@@ -106,10 +106,13 @@ function filterContent(query) {
         return;
     }
 
+    // Clear previous highlights
+    $('.search-highlight').removeClass('search-highlight');
+
     // Filtrar álbumes
     $('.public-album-item').each(function() {
-        const $album = $(this);
-        const albumTitle = $album.find('.public-album-header').text().toLowerCase();
+        const $albumItem = $(this);
+        const albumTitle = $albumItem.find('.public-album-header').text().toLowerCase();
 
         // El álbum coincide si el título contiene TODOS los keywords
         let albumTitleMatch = keywords.every(k => albumTitle.includes(k));
@@ -117,35 +120,31 @@ function filterContent(query) {
         let firstMatchPage = -1;
         let anyCardMatches = false;
 
-        $album.find('.card-slot').each(function() {
+        $albumItem.find('.card-slot').each(function() {
             const $slot = $(this);
             const cardName = ($slot.attr('data-name') || '').toLowerCase();
-            const cardRarity = ($slot.attr('data-rarity') || '').toLowerCase();
-            const cardExpansion = ($slot.attr('data-expansion') || '').toLowerCase();
-            const cardCondition = ($slot.attr('data-condition') || '').toLowerCase();
 
-            // Combinar todos los campos para buscar keywords
-            const combinedText = `${cardName} ${cardRarity} ${cardExpansion} ${cardCondition}`;
-
-            // Una carta coincide si TODOS los keywords están presentes en sus campos
-            const cardMatch = keywords.every(k => combinedText.includes(k));
+            // La búsqueda debe ser insensible a mayúsculas/minúsculas y buscar en data-name
+            const cardMatch = cardName && keywords.every(k => cardName.includes(k));
 
             if (cardMatch) {
                 anyCardMatches = true;
+                $slot.addClass('search-highlight');
                 if (firstMatchPage === -1) {
                     const $page = $slot.closest('.page');
-                    // Usar index relativo a todas las páginas del álbum para obtener el número de página correcto
-                    firstMatchPage = $album.find('.page').index($page) + 1;
+                    // Detectar en qué página del flipbook está el elemento
+                    firstMatchPage = $albumItem.find('.page').index($page) + 1;
                 }
             }
         });
 
         if (albumTitleMatch || anyCardMatches) {
-            $album.show();
+            $albumItem.show();
             anyVisible = true;
-            // Si hubo coincidencia en cartas, girar a la primera página que coincide
+            // Si hubo coincidencia en cartas, girar a la primera página que coincide usando turn.js
             if (anyCardMatches && firstMatchPage !== -1) {
-                const $turnAlbum = $album.find('.album');
+                const $turnAlbum = $albumItem.find('.album');
+                // Si ya está en la página correcta, no debe animar (turn.js ya lo maneja pero aseguramos)
                 if ($turnAlbum.turn('is') && $turnAlbum.turn('page') !== firstMatchPage) {
                     isManualPageTurn = true;
                     $turnAlbum.turn('page', firstMatchPage);
@@ -153,7 +152,7 @@ function filterContent(query) {
                 }
             }
         } else {
-            $album.hide();
+            $albumItem.hide();
         }
     });
 
@@ -169,15 +168,11 @@ function filterContent(query) {
         $deck.find('.swiper-slide').each(function(index) {
             const $slot = $(this);
             const cardName = ($slot.attr('data-name') || '').toLowerCase();
-            const cardRarity = ($slot.attr('data-rarity') || '').toLowerCase();
-            const cardExpansion = ($slot.attr('data-expansion') || '').toLowerCase();
-            const cardCondition = ($slot.attr('data-condition') || '').toLowerCase();
-
-            const combinedText = `${cardName} ${cardRarity} ${cardExpansion} ${cardCondition}`;
-            const cardMatch = keywords.every(k => combinedText.includes(k));
+            const cardMatch = cardName && keywords.every(k => cardName.includes(k));
 
             if (cardMatch) {
                 anyCardMatches = true;
+                $slot.addClass('search-highlight');
                 if (firstMatchIndex === -1) firstMatchIndex = index;
             }
         });
@@ -205,6 +200,7 @@ function filterContent(query) {
 
 function resetFilter() {
     $('.public-album-item, .deck-public-item').show();
+    $('.search-highlight').removeClass('search-highlight');
     $('#no-results').hide();
 }
 
@@ -547,7 +543,7 @@ async function loadPublicDecks() {
                                      data-condition="${card.condition || ''}"
                                      data-quantity="${card.quantity || '1'}"
                                      data-price="${card.price || ''}">
-                                    <img src="${card.image_url}" alt="${card.name || 'Card'}" />
+                                    <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
                                     <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                                 </div>
                             `).join('')}
@@ -634,6 +630,7 @@ async function renderAlbum(album) {
             const $slot = $('<div class="card-slot"></div>');
 
             if (slotData) {
+                // El nombre de la carta se almacena como atributo data-name para búsquedas (invisible en UI)
                 $slot.attr({
                     'data-name': slotData.name || '',
                     'data-rarity': slotData.rarity || '',
@@ -644,7 +641,8 @@ async function renderAlbum(album) {
                     'data-price': slotData.price || ''
                 });
                 if (slotData.image_url) {
-                    $slot.append(`<img src="${slotData.image_url}" class="tcg-card">`);
+                    const cardAlt = slotData.name || 'Carta';
+                    $slot.append(`<img src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}">`);
                     const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
 
                     // Priority handling for mobile: block propagation to turn.js
