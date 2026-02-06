@@ -78,12 +78,17 @@ $(document).ready(async function() {
         }
     });
 
-    // Search Logic
+    // Search Logic with Debounce
+    let searchTimeout;
     $('#search-input').on('input', function() {
         const query = $(this).val().toLowerCase().trim();
+        clearTimeout(searchTimeout);
+
         if (query.length > 0) {
             $('#clear-search').show();
-            filterContent(query);
+            searchTimeout = setTimeout(() => {
+                filterContent(query);
+            }, 300); // 300ms debounce
         } else {
             $('#clear-search').hide();
             resetFilter();
@@ -131,9 +136,11 @@ function filterContent(query) {
                 anyCardMatches = true;
                 $slot.addClass('search-highlight');
                 if (firstMatchPage === -1) {
-                    const $page = $slot.closest('.page');
+                    const $page = $slot.closest('.album-page');
                     // Detectar en qué página del flipbook está el elemento
-                    firstMatchPage = $albumItem.find('.page').index($page) + 1;
+                    // Usamos .find() porque turn.js puede haber envuelto las páginas en wrappers
+                    const $allPages = $albumItem.find('.album-page');
+                    firstMatchPage = $allPages.index($page) + 1;
                 }
             }
         });
@@ -144,11 +151,20 @@ function filterContent(query) {
             // Si hubo coincidencia en cartas, girar a la primera página que coincide usando turn.js
             if (anyCardMatches && firstMatchPage !== -1) {
                 const $turnAlbum = $albumItem.find('.album');
-                // Si ya está en la página correcta, no debe animar (turn.js ya lo maneja pero aseguramos)
-                if ($turnAlbum.turn('is') && $turnAlbum.turn('page') !== firstMatchPage) {
-                    isManualPageTurn = true;
-                    $turnAlbum.turn('page', firstMatchPage);
-                    setTimeout(() => { isManualPageTurn = false; }, 1000);
+                if ($turnAlbum.turn('is')) {
+                    const currentPage = $turnAlbum.turn('page');
+                    // En modo double, las páginas vienen en pares (2-3, 4-5, etc.)
+                    // Verificamos si la página destino ya está visible
+                    const isAlreadyVisible = (currentPage === firstMatchPage) ||
+                                           (currentPage % 2 === 0 && currentPage + 1 === firstMatchPage) ||
+                                           (currentPage % 2 !== 0 && currentPage - 1 === firstMatchPage && currentPage > 1);
+
+                    if (!isAlreadyVisible) {
+                        isManualPageTurn = true;
+                        $turnAlbum.turn('page', firstMatchPage);
+                        // Aumentamos el tiempo del flag para asegurar que termine la animación
+                        setTimeout(() => { isManualPageTurn = false; }, 1500);
+                    }
                 }
             }
         } else {
@@ -613,10 +629,10 @@ async function renderAlbum(album) {
         .order('page_index', { ascending: true });
 
     const coverImg = album.cover_image_url || 'https://via.placeholder.com/600x840?text=Portada';
-    $albumDiv.append(`<div class="page cover-page"><img src="${coverImg}"></div>`);
+    $albumDiv.append(`<div class="page album-page cover-page"><img src="${coverImg}"></div>`);
 
     for (const page of pages) {
-        const $pageDiv = $('<div class="page"></div>');
+        const $pageDiv = $('<div class="page album-page"></div>');
         const $grid = $('<div class="grid-container"></div>');
 
         const { data: slots } = await _supabase
@@ -664,7 +680,7 @@ async function renderAlbum(album) {
 
     if ((pages.length + 1) % 2 !== 0) {
         const backImg = album.back_image_url || 'https://via.placeholder.com/600x840?text=Contraportada';
-        $albumDiv.append(`<div class="page cover-page"><img src="${backImg}"></div>`);
+        $albumDiv.append(`<div class="page album-page cover-page"><img src="${backImg}"></div>`);
     }
 
     const $images = $albumDiv.find('img');
@@ -690,13 +706,13 @@ async function renderAlbum(album) {
             width: width,
             height: height,
             autoCenter: true,
-            gradients: !isMobile,
+            gradients: true,
             acceleration: true,
             display: 'double',
-            elevation: isMobile ? 0 : 50,
-            duration: 1000,
+            elevation: 50,
+            duration: 1500, // Aumentado para mayor suavidad y evitar brusquedad
             // Ajustar cornerSize basado en el tamaño del álbum
-            cornerSize: isMobile ? 80 : 50,
+            cornerSize: isMobile ? 80 : 100,
             when: {
                 start: function(event, pageObject, corner) {
                     // Solo permitir el giro si es desde una esquina o disparado manualmente por búsqueda
