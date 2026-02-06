@@ -4,6 +4,24 @@ let isManualPageTurn = false;
 let startX, startY;
 
 $(document).ready(async function() {
+    // --- Mobile Interaction Priority (Priority over turn.js) ---
+    // Interceptamos eventos en la fase de captura para evitar que turn.js
+    // detecte el toque si el usuario está interactuando con un botón.
+    const protectedElements = '.zoom-btn, #close-btn, .nav-btn, #clear-search';
+
+    const stopInterference = (e) => {
+        if (e.target.closest(protectedElements)) {
+            // Detenemos la propagación en fase de captura.
+            // Esto evita que el evento llegue a los listeners de turn.js
+            e.stopPropagation();
+        }
+    };
+
+    // Bloqueamos touchstart y mousedown en fase de captura
+    document.addEventListener('touchstart', stopInterference, true);
+    document.addEventListener('mousedown', stopInterference, true);
+    document.addEventListener('pointerdown', stopInterference, true);
+
     if ($.isTouch === undefined) {
         $.isTouch = 'ontouchstart' in window;
     }
@@ -568,14 +586,11 @@ async function loadPublicDecks() {
 
         $('#decks-container').append($deckItem);
 
-        // Bind zoom button events to stop propagation to swiper/turn.js
-        // We block all touch/mouse events in the bubble phase at the target
-        // to prevent them from reaching parent containers.
-        $deckItem.find('.zoom-btn').on('touchstart touchmove touchend mousedown mousemove mouseup click', function(e) {
+        // El manejo de clics se mantiene normal, la prioridad táctil
+        // ya se maneja con el listener global en fase de captura.
+        $deckItem.find('.zoom-btn').on('click', function(e) {
             e.stopPropagation();
-            if (e.type === 'click') {
-                openCardModal($(this).closest('.card-slot'));
-            }
+            openCardModal($(this).closest('.card-slot'));
         });
 
         new Swiper(`.${deckId}`, {
@@ -662,12 +677,11 @@ async function renderAlbum(album) {
                     $slot.append(`<img src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}">`);
                     const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
 
-                    // Priority handling for mobile: block propagation to turn.js
-                    $zoomBtn.on('touchstart touchmove touchend mousedown mousemove mouseup click', function(e) {
+                    // Prioridad para móvil: el listener global captura el touchstart.
+                    // Aquí manejamos el clic final para abrir el modal.
+                    $zoomBtn.on('click', function(e) {
                         e.stopPropagation();
-                        if (e.type === 'click') {
-                            openCardModal($(this).closest('.card-slot'));
-                        }
+                        openCardModal($(this).closest('.card-slot'));
                     });
 
                     $slot.append($zoomBtn);
