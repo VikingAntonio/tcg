@@ -136,11 +136,8 @@ function filterContent(query) {
                 anyCardMatches = true;
                 $slot.addClass('search-highlight');
                 if (firstMatchPage === -1) {
-                    const $page = $slot.closest('.album-page');
-                    // Detectar en qué página del flipbook está el elemento
-                    // Usamos .find() porque turn.js puede haber envuelto las páginas en wrappers
-                    const $allPages = $albumItem.find('.album-page');
-                    firstMatchPage = $allPages.index($page) + 1;
+                    // Usar el atributo data-page pre-calculado para mayor fiabilidad
+                    firstMatchPage = parseInt($slot.attr('data-page')) || -1;
                 }
             }
         });
@@ -629,10 +626,12 @@ async function renderAlbum(album) {
         .order('page_index', { ascending: true });
 
     const coverImg = album.cover_image_url || 'https://via.placeholder.com/600x840?text=Portada';
-    $albumDiv.append(`<div class="page album-page cover-page"><img src="${coverImg}"></div>`);
+    let pageCount = 1;
+    $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
 
     for (const page of pages) {
-        const $pageDiv = $('<div class="page album-page"></div>');
+        pageCount++;
+        const $pageDiv = $(`<div class="page album-page" data-page-num="${pageCount}"></div>`);
         const $grid = $('<div class="grid-container"></div>');
 
         const { data: slots } = await _supabase
@@ -647,8 +646,10 @@ async function renderAlbum(album) {
 
             if (slotData) {
                 // El nombre de la carta se almacena como atributo data-name para búsquedas (invisible en UI)
+                // data-page almacena el número de página para navegación directa
                 $slot.attr({
                     'data-name': slotData.name || '',
+                    'data-page': pageCount,
                     'data-rarity': slotData.rarity || '',
                     'data-holo': slotData.holo_effect || '',
                     'data-expansion': slotData.expansion || '',
@@ -679,8 +680,9 @@ async function renderAlbum(album) {
     }
 
     if ((pages.length + 1) % 2 !== 0) {
+        pageCount++;
         const backImg = album.back_image_url || 'https://via.placeholder.com/600x840?text=Contraportada';
-        $albumDiv.append(`<div class="page album-page cover-page"><img src="${backImg}"></div>`);
+        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
     }
 
     const $images = $albumDiv.find('img');
@@ -729,5 +731,11 @@ async function renderAlbum(album) {
     else {
         $images.on('load error', () => { if (++loadedCount >= $images.length) setTimeout(initTurn, 200); });
         setTimeout(initTurn, 1500);
+    }
+
+    // Si ya hay una búsqueda activa al terminar de cargar el álbum, aplicarla
+    const currentQuery = $('#search-input').val().trim();
+    if (currentQuery) {
+        setTimeout(() => { filterContent(currentQuery); }, 2000);
     }
 }
