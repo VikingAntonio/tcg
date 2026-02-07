@@ -640,9 +640,21 @@ async function renderAlbum(album) {
         .eq('album_id', album.id)
         .order('page_index', { ascending: true });
 
-    const coverImg = album.cover_image_url || 'https://via.placeholder.com/600x840?text=Portada';
+    const coverImg = album.cover_image_url;
+    const coverColor = album.cover_color || '#1a1a1a';
     let pageCount = 1;
-    $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
+
+    if (coverImg) {
+        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
+    } else {
+        $albumDiv.append(`
+            <div class="page album-page cover-page" data-page-num="${pageCount}">
+                <div class="textured-cover" style="background-color: ${coverColor}">
+                    <h2>${album.title}</h2>
+                </div>
+            </div>
+        `);
+    }
 
     for (const page of pages) {
         pageCount++;
@@ -695,8 +707,18 @@ async function renderAlbum(album) {
 
     if ((pages.length + 1) % 2 !== 0) {
         pageCount++;
-        const backImg = album.back_image_url || 'https://via.placeholder.com/600x840?text=Contraportada';
-        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
+        const backImg = album.back_image_url;
+        const backColor = album.back_color || '#1a1a1a';
+
+        if (backImg) {
+            $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
+        } else {
+            $albumDiv.append(`
+                <div class="page album-page cover-page" data-page-num="${pageCount}">
+                    <div class="textured-cover" style="background-color: ${backColor}"></div>
+                </div>
+            `);
+        }
     }
 
     const $images = $albumDiv.find('img');

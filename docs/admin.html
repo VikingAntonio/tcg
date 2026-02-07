@@ -120,12 +120,18 @@
                     <input type="text" id="input-album-title" placeholder="Nuevo Álbum">
                 </div>
                 <div class="form-group">
-                    <label>URL Imagen de Portada</label>
-                    <input type="text" id="input-album-cover" placeholder="https://...">
+                    <label>Portada (Imagen o Color con Textura)</label>
+                    <div class="color-input-wrapper">
+                        <input type="text" id="input-album-cover" placeholder="URL de la imagen (Opcional)" style="flex:1;">
+                        <input type="color" id="input-album-cover-color" value="#1a1a1a" title="Color de Portada" class="color-picker-custom">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>URL Imagen de Contraportada</label>
-                    <input type="text" id="input-album-back" placeholder="https://...">
+                    <label>Contraportada (Imagen o Color con Textura)</label>
+                    <div class="color-input-wrapper">
+                        <input type="text" id="input-album-back" placeholder="URL de la imagen (Opcional)" style="flex:1;">
+                        <input type="color" id="input-album-back-color" value="#1a1a1a" title="Color de Contraportada" class="color-picker-custom">
+                    </div>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                     <label class="switch">

@@ -55,9 +55,18 @@ $(document).ready(function() {
         const title = $('#input-album-title').val();
         const cover = $('#input-album-cover').val();
         const back = $('#input-album-back').val();
+        const coverColor = $('#input-album-cover-color').val();
+        const backColor = $('#input-album-back-color').val();
         const is_public = $('#input-album-public').is(':checked');
 
-        let updateData = { title, cover_image_url: cover, back_image_url: back, is_public };
+        let updateData = {
+            title,
+            cover_image_url: cover,
+            back_image_url: back,
+            cover_color: coverColor,
+            back_color: backColor,
+            is_public
+        };
         let { error } = await _supabase
             .from('albums')
             .update(updateData)
@@ -615,6 +624,8 @@ async function editAlbum(album) {
     $('#input-album-title').val(target.title);
     $('#input-album-cover').val(target.cover_image_url || '');
     $('#input-album-back').val(target.back_image_url || '');
+    $('#input-album-cover-color').val(target.cover_color || '#1a1a1a');
+    $('#input-album-back-color').val(target.back_color || '#1a1a1a');
     $('#input-album-public').prop('checked', target.is_public !== false);
     
     showView('editor');
