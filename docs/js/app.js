@@ -641,11 +641,13 @@ async function renderAlbum(album) {
     const $albumDiv = $albumContainer.find('.album');
     $('#albums-container').append($albumContainer);
 
-    const { data: pages } = await _supabase
+    let { data: pages } = await _supabase
         .from('pages')
         .select('*')
         .eq('album_id', album.id)
         .order('page_index', { ascending: true });
+
+    if (!pages) pages = [];
 
     const coverImg = album.cover_image_url;
     const coverColor = album.cover_color || '#1a1a1a';
@@ -713,20 +715,29 @@ async function renderAlbum(album) {
         $pageDiv.append($grid).appendTo($albumDiv);
     }
 
-    if ((pages.length + 1) % 2 !== 0) {
+    // Asegurarnos de que el álbum siempre termine con una contraportada independiente.
+    // Para que la contraportada quede al final (lado izquierdo en double-page),
+    // el total de páginas debe ser par.
+    // Total = 1 (portada) + pages.length (internas) + [1 si hay relleno] + 1 (contraportada).
+    // Si (1 + pages.length + 1) es impar (es decir, pages.length es impar), añadimos relleno.
+    if (pages.length % 2 !== 0) {
         pageCount++;
-        const backImg = album.back_image_url;
-        const backColor = album.back_color || '#1a1a1a';
+        $albumDiv.append(`<div class="page album-page" data-page-num="${pageCount}"></div>`);
+    }
 
-        if (backImg) {
-            $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
-        } else {
-            $albumDiv.append(`
-                <div class="page album-page cover-page" data-page-num="${pageCount}">
-                    <div class="textured-cover" style="background-color: ${backColor}"></div>
-                </div>
-            `);
-        }
+    // Añadir contraportada siempre
+    pageCount++;
+    const backImg = album.back_image_url;
+    const backColor = album.back_color || '#1a1a1a';
+
+    if (backImg) {
+        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
+    } else {
+        $albumDiv.append(`
+            <div class="page album-page cover-page" data-page-num="${pageCount}">
+                <div class="textured-cover" style="background-color: ${backColor}"></div>
+            </div>
+        `);
     }
 
     const $images = $albumDiv.find('img');
