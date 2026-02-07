@@ -378,6 +378,7 @@ function openCardModal($slot) {
     const name = $slot.data("name") || "Carta de Colección";
     const rarity = $slot.data("rarity") || "-";
     const holo = $slot.data("holo") || "";
+    const mask = $slot.data("mask") || "";
     const expansion = $slot.data("expansion") || "-";
     const condition = $slot.data("condition") || "-";
     const quantity = $slot.data("quantity") || "1";
@@ -392,9 +393,14 @@ function openCardModal($slot) {
     `);
 
     const $card3d = $("#card-3d-container");
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow active");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow custom-texture active");
+    $card3d.find('.holo-layer').css('--mask-url', '');
+
     if (holo) {
         $card3d.addClass(holo);
+        if (holo === 'custom-texture' && mask) {
+            $card3d.find('.holo-layer').css('--mask-url', `url(${mask})`);
+        }
     }
 
     $("#card-name").text(name);
@@ -570,6 +576,7 @@ async function loadPublicDecks() {
                                      data-name="${card.name || ''}"
                                      data-rarity="${card.rarity || ''}"
                                      data-holo="${card.holo_effect || ''}"
+                                     data-mask="${card.custom_mask_url || ''}"
                                      data-expansion="${card.expansion || ''}"
                                      data-condition="${card.condition || ''}"
                                      data-quantity="${card.quantity || '1'}"
@@ -679,6 +686,7 @@ async function renderAlbum(album) {
                     'data-page': pageCount,
                     'data-rarity': slotData.rarity || '',
                     'data-holo': slotData.holo_effect || '',
+                    'data-mask': slotData.custom_mask_url || '',
                     'data-expansion': slotData.expansion || '',
                     'data-condition': slotData.condition || '',
                     'data-quantity': slotData.quantity || '',

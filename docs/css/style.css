@@ -1283,6 +1283,33 @@ input:checked + .slider:before {
     mix-blend-mode: overlay;
 }
 
+/* CUSTOM TEXTURE FOIL */
+.custom-texture .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.5) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 255, 0.5) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3
+        );
+    background-size: 200% 200%, 400% 400%;
+    background-position: calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
+    mix-blend-mode: color-dodge;
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    opacity: 0.8;
+}
+
 /* Search Highlight Effect */
 .public-main-container .search-highlight {
     border-color: #00d2ff;

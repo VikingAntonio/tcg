@@ -137,6 +137,7 @@ $(document).ready(function() {
             image_url: $('#slot-image-url').val(),
             name: $('#slot-name').val(),
             holo_effect: $('#slot-holo-effect').val(),
+            custom_mask_url: $('#slot-custom-mask').val(),
             rarity: $('#slot-rarity').val(),
             expansion: $('#slot-expansion').val(),
             condition: $('#slot-condition').val(),
@@ -181,6 +182,14 @@ $(document).ready(function() {
 
     $('#close-slot-modal').click(function() {
         $('#slot-modal').removeClass('active');
+    });
+
+    $('#slot-holo-effect').change(function() {
+        if ($(this).val() === 'custom-texture') {
+            $('#custom-mask-container').show();
+        } else {
+            $('#custom-mask-container').hide();
+        }
     });
 
     // Deck Management Actions
@@ -538,6 +547,14 @@ function editDeckCard(card) {
     $('#slot-image-url').val(card.image_url || '');
     $('#slot-name').val(card.name || '');
     $('#slot-holo-effect').val(card.holo_effect || '');
+    $('#slot-custom-mask').val(card.custom_mask_url || '');
+
+    if (card.holo_effect === 'custom-texture') {
+        $('#custom-mask-container').show();
+    } else {
+        $('#custom-mask-container').hide();
+    }
+
     $('#slot-rarity').val(card.rarity || '');
     $('#slot-expansion').val(card.expansion || '');
     $('#slot-condition').val(card.condition || '');
@@ -767,6 +784,14 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
         $('#slot-holo-effect').val(data.holo_effect || '');
+        $('#slot-custom-mask').val(data.custom_mask_url || '');
+
+        if (data.holo_effect === 'custom-texture') {
+            $('#custom-mask-container').show();
+        } else {
+            $('#custom-mask-container').hide();
+        }
+
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');
         $('#slot-condition').val(data.condition || '');
