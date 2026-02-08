@@ -774,6 +774,7 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-image-url').val('');
     $('#slot-name').val('');
     $('#slot-holo-effect').val('');
+    $('#slot-custom-mask').val('');
     $('#slot-rarity').val('');
     $('#slot-expansion').val('');
     $('#slot-condition').val('');
