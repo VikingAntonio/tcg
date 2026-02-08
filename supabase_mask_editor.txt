@@ -1,0 +1,9 @@
+-- Ejecuta este SQL en tu editor de consultas de Supabase para asegurar que las columnas existen y pueden guardar datos de imagen.
+
+ALTER TABLE card_slots
+ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
+
+ALTER TABLE deck_cards
+ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
+
+-- Nota: El tipo TEXT en Postgres es ideal para guardar URLs o imágenes en formato Base64 generadas por el editor.
