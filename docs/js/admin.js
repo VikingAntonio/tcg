@@ -6,6 +6,14 @@ let currentPageId = null;
 let currentUser = null;
 let editingType = 'slot'; // 'slot' or 'deck-card'
 
+// Mask Editor State
+let maskCanvas, maskCtx;
+let isPainting = false;
+let currentBrushSize = 10;
+let currentTool = 'brush'; // 'brush' or 'eraser'
+let maskHistory = [];
+const MAX_HISTORY = 20;
+
 $(document).ready(function() {
     checkSession();
 
@@ -191,6 +199,158 @@ $(document).ready(function() {
             $('#custom-mask-container').hide();
         }
     });
+
+    // --- Mask Editor Logic ---
+    maskCanvas = document.getElementById('mask-canvas');
+    if (maskCanvas) maskCtx = maskCanvas.getContext('2d');
+
+    $('#btn-open-mask-editor').click(function(e) {
+        e.preventDefault();
+        const cardImgUrl = $('#slot-image-url').val();
+        if (!cardImgUrl) {
+            Swal.fire('Atención', 'Primero debes poner la URL de la imagen de la carta para usar de referencia.', 'warning');
+            return;
+        }
+
+        // Set card as background
+        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
+
+        // Initialize canvas
+        initMaskCanvas();
+
+        $('#mask-editor-overlay').addClass('active');
+    });
+
+    $('#close-mask-editor').click(function() {
+        $('#mask-editor-overlay').removeClass('active');
+    });
+
+    $('#brush-size').on('input', function() {
+        currentBrushSize = $(this).val();
+        $('#brush-size-val').text(currentBrushSize);
+    });
+
+    $('#tool-brush').click(function() {
+        currentTool = 'brush';
+        $('.editor-controls .btn-secondary').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    $('#tool-eraser').click(function() {
+        currentTool = 'eraser';
+        $('.editor-controls .btn-secondary').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    $('#btn-clear-mask').click(function() {
+        Swal.fire({
+            title: '¿Limpiar todo?',
+            text: "Se borrará todo el dibujo de la máscara.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, limpiar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveMaskHistory();
+                maskCtx.fillStyle = 'black';
+                maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+            }
+        });
+    });
+
+    $('#btn-undo-mask').click(function() {
+        if (maskHistory.length > 0) {
+            const lastState = maskHistory.pop();
+            const img = new Image();
+            img.onload = function() {
+                maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+                maskCtx.drawImage(img, 0, 0);
+            };
+            img.src = lastState;
+        }
+    });
+
+    $('#btn-save-mask').click(function() {
+        // Save canvas as base64
+        const dataUrl = maskCanvas.toDataURL('image/png');
+        $('#slot-custom-mask').val(dataUrl);
+        $('#mask-editor-overlay').removeClass('active');
+        Swal.fire('Guardado', 'La máscara se ha generado correctamente. No olvides guardar la carta para aplicar los cambios.', 'success');
+    });
+
+    // Canvas Events
+    $(maskCanvas).on('mousedown touchstart', function(e) {
+        isPainting = true;
+        saveMaskHistory();
+        draw(e);
+    });
+
+    $(window).on('mousemove touchmove', function(e) {
+        if (isPainting) draw(e);
+    });
+
+    $(window).on('mouseup touchend', function() {
+        isPainting = false;
+        maskCtx.beginPath();
+    });
+
+    function initMaskCanvas() {
+        const currentMask = $('#slot-custom-mask').val();
+
+        // Fill black background first
+        maskCtx.fillStyle = 'black';
+        maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+
+        if (currentMask) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = function() {
+                maskCtx.drawImage(img, 0, 0, maskCanvas.width, maskCanvas.height);
+            };
+            img.onerror = function() {
+                console.warn("No se pudo cargar la máscara previa en el lienzo (puede ser por CORS).");
+            };
+            img.src = currentMask;
+        }
+
+        maskHistory = [];
+    }
+
+    function saveMaskHistory() {
+        if (maskHistory.length >= MAX_HISTORY) maskHistory.shift();
+        maskHistory.push(maskCanvas.toDataURL());
+    }
+
+    function draw(e) {
+        if (!isPainting) return;
+
+        const rect = maskCanvas.getBoundingClientRect();
+        let x, y;
+
+        if (e.type.includes('touch')) {
+            const touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+            x = touch.clientX - rect.left;
+            y = touch.clientY - rect.top;
+            e.preventDefault();
+        } else {
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+        }
+
+        // Scale coordinates if canvas display size is different from actual size
+        x = x * (maskCanvas.width / rect.width);
+        y = y * (maskCanvas.height / rect.height);
+
+        maskCtx.lineWidth = currentBrushSize;
+        maskCtx.lineCap = 'round';
+        maskCtx.lineJoin = 'round';
+        maskCtx.strokeStyle = currentTool === 'brush' ? 'white' : 'black';
+
+        maskCtx.lineTo(x, y);
+        maskCtx.stroke();
+        maskCtx.beginPath();
+        maskCtx.moveTo(x, y);
+    }
 
     // Deck Management Actions
     $('#btn-create-deck').click(async function(e) {

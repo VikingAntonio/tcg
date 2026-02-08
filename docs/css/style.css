@@ -1347,3 +1347,25 @@ input:checked + .slider:before {
         box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
     }
 }
+
+/* --- Mask Editor Styles --- */
+#mask-canvas-wrapper {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+#mask-canvas {
+    opacity: 0.7; /* Allows seeing the card background behind the black mask */
+}
+
+.editor-controls .btn-secondary.active {
+    background: #00a8ff !important;
+    color: white !important;
+    border-color: #00d2ff !important;
+}
+
+#brush-size {
+    cursor: pointer;
+}
