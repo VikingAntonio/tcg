@@ -278,6 +278,102 @@ $(document).ready(function() {
         Swal.fire('Guardado', 'La máscara se ha generado correctamente. No olvides guardar la carta para aplicar los cambios.', 'success');
     });
 
+    // --- External Search Logic ---
+    $('#btn-external-search').click(function(e) {
+        e.preventDefault();
+        searchExternalCard();
+    });
+
+    $('#external-search-input').keypress(function(e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            searchExternalCard();
+        }
+    });
+
+    async function searchExternalCard() {
+        const game = $('#search-game-type').val();
+        const query = $('#external-search-input').val().trim();
+
+        if (query.length < 3) {
+            Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
+            return;
+        }
+
+        $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando...</div>');
+
+        try {
+            if (game === 'pokemon') {
+                const response = await fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`);
+                const cards = await response.json();
+
+                if (cards && cards.length > 0) {
+                    displayExternalResults(cards.slice(0, 20).map(c => ({
+                        name: c.name,
+                        image: `${c.image}/low.webp`,
+                        high_res: `${c.image}/high.webp`
+                    })));
+                } else {
+                    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en Pokémon TCG.</div>');
+                }
+            } else if (game === 'yugioh') {
+                const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas.</div>');
+                    return;
+                }
+
+                displayExternalResults(data.data.slice(0, 20).map(c => ({
+                    name: c.name,
+                    image: c.card_images[0].image_url_small,
+                    high_res: c.card_images[0].image_url
+                })));
+            }
+        } catch (err) {
+            console.error(err);
+            $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
+        }
+    }
+
+    function displayExternalResults(results) {
+        const $container = $('#external-search-results');
+        $container.empty();
+
+        if (results.length === 0) {
+            $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No se encontraron resultados.</div>');
+            return;
+        }
+
+        results.forEach(card => {
+            const $item = $(`
+                <div class="external-card-result" title="${card.name}" style="cursor: pointer; transition: transform 0.2s;">
+                    <img src="${card.image}" style="width: 100%; border-radius: 4px; border: 1px solid #333;">
+                </div>
+            `);
+
+            $item.hover(
+                function() { $(this).css('transform', 'scale(1.1)'); },
+                function() { $(this).css('transform', 'scale(1)'); }
+            );
+
+            $item.click(function() {
+                $('#slot-name').val(card.name);
+                $('#slot-image-url').val(card.high_res);
+                Swal.fire({
+                    title: 'Carta Seleccionada',
+                    text: card.name,
+                    icon: 'success',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+            });
+
+            $container.append($item);
+        });
+    }
+
     // Canvas Events
     $(maskCanvas).on('mousedown touchstart', function(e) {
         isPainting = true;
@@ -933,6 +1029,8 @@ async function loadSlotData(pageId, slotIndex) {
 
     $('#slot-image-url').val('');
     $('#slot-name').val('');
+    $('#external-search-input').val('');
+    $('#external-search-results').empty();
     $('#slot-holo-effect').val('');
     $('#slot-custom-mask').val('');
     $('#slot-rarity').val('');

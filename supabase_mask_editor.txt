@@ -1,9 +1,13 @@
--- Ejecuta este SQL en tu editor de consultas de Supabase para asegurar que las columnas existen y pueden guardar datos de imagen.
 
-ALTER TABLE card_slots
-ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
+-- SQL to add necessary columns for the Mask Editor and External Search
+-- Run this in your Supabase SQL Editor
 
-ALTER TABLE deck_cards
-ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
+-- Add custom_mask_url to card_slots
+ALTER TABLE card_slots ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
 
--- Nota: El tipo TEXT en Postgres es ideal para guardar URLs o imágenes en formato Base64 generadas por el editor.
+-- Add custom_mask_url to deck_cards
+ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
+
+-- Add colors to albums (if not already present)
+ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_color TEXT DEFAULT '#1a1a1a';
+ALTER TABLE albums ADD COLUMN IF NOT EXISTS back_color TEXT DEFAULT '#1a1a1a';
