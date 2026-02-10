@@ -755,7 +755,7 @@ async function renderAlbum(album) {
         if (isMobile) {
             const containerWidth = $albumContainer.width();
             const availableWidth = Math.min(600, containerWidth - 10);
-            width = availableWidth;
+            width = Math.floor(availableWidth / 2) * 2;
             height = Math.floor(width * (420 / 600));
         }
 
