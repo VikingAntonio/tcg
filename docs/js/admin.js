@@ -254,6 +254,8 @@ $(document).ready(function() {
                 saveMaskHistory();
                 maskCtx.fillStyle = 'black';
                 maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+                // Also clear the input field as requested
+                $('#slot-custom-mask').val('');
             }
         });
     });
