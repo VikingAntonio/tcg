@@ -4,40 +4,64 @@ let isManualPageTurn = false;
 let startX, startY;
 
 // --- Loading Screen Functions ---
-function initLoadingParticles() {
+let loadingTrailInterval;
+
+function startLoadingTrail() {
     const $container = $('.particles-container');
-    if ($container.length === 0) return;
+    const $char = $('.spinning-character');
+    if ($container.length === 0 || $char.length === 0) return;
 
     $container.empty();
-    const particleCount = 20;
+    if (loadingTrailInterval) clearInterval(loadingTrailInterval);
 
-    for (let i = 0; i < particleCount; i++) {
+    loadingTrailInterval = setInterval(() => {
+        if ($('#loading-screen').hasClass('hidden')) {
+            clearInterval(loadingTrailInterval);
+            return;
+        }
+
+        const charRect = $char[0].getBoundingClientRect();
+        const containerRect = $('#loading-screen')[0].getBoundingClientRect();
+
+        if (charRect.width === 0) return; // Not visible yet
+
+        // Calculate center position of character relative to loading screen
+        const x = charRect.left + charRect.width / 2 - containerRect.left;
+        const y = charRect.top + charRect.height / 2 - containerRect.top;
+
         const $particle = $('<div class="particle"></div>');
-        const left = Math.random() * 100;
-        const duration = 4 + Math.random() * 6;
-        const delay = Math.random() * 5;
-        const size = 15 + Math.random() * 25;
+        const size = 10 + Math.random() * 20;
+        const rotation = Math.random() * 360;
 
         $particle.css({
-            left: left + '%',
-            animationDuration: duration + 's',
-            animationDelay: delay + 's',
+            left: x + 'px',
+            top: y + 'px',
             width: size + 'px',
-            height: size + 'px'
+            height: size + 'px',
+            transform: `translate(-50%, -50%) rotate(${rotation}deg)`
         });
 
         $container.append($particle);
-    }
+
+        // Remove particle after its CSS animation finishes (approx 2s)
+        setTimeout(() => {
+            $particle.remove();
+        }, 2000);
+    }, 80); // Spawn every 80ms for a dense trail
 }
 
 function showLoading(message) {
     $('.loading-message').text(message);
     $('#loading-screen').removeClass('hidden');
-    initLoadingParticles();
+    startLoadingTrail();
 }
 
 function hideLoading() {
     $('#loading-screen').addClass('hidden');
+    if (loadingTrailInterval) {
+        clearInterval(loadingTrailInterval);
+        loadingTrailInterval = null;
+    }
 }
 
 $(document).ready(async function() {
@@ -509,6 +533,7 @@ async function loadStoreData() {
 }
 
 async function loadPublicAlbums(userId) {
+    showLoading('Cargando Binders...');
     let query = _supabase
         .from('albums')
         .select('*')
