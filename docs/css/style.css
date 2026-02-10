@@ -1369,3 +1369,11 @@ input:checked + .slider:before {
 #brush-size {
     cursor: pointer;
 }
+
+/* --- Tablet Kamvas Slot 10 (1920x1200) Responsive --- */
+@media screen and (min-width: 1920px) and (min-height: 1000px) {
+    #mask-canvas-wrapper, #mask-canvas {
+        width: 220px !important;
+        height: 308px !important;
+    }
+}
