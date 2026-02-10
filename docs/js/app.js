@@ -766,8 +766,8 @@ async function renderAlbum(album) {
             gradients: true,
             acceleration: true,
             display: 'double',
-            elevation: 50,
-            duration: 1500, // Aumentado para mayor suavidad y evitar brusquedad
+            elevation: 100,
+            duration: 800,
             // Ajustar cornerSize basado en el tamaño del álbum
             cornerSize: isMobile ? 80 : 100,
             when: {
