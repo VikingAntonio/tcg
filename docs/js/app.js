@@ -755,7 +755,7 @@ async function renderAlbum(album) {
         if (isMobile) {
             const containerWidth = $albumContainer.width();
             const availableWidth = Math.min(600, containerWidth - 10);
-            width = Math.floor(availableWidth / 2) * 2;
+            width = availableWidth;
             height = Math.floor(width * (420 / 600));
         }
 
@@ -766,8 +766,8 @@ async function renderAlbum(album) {
             gradients: true,
             acceleration: true,
             display: 'double',
-            elevation: 100,
-            duration: 800,
+            elevation: 50,
+            duration: 1500, // Aumentado para mayor suavidad y evitar brusquedad
             // Ajustar cornerSize basado en el tamaño del álbum
             cornerSize: isMobile ? 80 : 100,
             when: {
