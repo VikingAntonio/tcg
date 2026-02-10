@@ -1370,16 +1370,24 @@ input:checked + .slider:before {
     cursor: pointer;
 }
 
+/* Ensure SweetAlert is always on top of our overlays */
+.swal2-container {
+    z-index: 20000 !important;
+}
+
 /* --- Tablet Kamvas Slot 10 (1920x1200) Responsive --- */
 /* Target resolutions higher than standard 1080p to avoid affecting PC users */
 @media screen and (min-width: 1920px) and (min-height: 1081px) {
     #mask-canvas-wrapper, #mask-canvas {
-        width: 220px !important;
-        height: 308px !important;
-        min-width: 220px !important;
-        min-height: 308px !important;
+        width: 336px !important;
+        height: 488px !important;
+        min-width: 336px !important;
+        min-height: 488px !important;
     }
     #mask-canvas-wrapper {
         background-size: 100% 100% !important;
+    }
+    #mask-editor-overlay .overlay-content {
+        max-width: 800px !important;
     }
 }
