@@ -40,6 +40,12 @@ $(document).ready(function() {
         loadDecks();
     });
 
+    $('#btn-spirits').click(function(e) {
+        e.preventDefault();
+        showView('spirits');
+        loadSpirits();
+    });
+
     $('#btn-create-album').click(async function(e) {
         e.preventDefault();
         if (!currentUser) return;
@@ -521,6 +527,79 @@ $(document).ready(function() {
         }
     });
 
+    // --- Spirit Management ---
+    $('#btn-open-upload-spirit').click(function() {
+        $('#spirit-upload-modal').addClass('active');
+    });
+
+    $('#close-spirit-upload-modal').click(function() {
+        $('#spirit-upload-modal').removeClass('active');
+    });
+
+    $('#btn-save-spirit').click(async function() {
+        const name = $('#input-spirit-name').val();
+        const gltfFile = $('#input-spirit-gltf')[0].files[0];
+        const extraFiles = $('#input-spirit-extra')[0].files;
+        const animation = $('#input-spirit-animation').val();
+
+        if (!name || !gltfFile) {
+            Swal.fire('Atención', 'Nombre y archivo GLTF son obligatorios', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Subiendo Spirit...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            // 1. Upload main GLTF
+            const timestamp = Date.now();
+            const gltfPath = `models/${timestamp}_${gltfFile.name}`;
+            const { data: gltfData, error: gltfErr } = await _supabase.storage
+                .from('spirits')
+                .upload(gltfPath, gltfFile);
+
+            if (gltfErr) throw gltfErr;
+            const gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
+
+            // 2. Upload extra files (textures, etc.)
+            let textureUrl = null;
+            for (const file of extraFiles) {
+                const path = `models/${timestamp}_${file.name}`;
+                const { error: extraErr } = await _supabase.storage
+                    .from('spirits')
+                    .upload(path, file);
+                if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
+
+                // If it's an image, we might use it as the main texture if needed
+                if (file.type.startsWith('image/')) {
+                    textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
+                }
+            }
+
+            // 3. Save to DB
+            const { error: dbErr } = await _supabase
+                .from('spirits')
+                .insert([{
+                    name: name,
+                    gltf_url: gltfUrl,
+                    texture_url: textureUrl,
+                    animation_type: animation
+                }]);
+
+            if (dbErr) throw dbErr;
+
+            Swal.fire('¡Éxito!', 'Spirit subido correctamente', 'success');
+            $('#spirit-upload-modal').removeClass('active');
+            loadSpirits();
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Error', 'No se pudo subir el spirit: ' + (err.message || ''), 'error');
+        }
+    });
+
     // Toggle Public/Private from list
     $(document).on('change', '.toggle-public', async function() {
         const id = $(this).data('id');
@@ -608,6 +687,13 @@ function showAuthenticatedContent() {
         $('#btn-users-panel').show();
     } else {
         $('#btn-users-panel').hide();
+    }
+
+    // Antonio specific features
+    if (currentUser.username === 'Antonio') {
+        $('#antonio-upload-container').show();
+    } else {
+        $('#antonio-upload-container').hide();
     }
 
     // Generate public store link
@@ -1018,6 +1104,73 @@ async function deletePage(id) {
             loadAlbumPages(currentAlbumId, false);
         }
     }
+}
+
+async function loadSpirits() {
+    $('#spirit-list').html('<div class="loading">Cargando spirits...</div>');
+
+    // Fetch spirits and user's selection
+    const [spiritsRes, userRes] = await Promise.all([
+        _supabase.from('spirits').select('*').order('name', { ascending: true }),
+        _supabase.from('usuarios').select('selected_spirit_id').eq('id', currentUser.id).single()
+    ]);
+
+    if (spiritsRes.error) {
+        $('#spirit-list').html('<div class="error">Error al cargar la lista de spirits.</div>');
+        return;
+    }
+
+    const spirits = spiritsRes.data || [];
+    const selectedId = userRes.data ? userRes.data.selected_spirit_id : null;
+
+    if (spirits.length === 0) {
+        $('#spirit-list').html('<div class="empty">No hay spirits disponibles.</div>');
+        return;
+    }
+
+    const $tempContainer = $('<div></div>');
+    spirits.forEach(spirit => {
+        const isSelected = spirit.id == selectedId;
+        const $card = $(`
+            <div class="album-card spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
+                <div class="deck-preview-icon"><i class="fas fa-ghost fa-3x"></i></div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <h3 style="margin:0;">${spirit.name}</h3>
+                    <p style="font-size: 10px; color: #666; margin-top: 5px;">Animación: ${spirit.animation_type === 'orbit' ? 'Órbita' : 'Flotante'}</p>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-select-spirit" style="width: 100%;" ${isSelected ? 'disabled' : ''}>
+                        ${isSelected ? 'Seleccionado' : 'Seleccionar'}
+                    </button>
+                </div>
+            </div>
+        `);
+
+        $card.find('.btn-select-spirit').click(async function(e) {
+            e.preventDefault();
+            const { error } = await _supabase
+                .from('usuarios')
+                .update({ selected_spirit_id: spirit.id })
+                .eq('id', currentUser.id);
+
+            if (error) {
+                Swal.fire('Error', 'No se pudo seleccionar el spirit', 'error');
+            } else {
+                Swal.fire({
+                    title: '¡Spirit Seleccionado!',
+                    text: `${spirit.name} ahora aparecerá en tus pantallas de carga.`,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                loadSpirits();
+            }
+        });
+
+        $tempContainer.append($card);
+    });
+
+    $('#spirit-list').html($tempContainer.contents());
 }
 
 async function loadSlotData(pageId, slotIndex) {
