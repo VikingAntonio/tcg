@@ -554,9 +554,11 @@ $(document).ready(function() {
         });
 
         try {
-            // 1. Upload main GLTF
-            const timestamp = Date.now();
-            const gltfPath = `models/${timestamp}_${gltfFile.name}`;
+            // 1. Upload into a unique folder to preserve relative paths
+            const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+            // Upload main GLTF
+            const gltfPath = `models/${folderId}/${gltfFile.name}`;
             const { data: gltfData, error: gltfErr } = await _supabase.storage
                 .from('spirits')
                 .upload(gltfPath, gltfFile);
@@ -564,10 +566,10 @@ $(document).ready(function() {
             if (gltfErr) throw gltfErr;
             const gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
 
-            // 2. Upload extra files (textures, etc.)
+            // 2. Upload extra files (textures, bin, etc.) into the SAME folder
             let textureUrl = null;
             for (const file of extraFiles) {
-                const path = `models/${timestamp}_${file.name}`;
+                const path = `models/${folderId}/${file.name}`;
                 const { error: extraErr } = await _supabase.storage
                     .from('spirits')
                     .upload(path, file);
@@ -1116,7 +1118,11 @@ async function loadSpirits() {
     ]);
 
     if (spiritsRes.error) {
-        $('#spirit-list').html('<div class="error">Error al cargar la lista de spirits.</div>');
+        if (spiritsRes.error.code === '42P01') {
+            $('#spirit-list').html('<div class="error">La tabla "spirits" no existe. Debes ejecutar el script SQL de configuración.</div>');
+        } else {
+            $('#spirit-list').html('<div class="error">Error al cargar la lista de spirits.</div>');
+        }
         return;
     }
 

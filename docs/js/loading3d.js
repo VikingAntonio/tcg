@@ -56,50 +56,55 @@ function loadSpiritModel() {
     const loader = new GLTFLoader();
     const textureLoader = new THREE.TextureLoader();
 
-    const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || 'ash.gltf';
+    const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || 'ash.png';
     const textureUrl = (window.currentSpirit && window.currentSpirit.texture_url) || null;
 
-    loader.load(modelUrl, (gltf) => {
-        console.log(`Loading3D: ${modelUrl} loaded successfully`);
-        character = gltf.scene;
+    if (modelUrl.toLowerCase().endsWith('.png') || modelUrl.toLowerCase().endsWith('.webp')) {
+        textureLoader.load(modelUrl, (texture) => {
+            const material = new THREE.SpriteMaterial({ map: texture });
+            character = new THREE.Sprite(material);
+            character.scale.set(2.5, 2.5, 1);
+            scene.add(character);
+            console.log(`Loading3D: Sprite ${modelUrl} loaded successfully`);
+        });
+    } else {
+        loader.load(modelUrl, (gltf) => {
+            console.log(`Loading3D: ${modelUrl} loaded successfully`);
+            character = gltf.scene;
 
-        // Apply custom texture if provided
-        if (textureUrl) {
-            textureLoader.load(textureUrl, (tex) => {
-                tex.flipY = false;
-                character.traverse((child) => {
-                    // Only apply to meshes that already have a map or where it makes sense
-                    if (child.isMesh && child.material) {
-                        // If model has multiple meshes, this is still a bit aggressive but better than nothing.
-                        // Ideally we'd match by mesh name, but we don't know it here.
-                        child.material.map = tex;
-                        child.material.needsUpdate = true;
-                    }
+            if (textureUrl) {
+                textureLoader.load(textureUrl, (tex) => {
+                    tex.flipY = false;
+                    character.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            child.material.map = tex;
+                            child.material.needsUpdate = true;
+                        }
+                    });
                 });
-            });
-        }
+            }
 
-        // --- AJUSTE DE TAMAÑO ---
-        const box = new THREE.Box3().setFromObject(character);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scaleMultiplier = 1.8;
-        const scale = scaleMultiplier / maxDim;
-        character.scale.set(scale, scale, scale);
+            const box = new THREE.Box3().setFromObject(character);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scaleMultiplier = 1.8;
+            const scale = scaleMultiplier / maxDim;
+            character.scale.set(scale, scale, scale);
 
-        // Centrar el personaje en su eje
-        const center = box.getCenter(new THREE.Vector3());
-        character.position.y = -center.y * scale;
+            const center = box.getCenter(new THREE.Vector3());
+            character.position.y = -center.y * scale;
 
-        scene.add(character);
-    }, undefined, (error) => {
-        console.warn(`Error loading model ${modelUrl}:`, error);
-    });
+            scene.add(character);
+        }, undefined, (error) => {
+            console.warn(`Error loading model ${modelUrl}:`, error);
+        });
+    }
 
     // Load Cherry Texture for particles
     textureLoader.load('cherry.png', (texture) => {
         cherryTexture = texture;
     });
+}
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -187,7 +192,9 @@ function animate() {
                 character.position.z = z;
 
                 // Orientación: que el personaje mire hacia donde avanza
-                character.rotation.y = time * speed;
+                if (character.isMesh || character.type === 'Group') {
+                    character.rotation.y = time * speed;
+                }
 
                 // Efecto de flotación (opcional)
                 character.position.y = Math.sin(time * 3) * 0.2;

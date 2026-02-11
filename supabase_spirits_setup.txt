@@ -1,0 +1,48 @@
+INSTRUCCIONES DE CONFIGURACIÓN PARA SUPABASE (ESPIRITUS Y CARGA 3D)
+
+Sigue estos pasos para que el sistema de carga con personajes 3D funcione correctamente:
+
+1. EJECUTAR SQL EN EL EDITOR DE SUPABASE
+Copia y pega el siguiente código en el 'SQL Editor' de tu proyecto de Supabase y ejecútalo:
+
+--------------------------------------------------------------------------------
+-- 1. Crear la tabla de espíritus
+CREATE TABLE IF NOT EXISTS spirits (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    gltf_url TEXT NOT NULL,
+    texture_url TEXT,
+    animation_type TEXT DEFAULT 'orbit', -- 'orbit' o 'float'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. Agregar columna para el espíritu seleccionado en usuarios
+-- Nota: Si tu tabla 'usuarios' usa otro tipo para el ID, asegúrate de que coincida.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='selected_spirit_id') THEN
+        ALTER TABLE usuarios ADD COLUMN selected_spirit_id BIGINT REFERENCES spirits(id);
+    END IF;
+END $$;
+
+-- 3. Habilitar RLS y políticas
+ALTER TABLE spirits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir lectura pública de espíritus" ON spirits;
+CREATE POLICY "Permitir lectura pública de espíritus" ON spirits FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir gestión a autenticados" ON spirits;
+CREATE POLICY "Permitir gestión a autenticados" ON spirits FOR ALL USING (auth.role() = 'authenticated');
+--------------------------------------------------------------------------------
+
+2. CONFIGURAR EL STORAGE (ALMACENAMIENTO)
+Para que las subidas de archivos funcionen desde el panel de Admin:
+
+   a. Ve a 'Storage' en el menú lateral de Supabase.
+   b. Crea un nuevo 'Bucket' llamado exactamente: spirits
+   c. Asegúrate de marcarlo como PUBLIC (Public bucket).
+   d. Haz clic en el bucket 'spirits' y ve a la pestaña 'Policies'.
+   e. Agrega políticas para permitir SELECT a todos, e INSERT/UPDATE/DELETE a usuarios autenticados.
+
+3. ARCHIVOS RECOMENDADOS
+El sistema busca por defecto 'docs/assets/ash.png' y 'docs/assets/cherry.png' si no hay un spirit seleccionado en la DB.
+
+¡Listo! Con esto el panel de administración podrá guardar y asignar los personajes de carga.

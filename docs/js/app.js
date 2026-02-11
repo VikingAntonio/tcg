@@ -7,7 +7,7 @@ let startX, startY;
 window.isLoading = false;
 window.loadingMessage = '';
 
-function showLoading(message) {
+window.showLoading = function(message) {
     console.log("App: showLoading", message);
     window.isLoading = true;
     window.loadingMessage = message;
@@ -16,11 +16,15 @@ function showLoading(message) {
     }));
 }
 
-function hideLoading() {
+window.hideLoading = function() {
     console.log("App: hideLoading");
     window.isLoading = false;
     window.dispatchEvent(new CustomEvent('hide-loading'));
 }
+
+// Aliases for internal use
+const showLoading = window.showLoading;
+const hideLoading = window.hideLoading;
 
 $(document).ready(async function() {
     // --- Mobile Interaction Priority (Priority over turn.js) ---
@@ -475,7 +479,7 @@ async function loadStoreData() {
 
     const { data: userData, error: userError } = await _supabase
         .from('usuarios')
-        .select('id, store_name, selected_spirit_id')
+        .select('id, store_name')
         .eq('store_name', storeName)
         .single();
 
@@ -485,16 +489,20 @@ async function loadStoreData() {
         return;
     }
 
-    // Load selected spirit if exists
-    if (userData.selected_spirit_id) {
-        try {
-            const { data: spiritData } = await _supabase
-                .from('spirits')
-                .select('*')
-                .eq('id', userData.selected_spirit_id)
-                .single();
-            if (spiritData) window.currentSpirit = spiritData;
-        } catch (e) { console.error("Error loading spirit:", e); }
+    // Load selected spirit if exists (safe fetch)
+    const { data: spiritRef, error: spiritRefErr } = await _supabase
+        .from('usuarios')
+        .select('selected_spirit_id')
+        .eq('id', userData.id)
+        .single();
+
+    if (!spiritRefErr && spiritRef && spiritRef.selected_spirit_id) {
+        const { data: spiritData } = await _supabase
+            .from('spirits')
+            .select('*')
+            .eq('id', spiritRef.selected_spirit_id)
+            .single();
+        if (spiritData) window.currentSpirit = spiritData;
     }
 
     $('#public-store-name').text(`Tienda: ${userData.store_name}`);
