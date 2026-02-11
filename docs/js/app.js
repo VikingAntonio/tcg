@@ -3,18 +3,6 @@ let isMoving = false;
 let isManualPageTurn = false;
 let startX, startY;
 
-// --- Loading Screen Functions ---
-function showLoading(message) {
-    $('.loading-message').text(message);
-    $('#loading-screen').removeClass('hidden');
-    document.dispatchEvent(new CustomEvent('show-loading'));
-}
-
-function hideLoading() {
-    $('#loading-screen').addClass('hidden');
-    document.dispatchEvent(new CustomEvent('hide-loading'));
-}
-
 $(document).ready(async function() {
     // --- Mobile Interaction Priority (Priority over turn.js) ---
     // Interceptamos eventos en la fase de captura para evitar que turn.js
@@ -40,12 +28,6 @@ $(document).ready(async function() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const initialView = urlParams.get('view') || 'albums';
-
-    if (initialView === 'decks') {
-        showLoading('Cargando Decks...');
-    } else {
-        showLoading('Cargando Binders...');
-    }
 
     loadStoreData();
 
@@ -474,7 +456,6 @@ async function loadStoreData() {
 
     if (userError || !userData) {
         $('#albums-container').html('<div class="error">Tienda no encontrada.</div>');
-        hideLoading();
         return;
     }
 
@@ -484,7 +465,6 @@ async function loadStoreData() {
 }
 
 async function loadPublicAlbums(userId) {
-    showLoading('Cargando Binders...');
     let query = _supabase
         .from('albums')
         .select('*')
@@ -513,13 +493,11 @@ async function loadPublicAlbums(userId) {
 
     if (error) {
         $('#albums-container').html('<div class="error">Error al cargar álbumes.</div>');
-        hideLoading();
         return;
     }
 
     if (albums.length === 0) {
         $('#albums-container').html('<div class="empty">No hay álbumes disponibles.</div>');
-        hideLoading();
         return;
     }
 
@@ -527,16 +505,12 @@ async function loadPublicAlbums(userId) {
     for (const album of albums) {
         await renderAlbum(album);
     }
-
-    // Pequeño delay para asegurar que el primer álbum se vea bien al quitar la carga
-    setTimeout(hideLoading, 500);
 }
 
 async function loadPublicDecks() {
     const storeName = new URLSearchParams(window.location.search).get('store');
     if (!storeName) return;
 
-    showLoading('Cargando Decks...');
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
     const { data: user } = await _supabase
@@ -580,14 +554,12 @@ async function loadPublicDecks() {
 
     if (error || !decks) {
         $('#decks-container').html('<div class="error">No se pudieron cargar los decks.</div>');
-        hideLoading();
         return;
     }
 
     $('#decks-container').empty();
     if (decks.length === 0) {
         $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
-        hideLoading();
         return;
     }
 
@@ -652,8 +624,6 @@ async function loadPublicDecks() {
             }
         });
     });
-
-    setTimeout(hideLoading, 500);
 }
 
 async function renderAlbum(album) {
