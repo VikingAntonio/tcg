@@ -636,6 +636,12 @@ $(document).ready(function() {
         $('#spirit-upload-modal').removeClass('active');
     });
 
+    // Spirit Viewer Modal Close
+    $('#close-spirit-viewer').click(function() {
+        $('#spirit-viewer-modal').removeClass('active');
+        if (window.spiritViewer) window.spiritViewer.cleanupViewer();
+    });
+
     $('#btn-save-spirit').click(async function() {
         const name = $('#input-spirit-name').val();
         const gltfFile = droppedGltfFile;
@@ -1244,13 +1250,27 @@ async function loadSpirits() {
                     <h3 style="margin:0;">${spirit.name}</h3>
                     <p style="font-size: 10px; color: #666; margin-top: 5px;">Animación: ${spirit.animation_type === 'orbit' ? 'Órbita' : 'Flotante'}</p>
                 </div>
-                <div style="margin-top: 20px;">
+                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn btn-secondary btn-preview-spirit" style="width: 100%;">
+                        <i class="fas fa-eye"></i> Ver Vista Previa
+                    </button>
                     <button class="btn btn-select-spirit" style="width: 100%;" ${isSelected ? 'disabled' : ''}>
                         ${isSelected ? 'Seleccionado' : 'Seleccionar'}
                     </button>
                 </div>
             </div>
         `);
+
+        $card.find('.btn-preview-spirit').click(function(e) {
+            e.preventDefault();
+            $('#spirit-viewer-title').text(`Vista Previa: ${spirit.name}`);
+            $('#spirit-viewer-modal').addClass('active');
+
+            if (window.spiritViewer) {
+                window.spiritViewer.initViewer('spirit-viewer-container');
+                window.spiritViewer.loadModel(spirit.gltf_url, spirit.texture_url);
+            }
+        });
 
         $card.find('.btn-select-spirit').click(async function(e) {
             e.preventDefault();
