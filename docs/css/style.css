@@ -1405,14 +1405,16 @@ input:checked + .slider:before {
     justify-content: center;
     align-items: center;
     z-index: 30000;
-    transition: opacity 0.5s ease;
-    visibility: visible;
+    transition: opacity 0.5s ease, visibility 0.5s;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
-.loading-screen.hidden {
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
+.loading-screen.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 #loading-3d-container {
@@ -1454,10 +1456,6 @@ input:checked + .slider:before {
 }
 
 @media (max-width: 640px) {
-    .character-container {
-        width: 180px;
-        height: 180px;
-    }
     .loading-message {
         font-size: 1.2rem;
         letter-spacing: 2px;
