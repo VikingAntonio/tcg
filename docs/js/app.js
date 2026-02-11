@@ -475,7 +475,7 @@ async function loadStoreData() {
 
     const { data: userData, error: userError } = await _supabase
         .from('usuarios')
-        .select('id, store_name')
+        .select('id, store_name, selected_spirit_id')
         .eq('store_name', storeName)
         .single();
 
@@ -483,6 +483,18 @@ async function loadStoreData() {
         $('#albums-container').html('<div class="error">Tienda no encontrada.</div>');
         hideLoading();
         return;
+    }
+
+    // Load selected spirit if exists
+    if (userData.selected_spirit_id) {
+        try {
+            const { data: spiritData } = await _supabase
+                .from('spirits')
+                .select('*')
+                .eq('id', userData.selected_spirit_id)
+                .single();
+            if (spiritData) window.currentSpirit = spiritData;
+        } catch (e) { console.error("Error loading spirit:", e); }
     }
 
     $('#public-store-name').text(`Tienda: ${userData.store_name}`);

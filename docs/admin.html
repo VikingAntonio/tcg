@@ -42,6 +42,10 @@
                 <i class="fas fa-layer-group"></i>
                 <span>Mis Decks</span>
             </button>
+            <button id="btn-spirits" class="tile tile-orange">
+                <i class="fas fa-ghost"></i>
+                <span>Spirits</span>
+            </button>
             <a href="users.html" id="btn-users-panel" class="tile tile-pink" style="display: none;">
                 <i class="fas fa-users-cog"></i>
                 <span>Usuarios</span>
@@ -104,6 +108,21 @@
             </div>
             <div id="deck-card-list" class="album-list">
                 <!-- Deck cards will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Spirits View -->
+        <div id="view-spirits" class="admin-section" style="display:none;">
+            <div class="admin-header">
+                <h1>Mis Spirits</h1>
+                <p>Selecciona el personaje que aparecerá en tus pantallas de carga.</p>
+                <div id="antonio-upload-container" style="display:none; margin-top: 20px;">
+                    <button id="btn-open-upload-spirit" class="btn"><i class="fas fa-upload"></i> Subir Nuevo Spirit</button>
+                </div>
+            </div>
+            <div id="spirit-list" class="album-list">
+                <!-- Spirits will be loaded here -->
+                <div class="loading">Cargando spirits...</div>
             </div>
         </div>
 
@@ -228,6 +247,34 @@
                 </div>
             </div>
             <button id="btn-save-slot" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-check-circle"></i> Guardar Carta</button>
+        </div>
+    </div>
+
+    <!-- Spirit Upload Modal (Antonio only) -->
+    <div id="spirit-upload-modal" class="overlay">
+        <div class="overlay-content">
+            <span id="close-spirit-upload-modal" class="close-btn">&times;</span>
+            <h2>Subir Nuevo Spirit</h2>
+            <div class="form-group">
+                <label>Nombre del Spirit</label>
+                <input type="text" id="input-spirit-name" placeholder="Ej: Pikachu">
+            </div>
+            <div class="form-group">
+                <label>Archivo GLTF/GLB (Principal)</label>
+                <input type="file" id="input-spirit-gltf" accept=".gltf,.glb">
+            </div>
+            <div class="form-group">
+                <label>Textura/Archivos Adicionales (Opcional)</label>
+                <input type="file" id="input-spirit-extra" multiple>
+            </div>
+            <div class="form-group">
+                <label>Tipo de Animación</label>
+                <select id="input-spirit-animation">
+                    <option value="orbit">Giro en Eje Z (Órbita)</option>
+                    <option value="float">Movimiento Sutil (Flotante)</option>
+                </select>
+            </div>
+            <button id="btn-save-spirit" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-cloud-upload-alt"></i> Subir a la Nube</button>
         </div>
     </div>
 

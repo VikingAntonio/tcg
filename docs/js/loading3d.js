@@ -41,13 +41,45 @@ function init() {
     const loader = new GLTFLoader();
     const textureLoader = new THREE.TextureLoader();
 
-    // Load Ash
-    loader.load('ash.gltf', (gltf) => {
-        console.log("Loading3D: ash.gltf loaded successfully");
+    loadSpiritModel();
+
+    window.addEventListener('resize', onWindowResize);
+    animate();
+}
+
+function loadSpiritModel() {
+    if (character) {
+        scene.remove(character);
+        character = null;
+    }
+
+    const loader = new GLTFLoader();
+    const textureLoader = new THREE.TextureLoader();
+
+    const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || 'ash.gltf';
+    const textureUrl = (window.currentSpirit && window.currentSpirit.texture_url) || null;
+
+    loader.load(modelUrl, (gltf) => {
+        console.log(`Loading3D: ${modelUrl} loaded successfully`);
         character = gltf.scene;
 
-        // --- AJUSTE DE TAMAÑO DE ASH ---
-        // Cambia el valor 1.8 para hacer el personaje más grande o más chico
+        // Apply custom texture if provided
+        if (textureUrl) {
+            textureLoader.load(textureUrl, (tex) => {
+                tex.flipY = false;
+                character.traverse((child) => {
+                    // Only apply to meshes that already have a map or where it makes sense
+                    if (child.isMesh && child.material) {
+                        // If model has multiple meshes, this is still a bit aggressive but better than nothing.
+                        // Ideally we'd match by mesh name, but we don't know it here.
+                        child.material.map = tex;
+                        child.material.needsUpdate = true;
+                    }
+                });
+            });
+        }
+
+        // --- AJUSTE DE TAMAÑO ---
         const box = new THREE.Box3().setFromObject(character);
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
@@ -61,17 +93,13 @@ function init() {
 
         scene.add(character);
     }, undefined, (error) => {
-        console.warn('Waiting for ash.gltf to be uploaded...');
+        console.warn(`Error loading model ${modelUrl}:`, error);
     });
 
     // Load Cherry Texture for particles
     textureLoader.load('cherry.png', (texture) => {
         cherryTexture = texture;
     });
-
-    window.addEventListener('resize', onWindowResize);
-    animate();
-}
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -141,20 +169,29 @@ function animate() {
         // speed: Velocidad de giro
         const radius = 2.2;
         const speed = 2.0;
+        const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
         if (character) {
-            // Giro a la derecha (sentido horario)
-            const x = Math.sin(time * speed) * radius;
-            const z = Math.cos(time * speed) * radius;
+            if (animType === 'float') {
+                // Subtle floating and rotation in place
+                character.position.x = 0;
+                character.position.z = 0;
+                character.position.y = Math.sin(time * 2) * 0.4;
+                character.rotation.y += 0.01;
+            } else {
+                // Giro a la derecha (sentido horario) - Orbit
+                const x = Math.sin(time * speed) * radius;
+                const z = Math.cos(time * speed) * radius;
 
-            character.position.x = x;
-            character.position.z = z;
+                character.position.x = x;
+                character.position.z = z;
 
-            // Orientación: que el personaje mire hacia donde avanza
-            character.rotation.y = time * speed;
+                // Orientación: que el personaje mire hacia donde avanza
+                character.rotation.y = time * speed;
 
-            // Efecto de flotación (opcional)
-            character.position.y = Math.sin(time * 3) * 0.2;
+                // Efecto de flotación (opcional)
+                character.position.y = Math.sin(time * 3) * 0.2;
+            }
 
             // Generar rastro de pétalos
             if (time - lastParticleTime > 0.05) { // Spawn más frecuente para rastro denso
@@ -187,8 +224,17 @@ window.addEventListener('show-loading', (e) => {
     console.log("Loading3D: Received show-loading event");
     isAnimating = true;
     updateLoadingScreen(true, e.detail ? e.detail.message : null);
-    if (!scene) {
+
+    // Check if the spirit changed while we were already initialized
+    const newSpiritId = window.currentSpirit ? window.currentSpirit.id : null;
+    if (scene) {
+        if (window.lastLoadedSpiritId !== newSpiritId) {
+            loadSpiritModel();
+            window.lastLoadedSpiritId = newSpiritId;
+        }
+    } else {
         init();
+        window.lastLoadedSpiritId = newSpiritId;
     }
 });
 
