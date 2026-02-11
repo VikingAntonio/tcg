@@ -1,0 +1,100 @@
+-- SQL COMPLETO PARA SISTEMA DE SPIRITS
+-- Este script reinicia la configuración de la tabla 'spirits' y las políticas de storage.
+
+-----------------------------------------------------------
+-- 1. CONFIGURACIÓN DE LA TABLA 'spirits'
+-----------------------------------------------------------
+
+-- Eliminar si existe para reiniciar
+DROP TABLE IF EXISTS spirits CASCADE;
+
+-- Crear tabla de spirits
+CREATE TABLE spirits (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    gltf_url TEXT NOT NULL,
+    texture_url TEXT,
+    animation_type TEXT DEFAULT 'orbit',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Habilitar RLS en la tabla
+ALTER TABLE spirits ENABLE ROW LEVEL SECURITY;
+
+-- POLÍTICA: Todos pueden ver los spirits
+CREATE POLICY "Everyone can view spirits"
+ON spirits FOR SELECT
+TO public
+USING (true);
+
+-- POLÍTICA: Solo administradores pueden insertar/editar/borrar
+-- NOTA: Esta política asume que usas Supabase Auth.
+-- Si NO usas Supabase Auth (como en tu código actual), auth.uid() será NULL.
+CREATE POLICY "Admins can manage spirits"
+ON spirits FOR ALL
+TO public
+USING (
+  EXISTS (
+    SELECT 1 FROM usuarios
+    WHERE role = 'admin'
+    -- Si logras integrar Supabase Auth, descomenta la siguiente línea:
+    -- AND id = auth.uid()
+  )
+);
+
+
+-----------------------------------------------------------
+-- 2. CONFIGURACIÓN DE STORAGE (BUCKET 'spirits')
+-----------------------------------------------------------
+
+-- Asegúrate de que el bucket 'spirits' exista en el panel de Supabase
+-- Las siguientes políticas se aplican al bucket 'spirits'
+
+-- Eliminar políticas antiguas para evitar duplicados
+DROP POLICY IF EXISTS "Public View Spirits" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can upload to spirits" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can update spirits" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can delete spirits" ON storage.objects;
+
+-- POLÍTICA: Lectura pública para todos
+CREATE POLICY "Public View Spirits"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'spirits');
+
+-- POLÍTICA: Inserción solo para admins
+-- NOTA IMPORTANTE: Como tu sistema de login es MANUAL (no usas supabase.auth.signIn),
+-- auth.uid() siempre es NULL en la base de datos.
+-- Para que el Storage te deje subir archivos, tienes dos opciones:
+-- 1. Usar Supabase Auth real para loguearte.
+-- 2. O, si quieres mantener tu código actual, esta política debe ser más permisiva (TO public)
+--    y confiar en que el botón de subida solo aparece a los admins en tu web.
+
+CREATE POLICY "Admins can upload to spirits"
+ON storage.objects FOR INSERT
+TO public -- Cambiado a public para que funcione con tu login manual
+WITH CHECK (
+    bucket_id = 'spirits'
+);
+
+CREATE POLICY "Admins can update spirits"
+ON storage.objects FOR UPDATE
+TO public
+USING (bucket_id = 'spirits');
+
+CREATE POLICY "Admins can delete spirits"
+ON storage.objects FOR DELETE
+TO public
+USING (bucket_id = 'spirits');
+
+-----------------------------------------------------------
+-- 3. TABLA DE USUARIOS (Asegurar columna de selección)
+-----------------------------------------------------------
+
+-- Asegurar que la tabla usuarios tenga la columna para el spirit seleccionado
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='selected_spirit_id') THEN
+        ALTER TABLE usuarios ADD COLUMN selected_spirit_id BIGINT REFERENCES spirits(id);
+    END IF;
+END $$;
