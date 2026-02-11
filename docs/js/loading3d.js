@@ -51,7 +51,7 @@ function init() {
         const box = new THREE.Box3().setFromObject(character);
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scaleMultiplier = 1.8;
+        const scaleMultiplier = 1;
         const scale = scaleMultiplier / maxDim;
         character.scale.set(scale, scale, scale);
 
@@ -139,7 +139,7 @@ function animate() {
         // --- AJUSTES DE ANIMACIÓN ---
         // radius: Radio de la circunferencia (menos de 3.5 para que no se salga en móviles)
         // speed: Velocidad de giro
-        const radius = 2.2;
+        const radius = 1.5;
         const speed = 2.0;
 
         if (character) {
