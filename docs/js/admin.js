@@ -691,11 +691,11 @@ function showAuthenticatedContent() {
         $('#btn-users-panel').hide();
     }
 
-    // Antonio specific features
-    if (currentUser.username === 'Antonio') {
-        $('#antonio-upload-container').show();
+    // Admin specific features (Spirits upload)
+    if (currentUser.role === 'admin') {
+        $('#admin-upload-container').show();
     } else {
-        $('#antonio-upload-container').hide();
+        $('#admin-upload-container').hide();
     }
 
     // Generate public store link

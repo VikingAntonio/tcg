@@ -84,22 +84,21 @@ function loadSpiritModel() {
                 });
             }
 
-        // --- AJUSTE DE TAMAÑO ---
-        const box = new THREE.Box3().setFromObject(character);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scaleMultiplier = 1;
-        const scale = scaleMultiplier / maxDim;
-        character.scale.set(scale, scale, scale);
+            const box = new THREE.Box3().setFromObject(character);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scaleMultiplier = 1.8;
+            const scale = scaleMultiplier / maxDim;
+            character.scale.set(scale, scale, scale);
 
-        // Centrar el personaje en su eje
-        const center = box.getCenter(new THREE.Vector3());
-        character.position.y = -center.y * scale;
+            const center = box.getCenter(new THREE.Vector3());
+            character.position.y = -center.y * scale;
 
-        scene.add(character);
-    }, undefined, (error) => {
-        console.warn(`Error loading model ${modelUrl}:`, error);
-    });
+            scene.add(character);
+        }, undefined, (error) => {
+            console.warn(`Error loading model ${modelUrl}:`, error);
+        });
+    }
 
     // Load Cherry Texture for particles
     textureLoader.load('cherry.png', (texture) => {
@@ -173,7 +172,7 @@ function animate() {
         // --- AJUSTES DE ANIMACIÓN ---
         // radius: Radio de la circunferencia (menos de 3.5 para que no se salga en móviles)
         // speed: Velocidad de giro
-        const radius = 1.5;
+        const radius = 2.2;
         const speed = 2.0;
         const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
