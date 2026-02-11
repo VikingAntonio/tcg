@@ -8,8 +8,12 @@ const particles = [];
 let lastParticleTime = 0;
 
 function init() {
+    console.log("Loading3D: Initializing...");
     const container = document.getElementById('loading-3d-container');
-    if (!container) return;
+    if (!container) {
+        console.warn("Loading3D: Container not found!");
+        return;
+    }
 
     scene = new THREE.Scene();
 
@@ -39,6 +43,7 @@ function init() {
 
     // Load Ash
     loader.load('ash.gltf', (gltf) => {
+        console.log("Loading3D: ash.gltf loaded successfully");
         character = gltf.scene;
 
         // --- AJUSTE DE TAMAÑO DE ASH ---
@@ -163,25 +168,37 @@ function animate() {
     }
 }
 
-const loadingScreen = document.getElementById('loading-screen');
-const loadingText = loadingScreen ? loadingScreen.querySelector('.loading-message') : null;
+function updateLoadingScreen(active, message = null) {
+    const screen = document.getElementById('loading-screen');
+    const text = screen ? screen.querySelector('.loading-message') : null;
+
+    console.log(`Loading3D: updateLoadingScreen active=${active} message=${message}`);
+
+    if (screen) {
+        if (active) screen.classList.add('active');
+        else screen.classList.remove('active');
+    }
+    if (text && message) {
+        text.textContent = message;
+    }
+}
 
 window.addEventListener('show-loading', (e) => {
+    console.log("Loading3D: Received show-loading event");
     isAnimating = true;
-    if (loadingScreen) loadingScreen.classList.add('active');
-    if (loadingText && e.detail && e.detail.message) {
-        loadingText.textContent = e.detail.message;
-    }
+    updateLoadingScreen(true, e.detail ? e.detail.message : null);
     if (!scene) {
         init();
     }
 });
 
 window.addEventListener('hide-loading', () => {
-    if (loadingScreen) loadingScreen.classList.remove('active');
+    console.log("Loading3D: Received hide-loading event");
+    updateLoadingScreen(false);
 
     // Esperar a que termine la transición de CSS (0.5s) antes de detener el bucle
     setTimeout(() => {
+        if (!isAnimating) return; // Ya se detuvo
         isAnimating = false;
         // Limpiar partículas al ocultar
         if (scene) {
@@ -191,16 +208,14 @@ window.addEventListener('hide-loading', () => {
             });
             particles.length = 0;
         }
-    }, 500);
+    }, 600);
 });
 
-// Check initial state in case app.js already started loading
+// Check initial state in case app.js already started loading before this module initialized
+console.log("Loading3D: Module loaded. window.isLoading =", window.isLoading);
 if (window.isLoading) {
     isAnimating = true;
-    if (loadingScreen) loadingScreen.classList.add('active');
-    if (loadingText && window.loadingMessage) {
-        loadingText.textContent = window.loadingMessage;
-    }
+    updateLoadingScreen(true, window.loadingMessage);
     if (!scene) {
         init();
     }
