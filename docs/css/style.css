@@ -1497,3 +1497,56 @@ input:checked + .slider:before {
         letter-spacing: 2px;
     }
 }
+
+/* --- DRAG AND DROP ZONES --- */
+.drop-zone {
+    width: 100%;
+    min-height: 100px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 2px dashed #3d3d3d;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+    position: relative;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: #00d2ff;
+    background: rgba(0, 210, 255, 0.05);
+}
+
+.drop-zone i {
+    font-size: 24px;
+    color: #666;
+    margin-bottom: 10px;
+    transition: color 0.3s ease;
+}
+
+.drop-zone:hover i, .drop-zone.drag-over i {
+    color: #00d2ff;
+}
+
+.drop-zone p {
+    margin: 0;
+    font-size: 13px;
+    color: #aaa;
+}
+
+.drop-zone .file-name {
+    margin-top: 10px;
+    font-weight: 700;
+    color: #00ff88;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+.drop-zone input[type="file"] {
+    display: none;
+}

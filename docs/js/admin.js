@@ -528,7 +528,80 @@ $(document).ready(function() {
     });
 
     // --- Spirit Management ---
+    let droppedGltfFile = null;
+    let droppedExtraFiles = [];
+
+    function updateDropZoneUI(zoneId, files) {
+        const $zone = $(`#${zoneId}`);
+        const $fileName = $zone.find('.file-name');
+        if (files && files.length > 0) {
+            if (files.length === 1) {
+                $fileName.text(files[0].name);
+            } else {
+                $fileName.text(`${files.length} archivos seleccionados`);
+            }
+            $zone.find('p').hide();
+        } else {
+            $fileName.text('');
+            $zone.find('p').show();
+        }
+    }
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    $('.drop-zone').on('dragover dragenter', function(e) {
+        handleDrag(e);
+        $(this).addClass('drag-over');
+    });
+
+    $('.drop-zone').on('dragleave dragend drop', function(e) {
+        handleDrag(e);
+        $(this).removeClass('drag-over');
+    });
+
+    $('#drop-zone-gltf').on('drop', function(e) {
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            droppedGltfFile = files[0];
+            updateDropZoneUI('drop-zone-gltf', [droppedGltfFile]);
+        }
+    });
+
+    $('#drop-zone-extra').on('drop', function(e) {
+        const files = Array.from(e.originalEvent.dataTransfer.files);
+        if (files.length > 0) {
+            droppedExtraFiles = files;
+            updateDropZoneUI('drop-zone-extra', droppedExtraFiles);
+        }
+    });
+
+    $('#drop-zone-gltf').on('click', () => $('#input-spirit-gltf').click());
+    $('#drop-zone-extra').on('click', () => $('#input-spirit-extra').click());
+
+    $('#input-spirit-gltf').on('change', function() {
+        if (this.files.length > 0) {
+            droppedGltfFile = this.files[0];
+            updateDropZoneUI('drop-zone-gltf', [droppedGltfFile]);
+        }
+    });
+
+    $('#input-spirit-extra').on('change', function() {
+        if (this.files.length > 0) {
+            droppedExtraFiles = Array.from(this.files);
+            updateDropZoneUI('drop-zone-extra', droppedExtraFiles);
+        }
+    });
+
     $('#btn-open-upload-spirit').click(function() {
+        // Reset form
+        $('#input-spirit-name').val('');
+        droppedGltfFile = null;
+        droppedExtraFiles = [];
+        updateDropZoneUI('drop-zone-gltf', null);
+        updateDropZoneUI('drop-zone-extra', null);
         $('#spirit-upload-modal').addClass('active');
     });
 
@@ -538,8 +611,8 @@ $(document).ready(function() {
 
     $('#btn-save-spirit').click(async function() {
         const name = $('#input-spirit-name').val();
-        const gltfFile = $('#input-spirit-gltf')[0].files[0];
-        const extraFiles = $('#input-spirit-extra')[0].files;
+        const gltfFile = droppedGltfFile;
+        const extraFiles = droppedExtraFiles;
         const animation = $('#input-spirit-animation').val();
 
         if (!name || !gltfFile) {
