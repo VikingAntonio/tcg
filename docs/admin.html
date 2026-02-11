@@ -8,6 +8,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Three.js for 3D Viewer -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
     <script src="js/supabase-config.js"></script>
 </head>    
 <body>    
@@ -310,7 +320,26 @@
         </div>
     </div>
 
+    <!-- Spirit Viewer Modal -->
+    <div id="spirit-viewer-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 800px; width: 90%; height: 80vh; display: flex; flex-direction: column;">
+            <span id="close-spirit-viewer" class="close-btn">&times;</span>
+            <h2 id="spirit-viewer-title">Vista Previa del Spirit</h2>
+            <div id="spirit-viewer-container" style="flex: 1; width: 100%; background: #000; border-radius: 12px; overflow: hidden; position: relative;">
+                <!-- 3D Canvas will be injected here -->
+                <div id="spirit-viewer-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                </div>
+            </div>
+            <p style="font-size: 12px; color: #aaa; margin-top: 10px; text-align: center;">Usa el ratón para rotar y la rueda para hacer zoom.</p>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/admin.js"></script>
+    <script type="module">
+        import { initViewer, loadModel, cleanupViewer } from './js/spirit-viewer.js';
+        window.spiritViewer = { initViewer, loadModel, cleanupViewer };
+    </script>
 </body>    
 </html>
