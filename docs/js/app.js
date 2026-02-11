@@ -4,64 +4,15 @@ let isManualPageTurn = false;
 let startX, startY;
 
 // --- Loading Screen Functions ---
-let loadingTrailInterval;
-
-function startLoadingTrail() {
-    const $container = $('.particles-container');
-    const $char = $('.spinning-character');
-    if ($container.length === 0 || $char.length === 0) return;
-
-    $container.empty();
-    if (loadingTrailInterval) clearInterval(loadingTrailInterval);
-
-    loadingTrailInterval = setInterval(() => {
-        if ($('#loading-screen').hasClass('hidden')) {
-            clearInterval(loadingTrailInterval);
-            return;
-        }
-
-        const charRect = $char[0].getBoundingClientRect();
-        const containerRect = $('#loading-screen')[0].getBoundingClientRect();
-
-        if (charRect.width === 0) return; // Not visible yet
-
-        // Calculate center position of character relative to loading screen
-        const x = charRect.left + charRect.width / 2 - containerRect.left;
-        const y = charRect.top + charRect.height / 2 - containerRect.top;
-
-        const $particle = $('<div class="particle"></div>');
-        const size = 10 + Math.random() * 20;
-        const rotation = Math.random() * 360;
-
-        $particle.css({
-            left: x + 'px',
-            top: y + 'px',
-            width: size + 'px',
-            height: size + 'px',
-            transform: `translate(-50%, -50%) rotate(${rotation}deg)`
-        });
-
-        $container.append($particle);
-
-        // Remove particle after its CSS animation finishes (approx 2s)
-        setTimeout(() => {
-            $particle.remove();
-        }, 2000);
-    }, 80); // Spawn every 80ms for a dense trail
-}
-
 function showLoading(message) {
     $('.loading-message').text(message);
     $('#loading-screen').removeClass('hidden');
-    startLoadingTrail();
+    document.dispatchEvent(new CustomEvent('show-loading'));
 }
 
 function hideLoading() {
     $('#loading-screen').addClass('hidden');
-    if (loadingTrailInterval) {
-        clearInterval(loadingTrailInterval);
-        loadingTrailInterval = null;
-    }
+    document.dispatchEvent(new CustomEvent('hide-loading'));
 }
 
 $(document).ready(async function() {
