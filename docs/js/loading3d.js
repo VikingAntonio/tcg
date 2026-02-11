@@ -38,9 +38,6 @@ function init() {
 
     clock = new THREE.Clock();
 
-    const loader = new GLTFLoader();
-    const textureLoader = new THREE.TextureLoader();
-
     loadSpiritModel();
 
     window.addEventListener('resize', onWindowResize);
@@ -56,52 +53,55 @@ function loadSpiritModel() {
     const loader = new GLTFLoader();
     const textureLoader = new THREE.TextureLoader();
 
-    const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || 'ash.png';
+    // REMOVED ash.png fallback as requested
+    const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || null;
     const textureUrl = (window.currentSpirit && window.currentSpirit.texture_url) || null;
 
-    if (modelUrl.toLowerCase().endsWith('.png') || modelUrl.toLowerCase().endsWith('.webp')) {
-        textureLoader.load(modelUrl, (texture) => {
-            const material = new THREE.SpriteMaterial({ map: texture });
-            character = new THREE.Sprite(material);
-            character.scale.set(2.5, 2.5, 1);
-            scene.add(character);
-            console.log(`Loading3D: Sprite ${modelUrl} loaded successfully`);
-        });
-    } else {
-        loader.load(modelUrl, (gltf) => {
-            console.log(`Loading3D: ${modelUrl} loaded successfully`);
-            character = gltf.scene;
+    if (modelUrl) {
+        if (modelUrl.toLowerCase().endsWith('.png') || modelUrl.toLowerCase().endsWith('.webp')) {
+            textureLoader.load(modelUrl, (texture) => {
+                const material = new THREE.SpriteMaterial({ map: texture });
+                character = new THREE.Sprite(material);
+                character.scale.set(2.5, 2.5, 1);
+                scene.add(character);
+                console.log(`Loading3D: Sprite ${modelUrl} loaded successfully`);
+            });
+        } else {
+            loader.load(modelUrl, (gltf) => {
+                console.log(`Loading3D: ${modelUrl} loaded successfully`);
+                character = gltf.scene;
 
-            if (textureUrl) {
-                textureLoader.load(textureUrl, (tex) => {
-                    tex.flipY = false;
-                    character.traverse((child) => {
-                        if (child.isMesh && child.material) {
-                            child.material.map = tex;
-                            child.material.needsUpdate = true;
-                        }
+                if (textureUrl) {
+                    textureLoader.load(textureUrl, (tex) => {
+                        tex.flipY = false;
+                        character.traverse((child) => {
+                            if (child.isMesh && child.material) {
+                                child.material.map = tex;
+                                child.material.needsUpdate = true;
+                            }
+                        });
                     });
-                });
-            }
+                }
 
-            const box = new THREE.Box3().setFromObject(character);
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scaleMultiplier = 1.8;
-            const scale = scaleMultiplier / maxDim;
-            character.scale.set(scale, scale, scale);
+                const box = new THREE.Box3().setFromObject(character);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scaleMultiplier = 1.8;
+                const scale = scaleMultiplier / maxDim;
+                character.scale.set(scale, scale, scale);
 
-            const center = box.getCenter(new THREE.Vector3());
-            character.position.y = -center.y * scale;
+                const center = box.getCenter(new THREE.Vector3());
+                character.position.y = -center.y * scale;
 
-            scene.add(character);
-        }, undefined, (error) => {
-            console.warn(`Error loading model ${modelUrl}:`, error);
-        });
+                scene.add(character);
+            }, undefined, (error) => {
+                console.warn(`Error loading model ${modelUrl}:`, error);
+            });
+        }
     }
 
-    // Load Cherry Texture for particles
-    textureLoader.load('cherry.png', (texture) => {
+    // Load Cerezo Texture for particles
+    textureLoader.load('cerezo.png', (texture) => {
         cherryTexture = texture;
     });
 }
@@ -115,7 +115,6 @@ function onWindowResize() {
 function spawnParticle(pos) {
     if (!cherryTexture) return;
 
-    // Create particle as a Sprite using cherry.png
     const material = new THREE.SpriteMaterial({
         map: cherryTexture,
         transparent: true,
@@ -124,19 +123,17 @@ function spawnParticle(pos) {
     const p = new THREE.Sprite(material);
 
     p.position.copy(pos);
-    // Randomize position a bit
     p.position.x += (Math.random() - 0.5) * 0.5;
     p.position.y += (Math.random() - 0.5) * 0.5;
     p.position.z += (Math.random() - 0.5) * 0.5;
 
-    // Random size
     const s = 0.2 + Math.random() * 0.3;
     p.scale.set(s, s, 1);
 
     p.userData.life = 1.0;
     p.userData.velocity = new THREE.Vector3(
         (Math.random() - 0.5) * 0.02,
-        -0.01 - Math.random() * 0.02, // Falling effect
+        -0.01 - Math.random() * 0.02,
         (Math.random() - 0.5) * 0.02
     );
 
@@ -150,7 +147,6 @@ function updateParticles() {
         p.userData.life -= 0.01;
         p.position.add(p.userData.velocity);
 
-        // Fade out and shrink
         p.material.opacity = p.userData.life * 0.8;
         const s = p.userData.life * 0.4;
         p.scale.set(s, s, 1);
@@ -169,40 +165,38 @@ function animate() {
     if (isAnimating) {
         const time = clock.getElapsedTime();
 
-        // --- AJUSTES DE ANIMACIÓN ---
-        // radius: Radio de la circunferencia (menos de 3.5 para que no se salga en móviles)
-        // speed: Velocidad de giro
         const radius = 2.2;
         const speed = 2.0;
         const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
         if (character) {
             if (animType === 'float') {
-                // Subtle floating and rotation in place
                 character.position.x = 0;
                 character.position.z = 0;
                 character.position.y = Math.sin(time * 2) * 0.4;
                 character.rotation.y += 0.01;
             } else {
-                // Giro a la derecha (sentido horario) - Orbit
                 const x = Math.sin(time * speed) * radius;
                 const z = Math.cos(time * speed) * radius;
 
                 character.position.x = x;
                 character.position.z = z;
 
-                // Orientación: que el personaje mire hacia donde avanza
                 if (character.isMesh || character.type === 'Group') {
                     character.rotation.y = time * speed;
                 }
 
-                // Efecto de flotación (opcional)
                 character.position.y = Math.sin(time * 3) * 0.2;
             }
 
-            // Generar rastro de pétalos
-            if (time - lastParticleTime > 0.05) { // Spawn más frecuente para rastro denso
+            if (time - lastParticleTime > 0.05) {
                 spawnParticle(character.position.clone());
+                lastParticleTime = time;
+            }
+        } else {
+            // Even if no character, show some particles falling in the center
+            if (time - lastParticleTime > 0.1) {
+                spawnParticle(new THREE.Vector3(0, 2, 0));
                 lastParticleTime = time;
             }
         }
@@ -216,8 +210,6 @@ function updateLoadingScreen(active, message = null) {
     const screen = document.getElementById('loading-screen');
     const text = screen ? screen.querySelector('.loading-message') : null;
 
-    console.log(`Loading3D: updateLoadingScreen active=${active} message=${message}`);
-
     if (screen) {
         if (active) screen.classList.add('active');
         else screen.classList.remove('active');
@@ -228,11 +220,9 @@ function updateLoadingScreen(active, message = null) {
 }
 
 window.addEventListener('show-loading', (e) => {
-    console.log("Loading3D: Received show-loading event");
     isAnimating = true;
     updateLoadingScreen(true, e.detail ? e.detail.message : null);
 
-    // Check if the spirit changed while we were already initialized
     const newSpiritId = window.currentSpirit ? window.currentSpirit.id : null;
     if (scene) {
         if (window.lastLoadedSpiritId !== newSpiritId) {
@@ -246,14 +236,11 @@ window.addEventListener('show-loading', (e) => {
 });
 
 window.addEventListener('hide-loading', () => {
-    console.log("Loading3D: Received hide-loading event");
     updateLoadingScreen(false);
 
-    // Esperar a que termine la transición de CSS (0.5s) antes de detener el bucle
     setTimeout(() => {
-        if (!isAnimating) return; // Ya se detuvo
+        if (!isAnimating) return;
         isAnimating = false;
-        // Limpiar partículas al ocultar
         if (scene) {
             particles.forEach(p => {
                 if (p.material) p.material.dispose();
@@ -264,8 +251,6 @@ window.addEventListener('hide-loading', () => {
     }, 600);
 });
 
-// Check initial state in case app.js already started loading before this module initialized
-console.log("Loading3D: Module loaded. window.isLoading =", window.isLoading);
 if (window.isLoading) {
     isAnimating = true;
     updateLoadingScreen(true, window.loadingMessage);

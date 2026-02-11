@@ -8,7 +8,6 @@ window.isLoading = false;
 window.loadingMessage = '';
 
 window.showLoading = function(message) {
-    console.log("App: showLoading", message);
     window.isLoading = true;
     window.loadingMessage = message;
     window.dispatchEvent(new CustomEvent('show-loading', {
@@ -17,7 +16,6 @@ window.showLoading = function(message) {
 }
 
 window.hideLoading = function() {
-    console.log("App: hideLoading");
     window.isLoading = false;
     window.dispatchEvent(new CustomEvent('hide-loading'));
 }
@@ -489,14 +487,14 @@ async function loadStoreData() {
         return;
     }
 
-    // Load selected spirit if exists (safe fetch)
-    const { data: spiritRef, error: spiritRefErr } = await _supabase
+    // Fetch selected spirit
+    const { data: spiritRef } = await _supabase
         .from('usuarios')
         .select('selected_spirit_id')
         .eq('id', userData.id)
         .single();
 
-    if (!spiritRefErr && spiritRef && spiritRef.selected_spirit_id) {
+    if (spiritRef && spiritRef.selected_spirit_id) {
         const { data: spiritData } = await _supabase
             .from('spirits')
             .select('*')
@@ -540,11 +538,13 @@ async function loadPublicAlbums(userId) {
 
     if (error) {
         $('#albums-container').html('<div class="error">Error al cargar álbumes.</div>');
+        hideLoading();
         return;
     }
 
     if (albums.length === 0) {
         $('#albums-container').html('<div class="empty">No hay álbumes disponibles.</div>');
+        hideLoading();
         return;
     }
 
@@ -553,7 +553,6 @@ async function loadPublicAlbums(userId) {
         await renderAlbum(album);
     }
 
-    // Pequeño delay para asegurar que el primer álbum se vea bien al quitar la carga
     setTimeout(hideLoading, 500);
 }
 
@@ -570,7 +569,10 @@ async function loadPublicDecks() {
         .eq('store_name', storeName)
         .single();
 
-    if (!user) return;
+    if (!user) {
+        hideLoading();
+        return;
+    }
 
     let query = _supabase
         .from('decks')
@@ -612,6 +614,7 @@ async function loadPublicDecks() {
     $('#decks-container').empty();
     if (decks.length === 0) {
         $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
+        hideLoading();
         return;
     }
 
