@@ -547,51 +547,79 @@ $(document).ready(function() {
         }
     }
 
+    function updateSpiritDropZoneUI(files) {
+        const $zone = $('#drop-zone-spirit');
+        const $fileName = $zone.find('.file-name');
+        if (files && files.length > 0) {
+            let html = "";
+            if (droppedGltfFile) {
+                html += `<div style="color: #00d2ff; font-weight: bold; margin-bottom: 5px;"><i class="fas fa-file-code"></i> Principal: ${droppedGltfFile.name}</div>`;
+            }
+            if (droppedExtraFiles.length > 0) {
+                html += `<div style="font-size: 11px; color: #aaa;"><i class="fas fa-paperclip"></i> ${droppedExtraFiles.length} archivos adicionales</div>`;
+            }
+            $fileName.html(html);
+            $zone.find('p').hide();
+            $zone.find('i.fa-cloud-upload-alt').hide();
+        } else {
+            $fileName.text('');
+            $zone.find('p').show();
+            $zone.find('i.fa-cloud-upload-alt').show();
+        }
+    }
+
     const handleDrag = (e) => {
         e.preventDefault();
         e.stopPropagation();
     };
 
-    $('.drop-zone').on('dragover dragenter', function(e) {
+    $(document).on('dragover dragenter', '.drop-zone', function(e) {
         handleDrag(e);
         $(this).addClass('drag-over');
+        if ($(this).hasClass('file-drop-zone')) $(this).addClass('dragover');
     });
 
-    $('.drop-zone').on('dragleave dragend drop', function(e) {
+    $(document).on('dragleave dragend drop', '.drop-zone', function(e) {
         handleDrag(e);
         $(this).removeClass('drag-over');
+        if ($(this).hasClass('file-drop-zone')) $(this).removeClass('dragover');
     });
 
-    $('#drop-zone-gltf').on('drop', function(e) {
+    function processSpiritFiles(files) {
+        const fileArray = Array.from(files);
+        let foundGltf = false;
+
+        fileArray.forEach(file => {
+            const name = file.name.toLowerCase();
+            if (!foundGltf && (name.endsWith('.gltf') || name.endsWith('.glb'))) {
+                droppedGltfFile = file;
+                foundGltf = true;
+            } else {
+                droppedExtraFiles.push(file);
+            }
+        });
+
+        updateSpiritDropZoneUI(fileArray);
+    }
+
+    $(document).on('drop', '#drop-zone-spirit', function(e) {
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) {
-            droppedGltfFile = files[0];
-            updateDropZoneUI('drop-zone-gltf', [droppedGltfFile]);
+            droppedGltfFile = null;
+            droppedExtraFiles = [];
+            processSpiritFiles(files);
         }
     });
 
-    $('#drop-zone-extra').on('drop', function(e) {
-        const files = Array.from(e.originalEvent.dataTransfer.files);
-        if (files.length > 0) {
-            droppedExtraFiles = files;
-            updateDropZoneUI('drop-zone-extra', droppedExtraFiles);
-        }
+    $(document).on('click', '#drop-zone-spirit', function() {
+        $('#input-spirit-files').click();
     });
 
-    $('#drop-zone-gltf').on('click', () => $('#input-spirit-gltf').click());
-    $('#drop-zone-extra').on('click', () => $('#input-spirit-extra').click());
-
-    $('#input-spirit-gltf').on('change', function() {
+    $(document).on('change', '#input-spirit-files', function() {
         if (this.files.length > 0) {
-            droppedGltfFile = this.files[0];
-            updateDropZoneUI('drop-zone-gltf', [droppedGltfFile]);
-        }
-    });
-
-    $('#input-spirit-extra').on('change', function() {
-        if (this.files.length > 0) {
-            droppedExtraFiles = Array.from(this.files);
-            updateDropZoneUI('drop-zone-extra', droppedExtraFiles);
+            droppedGltfFile = null;
+            droppedExtraFiles = [];
+            processSpiritFiles(this.files);
         }
     });
 
@@ -600,8 +628,7 @@ $(document).ready(function() {
         $('#input-spirit-name').val('');
         droppedGltfFile = null;
         droppedExtraFiles = [];
-        updateDropZoneUI('drop-zone-gltf', null);
-        updateDropZoneUI('drop-zone-extra', null);
+        updateSpiritDropZoneUI(null);
         $('#spirit-upload-modal').addClass('active');
     });
 
