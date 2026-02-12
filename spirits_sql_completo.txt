@@ -14,7 +14,9 @@ CREATE TABLE spirits (
     name TEXT NOT NULL,
     gltf_url TEXT NOT NULL,
     texture_url TEXT,
-    animation_type TEXT DEFAULT 'orbit',
+    animation_type TEXT DEFAULT 'orbit', -- 'orbit' o 'float'
+    particle_asset TEXT DEFAULT 'cerezo.png',
+    particle_movement_type TEXT DEFAULT 'falling', -- 'falling' o 'trail'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

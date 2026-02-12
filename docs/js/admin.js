@@ -636,17 +636,13 @@ $(document).ready(function() {
         $('#spirit-upload-modal').removeClass('active');
     });
 
-    // Spirit Viewer Modal Close
-    $('#close-spirit-viewer').click(function() {
-        $('#spirit-viewer-modal').removeClass('active');
-        if (window.spiritViewer) window.spiritViewer.cleanupViewer();
-    });
-
     $('#btn-save-spirit').click(async function() {
         const name = $('#input-spirit-name').val();
         const gltfFile = droppedGltfFile;
         const extraFiles = droppedExtraFiles;
         const animation = $('#input-spirit-animation').val();
+        const particleAsset = $('#input-spirit-particle-asset').val() || 'cerezo.png';
+        const particleMovement = $('#input-spirit-particle-movement').val();
 
         if (!name || !gltfFile) {
             Swal.fire('Atención', 'Nombre y archivo GLTF son obligatorios', 'warning');
@@ -694,7 +690,9 @@ $(document).ready(function() {
                     name: name,
                     gltf_url: gltfUrl,
                     texture_url: textureUrl,
-                    animation_type: animation
+                    animation_type: animation,
+                    particle_asset: particleAsset,
+                    particle_movement_type: particleMovement
                 }]);
 
             if (dbErr) throw dbErr;
@@ -1241,35 +1239,38 @@ async function loadSpirits() {
     }
 
     const $tempContainer = $('<div></div>');
+
+    // Clear main viewer placeholder if nothing selected yet or keep it
+    const selectedSpirit = spirits.find(s => s.id == selectedId);
+    if (selectedSpirit) {
+        updateMainViewer(selectedSpirit);
+    }
+
     spirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
         const $card = $(`
-            <div class="album-card spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
-                <div class="deck-preview-icon"><i class="fas fa-ghost fa-3x"></i></div>
-                <div style="text-align: center; margin-top: 15px;">
-                    <h3 style="margin:0;">${spirit.name}</h3>
-                    <p style="font-size: 10px; color: #666; margin-top: 5px;">Animación: ${spirit.animation_type === 'orbit' ? 'Órbita' : 'Flotante'}</p>
+            <div class="spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
+                <div class="spirit-preview-img">
+                    <i class="fas fa-ghost fa-2x"></i>
                 </div>
-                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-                    <button class="btn btn-secondary btn-preview-spirit" style="width: 100%;">
-                        <i class="fas fa-eye"></i> Ver Vista Previa
-                    </button>
-                    <button class="btn btn-select-spirit" style="width: 100%;" ${isSelected ? 'disabled' : ''}>
+                <div style="text-align: center;">
+                    <h3 style="margin:0; font-size: 16px;">${spirit.name}</h3>
+                    <p style="font-size: 10px; color: #666; margin-top: 5px;">
+                        Anim: ${spirit.animation_type === 'orbit' ? 'Órbita' : 'Flotante'}<br>
+                        Part: ${spirit.particle_movement_type || 'falling'}
+                    </p>
+                </div>
+                <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 10px;">
+                    <button class="btn btn-select-spirit btn-sm" style="width: 100%;" ${isSelected ? 'disabled' : ''}>
                         ${isSelected ? 'Seleccionado' : 'Seleccionar'}
                     </button>
                 </div>
             </div>
         `);
 
-        $card.find('.btn-preview-spirit').click(function(e) {
-            e.preventDefault();
-            $('#spirit-viewer-title').text(`Vista Previa: ${spirit.name}`);
-            $('#spirit-viewer-modal').addClass('active');
-
-            if (window.spiritViewer) {
-                window.spiritViewer.initViewer('spirit-viewer-container');
-                window.spiritViewer.loadModel(spirit.gltf_url, spirit.texture_url);
-            }
+        $card.click(function(e) {
+            if ($(e.target).closest('.btn-select-spirit').length) return;
+            updateMainViewer(spirit);
         });
 
         $card.find('.btn-select-spirit').click(async function(e) {
@@ -1297,6 +1298,23 @@ async function loadSpirits() {
     });
 
     $('#spirit-list').html($tempContainer.contents());
+}
+
+function updateMainViewer(spirit) {
+    $('#main-visor-placeholder').hide();
+    $('#main-spirit-info').show();
+    $('#main-spirit-name').text(spirit.name);
+    $('#main-spirit-details').html(`Animación: ${spirit.animation_type === 'orbit' ? 'Órbita' : 'Flotante'} | Partículas: ${spirit.particle_asset || 'Default'} (${spirit.particle_movement_type || 'falling'})`);
+
+    const tryInitViewer = () => {
+        if (window.spiritViewer) {
+            window.spiritViewer.initViewer('main-spirit-visor');
+            window.spiritViewer.loadModel('main-spirit-visor', spirit.gltf_url, spirit.texture_url);
+        } else {
+            setTimeout(tryInitViewer, 100);
+        }
+    };
+    tryInitViewer();
 }
 
 async function loadSlotData(pageId, slotIndex) {
