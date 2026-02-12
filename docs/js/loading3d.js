@@ -58,6 +58,9 @@ function loadSpiritModel() {
     const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || null;
     const textureUrl = (window.currentSpirit && window.currentSpirit.texture_url) || null;
 
+    // Detect Ash Blossom for special effects
+    window.isAsh = modelUrl && modelUrl.toLowerCase().includes('ash.gltf');
+
     if (modelUrl) {
         if (modelUrl.toLowerCase().endsWith('.png') || modelUrl.toLowerCase().endsWith('.webp')) {
             textureLoader.load(modelUrl, (texture) => {
@@ -101,7 +104,9 @@ function loadSpiritModel() {
     }
 
     // Load Particle Texture
-    const particleAsset = (window.currentSpirit && window.currentSpirit.particle_asset) || 'cerezo.png';
+    let particleAsset = (window.currentSpirit && window.currentSpirit.particle_asset) || 'cerezo.png';
+    if (window.isAsh) particleAsset = 'cerezo.png'; // Force cerezo.png for Ash
+
     textureLoader.load(particleAsset, (texture) => {
         cherryTexture = texture;
     });
@@ -126,7 +131,12 @@ function spawnParticle(pos) {
     p.position.copy(pos);
 
     // Use database configuration
-    const movementType = (window.currentSpirit && window.currentSpirit.particle_movement_type) || 'falling';
+    let movementType = (window.currentSpirit && window.currentSpirit.particle_movement_type) || 'falling';
+
+    // Special handling for Ash Blossom displacement
+    if (window.isAsh) {
+        movementType = 'trail';
+    }
 
     if (movementType === 'trail') {
         // Trail particles: spawn with offset to look like they come from the character
@@ -147,9 +157,10 @@ function spawnParticle(pos) {
         }
 
         // Displacement trail (particles move slowly or stay mostly in place)
+        // For Ash, we ensure NO falling velocity (y=0)
         p.userData.velocity = new THREE.Vector3(
             (Math.random() - 0.5) * 0.01,
-            (Math.random() - 0.5) * 0.01,
+            window.isAsh ? (Math.random() - 0.5) * 0.005 : (Math.random() - 0.5) * 0.01,
             (Math.random() - 0.5) * 0.01
         );
         p.userData.movementType = 'trail';
@@ -250,8 +261,20 @@ function animate() {
             }
 
             // Spawn particles if character exists
-            if (time - lastParticleTime > 0.05) {
-                spawnParticle(character.position.clone());
+            const spawnInterval = window.isAsh ? 0.03 : 0.05; // More particles for Ash trail
+            if (time - lastParticleTime > spawnInterval) {
+                // If Ash, spawn slightly behind the current position
+                if (window.isAsh) {
+                    const radius = 2.2;
+                    const speed = 2.0;
+                    const trailTime = time - 0.05; // Previous time
+                    const trailX = Math.sin(-trailTime * speed) * radius;
+                    const trailZ = Math.cos(-trailTime * speed) * radius;
+                    const trailPos = new THREE.Vector3(trailX, character.position.y, trailZ);
+                    spawnParticle(trailPos);
+                } else {
+                    spawnParticle(character.position.clone());
+                }
                 lastParticleTime = time;
             }
         }
