@@ -18,10 +18,51 @@ $(document).ready(function() {
     checkSession();
     initTheme();
 
-    // Theme Switcher
-    $('#theme-select').on('change', function() {
-        const theme = $(this).val();
+    // Theme Switcher Buttons
+    $(document).on('click', '.theme-btn', function() {
+        const theme = $(this).data('theme');
         applyTheme(theme);
+    });
+
+    // Toggle User Dropdown
+    $(document).on('click', '#btn-user-menu', function(e) {
+        e.stopPropagation();
+        $('#user-dropdown-menu').toggleClass('active');
+    });
+
+    $(document).on('click', function() {
+        $('#user-dropdown-menu').removeClass('active');
+    });
+
+    $(document).on('click', '#user-dropdown-menu', function(e) {
+        e.stopPropagation();
+    });
+
+    // Navigation Menu Items
+    $(document).on('click', '#menu-dashboard, #menu-binders', function() {
+        showView('dashboard');
+        loadAlbums();
+        $('#user-dropdown-menu').removeClass('active');
+    });
+
+    $(document).on('click', '#menu-decks', function() {
+        showView('decks');
+        loadDecks();
+        $('#user-dropdown-menu').removeClass('active');
+    });
+
+    $(document).on('click', '#menu-spirits', function() {
+        showView('spirits');
+        loadSpirits();
+        $('#user-dropdown-menu').removeClass('active');
+    });
+
+    $(document).on('click', '#menu-users', function() {
+        window.location.href = 'users.html';
+    });
+
+    $(document).on('click', '#menu-logout', function() {
+        handleLogout();
     });
 
     // Zoom Toggle (Admin)
@@ -829,13 +870,16 @@ function showLoginView() {
 
 function initTheme() {
     const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
-    $('#theme-select').val(savedTheme);
     applyTheme(savedTheme);
 }
 
 function applyTheme(theme) {
     $('body').removeClass('theme-light theme-medium theme-dark').addClass(theme);
     localStorage.setItem('tcg_theme', theme);
+
+    // Update theme icons
+    $('.theme-btn').removeClass('active');
+    $(`.theme-btn[data-theme="${theme}"]`).addClass('active');
 }
 
 function showAuthenticatedContent() {
@@ -845,11 +889,20 @@ function showAuthenticatedContent() {
     $('#authenticated-content').show();
     $('#welcome-message').text(`Álbumes de ${currentUser.username}`);
 
-    // Show user panel only if admin
-    if (currentUser.role === 'admin') {
-        $('#btn-users-panel').show();
-    } else {
-        $('#btn-users-panel').hide();
+    // Update Dropdown Info
+    if (currentUser) {
+        $('#display-username').text(currentUser.username);
+        if (currentUser.role === 'admin') {
+            $('#menu-users-li').show();
+            $('#display-role').text('Admin');
+            $('#admin-upload-container').show();
+            $('#btn-users-panel').show();
+        } else {
+            $('#menu-users-li').hide();
+            $('#display-role').text('Usuario');
+            $('#admin-upload-container').hide();
+            $('#btn-users-panel').hide();
+        }
     }
 
     // Admin specific features (Spirits upload)
@@ -1342,6 +1395,14 @@ function updateMainViewer(spirit, currentSelectedId) {
     const viewer = document.getElementById('main-spirit-viewer');
     if (viewer) {
         viewer.src = spirit.gltf_url;
+
+        // Special orientation for Ash Blossom if needed (standing instead of horizontal)
+        if (spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf')) {
+            viewer.setAttribute('orientation', '-90deg 0deg 0deg');
+        } else {
+            viewer.removeAttribute('orientation');
+        }
+
         // Reset zoom state on new model
         viewer.setAttribute('disable-zoom', '');
         $('#btn-toggle-zoom-admin').css('background', 'rgba(0,0,0,0.5)').find('i').removeClass('fa-search-minus').addClass('fa-search-plus');

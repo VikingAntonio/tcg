@@ -28,8 +28,8 @@ $(document).ready(async function() {
     initTheme();
 
     // Theme Switcher
-    $('#theme-select').on('change', function() {
-        const theme = $(this).val();
+    $('.theme-btn').on('click', function() {
+        const theme = $(this).data('theme');
         applyTheme(theme);
     });
 
@@ -747,13 +747,16 @@ async function loadPublicDecks() {
 
 function initTheme() {
     const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
-    $('#theme-select').val(savedTheme);
     applyTheme(savedTheme);
 }
 
 function applyTheme(theme) {
     $('body').removeClass('theme-light theme-medium theme-dark').addClass(theme);
     localStorage.setItem('tcg_theme', theme);
+
+    // Update theme icons
+    $('.theme-btn').removeClass('active');
+    $(`.theme-btn[data-theme="${theme}"]`).addClass('active');
 }
 
 async function loadPublicSpirits() {
@@ -820,6 +823,14 @@ function updatePublicSpiritViewer(spirit, currentSelectedId) {
     const viewer = document.getElementById('public-spirit-viewer');
     if (viewer) {
         viewer.src = spirit.gltf_url;
+
+        // Special orientation for Ash Blossom if needed (standing instead of horizontal)
+        if (spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf')) {
+            viewer.setAttribute('orientation', '-90deg 0deg 0deg');
+        } else {
+            viewer.removeAttribute('orientation');
+        }
+
         // Reset zoom state on new model
         viewer.setAttribute('disable-zoom', '');
         $('#btn-toggle-zoom-public').css('background', 'rgba(0,0,0,0.5)').find('i').removeClass('fa-search-minus').addClass('fa-search-plus');
