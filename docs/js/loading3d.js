@@ -237,16 +237,19 @@ function animate() {
     if (isAnimating) {
         const time = clock.getElapsedTime();
 
-        // --- AJUSTES DE ANIMACIÓN ---
+        // --- [COMENTARIO] AJUSTES DE ANIMACIÓN (COMPARTIDOS) ---
+        // Estos valores controlan tanto la órbita del personaje como la de sus partículas.
         const radius = 2.2; // Radio de la circunferencia de rotación (Distancia al centro)
         const speed = 2.0;  // Velocidad de desplazamiento orbital
         const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
         if (character) {
-            // Ajuste de tamaño extra si se desea:
+            // --- AJUSTE DE TAMAÑO EXTRA ---
             // character.scale.multiplyScalar(1.0);
 
-            // Apply orientation correction for Ash Blossom
+            // --- [COMENTARIO] CORRECCIÓN DE ORIENTACIÓN ---
+            // Si el modelo aparece de espaldas o acostado, ajusta character.rotation.x o y.
+            // Para ash.gltf usamos Math.PI para que esté parado correctamente.
             if (window.isAsh) {
                 character.rotation.x = Math.PI;
             }
@@ -255,40 +258,43 @@ function animate() {
                 character.position.x = 0;
                 character.position.z = 0;
                 character.position.y = Math.sin(time * 2) * 0.4;
-                character.rotation.y += 0.01; // Rotación de derecha a izquierda sobre su propio eje
+                character.rotation.y += 0.01;
             } else {
-                // Órbita de derecha a izquierda (sentido anti-horario)
-                // Para cambiar la dirección (izquierda a derecha), quita el '-' de Math.sin
+                // --- [COMENTARIO] CIRCUNFERENCIA DE ROTACIÓN Y DIRECCIÓN ---
+                // Radio (radius): ajusta qué tan lejos gira del centro.
+                // Velocidad (speed): qué tan rápido se desplaza.
+                // DIRECCIÓN: Actualmente usa '-Math.sin' para ir de DERECHA a IZQUIERDA.
+                // Si quieres que vaya de IZQUIERDA a DERECHA, quita el signo menos: 'Math.sin'.
                 const x = -Math.sin(time * speed) * radius;
                 const z = Math.cos(time * speed) * radius;
 
                 character.position.x = x;
                 character.position.z = z;
 
-                // GIRO SOBRE SU EJE DESACTIVADO (Como pidió el usuario)
+                // --- [COMENTARIO] GIRO SOBRE SU PROPIO EJE (DESACTIVADO) ---
+                // Para que el personaje NO gire sobre sí mismo mientras se desplaza,
+                // mantenemos comentadas las líneas de rotation.y abajo.
+                // character.rotation.y += 0.05;
+
+                // --- [COMENTARIO] OTRAS ROTACIONES PARA PROBAR ---
                 /*
-                if (character.isMesh || character.type === 'Group') {
-                    // Si es Ash, invertimos 180 grados para compensar el flip de X
-                    character.rotation.y = (-time * speed) + (window.isAsh ? Math.PI : 0);
-                }
+                character.rotation.x += 0.05; // Rotación tipo "voltereta" (hacia adelante)
+                character.rotation.z += 0.05; // Rotación lateral (estilo moneda)
+                character.rotation.y = -time * speed; // Mantener el personaje siempre mirando hacia el frente del camino
+                character.rotation.y = Math.PI / 2; // Mantener el personaje mirando fijo hacia un lado
                 */
 
-                // OTRAS ROTACIONES PARA PROBAR (Descomenta una para activar):
-                // character.rotation.x += 0.01; // Giro voltereta
-                // character.rotation.z += 0.01; // Giro lateral
-                // character.rotation.y += 0.02; // Giro sobre su propio eje (más rápido)
-
-                character.position.y = Math.sin(time * 3) * 0.2; // Oscilación arriba/abajo
+                character.position.y = Math.sin(time * 3) * 0.2; // Oscilación suave arriba/abajo
             }
 
             // Spawn particles if character exists
             const spawnInterval = window.isAsh ? 0.03 : 0.05; // More particles for Ash trail
             if (time - lastParticleTime > spawnInterval) {
-                // If Ash, spawn slightly behind the current position
+                // If Ash, spawn slightly behind the current position (trail effect)
                 if (window.isAsh) {
-                    const radius = 2.2;
-                    const speed = 2.0;
-                    const trailTime = time - 0.05; // Previous time
+                    // Usamos los mismos valores (radius y speed) definidos arriba para la estela
+                    const trailDelay = 0.05; // Tiempo de retraso para la estela
+                    const trailTime = time - trailDelay;
                     const trailX = -Math.sin(trailTime * speed) * radius;
                     const trailZ = Math.cos(trailTime * speed) * radius;
                     const trailPos = new THREE.Vector3(trailX, character.position.y, trailZ);

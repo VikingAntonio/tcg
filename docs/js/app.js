@@ -525,6 +525,8 @@ function openCardModal($slot) {
 }
 
 async function switchView(view) {
+    if (!view) return;
+
     $('.nav-btn').removeClass('active');
     $(`.nav-btn[data-view="${view}"]`).addClass('active');
 
@@ -533,7 +535,7 @@ async function switchView(view) {
 
     if (view === 'albums') {
         $('#public-view-title').text('Colección de Álbumes');
-    } else {
+    } else if (view === 'decks') {
         $('#public-view-title').text('Decks de Cartas');
         loadPublicDecks();
     }
@@ -781,6 +783,11 @@ function applyTheme(theme) {
 }
 
 async function loadPublicSpirits() {
+    // Mostrar pantalla de carga con mensaje personalizado
+    window.dispatchEvent(new CustomEvent('show-loading', {
+        detail: { message: 'Cargando interfaz...' }
+    }));
+
     $('#public-spirits-grid').html('<div class="loading">Cargando interfaz...</div>');
 
     const { data: spirits, error } = await _supabase
@@ -790,6 +797,7 @@ async function loadPublicSpirits() {
 
     if (error || !spirits) {
         $('#public-spirits-grid').html('<div class="error">Error al cargar spirits.</div>');
+        window.dispatchEvent(new CustomEvent('hide-loading'));
         return;
     }
 
@@ -802,6 +810,8 @@ async function loadPublicSpirits() {
 
     const $grid = $('#public-spirits-grid');
     $grid.empty();
+
+    window.dispatchEvent(new CustomEvent('hide-loading'));
 
     spirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
