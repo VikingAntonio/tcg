@@ -240,21 +240,27 @@ function animate() {
         const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
         if (character) {
+            // Apply orientation correction for Ash Blossom
+            if (window.isAsh) {
+                character.rotation.x = Math.PI;
+            }
+
             if (animType === 'float') {
                 character.position.x = 0;
                 character.position.z = 0;
                 character.position.y = Math.sin(time * 2) * 0.4;
-                character.rotation.y -= 0.01; // Rotación a la derecha
+                character.rotation.y += 0.01; // Rotación de derecha a izquierda
             } else {
-                // Órbita a la derecha (sentido horario)
-                const x = Math.sin(-time * speed) * radius;
-                const z = Math.cos(-time * speed) * radius;
+                // Órbita de derecha a izquierda (sentido anti-horario)
+                const x = -Math.sin(time * speed) * radius;
+                const z = Math.cos(time * speed) * radius;
 
                 character.position.x = x;
                 character.position.z = z;
 
                 if (character.isMesh || character.type === 'Group') {
-                    character.rotation.y = -time * speed; // Rotación a la derecha
+                    // Si es Ash, invertimos 180 grados para compensar el flip de X
+                    character.rotation.y = (-time * speed) + (window.isAsh ? Math.PI : 0);
                 }
 
                 character.position.y = Math.sin(time * 3) * 0.2;
@@ -268,8 +274,8 @@ function animate() {
                     const radius = 2.2;
                     const speed = 2.0;
                     const trailTime = time - 0.05; // Previous time
-                    const trailX = Math.sin(-trailTime * speed) * radius;
-                    const trailZ = Math.cos(-trailTime * speed) * radius;
+                    const trailX = -Math.sin(trailTime * speed) * radius;
+                    const trailZ = Math.cos(trailTime * speed) * radius;
                     const trailPos = new THREE.Vector3(trailX, character.position.y, trailZ);
                     spawnParticle(trailPos);
                 } else {

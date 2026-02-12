@@ -47,6 +47,29 @@ $(document).ready(function() {
         handleLogout();
     });
 
+    // --- Floating Panel Logic ---
+    $(document).on('click', '#avatar-btn', function(e) {
+        e.stopPropagation();
+        $('#user-dropdown').toggleClass('active');
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.user-menu-container').length) {
+            $('#user-dropdown').removeClass('active');
+        }
+    });
+
+    $('.theme-btn-small').on('click', function() {
+        const theme = $(this).data('theme');
+        applyTheme(theme);
+    });
+
+    $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
+
     // --- Back Buttons ---
     $(document).on('click', '#btn-back-to-main, .btn-back-main', function(e) {
         e.preventDefault();
@@ -872,8 +895,8 @@ function applyTheme(theme) {
     localStorage.setItem('tcg_theme', theme);
 
     // Update theme icons
-    $('.theme-btn').removeClass('active');
-    $(`.theme-btn[data-theme="${theme}"]`).addClass('active');
+    $('.theme-btn, .theme-btn-small').removeClass('active');
+    $(`.theme-btn[data-theme="${theme}"], .theme-btn-small[data-theme="${theme}"]`).addClass('active');
 }
 
 function showAuthenticatedContent() {
@@ -882,6 +905,11 @@ function showAuthenticatedContent() {
     $('#login-modal').removeClass('active');
     $('#authenticated-content').show();
     $('#welcome-message').text(`Panel de ${currentUser.username}`);
+
+    // Update floating panel
+    $('#top-panel').show();
+    $('#dropdown-user-name').text(currentUser.username);
+    $('#dropdown-user-role').text(currentUser.role || 'Usuario');
 
     if (currentUser) {
         if (currentUser.role === 'admin') {
@@ -1303,53 +1331,54 @@ async function deletePage(id) {
 }
 
 async function loadSpirits() {
+    $('#spirits-grid').html('<div class="loading">Cargando spirits...</div>');
+
     // Fetch spirits and user's selection
     const [spiritsRes, userRes] = await Promise.all([
         _supabase.from('spirits').select('*').order('name', { ascending: true }),
         _supabase.from('usuarios').select('selected_spirit_id').eq('id', currentUser.id).single()
     ]);
 
-    if (spiritsRes.error || !spiritsRes.data || spiritsRes.data.length === 0) {
-        console.error("Error al cargar espíritus:", spiritsRes.error);
+    if (spiritsRes.error || !spiritsRes.data) {
+        $('#spirits-grid').html('<div class="error">Error al cargar spirits.</div>');
         return;
     }
 
     const spirits = spiritsRes.data;
-    window.allSpirits = spirits;
     const selectedId = userRes.data ? userRes.data.selected_spirit_id : null;
-    window.selectedSpiritId = selectedId;
 
-    if (selectedId) {
-        const idx = spirits.findIndex(s => s.id == selectedId);
-        window.currentSpiritIndex = idx !== -1 ? idx : 0;
-    } else {
-        window.currentSpiritIndex = 0;
+    if (spirits.length === 0) {
+        $('#spirits-grid').html('<div class="empty">No hay spirits disponibles.</div>');
+        return;
     }
 
-    updateMainViewer(spirits[window.currentSpiritIndex], selectedId);
+    const $grid = $('#spirits-grid');
+    $grid.empty();
 
-    // Hide arrows if only one spirit
-    if (spirits.length <= 1) {
-        $('#btn-prev-spirit-admin, #btn-next-spirit-admin').hide();
-    } else {
-        $('#btn-prev-spirit-admin, #btn-next-spirit-admin').show();
-    }
-}
+    spirits.forEach(spirit => {
+        const isSelected = spirit.id == selectedId;
+        const isAsh = spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf');
 
-function updateMainViewer(spirit, currentSelectedId) {
-    $('#main-visor-placeholder').hide();
-    $('#main-spirit-info').show();
-    $('#main-spirit-name').text(spirit.name);
+        const $card = $(`
+            <div class="spirit-card ${isSelected ? 'selected' : ''}">
+                <div class="badge-selected">Seleccionado</div>
+                <model-viewer
+                    src="${spirit.gltf_url}"
+                    camera-controls
+                    auto-rotate
+                    shadow-intensity="1"
+                    environment-image="neutral"
+                    exposure="1.2"
+                    ${isAsh ? 'orientation="-90deg 0deg 0deg"' : ''}>
+                </model-viewer>
+                <h3>${spirit.name}</h3>
+                <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
+                    ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}
+                </button>
+            </div>
+        `);
 
-    const isSelected = spirit.id == currentSelectedId;
-    const $selectBtn = $('#btn-select-main-spirit');
-
-    if (isSelected) {
-        $selectBtn.html('<i class="fas fa-check-circle"></i> Seleccionado').prop('disabled', true).addClass('btn-success');
-    } else {
-        $selectBtn.html('Seleccionar Compañero').prop('disabled', false).removeClass('btn-success');
-
-        $selectBtn.off('click').on('click', async function() {
+        $card.find('.btn-select').click(async function() {
             const { error } = await _supabase
                 .from('usuarios')
                 .update({ selected_spirit_id: spirit.id })
@@ -1358,10 +1387,9 @@ function updateMainViewer(spirit, currentSelectedId) {
             if (error) {
                 Swal.fire('Error', 'No se pudo seleccionar el spirit', 'error');
             } else {
-                window.selectedSpiritId = spirit.id;
                 Swal.fire({
-                    title: '¡Spirit Seleccionado!',
-                    text: `${spirit.name} ahora aparecerá en tus pantallas de carga.`,
+                    title: '¡Compañero Seleccionado!',
+                    text: `${spirit.name} aparecerá en tus pantallas de carga.`,
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -1369,24 +1397,9 @@ function updateMainViewer(spirit, currentSelectedId) {
                 loadSpirits();
             }
         });
-    }
 
-    // Update model-viewer
-    const viewer = document.getElementById('main-spirit-viewer');
-    if (viewer) {
-        viewer.src = spirit.gltf_url;
-
-        // Special orientation for Ash Blossom if needed (standing instead of horizontal)
-        if (spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf')) {
-            viewer.setAttribute('orientation', '-90deg 0deg 0deg');
-        } else {
-            viewer.removeAttribute('orientation');
-        }
-
-        // Reset zoom state on new model
-        viewer.setAttribute('disable-zoom', '');
-        $('#btn-toggle-zoom-admin').css('background', 'rgba(0,0,0,0.5)').find('i').removeClass('fa-search-minus').addClass('fa-search-plus');
-    }
+        $grid.append($card);
+    });
 }
 
 async function loadSlotData(pageId, slotIndex) {
