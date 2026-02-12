@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 let scene, camera, renderer, character, clock;
 let isAnimating = false;
+window.isAsh = false;
 let cherryTexture;
 const particles = [];
 let lastParticleTime = 0;
@@ -66,7 +67,8 @@ function loadSpiritModel() {
     const textureUrl = (window.currentSpirit && window.currentSpirit.texture_url) || null;
 
     // Detect Ash Blossom for special effects
-    window.isAsh = modelUrl && modelUrl.toLowerCase().includes('ash.gltf');
+    window.isAsh = !!(modelUrl && modelUrl.toLowerCase().includes('ash.gltf'));
+    console.log("Loading3D: isAsh =", window.isAsh);
 
     if (modelUrl) {
         if (modelUrl.toLowerCase().endsWith('.png') || modelUrl.toLowerCase().endsWith('.webp')) {
