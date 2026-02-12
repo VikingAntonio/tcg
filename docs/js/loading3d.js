@@ -259,7 +259,7 @@ function animate() {
             } else {
                 // Órbita de derecha a izquierda (sentido anti-horario)
                 // Para cambiar la dirección (izquierda a derecha), quita el '-' de Math.sin
-                const x = -Math.sin(time * speed) * radius;
+                const x = Math.sin(time * speed) * radius;
                 const z = Math.cos(time * speed) * radius;
 
                 character.position.x = x;
