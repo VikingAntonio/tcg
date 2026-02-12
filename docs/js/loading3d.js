@@ -72,33 +72,16 @@ function loadSpiritModel() {
                 console.log(`Loading3D: ${modelUrl} loaded successfully`);
                 character = gltf.scene;
 
-
-                if (textureUrl) {
-                    textureLoader.load(textureUrl, (tex) => {
-                        tex.flipY = false;
-                        tex.colorSpace = THREE.SRGBColorSpace;
-                        character.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                if (Array.isArray(child.material)) {
-                                    child.material.forEach(mat => {
-                                        mat.map = tex;
-                                        mat.needsUpdate = true;
-                                    });
-                                } else {
-                                    child.material.map = tex;
-                                    child.material.needsUpdate = true;
-                                }
-                            }
+                // Ensure internal textures are rendered correctly with sRGB
+                character.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
+                        materials.forEach(mat => {
+                            if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+                            mat.needsUpdate = true;
                         });
-                    });
-                } else {
-                    character.traverse((child) => {
-                        if (child.isMesh && child.material) {
-                            if (child.material.map) child.material.map.colorSpace = THREE.SRGBColorSpace;
-                            child.material.needsUpdate = true;
-                        }
-                    });
-                }
+                    }
+                });
 
                 const box = new THREE.Box3().setFromObject(character);
                 const size = box.getSize(new THREE.Vector3());

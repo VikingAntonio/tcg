@@ -720,30 +720,49 @@ async function loadPublicSpirits() {
         const isSelected = spirit.id == selectedId;
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
-                <div class="spirit-preview-img" id="public-preview-${spirit.id}">
-                    <i class="fas fa-ghost fa-2x"></i>
+                <div class="spirit-preview-img">
+                    <i class="fas fa-ghost fa-3x"></i>
                 </div>
-                <div style="text-align: center;">
+                <div style="text-align: center; padding-top: 10px;">
                     <h3 style="margin:0; font-size: 16px;">${spirit.name}</h3>
-                </div>
-                <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 10px;">
-                    <button class="btn-select-spirit" style="width: 100%; cursor: pointer;" ${isSelected ? 'disabled' : ''}>
-                        ${isSelected ? 'Seleccionado' : 'Seleccionar'}
-                    </button>
                 </div>
             </div>
         `);
 
-        $card.click(function(e) {
-            if ($(e.target).closest('.btn-select-spirit').length) return;
-            updatePublicSpiritViewer(spirit);
+        $card.click(function() {
+            updatePublicSpiritViewer(spirit, selectedId);
         });
 
-        $card.find('.btn-select-spirit').click(async function(e) {
-            e.preventDefault();
+        $list.append($card);
+    });
 
-            // This usually requires being logged in to update 'usuarios' table
-            // But if it's a public view, maybe we just save it in localStorage for this session
+    if (window.currentSpirit) {
+        updatePublicSpiritViewer(window.currentSpirit, selectedId);
+    }
+}
+
+function updatePublicSpiritViewer(spirit, currentSelectedId) {
+    $('#public-visor-placeholder').hide();
+    $('#public-spirit-info').show();
+    $('#public-spirit-name').text(spirit.name);
+
+    // Add select button if it doesn't exist or update it
+    let $selectBtn = $('#btn-select-public-spirit');
+    if ($selectBtn.length === 0) {
+        $('#public-spirit-info').append(`
+            <button id="btn-select-public-spirit" class="btn btn-sm" style="margin-top: 15px; min-width: 200px;">
+                Seleccionar Compañero
+            </button>
+        `);
+        $selectBtn = $('#btn-select-public-spirit');
+    }
+
+    const isSelected = spirit.id == currentSelectedId;
+    if (isSelected) {
+        $selectBtn.text('Seleccionado').prop('disabled', true).addClass('btn-success');
+    } else {
+        $selectBtn.text('Seleccionar Compañero').prop('disabled', false).removeClass('btn-success');
+        $selectBtn.off('click').on('click', function() {
             window.currentSpirit = spirit;
             localStorage.setItem('selected_spirit', JSON.stringify(spirit));
 
@@ -757,30 +776,7 @@ async function loadPublicSpirits() {
 
             loadPublicSpirits();
         });
-
-        $list.append($card);
-
-        // Mini preview
-        setTimeout(() => {
-            if (window.spiritViewer) {
-                const instance = window.spiritViewer.initViewer(`public-preview-${spirit.id}`);
-                if (instance) {
-                    instance.loadModel(spirit.gltf_url, spirit.texture_url);
-                    if (instance.controls) instance.controls.enabled = false;
-                }
-            }
-        }, 100);
-    });
-
-    if (window.currentSpirit) {
-        updatePublicSpiritViewer(window.currentSpirit);
     }
-}
-
-function updatePublicSpiritViewer(spirit) {
-    $('#public-visor-placeholder').hide();
-    $('#public-spirit-info').show();
-    $('#public-spirit-name').text(spirit.name);
 
     if (window.spiritViewer) {
         window.spiritViewer.initViewer('public-spirit-visor');
