@@ -260,12 +260,9 @@ function animate() {
                 character.position.y = Math.sin(time * 2) * 0.4;
                 character.rotation.y += 0.01;
             } else {
-                // --- [COMENTARIO] CIRCUNFERENCIA DE ROTACIÓN Y DIRECCIÓN ---
-                // Radio (radius): ajusta qué tan lejos gira del centro.
-                // Velocidad (speed): qué tan rápido se desplaza.
-                // DIRECCIÓN: Actualmente usa '-Math.sin' para ir de DERECHA a IZQUIERDA.
-                // Si quieres que vaya de IZQUIERDA a DERECHA, quita el signo menos: 'Math.sin'.
-                const x = -Math.sin(time * speed) * radius;
+                // Órbita de derecha a izquierda (sentido anti-horario)
+                // Para cambiar la dirección (izquierda a derecha), quita el '-' de Math.sin
+                const x = Math.sin(time * speed) * radius;
                 const z = Math.cos(time * speed) * radius;
 
                 character.position.x = x;
