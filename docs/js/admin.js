@@ -1250,15 +1250,11 @@ async function loadSpirits() {
         const isSelected = spirit.id == selectedId;
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
-                <div class="spirit-preview-img">
+                <div class="spirit-preview-img" id="preview-${spirit.id}">
                     <i class="fas fa-ghost fa-2x"></i>
                 </div>
                 <div style="text-align: center;">
                     <h3 style="margin:0; font-size: 16px;">${spirit.name}</h3>
-                    <p style="font-size: 10px; color: #666; margin-top: 5px;">
-                        Anim: ${spirit.animation_type === 'orbit' ? 'Órbita' : 'Flotante'}<br>
-                        Part: ${spirit.particle_movement_type || 'falling'}
-                    </p>
                 </div>
                 <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 10px;">
                     <button class="btn btn-select-spirit btn-sm" style="width: 100%;" ${isSelected ? 'disabled' : ''}>
@@ -1295,6 +1291,19 @@ async function loadSpirits() {
         });
 
         $tempContainer.append($card);
+
+        // Load small 3D preview after card is in DOM (or shortly after)
+        setTimeout(() => {
+            const previewId = `preview-${spirit.id}`;
+            if (window.spiritViewer) {
+                const instance = window.spiritViewer.initViewer(previewId);
+                if (instance) {
+                    instance.loadModel(spirit.gltf_url, spirit.texture_url);
+                    // Disable controls for mini previews to avoid weird behavior
+                    if (instance.controls) instance.controls.enabled = false;
+                }
+            }
+        }, 100);
     });
 
     $('#spirit-list').html($tempContainer.contents());
@@ -1304,7 +1313,7 @@ function updateMainViewer(spirit) {
     $('#main-visor-placeholder').hide();
     $('#main-spirit-info').show();
     $('#main-spirit-name').text(spirit.name);
-    $('#main-spirit-details').html(`Animación: ${spirit.animation_type === 'orbit' ? 'Órbita' : 'Flotante'} | Partículas: ${spirit.particle_asset || 'Default'} (${spirit.particle_movement_type || 'falling'})`);
+    $('#main-spirit-details').html('');
 
     const tryInitViewer = () => {
         if (window.spiritViewer) {

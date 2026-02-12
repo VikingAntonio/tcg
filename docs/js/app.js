@@ -67,6 +67,16 @@ $(document).ready(async function() {
         switchView('decks');
     }
 
+    $('#spirit-btn').click(function() {
+        $('#spirit-modal').addClass('active');
+        loadPublicSpirits();
+    });
+
+    $('#close-spirit-modal').click(function() {
+        $('#spirit-modal').removeClass('active');
+        if (window.spiritViewer) window.spiritViewer.cleanupAllViewers();
+    });
+
     // --- Card Interaction Logic (Click Protection) ---
     $(document).on("touchstart mousedown", ".card-slot", function(e) {
         isDragging = false;
@@ -487,20 +497,26 @@ async function loadStoreData() {
         return;
     }
 
-    // Fetch selected spirit
-    const { data: spiritRef } = await _supabase
-        .from('usuarios')
-        .select('selected_spirit_id')
-        .eq('id', userData.id)
-        .single();
-
-    if (spiritRef && spiritRef.selected_spirit_id) {
-        const { data: spiritData } = await _supabase
-            .from('spirits')
-            .select('*')
-            .eq('id', spiritRef.selected_spirit_id)
+    // Check localStorage first for guest selection
+    const localSpirit = localStorage.getItem('selected_spirit');
+    if (localSpirit) {
+        window.currentSpirit = JSON.parse(localSpirit);
+    } else {
+        // Fetch selected spirit from DB (owner's preference or default)
+        const { data: spiritRef } = await _supabase
+            .from('usuarios')
+            .select('selected_spirit_id')
+            .eq('id', userData.id)
             .single();
-        if (spiritData) window.currentSpirit = spiritData;
+
+        if (spiritRef && spiritRef.selected_spirit_id) {
+            const { data: spiritData } = await _supabase
+                .from('spirits')
+                .select('*')
+                .eq('id', spiritRef.selected_spirit_id)
+                .single();
+            if (spiritData) window.currentSpirit = spiritData;
+        }
     }
 
     $('#public-store-name').text(`Tienda: ${userData.store_name}`);
@@ -681,6 +697,95 @@ async function loadPublicDecks() {
     });
 
     setTimeout(hideLoading, 500);
+}
+
+async function loadPublicSpirits() {
+    const $list = $('#public-spirit-list');
+    $list.html('<div class="loading">Cargando compañeros...</div>');
+
+    const { data: spirits, error } = await _supabase
+        .from('spirits')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (error) {
+        $list.html('<div class="error">No se pudieron cargar los espíritus.</div>');
+        return;
+    }
+
+    const selectedId = window.currentSpirit ? window.currentSpirit.id : null;
+    $list.empty();
+
+    spirits.forEach(spirit => {
+        const isSelected = spirit.id == selectedId;
+        const $card = $(`
+            <div class="spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
+                <div class="spirit-preview-img" id="public-preview-${spirit.id}">
+                    <i class="fas fa-ghost fa-2x"></i>
+                </div>
+                <div style="text-align: center;">
+                    <h3 style="margin:0; font-size: 16px;">${spirit.name}</h3>
+                </div>
+                <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 10px;">
+                    <button class="btn-select-spirit" style="width: 100%; cursor: pointer;" ${isSelected ? 'disabled' : ''}>
+                        ${isSelected ? 'Seleccionado' : 'Seleccionar'}
+                    </button>
+                </div>
+            </div>
+        `);
+
+        $card.click(function(e) {
+            if ($(e.target).closest('.btn-select-spirit').length) return;
+            updatePublicSpiritViewer(spirit);
+        });
+
+        $card.find('.btn-select-spirit').click(async function(e) {
+            e.preventDefault();
+
+            // This usually requires being logged in to update 'usuarios' table
+            // But if it's a public view, maybe we just save it in localStorage for this session
+            window.currentSpirit = spirit;
+            localStorage.setItem('selected_spirit', JSON.stringify(spirit));
+
+            Swal.fire({
+                title: '¡Compañero Elegido!',
+                text: `${spirit.name} te acompañará en las cargas.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            loadPublicSpirits();
+        });
+
+        $list.append($card);
+
+        // Mini preview
+        setTimeout(() => {
+            if (window.spiritViewer) {
+                const instance = window.spiritViewer.initViewer(`public-preview-${spirit.id}`);
+                if (instance) {
+                    instance.loadModel(spirit.gltf_url, spirit.texture_url);
+                    if (instance.controls) instance.controls.enabled = false;
+                }
+            }
+        }, 100);
+    });
+
+    if (window.currentSpirit) {
+        updatePublicSpiritViewer(window.currentSpirit);
+    }
+}
+
+function updatePublicSpiritViewer(spirit) {
+    $('#public-visor-placeholder').hide();
+    $('#public-spirit-info').show();
+    $('#public-spirit-name').text(spirit.name);
+
+    if (window.spiritViewer) {
+        window.spiritViewer.initViewer('public-spirit-visor');
+        window.spiritViewer.loadModel('public-spirit-visor', spirit.gltf_url, spirit.texture_url);
+    }
 }
 
 async function renderAlbum(album) {

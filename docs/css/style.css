@@ -884,6 +884,14 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     color: #444;
+    overflow: hidden;
+    position: relative;
+}
+
+.spirit-card .spirit-preview-img canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
 }
 
 .nav-btn {
