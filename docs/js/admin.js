@@ -18,51 +18,40 @@ $(document).ready(function() {
     checkSession();
     initTheme();
 
-    // Theme Switcher Buttons
-    $(document).on('click', '.theme-btn', function() {
-        const theme = $(this).data('theme');
-        applyTheme(theme);
-    });
-
-    // Toggle User Dropdown
-    $(document).on('click', '#btn-user-menu', function(e) {
-        e.stopPropagation();
-        $('#user-dropdown-menu').toggleClass('active');
-    });
-
-    $(document).on('click', function() {
-        $('#user-dropdown-menu').removeClass('active');
-    });
-
-    $(document).on('click', '#user-dropdown-menu', function(e) {
-        e.stopPropagation();
-    });
-
-    // Navigation Menu Items
-    $(document).on('click', '#menu-dashboard, #menu-binders', function() {
+    // --- Navigation (Dashboard Tiles) ---
+    $(document).on('click', '#btn-show-albums', function(e) {
+        e.preventDefault();
         showView('dashboard');
         loadAlbums();
-        $('#user-dropdown-menu').removeClass('active');
     });
 
-    $(document).on('click', '#menu-decks', function() {
+    $(document).on('click', '#btn-show-decks', function(e) {
+        e.preventDefault();
         showView('decks');
         loadDecks();
-        $('#user-dropdown-menu').removeClass('active');
     });
 
-    $(document).on('click', '#menu-spirits', function() {
+    $(document).on('click', '#btn-show-spirits', function(e) {
+        e.preventDefault();
         showView('spirits');
         loadSpirits();
-        $('#user-dropdown-menu').removeClass('active');
     });
 
-    $(document).on('click', '#menu-users', function() {
-        window.location.href = 'users.html';
-    });
-
-    $(document).on('click', '#menu-logout', function() {
+    $(document).on('click', '#btn-logout-tile', function(e) {
+        e.preventDefault();
         handleLogout();
+    });
+
+    // --- Back Buttons ---
+    $(document).on('click', '#btn-back-to-main, .btn-back-main', function(e) {
+        e.preventDefault();
+        showView('main-dashboard');
+    });
+
+    $(document).on('click', '#btn-back-to-albums', function(e) {
+        e.preventDefault();
+        showView('dashboard');
+        loadAlbums();
     });
 
     // Zoom Toggle (Admin)
@@ -887,29 +876,16 @@ function showAuthenticatedContent() {
     initTheme(); // Ensure theme is applied after showing content
     $('#login-modal').removeClass('active');
     $('#authenticated-content').show();
-    $('#welcome-message').text(`Álbumes de ${currentUser.username}`);
+    $('#welcome-message').text(`Panel de ${currentUser.username}`);
 
-    // Update Dropdown Info
     if (currentUser) {
-        $('#display-username').text(currentUser.username);
         if (currentUser.role === 'admin') {
-            $('#menu-users-li').show();
-            $('#display-role').text('Admin');
-            $('#admin-upload-container').show();
             $('#btn-users-panel').show();
+            $('#admin-upload-container').show();
         } else {
-            $('#menu-users-li').hide();
-            $('#display-role').text('Usuario');
-            $('#admin-upload-container').hide();
             $('#btn-users-panel').hide();
+            $('#admin-upload-container').hide();
         }
-    }
-
-    // Admin specific features (Spirits upload)
-    if (currentUser.role === 'admin') {
-        $('#admin-upload-container').show();
-    } else {
-        $('#admin-upload-container').hide();
     }
 
     // Generate public store link
@@ -932,8 +908,7 @@ function showAuthenticatedContent() {
     `;
     $('#store-link-container').html(linkHtml);
 
-    showView('dashboard');
-    loadAlbums();
+    showView('main-dashboard');
 }
 
 function copyPublicLink() {
@@ -1182,8 +1157,8 @@ async function loadAlbums() {
 }
 
 function showView(view) {
-    $('.admin-section').hide();
-    $(`#view-${view}`).show();
+    $('.admin-section').hide().removeClass('active');
+    $(`#view-${view}`).show().addClass('active');
 }
 
 async function editAlbum(album) {
