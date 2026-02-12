@@ -1372,11 +1372,19 @@ async function loadSpirits() {
                     ${isAsh ? 'orientation="-90deg 0deg 0deg"' : ''}>
                 </model-viewer>
                 <h3>${spirit.name}</h3>
-                <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
-                    ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                    <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
+                        ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}
+                    </button>
+                    ${currentUser.role === 'admin' ? `<button class="btn btn-danger btn-delete-spirit" data-id="${spirit.id}">Eliminar</button>` : ''}
+                </div>
             </div>
         `);
+
+        $card.find('.btn-delete-spirit').click(function() {
+            const id = $(this).data('id');
+            deleteSpirit(id, spirit.gltf_url);
+        });
 
         $card.find('.btn-select').click(async function() {
             const { error } = await _supabase
@@ -1400,6 +1408,64 @@ async function loadSpirits() {
 
         $grid.append($card);
     });
+}
+
+async function deleteSpirit(id, gltfUrl) {
+    const result = await Swal.fire({
+        title: '¿Eliminar Spirit?',
+        text: "Se eliminará el registro y todos los archivos asociados en el servidor.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757',
+        confirmButtonText: 'Sí, eliminar'
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({
+            title: 'Eliminando...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            // 1. Delete from Storage (Cleanup)
+            // Extract folder path: models/{folderId}/filename.gltf
+            if (gltfUrl && gltfUrl.includes('/models/')) {
+                const parts = gltfUrl.split('/models/');
+                if (parts.length > 1) {
+                    const folderPath = parts[1].split('/')[0];
+                    const fullFolderPath = `models/${folderPath}`;
+
+                    // List files in folder to delete them
+                    const { data: files, error: listErr } = await _supabase.storage
+                        .from('spirits')
+                        .list(fullFolderPath);
+
+                    if (!listErr && files) {
+                        const filesToRemove = files.map(f => `${fullFolderPath}/${f.name}`);
+                        const { error: delErr } = await _supabase.storage
+                            .from('spirits')
+                            .remove(filesToRemove);
+                        if (delErr) console.warn("Error eliminando archivos de storage:", delErr);
+                    }
+                }
+            }
+
+            // 2. Delete from DB
+            const { error: dbErr } = await _supabase
+                .from('spirits')
+                .delete()
+                .eq('id', id);
+
+            if (dbErr) throw dbErr;
+
+            Swal.fire('¡Eliminado!', 'El spirit ha sido borrado correctamente.', 'success');
+            loadSpirits();
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Error', 'No se pudo eliminar el spirit: ' + (err.message || ''), 'error');
+        }
+    }
 }
 
 async function loadSlotData(pageId, slotIndex) {
