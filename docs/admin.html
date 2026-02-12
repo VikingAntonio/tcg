@@ -130,7 +130,22 @@
                     <button id="btn-open-upload-spirit" class="btn"><i class="fas fa-upload"></i> Subir Nuevo Spirit</button>
                 </div>
             </div>
-            <div id="spirit-list" class="album-list">
+
+            <!-- Main Viewer for optimization -->
+            <div class="spirit-main-viewer-container" style="max-width: 600px; margin: 0 auto 30px;">
+                <div id="main-spirit-visor" style="width: 100%; height: 350px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); border-radius: 15px; border: 2px solid #333; overflow: hidden; position: relative;">
+                    <div id="main-visor-placeholder" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #444;">
+                        <i class="fas fa-ghost fa-4x" style="margin-bottom: 15px;"></i>
+                        <p>Selecciona un spirit para verlo en 3D</p>
+                    </div>
+                </div>
+                <div id="main-spirit-info" style="margin-top: 10px; text-align: center; display: none;">
+                    <h2 id="main-spirit-name" style="margin: 0; color: #00d2ff;">Nombre del Spirit</h2>
+                    <p id="main-spirit-details" style="margin: 5px 0 0; color: #888; font-size: 14px;"></p>
+                </div>
+            </div>
+
+            <div id="spirit-list" class="spirit-grid">
                 <!-- Spirits will be loaded here -->
                 <div class="loading">Cargando spirits...</div>
             </div>
@@ -279,10 +294,21 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Tipo de Animación</label>
+                <label>Tipo de Animación del Modelo</label>
                 <select id="input-spirit-animation">
                     <option value="orbit">Giro en Eje Z (Órbita)</option>
                     <option value="float">Movimiento Sutil (Flotante)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Asset de Partículas (Ej: cerezo.png)</label>
+                <input type="text" id="input-spirit-particle-asset" placeholder="cerezo.png">
+            </div>
+            <div class="form-group">
+                <label>Tipo de Movimiento de Partículas</label>
+                <select id="input-spirit-particle-movement">
+                    <option value="falling">Cayendo (Gravedad)</option>
+                    <option value="trail">Estela (Sigue al personaje)</option>
                 </select>
             </div>
             <button id="btn-save-spirit" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-cloud-upload-alt"></i> Subir a la Nube</button>
@@ -320,26 +346,11 @@
         </div>
     </div>
 
-    <!-- Spirit Viewer Modal -->
-    <div id="spirit-viewer-modal" class="overlay">
-        <div class="overlay-content" style="max-width: 800px; width: 90%; height: 80vh; display: flex; flex-direction: column;">
-            <span id="close-spirit-viewer" class="close-btn">&times;</span>
-            <h2 id="spirit-viewer-title">Vista Previa del Spirit</h2>
-            <div id="spirit-viewer-container" style="flex: 1; width: 100%; background: #000; border-radius: 12px; overflow: hidden; position: relative;">
-                <!-- 3D Canvas will be injected here -->
-                <div id="spirit-viewer-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white;">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                </div>
-            </div>
-            <p style="font-size: 12px; color: #aaa; margin-top: 10px; text-align: center;">Usa el ratón para rotar y la rueda para hacer zoom.</p>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/admin.js"></script>
     <script type="module">
-        import { initViewer, loadModel, cleanupViewer } from './js/spirit-viewer.js';
-        window.spiritViewer = { initViewer, loadModel, cleanupViewer };
+        import { initViewer, loadModel, cleanupViewer, cleanupAllViewers } from './js/spirit-viewer.js';
+        window.spiritViewer = { initViewer, loadModel, cleanupViewer, cleanupAllViewers };
     </script>
 </body>    
 </html>

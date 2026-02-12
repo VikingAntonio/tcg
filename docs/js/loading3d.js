@@ -71,18 +71,14 @@ function loadSpiritModel() {
                 console.log(`Loading3D: ${modelUrl} loaded successfully`);
                 character = gltf.scene;
 
-                // Identify if it's Ash for special particle behavior
-                character.userData.isAsh = modelUrl.toLowerCase().includes('ash.gltf');
 
                 if (textureUrl) {
                     textureLoader.load(textureUrl, (tex) => {
                         tex.flipY = false;
                         character.traverse((child) => {
                             if (child.isMesh && child.material) {
-                                if (!child.material.map) {
-                                    child.material.map = tex;
-                                    child.material.needsUpdate = true;
-                                }
+                                child.material.map = tex;
+                                child.material.needsUpdate = true;
                             }
                         });
                     });
@@ -105,8 +101,9 @@ function loadSpiritModel() {
         }
     }
 
-    // Load Cerezo Texture for particles
-    textureLoader.load('cerezo.png', (texture) => {
+    // Load Particle Texture
+    const particleAsset = (window.currentSpirit && window.currentSpirit.particle_asset) || 'cerezo.png';
+    textureLoader.load(particleAsset, (texture) => {
         cherryTexture = texture;
     });
 }
@@ -129,22 +126,34 @@ function spawnParticle(pos) {
 
     p.position.copy(pos);
 
-    // Check if current model is Ash for special particles
-    const isAsh = character && character.userData && character.userData.isAsh;
+    // Use database configuration
+    const movementType = (window.currentSpirit && window.currentSpirit.particle_movement_type) || 'falling';
 
-    if (isAsh) {
-        // Ash particles follow behind as displacement, no falling
-        p.position.x += (Math.random() - 0.5) * 0.3;
-        p.position.y += (Math.random() - 0.5) * 0.3;
-        p.position.z += (Math.random() - 0.5) * 0.3;
+    if (movementType === 'trail') {
+        // Trail particles: spawn with offset to look like they come from the character
+        const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
+
+        if (animType === 'float' && character) {
+            // Spawn "behind" the character's rotation
+            const angle = -character.rotation.y + Math.PI + (Math.random() - 0.5) * 0.8;
+            const radius = 0.4 + Math.random() * 0.6;
+            p.position.x += Math.sin(angle) * radius;
+            p.position.z += Math.cos(angle) * radius;
+            p.position.y += (Math.random() - 0.5) * 1.2;
+        } else {
+            // Orbit or default trail
+            p.position.x += (Math.random() - 0.5) * 0.3;
+            p.position.y += (Math.random() - 0.5) * 0.3;
+            p.position.z += (Math.random() - 0.5) * 0.3;
+        }
 
         // Subtle jitter but no falling
         p.userData.velocity = new THREE.Vector3(
             (Math.random() - 0.5) * 0.005,
-            (Math.random() - 0.5) * 0.005,
+            (Math.random() - 0.5) * 0.01,
             (Math.random() - 0.5) * 0.005
         );
-        p.userData.isAsh = true;
+        p.userData.movementType = 'trail';
     } else {
         // Default falling particles
         p.position.x += (Math.random() - 0.5) * 0.5;
@@ -156,7 +165,7 @@ function spawnParticle(pos) {
             -0.01 - Math.random() * 0.02, // Falling
             (Math.random() - 0.5) * 0.02
         );
-        p.userData.isAsh = false;
+        p.userData.movementType = 'falling';
     }
 
     const s = 0.2 + Math.random() * 0.3;
@@ -177,21 +186,23 @@ function updateParticles() {
         p.userData.life -= 0.01;
 
         // Apply movement
-        if (p.userData.isAsh && character) {
+        if (p.userData.movementType === 'trail' && character) {
             const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
-            if (animType === 'float') {
-                // For float: Rotate particles around the character to follow its rotation
-                const rotSpeed = 0.01;
+            if (animType === 'orbit') {
+                // For orbit: Particles lag slightly but generally stay where spawned to create a trail
+                p.position.add(p.userData.velocity);
+            } else if (animType === 'float') {
+                // For float (rotating in place): Rotate particles around the character to simulate a spin trail
+                const rotSpeed = 0.015;
                 const cos = Math.cos(rotSpeed);
                 const sin = Math.sin(rotSpeed);
                 const x = p.position.x;
                 const z = p.position.z;
                 p.position.x = x * cos - z * sin;
                 p.position.z = x * sin + z * cos;
+                p.position.add(p.userData.velocity);
             }
-            // For orbit: Staying in world space (with jitter) naturally creates a trail behind the orbiting character
-            p.position.add(p.userData.velocity);
         } else {
             p.position.add(p.userData.velocity);
         }
@@ -238,14 +249,9 @@ function animate() {
                 character.position.y = Math.sin(time * 3) * 0.2;
             }
 
+            // Spawn particles if character exists
             if (time - lastParticleTime > 0.05) {
                 spawnParticle(character.position.clone());
-                lastParticleTime = time;
-            }
-        } else {
-            // Even if no character, show some particles falling in the center
-            if (time - lastParticleTime > 0.1) {
-                spawnParticle(new THREE.Vector3(0, 2, 0));
                 lastParticleTime = time;
             }
         }
@@ -285,19 +291,24 @@ window.addEventListener('show-loading', (e) => {
 });
 
 window.addEventListener('hide-loading', () => {
-    updateLoadingScreen(false);
+    // EDIT HERE: Adjust this value to change how long the loading screen stays (in milliseconds)
+    const LOADING_DELAY = 3000;
 
     setTimeout(() => {
-        if (!isAnimating) return;
-        isAnimating = false;
-        if (scene) {
-            particles.forEach(p => {
-                if (p.material) p.material.dispose();
-                scene.remove(p);
-            });
-            particles.length = 0;
-        }
-    }, 600);
+        updateLoadingScreen(false);
+
+        setTimeout(() => {
+            if (!isAnimating) return;
+            isAnimating = false;
+            if (scene) {
+                particles.forEach(p => {
+                    if (p.material) p.material.dispose();
+                    scene.remove(p);
+                });
+                particles.length = 0;
+            }
+        }, 600);
+    }, LOADING_DELAY);
 });
 
 if (window.isLoading) {
