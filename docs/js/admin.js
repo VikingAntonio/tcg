@@ -753,7 +753,7 @@ $(document).ready(function() {
         }
 
         Swal.fire({
-            title: 'Subiendo Spirit...',
+            title: 'Subiendo Compañero...',
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
         });
@@ -800,12 +800,12 @@ $(document).ready(function() {
 
             if (dbErr) throw dbErr;
 
-            Swal.fire('¡Éxito!', 'Spirit subido correctamente', 'success');
+            Swal.fire('¡Éxito!', 'Compañero subido correctamente', 'success');
             $('#spirit-upload-modal').removeClass('active');
             loadSpirits();
         } catch (err) {
             console.error(err);
-            Swal.fire('Error', 'No se pudo subir el spirit: ' + (err.message || ''), 'error');
+            Swal.fire('Error', 'No se pudo subir el compañero: ' + (err.message || ''), 'error');
         }
     });
 
@@ -1331,7 +1331,7 @@ async function deletePage(id) {
 }
 
 async function loadSpirits() {
-    $('#spirits-grid').html('<div class="loading">Cargando spirits...</div>');
+    $('#spirits-grid').html('<div class="loading">Cargando compañeros...</div>');
 
     // Fetch spirits and user's selection
     const [spiritsRes, userRes] = await Promise.all([
@@ -1340,7 +1340,7 @@ async function loadSpirits() {
     ]);
 
     if (spiritsRes.error || !spiritsRes.data) {
-        $('#spirits-grid').html('<div class="error">Error al cargar spirits.</div>');
+        $('#spirits-grid').html('<div class="error">Error al cargar compañeros.</div>');
         return;
     }
 
@@ -1348,7 +1348,7 @@ async function loadSpirits() {
     const selectedId = userRes.data ? userRes.data.selected_spirit_id : null;
 
     if (spirits.length === 0) {
-        $('#spirits-grid').html('<div class="empty">No hay spirits disponibles.</div>');
+        $('#spirits-grid').html('<div class="empty">No hay compañeros disponibles.</div>');
         return;
     }
 
@@ -1365,11 +1365,9 @@ async function loadSpirits() {
                 <model-viewer
                     src="${spirit.gltf_url}"
                     camera-controls
-                    auto-rotate
                     shadow-intensity="1"
                     environment-image="neutral"
-                    exposure="1.2"
-                    ${isAsh ? 'orientation="-90deg 0deg 0deg"' : ''}>
+                    exposure="1.2">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
                 <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
@@ -1393,7 +1391,7 @@ async function loadSpirits() {
                 .eq('id', currentUser.id);
 
             if (error) {
-                Swal.fire('Error', 'No se pudo seleccionar el spirit', 'error');
+                Swal.fire('Error', 'No se pudo seleccionar el compañero', 'error');
             } else {
                 Swal.fire({
                     title: '¡Compañero Seleccionado!',
@@ -1412,7 +1410,7 @@ async function loadSpirits() {
 
 async function deleteSpirit(id, gltfUrl) {
     const result = await Swal.fire({
-        title: '¿Eliminar Spirit?',
+        title: '¿Eliminar Compañero?',
         text: "Se eliminará el registro y todos los archivos asociados en el servidor.",
         icon: 'warning',
         showCancelButton: true,
@@ -1459,11 +1457,11 @@ async function deleteSpirit(id, gltfUrl) {
 
             if (dbErr) throw dbErr;
 
-            Swal.fire('¡Eliminado!', 'El spirit ha sido borrado correctamente.', 'success');
+            Swal.fire('¡Eliminado!', 'El compañero ha sido borrado correctamente.', 'success');
             loadSpirits();
         } catch (err) {
             console.error(err);
-            Swal.fire('Error', 'No se pudo eliminar el spirit: ' + (err.message || ''), 'error');
+            Swal.fire('Error', 'No se pudo eliminar el compañero: ' + (err.message || ''), 'error');
         }
     }
 }

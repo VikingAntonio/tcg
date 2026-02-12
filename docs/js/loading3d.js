@@ -7,6 +7,13 @@ let cherryTexture;
 const particles = [];
 let lastParticleTime = 0;
 
+// --- [CONFIGURACIÓN DEL COMPAÑERO] ---
+// Modifica estos valores para ajustar el comportamiento de la carga 3D.
+const ORBIT_RADIUS = 2.2;            // Radio de la circunferencia (distancia al centro)
+const ORBIT_SPEED = 2.0;             // Velocidad de movimiento
+const MODEL_SCALE_MULTIPLIER = 1.8;  // Tamaño del modelo GLTF
+const ROTATION_DIRECTION = -1;       // -1 para Derecha a Izquierda, 1 para Izquierda a Derecha
+
 function init() {
     console.log("Loading3D: Initializing...");
     const container = document.getElementById('loading-3d-container');
@@ -89,10 +96,9 @@ function loadSpiritModel() {
                 const box = new THREE.Box3().setFromObject(character);
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                // --- [COMENTARIO] AJUSTE DE TAMAÑO DEL GLTF ---
-                // Modifica este valor (ej: 1.8) para aumentar o disminuir el tamaño base del modelo en pantalla.
-                const scaleMultiplier = 1.8;
-                const scale = scaleMultiplier / maxDim;
+
+                // Usamos el multiplicador configurado al inicio del archivo
+                const scale = MODEL_SCALE_MULTIPLIER / maxDim;
                 character.scale.set(scale, scale, scale);
 
                 const center = box.getCenter(new THREE.Vector3());
@@ -236,65 +242,35 @@ function animate() {
 
     if (isAnimating) {
         const time = clock.getElapsedTime();
-
-        // --- [COMENTARIO] AJUSTES DE ANIMACIÓN Y ÓRBITA ---
-        // RADIUS: Ajusta el radio de la circunferencia (qué tan lejos gira del centro).
-        // SPEED: Ajusta la velocidad de desplazamiento orbital.
-        const radius = 2.2;
-        const speed = 2.0;
         const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
         if (character) {
-            // --- [COMENTARIO] CORRECCIÓN DE ORIENTACIÓN ---
-            // Ajusta la rotación inicial si el modelo no aparece parado correctamente.
-            if (window.isAsh) {
-                character.rotation.x = Math.PI;
-            }
-
             if (animType === 'float') {
                 character.position.x = 0;
                 character.position.z = 0;
                 character.position.y = Math.sin(time * 2) * 0.4;
                 character.rotation.y += 0.01;
             } else {
-                // --- [COMENTARIO] DESPLAZAMIENTO Y DIRECCIÓN ---
-                // DIRECCIÓN:
-                // Actualmente usa '-Math.sin' para desplazarse de DERECHA a IZQUIERDA.
-                // Si deseas cambiar el sentido (IZQ a DER), usa: 'Math.sin(time * speed)'.
-
-                const x = -Math.sin(time * speed) * radius;
-                const z = Math.cos(time * speed) * radius;
+                // Cálculo de posición orbital usando constantes configurables
+                const x = ROTATION_DIRECTION * Math.sin(time * ORBIT_SPEED) * ORBIT_RADIUS;
+                const z = Math.cos(time * ORBIT_SPEED) * ORBIT_RADIUS;
 
                 character.position.x = x;
                 character.position.z = z;
-
-                // --- [COMENTARIO] GIRO SOBRE SU PROPIO EJE (DESACTIVADO) ---
-                // El usuario solicitó que el modelo NO gire sobre su propio eje mientras se desplaza.
-                // Por eso, la línea de rotation.y se mantiene comentada.
-                // character.rotation.y += 0.05;
-
-                // --- [COMENTARIO] OTRAS ROTACIONES PARA PROBAR (Mantener comentadas) ---
-                /*
-                character.rotation.x += 0.05; // Rotación tipo "voltereta"
-                character.rotation.z += 0.05; // Rotación lateral (estilo moneda)
-                character.rotation.y = -time * speed; // Mantener el personaje mirando siempre hacia adelante en su camino
-                character.rotation.y = Math.PI / 2; // Mantener el personaje mirando fijo hacia un lado
-                */
 
                 // Oscilación vertical suave (arriba y abajo)
                 character.position.y = Math.sin(time * 3) * 0.2;
             }
 
-            // Spawn particles if character exists
-            const spawnInterval = window.isAsh ? 0.03 : 0.05; // More particles for Ash trail
+            // Generación de partículas
+            const spawnInterval = window.isAsh ? 0.03 : 0.05;
             if (time - lastParticleTime > spawnInterval) {
-                // If Ash, spawn slightly behind the current position (trail effect)
+                // Si es Ash (o requiere estela), generamos partículas en la posición previa del orbit
                 if (window.isAsh) {
-                    // Usamos los mismos valores (radius y speed) definidos arriba para la estela
-                    const trailDelay = 0.05; // Tiempo de retraso para la estela
+                    const trailDelay = 0.15; // Retraso de la estela para que se vea por detrás
                     const trailTime = time - trailDelay;
-                    const trailX = -Math.sin(trailTime * speed) * radius;
-                    const trailZ = Math.cos(trailTime * speed) * radius;
+                    const trailX = ROTATION_DIRECTION * Math.sin(trailTime * ORBIT_SPEED) * ORBIT_RADIUS;
+                    const trailZ = Math.cos(trailTime * ORBIT_SPEED) * ORBIT_RADIUS;
                     const trailPos = new THREE.Vector3(trailX, character.position.y, trailZ);
                     spawnParticle(trailPos);
                 } else {
