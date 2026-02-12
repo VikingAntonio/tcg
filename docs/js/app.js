@@ -28,9 +28,30 @@ $(document).ready(async function() {
     initTheme();
 
     // Theme Switcher
-    $('.theme-btn').on('click', function() {
+    $('.theme-btn, .theme-btn-small').on('click', function() {
         const theme = $(this).data('theme');
         applyTheme(theme);
+    });
+
+    // --- Floating Panel Logic ---
+    $(document).on('click', '#avatar-btn', function(e) {
+        e.stopPropagation();
+        $('#user-dropdown').toggleClass('active');
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.user-menu-container').length) {
+            if ($('#user-dropdown').hasClass('active')) {
+                $('#user-dropdown').removeClass('active');
+            }
+        }
+    });
+
+    $('#menu-spirit-btn').click(function(e) {
+        e.preventDefault();
+        $('#spirit-modal').addClass('active');
+        loadPublicSpirits();
+        $('#user-dropdown').removeClass('active');
     });
 
     // Zoom Toggle (Public)
@@ -755,55 +776,57 @@ function applyTheme(theme) {
     localStorage.setItem('tcg_theme', theme);
 
     // Update theme icons
-    $('.theme-btn').removeClass('active');
-    $(`.theme-btn[data-theme="${theme}"]`).addClass('active');
+    $('.theme-btn, .theme-btn-small').removeClass('active');
+    $(`.theme-btn[data-theme="${theme}"], .theme-btn-small[data-theme="${theme}"]`).addClass('active');
 }
 
 async function loadPublicSpirits() {
+    $('#public-spirits-grid').html('<div class="loading">Cargando spirits...</div>');
+
     const { data: spirits, error } = await _supabase
         .from('spirits')
         .select('*')
         .order('name', { ascending: true });
 
-    if (error || !spirits || spirits.length === 0) {
-        console.error("Error al cargar espíritus:", error);
+    if (error || !spirits) {
+        $('#public-spirits-grid').html('<div class="error">Error al cargar spirits.</div>');
         return;
     }
 
-    window.allSpirits = spirits;
     const selectedId = window.currentSpirit ? window.currentSpirit.id : null;
 
-    // Find index of current spirit
-    if (selectedId) {
-        const idx = spirits.findIndex(s => s.id == selectedId);
-        window.currentSpiritIndex = idx !== -1 ? idx : 0;
-    } else {
-        window.currentSpiritIndex = 0;
+    if (spirits.length === 0) {
+        $('#public-spirits-grid').html('<div class="empty">No hay spirits disponibles.</div>');
+        return;
     }
 
-    updatePublicSpiritViewer(spirits[window.currentSpiritIndex], selectedId);
+    const $grid = $('#public-spirits-grid');
+    $grid.empty();
 
-    // Hide arrows if only one spirit
-    if (spirits.length <= 1) {
-        $('#btn-prev-spirit-public, #btn-next-spirit-public').hide();
-    } else {
-        $('#btn-prev-spirit-public, #btn-next-spirit-public').show();
-    }
-}
+    spirits.forEach(spirit => {
+        const isSelected = spirit.id == selectedId;
+        const isAsh = spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf');
 
-function updatePublicSpiritViewer(spirit, currentSelectedId) {
-    $('#public-visor-placeholder').hide();
-    $('#public-spirit-info').show();
-    $('#public-spirit-name').text(spirit.name);
+        const $card = $(`
+            <div class="spirit-card ${isSelected ? 'selected' : ''}">
+                <div class="badge-selected">Elegido</div>
+                <model-viewer
+                    src="${spirit.gltf_url}"
+                    camera-controls
+                    auto-rotate
+                    shadow-intensity="1"
+                    environment-image="neutral"
+                    exposure="1.2"
+                    ${isAsh ? 'orientation="-90deg 0deg 0deg"' : ''}>
+                </model-viewer>
+                <h3>${spirit.name}</h3>
+                <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
+                    ${isSelected ? '<i class="fas fa-check-circle"></i> Elegido' : 'Elegir Compañero'}
+                </button>
+            </div>
+        `);
 
-    const $selectBtn = $('#btn-select-public-spirit');
-    const isSelected = spirit.id == currentSelectedId;
-
-    if (isSelected) {
-        $selectBtn.html('<i class="fas fa-check-circle"></i> Seleccionado').prop('disabled', true).addClass('btn-success');
-    } else {
-        $selectBtn.html('Seleccionar Compañero').prop('disabled', false).removeClass('btn-success');
-        $selectBtn.off('click').on('click', function() {
+        $card.find('.btn-select').click(function() {
             window.currentSpirit = spirit;
             localStorage.setItem('selected_spirit', JSON.stringify(spirit));
 
@@ -817,24 +840,9 @@ function updatePublicSpiritViewer(spirit, currentSelectedId) {
 
             loadPublicSpirits();
         });
-    }
 
-    // Update model-viewer
-    const viewer = document.getElementById('public-spirit-viewer');
-    if (viewer) {
-        viewer.src = spirit.gltf_url;
-
-        // Special orientation for Ash Blossom if needed (standing instead of horizontal)
-        if (spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf')) {
-            viewer.setAttribute('orientation', '-90deg 0deg 0deg');
-        } else {
-            viewer.removeAttribute('orientation');
-        }
-
-        // Reset zoom state on new model
-        viewer.setAttribute('disable-zoom', '');
-        $('#btn-toggle-zoom-public').css('background', 'rgba(0,0,0,0.5)').find('i').removeClass('fa-search-minus').addClass('fa-search-plus');
-    }
+        $grid.append($card);
+    });
 }
 
 async function renderAlbum(album) {
