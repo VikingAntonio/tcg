@@ -89,6 +89,8 @@ function loadSpiritModel() {
                 const box = new THREE.Box3().setFromObject(character);
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
+                // --- AJUSTE DE TAMAÑO DEL GLTF ---
+                // Modifica 1.8 para aumentar o disminuir el tamaño base del modelo
                 const scaleMultiplier = 1.8;
                 const scale = scaleMultiplier / maxDim;
                 character.scale.set(scale, scale, scale);
@@ -235,11 +237,15 @@ function animate() {
     if (isAnimating) {
         const time = clock.getElapsedTime();
 
-        const radius = 2.2;
-        const speed = 2.0;
+        // --- AJUSTES DE ANIMACIÓN ---
+        const radius = 2.2; // Radio de la circunferencia de rotación (Distancia al centro)
+        const speed = 2.0;  // Velocidad de desplazamiento orbital
         const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
         if (character) {
+            // Ajuste de tamaño extra si se desea:
+            // character.scale.multiplyScalar(1.0);
+
             // Apply orientation correction for Ash Blossom
             if (window.isAsh) {
                 character.rotation.x = Math.PI;
@@ -249,21 +255,30 @@ function animate() {
                 character.position.x = 0;
                 character.position.z = 0;
                 character.position.y = Math.sin(time * 2) * 0.4;
-                character.rotation.y += 0.01; // Rotación de derecha a izquierda
+                character.rotation.y += 0.01; // Rotación de derecha a izquierda sobre su propio eje
             } else {
                 // Órbita de derecha a izquierda (sentido anti-horario)
+                // Para cambiar la dirección (izquierda a derecha), quita el '-' de Math.sin
                 const x = -Math.sin(time * speed) * radius;
                 const z = Math.cos(time * speed) * radius;
 
                 character.position.x = x;
                 character.position.z = z;
 
+                // GIRO SOBRE SU EJE DESACTIVADO (Como pidió el usuario)
+                /*
                 if (character.isMesh || character.type === 'Group') {
                     // Si es Ash, invertimos 180 grados para compensar el flip de X
                     character.rotation.y = (-time * speed) + (window.isAsh ? Math.PI : 0);
                 }
+                */
 
-                character.position.y = Math.sin(time * 3) * 0.2;
+                // OTRAS ROTACIONES PARA PROBAR (Descomenta una para activar):
+                // character.rotation.x += 0.01; // Giro voltereta
+                // character.rotation.z += 0.01; // Giro lateral
+                // character.rotation.y += 0.02; // Giro sobre su propio eje (más rápido)
+
+                character.position.y = Math.sin(time * 3) * 0.2; // Oscilación arriba/abajo
             }
 
             // Spawn particles if character exists

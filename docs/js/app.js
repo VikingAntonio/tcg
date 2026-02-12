@@ -114,7 +114,7 @@ $(document).ready(async function() {
 
     $('.nav-btn').click(function() {
         const view = $(this).data('view');
-        switchView(view);
+        if (view) switchView(view);
     });
 
     if (initialView === 'decks') {
@@ -781,7 +781,7 @@ function applyTheme(theme) {
 }
 
 async function loadPublicSpirits() {
-    $('#public-spirits-grid').html('<div class="loading">Cargando spirits...</div>');
+    $('#public-spirits-grid').html('<div class="loading">Cargando interfaz...</div>');
 
     const { data: spirits, error } = await _supabase
         .from('spirits')
