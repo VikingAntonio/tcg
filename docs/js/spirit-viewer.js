@@ -78,35 +78,21 @@ export class SpiritViewerInstance {
             this.loader.load(modelUrl, (gltf) => {
                 this.character = gltf.scene;
 
-                if (textureUrl) {
-                    this.textureLoader.load(textureUrl, (tex) => {
-                        tex.flipY = false;
-                        tex.colorSpace = THREE.SRGBColorSpace;
-                        this.character.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                // If multiple materials exist, this might still be wrong,
-                                // but we follow the override request.
-                                if (Array.isArray(child.material)) {
-                                    child.material.forEach(mat => {
-                                        mat.map = tex;
-                                        mat.needsUpdate = true;
-                                    });
-                                } else {
-                                    child.material.map = tex;
-                                    child.material.needsUpdate = true;
-                                }
-                            }
+                // Ensure internal textures are rendered correctly with sRGB
+                this.character.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
+                        materials.forEach(mat => {
+                            if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+                            mat.needsUpdate = true;
                         });
-                    });
-                } else {
-                    // Ensure internal textures are rendered correctly
-                    this.character.traverse((child) => {
-                        if (child.isMesh && child.material) {
-                            if (child.material.map) child.material.map.colorSpace = THREE.SRGBColorSpace;
-                            child.material.needsUpdate = true;
-                        }
-                    });
-                }
+                    }
+                });
+
+                // Only apply textureUrl if it's explicitly a sprite model or if we really want to override.
+                // But the user said "asegurar que cargue las texturas de los gltfs", so we let the loader do it.
+                // If textureUrl exists and we are in a sprite-like mode, we could use it,
+                // but for GLTF we trust the internal mapping.
 
                 const box = new THREE.Box3().setFromObject(this.character);
                 const size = box.getSize(new THREE.Vector3());
