@@ -1,0 +1,15 @@
+127.0.0.1 - - [12/Feb/2026 06:56:27] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:27] "GET /js/admin.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:27] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:27] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:28] "GET /public.html HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:28] "GET /css/barajaryg.css HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:28] "GET /js/loading3d.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:28] "GET /js/turn.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:28] "GET /js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:28] "GET /js/ztext.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:56:28] "GET /cerezo.png HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:57:11] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:57:11] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:57:11] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 06:57:11] "GET /js/admin.js HTTP/1.1" 200 -
