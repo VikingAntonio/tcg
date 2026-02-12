@@ -25,6 +25,19 @@ $(document).ready(function() {
     });
 
     // Zoom Toggle (Admin)
+    // Spirit Navigation
+    $('#btn-prev-spirit-admin').click(function() {
+        if (!window.allSpirits || window.allSpirits.length <= 1) return;
+        window.currentSpiritIndex = (window.currentSpiritIndex - 1 + window.allSpirits.length) % window.allSpirits.length;
+        updateMainViewer(window.allSpirits[window.currentSpiritIndex], window.selectedSpiritId);
+    });
+
+    $('#btn-next-spirit-admin').click(function() {
+        if (!window.allSpirits || window.allSpirits.length <= 1) return;
+        window.currentSpiritIndex = (window.currentSpiritIndex + 1) % window.allSpirits.length;
+        updateMainViewer(window.allSpirits[window.currentSpiritIndex], window.selectedSpiritId);
+    });
+
     $('#btn-toggle-zoom-admin').on('click', function() {
         const viewer = document.getElementById('main-spirit-viewer');
         const icon = $(this).find('i');
@@ -1257,60 +1270,37 @@ async function deletePage(id) {
 }
 
 async function loadSpirits() {
-    $('#spirit-list').html('<div class="loading">Cargando spirits...</div>');
-
     // Fetch spirits and user's selection
     const [spiritsRes, userRes] = await Promise.all([
         _supabase.from('spirits').select('*').order('name', { ascending: true }),
         _supabase.from('usuarios').select('selected_spirit_id').eq('id', currentUser.id).single()
     ]);
 
-    if (spiritsRes.error) {
-        if (spiritsRes.error.code === '42P01') {
-            $('#spirit-list').html('<div class="error">La tabla "spirits" no existe. Debes ejecutar el script SQL de configuración.</div>');
-        } else {
-            $('#spirit-list').html('<div class="error">Error al cargar la lista de spirits.</div>');
-        }
+    if (spiritsRes.error || !spiritsRes.data || spiritsRes.data.length === 0) {
+        console.error("Error al cargar espíritus:", spiritsRes.error);
         return;
     }
 
-    const spirits = spiritsRes.data || [];
+    const spirits = spiritsRes.data;
+    window.allSpirits = spirits;
     const selectedId = userRes.data ? userRes.data.selected_spirit_id : null;
+    window.selectedSpiritId = selectedId;
 
-    if (spirits.length === 0) {
-        $('#spirit-list').html('<div class="empty">No hay spirits disponibles.</div>');
-        return;
+    if (selectedId) {
+        const idx = spirits.findIndex(s => s.id == selectedId);
+        window.currentSpiritIndex = idx !== -1 ? idx : 0;
+    } else {
+        window.currentSpiritIndex = 0;
     }
 
-    const $tempContainer = $('<div></div>');
+    updateMainViewer(spirits[window.currentSpiritIndex], selectedId);
 
-    // Clear main viewer placeholder if nothing selected yet or keep it
-    const selectedSpirit = spirits.find(s => s.id == selectedId);
-    if (selectedSpirit) {
-        updateMainViewer(selectedSpirit);
+    // Hide arrows if only one spirit
+    if (spirits.length <= 1) {
+        $('#btn-prev-spirit-admin, #btn-next-spirit-admin').hide();
+    } else {
+        $('#btn-prev-spirit-admin, #btn-next-spirit-admin').show();
     }
-
-    spirits.forEach(spirit => {
-        const isSelected = spirit.id == selectedId;
-        const $card = $(`
-            <div class="spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
-                <div class="spirit-preview-img">
-                    <i class="fas fa-ghost fa-3x"></i>
-                </div>
-                <div style="text-align: center; padding-top: 10px;">
-                    <h3 style="margin:0; font-size: 16px;">${spirit.name}</h3>
-                </div>
-            </div>
-        `);
-
-        $card.click(function() {
-            updateMainViewer(spirit, selectedId);
-        });
-
-        $tempContainer.append($card);
-    });
-
-    $('#spirit-list').html($tempContainer.contents());
 }
 
 function updateMainViewer(spirit, currentSelectedId) {
@@ -1335,6 +1325,7 @@ function updateMainViewer(spirit, currentSelectedId) {
             if (error) {
                 Swal.fire('Error', 'No se pudo seleccionar el spirit', 'error');
             } else {
+                window.selectedSpiritId = spirit.id;
                 Swal.fire({
                     title: '¡Spirit Seleccionado!',
                     text: `${spirit.name} ahora aparecerá en tus pantallas de carga.`,

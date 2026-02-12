@@ -110,6 +110,19 @@ $(document).ready(async function() {
         if (window.spiritViewer) window.spiritViewer.cleanupAllViewers();
     });
 
+    // Spirit Navigation
+    $('#btn-prev-spirit-public').click(function() {
+        if (!window.allSpirits || window.allSpirits.length <= 1) return;
+        window.currentSpiritIndex = (window.currentSpiritIndex - 1 + window.allSpirits.length) % window.allSpirits.length;
+        updatePublicSpiritViewer(window.allSpirits[window.currentSpiritIndex], window.currentSpirit ? window.currentSpirit.id : null);
+    });
+
+    $('#btn-next-spirit-public').click(function() {
+        if (!window.allSpirits || window.allSpirits.length <= 1) return;
+        window.currentSpiritIndex = (window.currentSpiritIndex + 1) % window.allSpirits.length;
+        updatePublicSpiritViewer(window.allSpirits[window.currentSpiritIndex], window.currentSpirit ? window.currentSpirit.id : null);
+    });
+
     // --- Card Interaction Logic (Click Protection) ---
     $(document).on("touchstart mousedown", ".card-slot", function(e) {
         isDragging = false;
@@ -744,44 +757,34 @@ function applyTheme(theme) {
 }
 
 async function loadPublicSpirits() {
-    const $list = $('#public-spirit-list');
-    $list.html('<div class="loading">Cargando compañeros...</div>');
-
     const { data: spirits, error } = await _supabase
         .from('spirits')
         .select('*')
         .order('name', { ascending: true });
 
-    if (error) {
-        $list.html('<div class="error">No se pudieron cargar los espíritus.</div>');
+    if (error || !spirits || spirits.length === 0) {
+        console.error("Error al cargar espíritus:", error);
         return;
     }
 
+    window.allSpirits = spirits;
     const selectedId = window.currentSpirit ? window.currentSpirit.id : null;
-    $list.empty();
 
-    spirits.forEach(spirit => {
-        const isSelected = spirit.id == selectedId;
-        const $card = $(`
-            <div class="spirit-card ${isSelected ? 'selected' : ''}" data-id="${spirit.id}">
-                <div class="spirit-preview-img">
-                    <i class="fas fa-ghost fa-3x"></i>
-                </div>
-                <div style="text-align: center; padding-top: 10px;">
-                    <h3 style="margin:0; font-size: 16px;">${spirit.name}</h3>
-                </div>
-            </div>
-        `);
+    // Find index of current spirit
+    if (selectedId) {
+        const idx = spirits.findIndex(s => s.id == selectedId);
+        window.currentSpiritIndex = idx !== -1 ? idx : 0;
+    } else {
+        window.currentSpiritIndex = 0;
+    }
 
-        $card.click(function() {
-            updatePublicSpiritViewer(spirit, selectedId);
-        });
+    updatePublicSpiritViewer(spirits[window.currentSpiritIndex], selectedId);
 
-        $list.append($card);
-    });
-
-    if (window.currentSpirit) {
-        updatePublicSpiritViewer(window.currentSpirit, selectedId);
+    // Hide arrows if only one spirit
+    if (spirits.length <= 1) {
+        $('#btn-prev-spirit-public, #btn-next-spirit-public').hide();
+    } else {
+        $('#btn-prev-spirit-public, #btn-next-spirit-public').show();
     }
 }
 

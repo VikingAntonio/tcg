@@ -934,6 +934,20 @@ input:checked + .slider:before {
     object-fit: contain;
 }
 
+.spirit-main-viewer-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 20px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+#main-spirit-visor-container, #public-spirit-visor-container {
+    border: 1px solid rgba(0, 210, 255, 0.2) !important;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+    background: radial-gradient(circle at center, #1a2a3a 0%, #000 100%) !important;
+}
+
 .nav-btn {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
