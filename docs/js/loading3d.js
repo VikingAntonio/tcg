@@ -140,17 +140,17 @@ function spawnParticle(pos) {
             p.position.z += Math.cos(angle) * radius;
             p.position.y += (Math.random() - 0.5) * 1.2;
         } else {
-            // Orbit or default trail
-            p.position.x += (Math.random() - 0.5) * 0.3;
-            p.position.y += (Math.random() - 0.5) * 0.3;
-            p.position.z += (Math.random() - 0.5) * 0.3;
+            // Orbit trail: shift particles slightly away from movement direction
+            p.position.x += (Math.random() - 0.5) * 0.5;
+            p.position.y += (Math.random() - 0.5) * 0.5;
+            p.position.z += (Math.random() - 0.5) * 0.5;
         }
 
-        // Subtle jitter but no falling
+        // Displacement trail (particles move slowly or stay mostly in place)
         p.userData.velocity = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.005,
             (Math.random() - 0.5) * 0.01,
-            (Math.random() - 0.5) * 0.005
+            (Math.random() - 0.5) * 0.01,
+            (Math.random() - 0.5) * 0.01
         );
         p.userData.movementType = 'trail';
     } else {
@@ -233,16 +233,17 @@ function animate() {
                 character.position.x = 0;
                 character.position.z = 0;
                 character.position.y = Math.sin(time * 2) * 0.4;
-                character.rotation.y += 0.01;
+                character.rotation.y -= 0.01; // Rotación a la derecha
             } else {
-                const x = Math.sin(time * speed) * radius;
-                const z = Math.cos(time * speed) * radius;
+                // Órbita a la derecha (sentido horario)
+                const x = Math.sin(-time * speed) * radius;
+                const z = Math.cos(-time * speed) * radius;
 
                 character.position.x = x;
                 character.position.z = z;
 
                 if (character.isMesh || character.type === 'Group') {
-                    character.rotation.y = time * speed;
+                    character.rotation.y = -time * speed; // Rotación a la derecha
                 }
 
                 character.position.y = Math.sin(time * 3) * 0.2;

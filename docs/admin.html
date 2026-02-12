@@ -8,16 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Three.js for 3D Viewer -->
-    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-      }
-    </script>
     <script src="js/supabase-config.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
 </head>    
@@ -150,11 +140,19 @@
                 </button>
 
                 <div id="main-spirit-visor-container" style="width: 100%; height: 350px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); border-radius: 15px; border: 2px solid #333; overflow: hidden; position: relative;">
+                    <!-- Navigation Arrows -->
+                    <button id="btn-prev-spirit-admin" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 100; background: rgba(0,0,0,0.4); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="btn-next-spirit-admin" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 100; background: rgba(0,0,0,0.4); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+
                     <model-viewer id="main-spirit-viewer"
                         style="width: 100%; height: 100%;"
                         camera-controls
                         disable-zoom
-                        auto-rotate
+                        camera-orbit="0deg 75deg 105%"
                         shadow-intensity="1"
                         environment-image="neutral"
                         exposure="1.2">
@@ -174,10 +172,7 @@
                 </div>
             </div>
 
-            <div id="spirit-list" class="spirit-grid">
-                <!-- Spirits will be loaded here -->
-                <div class="loading">Cargando spirits...</div>
-            </div>
+            <!-- The other box (grid) has been removed as it was redundant -->
         </div>
 
         <!-- Album Editor View -->
@@ -377,9 +372,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/admin.js"></script>
-    <script type="module">
-        import { initViewer, loadModel, cleanupViewer, cleanupAllViewers } from './js/spirit-viewer.js';
-        window.spiritViewer = { initViewer, loadModel, cleanupViewer, cleanupAllViewers };
-    </script>
 </body>    
 </html>
