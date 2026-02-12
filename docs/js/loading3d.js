@@ -24,6 +24,7 @@ function init() {
     camera.lookAt(0, 0, 0);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
@@ -75,12 +76,27 @@ function loadSpiritModel() {
                 if (textureUrl) {
                     textureLoader.load(textureUrl, (tex) => {
                         tex.flipY = false;
+                        tex.colorSpace = THREE.SRGBColorSpace;
                         character.traverse((child) => {
                             if (child.isMesh && child.material) {
-                                child.material.map = tex;
-                                child.material.needsUpdate = true;
+                                if (Array.isArray(child.material)) {
+                                    child.material.forEach(mat => {
+                                        mat.map = tex;
+                                        mat.needsUpdate = true;
+                                    });
+                                } else {
+                                    child.material.map = tex;
+                                    child.material.needsUpdate = true;
+                                }
                             }
                         });
+                    });
+                } else {
+                    character.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            if (child.material.map) child.material.map.colorSpace = THREE.SRGBColorSpace;
+                            child.material.needsUpdate = true;
+                        }
                     });
                 }
 

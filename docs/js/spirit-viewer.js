@@ -27,6 +27,7 @@ export class SpiritViewerInstance {
         this.camera.position.set(0, 1, 5);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setClearColor(0x000000, 0);
@@ -80,12 +81,30 @@ export class SpiritViewerInstance {
                 if (textureUrl) {
                     this.textureLoader.load(textureUrl, (tex) => {
                         tex.flipY = false;
+                        tex.colorSpace = THREE.SRGBColorSpace;
                         this.character.traverse((child) => {
                             if (child.isMesh && child.material) {
-                                child.material.map = tex;
-                                child.material.needsUpdate = true;
+                                // If multiple materials exist, this might still be wrong,
+                                // but we follow the override request.
+                                if (Array.isArray(child.material)) {
+                                    child.material.forEach(mat => {
+                                        mat.map = tex;
+                                        mat.needsUpdate = true;
+                                    });
+                                } else {
+                                    child.material.map = tex;
+                                    child.material.needsUpdate = true;
+                                }
                             }
                         });
+                    });
+                } else {
+                    // Ensure internal textures are rendered correctly
+                    this.character.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            if (child.material.map) child.material.map.colorSpace = THREE.SRGBColorSpace;
+                            child.material.needsUpdate = true;
+                        }
                     });
                 }
 
@@ -145,9 +164,6 @@ export function initViewer(containerId) {
         // If it's the same container, we don't necessarily need to re-init everything,
         // but it's safer for a clean state.
         instances.get(containerId).cleanup();
-    } else {
-        // If we are initiating a new one, maybe cleanup ALL others to save WebGL contexts
-        cleanupAllViewers();
     }
 
     const instance = new SpiritViewerInstance(container);
