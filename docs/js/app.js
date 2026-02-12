@@ -25,6 +25,7 @@ const showLoading = window.showLoading;
 const hideLoading = window.hideLoading;
 
 $(document).ready(async function() {
+    checkSession();
     initTheme();
 
     // Theme Switcher
@@ -782,6 +783,22 @@ function applyTheme(theme) {
     $(`.theme-btn[data-theme="${theme}"], .theme-btn-small[data-theme="${theme}"]`).addClass('active');
 }
 
+function checkSession() {
+    const session = localStorage.getItem('tcg_session');
+    if (session) {
+        try {
+            const user = JSON.parse(session);
+            $('#dropdown-user-name').text(user.username);
+            $('#dropdown-user-role').text(user.role || 'Usuario');
+        } catch (e) {
+            console.error("Error parsing session:", e);
+        }
+    } else {
+        $('#dropdown-user-name').text('Invitado');
+        $('#dropdown-user-role').text('Invitado');
+    }
+}
+
 async function loadPublicSpirits() {
     // El usuario no quiere pantalla de carga completa (loading screen) aquí
     $('#public-spirits-grid').html('<div class="loading">Cargando interfaz...</div>');
@@ -792,14 +809,14 @@ async function loadPublicSpirits() {
         .order('name', { ascending: true });
 
     if (error || !spirits) {
-        $('#public-spirits-grid').html('<div class="error">Error al cargar spirits.</div>');
+        $('#public-spirits-grid').html('<div class="error">Error al cargar compañeros.</div>');
         return;
     }
 
     const selectedId = window.currentSpirit ? window.currentSpirit.id : null;
 
     if (spirits.length === 0) {
-        $('#public-spirits-grid').html('<div class="empty">No hay spirits disponibles.</div>');
+        $('#public-spirits-grid').html('<div class="empty">No hay compañeros disponibles.</div>');
         return;
     }
 
@@ -810,41 +827,20 @@ async function loadPublicSpirits() {
 
     spirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
-        const isAsh = spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf');
 
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}">
-                <div class="badge-selected">Elegido</div>
+                <div class="badge-selected">Actual</div>
                 <model-viewer
                     src="${spirit.gltf_url}"
                     camera-controls
-                    auto-rotate
                     shadow-intensity="1"
                     environment-image="neutral"
-                    exposure="1.2"
-                    ${isAsh ? 'orientation="-90deg 0deg 0deg"' : ''}>
+                    exposure="1.2">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
-                <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
-                    ${isSelected ? '<i class="fas fa-check-circle"></i> Elegido' : 'Elegir Compañero'}
-                </button>
             </div>
         `);
-
-        $card.find('.btn-select').click(function() {
-            window.currentSpirit = spirit;
-            localStorage.setItem('selected_spirit', JSON.stringify(spirit));
-
-            Swal.fire({
-                title: '¡Compañero Elegido!',
-                text: `${spirit.name} te acompañará en las cargas.`,
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
-
-            loadPublicSpirits();
-        });
 
         $grid.append($card);
     });
