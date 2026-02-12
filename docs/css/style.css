@@ -20,21 +20,26 @@ html, body {
     --slot-border: #3d3d3d;
     --overlay-bg: rgba(0, 0, 0, 0.92);
     --header-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --header-text: #ffffff;
     --tile-text: #444;
     --primary-color: #00d2ff;
 }
 
 body.theme-light {
-    --bg-color: #f5f7fa;
+    --bg-color: #fff4e6; /* Peach Pastel */
     --bg-gradient: none;
-    --text-color: #2d3436;
+    --text-color: #1a1a1a; /* High contrast */
     --card-bg: #ffffff;
-    --card-border: #dfe6e9;
-    --slot-bg: #f1f2f6;
-    --slot-border: #ced6e0;
-    --overlay-bg: rgba(255, 255, 255, 0.95);
-    --header-gradient: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-    --tile-text: #2d3436;
+    --card-border: #e0e0e0;
+    --slot-bg: #fdfdfd;
+    --slot-border: #d0d0d0;
+    --overlay-bg: rgba(255, 244, 230, 0.95);
+    --header-gradient: linear-gradient(135deg, #ffd1a9 0%, #ff9a7b 100%);
+    --header-text: #1a1a1a;
+    --header-shadow: none;
+    --badge-bg: rgba(0, 0, 0, 0.05);
+    --badge-border: rgba(0, 0, 0, 0.1);
+    --tile-text: #1a1a1a;
 }
 
 body.theme-medium {
@@ -837,7 +842,7 @@ input:checked + .slider:before {
     text-align: center;
     padding: 60px 20px;
     background: var(--header-gradient);
-    color: white;
+    color: var(--header-text, white);
     margin-bottom: 40px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     width: 100%;
@@ -846,7 +851,7 @@ input:checked + .slider:before {
 .public-header h1 {
     font-size: 2.5rem;
     margin: 10px 0;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    text-shadow: var(--header-shadow, 2px 2px 4px rgba(0,0,0,0.3));
 }
 
 .public-header p {
@@ -857,12 +862,12 @@ input:checked + .slider:before {
 .store-badge {
     display: inline-flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--badge-bg, rgba(255, 255, 255, 0.15));
     padding: 8px 16px;
     border-radius: 50px;
     backdrop-filter: blur(5px);
     margin-bottom: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--badge-border, rgba(255, 255, 255, 0.2));
 }
 
 .store-badge i {
