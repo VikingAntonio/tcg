@@ -16,6 +16,38 @@ const MAX_HISTORY = 20;
 
 $(document).ready(function() {
     checkSession();
+    initTheme();
+
+    // Theme Switcher
+    $('#theme-select').on('change', function() {
+        const theme = $(this).val();
+        applyTheme(theme);
+    });
+
+    // Zoom Toggle (Admin)
+    $('#btn-toggle-zoom-admin').on('click', function() {
+        const viewer = document.getElementById('main-spirit-viewer');
+        const icon = $(this).find('i');
+
+        if (viewer.hasAttribute('disable-zoom')) {
+            viewer.removeAttribute('disable-zoom');
+            icon.removeClass('fa-search-plus').addClass('fa-search-minus');
+            $(this).css('background', 'rgba(0, 210, 255, 0.6)');
+            Swal.fire({
+                title: 'Zoom Activado',
+                text: 'Ahora puedes usar la rueda del ratón o pellizcar para hacer zoom.',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } else {
+            viewer.setAttribute('disable-zoom', '');
+            icon.removeClass('fa-search-minus').addClass('fa-search-plus');
+            $(this).css('background', 'rgba(0,0,0,0.5)');
+        }
+    });
 
     // Authentication Actions
     $('#btn-login').click(function(e) {
@@ -782,8 +814,20 @@ function showLoginView() {
     $('#authenticated-content').hide();
 }
 
+function initTheme() {
+    const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+    $('#theme-select').val(savedTheme);
+    applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+    $('body').removeClass('theme-light theme-medium theme-dark').addClass(theme);
+    localStorage.setItem('tcg_theme', theme);
+}
+
 function showAuthenticatedContent() {
     $('body').addClass('public-body');
+    initTheme(); // Ensure theme is applied after showing content
     $('#login-modal').removeClass('active');
     $('#authenticated-content').show();
     $('#welcome-message').text(`Álbumes de ${currentUser.username}`);
@@ -1278,9 +1322,9 @@ function updateMainViewer(spirit, currentSelectedId) {
     const $selectBtn = $('#btn-select-main-spirit');
 
     if (isSelected) {
-        $selectBtn.text('Seleccionado').prop('disabled', true).addClass('btn-success');
+        $selectBtn.html('<i class="fas fa-check-circle"></i> Seleccionado').prop('disabled', true).addClass('btn-success');
     } else {
-        $selectBtn.text('Seleccionar Compañero').prop('disabled', false).removeClass('btn-success');
+        $selectBtn.html('Seleccionar Compañero').prop('disabled', false).removeClass('btn-success');
 
         $selectBtn.off('click').on('click', async function() {
             const { error } = await _supabase
@@ -1303,15 +1347,14 @@ function updateMainViewer(spirit, currentSelectedId) {
         });
     }
 
-    const tryInitViewer = () => {
-        if (window.spiritViewer) {
-            window.spiritViewer.initViewer('main-spirit-visor');
-            window.spiritViewer.loadModel('main-spirit-visor', spirit.gltf_url, spirit.texture_url);
-        } else {
-            setTimeout(tryInitViewer, 100);
-        }
-    };
-    tryInitViewer();
+    // Update model-viewer
+    const viewer = document.getElementById('main-spirit-viewer');
+    if (viewer) {
+        viewer.src = spirit.gltf_url;
+        // Reset zoom state on new model
+        viewer.setAttribute('disable-zoom', '');
+        $('#btn-toggle-zoom-admin').css('background', 'rgba(0,0,0,0.5)').find('i').removeClass('fa-search-minus').addClass('fa-search-plus');
+    }
 }
 
 async function loadSlotData(pageId, slotIndex) {

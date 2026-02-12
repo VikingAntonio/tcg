@@ -25,6 +25,39 @@ const showLoading = window.showLoading;
 const hideLoading = window.hideLoading;
 
 $(document).ready(async function() {
+    initTheme();
+
+    // Theme Switcher
+    $('#theme-select').on('change', function() {
+        const theme = $(this).val();
+        applyTheme(theme);
+    });
+
+    // Zoom Toggle (Public)
+    $('#btn-toggle-zoom-public').on('click', function() {
+        const viewer = document.getElementById('public-spirit-viewer');
+        const icon = $(this).find('i');
+
+        if (viewer.hasAttribute('disable-zoom')) {
+            viewer.removeAttribute('disable-zoom');
+            icon.removeClass('fa-search-plus').addClass('fa-search-minus');
+            $(this).css('background', 'rgba(0, 210, 255, 0.6)');
+            Swal.fire({
+                title: 'Zoom Activado',
+                text: 'Ahora puedes usar la rueda del ratón o pellizcar para hacer zoom.',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } else {
+            viewer.setAttribute('disable-zoom', '');
+            icon.removeClass('fa-search-minus').addClass('fa-search-plus');
+            $(this).css('background', 'rgba(0,0,0,0.5)');
+        }
+    });
+
     // --- Mobile Interaction Priority (Priority over turn.js) ---
     // Interceptamos eventos en la fase de captura para evitar que turn.js
     // detecte el toque si el usuario está interactuando con un botón.
@@ -699,6 +732,17 @@ async function loadPublicDecks() {
     setTimeout(hideLoading, 500);
 }
 
+function initTheme() {
+    const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+    $('#theme-select').val(savedTheme);
+    applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+    $('body').removeClass('theme-light theme-medium theme-dark').addClass(theme);
+    localStorage.setItem('tcg_theme', theme);
+}
+
 async function loadPublicSpirits() {
     const $list = $('#public-spirit-list');
     $list.html('<div class="loading">Cargando compañeros...</div>');
@@ -746,22 +790,13 @@ function updatePublicSpiritViewer(spirit, currentSelectedId) {
     $('#public-spirit-info').show();
     $('#public-spirit-name').text(spirit.name);
 
-    // Add select button if it doesn't exist or update it
-    let $selectBtn = $('#btn-select-public-spirit');
-    if ($selectBtn.length === 0) {
-        $('#public-spirit-info').append(`
-            <button id="btn-select-public-spirit" class="btn btn-sm" style="margin-top: 15px; min-width: 200px;">
-                Seleccionar Compañero
-            </button>
-        `);
-        $selectBtn = $('#btn-select-public-spirit');
-    }
-
+    const $selectBtn = $('#btn-select-public-spirit');
     const isSelected = spirit.id == currentSelectedId;
+
     if (isSelected) {
-        $selectBtn.text('Seleccionado').prop('disabled', true).addClass('btn-success');
+        $selectBtn.html('<i class="fas fa-check-circle"></i> Seleccionado').prop('disabled', true).addClass('btn-success');
     } else {
-        $selectBtn.text('Seleccionar Compañero').prop('disabled', false).removeClass('btn-success');
+        $selectBtn.html('Seleccionar Compañero').prop('disabled', false).removeClass('btn-success');
         $selectBtn.off('click').on('click', function() {
             window.currentSpirit = spirit;
             localStorage.setItem('selected_spirit', JSON.stringify(spirit));
@@ -778,9 +813,13 @@ function updatePublicSpiritViewer(spirit, currentSelectedId) {
         });
     }
 
-    if (window.spiritViewer) {
-        window.spiritViewer.initViewer('public-spirit-visor');
-        window.spiritViewer.loadModel('public-spirit-visor', spirit.gltf_url, spirit.texture_url);
+    // Update model-viewer
+    const viewer = document.getElementById('public-spirit-viewer');
+    if (viewer) {
+        viewer.src = spirit.gltf_url;
+        // Reset zoom state on new model
+        viewer.setAttribute('disable-zoom', '');
+        $('#btn-toggle-zoom-public').css('background', 'rgba(0,0,0,0.5)').find('i').removeClass('fa-search-minus').addClass('fa-search-plus');
     }
 }
 

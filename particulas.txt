@@ -1,0 +1,11 @@
+-- SQL para actualizar la tabla 'spirits' y permitir guardar el asset de partículas personalizado
+
+-- Agregar columna para la URL o nombre del archivo de la partícula (ej: cerezo.png)
+ALTER TABLE spirits ADD COLUMN IF NOT EXISTS particle_asset TEXT DEFAULT 'cerezo.png';
+
+-- Agregar columna para el tipo de movimiento de las partículas (falling o trail)
+ALTER TABLE spirits ADD COLUMN IF NOT EXISTS particle_movement_type TEXT DEFAULT 'falling';
+
+-- Nota: Si usas Supabase, puedes ejecutar esto en el SQL Editor.
+-- Esto permitirá que desde el panel de Admin puedas especificar qué imagen usará cada Spirit como partícula
+-- y si estas deben caer (gravedad) o seguir al personaje (estela/trail).
