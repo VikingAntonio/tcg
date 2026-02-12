@@ -107,7 +107,7 @@ $(document).ready(async function() {
     if (initialView === 'decks') {
         showLoading('Cargando Decks...');
     } else {
-        showLoading('Cargando Binders...');
+        showLoading('Cargando interfaz...');
     }
 
     loadStoreData();
@@ -594,7 +594,7 @@ async function loadStoreData() {
 }
 
 async function loadPublicAlbums(userId) {
-    showLoading('Cargando Binders...');
+    showLoading('Cargando interfaz...');
     let query = _supabase
         .from('albums')
         .select('*')
@@ -783,11 +783,7 @@ function applyTheme(theme) {
 }
 
 async function loadPublicSpirits() {
-    // Mostrar pantalla de carga con mensaje personalizado
-    window.dispatchEvent(new CustomEvent('show-loading', {
-        detail: { message: 'Cargando interfaz...' }
-    }));
-
+    // El usuario no quiere pantalla de carga completa (loading screen) aquí
     $('#public-spirits-grid').html('<div class="loading">Cargando interfaz...</div>');
 
     const { data: spirits, error } = await _supabase
@@ -797,7 +793,6 @@ async function loadPublicSpirits() {
 
     if (error || !spirits) {
         $('#public-spirits-grid').html('<div class="error">Error al cargar spirits.</div>');
-        window.dispatchEvent(new CustomEvent('hide-loading'));
         return;
     }
 

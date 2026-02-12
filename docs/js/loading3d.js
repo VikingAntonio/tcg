@@ -89,8 +89,8 @@ function loadSpiritModel() {
                 const box = new THREE.Box3().setFromObject(character);
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                // --- AJUSTE DE TAMAÑO DEL GLTF ---
-                // Modifica 1.8 para aumentar o disminuir el tamaño base del modelo
+                // --- [COMENTARIO] AJUSTE DE TAMAÑO DEL GLTF ---
+                // Modifica este valor (ej: 1.8) para aumentar o disminuir el tamaño base del modelo en pantalla.
                 const scaleMultiplier = 1.8;
                 const scale = scaleMultiplier / maxDim;
                 character.scale.set(scale, scale, scale);
@@ -237,19 +237,16 @@ function animate() {
     if (isAnimating) {
         const time = clock.getElapsedTime();
 
-        // --- [COMENTARIO] AJUSTES DE ANIMACIÓN (COMPARTIDOS) ---
-        // Estos valores controlan tanto la órbita del personaje como la de sus partículas.
-        const radius = 2.2; // Radio de la circunferencia de rotación (Distancia al centro)
-        const speed = 2.0;  // Velocidad de desplazamiento orbital
+        // --- [COMENTARIO] AJUSTES DE ANIMACIÓN Y ÓRBITA ---
+        // RADIUS: Ajusta el radio de la circunferencia (qué tan lejos gira del centro).
+        // SPEED: Ajusta la velocidad de desplazamiento orbital.
+        const radius = 2.2;
+        const speed = 2.0;
         const animType = (window.currentSpirit && window.currentSpirit.animation_type) || 'orbit';
 
         if (character) {
-            // --- AJUSTE DE TAMAÑO EXTRA ---
-            // character.scale.multiplyScalar(1.0);
-
             // --- [COMENTARIO] CORRECCIÓN DE ORIENTACIÓN ---
-            // Si el modelo aparece de espaldas o acostado, ajusta character.rotation.x o y.
-            // Para ash.gltf usamos Math.PI para que esté parado correctamente.
+            // Ajusta la rotación inicial si el modelo no aparece parado correctamente.
             if (window.isAsh) {
                 character.rotation.x = Math.PI;
             }
@@ -260,28 +257,32 @@ function animate() {
                 character.position.y = Math.sin(time * 2) * 0.4;
                 character.rotation.y += 0.01;
             } else {
-                // Órbita de derecha a izquierda (sentido anti-horario)
-                // Para cambiar la dirección (izquierda a derecha), quita el '-' de Math.sin
-                const x = Math.sin(time * speed) * radius;
+                // --- [COMENTARIO] DESPLAZAMIENTO Y DIRECCIÓN ---
+                // DIRECCIÓN:
+                // Actualmente usa '-Math.sin' para desplazarse de DERECHA a IZQUIERDA.
+                // Si deseas cambiar el sentido (IZQ a DER), usa: 'Math.sin(time * speed)'.
+
+                const x = -Math.sin(time * speed) * radius;
                 const z = Math.cos(time * speed) * radius;
 
                 character.position.x = x;
                 character.position.z = z;
 
                 // --- [COMENTARIO] GIRO SOBRE SU PROPIO EJE (DESACTIVADO) ---
-                // Para que el personaje NO gire sobre sí mismo mientras se desplaza,
-                // mantenemos comentadas las líneas de rotation.y abajo.
+                // El usuario solicitó que el modelo NO gire sobre su propio eje mientras se desplaza.
+                // Por eso, la línea de rotation.y se mantiene comentada.
                 // character.rotation.y += 0.05;
 
-                // --- [COMENTARIO] OTRAS ROTACIONES PARA PROBAR ---
+                // --- [COMENTARIO] OTRAS ROTACIONES PARA PROBAR (Mantener comentadas) ---
                 /*
-                character.rotation.x += 0.05; // Rotación tipo "voltereta" (hacia adelante)
+                character.rotation.x += 0.05; // Rotación tipo "voltereta"
                 character.rotation.z += 0.05; // Rotación lateral (estilo moneda)
-                character.rotation.y = -time * speed; // Mantener el personaje siempre mirando hacia el frente del camino
+                character.rotation.y = -time * speed; // Mantener el personaje mirando siempre hacia adelante en su camino
                 character.rotation.y = Math.PI / 2; // Mantener el personaje mirando fijo hacia un lado
                 */
 
-                character.position.y = Math.sin(time * 3) * 0.2; // Oscilación suave arriba/abajo
+                // Oscilación vertical suave (arriba y abajo)
+                character.position.y = Math.sin(time * 3) * 0.2;
             }
 
             // Spawn particles if character exists

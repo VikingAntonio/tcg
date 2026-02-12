@@ -14,6 +14,7 @@ html, body {
     --bg-color: #0f0f0f;
     --bg-gradient: radial-gradient(circle at center, #1a2a3a 0%, #000000 100%);
     --text-color: #ffffff;
+    --text-muted: #666;
     --card-bg: #1a1a1a;
     --card-border: #333;
     --slot-bg: #252525;
@@ -26,21 +27,22 @@ html, body {
 }
 
 body.theme-light {
-    --bg-color: #fff4e6; /* Peach Pastel - No es blanco puro */
+    --bg-color: #ffeadb; /* Durazno Pastel - No es blanco puro */
     --bg-gradient: none;
-    --text-color: #1a1a1a; /* Alto contraste para legibilidad */
+    --text-color: #1a1a1a; /* Alto contraste para legibilidad (Negro carbón) */
+    --text-muted: #4a4a4a;
     --card-bg: #ffffff;
-    --card-border: #d8c3b0; /* Un poco más oscuro para contraste en fondo pastel */
-    --slot-bg: #fdfdfd;
-    --slot-border: #c0b0a0;
-    --overlay-bg: rgba(255, 244, 230, 0.98);
-    --header-gradient: linear-gradient(135deg, #ffd1a9 0%, #ff9a7b 100%);
+    --card-border: #e6ccb2; /* Contraste suave pero visible */
+    --slot-bg: #fcfcfc;
+    --slot-border: #d4a373; /* Tono tierra para mejor contraste */
+    --overlay-bg: rgba(255, 234, 219, 0.98);
+    --header-gradient: linear-gradient(135deg, #ffcfab 0%, #ff9a7b 100%);
     --header-text: #1a1a1a;
     --header-shadow: none;
     --badge-bg: rgba(0, 0, 0, 0.08);
     --badge-border: rgba(0, 0, 0, 0.15);
     --tile-text: #1a1a1a;
-    --primary-color: #007bb5; /* Azul más oscuro para contraste en modo claro */
+    --primary-color: #005f8d; /* Azul profundo para contraste en fondo pastel */
 }
 
 body.theme-medium {
@@ -376,7 +378,7 @@ body {
 
 .info-label {
     font-size: 10px;
-    color: #666;
+    color: var(--text-muted);
     text-transform: uppercase;
     font-weight: 700;
     margin-bottom: 4px;
@@ -631,7 +633,7 @@ body.modal-open {
 
 .form-group label {
     display: block;
-    color: #666;
+    color: var(--text-muted);
     margin-bottom: 8px;
     font-size: 12px;
     text-transform: uppercase;
