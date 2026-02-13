@@ -154,6 +154,9 @@ let tesseractWorker = null;
 async function initTesseract() {
     if (tesseractWorker) return;
     tesseractWorker = await Tesseract.createWorker('eng');
+    await tesseractWorker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-'
+    });
 }
 
 function processVideo() {
@@ -284,8 +287,7 @@ function detectCard(video) {
 
 async function captureAndProcess(src, contour) {
     let warped = new cv.Mat();
-    let gray = new cv.Mat();
-    let dsize = new cv.Size(800, 1120); // Higher resolution for better OCR
+    let dsize = new cv.Size(800, 1120);
 
     if (contour) {
         let corners = getOrderedPoints(contour);
@@ -295,15 +297,12 @@ async function captureAndProcess(src, contour) {
         cv.warpPerspective(src, warped, M, dsize);
         srcCoords.delete(); dstCoords.delete(); M.delete();
     } else {
-        // Center crop if no contour
+        // Center crop fallback
         let rect = new cv.Rect(src.cols * 0.2, src.rows * 0.1, src.cols * 0.6, src.rows * 0.8);
         let crop = src.roi(rect);
         cv.resize(crop, warped, dsize);
         crop.delete();
     }
-
-    // Double OCR approach: Normal and Enhanced Contrast
-    cv.cvtColor(warped, gray, cv.COLOR_RGBA2GRAY);
 
     // Preview original warped
     cv.imshow('cv-preview', warped);
@@ -312,68 +311,104 @@ async function captureAndProcess(src, contour) {
     $('#status-text').text('Identificando...');
     $('#status-container').addClass('status-working');
 
-    // Enhancements for OCR
-    let thresh = new cv.Mat();
-    cv.threshold(gray, thresh, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+    // Bottom 30% crop (y from 784 to 1120)
+    let bottomRegion = new cv.Rect(0, 784, 800, 336);
+    let bottomMat = warped.roi(bottomRegion);
 
-    // We'll use a larger canvas for OCR
-    const canvas = document.getElementById('hidden-canvas');
-    cv.imshow(canvas, thresh);
+    // Split left/right halves
+    let leftRect = new cv.Rect(0, 0, 400, 336);
+    let rightRect = new cv.Rect(400, 0, 400, 336);
+    let leftCrop = bottomMat.roi(leftRect);
+    let rightCrop = bottomMat.roi(rightRect);
+
+    const processForOCR = (mat) => {
+        let gray = new cv.Mat();
+        let contrast = new cv.Mat();
+        let thresh = new cv.Mat();
+
+        cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY);
+        // Increase contrast (1.5x alpha)
+        cv.convertScaleAbs(gray, contrast, 1.5, 0);
+        // B&W conversion
+        cv.threshold(contrast, thresh, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+
+        gray.delete(); contrast.delete();
+        return thresh;
+    };
+
+    let leftProcessed = processForOCR(leftCrop);
+    let rightProcessed = processForOCR(rightCrop);
 
     await initTesseract();
-    let { data: { text } } = await tesseractWorker.recognize(canvas);
+    const canvas = document.getElementById('hidden-canvas');
+    let combinedText = "";
 
-    // If first pass fails, try inverted image
-    let result = identifyFromText(text);
-    if (!result.code) {
-        cv.bitwise_not(thresh, thresh);
-        cv.imshow(canvas, thresh);
-        const { data: { text: textInv } } = await tesseractWorker.recognize(canvas);
-        let resultInv = identifyFromText(textInv);
-        if (resultInv.code) {
-            text = textInv;
-        }
-    }
+    // OCR Left
+    cv.imshow(canvas, leftProcessed);
+    const { data: { text: textL } } = await tesseractWorker.recognize(canvas);
+    combinedText += textL + " ";
 
-    await processDetectedText(text);
+    // OCR Right
+    cv.imshow(canvas, rightProcessed);
+    const { data: { text: textR } } = await tesseractWorker.recognize(canvas);
+    combinedText += textR;
 
-    warped.delete(); gray.delete(); thresh.delete();
+    await processDetectedText(combinedText);
+
+    // Deallocate everything
+    leftProcessed.delete(); rightProcessed.delete();
+    leftCrop.delete(); rightCrop.delete();
+    bottomMat.delete();
+    warped.delete();
     src.delete(); if (contour) contour.delete();
 }
 
 function identifyFromText(text) {
-    const normalizeNum = (s) => s.replace(/O/g, '0').replace(/I/g, '1').replace(/L/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2').replace(/G/g, '6');
+    const normalizeDigits = (s) => s.replace(/O/g, '0').replace(/I/g, '1').replace(/L/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2').replace(/G/g, '6');
 
-    // Keep spaces to separate codes from other text
+    // Remove unwanted characters except essential ones for codes
     const cleanText = text.replace(/[^a-zA-Z0-9\/\-\|]/g, ' ');
 
-    // 1. Check for Yu-Gi-Oh (e.g. LOB-001, MP23-EN001)
-    const regexYG = /[A-Z0-9]{2,5}-[A-Z0-9]{3,}/i;
+    // 1. Yu-Gi-Oh (Strict regex: MP23-EN001, LOB-005)
+    // Format: [Prefix]-[Optional SubPrefix][Number]
+    const regexYG = /[A-Z0-9]{2,6}-[A-Z0-9]{3,}/i;
     const matchYG = cleanText.match(regexYG);
     if (matchYG) {
         let full = matchYG[0].toUpperCase();
         let parts = full.split('-');
-        return { code: parts[0] + '-' + normalizeNum(parts[1]), type: 'yugioh' };
+        let secondPart = parts[1];
+        // Normalize only the trailing digits which are most prone to OCR errors
+        let normalizedSecond = secondPart.replace(/[0-9OILS BZG]+$/, (m) => normalizeDigits(m.replace(/\s/g, '')));
+        return { code: parts[0] + '-' + normalizedSecond, type: 'yugioh' };
     }
 
-    // 2. Check for Pokemon Promos / Set prefix (e.g. SWSH123, PAR 123)
-    const prefixes = "SWSH|SM|XY|BW|HGSS|DP|PVP|TG|GG|SV|PAR|OBF|MEW|PAL|SVI|BST|CRE|EVS|FST|BRS|ASR|LOR|SIT|CRZ|PGO|SVP|WP|PR|CEL|GEN|SHF|HF|DET";
-    const regexPK_Prefix = new RegExp(`(${prefixes})[ \\-]?(\\d|[IOLSBZG])+`, 'i');
-    const matchPrefix = cleanText.match(regexPK_Prefix);
-
-    // 3. Check for Pokemon Number/Number (e.g. 123/456)
-    const regexPK_Fraction = /(\d|[IOLSBZG])+(\/|\|)(\d|[IOLSBZG])+/;
+    // 2. Pokemon (58/102, TG17/TG30, SWSH020)
+    const regexPK_Fraction = /\b([A-Z0-9]{1,5})[\/\|]([A-Z0-9]{1,5})\b/i;
     const matchFraction = cleanText.match(regexPK_Fraction);
 
-    // Prioritize fraction if both found (more specific)
     if (matchFraction) {
-        let match = matchFraction[0].replace(/\|/g, '/');
-        return { code: normalizeNum(match), type: 'pokemon' };
-    } else if (matchPrefix) {
-        let match = matchPrefix[0].toUpperCase().replace(/[ \-]/, '');
-        let prefix = match.match(/[A-Z]+/)[0];
-        let num = match.substring(prefix.length);
-        return { code: prefix + normalizeNum(num), type: 'pokemon' };
+        let n1 = matchFraction[1].toUpperCase();
+        let n2 = matchFraction[2].toUpperCase();
+
+        // Helper to decide if we should normalize (only if it's mostly numeric)
+        const shouldNormalize = (s) => {
+            const digitCount = (s.match(/[0-9]/g) || []).length;
+            const errorProneCount = (s.match(/[OILS BZG]/g) || []).length;
+            return digitCount + errorProneCount >= s.length;
+        };
+
+        if (shouldNormalize(n1)) n1 = normalizeDigits(n1);
+        if (shouldNormalize(n2)) n2 = normalizeDigits(n2);
+
+        return { code: n1 + '/' + n2, type: 'pokemon' };
+    }
+
+    const regexPK_Promo = /\b([A-Z]{2,5})([0-9OILS BZG]{2,3})\b/i;
+    const matchPromo = cleanText.match(regexPK_Promo);
+    if (matchPromo) {
+        let prefix = matchPromo[1].toUpperCase();
+        let num = normalizeDigits(matchPromo[2].toUpperCase().trim());
+        return { code: prefix + num, type: 'pokemon' };
     }
 
     return { code: null, type: null };
@@ -547,23 +582,54 @@ async function saveCard(cardData) {
 async function fetchCardData(code, type) {
     try {
         if (type === 'yugioh') {
-            const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?setcode=${code}`);
+            // YGOPRODeck API uses cardset for set code searches
+            const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${code}`);
             const data = await res.json();
             if (data.data && data.data.length > 0) {
                 const card = data.data[0];
                 return {
                     name: card.name,
                     image_url: card.card_images[0].image_url,
-                    rarity: card.card_sets.find(s => s.set_code === code)?.set_rarity || '',
-                    expansion: card.card_sets.find(s => s.set_code === code)?.set_name || '',
+                    rarity: card.card_sets?.find(s => s.set_code === code)?.set_rarity || '',
+                    expansion: card.card_sets?.find(s => s.set_code === code)?.set_name || '',
                     type: 'yugioh'
                 };
             }
         } else {
-            // Pokemon
-            let res = await fetch(`https://api.tcgdex.net/v2/en/cards/${code.toLowerCase()}`);
-            if (res.ok) {
-                const card = await res.json();
+            // Pokemon - Try api.pokemontcg.io primary
+            let number = code;
+            if (code.includes('/')) {
+                number = code.split('/')[0];
+            }
+
+            try {
+                const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=number:${number}`);
+                const data = await res.json();
+                if (data.data && data.data.length > 0) {
+                    let card = data.data[0];
+                    // If we have a fraction, try to match the total too for better accuracy
+                    if (code.includes('/')) {
+                        const total = code.split('/')[1];
+                        const bestMatch = data.data.find(c => c.set.printedTotal == total);
+                        if (bestMatch) card = bestMatch;
+                    }
+
+                    return {
+                        name: card.name,
+                        image_url: card.images.large,
+                        rarity: card.rarity || '',
+                        expansion: card.set.name || '',
+                        type: 'pokemon'
+                    };
+                }
+            } catch (err) {
+                console.error("Pokemon TCG API Error:", err);
+            }
+
+            // Fallback to tcgdex.net
+            let resFallback = await fetch(`https://api.tcgdex.net/v2/en/cards/${code.toLowerCase()}`);
+            if (resFallback.ok) {
+                const card = await resFallback.json();
                 return {
                     name: card.name,
                     image_url: `${card.image}/high.webp`,
@@ -573,22 +639,24 @@ async function fetchCardData(code, type) {
                 };
             }
 
-            // Try searching by localId if / is present
+            // Try searching by localId on tcgdex
             if (code.includes('/')) {
                 const localId = code.split('/')[0];
                 const resLocal = await fetch(`https://api.tcgdex.net/v2/en/cards?localId=${localId}`);
-                const cards = await resLocal.json();
-                if (cards && cards.length > 0) {
-                    const cardShort = cards[0];
-                    const resFull = await fetch(`https://api.tcgdex.net/v2/en/cards/${cardShort.id}`);
-                    const card = await resFull.json();
-                    return {
-                        name: card.name,
-                        image_url: `${card.image}/high.webp`,
-                        rarity: card.rarity || '',
-                        expansion: card.set.name || '',
-                        type: 'pokemon'
-                    };
+                if (resLocal.ok) {
+                    const cards = await resLocal.json();
+                    if (cards && cards.length > 0) {
+                        const cardShort = cards[0];
+                        const resFull = await fetch(`https://api.tcgdex.net/v2/en/cards/${cardShort.id}`);
+                        const card = await resFull.json();
+                        return {
+                            name: card.name,
+                            image_url: `${card.image}/high.webp`,
+                            rarity: card.rarity || '',
+                            expansion: card.set.name || '',
+                            type: 'pokemon'
+                        };
+                    }
                 }
             }
         }
