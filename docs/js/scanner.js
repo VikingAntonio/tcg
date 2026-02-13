@@ -274,8 +274,8 @@ function detectCard(video) {
         }
     } else {
         lastContourTime = 0;
-        // Fallback: If no card detected for 4 seconds, scan the center area
-        if (now - lastAutoScanTime > 4000) {
+        // Fallback: If no card detected for 1 second, scan the center area
+        if (now - lastAutoScanTime > 1000) {
             lastAutoScanTime = now;
             captureAndProcess(src.clone(), null);
         }
@@ -311,13 +311,13 @@ async function captureAndProcess(src, contour) {
     $('#status-text').text('Identificando...');
     $('#status-container').addClass('status-working');
 
-    // Bottom 30% crop (y from 784 to 1120)
-    let bottomRegion = new cv.Rect(0, 784, 800, 336);
+    // Bottom 45% crop (y from 616 to 1120) to capture YGO set codes
+    let bottomRegion = new cv.Rect(0, 616, 800, 504);
     let bottomMat = warped.roi(bottomRegion);
 
     // Split left/right halves
-    let leftRect = new cv.Rect(0, 0, 400, 336);
-    let rightRect = new cv.Rect(400, 0, 400, 336);
+    let leftRect = new cv.Rect(0, 0, 400, 504);
+    let rightRect = new cv.Rect(400, 0, 400, 504);
     let leftCrop = bottomMat.roi(leftRect);
     let rightCrop = bottomMat.roi(rightRect);
 
@@ -367,30 +367,27 @@ function identifyFromText(text) {
     const normalizeDigits = (s) => s.replace(/O/g, '0').replace(/I/g, '1').replace(/L/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2').replace(/G/g, '6');
 
     // Remove unwanted characters except essential ones for codes
-    const cleanText = text.replace(/[^a-zA-Z0-9\/\-\|]/g, ' ');
+    const cleanText = text.replace(/[^a-zA-Z0-9\/\-\|\s]/g, ' ');
 
-    // 1. Yu-Gi-Oh (Strict regex: MP23-EN001, LOB-005)
-    // Format: [Prefix]-[Optional SubPrefix][Number]
-    const regexYG = /[A-Z0-9]{2,6}-[A-Z0-9]{3,}/i;
+    // 1. Yu-Gi-Oh (Strict regex: MP23-EN001, LOB-005, TDGS-EN078)
+    // Requires hyphen to avoid confusion with Pokemon promos
+    const regexYG = /\b([A-Z0-9]{2,6})-([A-Z0-9]{3,})\b/i;
     const matchYG = cleanText.match(regexYG);
     if (matchYG) {
-        let full = matchYG[0].toUpperCase();
-        let parts = full.split('-');
-        let secondPart = parts[1];
-        // Normalize only the trailing digits which are most prone to OCR errors
-        let normalizedSecond = secondPart.replace(/[0-9OILS BZG]+$/, (m) => normalizeDigits(m.replace(/\s/g, '')));
-        return { code: parts[0] + '-' + normalizedSecond, type: 'yugioh' };
+        let prefix = matchYG[1].toUpperCase();
+        let suffix = matchYG[2].toUpperCase();
+        // Normalize suffix digits which are most prone to OCR errors
+        let normalizedSuffix = suffix.replace(/[0-9OILS BZG]+$/, (m) => normalizeDigits(m.replace(/\s/g, '')));
+        return { code: prefix + '-' + normalizedSuffix, type: 'yugioh' };
     }
 
-    // 2. Pokemon (58/102, TG17/TG30, SWSH020)
+    // 2. Pokemon Fraction (58/102, TG17/TG30)
     const regexPK_Fraction = /\b([A-Z0-9]{1,5})[\/\|]([A-Z0-9]{1,5})\b/i;
     const matchFraction = cleanText.match(regexPK_Fraction);
-
     if (matchFraction) {
         let n1 = matchFraction[1].toUpperCase();
         let n2 = matchFraction[2].toUpperCase();
 
-        // Helper to decide if we should normalize (only if it's mostly numeric)
         const shouldNormalize = (s) => {
             const digitCount = (s.match(/[0-9]/g) || []).length;
             const errorProneCount = (s.match(/[OILS BZG]/g) || []).length;
@@ -403,7 +400,8 @@ function identifyFromText(text) {
         return { code: n1 + '/' + n2, type: 'pokemon' };
     }
 
-    const regexPK_Promo = /\b([A-Z]{2,5})([0-9OILS BZG]{2,3})\b/i;
+    // 3. Pokemon Promo (SWSH020, SWSH 020)
+    const regexPK_Promo = /\b([A-Z]{2,5})[\s]?([0-9OILS BZG]{2,4})\b/i;
     const matchPromo = cleanText.match(regexPK_Promo);
     if (matchPromo) {
         let prefix = matchPromo[1].toUpperCase();
@@ -598,22 +596,21 @@ async function fetchCardData(code, type) {
         } else {
             // Pokemon - Try api.pokemontcg.io primary
             let number = code;
+            let query = "";
             if (code.includes('/')) {
-                number = code.split('/')[0];
+                const parts = code.split('/');
+                number = parts[0];
+                const total = parts[1];
+                query = `number:${number} set.printedTotal:${total}`;
+            } else {
+                query = `number:${number}`;
             }
 
             try {
-                const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=number:${number}`);
+                const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
                 if (data.data && data.data.length > 0) {
                     let card = data.data[0];
-                    // If we have a fraction, try to match the total too for better accuracy
-                    if (code.includes('/')) {
-                        const total = code.split('/')[1];
-                        const bestMatch = data.data.find(c => c.set.printedTotal == total);
-                        if (bestMatch) card = bestMatch;
-                    }
-
                     return {
                         name: card.name,
                         image_url: card.images.large,
