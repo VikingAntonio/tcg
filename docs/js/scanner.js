@@ -196,16 +196,16 @@ function detectCard(video) {
     for (let i = 0; i < contours.size(); ++i) {
         let cnt = contours.get(i);
         let area = cv.contourArea(cnt);
-        if (area > 15000) {
+        if (area > 8000) {
             let peri = cv.arcLength(cnt, true);
             let approx = new cv.Mat();
-            cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+            cv.approxPolyDP(cnt, approx, 0.03 * peri, true);
 
             if (approx.rows === 4) {
                 let rect = cv.boundingRect(approx);
                 let ratio = rect.width / rect.height;
                 // Aspect ratio check (vertical or horizontal)
-                if ((ratio > 0.6 && ratio < 0.85) || (ratio > 1.2 && ratio < 1.6)) {
+                if ((ratio > 0.5 && ratio < 0.95) || (ratio > 1.1 && ratio < 1.8)) {
                     if (area > maxArea) {
                         maxArea = area;
                         maxContour = approx.clone();
@@ -220,7 +220,7 @@ function detectCard(video) {
         const now = Date.now();
         if (!lastContourTime) {
             lastContourTime = now;
-        } else if (now - lastContourTime > 600) {
+        } else if (now - lastContourTime > 400) {
             captureAndProcess(src.clone(), maxContour.clone());
             lastContourTime = 0;
         }
@@ -234,14 +234,19 @@ function detectCard(video) {
 
 async function captureAndProcess(src, contour) {
     let warped = new cv.Mat();
-    let dsize = new cv.Size(300, 420);
+    let gray = new cv.Mat();
+    let dsize = new cv.Size(600, 840);
 
     let corners = getOrderedPoints(contour);
     let srcCoords = cv.matFromArray(4, 1, cv.CV_32FC2, corners);
-    let dstCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 300, 0, 300, 420, 0, 420]);
+    let dstCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 600, 0, 600, 840, 0, 840]);
 
     let M = cv.getPerspectiveTransform(srcCoords, dstCoords);
     cv.warpPerspective(src, warped, M, dsize);
+
+    // Pre-processing
+    cv.cvtColor(warped, gray, cv.COLOR_RGBA2GRAY);
+    cv.threshold(gray, gray, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
 
     cv.imshow('cv-preview', warped);
     $('#cv-preview').show();
@@ -251,13 +256,13 @@ async function captureAndProcess(src, contour) {
 
     // OCR Analysis
     const canvas = document.getElementById('hidden-canvas');
-    cv.imshow(canvas, warped);
+    cv.imshow(canvas, gray);
 
     await initTesseract();
     const { data: { text } } = await tesseractWorker.recognize(canvas);
     await processDetectedText(text);
 
-    warped.delete(); srcCoords.delete(); dstCoords.delete(); M.delete();
+    warped.delete(); gray.delete(); srcCoords.delete(); dstCoords.delete(); M.delete();
     src.delete(); contour.delete();
 }
 
@@ -266,7 +271,7 @@ function identifyFromText(text) {
     const words = cleanText.split(/\s+/);
 
     const regexYG = /[A-Z0-9]+-[A-Z0-9-]+/i;
-    const regexPK1 = /\d+\/\d+/;
+    const regexPK1 = /(\d|[IOLSBZ])+(\/|\|)(\d|[IOLSBZ])+/;
     const regexPK2 = /[A-Z]{2,}\d+/i;
     const regexPK3 = /[A-Z0-9]+\/[A-Z0-9]+/i;
 
@@ -274,7 +279,10 @@ function identifyFromText(text) {
         if (regexYG.test(word)) {
             return { code: word.match(regexYG)[0].toUpperCase(), type: 'yugioh' };
         } else if (regexPK1.test(word)) {
-            return { code: word.match(regexPK1)[0], type: 'pokemon' };
+            let code = word.match(regexPK1)[0]
+                .replace(/\|/g, '/')
+                .replace(/O/g, '0').replace(/I/g, '1').replace(/L/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2');
+            return { code: code, type: 'pokemon' };
         } else if (regexPK2.test(word)) {
             return { code: word.match(regexPK2)[0].toUpperCase(), type: 'pokemon' };
         } else if (regexPK3.test(word)) {
@@ -291,8 +299,30 @@ async function processDetectedText(text) {
         $('#detected-code').text(code);
         await handleFoundCode(code, type);
     } else {
+        const clean = text.trim().replace(/[\n\r]/g, ' ').substring(0, 20);
+        if (clean.length > 3) {
+            $('#detected-code').html(`<span style="opacity: 0.5; font-size: 0.8rem;">? ${clean}</span> <i class="fas fa-edit" style="cursor:pointer; margin-left: 5px;" onclick="promptCorrection('${clean.replace(/'/g, "\\'")}')"></i>`);
+        }
         $('#status-text').text('Escaneando...');
         $('#status-container').removeClass('status-working');
+    }
+}
+
+async function promptCorrection(detectedText) {
+    const { value: correctedCode } = await Swal.fire({
+        title: 'Corregir Código',
+        input: 'text',
+        inputValue: detectedText,
+        inputLabel: 'El scanner no está seguro, corrígelo:',
+        showCancelButton: true,
+        confirmButtonColor: '#00d2ff',
+        background: '#1a1a2e',
+        color: '#fff'
+    });
+
+    if (correctedCode) {
+        const detected = identifyFromText(correctedCode.toUpperCase());
+        await handleFoundCode(detected.code || correctedCode.toUpperCase(), detected.type || 'pokemon');
     }
 }
 
@@ -304,21 +334,10 @@ async function handleFoundCode(code, type) {
     if (cardData) {
         const saved = await saveCard(cardData);
         if (saved) {
-            showToast(cardData);
+            showToast('success', 'Carta Añadida', cardData.name, cardData.image_url);
         }
     } else {
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            background: '#1a1a2e',
-            color: '#fff'
-        });
-        Toast.fire({
-            icon: 'error',
-            title: `No encontrada: ${code}`
-        });
+        showToast('error', 'Error de Búsqueda', `No se encontró la carta ${code}`);
     }
 
     setTimeout(() => {
@@ -492,12 +511,26 @@ async function fetchCardData(code, type) {
     return null;
 }
 
-function showToast(card) {
+function showToast(type, title, message, imageUrl = null) {
     const $toast = $('#result-toast');
-    $('#toast-img').attr('src', card.image_url).show();
-    $('#toast-name').text(card.name);
-    $toast.addClass('active');
-    setTimeout(() => { $toast.removeClass('active'); }, 3000);
+    $toast.removeClass('success error active');
+
+    $('#toast-title').text(title);
+    $('#toast-name').text(message);
+
+    if (imageUrl) {
+        $('#toast-img').attr('src', imageUrl).show();
+        $('#toast-icon-err').hide();
+    } else {
+        $('#toast-img').hide();
+        $('#toast-icon-err').css('display', 'flex');
+    }
+
+    $toast.addClass(type).addClass('active');
+
+    setTimeout(() => {
+        $toast.removeClass('active');
+    }, 3000);
 }
 
 function getOrderedPoints(contour) {
