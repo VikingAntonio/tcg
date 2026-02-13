@@ -1806,3 +1806,35 @@ input:checked + .slider:before {
         display: none; /* Hide theme switcher on very small screens to save space */
     }
 }
+
+/* Delete button for cards and slots - Added by Jules */
+.btn-delete-card-top {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 26px;
+    height: 26px;
+    background: #ff4757 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 100;
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    transition: all 0.2s ease;
+    padding: 0 !important;
+}
+
+.btn-delete-card-top:hover {
+    background: #ff6b81 !important;
+    transform: scale(1.15);
+    box-shadow: 0 0 12px rgba(255, 71, 87, 0.6);
+}
+
+.btn-delete-card-top i {
+    font-size: 14px;
+    pointer-events: none;
+}
