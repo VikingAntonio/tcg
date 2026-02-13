@@ -11,8 +11,6 @@
     <script src="js/supabase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- OpenCV.js -->
-    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();"></script>
     <style>
         :root {
             --glass-bg: rgba(255, 255, 255, 0.05);
@@ -127,6 +125,13 @@
             object-fit: cover;
         }
 
+        #file-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+        }
+
         .scan-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -137,26 +142,26 @@
         }
 
         .scan-frame {
-            width: 65%;
-            height: 85%;
-            border: 1px solid rgba(0, 210, 255, 0.3);
-            border-radius: 20px;
+            width: 80%;
+            height: 15%;
+            border: 2px solid var(--accent-color);
+            border-radius: 15px;
             box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
             position: relative;
         }
 
-        .corner-tl { position: absolute; top: -5px; left: -5px; width: 30px; height: 30px; border-top: 5px solid var(--accent-color); border-left: 5px solid var(--accent-color); border-radius: 10px 0 0 0; }
-        .corner-tr { position: absolute; top: -5px; right: -5px; width: 30px; height: 30px; border-top: 5px solid var(--accent-color); border-right: 5px solid var(--accent-color); border-radius: 0 10px 0 0; }
-        .corner-bl { position: absolute; bottom: -5px; left: -5px; width: 30px; height: 30px; border-bottom: 5px solid var(--accent-color); border-left: 5px solid var(--accent-color); border-radius: 0 0 0 10px; }
-        .corner-br { position: absolute; bottom: -5px; right: -5px; width: 30px; height: 30px; border-bottom: 5px solid var(--accent-color); border-right: 5px solid var(--accent-color); border-radius: 0 0 10px 0; }
+        .corner-tl { position: absolute; top: -5px; left: -5px; width: 20px; height: 20px; border-top: 4px solid var(--accent-color); border-left: 4px solid var(--accent-color); border-radius: 8px 0 0 0; }
+        .corner-tr { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; border-top: 4px solid var(--accent-color); border-right: 4px solid var(--accent-color); border-radius: 0 8px 0 0; }
+        .corner-bl { position: absolute; bottom: -5px; left: -5px; width: 20px; height: 20px; border-bottom: 4px solid var(--accent-color); border-left: 4px solid var(--accent-color); border-radius: 0 0 0 8px; }
+        .corner-br { position: absolute; bottom: -5px; right: -5px; width: 20px; height: 20px; border-bottom: 4px solid var(--accent-color); border-right: 4px solid var(--accent-color); border-radius: 0 0 8px 0; }
 
         .scanning-line {
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 3px;
+            height: 2px;
             background: var(--accent-color);
-            box-shadow: 0 0 20px var(--accent-color);
-            animation: scan-anim 2.5s infinite ease-in-out;
+            box-shadow: 0 0 15px var(--accent-color);
+            animation: scan-anim 2s infinite ease-in-out;
             opacity: 0;
         }
 
@@ -200,23 +205,25 @@
 
         .controls-row {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             margin-top: 10px;
             width: 100%;
+            flex-wrap: wrap;
         }
 
         .btn-main {
             flex: 1;
-            padding: 16px;
-            border-radius: 16px;
+            min-width: 140px;
+            padding: 14px;
+            border-radius: 14px;
             border: none;
             font-weight: 800;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             transition: all 0.2s;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -246,18 +253,6 @@
             z-index: 100;
         }
         .back-btn:hover { background: rgba(255,255,255,0.2); }
-
-        #cv-preview {
-            position: absolute;
-            bottom: 15px; right: 15px;
-            width: 100px;
-            height: 140px;
-            border: 2px solid var(--accent-color);
-            border-radius: 10px;
-            background: #000;
-            display: none;
-            z-index: 10;
-        }
 
         .result-toast {
             position: fixed;
@@ -327,7 +322,7 @@
 
         <div class="viewport-container" id="scanner-viewport">
             <video id="video-preview" autoplay playsinline muted></video>
-            <canvas id="overlay-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></canvas>
+            <img id="file-preview" src="">
             <div class="scan-overlay">
                 <div class="scan-frame">
                     <div class="corner-tl"></div>
@@ -337,26 +332,30 @@
                     <div class="scanning-line"></div>
                 </div>
             </div>
-            <canvas id="cv-preview"></canvas>
         </div>
 
         <div class="glass-panel status-panel" id="status-container">
             <div style="display: flex; align-items: center;">
                 <span class="status-dot"></span>
-                <span id="status-text">Cargando motor...</span>
+                <span id="status-text">Motor Listo</span>
             </div>
             <div id="detected-code" style="color: var(--accent-color); font-family: monospace; font-size: 1rem; font-weight: bold;"></div>
         </div>
 
         <div class="controls-row">
-            <button id="btn-toggle-scan" class="btn-main btn-primary" disabled>
-                <i class="fas fa-play"></i> Iniciar Scanner
+            <button id="btn-toggle-scan" class="btn-main btn-primary">
+                <i class="fas fa-camera"></i> Cámara
+            </button>
+            <button id="btn-upload" class="btn-main btn-secondary">
+                <i class="fas fa-upload"></i> Subir Imagen
             </button>
             <button id="btn-manual" class="btn-main btn-secondary">
                 <i class="fas fa-keyboard"></i> Manual
             </button>
         </div>
     </div>
+
+    <input type="file" id="file-upload" accept="image/*" style="display: none;">
 
     <div class="result-toast" id="result-toast">
         <div class="toast-img-box">
