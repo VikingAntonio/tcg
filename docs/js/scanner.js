@@ -44,7 +44,7 @@ $(document).ready(async function() {
         });
 
         if (code) {
-            await processDetectedText(code.toUpperCase());
+            await handleFoundCode(code.toUpperCase().trim());
         }
     });
 });
@@ -113,7 +113,7 @@ async function initTesseract() {
     $('#status-text').text('Iniciando OCR...');
     tesseractWorker = await Tesseract.createWorker('eng');
     await tesseractWorker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-'
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- '
     });
     $('#status-text').text('Motor Listo');
     $('#status-container').addClass('status-ready');
@@ -122,7 +122,7 @@ async function initTesseract() {
 async function startCamera() {
     try {
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+            video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
         });
         const video = document.getElementById('video-preview');
         video.srcObject = stream;
@@ -188,42 +188,35 @@ function startScanningLoop() {
         }
 
         startScanningLoop();
-    }, 1500); // Scan every 1.5 seconds
+    }, 1200);
 }
 
 async function captureAndProcessFrame(video) {
     const canvas = document.getElementById('hidden-canvas');
     const ctx = canvas.getContext('2d');
 
-    // We want to capture the central slit area
-    // The slit in UI is 80% width, 15% height
     const vW = video.videoWidth;
     const vH = video.videoHeight;
 
-    // Calculate crop coordinates based on video dimensions
-    // Assuming video is shown in a 1:1 container with object-fit: cover
     let cropW, cropH, cropX, cropY;
 
     if (vW > vH) {
-        // Landscape: height is matched to container height
-        cropH = vH * 0.15;
-        cropW = vH * 0.80; // 80% of the visible width (which is vH)
-        cropX = (vW - vH) / 2 + (vH * 0.10); // Center + 10% offset
-        cropY = vH * 0.425; // Centered vertically (0.5 - 0.15/2)
+        cropH = vH * 0.85;
+        cropW = vH * 0.75;
+        cropX = (vW - vH) / 2 + (vH * 0.125);
+        cropY = vH * 0.075;
     } else {
-        // Portrait: width is matched to container width
-        cropW = vW * 0.80;
-        cropH = vW * 0.15;
-        cropX = vW * 0.10;
-        cropY = (vH - vW) / 2 + (vW * 0.425);
+        cropW = vW * 0.75;
+        cropH = vW * 0.85;
+        cropX = vW * 0.125;
+        cropY = (vH - vW) / 2 + vW * 0.075;
     }
 
-    canvas.width = 600; // Fixed width for OCR optimization
-    canvas.height = 112; // 600 * 0.15/0.80 = 112.5
+    canvas.width = 800;
+    canvas.height = 1100;
 
     ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
 
-    // Apply some basic preprocessing
     preprocessCanvas(canvas);
 
     $('#status-text').text('Identificando...');
@@ -238,14 +231,10 @@ function preprocessCanvas(canvas) {
     const data = imageData.data;
 
     for (let i = 0; i < data.length; i += 4) {
-        // Grayscale
         const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        // Increase contrast
-        const contrast = 1.5;
-        const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-        const newValue = factor * (avg - 128) + 128;
-
-        data[i] = data[i + 1] = data[i + 2] = newValue;
+        const threshold = 128;
+        const v = avg > threshold ? 255 : 0;
+        data[i] = data[i+1] = data[i+2] = v;
     }
     ctx.putImageData(imageData, 0, 0);
 }
@@ -261,27 +250,75 @@ async function processImage(imageOrCanvas) {
     }
 }
 
+function smartNormalize(s) {
+    // Only normalize if it looks like it should be mostly numeric
+    const digitCount = (s.match(/[0-9]/g) || []).length;
+    const letterCount = (s.match(/[A-Z]/g) || []).length;
+
+    if (digitCount >= letterCount) {
+        return s.replace(/O|Q/g, '0')
+                .replace(/I|L|T/g, '1')
+                .replace(/Z/g, '2')
+                .replace(/E/g, '3')
+                .replace(/A/g, '4')
+                .replace(/S/g, '5')
+                .replace(/G/g, '6')
+                .replace(/B/g, '8')
+                .replace(/\s/g, '');
+    }
+    return s.replace(/\s/g, '');
+}
+
 function identifyFromText(text) {
-    const cleanText = text.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase();
+    const lines = text.toUpperCase().split('\n');
+    let results = [];
 
-    // Specific regex patterns from prompt
-    const regexes = [
-        // Yu-Gi-Oh: LOB-005, SDY-001, MP23-EN001
-        /\b([A-Z0-9]{3,5}-[A-Z]{0,2}\d{3,5})\b/i,
-        // Pokémon Fraction: 58/102, 123/198, TG17/TG30
-        /\b([A-Z0-9]{1,5}\/[A-Z0-9]{1,5})\b/i,
-        // Pokémon Promo: SWSH020
-        /\b([A-Z]{2,5}\d{3,5})\b/i
-    ];
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
 
-    for (const regex of regexes) {
-        const match = cleanText.match(regex);
-        if (match) {
-            return { code: match[1].replace(/\s/g, ''), type: regex.toString().includes('-') ? 'yugioh' : 'pokemon' };
+        // 1. Yu-Gi-Oh: [SET]-[LANG][ID]
+        // Allow broad alphanumeric for prefix and suffix
+        const regexYG = /\b([A-Z0-9]{3,6})[\-\s]([A-Z0-9]{3,8})\b/i;
+        const matchYG = line.match(regexYG);
+        if (matchYG) {
+            let prefix = matchYG[1];
+            let suffix = matchYG[2];
+
+            // For Yu-Gi-Oh suffix, language is usually 2 letters
+            let lang = "";
+            let idPart = suffix;
+            if (/^[A-Z]{2}[A-Z0-9]{1,}/.test(suffix)) {
+                lang = suffix.substring(0, 2);
+                idPart = suffix.substring(2);
+            }
+
+            let normalizedID = smartNormalize(idPart);
+            results.push({ code: prefix + '-' + lang + normalizedID, type: 'yugioh' });
+        }
+
+        // 2. Pokémon Fraction
+        const regexPK_F = /\b([A-Z0-9]{1,5})\/([A-Z0-9]{1,5})\b/i;
+        const matchPK_F = line.match(regexPK_F);
+        if (matchPK_F) {
+            let n1 = smartNormalize(matchPK_F[1]);
+            let n2 = smartNormalize(matchPK_F[2]);
+            results.push({ code: n1 + '/' + n2, type: 'pokemon' });
+        }
+
+        // 3. Pokémon Promo
+        const regexPK_P = /\b([A-Z]{2,5})[\s]?([0-9OILS BZGEA]{2,5})\b/i;
+        const matchPK_P = line.match(regexPK_P);
+        if (matchPK_P) {
+            let prefix = matchPK_P[1];
+            if (!['BASIC', 'STAGE', 'HP', 'NO', 'DNA'].includes(prefix)) {
+                let num = smartNormalize(matchPK_P[2]);
+                results.push({ code: prefix + num, type: 'pokemon' });
+            }
         }
     }
 
-    return { code: null, type: null };
+    return results.length > 0 ? results[0] : { code: null, type: null };
 }
 
 async function processDetectedText(text) {
@@ -289,35 +326,43 @@ async function processDetectedText(text) {
 
     if (code) {
         $('#detected-code').text(code);
-        await handleFoundCode(code, type);
-    } else {
-        const raw = text.trim().replace(/[\n\r]/g, ' ').substring(0, 30);
-        if (raw.length > 3) {
-            $('#detected-code').html(`<span style="opacity: 0.5; font-size: 0.8rem;">? ${raw}</span> <i class="fas fa-edit" style="cursor:pointer; margin-left: 5px;" onclick="promptCorrection('${raw.replace(/'/g, "\\'")}')"></i>`);
-
-            // If it's a camera scan, we don't auto-popup to avoid annoyance, but if it's a file upload, we might
-            if (!$('#file-preview').is(':visible')) {
-                 $('#status-text').text('Escaneando...');
-                 $('#status-container').removeClass('status-working');
-            } else {
-                Swal.fire({
-                    title: 'Código no detectado',
-                    text: 'No pudimos encontrar un código válido. ¿Quieres ingresarlo manualmente?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, editar',
-                    cancelButtonText: 'No'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        promptCorrection(raw);
-                    }
-                });
-            }
-        } else {
-            $('#status-text').text('Escaneando...');
-            $('#status-container').removeClass('status-working');
-            $('#detected-code').text('');
+        const success = await handleFoundCode(code, type);
+        if (!success && code) {
+             showManualPrompt(code, text);
         }
+    } else {
+        const raw = text.trim().replace(/[\n\r]/g, ' ').substring(0, 40);
+        if (raw.length > 5) {
+            $('#detected-code').html(`<span style="opacity: 0.5; font-size: 0.8rem;">? ${raw}</span> <i class="fas fa-edit" style="cursor:pointer; margin-left: 5px;" onclick="promptCorrection('${raw.replace(/'/g, "\\'")}')"></i>`);
+            if ($('#file-preview').is(':visible')) {
+                showManualPrompt(null, text);
+            }
+        }
+
+        $('#status-text').text(isScanning ? 'Escaneando...' : 'Listo');
+        $('#status-container').removeClass('status-working');
+    }
+}
+
+async function showManualPrompt(failedCode, rawText) {
+    if (window.isPrompting) return;
+    window.isPrompting = true;
+
+    const title = failedCode ? `No se encontró ${failedCode}` : 'Código no detectado';
+    const msg = failedCode ? 'El código parece correcto pero no está en la base de datos. ¿Deseas corregirlo?' : 'No pudimos encontrar un código. ¿Deseas ingresarlo manualmente?';
+
+    const { isConfirmed } = await Swal.fire({
+        title: title,
+        text: msg,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, editar',
+        cancelButtonText: 'No'
+    });
+
+    window.isPrompting = false;
+    if (isConfirmed) {
+        promptCorrection(failedCode || rawText.substring(0, 20));
     }
 }
 
@@ -334,73 +379,75 @@ async function promptCorrection(detectedText) {
     });
 
     if (correctedCode) {
-        const { code, type } = identifyFromText(correctedCode);
-        await handleFoundCode(code || correctedCode.toUpperCase(), type || 'pokemon');
+        await handleFoundCode(correctedCode.toUpperCase().trim());
     }
 }
 
-async function handleFoundCode(code, type) {
-    if (window.lastProcessedCode === code) return;
+async function handleFoundCode(code, type = null) {
+    if (window.lastProcessedCode === code) return true;
     window.lastProcessedCode = code;
 
     $('#status-text').text('Buscando...');
+
+    if (!type) {
+        if (code.includes('-')) type = 'yugioh';
+        else if (code.includes('/') || /^[A-Z]{2,}\d+/.test(code)) type = 'pokemon';
+        else type = 'pokemon';
+    }
+
     const cardData = await fetchCardData(code, type);
 
     if (cardData) {
         const saved = await saveCard(cardData);
         if (saved) {
             showToast('success', 'Carta Añadida', cardData.name, cardData.image_url);
+            setTimeout(() => { window.lastProcessedCode = null; }, 4000);
+            return true;
         }
-    } else {
-        showToast('error', 'No encontrado', `No se encontró la carta ${code}`);
     }
 
-    setTimeout(() => {
-        window.lastProcessedCode = null;
-        if (isScanning) {
-            $('#status-text').text('Escaneando...');
-            $('#status-container').removeClass('status-working');
-            $('#detected-code').text('');
-        } else {
-            $('#status-text').text('Listo');
-            $('#status-container').removeClass('status-working');
-        }
-    }, 4000);
+    setTimeout(() => { window.lastProcessedCode = null; }, 2000);
+    return false;
 }
 
 async function fetchCardData(code, type) {
     try {
         if (type === 'yugioh') {
-            const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${code}`);
+            const cleanCode = code.replace(/\s/g, '-').replace(/-{2,}/g, '-');
+            const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(cleanCode)}`);
             const data = await res.json();
             if (data.data && data.data.length > 0) {
                 const card = data.data[0];
+                const setInfo = card.card_sets?.find(s => s.set_code === cleanCode) || card.card_sets?.[0];
                 return {
                     name: card.name,
                     image_url: card.card_images[0].image_url,
-                    rarity: card.card_sets?.find(s => s.set_code === code)?.set_rarity || '',
-                    expansion: card.card_sets?.find(s => s.set_code === code)?.set_name || '',
+                    rarity: setInfo?.set_rarity || '',
+                    expansion: setInfo?.set_name || '',
                     type: 'yugioh'
                 };
             }
         } else {
-            // Pokemon
-            let query = code.includes('/') ? `number:${code.split('/')[0]} set.printedTotal:${code.split('/')[1]}` : `number:${code}`;
-            const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-
-            if (data.data && data.data.length > 0) {
-                let card = data.data[0];
-                return {
-                    name: card.name,
-                    image_url: card.images.large,
-                    rarity: card.rarity || '',
-                    expansion: card.set.name || '',
-                    type: 'pokemon'
-                };
+            let number, total;
+            if (code.includes('/')) {
+                [number, total] = code.split('/');
+                const query = `number:${number} set.printedTotal:${total}`;
+                const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if (data.data && data.data.length > 0) return formatPokemonCard(data.data[0]);
             }
 
-            // Fallback tcgdex
+            number = code.includes('/') ? code.split('/')[0] : code;
+            const resNum = await fetch(`https://api.pokemontcg.io/v2/cards?q=number:${number}`);
+            const dataNum = await resNum.json();
+            if (dataNum.data && dataNum.data.length > 0) {
+                if (code.includes('/')) {
+                    const bestMatch = dataNum.data.find(c => c.set.printedTotal == code.split('/')[1]) || dataNum.data[0];
+                    return formatPokemonCard(bestMatch);
+                }
+                return formatPokemonCard(dataNum.data[0]);
+            }
+
             const resFb = await fetch(`https://api.tcgdex.net/v2/en/cards/${code.toLowerCase()}`);
             if (resFb.ok) {
                 const card = await resFb.json();
@@ -419,14 +466,21 @@ async function fetchCardData(code, type) {
     return null;
 }
 
+function formatPokemonCard(card) {
+    return {
+        name: card.name,
+        image_url: card.images.large,
+        rarity: card.rarity || '',
+        expansion: card.set.name || '',
+        type: 'pokemon'
+    };
+}
+
 async function saveCard(cardData) {
     const targetType = $('#select-target-type').val();
     const destId = $('#select-dest').val();
 
-    if (!destId) {
-        Swal.fire('Error', 'Selecciona un destino primero', 'error');
-        return false;
-    }
+    if (!destId) return false;
 
     try {
         if (targetType === 'album') {
