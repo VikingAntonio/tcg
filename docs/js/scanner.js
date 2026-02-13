@@ -311,15 +311,9 @@ async function captureAndProcess(src, contour) {
     $('#status-text').text('Identificando...');
     $('#status-container').addClass('status-working');
 
-    // Bottom 45% crop (y from 616 to 1120) to capture YGO set codes
-    let bottomRegion = new cv.Rect(0, 616, 800, 504);
-    let bottomMat = warped.roi(bottomRegion);
-
-    // Split left/right halves
-    let leftRect = new cv.Rect(0, 0, 400, 504);
-    let rightRect = new cv.Rect(400, 0, 400, 504);
-    let leftCrop = bottomMat.roi(leftRect);
-    let rightCrop = bottomMat.roi(rightRect);
+    // Bottom 70% crop (y from 336 to 1120) to capture codes above text box and in corners
+    let scanRegion = new cv.Rect(0, 336, 800, 784);
+    let scanMat = warped.roi(scanRegion);
 
     const processForOCR = (mat) => {
         let gray = new cv.Mat();
@@ -336,29 +330,19 @@ async function captureAndProcess(src, contour) {
         return thresh;
     };
 
-    let leftProcessed = processForOCR(leftCrop);
-    let rightProcessed = processForOCR(rightCrop);
+    let processed = processForOCR(scanMat);
 
     await initTesseract();
     const canvas = document.getElementById('hidden-canvas');
-    let combinedText = "";
 
-    // OCR Left
-    cv.imshow(canvas, leftProcessed);
-    const { data: { text: textL } } = await tesseractWorker.recognize(canvas);
-    combinedText += textL + " ";
+    cv.imshow(canvas, processed);
+    const { data: { text } } = await tesseractWorker.recognize(canvas);
 
-    // OCR Right
-    cv.imshow(canvas, rightProcessed);
-    const { data: { text: textR } } = await tesseractWorker.recognize(canvas);
-    combinedText += textR;
-
-    await processDetectedText(combinedText);
+    await processDetectedText(text);
 
     // Deallocate everything
-    leftProcessed.delete(); rightProcessed.delete();
-    leftCrop.delete(); rightCrop.delete();
-    bottomMat.delete();
+    processed.delete();
+    scanMat.delete();
     warped.delete();
     src.delete(); if (contour) contour.delete();
 }
@@ -370,15 +354,22 @@ function identifyFromText(text) {
     const cleanText = text.replace(/[^a-zA-Z0-9\/\-\|\s]/g, ' ');
 
     // 1. Yu-Gi-Oh (Strict regex: MP23-EN001, LOB-005, TDGS-EN078)
-    // Requires hyphen to avoid confusion with Pokemon promos
-    const regexYG = /\b([A-Z0-9]{2,6})-([A-Z0-9]{3,})\b/i;
+    // We allow hyphen or space (which we convert to hyphen). Suffix must end in digit-like chars.
+    const regexYG = /\b([A-Z0-9]{2,6})[\-\s]([A-Z]{0,3}[0-9OILS BZG]{3,})\b/i;
     const matchYG = cleanText.match(regexYG);
     if (matchYG) {
         let prefix = matchYG[1].toUpperCase();
         let suffix = matchYG[2].toUpperCase();
-        // Normalize suffix digits which are most prone to OCR errors
-        let normalizedSuffix = suffix.replace(/[0-9OILS BZG]+$/, (m) => normalizeDigits(m.replace(/\s/g, '')));
-        return { code: prefix + '-' + normalizedSuffix, type: 'yugioh' };
+
+        // Exclude common card text and Pokemon promos
+        const isPromo = /^(SWSH|SM|XY|BW|HGSS|POP|PROMO)$/i.test(prefix) && /^[0-9OILS BZG]+$/.test(suffix);
+        const isCommonWord = /^(TRAP|SPELL|MAGIC|CARD|TYPE)$/i.test(prefix) || /^(TRAP|SPELL|MAGIC|CARD|TYPE)$/i.test(suffix);
+
+        if (!isPromo && !isCommonWord) {
+            // Normalize suffix digits which are most prone to OCR errors
+            let normalizedSuffix = suffix.replace(/[0-9OILS BZG]+$/, (m) => normalizeDigits(m.replace(/\s/g, '')));
+            return { code: prefix + '-' + normalizedSuffix, type: 'yugioh' };
+        }
     }
 
     // 2. Pokemon Fraction (58/102, TG17/TG30)
