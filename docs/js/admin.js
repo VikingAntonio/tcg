@@ -1075,16 +1075,16 @@ async function loadDeckCards(deckId) {
     const $tempContainer = $('<div></div>');
     cards.forEach(card => {
         const $cardItem = $(`
-            <div class="album-card deck-card-item" style="cursor:pointer;">
+            <div class="album-card deck-card-item" style="cursor:pointer; position:relative;">
+                <div class="btn-delete-card-top btn-delete-deck-card"><i class="fas fa-times"></i></div>
                 <img src="${card.image_url}" style="width:100%; height:150px; object-fit:contain;">
                 <div style="font-size: 12px; margin-top: 5px; color: #aaa; text-align: center;">${card.name || 'Sin nombre'}</div>
-                <button class="btn btn-danger btn-sm btn-delete-deck-card" style="margin-top:10px;">Eliminar</button>
             </div>
         `);
 
         $cardItem.click((e) => {
             e.preventDefault();
-            if ($(e.target).hasClass('btn-delete-deck-card')) return;
+            if ($(e.target).closest('.btn-delete-deck-card').length) return;
             editDeckCard(card);
         });
 
@@ -1093,9 +1093,13 @@ async function loadDeckCards(deckId) {
             e.stopPropagation();
             const res = await Swal.fire({
                 title: '¿Eliminar carta?',
+                text: "¿Estás seguro de que quieres eliminar esta carta del deck?",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí'
+                confirmButtonColor: '#ff4757',
+                cancelButtonColor: '#333',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
             });
             if (res.isConfirmed) {
                 await _supabase.from('deck_cards').delete().eq('id', card.id);
@@ -1295,6 +1299,37 @@ async function loadAlbumPages(albumId, isInitial = true) {
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
             if (slotData && slotData.image_url) {
                 $slot.append(`<img src="${slotData.image_url}" class="tcg-card">`);
+
+                // Add Delete Button (Jules)
+                const $btnDelete = $('<div class="btn-delete-card-top"><i class="fas fa-times"></i></div>');
+                $btnDelete.click(async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const res = await Swal.fire({
+                        title: '¿Eliminar carta?',
+                        text: "¿Estás seguro de que quieres quitar esta carta del álbum?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ff4757',
+                        cancelButtonColor: '#333',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    });
+                    if (res.isConfirmed) {
+                        const { error } = await _supabase
+                            .from('card_slots')
+                            .delete()
+                            .eq('page_id', page.id)
+                            .eq('slot_index', i);
+
+                        if (error) {
+                            Swal.fire('Error', 'No se pudo eliminar la carta', 'error');
+                        } else {
+                            loadAlbumPages(albumId, false);
+                        }
+                    }
+                });
+                $slot.append($btnDelete);
             } else {
                 $slot.append('<div style="color:#444; font-size:10px; text-align:center; padding-top:10px;">Vacío</div>');
             }
