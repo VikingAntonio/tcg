@@ -148,6 +148,7 @@ function stopScanner() {
 
 // OpenCV Engine Logic
 let lastContourTime = 0;
+let lastAutoScanTime = Date.now();
 let tesseractWorker = null;
 
 async function initTesseract() {
@@ -176,6 +177,39 @@ function processVideo() {
     requestAnimationFrame(loop);
 }
 
+function drawFeedback(maxContour, video) {
+    const canvas = document.getElementById('overlay-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = video.clientWidth;
+    canvas.height = video.clientHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (maxContour) {
+        const scaleX = canvas.width / video.videoWidth;
+        const scaleY = canvas.height / video.videoHeight;
+
+        ctx.strokeStyle = '#00d2ff';
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        for (let i = 0; i < maxContour.rows; i++) {
+            let x = maxContour.data32S[i * 2] * scaleX;
+            let y = maxContour.data32S[i * 2 + 1] * scaleY;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Glow effect
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#00d2ff';
+        ctx.stroke();
+    }
+}
+
 function detectCard(video) {
     let src = cv.imread(video);
     let gray = new cv.Mat();
@@ -186,7 +220,13 @@ function detectCard(video) {
 
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-    cv.Canny(blurred, edges, 75, 200);
+
+    // Multi-approach detection: Canny + Thresholding
+    let thresh = new cv.Mat();
+    cv.adaptiveThreshold(gray, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
+
+    cv.Canny(blurred, edges, 50, 150);
+    cv.add(edges, thresh, edges); // Combine for better edges
 
     cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
@@ -196,18 +236,20 @@ function detectCard(video) {
     for (let i = 0; i < contours.size(); ++i) {
         let cnt = contours.get(i);
         let area = cv.contourArea(cnt);
-        if (area > 8000) {
+        if (area > 10000) {
             let peri = cv.arcLength(cnt, true);
             let approx = new cv.Mat();
-            cv.approxPolyDP(cnt, approx, 0.03 * peri, true);
+            cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-            if (approx.rows === 4) {
+            // Allow 4 to 6 points to be more lenient with rounded corners/sleeves
+            if (approx.rows >= 4 && approx.rows <= 6) {
                 let rect = cv.boundingRect(approx);
                 let ratio = rect.width / rect.height;
-                // Aspect ratio check (vertical or horizontal)
-                if ((ratio > 0.5 && ratio < 0.95) || (ratio > 1.1 && ratio < 1.8)) {
+                // Standard TCG ratio is ~0.71. Accept 0.6 to 0.85 (vertical)
+                if ((ratio > 0.55 && ratio < 0.9) || (ratio > 1.1 && ratio < 1.8)) {
                     if (area > maxArea) {
                         maxArea = area;
+                        if (maxContour) maxContour.delete();
                         maxContour = approx.clone();
                     }
                 }
@@ -216,79 +258,124 @@ function detectCard(video) {
         }
     }
 
+    drawFeedback(maxContour, video);
+
+    const now = Date.now();
     if (maxContour) {
-        const now = Date.now();
+        lastAutoScanTime = now; // Reset auto-scan timer
         if (!lastContourTime) {
             lastContourTime = now;
-        } else if (now - lastContourTime > 400) {
+        } else if (now - lastContourTime > 600) {
             captureAndProcess(src.clone(), maxContour.clone());
             lastContourTime = 0;
         }
     } else {
         lastContourTime = 0;
+        // Fallback: If no card detected for 4 seconds, scan the center area
+        if (now - lastAutoScanTime > 4000) {
+            lastAutoScanTime = now;
+            captureAndProcess(src.clone(), null);
+        }
     }
 
-    src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete();
+    src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete(); thresh.delete();
     if (maxContour) maxContour.delete();
 }
 
 async function captureAndProcess(src, contour) {
     let warped = new cv.Mat();
     let gray = new cv.Mat();
-    let dsize = new cv.Size(600, 840);
+    let dsize = new cv.Size(800, 1120); // Higher resolution for better OCR
 
-    let corners = getOrderedPoints(contour);
-    let srcCoords = cv.matFromArray(4, 1, cv.CV_32FC2, corners);
-    let dstCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 600, 0, 600, 840, 0, 840]);
+    if (contour) {
+        let corners = getOrderedPoints(contour);
+        let srcCoords = cv.matFromArray(4, 1, cv.CV_32FC2, corners);
+        let dstCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 800, 0, 800, 1120, 0, 1120]);
+        let M = cv.getPerspectiveTransform(srcCoords, dstCoords);
+        cv.warpPerspective(src, warped, M, dsize);
+        srcCoords.delete(); dstCoords.delete(); M.delete();
+    } else {
+        // Center crop if no contour
+        let rect = new cv.Rect(src.cols * 0.2, src.rows * 0.1, src.cols * 0.6, src.rows * 0.8);
+        let crop = src.roi(rect);
+        cv.resize(crop, warped, dsize);
+        crop.delete();
+    }
 
-    let M = cv.getPerspectiveTransform(srcCoords, dstCoords);
-    cv.warpPerspective(src, warped, M, dsize);
-
-    // Pre-processing
+    // Double OCR approach: Normal and Enhanced Contrast
     cv.cvtColor(warped, gray, cv.COLOR_RGBA2GRAY);
-    cv.threshold(gray, gray, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
 
+    // Preview original warped
     cv.imshow('cv-preview', warped);
     $('#cv-preview').show();
 
     $('#status-text').text('Identificando...');
     $('#status-container').addClass('status-working');
 
-    // OCR Analysis
+    // Enhancements for OCR
+    let thresh = new cv.Mat();
+    cv.threshold(gray, thresh, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+
+    // We'll use a larger canvas for OCR
     const canvas = document.getElementById('hidden-canvas');
-    cv.imshow(canvas, gray);
+    cv.imshow(canvas, thresh);
 
     await initTesseract();
-    const { data: { text } } = await tesseractWorker.recognize(canvas);
+    let { data: { text } } = await tesseractWorker.recognize(canvas);
+
+    // If first pass fails, try inverted image
+    let result = identifyFromText(text);
+    if (!result.code) {
+        cv.bitwise_not(thresh, thresh);
+        cv.imshow(canvas, thresh);
+        const { data: { text: textInv } } = await tesseractWorker.recognize(canvas);
+        let resultInv = identifyFromText(textInv);
+        if (resultInv.code) {
+            text = textInv;
+        }
+    }
+
     await processDetectedText(text);
 
-    warped.delete(); gray.delete(); srcCoords.delete(); dstCoords.delete(); M.delete();
-    src.delete(); contour.delete();
+    warped.delete(); gray.delete(); thresh.delete();
+    src.delete(); if (contour) contour.delete();
 }
 
 function identifyFromText(text) {
-    const cleanText = text.replace(/[^a-zA-Z0-9\/\-]/g, ' ');
-    const words = cleanText.split(/\s+/);
+    const normalizeNum = (s) => s.replace(/O/g, '0').replace(/I/g, '1').replace(/L/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2').replace(/G/g, '6');
 
-    const regexYG = /[A-Z0-9]+-[A-Z0-9-]+/i;
-    const regexPK1 = /(\d|[IOLSBZ])+(\/|\|)(\d|[IOLSBZ])+/;
-    const regexPK2 = /[A-Z]{2,}\d+/i;
-    const regexPK3 = /[A-Z0-9]+\/[A-Z0-9]+/i;
+    // Keep spaces to separate codes from other text
+    const cleanText = text.replace(/[^a-zA-Z0-9\/\-\|]/g, ' ');
 
-    for (const word of words) {
-        if (regexYG.test(word)) {
-            return { code: word.match(regexYG)[0].toUpperCase(), type: 'yugioh' };
-        } else if (regexPK1.test(word)) {
-            let code = word.match(regexPK1)[0]
-                .replace(/\|/g, '/')
-                .replace(/O/g, '0').replace(/I/g, '1').replace(/L/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2');
-            return { code: code, type: 'pokemon' };
-        } else if (regexPK2.test(word)) {
-            return { code: word.match(regexPK2)[0].toUpperCase(), type: 'pokemon' };
-        } else if (regexPK3.test(word)) {
-            return { code: word.match(regexPK3)[0].toUpperCase(), type: 'pokemon' };
-        }
+    // 1. Check for Yu-Gi-Oh (e.g. LOB-001, MP23-EN001)
+    const regexYG = /[A-Z0-9]{2,5}-[A-Z0-9]{3,}/i;
+    const matchYG = cleanText.match(regexYG);
+    if (matchYG) {
+        let full = matchYG[0].toUpperCase();
+        let parts = full.split('-');
+        return { code: parts[0] + '-' + normalizeNum(parts[1]), type: 'yugioh' };
     }
+
+    // 2. Check for Pokemon Promos / Set prefix (e.g. SWSH123, PAR 123)
+    const prefixes = "SWSH|SM|XY|BW|HGSS|DP|PVP|TG|GG|SV|PAR|OBF|MEW|PAL|SVI|BST|CRE|EVS|FST|BRS|ASR|LOR|SIT|CRZ|PGO|SVP|WP|PR|CEL|GEN|SHF|HF|DET";
+    const regexPK_Prefix = new RegExp(`(${prefixes})[ \\-]?(\\d|[IOLSBZG])+`, 'i');
+    const matchPrefix = cleanText.match(regexPK_Prefix);
+
+    // 3. Check for Pokemon Number/Number (e.g. 123/456)
+    const regexPK_Fraction = /(\d|[IOLSBZG])+(\/|\|)(\d|[IOLSBZG])+/;
+    const matchFraction = cleanText.match(regexPK_Fraction);
+
+    // Prioritize fraction if both found (more specific)
+    if (matchFraction) {
+        let match = matchFraction[0].replace(/\|/g, '/');
+        return { code: normalizeNum(match), type: 'pokemon' };
+    } else if (matchPrefix) {
+        let match = matchPrefix[0].toUpperCase().replace(/[ \-]/, '');
+        let prefix = match.match(/[A-Z]+/)[0];
+        let num = match.substring(prefix.length);
+        return { code: prefix + normalizeNum(num), type: 'pokemon' };
+    }
+
     return { code: null, type: null };
 }
 
@@ -535,8 +622,28 @@ function showToast(type, title, message, imageUrl = null) {
 
 function getOrderedPoints(contour) {
     let pts = [];
-    for (let i = 0; i < 4; i++) {
-        pts.push({ x: contour.data32S[i * 2], y: contour.data32S[i * 2 + 1] });
+    if (contour.rows !== 4) {
+        let rect = cv.minAreaRect(contour);
+        let vertices;
+        try {
+            vertices = cv.rotatedRectPoints(rect);
+        } catch (e) {
+            // Fallback for different OpenCV versions
+            let box = new cv.Mat();
+            cv.boxPoints(rect, box);
+            vertices = [];
+            for (let i = 0; i < 4; i++) {
+                vertices.push({ x: box.data32F[i * 2], y: box.data32F[i * 2 + 1] });
+            }
+            box.delete();
+        }
+        for (let i = 0; i < 4; i++) {
+            pts.push({ x: vertices[i].x, y: vertices[i].y });
+        }
+    } else {
+        for (let i = 0; i < 4; i++) {
+            pts.push({ x: contour.data32S[i * 2], y: contour.data32S[i * 2 + 1] });
+        }
     }
     pts.sort((a, b) => a.y - b.y);
     let top = pts.slice(0, 2).sort((a, b) => a.x - b.x);
