@@ -110,6 +110,22 @@
         </div>
     </div>
 
+    <div id="gltf-overlay" class="overlay">
+        <div class="overlay-content gltf-expanded-content">
+            <span id="close-gltf-overlay" class="close-btn">&times;</span>
+            <model-viewer id="expanded-gltf-viewer"
+                camera-controls
+                auto-rotate
+                shadow-intensity="1"
+                environment-image="neutral"
+                exposure="1.2">
+            </model-viewer>
+            <div class="card-info">
+                <div id="expanded-gltf-name" class="card-name">Nombre del Compañero</div>
+            </div>
+        </div>
+    </div>
+
     <div id="image-overlay" class="overlay">
         <div class="overlay-content">
             <span id="close-btn">&times;</span>

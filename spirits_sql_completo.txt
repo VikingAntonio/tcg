@@ -17,17 +17,18 @@ CREATE TABLE spirits (
     animation_type TEXT DEFAULT 'orbit', -- 'orbit' o 'float'
     particle_asset TEXT DEFAULT 'cerezo.png',
     particle_movement_type TEXT DEFAULT 'falling', -- 'falling' o 'trail'
+    is_public BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Habilitar RLS en la tabla
 ALTER TABLE spirits ENABLE ROW LEVEL SECURITY;
 
--- POLÍTICA: Todos pueden ver los spirits
+-- POLÍTICA: Todos pueden ver los spirits (filtrados si no son admin)
 CREATE POLICY "Everyone can view spirits"
 ON spirits FOR SELECT
 TO public
-USING (true);
+USING (is_public = true OR (EXISTS (SELECT 1 FROM usuarios WHERE role = 'admin')));
 
 -- POLÍTICA: Solo administradores pueden insertar/editar/borrar
 -- NOTA: Esta política asume que usas Supabase Auth.

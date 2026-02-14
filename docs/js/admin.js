@@ -782,6 +782,7 @@ $(document).ready(function() {
         const particleAsset = $('#input-spirit-particle-asset').val() || 'cerezo.png';
         const particleMovement = $('#input-spirit-particle-movement').val();
         const scale = parseFloat($('#input-spirit-scale').val()) || 1.8;
+        const isPublic = $('#input-spirit-public').is(':checked');
 
         if (!name) {
             Swal.fire('Atención', 'El nombre es obligatorio', 'warning');
@@ -837,7 +838,8 @@ $(document).ready(function() {
                 animation_type: animation,
                 particle_asset: particleAsset,
                 particle_movement_type: particleMovement,
-                scale: scale
+                scale: scale,
+                is_public: isPublic
             };
 
             if (gltfUrl) {
@@ -870,14 +872,20 @@ $(document).ready(function() {
         }
     });
 
-    // Toggle Public/Private from list
+    // Toggle Public/Private from list (Albums, Decks, Spirits)
     $(document).on('change', '.toggle-public', async function() {
         const id = $(this).data('id');
         const type = $(this).data('type');
         const isChecked = $(this).is(':checked');
         const $label = $(this).parent().next();
+        const $card = $(this).closest('.album-card, .spirit-card');
 
+        // Optimistic UI update
         $label.text(isChecked ? 'Público' : 'Privado');
+        if ($card.length) {
+            $card.css('transition', 'opacity 0.3s ease');
+            $card.css('opacity', isChecked ? '1' : '0.7');
+        }
 
         const { error } = await _supabase
             .from(type)
@@ -885,15 +893,24 @@ $(document).ready(function() {
             .eq('id', id);
 
         if (error) {
+            console.error('Error updating visibility:', error);
             if (error.code === '42703' || (error.message && error.message.includes('is_public'))) {
-                Swal.fire('Error de Base de Datos', 'La columna "is_public" no existe. Debes ejecutar el script SQL "supabase_setup.sql" en tu panel de Supabase.', 'error');
+                Swal.fire('Error de Base de Datos', 'La columna "is_public" no existe en la tabla ' + type + '.', 'error');
             } else {
-                Swal.fire('Error', 'No se pudo actualizar la visibilidad: ' + (error.message || ''), 'error');
-                console.error(error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'No se pudo actualizar la visibilidad',
+                    icon: 'error',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
             }
             // Revert UI if error
             $(this).prop('checked', !isChecked);
             $label.text(!isChecked ? 'Público' : 'Privado');
+            if ($card.length) $card.css('opacity', !isChecked ? '1' : '0.7');
         }
     });
 });
@@ -944,6 +961,7 @@ function editSpirit(spirit) {
     $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
     $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
     $('#input-spirit-scale').val(spirit.scale || 1.8);
+    $('#input-spirit-public').prop('checked', spirit.is_public !== false);
 
     // Reset file selection for edit (optional)
     droppedGltfFile = null;
@@ -1509,6 +1527,7 @@ async function loadSpirits() {
     spirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
         const isAsh = spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf');
+        const isPublic = spirit.is_public !== false;
 
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}">
@@ -1521,6 +1540,15 @@ async function loadSpirits() {
                     exposure="1.2">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
+                <div style="margin-bottom: 15px; width: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-public" data-id="${spirit.id}" data-type="spirits" ${isPublic ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                        <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
+                    </div>
+                </div>
                 <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                     <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
                         ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}

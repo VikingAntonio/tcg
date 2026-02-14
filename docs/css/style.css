@@ -1838,3 +1838,62 @@ input:checked + .slider:before {
     font-size: 14px;
     pointer-events: none;
 }
+
+/* --- Expanded GLTF Viewer Styles --- */
+#gltf-overlay {
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
+    z-index: 11000; /* Higher than selection modal */
+}
+
+.gltf-expanded-content {
+    width: 90vw;
+    height: 90vh;
+    max-width: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    overflow: visible;
+}
+
+#expanded-gltf-viewer {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#expanded-gltf-name {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 30px;
+    border-radius: 50px;
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    backdrop-filter: blur(5px);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .gltf-expanded-content {
+        width: 95vw;
+        height: 80vh;
+    }
+
+    #expanded-gltf-name {
+        font-size: 1.1rem;
+        bottom: 20px;
+        padding: 8px 20px;
+    }
+}
