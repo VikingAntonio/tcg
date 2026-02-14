@@ -252,6 +252,11 @@ function animate() {
                 character.position.z = 0;
                 character.position.y = Math.sin(time * 2) * 0.4;
                 character.rotation.y += 0.01;
+            } else if (animType === 'float-static') {
+                character.position.x = 0;
+                character.position.z = 0;
+                character.position.y = Math.sin(time * 2) * 0.4;
+                // No rotación en su propio eje
             } else {
                 // Cálculo de posición orbital usando constantes configurables
                 const x = ROTATION_DIRECTION * Math.sin(time * ORBIT_SPEED) * ORBIT_RADIUS;
@@ -266,7 +271,9 @@ function animate() {
 
             // Generación de partículas
             const spawnInterval = window.isAsh ? 0.03 : 0.05;
-            if (time - lastParticleTime > spawnInterval) {
+            const pMovement = (window.currentSpirit && window.currentSpirit.particle_movement_type) || 'falling';
+
+            if (time - lastParticleTime > spawnInterval && pMovement !== 'none') {
                 // Si es Ash (o requiere estela), generamos partículas en la posición previa del orbit
                 if (window.isAsh) {
                     const trailDelay = 0.15; // Retraso de la estela para que se vea por detrás
