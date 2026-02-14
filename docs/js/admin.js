@@ -931,6 +931,22 @@ $(document).ready(function() {
             $label.text(!isChecked ? 'Público' : 'Privado');
         }
     });
+
+    window.editSpirit = function(spirit) {
+        $('#spirit-modal-title').text('Editar Compañero: ' + spirit.name);
+        $('#edit-spirit-id').val(spirit.id);
+        $('#input-spirit-name').val(spirit.name);
+        $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
+        $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
+        $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
+
+        // Reset file selection for edit (optional)
+        droppedGltfFile = null;
+        droppedExtraFiles = [];
+        updateSpiritDropZoneUI(null);
+
+        $('#spirit-upload-modal').addClass('active');
+    }
 });
 
 // Auth Functions
@@ -1647,20 +1663,4 @@ async function loadSlotData(pageId, slotIndex) {
     }
 
     $('#slot-modal').addClass('active');
-}
-
-function editSpirit(spirit) {
-    $('#spirit-modal-title').text('Editar Compañero: ' + spirit.name);
-    $('#edit-spirit-id').val(spirit.id);
-    $('#input-spirit-name').val(spirit.name);
-    $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
-    $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
-    $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
-
-    // Reset file selection for edit (optional)
-    droppedGltfFile = null;
-    droppedExtraFiles = [];
-    updateSpiritDropZoneUI(null);
-
-    $('#spirit-upload-modal').addClass('active');
 }
