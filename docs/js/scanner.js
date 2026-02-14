@@ -448,16 +448,24 @@ async function fetchCardData(code, type) {
                 return formatPokemonCard(dataNum.data[0]);
             }
 
-            const resFb = await fetch(`https://api.tcgdex.net/v2/en/cards/${code.toLowerCase()}`);
-            if (resFb.ok) {
-                const card = await resFb.json();
-                return {
-                    name: card.name,
-                    image_url: `${card.image}/high.webp`,
-                    rarity: card.rarity || '',
-                    expansion: card.set.name || '',
-                    type: 'pokemon'
-                };
+            // TCGdex Multilingual Fallback (English -> Spanish -> Japanese)
+            const langs = ['en', 'es', 'ja'];
+            for (const lang of langs) {
+                try {
+                    const resFb = await fetch(`https://api.tcgdex.net/v2/${lang}/cards/${code.toLowerCase()}`);
+                    if (resFb.ok) {
+                        const card = await resFb.json();
+                        return {
+                            name: card.name,
+                            image_url: `${card.image}/high.webp`,
+                            rarity: card.rarity || '',
+                            expansion: card.set.name || '',
+                            type: 'pokemon'
+                        };
+                    }
+                } catch (e) {
+                    console.warn(`TCGdex search failed for ${lang}:`, e);
+                }
             }
         }
     } catch (err) {
