@@ -99,8 +99,9 @@ function loadSpiritModel() {
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
 
-                // Usamos el multiplicador configurado al inicio del archivo
-                const scale = MODEL_SCALE_MULTIPLIER / maxDim;
+                // Usamos el multiplicador dinámico o el configurado al inicio del archivo
+                const multiplier = (window.currentSpirit && window.currentSpirit.scale) ? window.currentSpirit.scale : MODEL_SCALE_MULTIPLIER;
+                const scale = multiplier / maxDim;
                 character.scale.set(scale, scale, scale);
 
                 const center = box.getCenter(new THREE.Vector3());
