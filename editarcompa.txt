@@ -13,17 +13,46 @@ CARACTERÍSTICAS:
    - Animación: "Flotante (Sin Rotación)" (float-static).
    - Partículas: "Sin Partículas" (none).
 
-CONFIGURACIÓN EN SUPABASE:
---------------------------
-No se requieren cambios estructurales adicionales en Supabase, ya que el sistema utiliza las columnas existentes en la tabla `spirits`.
+CONFIGURACIÓN EN SUPABASE (SQL):
+--------------------------------
+Si la edición no funciona, asegúrate de haber ejecutado este SQL en tu editor de Supabase:
 
-Las columnas utilizadas son:
-- `name` (TEXT)
-- `gltf_url` (TEXT)
-- `texture_url` (TEXT)
-- `animation_type` (TEXT)
-- `particle_asset` (TEXT)
-- `particle_movement_type` (TEXT)
+```sql
+-- 1. Crear tabla si no existe (con columnas de edición)
+CREATE TABLE IF NOT EXISTS spirits (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    gltf_url TEXT NOT NULL,
+    texture_url TEXT,
+    animation_type TEXT DEFAULT 'orbit',
+    particle_asset TEXT DEFAULT 'cerezo.png',
+    particle_movement_type TEXT DEFAULT 'falling',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. Habilitar RLS
+ALTER TABLE spirits ENABLE ROW LEVEL SECURITY;
+
+-- 3. Política de edición para administradores
+DROP POLICY IF EXISTS "Admins can manage spirits" ON spirits;
+CREATE POLICY "Admins can manage spirits"
+ON spirits FOR ALL
+TO public
+USING (
+  EXISTS (
+    SELECT 1 FROM usuarios
+    WHERE role = 'admin'
+  )
+);
+
+-- 4. Asegurar columna en tabla usuarios
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='selected_spirit_id') THEN
+        ALTER TABLE usuarios ADD COLUMN selected_spirit_id BIGINT REFERENCES spirits(id);
+    END IF;
+END $$;
+```
 
 NOTA SOBRE ALMACENAMIENTO:
 --------------------------

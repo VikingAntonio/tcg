@@ -14,6 +14,9 @@ let currentTool = 'brush'; // 'brush' or 'eraser'
 let maskHistory = [];
 const MAX_HISTORY = 20;
 
+let droppedGltfFile = null;
+let droppedExtraFiles = [];
+
 $(document).ready(function() {
     checkSession();
     initTheme();
@@ -697,9 +700,6 @@ $(document).ready(function() {
     });
 
     // --- Spirit Management ---
-    let droppedGltfFile = null;
-    let droppedExtraFiles = [];
-
     function updateDropZoneUI(zoneId, files) {
         const $zone = $(`#${zoneId}`);
         const $fileName = $zone.find('.file-name');
@@ -713,27 +713,6 @@ $(document).ready(function() {
         } else {
             $fileName.text('');
             $zone.find('p').show();
-        }
-    }
-
-    function updateSpiritDropZoneUI(files) {
-        const $zone = $('#drop-zone-spirit');
-        const $fileName = $zone.find('.file-name');
-        if (files && files.length > 0) {
-            let html = "";
-            if (droppedGltfFile) {
-                html += `<div style="color: #00d2ff; font-weight: bold; margin-bottom: 5px;"><i class="fas fa-file-code"></i> Principal: ${droppedGltfFile.name}</div>`;
-            }
-            if (droppedExtraFiles.length > 0) {
-                html += `<div style="font-size: 11px; color: #aaa;"><i class="fas fa-paperclip"></i> ${droppedExtraFiles.length} archivos adicionales</div>`;
-            }
-            $fileName.html(html);
-            $zone.find('p').hide();
-            $zone.find('i.fa-cloud-upload-alt').hide();
-        } else {
-            $fileName.text('');
-            $zone.find('p').show();
-            $zone.find('i.fa-cloud-upload-alt').show();
         }
     }
 
@@ -753,23 +732,6 @@ $(document).ready(function() {
         $(this).removeClass('drag-over');
         if ($(this).hasClass('file-drop-zone')) $(this).removeClass('dragover');
     });
-
-    function processSpiritFiles(files) {
-        const fileArray = Array.from(files);
-        let foundGltf = false;
-
-        fileArray.forEach(file => {
-            const name = file.name.toLowerCase();
-            if (!foundGltf && (name.endsWith('.gltf') || name.endsWith('.glb'))) {
-                droppedGltfFile = file;
-                foundGltf = true;
-            } else {
-                droppedExtraFiles.push(file);
-            }
-        });
-
-        updateSpiritDropZoneUI(fileArray);
-    }
 
     $(document).on('drop', '#drop-zone-spirit', function(e) {
         const files = e.originalEvent.dataTransfer.files;
@@ -931,23 +893,61 @@ $(document).ready(function() {
             $label.text(!isChecked ? 'Público' : 'Privado');
         }
     });
-
-    window.editSpirit = function(spirit) {
-        $('#spirit-modal-title').text('Editar Compañero: ' + spirit.name);
-        $('#edit-spirit-id').val(spirit.id);
-        $('#input-spirit-name').val(spirit.name);
-        $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
-        $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
-        $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
-
-        // Reset file selection for edit (optional)
-        droppedGltfFile = null;
-        droppedExtraFiles = [];
-        updateSpiritDropZoneUI(null);
-
-        $('#spirit-upload-modal').addClass('active');
-    }
 });
+
+function updateSpiritDropZoneUI(files) {
+    const $zone = $('#drop-zone-spirit');
+    const $fileName = $zone.find('.file-name');
+    if (files && files.length > 0) {
+        let html = "";
+        if (droppedGltfFile) {
+            html += `<div style="color: #00d2ff; font-weight: bold; margin-bottom: 5px;"><i class="fas fa-file-code"></i> Principal: ${droppedGltfFile.name}</div>`;
+        }
+        if (droppedExtraFiles.length > 0) {
+            html += `<div style="font-size: 11px; color: #aaa;"><i class="fas fa-paperclip"></i> ${droppedExtraFiles.length} archivos adicionales</div>`;
+        }
+        $fileName.html(html);
+        $zone.find('p').hide();
+        $zone.find('i.fa-cloud-upload-alt').hide();
+    } else {
+        $fileName.text('');
+        $zone.find('p').show();
+        $zone.find('i.fa-cloud-upload-alt').show();
+    }
+}
+
+function processSpiritFiles(files) {
+    const fileArray = Array.from(files);
+    let foundGltf = false;
+
+    fileArray.forEach(file => {
+        const name = file.name.toLowerCase();
+        if (!foundGltf && (name.endsWith('.gltf') || name.endsWith('.glb'))) {
+            droppedGltfFile = file;
+            foundGltf = true;
+        } else {
+            droppedExtraFiles.push(file);
+        }
+    });
+
+    updateSpiritDropZoneUI(fileArray);
+}
+
+function editSpirit(spirit) {
+    $('#spirit-modal-title').text('Editar Compañero: ' + spirit.name);
+    $('#edit-spirit-id').val(spirit.id);
+    $('#input-spirit-name').val(spirit.name);
+    $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
+    $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
+    $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
+
+    // Reset file selection for edit (optional)
+    droppedGltfFile = null;
+    droppedExtraFiles = [];
+    updateSpiritDropZoneUI(null);
+
+    $('#spirit-upload-modal').addClass('active');
+}
 
 // Auth Functions
 function checkSession() {
@@ -1537,7 +1537,7 @@ async function loadSpirits() {
         });
 
         $card.find('.btn-edit-spirit').click(function() {
-            editSpirit(spirit);
+            window.editSpirit(spirit);
         });
 
         $card.find('.btn-select').click(async function() {
