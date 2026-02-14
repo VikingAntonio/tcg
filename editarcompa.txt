@@ -57,3 +57,11 @@ END $$;
 NOTA SOBRE ALMACENAMIENTO:
 --------------------------
 Cuando se edita un compañero y se suben nuevos archivos, estos se guardan en una nueva carpeta dentro del bucket `spirits`. Los archivos antiguos permanecen en el almacenamiento a menos que se elimine el compañero por completo usando el botón "Eliminar" (que limpia todos los archivos asociados).
+
+ACTUALIZACIÓN DE ESCALA (SQL):
+-----------------------------
+Para habilitar la modificación del tamaño de los modelos, ejecuta este SQL:
+
+```sql
+ALTER TABLE spirits ADD COLUMN IF NOT EXISTS scale FLOAT DEFAULT 1.8;
+```

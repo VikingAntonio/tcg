@@ -762,6 +762,7 @@ $(document).ready(function() {
         $('#input-spirit-animation').val('orbit');
         $('#input-spirit-particle-asset').val('cerezo.png');
         $('#input-spirit-particle-movement').val('falling');
+        $('#input-spirit-scale').val(1.8);
         droppedGltfFile = null;
         droppedExtraFiles = [];
         updateSpiritDropZoneUI(null);
@@ -780,6 +781,7 @@ $(document).ready(function() {
         const animation = $('#input-spirit-animation').val();
         const particleAsset = $('#input-spirit-particle-asset').val() || 'cerezo.png';
         const particleMovement = $('#input-spirit-particle-movement').val();
+        const scale = parseFloat($('#input-spirit-scale').val()) || 1.8;
 
         if (!name) {
             Swal.fire('Atención', 'El nombre es obligatorio', 'warning');
@@ -834,7 +836,8 @@ $(document).ready(function() {
                 name: name,
                 animation_type: animation,
                 particle_asset: particleAsset,
-                particle_movement_type: particleMovement
+                particle_movement_type: particleMovement,
+                scale: scale
             };
 
             if (gltfUrl) {
@@ -940,6 +943,7 @@ function editSpirit(spirit) {
     $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
     $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
     $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
+    $('#input-spirit-scale').val(spirit.scale || 1.8);
 
     // Reset file selection for edit (optional)
     droppedGltfFile = null;
