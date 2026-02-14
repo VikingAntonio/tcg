@@ -132,6 +132,28 @@ $(document).ready(async function() {
         if (window.spiritViewer) window.spiritViewer.cleanupAllViewers();
     });
 
+    // --- Expanded GLTF Viewer Logic ---
+    $(document).on('click', '.spirit-card', function() {
+        const gltf = $(this).data('gltf');
+        const name = $(this).data('name');
+
+        if (gltf) {
+            $('#expanded-gltf-viewer').attr('src', gltf);
+            $('#expanded-gltf-name').text(name);
+            $('#gltf-overlay').addClass('active');
+            $('body').addClass('modal-open');
+        }
+    });
+
+    $('#close-gltf-overlay').click(function() {
+        $('#gltf-overlay').removeClass('active');
+        // Clear src to stop rendering/loading
+        $('#expanded-gltf-viewer').attr('src', '');
+        if (!$('#image-overlay').hasClass('active') && !$('#spirit-modal').hasClass('active')) {
+            $('body').removeClass('modal-open');
+        }
+    });
+
     // Spirit Navigation
     $('#btn-prev-spirit-public').click(function() {
         if (!window.allSpirits || window.allSpirits.length <= 1) return;
@@ -813,9 +835,12 @@ async function loadPublicSpirits() {
         return;
     }
 
+    // Filtrar solo públicos
+    const visibleSpirits = spirits.filter(s => s.is_public !== false);
+
     const selectedId = window.currentSpirit ? window.currentSpirit.id : null;
 
-    if (spirits.length === 0) {
+    if (visibleSpirits.length === 0) {
         $('#public-spirits-grid').html('<div class="empty">No hay compañeros disponibles.</div>');
         return;
     }
@@ -825,11 +850,13 @@ async function loadPublicSpirits() {
 
     window.dispatchEvent(new CustomEvent('hide-loading'));
 
-    spirits.forEach(spirit => {
+    visibleSpirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
 
         const $card = $(`
-            <div class="spirit-card ${isSelected ? 'selected' : ''}">
+            <div class="spirit-card ${isSelected ? 'selected' : ''}"
+                 data-gltf="${spirit.gltf_url}"
+                 data-name="${spirit.name}">
                 <div class="badge-selected">Actual</div>
                 <model-viewer
                     src="${spirit.gltf_url}"
@@ -839,6 +866,7 @@ async function loadPublicSpirits() {
                     exposure="1.2">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
+                <div class="zoom-btn" style="display: flex;"><i class="fas fa-search-plus"></i></div>
             </div>
         `);
 
