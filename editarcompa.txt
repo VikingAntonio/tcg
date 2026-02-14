@@ -1,0 +1,30 @@
+SISTEMA DE EDICIÓN DE COMPAÑEROS
+================================
+
+Se ha implementado una nueva funcionalidad para editar los compañeros cargados en el sistema.
+
+CARACTERÍSTICAS:
+----------------
+1. Botón "Editar" en la cuadrícula de compañeros (solo visible para administradores).
+2. Formulario pre-cargado con los datos actuales del compañero.
+3. Posibilidad de actualizar metadatos (Nombre, Animación, Partículas) sin necesidad de volver a subir archivos.
+4. Si se suben nuevos archivos durante la edición, estos reemplazarán las URLs anteriores en la base de datos.
+5. Nuevas opciones de configuración:
+   - Animación: "Flotante (Sin Rotación)" (float-static).
+   - Partículas: "Sin Partículas" (none).
+
+CONFIGURACIÓN EN SUPABASE:
+--------------------------
+No se requieren cambios estructurales adicionales en Supabase, ya que el sistema utiliza las columnas existentes en la tabla `spirits`.
+
+Las columnas utilizadas son:
+- `name` (TEXT)
+- `gltf_url` (TEXT)
+- `texture_url` (TEXT)
+- `animation_type` (TEXT)
+- `particle_asset` (TEXT)
+- `particle_movement_type` (TEXT)
+
+NOTA SOBRE ALMACENAMIENTO:
+--------------------------
+Cuando se edita un compañero y se suben nuevos archivos, estos se guardan en una nueva carpeta dentro del bucket `spirits`. Los archivos antiguos permanecen en el almacenamiento a menos que se elimine el compañero por completo usando el botón "Eliminar" (que limpia todos los archivos asociados).

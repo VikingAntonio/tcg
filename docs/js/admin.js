@@ -794,7 +794,12 @@ $(document).ready(function() {
 
     $('#btn-open-upload-spirit').click(function() {
         // Reset form
+        $('#spirit-modal-title').text('Subir Nuevo Compañero');
+        $('#edit-spirit-id').val('');
         $('#input-spirit-name').val('');
+        $('#input-spirit-animation').val('orbit');
+        $('#input-spirit-particle-asset').val('cerezo.png');
+        $('#input-spirit-particle-movement').val('falling');
         droppedGltfFile = null;
         droppedExtraFiles = [];
         updateSpiritDropZoneUI(null);
@@ -807,71 +812,96 @@ $(document).ready(function() {
 
     $('#btn-save-spirit').click(async function() {
         const name = $('#input-spirit-name').val();
+        const editId = $('#edit-spirit-id').val();
         const gltfFile = droppedGltfFile;
         const extraFiles = droppedExtraFiles;
         const animation = $('#input-spirit-animation').val();
         const particleAsset = $('#input-spirit-particle-asset').val() || 'cerezo.png';
         const particleMovement = $('#input-spirit-particle-movement').val();
 
-        if (!name || !gltfFile) {
-            Swal.fire('Atención', 'Nombre y archivo GLTF son obligatorios', 'warning');
+        if (!name) {
+            Swal.fire('Atención', 'El nombre es obligatorio', 'warning');
+            return;
+        }
+
+        if (!editId && !gltfFile) {
+            Swal.fire('Atención', 'El archivo GLTF es obligatorio para nuevos compañeros', 'warning');
             return;
         }
 
         Swal.fire({
-            title: 'Subiendo Compañero...',
+            title: editId ? 'Actualizando Compañero...' : 'Subiendo Compañero...',
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
         });
 
         try {
-            // 1. Upload into a unique folder to preserve relative paths
-            const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
-
-            // Upload main GLTF
-            const gltfPath = `models/${folderId}/${gltfFile.name}`;
-            const { data: gltfData, error: gltfErr } = await _supabase.storage
-                .from('spirits')
-                .upload(gltfPath, gltfFile);
-
-            if (gltfErr) throw gltfErr;
-            const gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
-
-            // 2. Upload extra files (textures, bin, etc.) into the SAME folder
+            let gltfUrl = null;
             let textureUrl = null;
-            for (const file of extraFiles) {
-                const path = `models/${folderId}/${file.name}`;
-                const { error: extraErr } = await _supabase.storage
-                    .from('spirits')
-                    .upload(path, file);
-                if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
 
-                // If it's an image, we might use it as the main texture if needed
-                if (file.type.startsWith('image/')) {
-                    textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
+            if (gltfFile) {
+                // 1. Upload into a unique folder to preserve relative paths
+                const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+                // Upload main GLTF
+                const gltfPath = `models/${folderId}/${gltfFile.name}`;
+                const { data: gltfData, error: gltfErr } = await _supabase.storage
+                    .from('spirits')
+                    .upload(gltfPath, gltfFile);
+
+                if (gltfErr) throw gltfErr;
+                gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
+
+                // 2. Upload extra files (textures, bin, etc.) into the SAME folder
+                for (const file of extraFiles) {
+                    const path = `models/${folderId}/${file.name}`;
+                    const { error: extraErr } = await _supabase.storage
+                        .from('spirits')
+                        .upload(path, file);
+                    if (extraErr) console.warn("Error subiendo archivo extra:", file.name, extraErr);
+
+                    // If it's an image, we might use it as the main texture if needed
+                    if (file.type.startsWith('image/')) {
+                        textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
+                    }
                 }
             }
 
             // 3. Save to DB
-            const { error: dbErr } = await _supabase
-                .from('spirits')
-                .insert([{
-                    name: name,
-                    gltf_url: gltfUrl,
-                    texture_url: textureUrl,
-                    animation_type: animation,
-                    particle_asset: particleAsset,
-                    particle_movement_type: particleMovement
-                }]);
+            const spiritData = {
+                name: name,
+                animation_type: animation,
+                particle_asset: particleAsset,
+                particle_movement_type: particleMovement
+            };
+
+            if (gltfUrl) {
+                spiritData.gltf_url = gltfUrl;
+                spiritData.texture_url = textureUrl;
+            }
+
+            let dbErr;
+            if (editId) {
+                const { error } = await _supabase
+                    .from('spirits')
+                    .update(spiritData)
+                    .eq('id', editId);
+                dbErr = error;
+            } else {
+                const { error } = await _supabase
+                    .from('spirits')
+                    .insert([spiritData]);
+                dbErr = error;
+            }
 
             if (dbErr) throw dbErr;
 
-            Swal.fire('¡Éxito!', 'Compañero subido correctamente', 'success');
+            Swal.fire('¡Éxito!', editId ? 'Compañero actualizado correctamente' : 'Compañero subido correctamente', 'success');
             $('#spirit-upload-modal').removeClass('active');
             loadSpirits();
         } catch (err) {
             console.error(err);
-            Swal.fire('Error', 'No se pudo subir el compañero: ' + (err.message || ''), 'error');
+            Swal.fire('Error', 'No se pudo guardar el compañero: ' + (err.message || ''), 'error');
         }
     });
 
@@ -1475,7 +1505,12 @@ async function loadSpirits() {
                     <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
                         ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}
                     </button>
-                    ${currentUser.role === 'admin' ? `<button class="btn btn-danger btn-delete-spirit" data-id="${spirit.id}">Eliminar</button>` : ''}
+                    ${currentUser.role === 'admin' ? `
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secondary btn-edit-spirit" style="flex: 1;"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="btn btn-danger btn-delete-spirit" data-id="${spirit.id}" style="flex: 1;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `);
@@ -1483,6 +1518,10 @@ async function loadSpirits() {
         $card.find('.btn-delete-spirit').click(function() {
             const id = $(this).data('id');
             deleteSpirit(id, spirit.gltf_url);
+        });
+
+        $card.find('.btn-edit-spirit').click(function() {
+            editSpirit(spirit);
         });
 
         $card.find('.btn-select').click(async function() {
@@ -1608,4 +1647,20 @@ async function loadSlotData(pageId, slotIndex) {
     }
 
     $('#slot-modal').addClass('active');
+}
+
+function editSpirit(spirit) {
+    $('#spirit-modal-title').text('Editar Compañero: ' + spirit.name);
+    $('#edit-spirit-id').val(spirit.id);
+    $('#input-spirit-name').val(spirit.name);
+    $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
+    $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
+    $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
+
+    // Reset file selection for edit (optional)
+    droppedGltfFile = null;
+    droppedExtraFiles = [];
+    updateSpiritDropZoneUI(null);
+
+    $('#spirit-upload-modal').addClass('active');
 }
