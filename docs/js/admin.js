@@ -392,25 +392,70 @@ $(document).ready(function() {
     // --- External Search Logic ---
     $('#btn-external-search').click(function(e) {
         e.preventDefault();
-        searchExternalCard();
+        searchExternalCard('#external-search-input', '#external-search-results', function(card) {
+            $('#slot-name').val(card.name);
+            $('#slot-image-url').val(card.high_res);
+            Swal.fire({
+                title: 'Carta Seleccionada',
+                text: card.name,
+                icon: 'success',
+                timer: 1000,
+                showConfirmButton: false
+            });
+        });
     });
 
     $('#external-search-input').keypress(function(e) {
         if (e.which == 13) {
             e.preventDefault();
-            searchExternalCard();
+            $('#btn-external-search').click();
         }
     });
 
-    async function searchExternalCard() {
-        const query = $('#external-search-input').val().trim();
+    // Deck Search Listeners
+    $(document).on('click', '#btn-deck-external-search', function(e) {
+        e.preventDefault();
+        searchExternalCard('#deck-external-search-input', '#deck-external-search-results', async function(card) {
+            // Immediate add to deck
+            const { error } = await _supabase
+                .from('deck_cards')
+                .insert([{
+                    deck_id: currentDeckId,
+                    image_url: card.high_res,
+                    name: card.name
+                }]);
+
+            if (error) {
+                Swal.fire('Error', 'No se pudo añadir la carta al deck', 'error');
+            } else {
+                Swal.fire({
+                    title: '¡Añadida!',
+                    text: card.name,
+                    icon: 'success',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                loadDeckCards(currentDeckId);
+            }
+        });
+    });
+
+    $(document).on('keypress', '#deck-external-search-input', function(e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            $('#btn-deck-external-search').click();
+        }
+    });
+
+    async function searchExternalCard(inputSelector, resultsSelector, onSelectCallback) {
+        const query = $(inputSelector).val().trim();
 
         if (query.length < 3) {
             Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
             return;
         }
 
-        $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando en todas las bases de datos...</div>');
+        $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando en todas las bases de datos...</div>');
 
         try {
             // Concurrent search across all databases (Yu-Gi-Oh and Pokémon in 3 languages)
@@ -466,19 +511,19 @@ $(document).ready(function() {
             });
 
             if (uniqueResults.length === 0) {
-                $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en ninguna base de datos.</div>');
+                $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en ninguna base de datos.</div>');
             } else {
-                displayExternalResults(uniqueResults.slice(0, 50));
+                displayExternalResults(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
             }
 
         } catch (err) {
             console.error(err);
-            $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
+            $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
         }
     }
 
-    function displayExternalResults(results) {
-        const $container = $('#external-search-results');
+    function displayExternalResults(results, resultsSelector, onSelectCallback) {
+        const $container = $(resultsSelector);
         $container.empty();
 
         if (results.length === 0) {
@@ -499,15 +544,7 @@ $(document).ready(function() {
             );
 
             $item.click(function() {
-                $('#slot-name').val(card.name);
-                $('#slot-image-url').val(card.high_res);
-                Swal.fire({
-                    title: 'Carta Seleccionada',
-                    text: card.name,
-                    icon: 'success',
-                    timer: 1000,
-                    showConfirmButton: false
-                });
+                onSelectCallback(card);
             });
 
             $container.append($item);
