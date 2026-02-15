@@ -136,6 +136,19 @@ $(document).ready(async function() {
     $(document).on('click', '.spirit-card', function() {
         const gltf = $(this).data('gltf');
         const name = $(this).data('name');
+        const spiritId = $(this).data('id');
+
+        // Selection logic for guest
+        if (spiritId) {
+            const spiritData = { id: spiritId, name: name, gltf_url: gltf };
+            window.currentSpirit = spiritData;
+            localStorage.setItem('selected_spirit', JSON.stringify(spiritData));
+            initFloatingCompanion();
+
+            // Mark as selected in grid
+            $('.spirit-card').removeClass('selected');
+            $(this).addClass('selected');
+        }
 
         if (gltf) {
             $('#expanded-gltf-viewer').attr('src', gltf);
@@ -244,6 +257,78 @@ $(document).ready(async function() {
         $('#search-input').val('');
         $(this).hide();
         resetFilter();
+    });
+
+    // --- Chatbot Logic ---
+    const faqResponses = {
+        'album': 'Para crear un álbum, ve al Panel de Control, inicia sesión y haz clic en "Crear Nuevo Álbum". Luego puedes añadir páginas y cartas.',
+        'scanner': 'El scanner te permite añadir cartas rápidamente usando la cámara de tu móvil. Escanea el código de la carta y se añadirá automáticamente a tu álbum o deck.',
+        'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
+        'spirit': 'Un compañero es un personaje 3D que te acompaña mientras exploras la tienda. Puedes elegir tu favorito en el menú de Compañeros.'
+    };
+
+    window.addChatMessage = function(sender, text) {
+        const $container = $('#chat-messages');
+        const $msg = $(`<div class="chat-msg msg-${sender}"></div>`).text(text);
+        $container.append($msg);
+        $container.scrollTop($container[0].scrollHeight);
+    };
+
+    $('#send-chat').click(function() {
+        const text = $('#chat-input').val().trim();
+        if (!text) return;
+        addChatMessage('user', text);
+        $('#chat-input').val('');
+        setTimeout(() => {
+            addChatMessage('bot', 'Aún estoy aprendiendo a responder mensajes libres. Por favor, usa los botones de preguntas frecuentes para obtener ayuda inmediata.');
+        }, 800);
+    });
+
+    $('#chat-input').keypress(function(e) {
+        if (e.which == 13) $('#send-chat').click();
+    });
+
+    $('.faq-btn').click(function() {
+        const faq = $(this).data('faq');
+        const question = $(this).text();
+        const answer = faqResponses[faq];
+
+        addChatMessage('user', question);
+        setTimeout(() => {
+            addChatMessage('bot', answer);
+        }, 500);
+    });
+
+    $('#close-chatbot').click(function() {
+        $('#chatbot-container').removeClass('active');
+    });
+
+    // --- Companion Menu Logic ---
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#floating-companion-container, #companion-menu').length) {
+            $('#companion-menu').removeClass('active');
+        }
+    });
+
+    $('#menu-item-chat').click(function() {
+        $('#chatbot-container').addClass('active');
+        $('#companion-menu').removeClass('active');
+    });
+
+    $('#menu-item-details').click(function() {
+        if (window.currentSpirit) {
+            $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
+            $('#expanded-gltf-name').text(window.currentSpirit.name);
+            $('#gltf-overlay').addClass('active');
+            $('body').addClass('modal-open');
+        }
+        $('#companion-menu').removeClass('active');
+    });
+
+    $('#menu-item-change').click(function() {
+        $('#spirit-modal').addClass('active');
+        loadPublicSpirits();
+        $('#companion-menu').removeClass('active');
     });
 });
 
@@ -614,6 +699,30 @@ async function loadStoreData() {
     $('#public-store-name').text(`Tienda: ${userData.store_name}`);
 
     loadPublicAlbums(userData.id);
+    initFloatingCompanion();
+}
+
+function initFloatingCompanion() {
+    if (!window.currentSpirit) return;
+
+    const $container = $('#floating-companion-container');
+    $container.html(`
+        <model-viewer
+            src="${window.currentSpirit.gltf_url}"
+            auto-rotate
+            camera-controls
+            rotation="0deg 0deg 0deg"
+            shadow-intensity="1"
+            environment-image="neutral"
+            exposure="1"
+            interaction-prompt="none">
+        </model-viewer>
+    `);
+
+    $container.on('click', function(e) {
+        e.stopPropagation();
+        $('#companion-menu').toggleClass('active');
+    });
 }
 
 async function loadPublicAlbums(userId) {
@@ -855,6 +964,7 @@ async function loadPublicSpirits() {
 
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}"
+                 data-id="${spirit.id}"
                  data-gltf="${spirit.gltf_url}"
                  data-name="${spirit.name}">
                 <div class="badge-selected">Actual</div>

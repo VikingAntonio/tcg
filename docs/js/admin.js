@@ -67,6 +67,80 @@ $(document).ready(function() {
         applyTheme(theme);
     });
 
+    // --- Chatbot Logic ---
+    const faqResponses = {
+        'album': 'Para crear un álbum, haz clic en "Crear Nuevo Álbum" en esta misma pantalla. Luego puedes entrar a "Editar" para añadir páginas y cartas.',
+        'scanner': 'El scanner te permite añadir cartas rápidamente usando la cámara de tu móvil. Escanea el código de la carta y se añadirá automáticamente a tu álbum o deck.',
+        'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
+        'spirit': 'Un compañero es un personaje 3D que te acompaña. Puedes elegir el que prefieras en la sección "Compañero 3D" del panel.'
+    };
+
+    window.addChatMessage = function(sender, text) {
+        const $container = $('#chat-messages');
+        const $msg = $(`<div class="chat-msg msg-${sender}"></div>`).text(text);
+        $container.append($msg);
+        $container.scrollTop($container[0].scrollHeight);
+    };
+
+    $('#send-chat').click(function() {
+        const text = $('#chat-input').val().trim();
+        if (!text) return;
+        addChatMessage('user', text);
+        $('#chat-input').val('');
+        setTimeout(() => {
+            addChatMessage('bot', 'Aún estoy aprendiendo a responder mensajes libres. Por favor, usa los botones de preguntas frecuentes para obtener ayuda inmediata.');
+        }, 800);
+    });
+
+    $('#chat-input').keypress(function(e) {
+        if (e.which == 13) $('#send-chat').click();
+    });
+
+    $('.faq-btn').click(function() {
+        const faq = $(this).data('faq');
+        const question = $(this).text();
+        const answer = faqResponses[faq];
+
+        addChatMessage('user', question);
+        setTimeout(() => {
+            addChatMessage('bot', answer);
+        }, 500);
+    });
+
+    $('#close-chatbot').click(function() {
+        $('#chatbot-container').removeClass('active');
+    });
+
+    // --- Companion Menu Logic ---
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#floating-companion-container, #companion-menu').length) {
+            $('#companion-menu').removeClass('active');
+        }
+    });
+
+    $('#menu-item-chat').click(function() {
+        $('#chatbot-container').addClass('active');
+        $('#companion-menu').removeClass('active');
+    });
+
+    $('#menu-item-details').click(function() {
+        if (window.currentSpirit) {
+            Swal.fire({
+                title: window.currentSpirit.name,
+                html: `<model-viewer src="${window.currentSpirit.gltf_url}" auto-rotate camera-controls style="width:100%; height:300px; background:#000; border-radius:15px;"></model-viewer>`,
+                showCloseButton: true,
+                showConfirmButton: false
+            });
+        }
+        $('#companion-menu').removeClass('active');
+    });
+
+    $('#menu-item-change').click(function() {
+        showView('spirits');
+        loadSpirits();
+        $('#companion-menu').removeClass('active');
+    });
+
     $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
@@ -1076,6 +1150,19 @@ function showAuthenticatedContent() {
     $('#store-link-container').html(linkHtml);
 
     showView('main-dashboard');
+
+    // Load current spirit for floating companion
+    if (currentUser.selected_spirit_id) {
+        const { data: spiritData } = await _supabase
+            .from('spirits')
+            .select('*')
+            .eq('id', currentUser.selected_spirit_id)
+            .single();
+        if (spiritData) {
+            window.currentSpirit = spiritData;
+            initFloatingCompanion();
+        }
+    }
 }
 
 function copyPublicLink() {
@@ -1582,6 +1669,8 @@ async function loadSpirits() {
             if (error) {
                 Swal.fire('Error', 'No se pudo seleccionar el compañero', 'error');
             } else {
+                window.currentSpirit = spirit;
+                initFloatingCompanion();
                 Swal.fire({
                     title: '¡Compañero Seleccionado!',
                     text: `${spirit.name} aparecerá en tus pantallas de carga.`,
@@ -1594,6 +1683,29 @@ async function loadSpirits() {
         });
 
         $grid.append($card);
+    });
+}
+
+function initFloatingCompanion() {
+    if (!window.currentSpirit) return;
+
+    const $container = $('#floating-companion-container');
+    $container.html(`
+        <model-viewer
+            src="${window.currentSpirit.gltf_url}"
+            auto-rotate
+            camera-controls
+            rotation="0deg 0deg 0deg"
+            shadow-intensity="1"
+            environment-image="neutral"
+            exposure="1"
+            interaction-prompt="none">
+        </model-viewer>
+    `);
+
+    $container.off('click').on('click', function(e) {
+        e.stopPropagation();
+        $('#companion-menu').toggleClass('active');
     });
 }
 
