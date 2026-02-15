@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 let scene, camera, renderer, character, clock;
 let isAnimating = false;
@@ -60,6 +62,13 @@ function loadSpiritModel() {
     }
 
     const loader = new GLTFLoader();
+
+    // Configuración de decodificadores para modelos comprimidos (Blender)
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+    loader.setDRACOLoader(dracoLoader);
+    loader.setMeshoptDecoder(MeshoptDecoder);
+
     const textureLoader = new THREE.TextureLoader();
 
     // REMOVED ash.png fallback as requested
