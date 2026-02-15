@@ -1107,7 +1107,7 @@ function applyTheme(theme) {
     $(`.theme-btn[data-theme="${theme}"], .theme-btn-small[data-theme="${theme}"]`).addClass('active');
 }
 
-function showAuthenticatedContent() {
+async function showAuthenticatedContent() {
     $('body').addClass('public-body');
     initTheme(); // Ensure theme is applied after showing content
     $('#login-modal').removeClass('active');
