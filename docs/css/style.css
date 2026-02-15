@@ -1885,6 +1885,45 @@ input:checked + .slider:before {
     z-index: 10;
 }
 
+.close-btn-floating {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: white;
+    font-size: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 12000;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    user-select: none;
+    line-height: 1;
+    padding-bottom: 4px; /* Align &times; vertically */
+}
+
+.close-btn-floating:hover {
+    background: rgba(255, 71, 87, 0.8);
+    border-color: #ff4757;
+    transform: rotate(90deg) scale(1.1);
+}
+
+@media (max-width: 640px) {
+    .close-btn-floating {
+        top: 15px;
+        right: 15px;
+        width: 44px;
+        height: 44px;
+        font-size: 32px;
+    }
+}
+
 @media (max-width: 768px) {
     .gltf-expanded-content {
         width: 95vw;
