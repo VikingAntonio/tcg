@@ -860,6 +860,7 @@ async function loadPublicSpirits() {
                 <div class="badge-selected">Actual</div>
                 <model-viewer
                     src="${spirit.gltf_url}"
+                    loading="lazy"
                     camera-controls
                     shadow-intensity="1"
                     environment-image="neutral"

@@ -1534,6 +1534,7 @@ async function loadSpirits() {
                 <div class="badge-selected">Seleccionado</div>
                 <model-viewer
                     src="${spirit.gltf_url}"
+                    loading="lazy"
                     camera-controls
                     shadow-intensity="1"
                     environment-image="neutral"
