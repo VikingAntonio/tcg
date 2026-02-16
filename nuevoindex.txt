@@ -17,3 +17,6 @@ ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS allowed_spirit_ids TEXT DEFAULT ''
 -- 4. Opcional: Actualizar usuarios existentes para que no tengan valores nulos
 UPDATE usuarios SET is_store = false WHERE is_store IS NULL;
 UPDATE usuarios SET max_albums = 3, max_pages = 5, max_decks = 1, max_cards_per_deck = 60 WHERE max_albums IS NULL;
+
+-- 5. Activar tiendas conocidas (Basado en imagen proporcionada)
+UPDATE usuarios SET is_store = true WHERE username IN ('Mexplay', 'toonShop');
