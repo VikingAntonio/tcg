@@ -347,6 +347,24 @@ $(document).ready(async function() {
             });
         }
     });
+
+    // --- Dynamic Album Resizing ---
+    let resizeTimeout;
+    $(window).on('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            $('.album').each(function() {
+                const $album = $(this);
+                if ($album.turn('is')) {
+                    const $container = $album.closest('.public-album-item');
+                    if ($container.length) {
+                        const { width, height } = getAlbumSize($container);
+                        $album.turn('size', width, height);
+                    }
+                }
+            });
+        }, 250);
+    });
 });
 
 function filterContent(query) {
@@ -1013,6 +1031,21 @@ async function loadPublicSpirits() {
     });
 }
 
+function getAlbumSize($albumContainer) {
+    const isMobile = window.innerWidth <= 640;
+    let width = 600;
+    let height = 420;
+
+    if (isMobile) {
+        // En móvil usamos el ancho del contenedor con un pequeño margen
+        const containerWidth = $albumContainer.width() || $(window).width();
+        const availableWidth = Math.min(600, containerWidth - 20);
+        width = availableWidth;
+        height = Math.floor(width * (420 / 600));
+    }
+    return { width, height };
+}
+
 async function renderAlbum(album) {
     const $albumContainer = $(`
         <div class="public-album-item">
@@ -1136,15 +1169,7 @@ async function renderAlbum(album) {
         turnInitialized = true;
 
         const isMobile = window.innerWidth <= 640;
-        let width = $albumDiv.width() || 600;
-        let height = $albumDiv.height() || 420;
-
-        if (isMobile) {
-            const containerWidth = $albumContainer.width();
-            const availableWidth = Math.min(600, containerWidth - 10);
-            width = availableWidth;
-            height = Math.floor(width * (420 / 600));
-        }
+        const { width, height } = getAlbumSize($albumContainer);
 
         $albumDiv.turn({
             width: width,
@@ -1164,6 +1189,12 @@ async function renderAlbum(album) {
                         event.preventDefault();
                         return;
                     }
+                },
+                turning: function() {
+                    $(this).addClass('is-turning');
+                },
+                turned: function() {
+                    $(this).removeClass('is-turning');
                 }
             }
         });
