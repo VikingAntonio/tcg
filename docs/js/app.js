@@ -732,7 +732,21 @@ async function loadStoreData() {
         }
     }
 
-    $('#public-store-name').text(`Tienda: ${userData.store_name}`);
+    if (userData.is_store) {
+        if (userData.store_logo) {
+            $('#public-store-logo').show().attr('src', userData.store_logo);
+            $('#public-store-icon').hide();
+        } else {
+            $('#public-store-logo').hide();
+            $('#public-store-icon').show();
+        }
+        $('#public-store-name').text(`Tienda: ${userData.store_name}`);
+    } else {
+        $('#public-store-logo').hide();
+        $('#public-store-icon').hide(); // If it's a common user, maybe we don't even want the shop icon?
+        // User said: "si es un usuario comun que solo muestre el nombre"
+        $('#public-store-name').text(userData.username);
+    }
 
     window.currentStoreContact = {
         whatsapp: userData.whatsapp_link,
