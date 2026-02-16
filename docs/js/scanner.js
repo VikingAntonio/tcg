@@ -1,5 +1,19 @@
 let isScanning = false;
 let stream = null;
+
+let ygoSetsCache = null;
+async function getYgoSets() {
+    if (ygoSetsCache) return ygoSetsCache;
+    try {
+        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
+        ygoSetsCache = await response.json();
+    } catch (e) {
+        console.warn("Error fetching YGO sets:", e);
+        ygoSetsCache = [];
+    }
+    return ygoSetsCache;
+}
+
 let currentUser = null;
 let tesseractWorker = null;
 let scanTimer = null;
@@ -424,12 +438,47 @@ async function handleFoundCode(code, type = null) {
 async function fetchCardData(code, type) {
     try {
         if (type === 'yugioh') {
-            const cleanCode = code.replace(/\s/g, '-').replace(/-{2,}/g, '-');
-            const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(cleanCode)}`);
-            const data = await res.json();
-            if (data.data && data.data.length > 0) {
+            const cleanCode = code.toUpperCase().replace(/\s/g, '-').replace(/-{2,}/g, '-');
+            let data = null;
+
+            // 1. Try search by Passcode (Numeric 5-10 digits)
+            if (/^\d{5,10}$/.test(cleanCode)) {
+                const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${cleanCode}`);
+                data = await res.json();
+            }
+            // 2. Try search by Set Code resolution
+            else {
+                const setMatch = cleanCode.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
+                if (setMatch) {
+                    const prefix = setMatch[1];
+                    const sets = await getYgoSets();
+                    const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
+                    if (setObj) {
+                        const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`);
+                        const fullSetData = await res.json();
+                        if (fullSetData.data) {
+                            // Filter for the exact card in the set
+                            const cardMatch = fullSetData.data.find(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === cleanCode));
+                            if (cardMatch) {
+                                data = { data: [cardMatch] };
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback: Try search by name (legacy/simple)
+            if (!data || !data.data) {
+                const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(cleanCode)}`);
+                data = await res.json();
+            }
+
+            if (data && data.data && data.data.length > 0) {
                 const card = data.data[0];
-                const setInfo = card.card_sets?.find(s => s.set_code === cleanCode) || card.card_sets?.[0];
+                const setInfo = card.card_sets?.find(s => s.set_code.toUpperCase() === cleanCode) || card.card_sets?.[0];
+
+                // For scanner, we prefer the first image or try to find a matching one if possible
+                // (YGOPRODeck doesn't easily map set_code to card_image index, so we use the first)
                 return {
                     name: card.name,
                     image_url: card.card_images[0].image_url,
