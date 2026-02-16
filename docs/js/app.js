@@ -138,18 +138,6 @@ $(document).ready(async function() {
         const name = $(this).data('name');
         const spiritId = $(this).data('id');
 
-        // Selection logic for guest
-        if (spiritId) {
-            const spiritData = { id: spiritId, name: name, gltf_url: gltf };
-            window.currentSpirit = spiritData;
-            localStorage.setItem('selected_spirit', JSON.stringify(spiritData));
-            initFloatingCompanion();
-
-            // Mark as selected in grid
-            $('.spirit-card').removeClass('selected');
-            $(this).addClass('selected');
-        }
-
         if (gltf) {
             $('#expanded-gltf-viewer').attr('src', gltf);
             $('#expanded-gltf-name').text(name);
