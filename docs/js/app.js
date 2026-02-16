@@ -29,21 +29,9 @@ $(document).ready(async function() {
     initTheme();
 
     // Theme Switcher
-    $('.theme-btn, .theme-btn-small').on('click', function() {
+    $(document).on('click', '.theme-btn, .theme-btn-small', function() {
         const theme = $(this).data('theme');
         applyTheme(theme);
-    });
-
-    $('#menu-theme-btn').on('click', function(e) {
-        e.preventDefault();
-        const themes = ['theme-light', 'theme-medium', 'theme-dark'];
-        let currentTheme = 'theme-dark';
-        themes.forEach(t => {
-            if ($('body').hasClass(t)) currentTheme = t;
-        });
-        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
-        applyTheme(nextTheme);
-        $('#user-dropdown').removeClass('active');
     });
 
     // --- Floating Panel Logic ---
