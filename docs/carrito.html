@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
     <style>
         .cart-page-container {
             max-width: 1000px;
@@ -197,8 +199,14 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/cart.js"></script>
     <script>
-        $(document).ready(function() {
+        let storeOwnerLinks = {
+            whatsapp: '526645367661',
+            messenger: 'TCGToonShop'
+        };
+
+        $(document).ready(async function() {
             renderCart();
+            await loadStoreContact();
 
             $('#btn-clear-cart').click(function() {
                 Swal.fire({
@@ -264,6 +272,28 @@
             renderCart();
         };
 
+        async function loadStoreContact() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const storeName = urlParams.get('store');
+
+            if (!storeName) return;
+
+            try {
+                const { data, error } = await _supabase
+                    .from('usuarios')
+                    .select('whatsapp_link, messenger_link')
+                    .eq('store_name', storeName)
+                    .single();
+
+                if (!error && data) {
+                    if (data.whatsapp_link) storeOwnerLinks.whatsapp = data.whatsapp_link;
+                    if (data.messenger_link) storeOwnerLinks.messenger = data.messenger_link;
+                }
+            } catch (e) {
+                console.error("Error loading store contact:", e);
+            }
+        }
+
         function sendMessage(platform) {
             const items = Cart.getAll();
             if (items.length === 0) return;
@@ -277,9 +307,16 @@
             const encodedMsg = encodeURIComponent(message);
 
             if (platform === 'whatsapp') {
-                window.open(`https://wa.me/526645367661?text=${encodedMsg}`, '_blank');
+                const waNumber = storeOwnerLinks.whatsapp.replace(/\D/g, '');
+                window.open(`https://wa.me/${waNumber}?text=${encodedMsg}`, '_blank');
             } else {
-                window.open(`https://m.me/TCGToonShop?text=${encodedMsg}`, '_blank');
+                // If messenger link is a full URL, use it, otherwise assume it's a username/ID
+                let messengerLink = storeOwnerLinks.messenger;
+                if (!messengerLink.startsWith('http')) {
+                    messengerLink = `https://m.me/${messengerLink}`;
+                }
+                const separator = messengerLink.includes('?') ? '&' : '?';
+                window.open(`${messengerLink}${separator}text=${encodedMsg}`, '_blank');
             }
         }
     </script>

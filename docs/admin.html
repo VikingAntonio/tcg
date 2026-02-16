@@ -209,14 +209,14 @@
                 <div class="form-group">
                     <label>Portada (Imagen o Color con Textura)</label>
                     <div class="color-input-wrapper">
-                        <input type="text" id="input-album-cover" placeholder="URL de la imagen (Opcional)" style="flex:1;">
+                        <input type="text" id="input-album-cover" placeholder="midominio.com/portada.png" style="flex:1;">
                         <input type="color" id="input-album-cover-color" value="#1a1a1a" title="Color de Portada" class="color-picker-custom">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Contraportada (Imagen o Color con Textura)</label>
                     <div class="color-input-wrapper">
-                        <input type="text" id="input-album-back" placeholder="URL de la imagen (Opcional)" style="flex:1;">
+                        <input type="text" id="input-album-back" placeholder="midominio.com/contraportada.png" style="flex:1;">
                         <input type="color" id="input-album-back-color" value="#1a1a1a" title="Color de Contraportada" class="color-picker-custom">
                     </div>
                 </div>
@@ -259,7 +259,7 @@
 
             <div class="form-group">
                 <label>URL de la Imagen</label>
-                <input type="text" id="slot-image-url">
+                <input type="text" id="slot-image-url" placeholder="midominio.com/carta.png">
             </div>
             <div class="info-grid">
                 <div class="form-group">
@@ -281,7 +281,7 @@
                 <div class="form-group" id="custom-mask-container" style="display: none;">
                     <label>URL de la Máscara (CustomTexture)</label>
                     <div style="display: flex; gap: 10px;">
-                        <input type="text" id="slot-custom-mask" placeholder="https://..." style="flex: 1;">
+                        <input type="text" id="slot-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
                         <button id="btn-open-mask-editor" class="btn btn-secondary" style="white-space: nowrap;">
                             <i class="fas fa-paint-brush"></i> Editar
                         </button>
@@ -311,9 +311,6 @@
                 </div>
             </div>
             <button id="btn-save-slot" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-check-circle"></i> Guardar Carta</button>
-            <button id="btn-add-to-cart" class="btn btn-add-cart-modal">
-                <i class="fas fa-cart-plus"></i> Agregar al Carrito
-            </button>
         </div>
     </div>
 
@@ -346,7 +343,7 @@
             </div>
             <div class="form-group">
                 <label>Asset de Partículas (Ej: cerezo.png)</label>
-                <input type="text" id="input-spirit-particle-asset" placeholder="cerezo.png">
+                <input type="text" id="input-spirit-particle-asset" placeholder="midominio.com/particula.png">
             </div>
             <div class="form-group">
                 <label>Tipo de Movimiento de Partículas</label>
