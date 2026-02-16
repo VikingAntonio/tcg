@@ -97,16 +97,16 @@ $(document).ready(function() {
             if (selectedLogoFile) {
                 const fileExt = selectedLogoFile.name.split('.').pop();
                 const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
-                const filePath = `logos/${fileName}`;
+                const filePath = `${fileName}`;
 
                 const { data, error: uploadError } = await _supabase.storage
-                    .from('spirits') // Using existing spirits bucket for simplicity
+                    .from('logos')
                     .upload(filePath, selectedLogoFile);
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicData } = _supabase.storage
-                    .from('spirits')
+                    .from('logos')
                     .getPublicUrl(filePath);
 
                 logoUrl = publicData.publicUrl;

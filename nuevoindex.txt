@@ -25,3 +25,20 @@ UPDATE usuarios SET max_albums = 3, max_pages = 5, max_decks = 1, max_cards_per_
 
 -- 5. Activar tiendas conocidas (Basado en imagen proporcionada)
 UPDATE usuarios SET is_store = true WHERE username IN ('Mexplay', 'toonShop');
+
+-- 6. Configuración de Storage para Logos (Ejecutar en Editor SQL)
+-- Esto crea el bucket 'logos' y lo hace público para que se puedan ver las imágenes
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('logos', 'logos', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Políticas de Storage (Permitir a usuarios autenticados subir logos)
+CREATE POLICY "Permitir subida de logos a usuarios autenticados"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'logos');
+
+CREATE POLICY "Permitir ver logos a todos"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'logos');
