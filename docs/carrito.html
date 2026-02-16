@@ -298,6 +298,14 @@
             const items = Cart.getAll();
             if (items.length === 0) return;
 
+            // Try to get links from the first item if not loaded from URL
+            const firstItem = items[0];
+            let whatsapp = storeOwnerLinks.whatsapp;
+            let messenger = storeOwnerLinks.messenger;
+
+            if (firstItem.whatsapp_link) whatsapp = firstItem.whatsapp_link;
+            if (firstItem.messenger_link) messenger = firstItem.messenger_link;
+
             let message = "Hola, estoy interesado en comprar estas cartas de TCG Dual:\n\n";
             items.forEach((item, index) => {
                 message += `${index + 1}. ${item.name} (${item.rarity}) - ${item.price}\n`;
@@ -307,11 +315,18 @@
             const encodedMsg = encodeURIComponent(message);
 
             if (platform === 'whatsapp') {
-                const waNumber = storeOwnerLinks.whatsapp.replace(/\D/g, '');
+                const waNumber = whatsapp.replace(/\D/g, '');
+                if (!waNumber) {
+                    Swal.fire('Error', 'No hay un número de WhatsApp configurado para este vendedor.', 'error');
+                    return;
+                }
                 window.open(`https://wa.me/${waNumber}?text=${encodedMsg}`, '_blank');
             } else {
-                // If messenger link is a full URL, use it, otherwise assume it's a username/ID
-                let messengerLink = storeOwnerLinks.messenger;
+                let messengerLink = messenger;
+                if (!messengerLink) {
+                    Swal.fire('Error', 'No hay un enlace de Messenger configurado para este vendedor.', 'error');
+                    return;
+                }
                 if (!messengerLink.startsWith('http')) {
                     messengerLink = `https://m.me/${messengerLink}`;
                 }
