@@ -230,6 +230,17 @@ $(document).ready(function() {
         e.preventDefault();
         if (!currentUser) return;
 
+        // Limite de álbumes
+        const { count } = await _supabase
+            .from('albums')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id);
+
+        if (count >= (currentUser.max_albums || 3)) {
+            Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_albums || 3} álbumes.`, 'warning');
+            return;
+        }
+
         const { data, error } = await _supabase
             .from('albums')
             .insert([{ title: 'Nuevo Álbum', user_id: currentUser.id }])
@@ -296,6 +307,18 @@ $(document).ready(function() {
     // Page Management
     $('#btn-add-page').click(async function(e) {
         e.preventDefault();
+
+        // Limite de páginas por álbum
+        const { count } = await _supabase
+            .from('pages')
+            .select('*', { count: 'exact', head: true })
+            .eq('album_id', currentAlbumId);
+
+        if (count >= (currentUser.max_pages || 5)) {
+            Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_pages || 5} páginas por álbum.`, 'warning');
+            return;
+        }
+
         const { data: pages } = await _supabase
             .from('pages')
             .select('page_index')
@@ -522,6 +545,13 @@ $(document).ready(function() {
     $(document).on('click', '#btn-deck-external-search', function(e) {
         e.preventDefault();
         searchExternalCard('#deck-external-search-input', '#deck-external-search-results', async function(card) {
+            // Limite de cartas por deck
+            const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', currentDeckId);
+            if (count >= (currentUser.max_cards_per_deck || 60)) {
+                Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
+                return;
+            }
+
             // Immediate add to deck
             const { error } = await _supabase
                 .from('deck_cards')
@@ -736,6 +766,17 @@ $(document).ready(function() {
         e.preventDefault();
         if (!currentUser) return;
 
+        // Limite de decks
+        const { count } = await _supabase
+            .from('decks')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id);
+
+        if (count >= (currentUser.max_decks || 1)) {
+            Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_decks || 1} deck.`, 'warning');
+            return;
+        }
+
         const { data, error } = await _supabase
             .from('decks')
             .insert([{ name: 'Nuevo Deck', user_id: currentUser.id }])
@@ -781,6 +822,14 @@ $(document).ready(function() {
 
     $('#btn-add-deck-card').click(async function(e) {
         e.preventDefault();
+
+        // Limite de cartas por deck
+        const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', currentDeckId);
+        if (count >= (currentUser.max_cards_per_deck || 60)) {
+            Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
+            return;
+        }
+
         const { value: url } = await Swal.fire({
             title: 'Añadir imagen al deck',
             input: 'url',
@@ -1644,6 +1693,28 @@ async function loadSpirits() {
         const isSelected = spirit.id == selectedId;
         const isAsh = spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf');
         const isPublic = spirit.is_public !== false;
+
+        // Filtrado por plan/permisos
+        let isAllowed = true;
+        if (currentUser.role === 'starter' || currentUser.role === 'user') {
+            isAllowed = spirit.name.toLowerCase().includes('winged kuriboh');
+        }
+
+        // Overrides del admin
+        if (currentUser.allowed_spirit_ids === 'all') {
+            isAllowed = true;
+        } else if (currentUser.allowed_spirit_ids) {
+            const allowedIds = currentUser.allowed_spirit_ids.split(',').map(s => s.trim());
+            if (allowedIds.includes(spirit.id.toString())) {
+                isAllowed = true;
+            }
+        }
+
+        if (currentUser.role === 'premium' || currentUser.role === 'admin' || currentUser.role === 'admin_store') {
+            isAllowed = true;
+        }
+
+        if (!isAllowed) return;
 
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}">

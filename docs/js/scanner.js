@@ -83,6 +83,17 @@ async function loadDestinations(type) {
 
 async function createNewDestination() {
     const type = $('#select-target-type').val();
+
+    // Check limit
+    const table = type === 'album' ? 'albums' : 'decks';
+    const limit = type === 'album' ? (currentUser.max_albums || 3) : (currentUser.max_decks || 1);
+    const { count } = await _supabase.from(table).select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id);
+
+    if (count >= limit) {
+        Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${limit} ${type === 'album' ? 'álbumes' : 'deck'}.`, 'warning');
+        return;
+    }
+
     const { value: name } = await Swal.fire({
         title: `Nuevo ${type === 'album' ? 'Álbum' : 'Deck'}`,
         input: 'text',
@@ -515,6 +526,12 @@ async function saveCard(cardData) {
             }
 
             if (!saved) {
+                // Check page limit
+                if (pages.length >= (currentUser.max_pages || 5)) {
+                    Swal.fire('Límite alcanzado', `Has alcanzado el límite de ${currentUser.max_pages || 5} páginas en este álbum.`, 'warning');
+                    return false;
+                }
+
                 const lastIdx = pages[pages.length - 1].page_index;
                 const { data: nPage } = await _supabase.from('pages').insert([{ album_id: destId, page_index: lastIdx + 1 }]).select();
                 await _supabase.from('card_slots').insert([{
@@ -524,6 +541,13 @@ async function saveCard(cardData) {
             }
             return true;
         } else {
+            // Check deck card limit
+            const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', destId);
+            if (count >= (currentUser.max_cards_per_deck || 60)) {
+                Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
+                return false;
+            }
+
             await _supabase.from('deck_cards').insert([{
                 deck_id: destId, name: cardData.name, image_url: cardData.image_url,
                 rarity: cardData.rarity, expansion: cardData.expansion, quantity: 1
