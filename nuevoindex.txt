@@ -7,6 +7,11 @@ ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS is_store BOOLEAN DEFAULT false;
 -- 2. Agregar columna para el correo electrónico
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email TEXT;
 
+-- Agregar columnas para el Perfil de Negocio
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS horario TEXT;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ubicacion TEXT;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS store_logo TEXT;
+
 -- 3. Asegurar que existan las columnas de límites (si no se agregaron antes)
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS max_albums INTEGER DEFAULT 3;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS max_pages INTEGER DEFAULT 5;

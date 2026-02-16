@@ -833,37 +833,6 @@ $(document).ready(function() {
         }
     });
 
-    $('#btn-save-store-contact').click(async function(e) {
-        e.preventDefault();
-        const whatsapp = $('#store-whatsapp').val().trim();
-        const messenger = $('#store-messenger').val().trim();
-
-        const { error } = await _supabase
-            .from('usuarios')
-            .update({
-                whatsapp_link: whatsapp,
-                messenger_link: messenger
-            })
-            .eq('id', currentUser.id);
-
-        if (error) {
-            Swal.fire('Error', 'No se pudo guardar la configuración de contacto', 'error');
-            console.error(error);
-        } else {
-            // Update local user object
-            currentUser.whatsapp_link = whatsapp;
-            currentUser.messenger_link = messenger;
-            localStorage.setItem('tcg_session', JSON.stringify(currentUser));
-
-            Swal.fire({
-                title: '¡Guardado!',
-                text: 'Tu información de contacto ha sido actualizada.',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }
-    });
 
     $('#btn-save-deck-meta').click(async function(e) {
         e.preventDefault();
