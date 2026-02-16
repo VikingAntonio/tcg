@@ -1,0 +1,125 @@
+<!DOCTYPE html>    
+<html lang="es">    
+<head>    
+    <meta charset="UTF-8">    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <title>TCG Dual - La plataforma definitiva para tus cartas</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>    
+<body class="public-body landing-page">
+    <header class="main-nav">
+        <div class="nav-container">
+            <div class="logo">TCG <span>Dual</span></div>
+            <div class="nav-actions">
+                <a href="admin.html" class="btn-minimal">Acceso Clientes</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Tus cartas, elevadas al <span>siguiente nivel</span></h1>
+            <p class="hero-subtitle">La forma más elegante y sencilla de organizar, mostrar y compartir tu colección TCG con el mundo.</p>
+            <div class="hero-cta">
+                <a href="#features" class="btn-primary">Explorar Funciones</a>
+                <a href="#stores" class="btn-outline">Ver Tiendas</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="glass-card-preview">
+                <!-- Visual placeholder for modern look -->
+                <div class="preview-inner"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="stores" class="stores-section">
+        <h2 class="section-title">Tiendas que confían en <span>nosotros</span></h2>
+        <div class="swiper logos-swiper">
+            <div class="swiper-wrapper" id="stores-slider-wrapper">
+                <!-- Stores will be loaded here -->
+            </div>
+            <div class="swiper-pagination"></div>
+        </div>
+    </section>
+
+    <main id="features" class="landing-container">
+        <h2 class="section-title">Visualización <span>Inteligente</span></h2>
+        <div class="bento-grid">
+            <div class="bento-item large">
+                <div class="bento-content">
+                    <i class="fas fa-eye"></i>
+                    <h3>Visualización Inmersiva</h3>
+                    <p>Disfruta de tus cartas con un detalle asombroso. Nuestra plataforma está optimizada para que cada detalle de tus cartas brille, facilitando la navegación y el disfrute de tu colección.</p>
+                </div>
+            </div>
+            <div class="bento-item">
+                <div class="bento-content">
+                    <i class="fas fa-search"></i>
+                    <h3>Búsqueda Avanzada</h3>
+                    <p>Encuentra cualquier carta en segundos. Filtra por nombre, expansión o rareza de forma instantánea.</p>
+                </div>
+            </div>
+            <div class="bento-item">
+                <div class="bento-content">
+                    <i class="fas fa-share-alt"></i>
+                    <h3>Comparte tu Pasión</h3>
+                    <p>Genera enlaces públicos personalizados para mostrar tu inventario a clientes o amigos de forma profesional.</p>
+                </div>
+            </div>
+            <div class="bento-item medium">
+                <div class="bento-content">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Experiencia Multiplataforma</h3>
+                    <p>Accede a tu colección desde cualquier dispositivo. Diseñado para ofrecer la mejor experiencia tanto en móvil como en escritorio, sin complicaciones.</p>
+                </div>
+            </div>
+        </div>
+
+        <section style="margin-top: 100px; text-align: center; background: linear-gradient(135deg, rgba(0,210,255,0.1), rgba(0,255,136,0.1)); padding: 60px; border-radius: 30px; border: 1px solid rgba(0,210,255,0.2);">
+            <h2 style="margin-bottom: 20px;">¿Listo para empezar?</h2>
+            <p style="margin-bottom: 30px; opacity: 0.8;">Únete a la nueva era de coleccionismo digital.</p>
+            <a href="admin.html" class="btn" style="padding: 15px 40px; font-size: 1.2rem;">Crear mi Cuenta</a>
+        </section>
+    </main>
+
+    <footer style="text-align: center; padding: 40px; opacity: 0.5; font-size: 0.9rem;">
+        &copy; 2024 TCG Dual - Todos los derechos reservados.
+    </footer>
+    
+    <!-- Business Card Modal -->
+    <div id="business-modal" class="business-overlay">
+        <div class="business-card-modal">
+            <span class="close-business-modal">&times;</span>
+            <div class="modal-header">
+                <img id="modal-business-logo" src="" alt="Logo">
+                <h2 id="modal-business-name">Nombre del Negocio</h2>
+            </div>
+            <div class="modal-body">
+                <div class="info-row">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="modal-business-address">Dirección no disponible</span>
+                </div>
+                <div class="info-row">
+                    <i class="fas fa-clock"></i>
+                    <span id="modal-business-hours">Horario no disponible</span>
+                </div>
+                <div class="info-row">
+                    <i class="fas fa-external-link-alt"></i>
+                    <a id="modal-business-link" href="#" target="_blank">Visitar Tienda Pública</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías -->    
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/landing.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</body>    
+</html>
