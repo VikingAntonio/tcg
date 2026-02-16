@@ -1790,6 +1790,28 @@ input:checked + .slider:before {
     font-size: 1.1rem;
 }
 
+.theme-menu-container {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.theme-switcher-inline {
+    display: flex;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px;
+    border-radius: 25px;
+    margin-left: auto;
+}
+
+.theme-switcher-inline .theme-btn-small {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+}
+
 .menu-item.logout {
     color: #ff4757;
     margin-top: 5px;
