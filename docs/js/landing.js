@@ -140,8 +140,16 @@ $(document).ready(function() {
 
         if (session) {
             const user = JSON.parse(session);
-            $('#dropdown-user-name').text(user.username);
-            $('#dropdown-user-role').text(user.role || 'Usuario');
+
+            if (user.is_store) {
+                $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
+                $('#dropdown-user-name').text(user.store_name || user.username);
+                $('#dropdown-user-role').hide();
+            } else {
+                $('#dropdown-user-logo').hide();
+                $('#dropdown-user-name').text(user.username);
+                $('#dropdown-user-role').hide();
+            }
 
             $authItems.append('<a href="admin.html" class="menu-item"><i class="fas fa-lock"></i> Panel Admin</a>');
             $authItems.append('<a href="#" class="menu-item logout" id="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>');
@@ -275,26 +283,11 @@ $(document).ready(function() {
         const storeDisplay = store.store_name || store.username;
         $('#modal-business-name').text(storeDisplay);
         $('#modal-business-logo').attr('src', store.store_logo || 'https://midominio.com/placeholder-logo.png');
-        $('#modal-business-email').text(store.email || 'No disponible');
         $('#modal-business-address').text(store.ubicacion || 'Ubicación no disponible');
         $('#modal-business-hours').text(store.horario || 'Horario no disponible');
 
         const publicUrl = `public.html?store=${encodeURIComponent(storeDisplay)}`;
         $('#modal-business-link').attr('href', publicUrl);
-
-        if (store.messenger_link) {
-            $('#row-messenger').show();
-            $('#modal-business-messenger').attr('href', store.messenger_link);
-        } else {
-            $('#row-messenger').hide();
-        }
-
-        if (store.whatsapp_link) {
-            $('#row-whatsapp').show();
-            $('#modal-business-whatsapp').attr('href', store.whatsapp_link);
-        } else {
-            $('#row-whatsapp').hide();
-        }
 
         $('#business-modal').addClass('active');
     };

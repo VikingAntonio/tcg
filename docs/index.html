@@ -18,8 +18,9 @@
             </button>
             <div class="user-dropdown-menu" id="user-dropdown">
                 <div class="user-dropdown-info">
+                    <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
                     <div class="user-dropdown-name" id="dropdown-user-name">Invitado</div>
-                    <div class="user-dropdown-role" id="dropdown-user-role">Invitado</div>
+                    <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Invitado</div>
                 </div>
                 <div id="auth-menu-items">
                     <!-- Dynamic login/logout items -->
@@ -46,7 +47,7 @@
         <div class="nav-container">
             <div class="logo">TCG <span>Dual</span></div>
             <div class="nav-actions">
-                <a href="#" id="btn-open-auth" class="btn-minimal">Acceso Clientes</a>
+                <!-- Login managed via user icon -->
             </div>
         </div>
     </header>
@@ -177,24 +178,12 @@
             </div>
             <div class="modal-body">
                 <div class="info-row">
-                    <i class="fas fa-envelope"></i>
-                    <span id="modal-business-email">correo@ejemplo.com</span>
-                </div>
-                <div class="info-row">
                     <i class="fas fa-map-marker-alt"></i>
                     <span id="modal-business-address">Dirección no disponible</span>
                 </div>
                 <div class="info-row">
                     <i class="fas fa-clock"></i>
                     <span id="modal-business-hours">Horario no disponible</span>
-                </div>
-                <div class="info-row" id="row-messenger">
-                    <i class="fab fa-facebook-messenger"></i>
-                    <a id="modal-business-messenger" href="#" target="_blank">Messenger</a>
-                </div>
-                <div class="info-row" id="row-whatsapp">
-                    <i class="fab fa-whatsapp"></i>
-                    <a id="modal-business-whatsapp" href="#" target="_blank">WhatsApp</a>
                 </div>
                 <div style="margin-top: 30px; text-align: center;">
                     <a id="modal-business-link" href="#" target="_blank" class="btn" style="display: block; width: 100%;">Visitar Tienda Pública</a>

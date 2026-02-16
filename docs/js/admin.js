@@ -38,7 +38,7 @@ $(document).ready(function() {
     // --- Navigation (Dashboard Tiles) ---
     $(document).on('click', '#btn-home', function(e) {
         e.preventDefault();
-        showView('main-dashboard');
+        window.location.href = 'index.html';
     });
 
     $(document).on('click', '#btn-show-albums', function(e) {
@@ -155,7 +155,7 @@ $(document).ready(function() {
         $('#companion-menu').removeClass('active');
     });
 
-    $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-home').click(function(e) { e.preventDefault(); window.location.href = 'index.html'; });
     $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
@@ -1239,8 +1239,15 @@ async function showAuthenticatedContent() {
 
     // Update floating panel
     $('#top-panel').show();
-    $('#dropdown-user-name').text(currentUser.username);
-    $('#dropdown-user-role').text(currentUser.role || 'Usuario');
+    if (currentUser.is_store) {
+        $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || 'https://midominio.com/placeholder-logo.png');
+        $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
+        $('#dropdown-user-role').hide();
+    } else {
+        $('#dropdown-user-logo').hide();
+        $('#dropdown-user-name').text(currentUser.username);
+        $('#dropdown-user-role').hide();
+    }
 
     if (currentUser) {
         if (currentUser.role === 'admin') {

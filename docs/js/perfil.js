@@ -51,8 +51,16 @@ $(document).ready(function() {
     }
 
     function updateHeader() {
-        $('#dropdown-user-name').text(currentUser.username);
-        $('#dropdown-user-role').text(currentUser.role || 'Usuario');
+        if (currentUser.is_store) {
+            $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || 'https://midominio.com/placeholder-logo.png');
+            $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
+            $('#dropdown-user-role').hide();
+        } else {
+            $('#dropdown-user-logo').hide();
+            $('#dropdown-user-name').text(currentUser.username);
+            $('#dropdown-user-role').hide();
+        }
+
         if (typeof Cart !== 'undefined') {
             $('#cart-count').text(Cart.getCount());
         }

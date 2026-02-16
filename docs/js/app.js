@@ -653,7 +653,9 @@ function openCardModal($slot) {
         expansion,
         condition,
         price,
-        quantity
+        quantity,
+        whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
+        messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
     };
 
     $("#image-overlay").addClass("active");
@@ -698,7 +700,7 @@ async function loadStoreData() {
 
     const { data: userData, error: userError } = await _supabase
         .from('usuarios')
-        .select('id, store_name, whatsapp_link, messenger_link')
+        .select('id, store_name, whatsapp_link, messenger_link, store_logo, is_store')
         .eq('store_name', storeName)
         .single();
 
@@ -731,6 +733,11 @@ async function loadStoreData() {
     }
 
     $('#public-store-name').text(`Tienda: ${userData.store_name}`);
+
+    window.currentStoreContact = {
+        whatsapp: userData.whatsapp_link,
+        messenger: userData.messenger_link
+    };
 
     // Update cart link to include store name
     $('#cart-btn').attr('href', `carrito.html?store=${encodeURIComponent(storeName)}`);
@@ -956,14 +963,22 @@ function checkSession() {
     if (session) {
         try {
             const user = JSON.parse(session);
-            $('#dropdown-user-name').text(user.username);
-            $('#dropdown-user-role').text(user.role || 'Usuario');
+            if (user.is_store) {
+                $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
+                $('#dropdown-user-name').text(user.store_name || user.username);
+                $('#dropdown-user-role').hide();
+            } else {
+                $('#dropdown-user-logo').hide();
+                $('#dropdown-user-name').text(user.username);
+                $('#dropdown-user-role').hide();
+            }
         } catch (e) {
             console.error("Error parsing session:", e);
         }
     } else {
+        $('#dropdown-user-logo').hide();
         $('#dropdown-user-name').text('Invitado');
-        $('#dropdown-user-role').text('Invitado');
+        $('#dropdown-user-role').text('Invitado').show();
     }
 }
 
