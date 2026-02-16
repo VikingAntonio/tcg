@@ -198,13 +198,15 @@ $(document).ready(function() {
     });
 
     // --- Slider Logic ---
+    window.allStoresData = [];
+
     async function loadStoresSlider() {
         const $wrapper = $('#stores-slider-wrapper');
         $wrapper.html('<div class="loading">Cargando tiendas...</div>');
 
         const { data: stores, error } = await _supabase
             .from('usuarios')
-            .select('username, store_name, role')
+            .select('*')
             .eq('is_store', true);
 
         if (error || !stores || stores.length === 0) {
@@ -212,15 +214,20 @@ $(document).ready(function() {
             return;
         }
 
+        window.allStoresData = stores;
         $wrapper.empty();
         stores.forEach(store => {
             const storeDisplay = store.store_name || store.username;
-            const publicUrl = `public.html?store=${encodeURIComponent(storeDisplay)}`;
+            const logoUrl = store.store_logo || 'https://midominio.com/placeholder-logo.png';
+
             const $slide = $(`
                 <div class="swiper-slide">
-                    <div class="store-slide" onclick="window.location.href='${publicUrl}'">
+                    <div class="store-slide" onclick="openBusinessModal('${store.username}')">
                         <div class="store-logo-circle">
-                            <i class="fas fa-store" style="font-size: 3rem; color: var(--primary-color); display: flex; justify-content: center; align-items: center; height: 100%;"></i>
+                            ${store.store_logo
+                                ? `<img src="${store.store_logo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`
+                                : `<i class="fas fa-store" style="font-size: 3rem; color: var(--primary-color); display: flex; justify-content: center; align-items: center; height: 100%;"></i>`
+                            }
                         </div>
                         <div class="store-name-slide">${storeDisplay}</div>
                         <div style="font-size: 0.8rem; color: #888; margin-top: 5px;">@${store.username}</div>
@@ -259,6 +266,46 @@ $(document).ready(function() {
             }
         });
     }
+
+    // --- Business Modal ---
+    window.openBusinessModal = function(username) {
+        const store = window.allStoresData.find(s => s.username === username);
+        if (!store) return;
+
+        const storeDisplay = store.store_name || store.username;
+        $('#modal-business-name').text(storeDisplay);
+        $('#modal-business-logo').attr('src', store.store_logo || 'https://midominio.com/placeholder-logo.png');
+        $('#modal-business-email').text(store.email || 'No disponible');
+        $('#modal-business-address').text(store.ubicacion || 'Ubicación no disponible');
+        $('#modal-business-hours').text(store.horario || 'Horario no disponible');
+
+        const publicUrl = `public.html?store=${encodeURIComponent(storeDisplay)}`;
+        $('#modal-business-link').attr('href', publicUrl);
+
+        if (store.messenger_link) {
+            $('#row-messenger').show();
+            $('#modal-business-messenger').attr('href', store.messenger_link);
+        } else {
+            $('#row-messenger').hide();
+        }
+
+        if (store.whatsapp_link) {
+            $('#row-whatsapp').show();
+            $('#modal-business-whatsapp').attr('href', store.whatsapp_link);
+        } else {
+            $('#row-whatsapp').hide();
+        }
+
+        $('#business-modal').addClass('active');
+    };
+
+    window.closeBusinessModal = function() {
+        $('#business-modal').removeClass('active');
+    };
+
+    $('#business-modal').click(function(e) {
+        if (e.target === this) closeBusinessModal();
+    });
 
     // --- Cart Logic ---
     function updateCartCount() {
