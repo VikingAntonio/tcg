@@ -1,5 +1,19 @@
 let currentAlbumId = null;
 let currentDeckId = null;
+
+let ygoSetsCache = null;
+async function getYgoSets() {
+    if (ygoSetsCache) return ygoSetsCache;
+    try {
+        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
+        ygoSetsCache = await response.json();
+    } catch (e) {
+        console.warn("Error fetching YGO sets:", e);
+        ygoSetsCache = [];
+    }
+    return ygoSetsCache;
+}
+
 let currentDeckCardId = null; // New for deck card editing
 let currentSlotIndex = null;
 let currentPageId = null;
@@ -594,12 +608,39 @@ $(document).ready(function() {
         $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando en todas las bases de datos...</div>');
 
         try {
+            // Special YGO search logic for passcodes and set codes
+            const ygoSpecialSearch = async () => {
+                const q = query.toUpperCase();
+                // Passcode (Numeric 5-10 digits)
+                if (/^\d{5,10}$/.test(q)) {
+                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
+                    return r.data || [];
+                }
+                // Set Code (Format XXX-123 or XXX-EN123)
+                const setMatch = q.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
+                if (setMatch) {
+                    const prefix = setMatch[1];
+                    const sets = await getYgoSets();
+                    const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
+                    if (setObj) {
+                        const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
+                        if (r.data) {
+                            // Filter for the exact set code
+                            return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
+                        }
+                    }
+                }
+                return [];
+            };
+
             // Concurrent search across all databases (Yu-Gi-Oh and Pokémon in 3 languages)
             const searchPromises = [
                 // Yu-Gi-Oh! Name Search
                 fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
                 // Yu-Gi-Oh! Code/Set Search
                 fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+                // Special YGO Search
+                ygoSpecialSearch(),
                 // Pokémon TCGdex - English
                 fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
                 // Pokémon TCGdex - Spanish
@@ -608,18 +649,21 @@ $(document).ready(function() {
                 fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => [])
             ];
 
-            const [ygName, ygCode, pkEn, pkEs, pkJa] = await Promise.all(searchPromises);
+            const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa] = await Promise.all(searchPromises);
 
             let combinedResults = [];
 
             // Process Yu-Gi-Oh Results
-            const ygoResults = [...(ygName.data || []), ...(ygCode.data || [])];
+            const ygoResults = [...(ygName.data || []), ...(ygCode.data || []), ...ygSpecial];
             ygoResults.forEach(c => {
                 if (c.card_images && c.card_images.length > 0) {
-                    combinedResults.push({
-                        name: c.name,
-                        image: c.card_images[0].image_url_small,
-                        high_res: c.card_images[0].image_url
+                    // Iterate through all alternate arts
+                    c.card_images.forEach(img => {
+                        combinedResults.push({
+                            name: c.name,
+                            image: img.image_url_small,
+                            high_res: img.image_url
+                        });
                     });
                 }
             });
