@@ -330,6 +330,23 @@ $(document).ready(async function() {
         loadPublicSpirits();
         $('#companion-menu').removeClass('active');
     });
+
+    // --- Cart Integration ---
+    $(document).on('click', '#btn-add-to-cart', function(e) {
+        e.preventDefault();
+        if (window.currentCardData) {
+            Cart.add(window.currentCardData);
+            Swal.fire({
+                title: '¡Añadido!',
+                text: `${window.currentCardData.name} se ha agregado al carrito.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+    });
 });
 
 function filterContent(query) {
@@ -621,6 +638,17 @@ function openCardModal($slot) {
     $("#card-condition").text(condition);
     $("#card-quantity").text(quantity);
     $("#card-price").text(price);
+
+    // Store current card data for cart integration
+    window.currentCardData = {
+        name,
+        image_url: imgSrc,
+        rarity,
+        expansion,
+        condition,
+        price,
+        quantity
+    };
 
     $("#image-overlay").addClass("active");
     $("body").addClass("modal-open");
