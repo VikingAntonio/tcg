@@ -710,7 +710,7 @@ async function loadStoreData() {
 
     const { data: userData, error: userError } = await _supabase
         .from('usuarios')
-        .select('id, store_name')
+        .select('id, store_name, whatsapp_link, messenger_link')
         .eq('store_name', storeName)
         .single();
 
@@ -743,6 +743,9 @@ async function loadStoreData() {
     }
 
     $('#public-store-name').text(`Tienda: ${userData.store_name}`);
+
+    // Update cart link to include store name
+    $('#cart-btn').attr('href', `carrito.html?store=${encodeURIComponent(storeName)}`);
 
     loadPublicAlbums(userData.id);
     initFloatingCompanion();
