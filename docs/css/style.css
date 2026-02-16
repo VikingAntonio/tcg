@@ -1113,12 +1113,35 @@ input:checked + .slider:before {
         gap: 3px;
     }
 
+    .overlay-content {
+        padding: 20px 15px;
+    }
+
+    #expanded-image, .card-3d-container {
+        margin-bottom: 15px;
+    }
+
     .info-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 15px;
+    }
+
+    .info-item {
+        padding: 8px 10px;
+    }
+
+    .info-value {
+        font-size: 13px;
     }
 
     .price-item {
-        grid-column: span 1;
+        grid-column: span 2;
+    }
+
+    .btn-add-cart-modal {
+        margin-top: 15px;
+        padding: 12px !important;
     }
 
     .login-container {
