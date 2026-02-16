@@ -34,7 +34,14 @@
             </div>
             <div class="form-group">
                 <label>Nombre de la Tienda</label>
-                <input type="text" id="new-store" placeholder="Mi Tienda TCG">
+                <input type="text" id="new-store" placeholder="Mi Tienda TCG (Opcional)">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <label class="switch">
+                    <input type="checkbox" id="new-is-store">
+                    <span class="slider"></span>
+                </label>
+                <span style="color: white; font-weight: bold;">¿Es Tienda?</span>
             </div>
             <div class="form-group">
                 <label>Rol</label>
@@ -57,13 +64,14 @@
                     <th>Usuario</th>
                     <th>Contraseña</th>
                     <th>Tienda</th>
+                    <th>¿Tienda?</th>
                     <th>Rol</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="user-list-body">
                 <!-- Users will be loaded here -->
-                <tr><td colspan="5" class="loading">Cargando usuarios...</td></tr>
+                <tr><td colspan="6" class="loading">Cargando usuarios...</td></tr>
             </tbody>
         </table>
 
@@ -145,7 +153,7 @@
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    $('#user-list-body').html('<tr><td colspan="5" class="error">Error al cargar usuarios.</td></tr>');
+                    $('#user-list-body').html('<tr><td colspan="6" class="error">Error al cargar usuarios.</td></tr>');
                     return;
                 }
 
@@ -156,6 +164,12 @@
                             <td>${user.username}</td>
                             <td>${user.password}</td>
                             <td>${user.store_name || '-'}</td>
+                            <td style="text-align: center;">
+                                <label class="switch" style="transform: scale(0.8);">
+                                    <input type="checkbox" class="toggle-is-store" data-id="${user.id}" ${user.is_store ? 'checked' : ''}>
+                                    <span class="slider"></span>
+                                </label>
+                            </td>
                             <td>
                                 <select class="role-select" data-id="${user.id}" style="background: #252525; color: white; border: 1px solid #3d3d3d; padding: 5px; border-radius: 4px;">
                                     <option value="starter" ${user.role === 'starter' || user.role === 'user' ? 'selected' : ''}>Starter</option>
@@ -187,13 +201,14 @@
 
             // Create User
             $('#btn-save-user').click(async function() {
-                const username = $('#new-username').val();
-                const password = $('#new-password').val();
-                const store_name = $('#new-store').val();
+                const username = $('#new-username').val().trim();
+                const password = $('#new-password').val().trim();
+                const store_name = $('#new-store').val().trim();
+                const is_store = $('#new-is-store').is(':checked');
                 const role = $('#new-role').val();
 
-                if (!username || !password || !store_name) {
-                    Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
+                if (!username || !password) {
+                    Swal.fire('Atención', 'Por favor, completa nombre de usuario y contraseña', 'warning');
                     return;
                 }
 
@@ -207,7 +222,18 @@
 
                 const { error } = await _supabase
                     .from('usuarios')
-                    .insert([{ username, password, store_name, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids }]);
+                    .insert([{
+                        username,
+                        password,
+                        store_name: store_name || null,
+                        is_store,
+                        role,
+                        max_albums,
+                        max_pages,
+                        max_decks,
+                        max_cards_per_deck,
+                        allowed_spirit_ids
+                    }]);
 
                 if (error) {
                     Swal.fire('Error', 'No se pudo crear el usuario: ' + error.message, 'error');
@@ -215,7 +241,34 @@
                     Swal.fire('¡Éxito!', 'Usuario creado correctamente', 'success');
                     $('#create-user-panel').slideUp();
                     $('#new-username, #new-password, #new-store').val('');
+                    $('#new-is-store').prop('checked', false);
                     loadUsers();
+                }
+            });
+
+            // Toggle is_store Event
+            $(document).on('change', '.toggle-is-store', async function() {
+                const userId = $(this).data('id');
+                const is_store = $(this).is(':checked');
+
+                const { error } = await _supabase
+                    .from('usuarios')
+                    .update({ is_store })
+                    .eq('id', userId);
+
+                if (error) {
+                    Swal.fire('Error', 'No se pudo actualizar el estado de tienda', 'error');
+                    $(this).prop('checked', !is_store);
+                } else {
+                    Swal.fire({
+                        title: 'Actualizado',
+                        text: 'Estado de tienda actualizado',
+                        icon: 'success',
+                        timer: 1000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
                 }
             });
 

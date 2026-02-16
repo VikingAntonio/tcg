@@ -232,19 +232,30 @@ $(document).ready(function() {
 
         new Swiper('.logos-swiper', {
             slidesPerView: 1,
-            spaceBetween: 30,
-            loop: stores.length > 3,
+            spaceBetween: 40,
+            loop: stores.length >= 3,
+            speed: 1000,
+            grabCursor: true,
+            centeredSlides: false,
             autoplay: {
-                delay: 3000,
+                delay: 2500,
                 disableOnInteraction: false,
+                pauseOnMouseEnter: true
             },
             pagination: {
                 el: '.swiper-pagination',
                 clickable: true,
+                dynamicBullets: true
             },
             breakpoints: {
-                640: { slidesPerView: 2 },
-                1024: { slidesPerView: 3 }
+                640: {
+                    slidesPerView: 2,
+                    spaceBetween: 30
+                },
+                1024: {
+                    slidesPerView: 3,
+                    spaceBetween: 50
+                }
             }
         });
     }
