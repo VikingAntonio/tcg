@@ -191,7 +191,6 @@
             <i class="fas fa-shopping-basket"></i>
             <h2>Tu carrito está vacío</h2>
             <p>Explora nuestros álbumes y agrega tus cartas favoritas.</p>
-            <a href="public.html" class="btn" style="margin-top: 20px;">Volver a la Tienda</a>
         </div>
     </div>
 
@@ -278,10 +277,9 @@
             const encodedMsg = encodeURIComponent(message);
 
             if (platform === 'whatsapp') {
-                window.open(`https://wa.me/?text=${encodedMsg}`, '_blank');
+                window.open(`https://wa.me/526645367661?text=${encodedMsg}`, '_blank');
             } else {
-                // Messenger direct text share is limited on web, but this is a common approach
-                window.open(`https://www.facebook.com/messages/t/?text=${encodedMsg}`, '_blank');
+                window.open(`https://m.me/TCGToonShop?text=${encodedMsg}`, '_blank');
             }
         }
     </script>

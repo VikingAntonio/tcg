@@ -34,6 +34,18 @@ $(document).ready(async function() {
         applyTheme(theme);
     });
 
+    $('#menu-theme-btn').on('click', function(e) {
+        e.preventDefault();
+        const themes = ['theme-light', 'theme-medium', 'theme-dark'];
+        let currentTheme = 'theme-dark';
+        themes.forEach(t => {
+            if ($('body').hasClass(t)) currentTheme = t;
+        });
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        applyTheme(nextTheme);
+        $('#user-dropdown').removeClass('active');
+    });
+
     // --- Floating Panel Logic ---
     $(document).on('click', '#avatar-btn', function(e) {
         e.stopPropagation();

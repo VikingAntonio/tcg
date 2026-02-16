@@ -39,8 +39,9 @@ const Cart = {
     getTotal: function() {
         const items = this.getAll();
         return items.reduce((sum, item) => {
-            // Try to parse price as float, remove non-numeric chars except .
-            const priceStr = (item.price || "0").toString().replace(/[^0-9.]/g, '');
+            // Try to parse price as float, remove non-numeric chars except . and ,
+            // then normalize comma to dot for parsing
+            const priceStr = (item.price || "0").toString().replace(/[^0-9.,]/g, '').replace(',', '.');
             const price = parseFloat(priceStr) || 0;
             return sum + price;
         }, 0);

@@ -1654,6 +1654,7 @@ input:checked + .slider:before {
     .top-left-panel {
         left: auto;
         right: 25px;
+        flex-direction: row-reverse;
     }
 }
 

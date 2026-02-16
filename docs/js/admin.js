@@ -67,6 +67,18 @@ $(document).ready(function() {
         applyTheme(theme);
     });
 
+    $('#menu-theme-btn').on('click', function(e) {
+        e.preventDefault();
+        const themes = ['theme-light', 'theme-medium', 'theme-dark'];
+        let currentTheme = 'theme-dark';
+        themes.forEach(t => {
+            if ($('body').hasClass(t)) currentTheme = t;
+        });
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        applyTheme(nextTheme);
+        $('#user-dropdown').removeClass('active');
+    });
+
     // --- Chatbot Logic ---
     const faqResponses = {
         'album': 'Para crear un álbum, haz clic en "Crear Nuevo Álbum" en esta misma pantalla. Luego puedes entrar a "Editar" para añadir páginas y cartas.',
@@ -371,6 +383,35 @@ $(document).ready(function() {
             } else {
                 loadDeckCards(currentDeckId);
             }
+        }
+    });
+
+    $('#btn-add-to-cart').click(function(e) {
+        e.preventDefault();
+        const cardData = {
+            image_url: $('#slot-image-url').val(),
+            name: $('#slot-name').val(),
+            rarity: $('#slot-rarity').val(),
+            expansion: $('#slot-expansion').val(),
+            price: $('#slot-price').val()
+        };
+
+        if (!cardData.name || !cardData.image_url) {
+            Swal.fire('Atención', 'La carta debe tener al menos nombre e imagen para añadirla al carrito.', 'warning');
+            return;
+        }
+
+        if (window.Cart) {
+            window.Cart.addItem(cardData);
+            Swal.fire({
+                title: '¡Añadido!',
+                text: `${cardData.name} se ha añadido al carrito.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
         }
     });
 
