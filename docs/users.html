@@ -39,7 +39,8 @@
             <div class="form-group">
                 <label>Rol</label>
                 <select id="new-role" style="width: 100%; padding: 10px; background: #252525; color: white; border: 1px solid #3d3d3d; border-radius: 8px;">
-                    <option value="user">Usuario</option>
+                    <option value="starter">Starter</option>
+                    <option value="premium">Premium</option>
                     <option value="admin_store">Admin store</option>
                     <option value="admin">Admin</option>
                 </select>
@@ -65,6 +66,43 @@
                 <tr><td colspan="5" class="loading">Cargando usuarios...</td></tr>
             </tbody>
         </table>
+
+        <!-- Manage Limits Panel -->
+        <div id="manage-limits-panel" class="album-card" style="display: none; max-width: 600px; margin: 30px auto; padding: 25px; border: 1px solid #00d2ff; box-shadow: 0 0 15px rgba(0,210,255,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin:0; color: #00d2ff;"><i class="fas fa-sliders-h"></i> Gestionar Límites</h2>
+                <button id="btn-close-limits" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Volver</button>
+            </div>
+            <p style="color: #aaa; margin-bottom: 20px;">Usuario: <strong id="manage-username" style="color: #fff;"></strong></p>
+            <input type="hidden" id="manage-user-id">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Máximo de Álbumes</label>
+                    <input type="number" id="limit-albums" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Páginas por Álbum</label>
+                    <input type="number" id="limit-pages" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Máximo de Decks</label>
+                    <input type="number" id="limit-decks" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Cartas por Deck</label>
+                    <input type="number" id="limit-cards" min="1">
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Compañeros Desbloqueados (IDs o "all")</label>
+                <input type="text" id="limit-spirits" placeholder="Ej: 1, 5, 12 o all">
+                <small style="color: #666;">Deja vacío para usar los predeterminados del plan.</small>
+            </div>
+            <div style="margin-top: 25px;">
+                <button id="btn-save-limits" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Cambios</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -106,16 +144,22 @@
                             <td>${user.store_name || '-'}</td>
                             <td>
                                 <select class="role-select" data-id="${user.id}" style="background: #252525; color: white; border: 1px solid #3d3d3d; padding: 5px; border-radius: 4px;">
-                                    <option value="user" ${user.role === 'user' ? 'selected' : ''}>Usuario</option>
+                                    <option value="starter" ${user.role === 'starter' || user.role === 'user' ? 'selected' : ''}>Starter</option>
+                                    <option value="premium" ${user.role === 'premium' ? 'selected' : ''}>Premium</option>
                                     <option value="admin_store" ${user.role === 'admin_store' ? 'selected' : ''}>Admin store</option>
                                     <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                                 </select>
                             </td>
                             <td>
-                                <button class="btn btn-danger btn-sm btn-delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                                <div style="display: flex; gap: 5px;">
+                                    <button class="btn btn-secondary btn-sm btn-manage-limits" title="Gestionar Límites"><i class="fas fa-cog"></i></button>
+                                    <button class="btn btn-danger btn-sm btn-delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                                </div>
                             </td>
                         </tr>
                     `);
+
+                    $row.find('.btn-manage-limits').click(() => showManageLimits(user));
                     $('#user-list-body').append($row);
                 });
             }
@@ -139,9 +183,17 @@
                     return;
                 }
 
+                // Default limits based on role
+                let max_albums = 3, max_pages = 5, max_decks = 1, max_cards_per_deck = 60, allowed_spirit_ids = '';
+                if (role === 'premium') {
+                    max_albums = 5; max_pages = 10; max_decks = 5; max_cards_per_deck = 60; allowed_spirit_ids = 'all';
+                } else if (role === 'admin' || role === 'admin_store') {
+                    max_albums = 999; max_pages = 999; max_decks = 999; max_cards_per_deck = 999; allowed_spirit_ids = 'all';
+                }
+
                 const { error } = await _supabase
                     .from('usuarios')
-                    .insert([{ username, password, store_name, role }]);
+                    .insert([{ username, password, store_name, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids }]);
 
                 if (error) {
                     Swal.fire('Error', 'No se pudo crear el usuario: ' + error.message, 'error');
@@ -217,6 +269,49 @@
             $('#btn-logout').click(function() {
                 localStorage.removeItem('tcg_session');
                 window.location.href = 'admin.html';
+            });
+
+            // --- Manage Limits Logic ---
+            function showManageLimits(user) {
+                $('#manage-user-id').val(user.id);
+                $('#manage-username').text(user.username);
+                $('#limit-albums').val(user.max_albums || 3);
+                $('#limit-pages').val(user.max_pages || 5);
+                $('#limit-decks').val(user.max_decks || 1);
+                $('#limit-cards').val(user.max_cards_per_deck || 60);
+                $('#limit-spirits').val(user.allowed_spirit_ids || '');
+
+                $('#manage-limits-panel').slideDown();
+                // Scroll to panel
+                $('html, body').animate({
+                    scrollTop: $("#manage-limits-panel").offset().top - 50
+                }, 500);
+            }
+
+            $('#btn-close-limits').click(() => $('#manage-limits-panel').slideUp());
+
+            $('#btn-save-limits').click(async function() {
+                const userId = $('#manage-user-id').val();
+                const updateData = {
+                    max_albums: parseInt($('#limit-albums').val()),
+                    max_pages: parseInt($('#limit-pages').val()),
+                    max_decks: parseInt($('#limit-decks').val()),
+                    max_cards_per_deck: parseInt($('#limit-cards').val()),
+                    allowed_spirit_ids: $('#limit-spirits').val().trim()
+                };
+
+                const { error } = await _supabase
+                    .from('usuarios')
+                    .update(updateData)
+                    .eq('id', userId);
+
+                if (error) {
+                    Swal.fire('Error', 'No se pudieron actualizar los límites', 'error');
+                } else {
+                    Swal.fire('¡Éxito!', 'Límites actualizados correctamente', 'success');
+                    $('#manage-limits-panel').slideUp();
+                    loadUsers();
+                }
             });
         });
     </script>
