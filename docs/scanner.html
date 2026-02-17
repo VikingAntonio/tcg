@@ -459,6 +459,8 @@ const SCAN_ROI = {
 
 let isScanning = false;
 let stream = null;
+let detectionBuffer = {};
+const DETECTION_THRESHOLD = 3;
 
 let ygoSetsCache = null;
 async function getYgoSets() {
@@ -614,6 +616,15 @@ async function startCamera() {
         });
         const video = document.getElementById('video-preview');
         video.srcObject = stream;
+
+        // Intentar aplicar enfoque continuo si el dispositivo lo permite
+        const track = stream.getVideoTracks()[0];
+        if (track && track.applyConstraints) {
+            track.applyConstraints({
+                advanced: [{ focusMode: 'continuous' }, { exposureMode: 'continuous' }]
+            }).catch(e => console.warn("Constraints no soportados:", e));
+        }
+
         video.style.display = 'block';
         $('#file-preview').hide();
 
@@ -636,6 +647,7 @@ function stopCamera() {
     }
     isScanning = false;
     clearTimeout(scanTimer);
+    detectionBuffer = {};
     $('#btn-toggle-scan').html('<i class="fas fa-camera"></i> Cámara').removeClass('btn-secondary').addClass('btn-primary');
     $('#scanner-viewport').removeClass('scanner-active');
     $('#status-text').text('Pausado');
@@ -704,25 +716,29 @@ async function captureAndProcessFrame(video) {
     canvas.height = 1100;
     ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1100);
 
-    // Create a processing canvas for the specific ROI adjusted by the user
+    // Create a processing canvas for the specific ROI adjusted by the user - UPSCALE 2x
     const procCanvas = document.createElement('canvas');
-    procCanvas.width = SCAN_ROI.w;
-    procCanvas.height = SCAN_ROI.h;
+    procCanvas.width = SCAN_ROI.w * 2;
+    procCanvas.height = SCAN_ROI.h * 2;
     const pctx = procCanvas.getContext('2d');
 
-    pctx.drawImage(canvas, SCAN_ROI.x, SCAN_ROI.y, SCAN_ROI.w, SCAN_ROI.h, 0, 0, SCAN_ROI.w, SCAN_ROI.h);
-    preprocessROI(pctx, 0, 0, SCAN_ROI.w, SCAN_ROI.h);
+    // Smooth scaling
+    pctx.imageSmoothingEnabled = true;
+    pctx.imageSmoothingQuality = 'high';
 
-    $('#status-text').text('Identificando...');
+    pctx.drawImage(canvas, SCAN_ROI.x, SCAN_ROI.y, SCAN_ROI.w, SCAN_ROI.h, 0, 0, SCAN_ROI.w * 2, SCAN_ROI.h * 2);
+    preprocessROI(pctx, 0, 0, SCAN_ROI.w * 2, SCAN_ROI.h * 2);
+
+    // No cambiamos el texto aquí para no parpadear con "Verificando..."
     $('#status-container').addClass('status-working');
 
     await processImage(procCanvas);
 }
 
-function preprocessROI(ctx, x, y, w, h) {
+function preprocessROI(ctx, x, y, w, h, threshold = 140) {
     const imageData = ctx.getImageData(x, y, w, h);
     const data = imageData.data;
-    const factor = 2.0; // High contrast factor
+    const factor = 2.5; // Slightly higher contrast
 
     for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
@@ -733,17 +749,34 @@ function preprocessROI(ctx, x, y, w, h) {
         v = factor * (v - 128) + 128;
 
         // Apply Threshold
-        v = v > 140 ? 255 : 0;
+        v = v > threshold ? 255 : 0;
 
         data[i] = data[i+1] = data[i+2] = v;
     }
     ctx.putImageData(imageData, x, y);
 }
 
-async function processImage(imageOrCanvas) {
+async function processImage(imageOrCanvas, isRetry = false) {
     try {
         const { data: { text } } = await tesseractWorker.recognize(imageOrCanvas);
-        await processDetectedText(text);
+        const { code } = identifyFromText(text);
+
+        if (code) {
+            await processDetectedText(text);
+        } else if (!isRetry && !$('#file-preview').is(':visible') && isScanning) {
+            // Reintento con un preprocesado diferente si falló el primero
+            const procCanvas = document.createElement('canvas');
+            procCanvas.width = imageOrCanvas.width;
+            procCanvas.height = imageOrCanvas.height;
+            const pctx = procCanvas.getContext('2d');
+            pctx.drawImage(imageOrCanvas, 0, 0);
+
+            // Segundo intento con un threshold distinto
+            preprocessROI(pctx, 0, 0, procCanvas.width, procCanvas.height, 165);
+            await processImage(procCanvas, true);
+        } else {
+            await processDetectedText(text);
+        }
     } catch (err) {
         console.error("OCR Error:", err);
         $('#status-text').text('Error en OCR');
@@ -753,19 +786,19 @@ async function processImage(imageOrCanvas) {
 
 function smartNormalize(s, forceNumeric = false) {
     if (!s) return "";
-    // If it's supposed to be numeric or mostly numeric, fix common OCR swaps
+    // Si se espera numérico o tiene más números que letras, aplicamos correcciones agresivas
     const digitCount = (s.match(/[0-9]/g) || []).length;
     const letterCount = (s.match(/[A-Z]/g) || []).length;
 
     if (forceNumeric || digitCount >= letterCount) {
-        return s.replace(/[OQ]/g, '0')
-                .replace(/[ILT]/g, '1')
-                .replace(/Z/g, '2')
-                .replace(/E/g, '3')
-                .replace(/A/g, '4')
-                .replace(/S/g, '5')
-                .replace(/G/g, '6')
-                .replace(/B/g, '8')
+        return s.replace(/[OQDU]/g, '0') // O, Q, D, U -> 0
+                .replace(/[ILJT]/g, '1') // I, L, J, T -> 1
+                .replace(/Z/g, '2')      // Z -> 2
+                .replace(/E/g, '3')      // E -> 3
+                .replace(/A/g, '4')      // A -> 4
+                .replace(/S/g, '5')      // S -> 5
+                .replace(/G/g, '6')      // G -> 6
+                .replace(/B/g, '8')      // B -> 8
                 .replace(/\s/g, '');
     }
     return s.replace(/\s/g, '');
@@ -779,8 +812,9 @@ function identifyFromText(text) {
         line = line.trim();
         if (!line) continue;
 
-        // 1. Yu-Gi-Oh Passcode (8 digits) - High Priority
-        const regexPasscode = /\b([0-9OIZSGEAB]{8})\b/;
+        // 1. Yu-Gi-Oh Passcode (8 dígitos) - Alta prioridad
+        // Incluimos letras que suelen confundirse con números
+        const regexPasscode = /\b([0-9OIZSGEABDUQ]{8})\b/;
         const matchPass = line.match(regexPasscode);
         if (matchPass) {
             const code = smartNormalize(matchPass[1], true);
@@ -836,6 +870,28 @@ async function processDetectedText(text) {
     const { code, type } = identifyFromText(text);
 
     if (code) {
+        // Si es carga de archivo, no necesitamos votación
+        if (!$('#file-preview').is(':visible')) {
+            if (!detectionBuffer[code]) {
+                detectionBuffer = {}; // Solo nos enfocamos en un código a la vez
+                detectionBuffer[code] = 1;
+            } else {
+                detectionBuffer[code]++;
+            }
+
+            const count = detectionBuffer[code];
+            $('#detected-code').text(`${code} (${count}/${DETECTION_THRESHOLD})`);
+
+            if (count < DETECTION_THRESHOLD) {
+                $('#status-text').text(`Verificando... [${count}/${DETECTION_THRESHOLD}]`);
+                return;
+            }
+
+            // Si llegamos aquí, el código es válido
+            detectionBuffer = {};
+            $('#status-text').text('¡Confirmado!');
+        }
+
         $('#detected-code').text(code);
         const success = await handleFoundCode(code, type);
         if (!success && code) {
