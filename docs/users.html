@@ -150,7 +150,7 @@
             async function loadUsers() {
                 const { data: users, error } = await _supabase
                     .from('usuarios')
-                    .select('*')
+                    .select('id, username, store_name, is_store, role')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -163,7 +163,7 @@
                     const $row = $(`
                         <tr data-id="${user.id}">
                             <td>${user.username}</td>
-                            <td>${user.password}</td>
+                            <td>********</td>
                             <td>${user.store_name || '-'}</td>
                             <td style="text-align: center;">
                                 <label class="switch" style="transform: scale(0.8);">

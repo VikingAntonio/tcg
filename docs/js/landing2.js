@@ -50,17 +50,16 @@ $(document).ready(function() {
             return;
         }
 
-        const { data, error } = await _supabase
-            .from('usuarios')
-            .select('*')
-            .eq('username', username)
-            .eq('password', password)
-            .single();
+        const { data, error } = await _supabase.rpc('login_usuario', {
+            p_username: username,
+            p_password: password
+        });
+        const user = (data && data.length > 0) ? data[0] : null;
 
-        if (error || !data) {
+        if (error || !user) {
             Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
         } else {
-            localStorage.setItem('tcg_session', JSON.stringify(data));
+            localStorage.setItem('tcg_session', JSON.stringify(user));
             Swal.fire({
                 title: '¡Bienvenido!',
                 text: 'Has iniciado sesión correctamente',
@@ -192,7 +191,7 @@ $(document).ready(function() {
 
         const { data: stores, error } = await _supabase
             .from('usuarios')
-            .select('*')
+            .select('id, username, store_name, store_logo, ubicacion, horario, is_store')
             .eq('is_store', true);
 
         if (error || !stores || stores.length === 0) {

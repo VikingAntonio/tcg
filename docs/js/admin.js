@@ -1221,18 +1221,17 @@ async function handleLogin() {
         return;
     }
 
-    const { data, error } = await _supabase
-        .from('usuarios')
-        .select('*')
-        .eq('username', username)
-        .eq('password', password)
-        .single();
+    const { data, error } = await _supabase.rpc('login_usuario', {
+        p_username: username,
+        p_password: password
+    });
+    const user = (data && data.length > 0) ? data[0] : null;
 
-    if (error || !data) {
+    if (error || !user) {
         Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
     } else {
-        currentUser = data;
-        localStorage.setItem('tcg_session', JSON.stringify(data));
+        currentUser = user;
+        localStorage.setItem('tcg_session', JSON.stringify(user));
         showAuthenticatedContent();
     }
 }
