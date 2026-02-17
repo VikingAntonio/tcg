@@ -173,7 +173,7 @@ h1, h2, h3, h4, .logo {
 .card-3d-container {
     perspective: 1000px;
     width: 320px;
-    height: 448px;
+    height: 460px;
     position: relative;
     touch-action: none;
     z-index: 5;
@@ -184,7 +184,7 @@ h1, h2, h3, h4, .logo {
 
 .card-3d {
     width: 320px;
-    height: 448px;
+    height: 460px;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.1s ease;
@@ -359,7 +359,7 @@ h1, h2, h3, h4, .logo {
 }
 
 /* User Panel */
-.top-left-panel {
+.floating-control-panel {
     position: fixed;
     top: 24px;
     right: 24px;
@@ -552,34 +552,40 @@ h1, h2, h3, h4, .logo {
     background: var(--white);
     border: 1px solid rgba(0,0,0,0.05);
     border-radius: 40px;
-    padding: 60px 40px;
-    text-align: center;
+    padding: 60px;
     box-shadow: var(--card-shadow);
 }
 
+.contact-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 60px;
+    text-align: left;
+}
+
+.contact-text {
+    flex: 1;
+}
+
 .contact-logo {
-    width: 80px;
-    height: 80px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
-    margin-bottom: 24px;
-    border: 3px solid var(--pastel-cyan);
+    border: 6px solid var(--pastel-cyan);
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
 .contact-banner h2 {
     font-size: 2.25rem;
     margin-bottom: 16px;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
 }
 
 .contact-banner p {
     color: var(--text-muted);
     font-size: 1.125rem;
     margin-bottom: 32px;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
 }
 
 /* CTA Section */
@@ -655,6 +661,15 @@ footer {
     .hero-cta { justify-content: center; }
     .bento-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
     .bento-item.large, .bento-item.medium { grid-column: span 1; }
+
+    .contact-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 40px;
+    }
+    .contact-logo {
+        order: 2; /* Logo below text */
+    }
 }
 
 @media (max-width: 640px) {
