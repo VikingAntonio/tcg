@@ -161,6 +161,39 @@ $(document).ready(function() {
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
 
+    // --- Upgrade Button Logic ---
+    $(document).on('click', '#btn-upgrade-plan', function(e) {
+        e.preventDefault();
+        Swal.fire({
+            title: '<span style="color: #00d2ff;">¡Sube a Premium!</span>',
+            html: `
+                <div style="text-align: left; color: #eee; font-size: 0.95rem; line-height: 1.6;">
+                    <p>¿Te gustaría aumentar el potencial de tu tienda? Estos son los beneficios del plan <strong>Premium</strong>:</p>
+                    <ul style="list-style-type: none; padding-left: 0; margin-top: 15px;">
+                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 álbumes</strong> activos.</li>
+                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>10 páginas</strong> por álbum.</li>
+                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 decks</strong> personalizados.</li>
+                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Acceso a <strong>todos los compañeros 3D</strong>.</li>
+                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Soporte prioritario.</li>
+                    </ul>
+                    <p style="margin-top: 20px; text-align: center; font-weight: bold;">Haz clic abajo para contactarnos y solicitar tu upgrade:</p>
+                </div>
+            `,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fab fa-facebook-messenger"></i> Contactar por Messenger',
+            cancelButtonText: 'Tal vez luego',
+            confirmButtonColor: '#0084ff',
+            cancelButtonColor: '#333',
+            background: '#1a1a1a',
+            color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.open('https://m.me/vikingdevtj', '_blank');
+            }
+        });
+    });
+
     // --- Back Buttons ---
     $(document).on('click', '#btn-back-to-main, .btn-back-main', function(e) {
         e.preventDefault();
@@ -1257,6 +1290,17 @@ async function showAuthenticatedContent() {
             $('#btn-users-panel').hide();
             $('#admin-upload-container').hide();
         }
+    }
+
+    // Upgrade button for starter users
+    if (currentUser.role === 'starter' || currentUser.role === 'user') {
+        $('#upgrade-button-container').html(`
+            <button id="btn-upgrade-plan" class="btn-upgrade">
+                <i class="fas fa-rocket"></i> Upgrade a Premium
+            </button>
+        `);
+    } else {
+        $('#upgrade-button-container').empty();
     }
 
     // Generate public store link

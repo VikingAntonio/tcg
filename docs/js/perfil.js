@@ -33,6 +33,7 @@ $(document).ready(function() {
     function loadProfileData() {
         $('#profile-username').val(currentUser.username);
         $('#profile-email').val(currentUser.email || '');
+        $('#profile-password').val(currentUser.password || '');
 
         if (currentUser.is_store) {
             $('.store-only-field').show();
@@ -86,6 +87,7 @@ $(document).ready(function() {
     // --- Save Profile ---
     $('#btn-save-profile').click(async function() {
         const email = $('#profile-email').val().trim();
+        const password = $('#profile-password').val().trim();
         const storeName = $('#profile-store-name').val().trim();
         const whatsapp = $('#profile-whatsapp').val().trim();
         const messenger = $('#profile-messenger').val().trim();
@@ -123,6 +125,7 @@ $(document).ready(function() {
             // 2. Update DB
             const updateData = {
                 email: email,
+                password: password,
                 store_name: storeName,
                 whatsapp_link: whatsapp,
                 messenger_link: messenger,
@@ -191,5 +194,50 @@ $(document).ready(function() {
     $('.theme-btn-small').click(function() {
         const theme = $(this).data('theme');
         applyTheme(theme);
+    });
+
+    // --- Password Toggle ---
+    $('#toggle-password').click(function() {
+        const input = $('#profile-password');
+        const type = input.attr('type') === 'password' ? 'text' : 'password';
+        input.attr('type', type);
+        $(this).toggleClass('fa-eye fa-eye-slash');
+    });
+
+    // --- Schedule Helper Logic ---
+    let selectedScheduleDay = null;
+
+    $('.day-btn').click(function() {
+        $('.day-btn').removeClass('active');
+        $(this).addClass('active');
+        selectedScheduleDay = $(this).data('day');
+    });
+
+    $('#btn-apply-sched').click(function() {
+        if (!selectedScheduleDay) {
+            Swal.fire('Atención', 'Por favor, selecciona un rango de días primero.', 'info');
+            return;
+        }
+
+        const start = $('#sched-start').val();
+        const end = $('#sched-end').val();
+        const newSchedulePart = `${selectedScheduleDay} ${start} - ${end}`;
+
+        let currentVal = $('#profile-horario').val().trim();
+        if (currentVal) {
+            $('#profile-horario').val(currentVal + ', ' + newSchedulePart);
+        } else {
+            $('#profile-horario').val(newSchedulePart);
+        }
+
+        Swal.fire({
+            title: '¡Aplicado!',
+            text: 'Se ha añadido al horario.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
     });
 });
