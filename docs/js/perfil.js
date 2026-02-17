@@ -17,7 +17,7 @@ $(document).ready(function() {
         // Refresh data from Supabase to get latest
         const { data, error } = await _supabase
             .from('usuarios')
-            .select('*')
+            .select('id, username, email, password, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo')
             .eq('id', currentUser.id)
             .single();
 

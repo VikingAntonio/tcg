@@ -700,7 +700,7 @@ async function loadStoreData() {
 
     const { data: userData, error: userError } = await _supabase
         .from('usuarios')
-        .select('id, store_name, whatsapp_link, messenger_link, store_logo, is_store')
+        .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store')
         .eq('store_name', storeName)
         .single();
 

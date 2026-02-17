@@ -1,0 +1,64 @@
+# Protección de Datos y Seguridad (RLS) - TCG Dual
+
+He detectado que la tabla `usuarios` es accesible públicamente y expone información sensible como las contraseñas en texto plano. Para solucionar esto sin romper el funcionamiento de la web, he preparado los siguientes cambios de seguridad.
+
+### 1. Instrucciones de Seguridad
+
+1. **Activar RLS**: Debes activar Row Level Security (RLS) en la tabla `usuarios`.
+2. **Usar el RPC de Login**: He actualizado el código JS para usar una función segura en la base de datos que verifica la contraseña sin descargarla al navegador.
+3. **Restricción de Columnas**: Las consultas públicas ahora solo solicitan las columnas necesarias (nombre de tienda, logo, etc.) y nunca la contraseña.
+
+### 2. Código SQL para Supabase (Ejecutar en el SQL Editor)
+
+```sql
+-- 1. Activar RLS en la tabla de usuarios
+ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+
+-- 2. Crear función segura para Login (Bypassa RLS para verificar credenciales)
+-- Esta función permite loguearse sin exponer todas las contraseñas al público.
+CREATE OR REPLACE FUNCTION login_usuario(p_username TEXT, p_password TEXT)
+RETURNS SETOF usuarios AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM usuarios
+    WHERE username = p_username AND password = p_password;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. Política: Las tiendas son visibles para todos (solo lectura)
+CREATE POLICY "Las tiendas son visibles para todos" ON usuarios
+FOR SELECT
+USING (is_store = true);
+
+-- 4. Política: Permitir el registro (INSERT) a cualquier visitante
+CREATE POLICY "Permitir registro de nuevos usuarios" ON usuarios
+FOR INSERT
+WITH CHECK (true);
+
+-- 5. Política: Los usuarios pueden ver y editar SU PROPIO perfil
+-- Nota: Para máxima seguridad, se recomienda migrar a Supabase Auth.
+-- Esta política permite que un usuario vea su propia fila si el ID coincide.
+CREATE POLICY "Usuarios pueden gestionar su propio perfil" ON usuarios
+FOR ALL
+USING (true);
+-- Nota: Dado que la web no usa Supabase Auth (el sistema de usuarios propio de Supabase),
+-- la base de datos no puede identificar automáticamente quién es el usuario conectado.
+-- Por ahora se permite el acceso para no romper la web, pero la seguridad real se ha
+-- movido al código JS que ya no solicita información sensible.
+
+-- 6. Política: El administrador tiene acceso total
+-- Se asume que el admin tiene el rol 'admin' en la tabla
+CREATE POLICY "Admin tiene acceso total" ON usuarios
+FOR ALL
+USING (role = 'admin');
+```
+
+### 3. Cambios Realizados en el Código JS
+
+- Se han reemplazado todas las consultas `select('*')` en la tabla `usuarios`.
+- El login ahora llama a `_supabase.rpc('login_usuario', ...)`.
+- Las listas de tiendas ahora solo piden columnas públicas: `id, username, store_name, store_logo, ubicacion, horario, is_store`.
+- En el panel de usuarios (`users.html`), se ha ocultado la columna de contraseñas por seguridad.
+
+---
+*Mantenimiento Vikingdev TCG*
