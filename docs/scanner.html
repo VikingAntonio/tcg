@@ -346,9 +346,13 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
-        .ygo-set { top: 60%; right: 5%; width: 38%; height: 6%; }
-        .bottom-left { bottom: 6%; left: 5%; width: 35%; height: 6%; }
-        .bottom-right { bottom: 6%; right: 5%; width: 30%; height: 6%; }
+        /* AJUSTA ESTA ZONA VISUAL PARA QUE COINCIDA CON SCAN_ROI */
+        .main-code-zone {
+            bottom: 5%;  /* Distancia desde abajo */
+            left: 5%;    /* Distancia desde la izquierda */
+            width: 90%;  /* Ancho de la caja */
+            height: 10%; /* Alto de la caja */
+        }
     </style>
 </head>
 <body class="public-body">
@@ -397,10 +401,8 @@
                     <div class="corner-bl"></div>
                     <div class="corner-br"></div>
 
-                    <!-- Detection Zones -->
-                    <div class="code-zone ygo-set" data-label="YGO Set Code"></div>
-                    <div class="code-zone bottom-left" data-label="Passcode / PKMN"></div>
-                    <div class="code-zone bottom-right" data-label="PKMN"></div>
+                    <!-- Solo el espacio para el código (Ajustable) -->
+                    <div class="code-zone main-code-zone" data-label="Área de Escaneo"></div>
 
                     <div class="scanning-line"></div>
                 </div>
@@ -446,6 +448,15 @@
     <canvas id="hidden-canvas" style="display:none;"></canvas>
 
     <script>
+// CONFIGURACIÓN DE ÁREA DE ESCANEO (ROI)
+// Estos valores se aplican sobre un lienzo de 800x1100 (proporción de carta)
+const SCAN_ROI = {
+    x: 40,    // Distancia desde la izquierda
+    y: 940,   // Distancia desde arriba (YGO Passcode/PKMN Number suelen estar abajo)
+    w: 720,   // Ancho del área de captura
+    h: 120    // Alto del área de captura
+};
+
 let isScanning = false;
 let stream = null;
 
@@ -693,26 +704,14 @@ async function captureAndProcessFrame(video) {
     canvas.height = 1100;
     ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1100);
 
-    // Create a processing canvas for specific ROIs (Regions of Interest)
-    // This dramatically improves OCR accuracy by focusing only on code areas
+    // Create a processing canvas for the specific ROI adjusted by the user
     const procCanvas = document.createElement('canvas');
-    procCanvas.width = 320;
-    procCanvas.height = 300;
+    procCanvas.width = SCAN_ROI.w;
+    procCanvas.height = SCAN_ROI.h;
     const pctx = procCanvas.getContext('2d');
-    pctx.fillStyle = 'white';
-    pctx.fillRect(0, 0, 320, 300);
 
-    // ROI 1: YGO Set Code (Middle-Right)
-    pctx.drawImage(canvas, 450, 640, 300, 80, 10, 10, 300, 80);
-    preprocessROI(pctx, 10, 10, 300, 80);
-
-    // ROI 2: Bottom Left (Passcode / PKMN)
-    pctx.drawImage(canvas, 40, 980, 300, 80, 10, 100, 300, 80);
-    preprocessROI(pctx, 10, 100, 300, 80);
-
-    // ROI 3: Bottom Right (PKMN)
-    pctx.drawImage(canvas, 480, 980, 280, 80, 10, 190, 300, 80);
-    preprocessROI(pctx, 10, 190, 300, 80);
+    pctx.drawImage(canvas, SCAN_ROI.x, SCAN_ROI.y, SCAN_ROI.w, SCAN_ROI.h, 0, 0, SCAN_ROI.w, SCAN_ROI.h);
+    preprocessROI(pctx, 0, 0, SCAN_ROI.w, SCAN_ROI.h);
 
     $('#status-text').text('Identificando...');
     $('#status-container').addClass('status-working');
