@@ -25,7 +25,7 @@ const showLoading = window.showLoading;
 const hideLoading = window.hideLoading;
 
 $(document).ready(async function() {
-    checkSession();
+    await checkSession();
     initTheme();
 
     // Theme Switcher
@@ -972,11 +972,17 @@ function applyTheme(theme) {
     $(`.theme-btn[data-theme="${theme}"], .theme-btn-small[data-theme="${theme}"]`).addClass('active');
 }
 
-function checkSession() {
-    const session = localStorage.getItem('tcg_session');
+async function checkSession() {
+    const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
-        try {
-            const user = JSON.parse(session);
+        const { data: user } = await _supabase
+            .from('usuarios')
+            .select('id, username, store_name, store_logo, is_store, role')
+            .eq('id', session.user.id)
+            .single();
+
+        if (user) {
+            localStorage.setItem('tcg_session', JSON.stringify(user));
             if (user.is_store) {
                 $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
                 $('#dropdown-user-name').text(user.store_name || user.username);

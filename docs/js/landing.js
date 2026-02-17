@@ -1,5 +1,5 @@
-$(document).ready(function() {
-    checkSession();
+$(document).ready(async function() {
+    await checkSession();
     initTheme();
     loadStoresSlider();
     updateCartCount();
@@ -46,24 +46,34 @@ $(document).ready(function() {
     $('#btn-register').click(handleRegister);
 
     async function handleLogin() {
-        const username = $('#login-username').val().trim();
+        const email = $('#login-username').val().trim(); // Assuming users use email or we need to find email by username
         const password = $('#login-password').val().trim();
 
-        if (!username || !password) {
+        if (!email || !password) {
             Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
             return;
         }
 
-        const { data, error } = await _supabase.rpc('login_usuario', {
-            p_username: username,
-            p_password: password
-        });
-        const user = (data && data.length > 0) ? data[0] : null;
+        // With Supabase Auth, login is usually by email.
+        // If we want to support username login, we'd need a workaround,
+        // but standard is email. I'll use signInWithPassword.
 
-        if (error || !user) {
-            Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
+        const { data, error } = await _supabase.auth.signInWithPassword({
+            email: email.includes('@') ? email : `${email}@placeholder.com`, // Simple hack if they use username
+            password: password,
+        });
+
+        if (error) {
+            Swal.fire('Error', 'Error al iniciar sesión: ' + error.message, 'error');
         } else {
-            localStorage.setItem('tcg_session', JSON.stringify(user));
+            // After auth, fetch profile
+            const { data: profile } = await _supabase
+                .from('usuarios')
+                .select('id, username, store_name, store_logo, is_store, role')
+                .eq('id', data.user.id)
+                .single();
+
+            localStorage.setItem('tcg_session', JSON.stringify(profile));
             Swal.fire({
                 title: '¡Bienvenido!',
                 text: 'Has iniciado sesión correctamente',
@@ -86,45 +96,23 @@ $(document).ready(function() {
             return;
         }
 
-        // Check if username already exists
-        const { data: existingUser } = await _supabase
-            .from('usuarios')
-            .select('username')
-            .eq('username', username)
-            .single();
-
-        if (existingUser) {
-            Swal.fire('Error', 'El nombre de usuario ya está en uso', 'error');
-            return;
-        }
-
-        // Create new user
-        const { data, error } = await _supabase
-            .from('usuarios')
-            .insert([{
-                username,
-                password,
-                email,
-                role: 'starter',
-                is_store: false,
-                max_albums: 3,
-                max_pages: 5,
-                max_decks: 1,
-                max_cards_per_deck: 60
-            }])
-            .select()
-            .single();
+        const { data, error } = await _supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { username }
+            }
+        });
 
         if (error) {
             Swal.fire('Error', 'No se pudo crear la cuenta: ' + error.message, 'error');
         } else {
-            localStorage.setItem('tcg_session', JSON.stringify(data));
             Swal.fire({
                 title: '¡Cuenta Creada!',
-                text: 'Tu cuenta ha sido creada y has iniciado sesión',
+                text: 'Revisa tu correo para confirmar (si está activado) o inicia sesión ahora.',
                 icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
+                timer: 3000,
+                showConfirmButton: true
             }).then(() => {
                 location.reload();
             });
@@ -132,13 +120,20 @@ $(document).ready(function() {
     }
 
     // --- Session & Header ---
-    function checkSession() {
-        const session = localStorage.getItem('tcg_session');
+    async function checkSession() {
+        const { data: { session } } = await _supabase.auth.getSession();
         const $authItems = $('#auth-menu-items');
         $authItems.empty();
 
         if (session) {
-            const user = JSON.parse(session);
+            const { data: user } = await _supabase
+                .from('usuarios')
+                .select('id, username, store_name, store_logo, is_store, role')
+                .eq('id', session.user.id)
+                .single();
+
+            if (!user) return;
+            localStorage.setItem('tcg_session', JSON.stringify(user));
 
             if (user.is_store) {
                 $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
@@ -161,8 +156,9 @@ $(document).ready(function() {
         }
     }
 
-    $(document).on('click', '#btn-logout', function(e) {
+    $(document).on('click', '#btn-logout', async function(e) {
         e.preventDefault();
+        await _supabase.auth.signOut();
         localStorage.removeItem('tcg_session');
         location.reload();
     });

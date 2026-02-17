@@ -132,15 +132,19 @@
     <script src="js/supabase-config.js"></script>
     <script>
         async function initUsersPanel() {
-            // Check session
-            const sessionData = localStorage.getItem('tcg_session');
-            if (!sessionData) {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (!session) {
                 window.location.href = 'admin.html';
                 return;
             }
 
-            const currentUser = JSON.parse(sessionData);
-            if (currentUser.role !== 'admin') {
+            const { data: currentUser } = await _supabase
+                .from('usuarios')
+                .select('id, username, role')
+                .eq('id', session.user.id)
+                .single();
+
+            if (!currentUser || currentUser.role !== 'admin') {
                 await Swal.fire('Acceso Denegado', 'Solo los administradores pueden acceder a este panel.', 'error');
                 window.location.href = 'admin.html';
                 return;
@@ -150,7 +154,7 @@
             async function loadUsers() {
                 const { data: users, error } = await _supabase
                     .from('usuarios')
-                    .select('id, username, store_name, is_store, role')
+                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -202,49 +206,7 @@
 
             // Create User
             $('#btn-save-user').click(async function() {
-                const username = $('#new-username').val().trim();
-                const password = $('#new-password').val().trim();
-                const store_name = $('#new-store').val().trim();
-                const is_store = $('#new-is-store').is(':checked');
-                const role = $('#new-role').val();
-
-                if (!username || !password) {
-                    Swal.fire('Atención', 'Por favor, completa nombre de usuario y contraseña', 'warning');
-                    return;
-                }
-
-                // Default limits based on role
-                let max_albums = 3, max_pages = 5, max_decks = 1, max_cards_per_deck = 60, allowed_spirit_ids = '';
-                if (role === 'premium') {
-                    max_albums = 5; max_pages = 10; max_decks = 5; max_cards_per_deck = 60; allowed_spirit_ids = 'all';
-                } else if (role === 'admin' || role === 'admin_store') {
-                    max_albums = 999; max_pages = 999; max_decks = 999; max_cards_per_deck = 999; allowed_spirit_ids = 'all';
-                }
-
-                const { error } = await _supabase
-                    .from('usuarios')
-                    .insert([{
-                        username,
-                        password,
-                        store_name: store_name || null,
-                        is_store,
-                        role,
-                        max_albums,
-                        max_pages,
-                        max_decks,
-                        max_cards_per_deck,
-                        allowed_spirit_ids
-                    }]);
-
-                if (error) {
-                    Swal.fire('Error', 'No se pudo crear el usuario: ' + error.message, 'error');
-                } else {
-                    Swal.fire('¡Éxito!', 'Usuario creado correctamente', 'success');
-                    $('#create-user-panel').slideUp();
-                    $('#new-username, #new-password, #new-store').val('');
-                    $('#new-is-store').prop('checked', false);
-                    loadUsers();
-                }
+                Swal.fire('Información', 'Para crear usuarios con Supabase Auth, utiliza el panel de Supabase o regístrate normalmente.', 'info');
             });
 
             // Toggle is_store Event
@@ -334,7 +296,8 @@
                 }
             });
 
-            $('#btn-logout').click(function() {
+            $('#btn-logout').click(async function() {
+                await _supabase.auth.signOut();
                 localStorage.removeItem('tcg_session');
                 window.location.href = 'admin.html';
             });
@@ -437,8 +400,8 @@
             });
         }
 
-        $(document).ready(function() {
-            initUsersPanel();
+        $(document).ready(async function() {
+            await initUsersPanel();
         });
     </script>
 </body>

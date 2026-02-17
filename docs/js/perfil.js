@@ -1,29 +1,30 @@
-$(document).ready(function() {
+$(document).ready(async function() {
     let currentUser = null;
     let selectedLogoFile = null;
 
-    checkSession();
+    await checkSession();
     initTheme();
 
     async function checkSession() {
-        const session = localStorage.getItem('tcg_session');
+        const { data: { session } } = await _supabase.auth.getSession();
         if (!session) {
             window.location.href = 'admin.html';
             return;
         }
 
-        currentUser = JSON.parse(session);
-
         // Refresh data from Supabase to get latest
         const { data, error } = await _supabase
             .from('usuarios')
-            .select('id, username, email, password, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo')
-            .eq('id', currentUser.id)
+            .select('id, username, email, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo')
+            .eq('id', session.user.id)
             .single();
 
         if (!error && data) {
             currentUser = data;
             localStorage.setItem('tcg_session', JSON.stringify(data));
+        } else {
+            window.location.href = 'admin.html';
+            return;
         }
 
         loadProfileData();
@@ -33,7 +34,7 @@ $(document).ready(function() {
     function loadProfileData() {
         $('#profile-username').val(currentUser.username);
         $('#profile-email').val(currentUser.email || '');
-        $('#profile-password').val(currentUser.password || '');
+        $('#profile-password').val('********').attr('disabled', true); // Password management via Auth
 
         if (currentUser.is_store) {
             $('.store-only-field').show();
@@ -125,7 +126,6 @@ $(document).ready(function() {
             // 2. Update DB
             const updateData = {
                 email: email,
-                password: password,
                 store_name: storeName,
                 whatsapp_link: whatsapp,
                 messenger_link: messenger,
@@ -172,8 +172,9 @@ $(document).ready(function() {
         }
     });
 
-    $('#btn-logout').click(function(e) {
+    $('#btn-logout').click(async function(e) {
         e.preventDefault();
+        await _supabase.auth.signOut();
         localStorage.removeItem('tcg_session');
         window.location.href = 'index.html';
     });

@@ -480,7 +480,7 @@ let tesseractWorker = null;
 let scanTimer = null;
 
 $(document).ready(async function() {
-    checkSession();
+    await checkSession();
     await loadInitialData();
     await initTesseract();
 
@@ -524,13 +524,22 @@ $(document).ready(async function() {
     });
 });
 
-function checkSession() {
-    const session = localStorage.getItem('tcg_session');
+async function checkSession() {
+    const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
-        currentUser = JSON.parse(session);
-        // Show development warning for everyone except admin
-        if (currentUser.role !== 'admin') {
-            $('#dev-warning').show();
+        const { data: user } = await _supabase
+            .from('usuarios')
+            .select('id, username, email, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck')
+            .eq('id', session.user.id)
+            .single();
+
+        if (user) {
+            currentUser = user;
+            if (currentUser.role !== 'admin') {
+                $('#dev-warning').show();
+            }
+        } else {
+            window.location.href = 'admin.html';
         }
     } else {
         window.location.href = 'admin.html';
