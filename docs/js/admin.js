@@ -31,8 +31,8 @@ const MAX_HISTORY = 20;
 let droppedGltfFile = null;
 let droppedExtraFiles = [];
 
-$(document).ready(function() {
-    checkSession();
+$(document).ready(async function() {
+    await checkSession();
     initTheme();
 
     // --- Navigation (Dashboard Tiles) ---
@@ -1202,41 +1202,58 @@ function editSpirit(spirit) {
 }
 
 // Auth Functions
-function checkSession() {
-    const session = localStorage.getItem('tcg_session');
+async function checkSession() {
+    const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
-        currentUser = JSON.parse(session);
-        showAuthenticatedContent();
+        const { data: user } = await _supabase
+            .from('usuarios')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck')
+            .eq('id', session.user.id)
+            .single();
+
+        if (user) {
+            currentUser = user;
+            localStorage.setItem('tcg_session', JSON.stringify(user));
+            showAuthenticatedContent();
+        } else {
+            showLoginView();
+        }
     } else {
         showLoginView();
     }
 }
 
 async function handleLogin() {
-    const username = $('#login-username').val();
+    const email = $('#login-username').val();
     const password = $('#login-password').val();
 
-    if (!username || !password) {
+    if (!email || !password) {
         Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
         return;
     }
 
-    const { data, error } = await _supabase.rpc('login_usuario', {
-        p_username: username,
-        p_password: password
+    const { data, error } = await _supabase.auth.signInWithPassword({
+        email: email.includes('@') ? email : `${email}@placeholder.com`,
+        password: password,
     });
-    const user = (data && data.length > 0) ? data[0] : null;
 
-    if (error || !user) {
-        Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
+    if (error) {
+        Swal.fire('Error', 'Error al iniciar sesión: ' + error.message, 'error');
     } else {
-        currentUser = user;
-        localStorage.setItem('tcg_session', JSON.stringify(user));
+        const { data: profile } = await _supabase
+            .from('usuarios')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck')
+            .eq('id', data.user.id)
+            .single();
+
+        currentUser = profile;
+        localStorage.setItem('tcg_session', JSON.stringify(profile));
         showAuthenticatedContent();
     }
 }
 
-function handleLogout() {
+async function handleLogout() {
+    await _supabase.auth.signOut();
     currentUser = null;
     localStorage.removeItem('tcg_session');
     location.reload();

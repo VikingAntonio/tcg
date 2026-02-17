@@ -1,0 +1,203 @@
+-- SUPABASE AUTH MIGRATION SCRIPT
+-- WARNING: This script will drop and recreate tables to handle the BIGINT -> UUID transition.
+-- Back up your data if needed before running this in the Supabase SQL Editor.
+
+-- 1. Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. Clean up existing tables (Destructive!)
+DROP TABLE IF EXISTS public.deck_cards CASCADE;
+DROP TABLE IF EXISTS public.decks CASCADE;
+DROP TABLE IF EXISTS public.card_slots CASCADE;
+DROP TABLE IF EXISTS public.pages CASCADE;
+DROP TABLE IF EXISTS public.albums CASCADE;
+DROP TABLE IF EXISTS public.usuarios CASCADE;
+DROP TABLE IF EXISTS public.spirits CASCADE;
+
+-- 3. Recreate public.usuarios (Profiles)
+-- This table is synced with auth.users via triggers
+CREATE TABLE public.usuarios (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT,
+    is_store BOOLEAN DEFAULT FALSE,
+    store_name TEXT UNIQUE,
+    store_logo TEXT,
+    role TEXT DEFAULT 'starter',
+    whatsapp_link TEXT,
+    messenger_link TEXT,
+    horario TEXT,
+    ubicacion TEXT,
+    selected_spirit_id BIGINT,
+    max_albums INTEGER DEFAULT 3,
+    max_pages INTEGER DEFAULT 5,
+    max_decks INTEGER DEFAULT 1,
+    max_cards_per_deck INTEGER DEFAULT 60,
+    allowed_spirit_ids TEXT DEFAULT '1', -- "1" is Winged Kuriboh
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Recreate Spirits table
+CREATE TABLE public.spirits (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    model_url TEXT,
+    animation_type TEXT,
+    particle_asset TEXT,
+    particle_movement TEXT,
+    scale FLOAT DEFAULT 1.0,
+    is_public BOOLEAN DEFAULT TRUE,
+    user_id UUID REFERENCES auth.users(id)
+);
+
+-- 5. Recreate Application Tables
+CREATE TABLE public.albums (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    cover_image TEXT,
+    back_image TEXT,
+    is_public BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.pages (
+    id BIGSERIAL PRIMARY KEY,
+    album_id BIGINT NOT NULL REFERENCES public.albums(id) ON DELETE CASCADE,
+    page_index INTEGER NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.card_slots (
+    id BIGSERIAL PRIMARY KEY,
+    page_id BIGINT NOT NULL REFERENCES public.pages(id) ON DELETE CASCADE,
+    slot_index INTEGER NOT NULL,
+    name TEXT,
+    image_url TEXT,
+    rarity TEXT,
+    expansion TEXT,
+    condition TEXT,
+    quantity INTEGER DEFAULT 1,
+    price TEXT,
+    holo_effect TEXT,
+    custom_mask TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.decks (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    is_public BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.deck_cards (
+    id BIGSERIAL PRIMARY KEY,
+    deck_id BIGINT NOT NULL REFERENCES public.decks(id) ON DELETE CASCADE,
+    name TEXT,
+    image_url TEXT,
+    rarity TEXT,
+    expansion TEXT,
+    quantity INTEGER DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Trigger to automatically create a profile entry on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS \$\$
+BEGIN
+  INSERT INTO public.usuarios (id, username, email, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    NEW.email,
+    'starter'
+  );
+  RETURN NEW;
+END;
+\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 7. ENABLE ROW LEVEL SECURITY
+ALTER TABLE public.usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.spirits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.albums ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.card_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.decks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.deck_cards ENABLE ROW LEVEL SECURITY;
+
+-- 8. POLICIES
+
+-- USUARIOS (PROFILES)
+CREATE POLICY "Public profiles are viewable by everyone" ON public.usuarios
+    FOR SELECT USING (TRUE);
+
+CREATE POLICY "Users can update their own profile" ON public.usuarios
+    FOR UPDATE USING (auth.uid() = id);
+
+-- SPIRITS
+CREATE POLICY "Public spirits are viewable by everyone" ON public.spirits
+    FOR SELECT USING (is_public = TRUE);
+
+CREATE POLICY "Users can manage their own spirits" ON public.spirits
+    FOR ALL USING (auth.uid() = user_id);
+
+-- ALBUMS
+CREATE POLICY "Public albums are viewable by everyone" ON public.albums
+    FOR SELECT USING (is_public = TRUE);
+
+CREATE POLICY "Users can manage their own albums" ON public.albums
+    FOR ALL USING (auth.uid() = user_id);
+
+-- PAGES (Access depends on Album)
+CREATE POLICY "Pages of public albums are viewable by everyone" ON public.pages
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.albums WHERE id = public.pages.album_id AND is_public = TRUE)
+        OR EXISTS (SELECT 1 FROM public.albums WHERE id = public.pages.album_id AND user_id = auth.uid())
+    );
+
+CREATE POLICY "Users can manage pages of their own albums" ON public.pages
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.albums WHERE id = public.pages.album_id AND user_id = auth.uid())
+    );
+
+-- CARD SLOTS
+CREATE POLICY "Cards in public albums are viewable by everyone" ON public.card_slots
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.pages
+            JOIN public.albums ON public.albums.id = public.pages.album_id
+            WHERE public.pages.id = public.card_slots.page_id AND (public.albums.is_public = TRUE OR public.albums.user_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Users can manage cards in their own albums" ON public.card_slots
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.pages
+            JOIN public.albums ON public.albums.id = public.pages.album_id
+            WHERE public.pages.id = public.card_slots.page_id AND public.albums.user_id = auth.uid())
+    );
+
+-- DECKS
+CREATE POLICY "Public decks are viewable by everyone" ON public.decks
+    FOR SELECT USING (is_public = TRUE);
+
+CREATE POLICY "Users can manage their own decks" ON public.decks
+    FOR ALL USING (auth.uid() = user_id);
+
+-- DECK CARDS
+CREATE POLICY "Cards in public decks are viewable by everyone" ON public.deck_cards
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.decks WHERE id = public.deck_cards.deck_id AND (is_public = TRUE OR user_id = auth.uid()))
+    );
+
+CREATE POLICY "Users can manage cards in their own decks" ON public.deck_cards
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.decks WHERE id = public.deck_cards.deck_id AND user_id = auth.uid())
+    );
