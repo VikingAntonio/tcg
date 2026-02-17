@@ -67,6 +67,10 @@ function checkSession() {
     const session = localStorage.getItem('tcg_session');
     if (session) {
         currentUser = JSON.parse(session);
+        // Show development warning for everyone except admin
+        if (currentUser.role !== 'admin') {
+            $('#dev-warning').show();
+        }
     } else {
         window.location.href = 'admin.html';
     }
