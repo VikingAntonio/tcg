@@ -5,14 +5,10 @@ $(document).ready(function() {
     updateCartCount();
 
     // --- Auth Modal Toggling ---
-    $('#btn-open-auth, #btn-cta-register').click(function(e) {
+    $('#btn-cta-register').click(function(e) {
         e.preventDefault();
         $('#auth-modal').addClass('active');
-        if ($(this).attr('id') === 'btn-cta-register') {
-            showRegister();
-        } else {
-            showLogin();
-        }
+        showRegister();
     });
 
     $('#close-auth-modal, #auth-modal').click(function(e) {
@@ -153,8 +149,6 @@ $(document).ready(function() {
 
             $authItems.append('<a href="admin.html" class="menu-item"><i class="fas fa-lock"></i> Panel Admin</a>');
             $authItems.append('<a href="#" class="menu-item logout" id="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>');
-
-            $('#btn-open-auth').text('Ir al Panel').attr('href', 'admin.html').attr('id', '');
         } else {
             $('#dropdown-user-name').text('Invitado');
             $('#dropdown-user-role').text('Invitado');
