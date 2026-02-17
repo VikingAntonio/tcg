@@ -173,7 +173,7 @@ h1, h2, h3, h4, .logo {
 .card-3d-container {
     perspective: 1000px;
     width: 320px;
-    height: 460px;
+    height: 470px;
     position: relative;
     touch-action: none;
     z-index: 5;
@@ -184,7 +184,7 @@ h1, h2, h3, h4, .logo {
 
 .card-3d {
     width: 320px;
-    height: 460px;
+    height: 470px;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.1s ease;
@@ -390,10 +390,16 @@ h1, h2, h3, h4, .logo {
 }
 
 #cart-btn {
-    background: var(--pastel-pink);
+    background: #ffcbd1; /* More vibrant pink from image-like palette */
     border: none;
-    color: var(--secondary);
+    color: #e91e63;
     position: relative;
+}
+
+#avatar-btn {
+    background: #00bcd4; /* Vibrant blue/cyan from image */
+    border: none;
+    color: white;
 }
 
 #cart-count {
@@ -566,6 +572,7 @@ h1, h2, h3, h4, .logo {
 
 .contact-text {
     flex: 1;
+    order: 2; /* Text on the right for PC */
 }
 
 .contact-logo {
@@ -575,6 +582,7 @@ h1, h2, h3, h4, .logo {
     border: 6px solid var(--pastel-cyan);
     object-fit: cover;
     flex-shrink: 0;
+    order: 1; /* Logo on the left for PC */
 }
 
 .contact-banner h2 {
@@ -667,15 +675,19 @@ footer {
         text-align: center;
         gap: 40px;
     }
+    .contact-text {
+        order: 1;
+    }
     .contact-logo {
         order: 2; /* Logo below text */
+        margin: 0 auto;
     }
 }
 
 @media (max-width: 640px) {
     .hero-title { font-size: 2.5rem; }
     .hero-cta { flex-direction: column; }
-    .top-left-panel { top: 16px; right: 16px; }
+    .floating-control-panel { top: 16px; right: 16px; }
 }
 
 /* Hide theme switcher explicitly */
