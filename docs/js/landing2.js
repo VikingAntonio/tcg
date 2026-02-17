@@ -231,13 +231,13 @@ $(document).ready(function() {
 
         new Swiper('.logos-swiper', {
             slidesPerView: 1,
-            spaceBetween: 40,
-            loop: stores.length >= 3,
-            speed: 1000,
+            spaceBetween: 30,
+            loop: true,
+            speed: 800,
             grabCursor: true,
-            centeredSlides: false,
+            centeredSlides: true,
             autoplay: {
-                delay: 2500,
+                delay: 2000,
                 disableOnInteraction: false,
                 pauseOnMouseEnter: true
             },
@@ -249,11 +249,13 @@ $(document).ready(function() {
             breakpoints: {
                 640: {
                     slidesPerView: 2,
-                    spaceBetween: 30
+                    spaceBetween: 30,
+                    centeredSlides: false
                 },
                 1024: {
                     slidesPerView: 3,
-                    spaceBetween: 50
+                    spaceBetween: 40,
+                    centeredSlides: false
                 }
             }
         });
@@ -290,4 +292,58 @@ $(document).ready(function() {
             $('#cart-count').text(Cart.getCount());
         }
     }
+
+    // --- Hero 3D Card Effect ---
+    let targetRX = 0;
+    let targetRY = 0;
+    let currentRX = 0;
+    let currentRY = 0;
+
+    function updateHeroRotation() {
+        currentRX += (targetRX - currentRX) * 0.1;
+        currentRY += (targetRY - currentRY) * 0.1;
+
+        const $card = $('.card-3d');
+        if ($card.length) {
+            $card.css('transform', `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`);
+
+            const mx = (currentRY + 20) / 40;
+            const my = (currentRX + 20) / 40;
+            const angle = (Math.atan2(currentRX, currentRY) * 180 / Math.PI) + 135;
+
+            $card.css({
+                '--mx': mx,
+                '--my': my,
+                '--angle': `${angle}deg`
+            });
+        }
+        requestAnimationFrame(updateHeroRotation);
+    }
+
+    const $heroContainer = $('#hero-card');
+    $heroContainer.on('mousemove', (e) => {
+        const rect = $heroContainer[0].getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        targetRY = ((x / rect.width) - 0.5) * 40;
+        targetRX = ((y / rect.height) - 0.5) * -40;
+    });
+
+    $heroContainer.on('mouseleave', () => {
+        targetRX = 0;
+        targetRY = 0;
+    });
+
+    // Device orientation for mobile
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (e) => {
+            if (e.gamma !== null && e.beta !== null) {
+                targetRY = Math.max(-20, Math.min(20, e.gamma)) * 1.5;
+                targetRX = Math.max(-20, Math.min(20, e.beta - 45)) * 1.5;
+            }
+        });
+    }
+
+    updateHeroRotation();
 });
