@@ -6,6 +6,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 2. Clean up existing tables (Destructive!)
+-- We drop in order of dependency
 DROP TABLE IF EXISTS public.deck_cards CASCADE;
 DROP TABLE IF EXISTS public.decks CASCADE;
 DROP TABLE IF EXISTS public.card_slots CASCADE;
@@ -15,7 +16,6 @@ DROP TABLE IF EXISTS public.usuarios CASCADE;
 DROP TABLE IF EXISTS public.spirits CASCADE;
 
 -- 3. Recreate public.usuarios (Profiles)
--- This table is synced with auth.users via triggers
 CREATE TABLE public.usuarios (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT UNIQUE NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE public.deck_cards (
 
 -- 6. Trigger to automatically create a profile entry on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS \$\$
+RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.usuarios (id, username, email, role)
   VALUES (
@@ -113,10 +113,14 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
     NEW.email,
     'starter'
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
-\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop trigger if exists to avoid errors on re-run
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -134,39 +138,48 @@ ALTER TABLE public.deck_cards ENABLE ROW LEVEL SECURITY;
 -- 8. POLICIES
 
 -- USUARIOS (PROFILES)
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.usuarios;
 CREATE POLICY "Public profiles are viewable by everyone" ON public.usuarios
     FOR SELECT USING (TRUE);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.usuarios;
 CREATE POLICY "Users can update their own profile" ON public.usuarios
     FOR UPDATE USING (auth.uid() = id);
 
 -- SPIRITS
+DROP POLICY IF EXISTS "Public spirits are viewable by everyone" ON public.spirits;
 CREATE POLICY "Public spirits are viewable by everyone" ON public.spirits
     FOR SELECT USING (is_public = TRUE);
 
+DROP POLICY IF EXISTS "Users can manage their own spirits" ON public.spirits;
 CREATE POLICY "Users can manage their own spirits" ON public.spirits
     FOR ALL USING (auth.uid() = user_id);
 
 -- ALBUMS
+DROP POLICY IF EXISTS "Public albums are viewable by everyone" ON public.albums;
 CREATE POLICY "Public albums are viewable by everyone" ON public.albums
     FOR SELECT USING (is_public = TRUE);
 
+DROP POLICY IF EXISTS "Users can manage their own albums" ON public.albums;
 CREATE POLICY "Users can manage their own albums" ON public.albums
     FOR ALL USING (auth.uid() = user_id);
 
--- PAGES (Access depends on Album)
+-- PAGES
+DROP POLICY IF EXISTS "Pages of public albums are viewable by everyone" ON public.pages;
 CREATE POLICY "Pages of public albums are viewable by everyone" ON public.pages
     FOR SELECT USING (
         EXISTS (SELECT 1 FROM public.albums WHERE id = public.pages.album_id AND is_public = TRUE)
         OR EXISTS (SELECT 1 FROM public.albums WHERE id = public.pages.album_id AND user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Users can manage pages of their own albums" ON public.pages;
 CREATE POLICY "Users can manage pages of their own albums" ON public.pages
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.albums WHERE id = public.pages.album_id AND user_id = auth.uid())
     );
 
 -- CARD SLOTS
+DROP POLICY IF EXISTS "Cards in public albums are viewable by everyone" ON public.card_slots;
 CREATE POLICY "Cards in public albums are viewable by everyone" ON public.card_slots
     FOR SELECT USING (
         EXISTS (
@@ -176,6 +189,7 @@ CREATE POLICY "Cards in public albums are viewable by everyone" ON public.card_s
         )
     );
 
+DROP POLICY IF EXISTS "Users can manage cards in their own albums" ON public.card_slots;
 CREATE POLICY "Users can manage cards in their own albums" ON public.card_slots
     FOR ALL USING (
         EXISTS (
@@ -185,18 +199,22 @@ CREATE POLICY "Users can manage cards in their own albums" ON public.card_slots
     );
 
 -- DECKS
+DROP POLICY IF EXISTS "Public decks are viewable by everyone" ON public.decks;
 CREATE POLICY "Public decks are viewable by everyone" ON public.decks
     FOR SELECT USING (is_public = TRUE);
 
+DROP POLICY IF EXISTS "Users can manage their own decks" ON public.decks;
 CREATE POLICY "Users can manage their own decks" ON public.decks
     FOR ALL USING (auth.uid() = user_id);
 
 -- DECK CARDS
+DROP POLICY IF EXISTS "Cards in public decks are viewable by everyone" ON public.deck_cards;
 CREATE POLICY "Cards in public decks are viewable by everyone" ON public.deck_cards
     FOR SELECT USING (
         EXISTS (SELECT 1 FROM public.decks WHERE id = public.deck_cards.deck_id AND (is_public = TRUE OR user_id = auth.uid()))
     );
 
+DROP POLICY IF EXISTS "Users can manage cards in their own decks" ON public.deck_cards;
 CREATE POLICY "Users can manage cards in their own decks" ON public.deck_cards
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.decks WHERE id = public.deck_cards.deck_id AND user_id = auth.uid())
