@@ -252,7 +252,7 @@ $(document).ready(async function() {
         'album': 'Para crear un álbum, ve al Panel de Control, inicia sesión y haz clic en "Crear Nuevo Álbum". Luego puedes añadir páginas y cartas.',
         'scanner': 'El scanner te permite añadir cartas rápidamente usando la cámara de tu móvil. Escanea el código de la carta y se añadirá automáticamente a tu álbum o deck.',
         'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
-        'spirit': 'Un compañero es un personaje 3D que te acompaña mientras exploras la tienda. Puedes elegir tu favorito en el menú de Compañeros.'
+        'spirit': 'Elige a tu Compañero ideal, quien te guiará y acompañará a través de toda la web en tu aventura coleccionista.'
     };
 
     window.addChatMessage = function(sender, text) {

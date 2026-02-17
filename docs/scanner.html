@@ -254,6 +254,36 @@
         }
         .back-btn:hover { background: rgba(255,255,255,0.2); }
 
+        .dev-warning-banner {
+            background: #ff4757;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+            width: 100%;
+            max-width: 600px;
+            animation: slideDown 0.5s ease-out;
+            z-index: 1001;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .close-warning {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+        }
+
         .result-toast {
             position: fixed;
             top: 20px;
@@ -296,6 +326,14 @@
     <button class="back-btn" onclick="location.href='admin.html'"><i class="fas fa-arrow-left"></i></button>
 
     <div class="scanner-layout">
+        <div id="dev-warning" class="dev-warning-banner" style="display:none;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span style="font-weight: 600; font-size: 14px;">Esta función está en desarrollo y aún no está en funcionamiento</span>
+            </div>
+            <button class="close-warning" onclick="this.parentElement.style.display='none'">&times;</button>
+        </div>
+
         <div class="scanner-header">
             <h1>Scanner de Cartas</h1>
             <p style="color: #aaa;">Encuentra y añade cartas automáticamente</p>
