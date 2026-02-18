@@ -335,6 +335,12 @@
                 $('.spirit-checkbox').prop('checked', isChecked);
             });
 
+            $(document).on('change', '.spirit-checkbox', function() {
+                const total = $('.spirit-checkbox').length;
+                const checked = $('.spirit-checkbox:checked').length;
+                $('#spirit-select-all').prop('checked', total === checked && total > 0);
+            });
+
             function renderSpiritsCheckboxes(allowedIds) {
                 const $container = $('#spirits-selection-list');
                 $container.empty();
