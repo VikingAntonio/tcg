@@ -173,11 +173,11 @@ $(document).ready(async function() {
     }
 
     async function handleRegister() {
+        const email = $('#reg-email').val().trim();
         const username = $('#reg-username').val().trim();
         const password = $('#reg-password').val().trim();
-        const email = `${username}@tcgdual.com`;
 
-        if (!username || !password) {
+        if (!email || !username || !password) {
             Swal.fire({
                 title: 'Atención',
                 text: 'Por favor, completa todos los campos',
