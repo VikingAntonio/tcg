@@ -580,13 +580,12 @@ h1, h2, h3, h4, .logo {
 }
 
 .contact-logo {
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    border: 6px solid var(--pastel-cyan);
-    object-fit: cover;
+    width: 280px;
+    height: 280px;
     flex-shrink: 0;
     order: 1; /* Logo on the left for PC */
+    outline: none;
+    background: transparent;
 }
 
 .contact-banner h2 {
@@ -692,6 +691,10 @@ footer {
     .hero-title { font-size: 2.5rem; }
     .hero-cta { flex-direction: column; }
     .floating-control-panel { top: 16px; right: 16px; }
+    .contact-logo {
+        width: 200px;
+        height: 200px;
+    }
 }
 
 /* Hide theme switcher explicitly */
