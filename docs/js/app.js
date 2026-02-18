@@ -313,12 +313,6 @@ $(document).ready(async function() {
         $('#companion-menu').removeClass('active');
     });
 
-    $('#menu-item-change').click(function() {
-        $('#spirit-modal').addClass('active');
-        loadPublicSpirits();
-        $('#companion-menu').removeClass('active');
-    });
-
     // --- Cart Integration ---
     $(document).on('click', '#btn-add-to-cart', function(e) {
         e.preventDefault();

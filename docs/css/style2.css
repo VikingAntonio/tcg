@@ -202,6 +202,11 @@ h1, h2, h3, h4, .logo {
     object-fit: cover;
     display: block;
     backface-visibility: hidden;
+    transition: opacity 0.8s ease-in-out;
+}
+
+#expanded-image.fade-out {
+    opacity: 0;
 }
 
 .holo-layer {
