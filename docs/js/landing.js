@@ -26,31 +26,50 @@ $(document).ready(async function() {
         showRegister();
     });
 
-    $('#link-show-login').click(function(e) {
+    $('#link-show-login, #link-forgot-to-login').click(function(e) {
         e.preventDefault();
         showLogin();
     });
 
+    $('#link-show-forgot').click(function(e) {
+        e.preventDefault();
+        showForgot();
+    });
+
     function showLogin() {
         $('#register-view').hide();
+        $('#forgot-view').hide();
         $('#login-view').show();
     }
 
     function showRegister() {
         $('#login-view').hide();
+        $('#forgot-view').hide();
         $('#register-view').show();
+    }
+
+    function showForgot() {
+        $('#login-view').hide();
+        $('#register-view').hide();
+        $('#forgot-view').show();
     }
 
     // --- Authentication ---
     $('#btn-login').click(handleLogin);
     $('#btn-register').click(handleRegister);
+    $('#btn-forgot-password').click(handleForgotPassword);
 
     async function handleLogin() {
         const email = $('#login-username').val().trim(); // Assuming users use email or we need to find email by username
         const password = $('#login-password').val().trim();
 
         if (!email || !password) {
-            Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
+            Swal.fire({
+                title: 'Atención',
+                text: 'Por favor, completa todos los campos',
+                icon: 'warning',
+                position: 'top'
+            });
             return;
         }
 
@@ -64,7 +83,12 @@ $(document).ready(async function() {
         });
 
         if (error) {
-            Swal.fire('Error', 'Error al iniciar sesión: ' + error.message, 'error');
+            Swal.fire({
+                title: 'Error',
+                text: 'Error al iniciar sesión: ' + error.message,
+                icon: 'error',
+                position: 'top'
+            });
         } else {
             // After auth, fetch profile
             const { data: profile } = await _supabase
@@ -86,13 +110,48 @@ $(document).ready(async function() {
         }
     }
 
+    async function handleForgotPassword() {
+        const email = $('#forgot-email').val().trim();
+
+        if (!email) {
+            Swal.fire({
+                title: 'Atención',
+                text: 'Por favor, introduce tu correo electrónico',
+                icon: 'warning',
+                position: 'top'
+            });
+            return;
+        }
+
+        const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/perfil.html'),
+        });
+
+        if (error) {
+            Swal.fire('Error', 'No se pudo enviar el correo de restablecimiento: ' + error.message, 'error');
+        } else {
+            Swal.fire({
+                title: '¡Correo Enviado!',
+                text: 'Revisa tu bandeja de entrada para restablecer tu contraseña.',
+                icon: 'success'
+            }).then(() => {
+                showLogin();
+            });
+        }
+    }
+
     async function handleRegister() {
         const email = $('#reg-email').val().trim();
         const username = $('#reg-username').val().trim();
         const password = $('#reg-password').val().trim();
 
         if (!email || !username || !password) {
-            Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
+            Swal.fire({
+                title: 'Atención',
+                text: 'Por favor, completa todos los campos',
+                icon: 'warning',
+                position: 'top'
+            });
             return;
         }
 
@@ -105,14 +164,20 @@ $(document).ready(async function() {
         });
 
         if (error) {
-            Swal.fire('Error', 'No se pudo crear la cuenta: ' + error.message, 'error');
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudo crear la cuenta: ' + error.message,
+                icon: 'error',
+                position: 'top'
+            });
         } else {
             Swal.fire({
                 title: '¡Cuenta Creada!',
                 text: 'Revisa tu correo para confirmar (si está activado) o inicia sesión ahora.',
                 icon: 'success',
                 timer: 3000,
-                showConfirmButton: true
+                showConfirmButton: true,
+                position: 'top'
             }).then(() => {
                 location.reload();
             });

@@ -67,6 +67,9 @@
                 </div>
                 <button id="btn-login" class="btn">Entrar</button>
                 <p style="text-align: center; font-size: 0.9rem; color: #888; margin-top: 16px;">
+                    ¿Olvidaste tu contraseña? <a href="#" id="link-show-forgot" style="color: var(--primary); text-decoration: none; font-weight: bold;">Restablécela aquí</a>
+                </p>
+                <p style="text-align: center; font-size: 0.9rem; color: #888; margin-top: 8px;">
                     ¿No tienes cuenta? <a href="#" id="link-show-register" style="color: var(--primary); text-decoration: none; font-weight: bold;">Regístrate</a>
                 </p>
             </div>
@@ -89,6 +92,22 @@
                 <button id="btn-register" class="btn">Registrarse</button>
                 <p style="text-align: center; font-size: 0.9rem; color: #888; margin-top: 16px;">
                     ¿Ya tienes cuenta? <a href="#" id="link-show-login" style="color: var(--primary); text-decoration: none; font-weight: bold;">Inicia Sesión</a>
+                </p>
+            </div>
+
+            <!-- Forgot Password View -->
+            <div id="forgot-view" style="display: none;">
+                <h1 style="text-align: center; margin-bottom: 24px;">Restablecer Contraseña</h1>
+                <p style="text-align: center; font-size: 0.9rem; color: #888; margin-bottom: 24px;">
+                    Introduce tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+                </p>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="forgot-email" placeholder="ejemplo@correo.com">
+                </div>
+                <button id="btn-forgot-password" class="btn">Enviar Enlace</button>
+                <p style="text-align: center; font-size: 0.9rem; color: #888; margin-top: 16px;">
+                    ¿Recordaste tu contraseña? <a href="#" id="link-forgot-to-login" style="color: var(--primary); text-decoration: none; font-weight: bold;">Inicia Sesión</a>
                 </p>
             </div>
         </div>

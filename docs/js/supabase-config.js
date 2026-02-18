@@ -4,3 +4,11 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Global SweetAlert2 configuration
+if (typeof Swal !== 'undefined') {
+    window.Swal = Swal.mixin({
+        position: 'top',
+        showConfirmButton: true
+    });
+}
