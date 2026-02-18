@@ -25,6 +25,9 @@ BEGIN
     -----------------------------------------------------------
     -- 2. Table: spirits
     -----------------------------------------------------------
+    -- Ensure user_id column exists for RLS policies
+    ALTER TABLE public.spirits ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+
     -- Rename model_url to gltf_url if it exists
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='spirits' AND column_name='model_url') THEN
         ALTER TABLE public.spirits RENAME COLUMN model_url TO gltf_url;
@@ -110,11 +113,12 @@ END $$;
 /*
 -- UNCOMMENT AND RUN THIS IF YOU WANT TO ADD DEFAULT SPIRITS
 -- Replace [TU-PROYECTO] with your actual Supabase project ID.
+-- Replace [USER-ID] with the UUID of the admin user.
 
-INSERT INTO public.spirits (name, gltf_url, animation_type, is_public)
+INSERT INTO public.spirits (name, gltf_url, animation_type, is_public, user_id)
 VALUES
-('Winged Kuriboh', 'https://[TU-PROYECTO].supabase.co/storage/v1/object/public/spirits/models/kuriboh/kuriboh.gltf', 'float', true),
-('Ash Blossom', 'https://[TU-PROYECTO].supabase.co/storage/v1/object/public/spirits/models/ash/ash.gltf', 'orbit', true)
+('Winged Kuriboh', 'https://[TU-PROYECTO].supabase.co/storage/v1/object/public/spirits/models/kuriboh/kuriboh.gltf', 'float', true, '[USER-ID]'),
+('Ash Blossom', 'https://[TU-PROYECTO].supabase.co/storage/v1/object/public/spirits/models/ash/ash.gltf', 'orbit', true, '[USER-ID]')
 ON CONFLICT DO NOTHING;
 */
 
