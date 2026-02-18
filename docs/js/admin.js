@@ -397,16 +397,23 @@ $(document).ready(async function() {
 
     $('#btn-save-slot').click(async function(e) {
         e.preventDefault();
+        const imageUrl = $('#slot-image-url').val();
+
+        if (!imageUrl) {
+            Swal.fire('Atención', 'La URL de la imagen es obligatoria.', 'warning');
+            return;
+        }
+
         const cardData = {
-            image_url: $('#slot-image-url').val(),
-            name: $('#slot-name').val(),
-            holo_effect: $('#slot-holo-effect').val(),
-            custom_mask_url: $('#slot-custom-mask').val(),
-            rarity: $('#slot-rarity').val(),
-            expansion: $('#slot-expansion').val(),
-            condition: $('#slot-condition').val(),
-            quantity: $('#slot-quantity').val(),
-            price: $('#slot-price').val()
+            image_url: imageUrl,
+            name: $('#slot-name').val() || '',
+            holo_effect: $('#slot-holo-effect').val() || '',
+            custom_mask_url: $('#slot-custom-mask').val() || '',
+            rarity: $('#slot-rarity').val() || '',
+            expansion: $('#slot-expansion').val() || '',
+            condition: $('#slot-condition').val() || 'M',
+            quantity: parseInt($('#slot-quantity').val()) || 1,
+            price: $('#slot-price').val() || ''
         };
 
         let error;
@@ -1069,7 +1076,8 @@ $(document).ready(async function() {
                 particle_asset: particleAsset,
                 particle_movement_type: particleMovement,
                 scale: scale,
-                is_public: isPublic
+                is_public: isPublic,
+                user_id: currentUser.id
             };
 
             if (gltfUrl) {
