@@ -1234,8 +1234,11 @@ async function handleLogin() {
         return;
     }
 
+    // Standardizing username-to-email conversion for Supabase Auth
+    const finalEmail = email.includes('@') ? email : `${email}@tcgdual.com`;
+
     const { data, error } = await _supabase.auth.signInWithPassword({
-        email: email.includes('@') ? email : `${email}@placeholder.com`,
+        email: finalEmail,
         password: password,
     });
 

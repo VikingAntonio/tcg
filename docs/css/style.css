@@ -1714,7 +1714,7 @@ input:checked + .slider:before {
 
 /* Ensure SweetAlert is always on top of our overlays */
 .swal2-container {
-    z-index: 20000 !important;
+    z-index: 999999 !important;
 }
 
 /* --- Tablet Kamvas Slot 10 (1920x1200) Responsive --- */
