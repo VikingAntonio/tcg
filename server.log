@@ -1,0 +1,7 @@
+127.0.0.1 - - [18/Feb/2026 15:58:45] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 15:58:45] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 15:58:45] "GET /js/admin.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 15:58:45] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 15:58:45] "GET /js/cart.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 15:58:46] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 15:58:46] "GET /js/landing.js HTTP/1.1" 200 -
