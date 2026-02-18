@@ -333,6 +333,7 @@ $(document).ready(async function() {
 
     // --- Hero Card Cycle ---
     const heroCards = [
+        "https://tcgplayer-cdn.tcgplayer.com/product/58518_in_1000x1000.jpg",
         "https://tcgplayer-cdn.tcgplayer.com/product/58469_in_1000x1000.jpg",
         "https://tcgplayer-cdn.tcgplayer.com/product/58428_in_1000x1000.jpg",
         "https://tcgplayer-cdn.tcgplayer.com/product/58508_in_1000x1000.jpg",
@@ -340,20 +341,21 @@ $(document).ready(async function() {
         "https://tcgplayer-cdn.tcgplayer.com/product/58477_in_1000x1000.jpg"
     ];
     let currentHeroIndex = 0;
+    const $heroCard = $('.card-3d');
     const $heroImage = $('#expanded-image');
 
-    if ($heroImage.length) {
+    if ($heroCard.length && $heroImage.length) {
         setInterval(() => {
             currentHeroIndex = (currentHeroIndex + 1) % heroCards.length;
             const nextSrc = heroCards[currentHeroIndex];
 
-            $heroImage.addClass('fade-out');
+            $heroCard.addClass('fade-out');
 
             setTimeout(() => {
                 const img = new Image();
                 img.onload = function() {
                     $heroImage.attr('src', nextSrc);
-                    $heroImage.removeClass('fade-out');
+                    $heroCard.removeClass('fade-out');
                 };
                 img.src = nextSrc;
             }, 800); // Matches CSS transition duration
