@@ -692,20 +692,28 @@ async function switchView(view) {
 async function loadStoreData() {
     const urlParams = new URLSearchParams(window.location.search);
     const storeName = urlParams.get('store');
+    const userName = urlParams.get('user');
 
-    if (!storeName) {
+    if (!storeName && !userName) {
         $('#public-store-name').hide();
         return;
     }
 
-    const { data: userData, error: userError } = await _supabase
+    let query = _supabase
         .from('usuarios')
-        .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store')
-        .eq('store_name', storeName)
-        .single();
+        .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store');
+
+    if (storeName) {
+        query = query.eq('store_name', storeName);
+    } else {
+        query = query.eq('username', userName);
+    }
+
+    const { data: userData, error: userError } = await query.single();
 
     if (userError || !userData) {
-        $('#albums-container').html('<div class="error">Tienda no encontrada.</div>');
+        const errorMsg = storeName ? 'Tienda no encontrada.' : 'Usuario no encontrado.';
+        $('#albums-container').html(`<div class="error">${errorMsg}</div>`);
         hideLoading();
         return;
     }
@@ -740,12 +748,11 @@ async function loadStoreData() {
             $('#public-store-logo').hide();
             $('#public-store-icon').show();
         }
-        $('#public-store-name').text(`Tienda: ${userData.store_name}`);
+        $('#public-store-name').text(`Tienda: ${userData.store_name}`).show();
     } else {
         $('#public-store-logo').hide();
-        $('#public-store-icon').hide(); // If it's a common user, maybe we don't even want the shop icon?
-        // User said: "si es un usuario comun que solo muestre el nombre"
-        $('#public-store-name').text(userData.username);
+        $('#public-store-icon').hide();
+        $('#public-store-name').text(userData.username).show();
     }
 
     window.currentStoreContact = {
@@ -753,8 +760,9 @@ async function loadStoreData() {
         messenger: userData.messenger_link
     };
 
-    // Update cart link to include store name
-    $('#cart-btn').attr('href', `carrito.html?store=${encodeURIComponent(storeName)}`);
+    // Update cart link to include store name or user name
+    const identifier = userData.is_store ? `store=${encodeURIComponent(userData.store_name)}` : `user=${encodeURIComponent(userData.username)}`;
+    $('#cart-btn').attr('href', `carrito.html?${identifier}`);
 
     loadPublicAlbums(userData.id);
     initFloatingCompanion();
@@ -832,24 +840,28 @@ async function loadPublicAlbums(userId) {
 }
 
 async function loadPublicDecks() {
-    const storeName = new URLSearchParams(window.location.search).get('store');
-    if (!storeName) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const storeName = urlParams.get('store');
+    const userName = urlParams.get('user');
+    if (!storeName && !userName) return;
 
     showLoading('Cargando Decks...');
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
-    const { data: user } = await _supabase
-        .from('usuarios')
-        .select('id')
-        .eq('store_name', storeName)
-        .single();
+    let query = _supabase.from('usuarios').select('id');
+    if (storeName) {
+        query = query.eq('store_name', storeName);
+    } else {
+        query = query.eq('username', userName);
+    }
+    const { data: user } = await query.single();
 
     if (!user) {
         hideLoading();
         return;
     }
 
-    let query = _supabase
+    let deckQuery = _supabase
         .from('decks')
         .select(`
             *,
@@ -858,7 +870,7 @@ async function loadPublicDecks() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-    let { data: decks, error } = await query;
+    let { data: decks, error } = await deckQuery;
 
     // Fallback if query failed
     if (error) {

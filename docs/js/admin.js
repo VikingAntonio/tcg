@@ -1320,7 +1320,8 @@ async function showAuthenticatedContent() {
     }
 
     // Generate public store link
-    const publicUrl = `${window.location.origin}${window.location.pathname.replace('admin.html', 'public.html')}?store=${encodeURIComponent(currentUser.store_name)}`;
+    const identifier = currentUser.is_store ? `store=${encodeURIComponent(currentUser.store_name)}` : `user=${encodeURIComponent(currentUser.username)}`;
+    const publicUrl = `${window.location.origin}${window.location.pathname.replace('admin.html', 'public.html')}?${identifier}`;
 
     const linkHtml = `
         <div class="share-card">

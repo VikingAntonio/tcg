@@ -35,7 +35,6 @@ $(document).ready(async function() {
     function loadProfileData() {
         $('#profile-username').val(currentUser.username);
         $('#profile-email').val(currentUser.email || '');
-        $('#profile-password').val('********').attr('disabled', true); // Password management via Auth
 
         if (currentUser.is_store) {
             $('.store-only-field').show();
@@ -89,7 +88,6 @@ $(document).ready(async function() {
     // --- Save Profile ---
     $('#btn-save-profile').click(async function() {
         const email = $('#profile-email').val().trim();
-        const password = $('#profile-password').val().trim();
         const storeName = $('#profile-store-name').val().trim();
         const whatsapp = $('#profile-whatsapp').val().trim();
         const messenger = $('#profile-messenger').val().trim();
