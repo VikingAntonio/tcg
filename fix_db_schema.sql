@@ -1,5 +1,5 @@
 -- FIX DATABASE SCHEMA FOR TCG DUAL
--- This script ensures all tables have the columns expected by the frontend.
+-- This script ensures all tables have the columns and constraints expected by the frontend.
 -- Note: RLS settings are NOT modified as per user instructions.
 
 DO $$
@@ -78,6 +78,11 @@ BEGIN
     ALTER TABLE public.card_slots ADD COLUMN IF NOT EXISTS rarity TEXT;
     ALTER TABLE public.card_slots ADD COLUMN IF NOT EXISTS expansion TEXT;
 
+    -- ADD UNIQUE CONSTRAINT FOR UPSERT (Required by admin.js)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'card_slots_page_id_slot_index_key') THEN
+        ALTER TABLE public.card_slots ADD CONSTRAINT card_slots_page_id_slot_index_key UNIQUE (page_id, slot_index);
+    END IF;
+
     -----------------------------------------------------------
     -- 5. Table: decks
     -----------------------------------------------------------
@@ -99,14 +104,23 @@ END $$;
 -----------------------------------------------------------
 -- 7. TEMPLATE FOR SPIRITS (Companions)
 -- Use this to manually populate your spirits table if it's empty.
--- Update the URLs with your actual Supabase storage links.
+-- Update the URLs with your actual Supabase storage links from the 'spirits' bucket.
 -----------------------------------------------------------
 
 /*
 -- UNCOMMENT AND RUN THIS IF YOU WANT TO ADD DEFAULT SPIRITS
+-- Replace [TU-PROYECTO] with your actual Supabase project ID.
+
 INSERT INTO public.spirits (name, gltf_url, animation_type, is_public)
 VALUES
 ('Winged Kuriboh', 'https://[TU-PROYECTO].supabase.co/storage/v1/object/public/spirits/models/kuriboh/kuriboh.gltf', 'float', true),
 ('Ash Blossom', 'https://[TU-PROYECTO].supabase.co/storage/v1/object/public/spirits/models/ash/ash.gltf', 'orbit', true)
 ON CONFLICT DO NOTHING;
 */
+
+-----------------------------------------------------------
+-- 8. NOTES FOR LOGOS
+-- Ensure your store logos are uploaded to the 'logos' bucket in Supabase.
+-- The URL format should be: https://[TU-PROYECTO].supabase.co/storage/v1/object/public/logos/[FILENAME]
+-- You can update your store logo via the Profile (Perfil) section in the admin panel.
+-----------------------------------------------------------
