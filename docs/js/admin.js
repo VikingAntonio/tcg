@@ -38,7 +38,7 @@ $(document).ready(async function() {
     // --- Navigation (Dashboard Tiles) ---
     $(document).on('click', '#btn-home', function(e) {
         e.preventDefault();
-        window.location.href = 'index.html';
+        showView('main-dashboard');
     });
 
     $(document).on('click', '#btn-show-albums', function(e) {
@@ -149,7 +149,7 @@ $(document).ready(async function() {
         $('#companion-menu').removeClass('active');
     });
 
-    $('#menu-btn-home').click(function(e) { e.preventDefault(); window.location.href = 'index.html'; });
+    $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });

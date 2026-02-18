@@ -253,8 +253,20 @@ $(document).ready(async function() {
         const storeDisplay = store.store_name || store.username;
         $('#modal-business-name').text(storeDisplay);
         $('#modal-business-logo').attr('src', store.store_logo || 'https://midominio.com/placeholder-logo.png');
-        $('#modal-business-address').text(store.ubicacion || 'Ubicación no disponible');
-        $('#modal-business-hours').text(store.horario || 'Horario no disponible');
+
+        if (store.ubicacion) {
+            $('#modal-business-address').text(store.ubicacion);
+            $('#modal-address-container').show();
+        } else {
+            $('#modal-address-container').hide();
+        }
+
+        if (store.horario) {
+            $('#modal-business-hours').text(store.horario);
+            $('#modal-hours-container').show();
+        } else {
+            $('#modal-hours-container').hide();
+        }
 
         const publicUrl = `public.html?store=${encodeURIComponent(storeDisplay)}`;
         $('#modal-business-link').attr('href', publicUrl);
