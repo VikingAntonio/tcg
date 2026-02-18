@@ -15,7 +15,7 @@
         <button id="btn-logout" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
     </div>
 
-    <div class="admin-section active">
+    <div class="admin-section" style="display: none;">
         <div class="admin-header">
             <a href="admin.html" class="btn btn-secondary btn-volver" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver</a>
             <h1><i class="fas fa-users-cog"></i> Gestión de Usuarios</h1>
@@ -31,7 +31,7 @@
             </div>
             <div class="form-group">
                 <label>Contraseña</label>
-                <input type="text" id="new-password" placeholder="contraseña123">
+                <input type="password" id="new-password" placeholder="********">
             </div>
             <div class="form-group">
                 <label>Nombre de la Tienda</label>
@@ -104,7 +104,12 @@
                 </div>
             </div>
             <div class="form-group" style="margin-top: 15px;">
-                <label>Compañeros Desbloqueados</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="margin-bottom: 0;">Compañeros Desbloqueados</label>
+                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; color: #00d2ff;">
+                        <input type="checkbox" id="spirit-select-all"> Seleccionar Todos
+                    </label>
+                </div>
                 <div id="spirits-selection-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; max-height: 250px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);">
                     <!-- Spirits will be loaded here -->
                     <div style="color: #666; font-size: 12px;">Cargando compañeros...</div>
@@ -149,6 +154,8 @@
                 window.location.href = 'admin.html';
                 return;
             }
+
+            $('.admin-section').show();
 
             // Load Users Function
             async function loadUsers() {
@@ -211,6 +218,7 @@
 
             // Toggle is_store Event
             $(document).on('change', '.toggle-is-store', async function() {
+                if (!currentUser || currentUser.role !== 'admin') return;
                 const userId = $(this).data('id');
                 const is_store = $(this).is(':checked');
 
@@ -237,6 +245,7 @@
 
             // Role Change Event
             $(document).on('change', '.role-select', async function() {
+                if (!currentUser || currentUser.role !== 'admin') return;
                 const userId = $(this).data('id');
                 const newRole = $(this).val();
 
@@ -265,6 +274,7 @@
 
             // Delete User Event
             $(document).on('click', '.btn-delete-user', async function() {
+                if (!currentUser || currentUser.role !== 'admin') return;
                 const userId = $(this).data('id');
                 if (userId === currentUser.id) {
                     Swal.fire('Acción denegada', 'No puedes eliminar tu propia cuenta.', 'info');
@@ -319,12 +329,20 @@
             // Initial spirits load
             await loadAvailableSpirits();
 
+            // Select All Spirits Toggle
+            $('#spirit-select-all').change(function() {
+                const isChecked = $(this).is(':checked');
+                $('.spirit-checkbox').prop('checked', isChecked);
+            });
+
             function renderSpiritsCheckboxes(allowedIds) {
                 const $container = $('#spirits-selection-list');
                 $container.empty();
 
                 const allowedArray = allowedIds ? allowedIds.split(',').map(id => id.trim()) : [];
                 const isAll = allowedIds === 'all';
+
+                $('#spirit-select-all').prop('checked', isAll);
 
                 allAvailableSpirits.forEach(spirit => {
                     const isChecked = isAll || allowedArray.includes(spirit.id.toString());
@@ -360,6 +378,7 @@
             $('#btn-close-limits').click(() => $('#manage-limits-panel').slideUp());
 
             $('#btn-save-limits').click(async function() {
+                if (!currentUser || currentUser.role !== 'admin') return;
                 const userId = $('#manage-user-id').val();
 
                 // Collect selected spirits
