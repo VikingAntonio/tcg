@@ -701,3 +701,8 @@ footer {
 .theme-menu-container {
     display: none !important;
 }
+
+/* Ensure SweetAlert is always on top of our overlays */
+.swal2-container {
+    z-index: 999999 !important;
+}

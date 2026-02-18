@@ -69,8 +69,11 @@ $(document).ready(async function() {
             return;
         }
 
+        // Standardizing username-to-email conversion for Supabase Auth
+        const finalEmail = email.includes('@') ? email : `${email}@tcgdual.com`;
+
         const { data, error } = await _supabase.auth.signInWithPassword({
-            email: email.includes('@') ? email : `${email}@placeholder.com`,
+            email: finalEmail,
             password: password,
         });
 
@@ -102,12 +105,13 @@ $(document).ready(async function() {
     }
 
     async function handleForgotPassword() {
-        const email = $('#forgot-email').val().trim();
+        const username = $('#forgot-username').val().trim();
+        const email = username.includes('@') ? username : `${username}@tcgdual.com`;
 
-        if (!email) {
+        if (!username) {
             Swal.fire({
                 title: 'Atención',
-                text: 'Por favor, introduce tu correo electrónico',
+                text: 'Por favor, introduce tu nombre de usuario',
                 icon: 'warning',
                 position: 'top'
             });
@@ -132,11 +136,11 @@ $(document).ready(async function() {
     }
 
     async function handleRegister() {
-        const email = $('#reg-email').val().trim();
         const username = $('#reg-username').val().trim();
         const password = $('#reg-password').val().trim();
+        const email = `${username}@tcgdual.com`;
 
-        if (!email || !username || !password) {
+        if (!username || !password) {
             Swal.fire({
                 title: 'Atención',
                 text: 'Por favor, completa todos los campos',

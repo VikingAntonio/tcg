@@ -60,7 +60,7 @@ $(document).ready(async function() {
     $('#btn-forgot-password').click(handleForgotPassword);
 
     async function handleLogin() {
-        const email = $('#login-username').val().trim(); // Assuming users use email or we need to find email by username
+        const email = $('#login-username').val().trim();
         const password = $('#login-password').val().trim();
 
         if (!email || !password) {
@@ -73,12 +73,11 @@ $(document).ready(async function() {
             return;
         }
 
-        // With Supabase Auth, login is usually by email.
-        // If we want to support username login, we'd need a workaround,
-        // but standard is email. I'll use signInWithPassword.
+        // Standardizing username-to-email conversion for Supabase Auth
+        const finalEmail = email.includes('@') ? email : `${email}@tcgdual.com`;
 
         const { data, error } = await _supabase.auth.signInWithPassword({
-            email: email.includes('@') ? email : `${email}@placeholder.com`, // Simple hack if they use username
+            email: finalEmail,
             password: password,
         });
 
@@ -111,12 +110,13 @@ $(document).ready(async function() {
     }
 
     async function handleForgotPassword() {
-        const email = $('#forgot-email').val().trim();
+        const username = $('#forgot-username').val().trim();
+        const email = username.includes('@') ? username : `${username}@tcgdual.com`;
 
-        if (!email) {
+        if (!username) {
             Swal.fire({
                 title: 'Atención',
-                text: 'Por favor, introduce tu correo electrónico',
+                text: 'Por favor, introduce tu nombre de usuario',
                 icon: 'warning',
                 position: 'top'
             });
@@ -141,11 +141,11 @@ $(document).ready(async function() {
     }
 
     async function handleRegister() {
-        const email = $('#reg-email').val().trim();
         const username = $('#reg-username').val().trim();
         const password = $('#reg-password').val().trim();
+        const email = `${username}@tcgdual.com`;
 
-        if (!email || !username || !password) {
+        if (!username || !password) {
             Swal.fire({
                 title: 'Atención',
                 text: 'Por favor, completa todos los campos',
