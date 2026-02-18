@@ -29,6 +29,7 @@ $(document).ready(async function() {
 
         loadProfileData();
         updateHeader();
+        $('.admin-container').show();
     }
 
     function loadProfileData() {
@@ -197,13 +198,6 @@ $(document).ready(async function() {
         applyTheme(theme);
     });
 
-    // --- Password Toggle ---
-    $('#toggle-password').click(function() {
-        const input = $('#profile-password');
-        const type = input.attr('type') === 'password' ? 'text' : 'password';
-        input.attr('type', type);
-        $(this).toggleClass('fa-eye fa-eye-slash');
-    });
 
     // --- Schedule Helper Logic ---
     let selectedScheduleDay = null;
