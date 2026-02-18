@@ -187,12 +187,16 @@ h1, h2, h3, h4, .logo {
     height: 470px;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.1s ease;
+    transition: transform 0.1s ease, opacity 0.8s ease-in-out;
     border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
     box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+}
+
+.card-3d.fade-out {
+    opacity: 0;
 }
 
 #expanded-image {
@@ -202,11 +206,6 @@ h1, h2, h3, h4, .logo {
     object-fit: cover;
     display: block;
     backface-visibility: hidden;
-    transition: opacity 0.8s ease-in-out;
-}
-
-#expanded-image.fade-out {
-    opacity: 0;
 }
 
 .holo-layer {
