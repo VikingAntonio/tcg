@@ -1209,7 +1209,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids')
             .eq('id', session.user.id)
             .single();
 
@@ -1262,7 +1262,7 @@ async function handleLogin() {
     } else {
         const { data: profile } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids')
             .eq('id', data.user.id)
             .single();
 
@@ -1832,23 +1832,28 @@ async function loadSpirits() {
         const isPublic = spirit.is_public !== false;
 
         // Filtrado por plan/permisos
-        let isAllowed = true;
-        if (currentUser.role === 'starter' || currentUser.role === 'user') {
-            isAllowed = spirit.name.toLowerCase().includes('winged kuriboh');
+        let isAllowed = false;
+
+        // 1. Roles con acceso total por defecto
+        if (currentUser.role === 'premium' || currentUser.role === 'admin' || currentUser.role === 'admin_store') {
+            isAllowed = true;
+        } else if (spirit.name.toLowerCase().includes('winged kuriboh')) {
+            // Starter con acceso a Winged Kuriboh por defecto
+            isAllowed = true;
         }
 
-        // Overrides del admin
+        // 2. Overrides del admin (Prevalece sobre los roles si está configurado específicamente)
+        // Tratamos '1' como el default para starter, pero si es 'all' o una lista específica (no '1'), aplicamos lógica de override.
         if (currentUser.allowed_spirit_ids === 'all') {
             isAllowed = true;
-        } else if (currentUser.allowed_spirit_ids) {
+        } else if (currentUser.allowed_spirit_ids && currentUser.allowed_spirit_ids !== '1' && currentUser.allowed_spirit_ids !== '') {
             const allowedIds = currentUser.allowed_spirit_ids.split(',').map(s => s.trim());
+            // Para starters, esto EXPANDE su acceso.
+            // Para premium/admin, si el admin puso una lista específica, esto podría RESTRINGIR si así lo desea el sistema,
+            // pero para esta implementación lo usaremos principalmente para EXPANDIR a los starter.
             if (allowedIds.includes(spirit.id.toString())) {
                 isAllowed = true;
             }
-        }
-
-        if (currentUser.role === 'premium' || currentUser.role === 'admin' || currentUser.role === 'admin_store') {
-            isAllowed = true;
         }
 
         if (!isAllowed) return;
