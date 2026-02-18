@@ -60,10 +60,10 @@ $(document).ready(async function() {
     $('#btn-forgot-password').click(handleForgotPassword);
 
     async function handleLogin() {
-        const email = $('#login-username').val().trim();
+        const userInput = $('#login-username').val().trim();
         const password = $('#login-password').val().trim();
 
-        if (!email || !password) {
+        if (!userInput || !password) {
             Swal.fire({
                 title: 'Atención',
                 text: 'Por favor, completa todos los campos',
@@ -73,11 +73,26 @@ $(document).ready(async function() {
             return;
         }
 
-        // Standardizing username-to-email conversion for Supabase Auth
-        const finalEmail = email.includes('@') ? email : `${email}@tcgdual.com`;
+        let emailToUse = userInput;
+
+        if (!userInput.includes('@')) {
+            // Attempt to find the real email in the 'usuarios' table for existing accounts
+            const { data: userRow } = await _supabase
+                .from('usuarios')
+                .select('email')
+                .eq('username', userInput)
+                .maybeSingle();
+
+            if (userRow && userRow.email) {
+                emailToUse = userRow.email;
+            } else {
+                // Fallback to our convention for new accounts
+                emailToUse = `${userInput}@tcgdual.com`;
+            }
+        }
 
         const { data, error } = await _supabase.auth.signInWithPassword({
-            email: finalEmail,
+            email: emailToUse,
             password: password,
         });
 
@@ -110,10 +125,9 @@ $(document).ready(async function() {
     }
 
     async function handleForgotPassword() {
-        const username = $('#forgot-username').val().trim();
-        const email = username.includes('@') ? username : `${username}@tcgdual.com`;
+        const userInput = $('#forgot-username').val().trim();
 
-        if (!username) {
+        if (!userInput) {
             Swal.fire({
                 title: 'Atención',
                 text: 'Por favor, introduce tu nombre de usuario',
@@ -123,7 +137,25 @@ $(document).ready(async function() {
             return;
         }
 
-        const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+        let emailToUse = userInput;
+
+        if (!userInput.includes('@')) {
+            // Attempt to find the real email in the 'usuarios' table
+            const { data: userRow } = await _supabase
+                .from('usuarios')
+                .select('email')
+                .eq('username', userInput)
+                .maybeSingle();
+
+            if (userRow && userRow.email) {
+                emailToUse = userRow.email;
+            } else {
+                // Fallback to our convention
+                emailToUse = `${userInput}@tcgdual.com`;
+            }
+        }
+
+        const { error } = await _supabase.auth.resetPasswordForEmail(emailToUse, {
             redirectTo: window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/perfil.html'),
         });
 
