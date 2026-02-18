@@ -696,76 +696,82 @@ async function loadStoreData() {
 
     if (!storeName && !userName) {
         $('#public-store-name').hide();
-        return;
-    }
-
-    let query = _supabase
-        .from('usuarios')
-        .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store');
-
-    if (storeName) {
-        query = query.eq('store_name', storeName);
-    } else {
-        query = query.eq('username', userName);
-    }
-
-    const { data: userData, error: userError } = await query.single();
-
-    if (userError || !userData) {
-        const errorMsg = storeName ? 'Tienda no encontrada.' : 'Usuario no encontrado.';
-        $('#albums-container').html(`<div class="error">${errorMsg}</div>`);
         hideLoading();
         return;
     }
 
-    // Check localStorage first for guest selection
-    const localSpirit = localStorage.getItem('selected_spirit');
-    if (localSpirit) {
-        window.currentSpirit = JSON.parse(localSpirit);
-    } else {
-        // Fetch selected spirit from DB (owner's preference or default)
-        const { data: spiritRef } = await _supabase
+    try {
+        let query = _supabase
             .from('usuarios')
-            .select('selected_spirit_id')
-            .eq('id', userData.id)
-            .single();
+            .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store');
 
-        if (spiritRef && spiritRef.selected_spirit_id) {
-            const { data: spiritData } = await _supabase
-                .from('spirits')
-                .select('*')
-                .eq('id', spiritRef.selected_spirit_id)
-                .single();
-            if (spiritData) window.currentSpirit = spiritData;
+        if (storeName) {
+            query = query.eq('store_name', storeName);
+        } else {
+            query = query.eq('username', userName);
         }
-    }
 
-    if (userData.is_store) {
-        if (userData.store_logo) {
-            $('#public-store-logo').show().attr('src', userData.store_logo);
-            $('#public-store-icon').hide();
+        const { data: userData, error: userError } = await query.single();
+
+        if (userError || !userData) {
+            const errorMsg = storeName ? 'Tienda no encontrada.' : 'Usuario no encontrado.';
+            $('#albums-container').html(`<div class="error">${errorMsg}</div>`);
+            hideLoading();
+            return;
+        }
+
+        // Check localStorage first for guest selection
+        const localSpirit = localStorage.getItem('selected_spirit');
+        if (localSpirit) {
+            window.currentSpirit = JSON.parse(localSpirit);
+        } else {
+            // Fetch selected spirit from DB (owner's preference or default)
+            const { data: spiritRef } = await _supabase
+                .from('usuarios')
+                .select('selected_spirit_id')
+                .eq('id', userData.id)
+                .single();
+
+            if (spiritRef && spiritRef.selected_spirit_id) {
+                const { data: spiritData } = await _supabase
+                    .from('spirits')
+                    .select('*')
+                    .eq('id', spiritRef.selected_spirit_id)
+                    .single();
+                if (spiritData) window.currentSpirit = spiritData;
+            }
+        }
+
+        if (userData.is_store) {
+            if (userData.store_logo) {
+                $('#public-store-logo').show().attr('src', userData.store_logo);
+                $('#public-store-icon').hide();
+            } else {
+                $('#public-store-logo').hide();
+                $('#public-store-icon').show();
+            }
+            $('#public-store-name').text(`Tienda: ${userData.store_name}`).show();
         } else {
             $('#public-store-logo').hide();
-            $('#public-store-icon').show();
+            $('#public-store-icon').hide();
+            $('#public-store-name').text(userData.username).show();
         }
-        $('#public-store-name').text(`Tienda: ${userData.store_name}`).show();
-    } else {
-        $('#public-store-logo').hide();
-        $('#public-store-icon').hide();
-        $('#public-store-name').text(userData.username).show();
+
+        window.currentStoreContact = {
+            whatsapp: userData.whatsapp_link,
+            messenger: userData.messenger_link
+        };
+
+        // Update cart link to include store name or user name
+        const identifier = userData.is_store ? `store=${encodeURIComponent(userData.store_name)}` : `user=${encodeURIComponent(userData.username)}`;
+        $('#cart-btn').attr('href', `carrito.html?${identifier}`);
+
+        loadPublicAlbums(userData.id);
+        initFloatingCompanion();
+    } catch (e) {
+        console.error("Error in loadStoreData:", e);
+        hideLoading();
     }
-
-    window.currentStoreContact = {
-        whatsapp: userData.whatsapp_link,
-        messenger: userData.messenger_link
-    };
-
-    // Update cart link to include store name or user name
-    const identifier = userData.is_store ? `store=${encodeURIComponent(userData.store_name)}` : `user=${encodeURIComponent(userData.username)}`;
-    $('#cart-btn').attr('href', `carrito.html?${identifier}`);
-
-    loadPublicAlbums(userData.id);
-    initFloatingCompanion();
 }
 
 function initFloatingCompanion() {
@@ -793,50 +799,53 @@ function initFloatingCompanion() {
 
 async function loadPublicAlbums(userId) {
     showLoading('Cargando interfaz...');
-    let query = _supabase
-        .from('albums')
-        .select('*')
-        .eq('user_id', userId)
-        .order('id', { ascending: true });
-
-    let { data: albums, error } = await query;
-
-    // Fallback if query failed (might be schema mismatch)
-    if (error) {
-        console.warn("Error al cargar álbumes, intentando consulta básica.");
-        const retry = await _supabase
+    try {
+        let query = _supabase
             .from('albums')
             .select('*')
             .eq('user_id', userId)
             .order('id', { ascending: true });
-        albums = retry.data;
-        error = retry.error;
-    }
 
-    if (albums) {
-        // Filtrar en JS para tratar null como público (true)
-        // Solo ocultamos si is_public es explícitamente false
-        albums = albums.filter(a => a.is_public !== false);
-    }
+        let { data: albums, error } = await query;
 
-    if (error) {
-        $('#albums-container').html('<div class="error">Error al cargar álbumes.</div>');
-        hideLoading();
-        return;
-    }
+        // Fallback if query failed (might be schema mismatch)
+        if (error) {
+            console.warn("Error al cargar álbumes, intentando consulta básica.");
+            const retry = await _supabase
+                .from('albums')
+                .select('*')
+                .eq('user_id', userId)
+                .order('id', { ascending: true });
+            albums = retry.data;
+            error = retry.error;
+        }
 
-    if (albums.length === 0) {
-        $('#albums-container').html('<div class="empty">No hay álbumes disponibles.</div>');
-        hideLoading();
-        return;
-    }
+        if (albums) {
+            // Filtrar en JS para tratar null como público (true)
+            // Solo ocultamos si is_public es explícitamente false
+            albums = albums.filter(a => a.is_public !== false);
+        }
 
-    $('#albums-container').empty();
-    for (const album of albums) {
-        await renderAlbum(album);
-    }
+        if (error) {
+            $('#albums-container').html('<div class="error">Error al cargar álbumes.</div>');
+            return;
+        }
 
-    setTimeout(hideLoading, 500);
+        if (albums.length === 0) {
+            $('#albums-container').html('<div class="empty">No hay álbumes disponibles.</div>');
+            return;
+        }
+
+        $('#albums-container').empty();
+        for (const album of albums) {
+            await renderAlbum(album);
+        }
+    } catch (e) {
+        console.error("Error in loadPublicAlbums:", e);
+        $('#albums-container').html('<div class="error">Error al cargar la colección.</div>');
+    } finally {
+        setTimeout(hideLoading, 500);
+    }
 }
 
 async function loadPublicDecks() {
@@ -848,34 +857,20 @@ async function loadPublicDecks() {
     showLoading('Cargando Decks...');
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
-    let query = _supabase.from('usuarios').select('id');
-    if (storeName) {
-        query = query.eq('store_name', storeName);
-    } else {
-        query = query.eq('username', userName);
-    }
-    const { data: user } = await query.single();
+    try {
+        let query = _supabase.from('usuarios').select('id');
+        if (storeName) {
+            query = query.eq('store_name', storeName);
+        } else {
+            query = query.eq('username', userName);
+        }
+        const { data: user } = await query.single();
 
-    if (!user) {
-        hideLoading();
-        return;
-    }
+        if (!user) {
+            return;
+        }
 
-    let deckQuery = _supabase
-        .from('decks')
-        .select(`
-            *,
-            deck_cards (*)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-    let { data: decks, error } = await deckQuery;
-
-    // Fallback if query failed
-    if (error) {
-        console.warn("Error al cargar decks, intentando consulta básica.");
-        const retry = await _supabase
+        let deckQuery = _supabase
             .from('decks')
             .select(`
                 *,
@@ -883,91 +878,107 @@ async function loadPublicDecks() {
             `)
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
-        decks = retry.data;
-        error = retry.error;
-    }
 
-    if (decks) {
-        // Filtrar en JS para tratar null como público (true)
-        decks = decks.filter(d => d.is_public !== false);
-    }
+        let { data: decks, error } = await deckQuery;
 
-    if (error || !decks) {
-        $('#decks-container').html('<div class="error">No se pudieron cargar los decks.</div>');
-        hideLoading();
-        return;
-    }
+        // Fallback if query failed
+        if (error) {
+            console.warn("Error al cargar decks, intentando consulta básica.");
+            const retry = await _supabase
+                .from('decks')
+                .select(`
+                    *,
+                    deck_cards (*)
+                `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+            decks = retry.data;
+            error = retry.error;
+        }
 
-    $('#decks-container').empty();
-    if (decks.length === 0) {
-        $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
-        hideLoading();
-        return;
-    }
+        if (decks) {
+            // Filtrar en JS para tratar null como público (true)
+            decks = decks.filter(d => d.is_public !== false);
+        }
 
-    decks.forEach(deck => {
-        const deckId = `deck-swiper-${deck.id}`;
-        const $deckItem = $(`
-            <div class="deck-public-item">
-                <h3>${deck.name}</h3>
-                <div class="container">
-                    <div class="swiper swiperyg ${deckId}">
-                        <div class="swiper-wrapper">
-                            ${deck.deck_cards.map(card => `
-                                <div class="swiper-slide card-slot"
-                                     data-name="${card.name || ''}"
-                                     data-rarity="${card.rarity || ''}"
-                                     data-holo="${card.holo_effect || ''}"
-                                     data-mask="${card.custom_mask_url || ''}"
-                                     data-expansion="${card.expansion || ''}"
-                                     data-condition="${card.condition || ''}"
-                                     data-quantity="${card.quantity || '1'}"
-                                     data-price="${card.price || ''}">
-                                    <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
-                                    <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
-                                </div>
-                            `).join('')}
+        if (error || !decks) {
+            $('#decks-container').html('<div class="error">No se pudieron cargar los decks.</div>');
+            return;
+        }
+
+        $('#decks-container').empty();
+        if (decks.length === 0) {
+            $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
+            return;
+        }
+
+        decks.forEach(deck => {
+            const deckId = `deck-swiper-${deck.id}`;
+            const $deckItem = $(`
+                <div class="deck-public-item">
+                    <h3>${deck.name}</h3>
+                    <div class="container">
+                        <div class="swiper swiperyg ${deckId}">
+                            <div class="swiper-wrapper">
+                                ${deck.deck_cards.map(card => `
+                                    <div class="swiper-slide card-slot"
+                                         data-name="${card.name || ''}"
+                                         data-rarity="${card.rarity || ''}"
+                                         data-holo="${card.holo_effect || ''}"
+                                         data-mask="${card.custom_mask_url || ''}"
+                                         data-expansion="${card.expansion || ''}"
+                                         data-condition="${card.condition || ''}"
+                                         data-quantity="${card.quantity || '1'}"
+                                         data-price="${card.price || ''}">
+                                        <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
+                                        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `);
+            `);
 
-        $('#decks-container').append($deckItem);
+            $('#decks-container').append($deckItem);
 
-        // El manejo de clics se mantiene normal, la prioridad táctil
-        // ya se maneja con el listener global en fase de captura.
-        $deckItem.find('.zoom-btn').on('click', function(e) {
-            e.stopPropagation();
-            openCardModal($(this).closest('.card-slot'));
-        });
+            // El manejo de clics se mantiene normal, la prioridad táctil
+            // ya se maneja con el listener global en fase de captura.
+            $deckItem.find('.zoom-btn').on('click', function(e) {
+                e.stopPropagation();
+                openCardModal($(this).closest('.card-slot'));
+            });
 
-        new Swiper(`.${deckId}`, {
-            effect: "cards",
-            grabCursor: true,
-            perSlideOffset: 8,
-            perSlideRotate: 2,
-            rotate: true,
-            slideShadows: true,
-            preventClicksPropagation: false,
-            on: {
-                click: function(s, e) {
-                    if (!isDragging) {
-                        const $slot = $(e.target).closest('.card-slot');
-                        if ($slot.length) {
-                            const isMobile = window.innerWidth <= 640;
-                            if (isMobile) {
-                                if (!$(e.target).closest('.zoom-btn').length) return;
+            new Swiper(`.${deckId}`, {
+                effect: "cards",
+                grabCursor: true,
+                perSlideOffset: 8,
+                perSlideRotate: 2,
+                rotate: true,
+                slideShadows: true,
+                preventClicksPropagation: false,
+                on: {
+                    click: function(s, e) {
+                        if (!isDragging) {
+                            const $slot = $(e.target).closest('.card-slot');
+                            if ($slot.length) {
+                                const isMobile = window.innerWidth <= 640;
+                                if (isMobile) {
+                                    if (!$(e.target).closest('.zoom-btn').length) return;
+                                }
+                                openCardModal($slot);
                             }
-                            openCardModal($slot);
                         }
                     }
                 }
-            }
+            });
         });
-    });
-
-    setTimeout(hideLoading, 500);
+    } catch (e) {
+        console.error("Error in loadPublicDecks:", e);
+        $('#decks-container').html('<div class="error">Error al cargar los decks.</div>');
+    } finally {
+        setTimeout(hideLoading, 500);
+    }
 }
 
 function initTheme() {
@@ -993,16 +1004,18 @@ async function checkSession() {
             .eq('id', session.user.id)
             .single();
 
-        if (user) {
-            localStorage.setItem('tcg_session', JSON.stringify(user));
-            if (user.is_store) {
-                $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
-                $('#dropdown-user-name').text(user.store_name || user.username);
-                $('#dropdown-user-role').hide();
-            } else {
-                $('#dropdown-user-logo').hide();
-                $('#dropdown-user-name').text(user.username);
-                $('#dropdown-user-role').hide();
+        try {
+            if (user) {
+                localStorage.setItem('tcg_session', JSON.stringify(user));
+                if (user.is_store) {
+                    $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
+                    $('#dropdown-user-name').text(user.store_name || user.username);
+                    $('#dropdown-user-role').hide();
+                } else {
+                    $('#dropdown-user-logo').hide();
+                    $('#dropdown-user-name').text(user.username);
+                    $('#dropdown-user-role').hide();
+                }
             }
         } catch (e) {
             console.error("Error parsing session:", e);
