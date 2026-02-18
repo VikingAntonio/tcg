@@ -4,6 +4,17 @@ $(document).ready(async function() {
     loadStoresSlider();
     updateCartCount();
 
+    // --- Smooth Scroll for Registrarse ---
+    $('a[href="#join-section"]').click(function(e) {
+        e.preventDefault();
+        const target = $('#join-section');
+        if (target.length) {
+            $('html, body').animate({
+                scrollTop: target.offset().top - 80
+            }, 800);
+        }
+    });
+
     // --- Auth Modal Toggling ---
     $('#btn-cta-register').click(function(e) {
         e.preventDefault();
