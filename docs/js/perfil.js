@@ -124,7 +124,6 @@ $(document).ready(async function() {
 
             // 2. Update DB
             const updateData = {
-                email: email,
                 store_name: storeName,
                 whatsapp_link: whatsapp,
                 messenger_link: messenger,
