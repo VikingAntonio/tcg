@@ -149,12 +149,6 @@ $(document).ready(async function() {
         $('#companion-menu').removeClass('active');
     });
 
-    $('#menu-item-change').click(function() {
-        showView('spirits');
-        loadSpirits();
-        $('#companion-menu').removeClass('active');
-    });
-
     $('#menu-btn-home').click(function(e) { e.preventDefault(); window.location.href = 'index.html'; });
     $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
