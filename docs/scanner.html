@@ -322,14 +322,14 @@
             .destination-grid { grid-template-columns: 1fr; }
         }
 
-        /* Detection Zones */
+        /* Detection Zones - Hidden as per user request */
         .code-zone {
             position: absolute;
-            border: 2px dashed rgba(0, 210, 255, 0.4);
+            border: 1px dashed rgba(0, 210, 255, 0.2); /* Much more subtle or hidden */
             border-radius: 4px;
             pointer-events: none;
             transition: 0.3s;
-            display: flex;
+            display: none; /* Hidden */
             align-items: center;
             justify-content: center;
         }
@@ -346,9 +346,8 @@
             background: rgba(0,0,0,0.5);
             padding: 2px 4px;
             border-radius: 3px;
+            display: none; /* Hidden */
         }
-        /* Las zonas se ajustan dinámicamente según la máscara */
-        .main-code-zone { }
     </style>
 </head>
 <body class="public-body">
@@ -583,12 +582,10 @@ async function detectMaskROIs(maskUrl) {
         img.crossOrigin = "anonymous";
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = img.width; canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
             let topBox = { x1: img.width, y1: img.height, x2: 0, y2: 0 };
             let bottomBox = { x1: img.width, y1: img.height, x2: 0, y2: 0 };
@@ -598,35 +595,40 @@ async function detectMaskROIs(maskUrl) {
             for (let y = 0; y < img.height; y++) {
                 for (let x = 0; x < img.width; x++) {
                     const idx = (y * img.width + x) * 4;
-                    const r = data[idx], g = data[idx+1], b = data[idx+2];
-                    if (r > 200 && g > 200 && b > 200) { // white pixel
+                    if (data[idx] > 200 && data[idx+1] > 200 && data[idx+2] > 200) {
                         if (y < midY) {
-                            if (x < topBox.x1) topBox.x1 = x;
-                            if (y < topBox.y1) topBox.y1 = y;
-                            if (x > topBox.x2) topBox.x2 = x;
-                            if (y > topBox.y2) topBox.y2 = y;
+                            topBox.x1 = Math.min(topBox.x1, x); topBox.y1 = Math.min(topBox.y1, y);
+                            topBox.x2 = Math.max(topBox.x2, x); topBox.y2 = Math.max(topBox.y2, y);
                             foundTop = true;
                         } else {
-                            if (x < bottomBox.x1) bottomBox.x1 = x;
-                            if (y < bottomBox.y1) bottomBox.y1 = y;
-                            if (x > bottomBox.x2) bottomBox.x2 = x;
-                            if (y > bottomBox.y2) bottomBox.y2 = y;
+                            bottomBox.x1 = Math.min(bottomBox.x1, x); bottomBox.y1 = Math.min(bottomBox.y1, y);
+                            bottomBox.x2 = Math.max(bottomBox.x2, x); bottomBox.y2 = Math.max(bottomBox.y2, y);
                             foundBottom = true;
                         }
                     }
                 }
             }
 
+            // Expand ROIs by 15% for more "forgiveness" (Automaticity)
+            const expand = (box) => {
+                if (!box) return null;
+                const w = box.x2 - box.x1, h = box.y2 - box.y1;
+                const marginW = w * 0.15, marginH = h * 0.15;
+                return {
+                    x: Math.max(0, box.x1 - marginW),
+                    y: Math.max(0, box.y1 - marginH),
+                    w: Math.min(img.width, w + marginW * 2),
+                    h: Math.min(img.height, h + marginH * 2)
+                };
+            };
+
             resolve({
-                name: foundTop ? { x: topBox.x1, y: topBox.y1, w: topBox.x2 - topBox.x1, h: topBox.y2 - topBox.y1 } : null,
-                code: foundBottom ? { x: bottomBox.x1, y: bottomBox.y1, w: bottomBox.x2 - bottomBox.x1, h: bottomBox.y2 - bottomBox.y1 } : null,
+                name: foundTop ? expand(topBox) : null,
+                code: foundBottom ? expand(bottomBox) : null,
                 originalSize: { w: img.width, h: img.height }
             });
         };
-        img.onerror = () => {
-            console.error("Error cargando máscara:", maskUrl);
-            resolve(null);
-        };
+        img.onerror = () => { resolve(null); };
         img.src = maskUrl;
     });
 }
@@ -635,9 +637,10 @@ function updateScannerLayout() {
     const config = CARD_CONFIGS[currentCardType];
     $('#scanner-viewport').css('aspect-ratio', `${config.width}/${config.height}`);
 
+    // Internal mask image is hidden from user
     let $maskOverlay = $('#mask-overlay');
     if ($maskOverlay.length === 0) {
-        $('.scan-frame').append(`<img id="mask-overlay" src="${config.mask}" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.3; pointer-events: none; object-fit: fill;">`);
+        $('.scan-frame').append(`<img id="mask-overlay" src="${config.mask}" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0; pointer-events: none; object-fit: fill; display:none;">`);
     } else {
         $maskOverlay.attr('src', config.mask);
     }
@@ -653,7 +656,7 @@ function updateScannerLayout() {
         }).attr('data-label', 'Código');
 
         if ($('.name-code-zone').length === 0) {
-            $('.scan-frame').append('<div class="code-zone name-code-zone" data-label="Nombre"></div>');
+            $('.scan-frame').append('<div class="code-zone name-code-zone" data-label="Nombre" style="display:none;"></div>');
         }
         const nRoi = config.rois.name;
         $('.name-code-zone').css({
@@ -798,7 +801,7 @@ function startScanningLoop() {
             await captureAndProcessFrame(video);
         }
         startScanningLoop();
-    }, 1200);
+    }, 900);
 }
 
 async function captureAndProcessFrame(video) {
@@ -834,19 +837,28 @@ async function captureAndProcessFrame(video) {
 async function processImageMulti(sourceCanvas, rois, scaleX, scaleY, threshold = 140) {
     try {
         let nameText = "", codeText = "";
+        let maxConf = 0;
 
         if (rois.name) {
             const nameCanvas = extractAndPreprocessROI(sourceCanvas, rois.name, scaleX, scaleY, threshold);
             await tesseractWorker.setParameters({ tessedit_char_whitelist: '' }); // Reset whitelist
-            const { data: { text } } = await tesseractWorker.recognize(nameCanvas);
+            const { data: { text, confidence } } = await tesseractWorker.recognize(nameCanvas);
             nameText = text.trim();
+            maxConf = Math.max(maxConf, confidence);
         }
 
         if (rois.code) {
             const codeCanvas = extractAndPreprocessROI(sourceCanvas, rois.code, scaleX, scaleY, threshold);
             await tesseractWorker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- ' });
-            const { data: { text } } = await tesseractWorker.recognize(codeCanvas);
+            const { data: { text, confidence } } = await tesseractWorker.recognize(codeCanvas);
             codeText = text.trim();
+            maxConf = Math.max(maxConf, confidence);
+        }
+
+        // If confidence is very low, it's likely noise or extreme blur
+        if (maxConf < 40 && !$('#file-preview').is(':visible')) {
+            processDetectedText("");
+            return;
         }
 
         const combinedText = `${nameText}\n${codeText}`;
@@ -952,7 +964,7 @@ function identifyFromText(text) {
 
 async function processDetectedText(text) {
     const { code, type, name } = identifyFromText(text);
-    if (code || name) {
+    if (code || (name && name.length > 4)) {
         const identifier = code || name;
         if (!$('#file-preview').is(':visible')) {
             if (!detectionBuffer[identifier]) { detectionBuffer = {}; detectionBuffer[identifier] = 1; }
@@ -966,13 +978,15 @@ async function processDetectedText(text) {
         const success = await handleFoundCode(code, name, type);
         if (!success && code) { showManualPrompt(code, text); }
     } else {
-        const raw = text.trim().replace(/[\n\r]/g, ' ').substring(0, 40);
-        if (raw.length > 5) {
-            $('#detected-code').html(`<span style="opacity: 0.5; font-size: 0.8rem;">? ${raw}</span> <i class="fas fa-edit" style="cursor:pointer; margin-left: 5px;" onclick="promptCorrection('${raw.replace(/'/g, "\\'")}')"></i>`);
-            if ($('#file-preview').is(':visible')) { showManualPrompt(null, text); }
-        }
+        // No valid card data found, be silent to avoid "garbage" detections
+        $('#detected-code').text('');
         $('#status-text').text(isScanning ? 'Escaneando...' : 'Listo');
         $('#status-container').removeClass('status-working');
+
+        // Only show manual prompt if it's an intentional upload that failed
+        if ($('#file-preview').is(':visible') && text.trim().length > 0) {
+            showManualPrompt(null, text);
+        }
     }
 }
 
