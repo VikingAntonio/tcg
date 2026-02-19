@@ -357,6 +357,49 @@ $(document).ready(async function() {
             });
         }, 250);
     });
+
+    // --- Wishlist Contact Buttons Logic ---
+    $(document).on('click', '#btn-wishlist-whatsapp', function() {
+        if (!window.currentCardData) return;
+        const contact = window.currentStoreContact;
+        if (!contact || !contact.whatsapp) {
+            Swal.fire({
+                title: 'Error',
+                text: 'No hay WhatsApp configurado para este vendedor.',
+                icon: 'error',
+                toast: true,
+                position: 'top'
+            });
+            return;
+        }
+
+        const message = `¡Hola! Vi tu lista de "Buscamos" en Vikingdev TCG y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity || 'N/A'}). ¿Te interesa?`;
+        const waNumber = contact.whatsapp.replace(/\D/g, '');
+        window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    });
+
+    $(document).on('click', '#btn-wishlist-messenger', function() {
+        if (!window.currentCardData) return;
+        const contact = window.currentStoreContact;
+        if (!contact || !contact.messenger) {
+            Swal.fire({
+                title: 'Error',
+                text: 'No hay Messenger configurado para este vendedor.',
+                icon: 'error',
+                toast: true,
+                position: 'top'
+            });
+            return;
+        }
+
+        const message = `¡Hola! Vi tu lista de "Buscamos" en Vikingdev TCG y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity || 'N/A'}). ¿Te interesa?`;
+        let messengerLink = contact.messenger;
+        if (!messengerLink.startsWith('http')) {
+            messengerLink = `https://m.me/${messengerLink}`;
+        }
+        const separator = messengerLink.includes('?') ? '&' : '?';
+        window.open(`${messengerLink}${separator}text=${encodeURIComponent(message)}`, '_blank');
+    });
 });
 
 function filterContent(query) {
@@ -692,11 +735,14 @@ async function switchView(view) {
 
     if (view === 'albums') {
         $('#public-view-title').text('Colección de Álbumes');
+        $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
     } else if (view === 'decks') {
         $('#public-view-title').text('Decks de Cartas');
+        $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
         loadPublicDecks();
     } else if (view === 'wishlist') {
-        $('#public-view-title').text('Lo que Buscamos (Deseos)');
+        $('#public-view-title').text('Buscamos lo siguiente');
+        $('.public-header p').text('Si tienes alguno de estos productos ponte en coontacto con nosotros');
         loadPublicWishlist();
     }
 
@@ -1352,35 +1398,3 @@ async function loadPublicWishlist() {
         hideLoading();
     }
 }
-
-$(document).ready(function() {
-    $('#btn-wishlist-whatsapp').click(function() {
-        if (!window.currentCardData) return;
-        const contact = window.currentStoreContact;
-        if (!contact || !contact.whatsapp) {
-            Swal.fire('Error', 'No hay WhatsApp configurado para este vendedor.', 'error');
-            return;
-        }
-
-        const message = `Hola! Vi tu lista de deseos en TCG Dual y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity}). ¿Te interesa?`;
-        const waNumber = contact.whatsapp.replace(/\D/g, '');
-        window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
-    });
-
-    $('#btn-wishlist-messenger').click(function() {
-        if (!window.currentCardData) return;
-        const contact = window.currentStoreContact;
-        if (!contact || !contact.messenger) {
-            Swal.fire('Error', 'No hay Messenger configurado para este vendedor.', 'error');
-            return;
-        }
-
-        const message = `Hola! Vi tu lista de deseos en TCG Dual y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity}). ¿Te interesa?`;
-        let messengerLink = contact.messenger;
-        if (!messengerLink.startsWith('http')) {
-            messengerLink = `https://m.me/${messengerLink}`;
-        }
-        const separator = messengerLink.includes('?') ? '&' : '?';
-        window.open(`${messengerLink}${separator}text=${encodeURIComponent(message)}`, '_blank');
-    });
-});

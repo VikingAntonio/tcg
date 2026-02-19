@@ -7,6 +7,32 @@
     <title>Lista de Deseos - Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .wishlist-item {
+            min-width: 0; /* Fix flex issue */
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        .wishlist-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.2);
+        }
+        .wishlist-field {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            border-radius: 6px;
+            width: 100%;
+        }
+        .wishlist-field:focus {
+            border-color: var(--primary-color) !important;
+            outline: none;
+        }
+        .album-list {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+        }
+    </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
