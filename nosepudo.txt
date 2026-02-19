@@ -1,15 +1,17 @@
-Explicación técnica sobre el escaneo 100% automático sin ajuste:
+Explicación técnica sobre el escaneo 100% automático (Ajuste Cero):
 
-Para lograr un escaneo donde el usuario no tenga que ajustar la carta en absoluto (detección de carta en cualquier posición, ángulo o distancia), se requeriría una arquitectura de Visión Computacional mucho más compleja que no está presente actualmente en el proyecto por las siguientes razones:
+Estado Actual del Proyecto:
+Se ha implementado una arquitectura de "Escaneo por Franjas de Interés" (ROI) con las siguientes mejoras de robustez:
+1. ROIs Fijas y Expandidas: En lugar de depender de una imagen PNG que puede fallar al cargar, el sistema ahora tiene grabadas las coordenadas proporcionales exactas (10% superior e inferior). Se han ampliado un 15% para permitir que la carta se detecte aunque no esté perfectamente centrada.
+2. Pipeline de Multi-Pasada: Para cada captura, el sistema procesa la imagen 3 veces con diferentes niveles de brillo y contraste (Normal, Oscuro, Claro). Esto soluciona los problemas de reflejos o falta de luz automáticamente.
+3. Validación de Patrones (Regex): El sistema es "silencioso". Solo muestra resultados cuando detecta un código que cumple con el formato real de una carta (8 dígitos para YGO, fracciones o promos para Pokémon). Esto elimina el "ruido" visual de letras aleatorias.
+4. Pre-procesado Avanzado: Se aplica un reescalado 4x y un filtro de contraste ultra-agresivo para que el OCR lea texto incluso si la imagen original es borrosa.
 
-1. Detección de Objetos en Tiempo Real: Se necesitaría integrar bibliotecas como TensorFlow.js (con un modelo entrenado como YOLO o SSD) o OpenCV.js para detectar los bordes de la carta, extraer sus cuatro esquinas y realizar una "transformación de perspectiva" (warping) para enderezar la imagen antes de pasarla al OCR.
-2. Rendimiento en Dispositivos Móviles: Ejecutar detección de bordes y corrección de perspectiva en cada fotograma del video dentro del navegador consumiría demasiados recursos (CPU/RAM), lo que haría que el escaneo fuera lento y sobrecalentara el teléfono.
-3. Dependencias Pesadas: Bibliotecas como OpenCV.js pesan varios megabytes y aumentarían significativamente el tiempo de carga de la web, rompiendo la restricción de "no tocar ni modificar otras partes del código" al requerir cambios estructurales en la carga de scripts.
+Por qué no se puede lograr el "Cero Ajuste" Total (detectar la carta rotada o en cualquier ángulo):
+Para lograr eso, se necesitaría Visión Computacional pesada:
+- Detección de Rectángulos por IA: Requeriría TensorFlow.js o OpenCV.js para encontrar los 4 puntos de la carta en el aire y "enderezarla".
+- Rendimiento: Ejecutar estos modelos en móviles antiguos causaría lag extremo y sobrecalentamiento.
+- Restricción de Código: Integrar estas librerías requiere cambios profundos en la estructura del proyecto que violarían la orden de "no tocar otras partes del código".
 
-Solución Actual Implementada:
-He optimizado el sistema para que sea lo más cercano a "automático" posible mediante:
-- Máscaras Invisibles: El programa sabe dónde buscar el nombre y el código internamente sin mostrar cuadros molestos al usuario.
-- ROI Expandido: He ampliado las zonas de detección un 15% para que no haga falta una alineación perfecta; con que la carta ocupe la mayor parte del visor, el sistema la detectará.
-- Filtrado de Ruido: El sistema ahora es silencioso y solo actúa cuando detecta patrones reales de cartas, evitando mostrar símbolos o letras aleatorias cuando no hay una carta presente.
-
-Para lograr el "Cero Ajuste" total, sería necesario migrar el scanner a una solución basada en modelos de IA especializados en detección de rectángulos, lo cual excede el alcance de una implementación en JS puro sin dependencias externas pesadas.
+Conclusión:
+La implementación actual es la más robusta posible dentro de un navegador web sin usar IA pesada. Es rápida, automática y perdona errores de alineación.
