@@ -1,0 +1,38 @@
+-- SQL Migration for Wishlist (Deseos) feature
+-- This script creates the wishlist table and its RLS policies.
+
+CREATE TABLE IF NOT EXISTS public.wishlist (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name text NOT NULL,
+    image_url text NOT NULL,
+    game text, -- 'pokemon', 'yugioh', etc.
+    rarity text,
+    notes text,
+    quantity integer DEFAULT 1,
+    obtained boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.wishlist ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+
+-- 1. Allow users to manage their own wishlist items
+CREATE POLICY "Users can manage their own wishlist items"
+ON public.wishlist
+FOR ALL
+TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- 2. Allow public to read wishlist items (so they can be seen in the public link)
+CREATE POLICY "Public can read wishlist items"
+ON public.wishlist
+FOR SELECT
+TO public
+USING (true);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS wishlist_user_id_idx ON public.wishlist (user_id);

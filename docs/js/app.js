@@ -48,10 +48,14 @@ $(document).ready(async function() {
         }
     });
 
-    $('#menu-spirit-btn').click(function(e) {
+    $('#menu-spirit-btn, #menu-wishlist-btn').click(function(e) {
         e.preventDefault();
-        $('#spirit-modal').addClass('active');
-        loadPublicSpirits();
+        if ($(this).attr('id') === 'menu-spirit-btn') {
+            $('#spirit-modal').addClass('active');
+            loadPublicSpirits();
+        } else {
+            switchView('wishlist');
+        }
         $('#user-dropdown').removeClass('active');
     });
 
@@ -120,11 +124,17 @@ $(document).ready(async function() {
 
     if (initialView === 'decks') {
         switchView('decks');
+    } else if (initialView === 'wishlist') {
+        switchView('wishlist');
     }
 
     $('#spirit-btn').click(function() {
         $('#spirit-modal').addClass('active');
         loadPublicSpirits();
+    });
+
+    $('#wishlist-nav-btn').click(function() {
+        switchView('wishlist');
     });
 
     $('#close-spirit-modal').click(function() {
@@ -612,6 +622,7 @@ function openCardModal($slot) {
     const condition = $slot.data("condition") || "-";
     const quantity = $slot.data("quantity") || "1";
     const price = $slot.data("price") || "-";
+    const isWishlist = $slot.hasClass('wishlist-card-item');
 
     // Reset the card container with a fresh image tag and preserve holo-layer
     $("#card-3d").html(`
@@ -638,6 +649,14 @@ function openCardModal($slot) {
     $("#card-condition").text(condition);
     $("#card-quantity").text(quantity);
     $("#card-price").text(price);
+
+    if (isWishlist) {
+        $('#wishlist-contact-buttons').css('display', 'flex');
+        $('#btn-add-to-cart').hide();
+    } else {
+        $('#wishlist-contact-buttons').hide();
+        $('#btn-add-to-cart').show();
+    }
 
     // Store current card data for cart integration
     window.currentCardData = {
@@ -676,6 +695,9 @@ async function switchView(view) {
     } else if (view === 'decks') {
         $('#public-view-title').text('Decks de Cartas');
         loadPublicDecks();
+    } else if (view === 'wishlist') {
+        $('#public-view-title').text('Lo que Buscamos (Deseos)');
+        loadPublicWishlist();
     }
 
     const url = new URL(window.location);
@@ -751,6 +773,7 @@ async function loadStoreData() {
             $('#public-store-name').text(userData.username).show();
         }
 
+        window.currentStoreId = userData.id;
         window.currentStoreContact = {
             whatsapp: userData.whatsapp_link,
             messenger: userData.messenger_link
@@ -1257,3 +1280,107 @@ async function renderAlbum(album) {
         setTimeout(() => { filterContent(currentQuery); }, 2000);
     }
 }
+
+async function loadPublicWishlist() {
+    let userId = window.currentStoreId;
+
+    if (!userId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeName = urlParams.get('store');
+        const userName = urlParams.get('user');
+        if (!storeName && !userName) return;
+
+        let query = _supabase.from('usuarios').select('id');
+        if (storeName) query = query.eq('store_name', storeName);
+        else query = query.eq('username', userName);
+
+        const { data: user } = await query.single();
+        if (user) userId = user.id;
+    }
+
+    if (!userId) return;
+
+    showLoading('Cargando Buscamos...');
+    $('#wishlist-container').html('<div class="loading">Cargando lista de deseos...</div>');
+
+    try {
+        const { data: wishlist, error } = await _supabase
+            .from('wishlist')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!wishlist || wishlist.length === 0) {
+            $('#wishlist-container').html('<div class="empty">Esta tienda no tiene una lista de deseos pública.</div>');
+            return;
+        }
+
+        $('#wishlist-container').empty();
+        wishlist.forEach(item => {
+            const $item = `
+                <div class="deck-public-item wishlist-card-item card-slot"
+                     data-name="${item.name}"
+                     data-rarity="${item.rarity || '-'}"
+                     data-notes="${item.notes || ''}"
+                     data-quantity="${item.quantity || '1'}"
+                     style="${item.obtained ? 'opacity: 0.5;' : ''}">
+                    <h3>${item.name}</h3>
+                    <img src="${item.image_url}" style="width: 100%; border-radius: 12px; margin-bottom: 15px;">
+                    <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 10px;">
+                        ${item.rarity ? `<div>Rareza: ${item.rarity}</div>` : ''}
+                        ${item.quantity > 1 ? `<div>Cantidad: ${item.quantity}</div>` : ''}
+                        ${item.obtained ? '<div style="color: #00ff88; font-weight: bold;">¡Ya conseguida!</div>' : ''}
+                    </div>
+                    <div class="zoom-btn" style="display: flex;"><i class="fas fa-search-plus"></i></div>
+                </div>
+            `;
+
+            const $el = $($item);
+            $el.find('.zoom-btn').click(function(e) {
+                e.stopPropagation();
+                openCardModal($el);
+            });
+
+            $('#wishlist-container').append($el);
+        });
+    } catch (e) {
+        console.error("Error loading wishlist:", e);
+        $('#wishlist-container').html('<div class="error">Error al cargar los deseos.</div>');
+    } finally {
+        hideLoading();
+    }
+}
+
+$(document).ready(function() {
+    $('#btn-wishlist-whatsapp').click(function() {
+        if (!window.currentCardData) return;
+        const contact = window.currentStoreContact;
+        if (!contact || !contact.whatsapp) {
+            Swal.fire('Error', 'No hay WhatsApp configurado para este vendedor.', 'error');
+            return;
+        }
+
+        const message = `Hola! Vi tu lista de deseos en TCG Dual y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity}). ¿Te interesa?`;
+        const waNumber = contact.whatsapp.replace(/\D/g, '');
+        window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    });
+
+    $('#btn-wishlist-messenger').click(function() {
+        if (!window.currentCardData) return;
+        const contact = window.currentStoreContact;
+        if (!contact || !contact.messenger) {
+            Swal.fire('Error', 'No hay Messenger configurado para este vendedor.', 'error');
+            return;
+        }
+
+        const message = `Hola! Vi tu lista de deseos en TCG Dual y tengo esta carta: ${window.currentCardData.name} (${window.currentCardData.rarity}). ¿Te interesa?`;
+        let messengerLink = contact.messenger;
+        if (!messengerLink.startsWith('http')) {
+            messengerLink = `https://m.me/${messengerLink}`;
+        }
+        const separator = messengerLink.includes('?') ? '&' : '?';
+        window.open(`${messengerLink}${separator}text=${encodeURIComponent(message)}`, '_blank');
+    });
+});
