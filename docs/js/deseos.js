@@ -109,32 +109,36 @@ async function loadWishlist() {
 
     wishlist.forEach(item => {
         const $card = $(`
-            <div class="album-card wishlist-item" data-id="${item.id}" style="position: relative; ${item.obtained ? 'opacity: 0.7;' : ''}">
+            <div class="album-card wishlist-item" data-id="${item.id}" style="position: relative; padding: 15px; gap: 8px; ${item.obtained ? 'opacity: 0.7;' : ''}">
                 <div class="btn-delete-card-top btn-delete-wishlist" data-id="${item.id}" title="Eliminar"><i class="fas fa-times"></i></div>
-                <img src="${item.image_url}" style="width: 100%; border-radius: 8px; margin-bottom: 10px;">
-                <div style="font-weight: bold; margin-bottom: 10px; text-align: center;">${item.name}</div>
 
-                <div class="form-group" style="margin-bottom: 10px;">
-                    <label style="font-size: 10px;">RAREZA</label>
-                    <input type="text" class="wishlist-field" data-field="rarity" value="${item.rarity || ''}" placeholder="Ej: Ultra Rare" style="padding: 5px; font-size: 12px;">
+                <div style="position: relative; width: 100%;">
+                    <div style="position: absolute; top: 5px; left: 5px; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 20px; padding: 2px 5px; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.2);">
+                        <label class="switch" style="width: 30px; height: 16px; margin: 0;">
+                            <input type="checkbox" class="wishlist-toggle-obtained" ${item.obtained ? 'checked' : ''}>
+                            <span class="slider" style="border-radius: 16px;"></span>
+                        </label>
+                        <span style="font-size: 9px; color: white; font-weight: bold;">${item.obtained ? 'CONSEGUIDA' : 'BUSCANDO'}</span>
+                    </div>
+                    <img src="${item.image_url}" style="width: 100%; height: 160px; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 10px;">
-                    <label style="font-size: 10px;">CANTIDAD</label>
-                    <input type="number" class="wishlist-field" data-field="quantity" value="${item.quantity || 1}" style="padding: 5px; font-size: 12px;">
+                <div style="font-weight: bold; font-size: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.name}">${item.name}</div>
+
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 2;">
+                        <label style="font-size: 9px; margin-bottom: 2px;">RAREZA</label>
+                        <input type="text" class="wishlist-field" data-field="rarity" value="${item.rarity || ''}" placeholder="Rareza" style="padding: 6px; font-size: 11px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                        <label style="font-size: 9px; margin-bottom: 2px;">CANT.</label>
+                        <input type="number" class="wishlist-field" data-field="quantity" value="${item.quantity || 1}" style="padding: 6px; font-size: 11px;">
+                    </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 10px;">
-                    <label style="font-size: 10px;">NOTAS</label>
-                    <input type="text" class="wishlist-field" data-field="notes" value="${item.notes || ''}" placeholder="Ej: En español..." style="padding: 5px; font-size: 12px;">
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
-                    <label class="switch" style="width: 40px; height: 20px;">
-                        <input type="checkbox" class="wishlist-toggle-obtained" ${item.obtained ? 'checked' : ''}>
-                        <span class="slider" style="border-radius: 20px;"></span>
-                    </label>
-                    <span style="font-size: 11px;">${item.obtained ? '¡Conseguida!' : 'Buscando'}</span>
+                <div class="form-group" style="margin-bottom: 0; width: 100%;">
+                    <label style="font-size: 9px; margin-bottom: 2px;">NOTAS</label>
+                    <input type="text" class="wishlist-field" data-field="notes" value="${item.notes || ''}" placeholder="Notas adicionales..." style="padding: 6px; font-size: 11px;">
                 </div>
             </div>
         `);
