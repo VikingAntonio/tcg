@@ -143,8 +143,8 @@
         }
 
         .scan-frame {
-            width: 75%;
-            height: 85%;
+            width: 100%;
+            height: 100%;
             border: 2px solid var(--accent-color);
             border-radius: 20px;
             box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
@@ -347,13 +347,8 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
-        /* AJUSTA ESTA ZONA VISUAL PARA QUE COINCIDA CON SCAN_ROI */
-        .main-code-zone {
-            bottom: 5%;  /* Distancia desde abajo */
-            left: 5%;    /* Distancia desde la izquierda */
-            width: 90%;  /* Ancho de la caja */
-            height: 10%; /* Alto de la caja */
-        }
+        /* Las zonas se ajustan dinámicamente según la máscara */
+        .main-code-zone { }
     </style>
 </head>
 <body class="public-body">
@@ -375,6 +370,13 @@
 
         <div class="glass-panel">
             <div class="destination-grid">
+                <div class="form-group">
+                    <label>Tipo de Juego</label>
+                    <select id="select-game-type">
+                        <option value="yugioh">Yu-Gi-Oh!</option>
+                        <option value="pokemon">Pokémon</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>Añadir a</label>
                     <select id="select-target-type">
@@ -449,15 +451,23 @@
     <canvas id="hidden-canvas" style="display:none;"></canvas>
 
     <script>
-// CONFIGURACIÓN DE ÁREA DE ESCANEO (ROI)
-// Estos valores se aplican sobre un lienzo de 800x1100 (proporción de carta)
-const SCAN_ROI = {
-    x: 40,    // Distancia desde la izquierda
-    y: 940,   // Distancia desde arriba (YGO Passcode/PKMN Number suelen estar abajo)
-    w: 720,   // Ancho del área de captura
-    h: 120    // Alto del área de captura
+// CONFIGURACIÓN DE ÁREAS DE ESCANEO (ROI)
+const CARD_CONFIGS = {
+    yugioh: {
+        width: 348,
+        height: 508,
+        mask: 'images/CardYugiohMask.png',
+        rois: null // Se detectarán automáticamente
+    },
+    pokemon: {
+        width: 372,
+        height: 520,
+        mask: 'images/CardPokemonMask.png',
+        rois: null // Se detectarán automáticamente
+    }
 };
 
+let currentCardType = 'yugioh';
 let isScanning = false;
 let stream = null;
 let detectionBuffer = {};
@@ -484,6 +494,12 @@ $(document).ready(async function() {
     await checkSession();
     await loadInitialData();
     await initTesseract();
+    await initializeMasks();
+
+    $('#select-game-type').change(async function() {
+        currentCardType = $(this).val();
+        updateScannerLayout();
+    });
 
     $('#select-target-type').change(function() {
         const type = $(this).val();
@@ -511,8 +527,8 @@ $(document).ready(async function() {
         const { value: code } = await Swal.fire({
             title: 'Entrada Manual',
             input: 'text',
-            inputLabel: 'Introduce el código de la carta',
-            inputPlaceholder: 'LOB-001 / 58/102',
+            inputLabel: 'Introduce el código o nombre de la carta',
+            inputPlaceholder: 'LOB-001 / Dark Magician',
             showCancelButton: true,
             confirmButtonColor: '#00d2ff',
             background: '#1a1a2e',
@@ -520,7 +536,7 @@ $(document).ready(async function() {
         });
 
         if (code) {
-            await handleFoundCode(code.toUpperCase().trim());
+            await handleFoundCode(null, code.trim());
         }
     });
 });
@@ -551,7 +567,106 @@ async function loadInitialData() {
     await loadDestinations('album');
 }
 
+async function initializeMasks() {
+    $('#status-text').text('Configurando máscaras...');
+    for (let type in CARD_CONFIGS) {
+        const rois = await detectMaskROIs(CARD_CONFIGS[type].mask);
+        CARD_CONFIGS[type].rois = rois;
+    }
+    updateScannerLayout();
+    $('#status-text').text('Motor Listo');
+}
+
+async function detectMaskROIs(maskUrl) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            let topBox = { x1: img.width, y1: img.height, x2: 0, y2: 0 };
+            let bottomBox = { x1: img.width, y1: img.height, x2: 0, y2: 0 };
+            const midY = img.height / 2;
+            let foundTop = false, foundBottom = false;
+
+            for (let y = 0; y < img.height; y++) {
+                for (let x = 0; x < img.width; x++) {
+                    const idx = (y * img.width + x) * 4;
+                    const r = data[idx], g = data[idx+1], b = data[idx+2];
+                    if (r > 200 && g > 200 && b > 200) { // white pixel
+                        if (y < midY) {
+                            if (x < topBox.x1) topBox.x1 = x;
+                            if (y < topBox.y1) topBox.y1 = y;
+                            if (x > topBox.x2) topBox.x2 = x;
+                            if (y > topBox.y2) topBox.y2 = y;
+                            foundTop = true;
+                        } else {
+                            if (x < bottomBox.x1) bottomBox.x1 = x;
+                            if (y < bottomBox.y1) bottomBox.y1 = y;
+                            if (x > bottomBox.x2) bottomBox.x2 = x;
+                            if (y > bottomBox.y2) bottomBox.y2 = y;
+                            foundBottom = true;
+                        }
+                    }
+                }
+            }
+
+            resolve({
+                name: foundTop ? { x: topBox.x1, y: topBox.y1, w: topBox.x2 - topBox.x1, h: topBox.y2 - topBox.y1 } : null,
+                code: foundBottom ? { x: bottomBox.x1, y: bottomBox.y1, w: bottomBox.x2 - bottomBox.x1, h: bottomBox.y2 - bottomBox.y1 } : null,
+                originalSize: { w: img.width, h: img.height }
+            });
+        };
+        img.onerror = () => {
+            console.error("Error cargando máscara:", maskUrl);
+            resolve(null);
+        };
+        img.src = maskUrl;
+    });
+}
+
+function updateScannerLayout() {
+    const config = CARD_CONFIGS[currentCardType];
+    $('#scanner-viewport').css('aspect-ratio', `${config.width}/${config.height}`);
+
+    let $maskOverlay = $('#mask-overlay');
+    if ($maskOverlay.length === 0) {
+        $('.scan-frame').append(`<img id="mask-overlay" src="${config.mask}" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.3; pointer-events: none; object-fit: fill;">`);
+    } else {
+        $maskOverlay.attr('src', config.mask);
+    }
+
+    if (config.rois && config.rois.code) {
+        const roi = config.rois.code;
+        const oS = config.rois.originalSize;
+        $('.main-code-zone').css({
+            left: (roi.x / oS.w * 100) + '%',
+            top: (roi.y / oS.h * 100) + '%',
+            width: (roi.w / oS.w * 100) + '%',
+            height: (roi.h / oS.h * 100) + '%'
+        }).attr('data-label', 'Código');
+
+        if ($('.name-code-zone').length === 0) {
+            $('.scan-frame').append('<div class="code-zone name-code-zone" data-label="Nombre"></div>');
+        }
+        const nRoi = config.rois.name;
+        $('.name-code-zone').css({
+            left: (nRoi.x / oS.w * 100) + '%',
+            top: (nRoi.y / oS.h * 100) + '%',
+            width: (nRoi.w / oS.w * 100) + '%',
+            height: (nRoi.h / oS.h * 100) + '%'
+        });
+    }
+}
+
 async function loadDestinations(type) {
+    if (!currentUser) return;
     const table = type === 'album' ? 'albums' : 'decks';
     const { data, error } = await _supabase
         .from(table)
@@ -572,8 +687,6 @@ async function loadDestinations(type) {
 
 async function createNewDestination() {
     const type = $('#select-target-type').val();
-
-    // Check limit
     const table = type === 'album' ? 'albums' : 'decks';
     const limit = type === 'album' ? (currentUser.max_albums || 3) : (currentUser.max_decks || 1);
     const { count } = await _supabase.from(table).select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id);
@@ -594,7 +707,6 @@ async function createNewDestination() {
     });
 
     if (name) {
-        const table = type === 'album' ? 'albums' : 'decks';
         const field = type === 'album' ? 'title' : 'name';
         const { data, error } = await _supabase
             .from(table)
@@ -612,9 +724,6 @@ async function initTesseract() {
     if (tesseractWorker) return;
     $('#status-text').text('Iniciando OCR...');
     tesseractWorker = await Tesseract.createWorker('eng');
-    await tesseractWorker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- '
-    });
     $('#status-text').text('Motor Listo');
     $('#status-container').addClass('status-ready');
 }
@@ -627,7 +736,6 @@ async function startCamera() {
         const video = document.getElementById('video-preview');
         video.srcObject = stream;
 
-        // Intentar aplicar enfoque continuo si el dispositivo lo permite
         const track = stream.getVideoTracks()[0];
         if (track && track.applyConstraints) {
             track.applyConstraints({
@@ -637,12 +745,10 @@ async function startCamera() {
 
         video.style.display = 'block';
         $('#file-preview').hide();
-
         isScanning = true;
         $('#btn-toggle-scan').html('<i class="fas fa-stop"></i> Detener').removeClass('btn-primary').addClass('btn-secondary');
         $('#scanner-viewport').addClass('scanner-active');
         $('#status-text').text('Escaneando...');
-
         startScanningLoop();
     } catch (err) {
         console.error("Error accessing camera:", err);
@@ -667,9 +773,7 @@ function stopCamera() {
 async function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
-
     stopCamera();
-
     const reader = new FileReader();
     reader.onload = function(event) {
         const img = new Image();
@@ -678,7 +782,6 @@ async function handleFileUpload(e) {
             $('#video-preview').hide();
             $('#status-text').text('Procesando Imagen...');
             $('#status-container').addClass('status-working');
-
             await processImage(img);
         };
         img.src = event.target.result;
@@ -688,128 +791,121 @@ async function handleFileUpload(e) {
 
 function startScanningLoop() {
     if (!isScanning) return;
-
     scanTimer = setTimeout(async () => {
         if (!isScanning) return;
-
         const video = document.getElementById('video-preview');
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
             await captureAndProcessFrame(video);
         }
-
         startScanningLoop();
     }, 1200);
 }
 
 async function captureAndProcessFrame(video) {
+    const config = CARD_CONFIGS[currentCardType];
+    if (!config.rois) return;
+
     const canvas = document.getElementById('hidden-canvas');
     const ctx = canvas.getContext('2d');
-
     const vW = video.videoWidth;
     const vH = video.videoHeight;
+    const cardRatio = config.width / config.height;
+    const videoRatio = vW / vH;
 
     let cropW, cropH, cropX, cropY;
-
-    if (vW > vH) {
-        cropH = vH * 0.85;
-        cropW = vH * 0.75;
-        cropX = (vW - vH) / 2 + (vH * 0.125);
-        cropY = vH * 0.075;
+    if (videoRatio > cardRatio) {
+        cropH = vH; cropW = vH * cardRatio; cropX = (vW - cropW) / 2; cropY = 0;
     } else {
-        cropW = vW * 0.75;
-        cropH = vW * 0.85;
-        cropX = vW * 0.125;
-        cropY = (vH - vW) / 2 + vW * 0.075;
+        cropW = vW; cropH = vW / cardRatio; cropX = 0; cropY = (vH - cropH) / 2;
     }
 
-    canvas.width = 800;
-    canvas.height = 1100;
-    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1100);
+    canvas.width = 1000;
+    canvas.height = 1000 / cardRatio;
+    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
 
-    // Create a processing canvas for the specific ROI adjusted by the user - UPSCALE 2x
-    const procCanvas = document.createElement('canvas');
-    procCanvas.width = SCAN_ROI.w * 2;
-    procCanvas.height = SCAN_ROI.h * 2;
-    const pctx = procCanvas.getContext('2d');
+    const oS = config.rois.originalSize;
+    const scaleX = canvas.width / oS.w;
+    const scaleY = canvas.height / oS.h;
 
-    // Smooth scaling
-    pctx.imageSmoothingEnabled = true;
-    pctx.imageSmoothingQuality = 'high';
-
-    pctx.drawImage(canvas, SCAN_ROI.x, SCAN_ROI.y, SCAN_ROI.w, SCAN_ROI.h, 0, 0, SCAN_ROI.w * 2, SCAN_ROI.h * 2);
-    preprocessROI(pctx, 0, 0, SCAN_ROI.w * 2, SCAN_ROI.h * 2);
-
-    // No cambiamos el texto aquí para no parpadear con "Verificando..."
     $('#status-container').addClass('status-working');
-
-    await processImage(procCanvas);
+    await processImageMulti(canvas, config.rois, scaleX, scaleY);
 }
 
-function preprocessROI(ctx, x, y, w, h, threshold = 140) {
+async function processImageMulti(sourceCanvas, rois, scaleX, scaleY, threshold = 140) {
+    try {
+        let nameText = "", codeText = "";
+
+        if (rois.name) {
+            const nameCanvas = extractAndPreprocessROI(sourceCanvas, rois.name, scaleX, scaleY, threshold);
+            await tesseractWorker.setParameters({ tessedit_char_whitelist: '' }); // Reset whitelist
+            const { data: { text } } = await tesseractWorker.recognize(nameCanvas);
+            nameText = text.trim();
+        }
+
+        if (rois.code) {
+            const codeCanvas = extractAndPreprocessROI(sourceCanvas, rois.code, scaleX, scaleY, threshold);
+            await tesseractWorker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- ' });
+            const { data: { text } } = await tesseractWorker.recognize(codeCanvas);
+            codeText = text.trim();
+        }
+
+        const combinedText = `${nameText}\n${codeText}`;
+        const { code } = identifyFromText(combinedText);
+
+        if (code) {
+            await processDetectedText(combinedText);
+        } else if (threshold === 140 && isScanning && !$('#file-preview').is(':visible')) {
+            // Retry with 165 threshold from original canvas
+            await processImageMulti(sourceCanvas, rois, scaleX, scaleY, 165);
+        } else {
+            await processDetectedText(combinedText);
+        }
+    } catch (err) {
+        console.error("OCR Multi Error:", err);
+    }
+}
+
+function extractAndPreprocessROI(sourceCanvas, roi, scaleX, scaleY, threshold) {
+    const upscale = 3;
+    const procCanvas = document.createElement('canvas');
+    procCanvas.width = roi.w * scaleX * upscale;
+    procCanvas.height = roi.h * scaleY * upscale;
+    const pctx = procCanvas.getContext('2d');
+    pctx.imageSmoothingEnabled = true;
+    pctx.imageSmoothingQuality = 'high';
+    pctx.drawImage(sourceCanvas, roi.x * scaleX, roi.y * scaleY, roi.w * scaleX, roi.h * scaleY, 0, 0, procCanvas.width, procCanvas.height);
+    preprocessROI(pctx, 0, 0, procCanvas.width, procCanvas.height, threshold);
+    return procCanvas;
+}
+
+function preprocessROI(ctx, x, y, w, h, threshold) {
     const imageData = ctx.getImageData(x, y, w, h);
     const data = imageData.data;
-    const factor = 2.5; // Slightly higher contrast
-
+    const contrastFactor = 2.8;
     for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
-        // Luminance-based grayscale
         let v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-        // Apply Contrast
-        v = factor * (v - 128) + 128;
-
-        // Apply Threshold
+        v = contrastFactor * (v - 128) + 128;
         v = v > threshold ? 255 : 0;
-
         data[i] = data[i+1] = data[i+2] = v;
     }
     ctx.putImageData(imageData, x, y);
 }
 
-async function processImage(imageOrCanvas, isRetry = false) {
+async function processImage(imageOrCanvas) {
     try {
+        await tesseractWorker.setParameters({ tessedit_char_whitelist: '' });
         const { data: { text } } = await tesseractWorker.recognize(imageOrCanvas);
-        const { code } = identifyFromText(text);
-
-        if (code) {
-            await processDetectedText(text);
-        } else if (!isRetry && !$('#file-preview').is(':visible') && isScanning) {
-            // Reintento con un preprocesado diferente si falló el primero
-            const procCanvas = document.createElement('canvas');
-            procCanvas.width = imageOrCanvas.width;
-            procCanvas.height = imageOrCanvas.height;
-            const pctx = procCanvas.getContext('2d');
-            pctx.drawImage(imageOrCanvas, 0, 0);
-
-            // Segundo intento con un threshold distinto
-            preprocessROI(pctx, 0, 0, procCanvas.width, procCanvas.height, 165);
-            await processImage(procCanvas, true);
-        } else {
-            await processDetectedText(text);
-        }
-    } catch (err) {
-        console.error("OCR Error:", err);
-        $('#status-text').text('Error en OCR');
-        $('#status-container').removeClass('status-working');
-    }
+        await processDetectedText(text);
+    } catch (e) { console.error(e); }
 }
 
 function smartNormalize(s, forceNumeric = false) {
     if (!s) return "";
-    // Si se espera numérico o tiene más números que letras, aplicamos correcciones agresivas
     const digitCount = (s.match(/[0-9]/g) || []).length;
     const letterCount = (s.match(/[A-Z]/g) || []).length;
-
     if (forceNumeric || digitCount >= letterCount) {
-        return s.replace(/[OQDU]/g, '0') // O, Q, D, U -> 0
-                .replace(/[ILJT]/g, '1') // I, L, J, T -> 1
-                .replace(/Z/g, '2')      // Z -> 2
-                .replace(/E/g, '3')      // E -> 3
-                .replace(/A/g, '4')      // A -> 4
-                .replace(/S/g, '5')      // S -> 5
-                .replace(/G/g, '6')      // G -> 6
-                .replace(/B/g, '8')      // B -> 8
-                .replace(/\s/g, '');
+        return s.replace(/[OQDU]/g, '0').replace(/[ILJT]/g, '1').replace(/Z/g, '2').replace(/E/g, '3').replace(/A/g, '4').replace(/S/g, '5').replace(/G/g, '6').replace(/B/g, '8').replace(/\s/g, '');
     }
     return s.replace(/\s/g, '');
 }
@@ -817,51 +913,29 @@ function smartNormalize(s, forceNumeric = false) {
 function identifyFromText(text) {
     const lines = text.toUpperCase().split('\n');
     let results = [];
-
+    let potentialName = lines[0] ? lines[0].trim() : null;
     for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
-
-        // 1. Yu-Gi-Oh Passcode (8 dígitos) - Alta prioridad
-        // Incluimos letras que suelen confundirse con números
+        line = line.trim(); if (!line) continue;
         const regexPasscode = /\b([0-9OIZSGEABDUQ]{8})\b/;
         const matchPass = line.match(regexPasscode);
         if (matchPass) {
             const code = smartNormalize(matchPass[1], true);
-            if (code.length === 8) {
-                results.unshift({ code: code, type: 'yugioh' }); // unshift to prioritize
-            }
+            if (code.length === 8) results.unshift({ code: code, type: 'yugioh' });
         }
-
-        // 2. Yu-Gi-Oh Set Code: [SET]-[LANG][ID]
         const regexYG = /\b([A-Z0-9]{3,6})[\-\s]([A-Z0-9]{3,8})\b/i;
         const matchYG = line.match(regexYG);
         if (matchYG) {
-            let prefix = matchYG[1];
-            let suffix = matchYG[2];
-
-            let lang = "";
-            let idPart = suffix;
-            // Detect common language codes like EN, SP, IT, FR, DE, JP
-            if (/^(EN|SP|IT|FR|DE|JP|PT|KR)[0-9OIZSGEAB]{1,}/.test(suffix)) {
-                lang = suffix.substring(0, 2);
-                idPart = suffix.substring(2);
-            }
-
+            let prefix = matchYG[1], suffix = matchYG[2], lang = "", idPart = suffix;
+            if (/^(EN|SP|IT|FR|DE|JP|PT|KR)[0-9OIZSGEAB]{1,}/.test(suffix)) { lang = suffix.substring(0, 2); idPart = suffix.substring(2); }
             let normalizedID = smartNormalize(idPart, true);
             results.push({ code: prefix + '-' + lang + normalizedID, type: 'yugioh' });
         }
-
-        // 3. Pokémon Fraction (e.g., 123/456)
         const regexPK_F = /\b([0-9OIZSGEAB]{1,5})\/([0-9OIZSGEAB]{1,5})\b/i;
         const matchPK_F = line.match(regexPK_F);
         if (matchPK_F) {
-            let n1 = smartNormalize(matchPK_F[1], true);
-            let n2 = smartNormalize(matchPK_F[2], true);
+            let n1 = smartNormalize(matchPK_F[1], true), n2 = smartNormalize(matchPK_F[2], true);
             results.push({ code: n1 + '/' + n2, type: 'pokemon' });
         }
-
-        // 4. Pokémon Promo (e.g., SWSH123)
         const regexPK_P = /\b([A-Z]{2,5})[\s]?([0-9OIZSGEAB]{2,5})\b/i;
         const matchPK_P = line.match(regexPK_P);
         if (matchPK_P) {
@@ -872,50 +946,31 @@ function identifyFromText(text) {
             }
         }
     }
-
-    return results.length > 0 ? results[0] : { code: null, type: null };
+    if (results.length > 0) return { ...results[0], name: potentialName };
+    return { code: null, type: currentCardType, name: potentialName };
 }
 
 async function processDetectedText(text) {
-    const { code, type } = identifyFromText(text);
-
-    if (code) {
-        // Si es carga de archivo, no necesitamos votación
+    const { code, type, name } = identifyFromText(text);
+    if (code || name) {
+        const identifier = code || name;
         if (!$('#file-preview').is(':visible')) {
-            if (!detectionBuffer[code]) {
-                detectionBuffer = {}; // Solo nos enfocamos en un código a la vez
-                detectionBuffer[code] = 1;
-            } else {
-                detectionBuffer[code]++;
-            }
-
-            const count = detectionBuffer[code];
-            $('#detected-code').text(`${code} (${count}/${DETECTION_THRESHOLD})`);
-
-            if (count < DETECTION_THRESHOLD) {
-                $('#status-text').text(`Verificando... [${count}/${DETECTION_THRESHOLD}]`);
-                return;
-            }
-
-            // Si llegamos aquí, el código es válido
-            detectionBuffer = {};
-            $('#status-text').text('¡Confirmado!');
+            if (!detectionBuffer[identifier]) { detectionBuffer = {}; detectionBuffer[identifier] = 1; }
+            else { detectionBuffer[identifier]++; }
+            const count = detectionBuffer[identifier];
+            $('#detected-code').text(`${identifier.substring(0, 15)}... (${count}/${DETECTION_THRESHOLD})`);
+            if (count < DETECTION_THRESHOLD) { $('#status-text').text(`Verificando... [${count}/${DETECTION_THRESHOLD}]`); return; }
+            detectionBuffer = {}; $('#status-text').text('¡Confirmado!');
         }
-
-        $('#detected-code').text(code);
-        const success = await handleFoundCode(code, type);
-        if (!success && code) {
-             showManualPrompt(code, text);
-        }
+        $('#detected-code').text(identifier);
+        const success = await handleFoundCode(code, name, type);
+        if (!success && code) { showManualPrompt(code, text); }
     } else {
         const raw = text.trim().replace(/[\n\r]/g, ' ').substring(0, 40);
         if (raw.length > 5) {
             $('#detected-code').html(`<span style="opacity: 0.5; font-size: 0.8rem;">? ${raw}</span> <i class="fas fa-edit" style="cursor:pointer; margin-left: 5px;" onclick="promptCorrection('${raw.replace(/'/g, "\\'")}')"></i>`);
-            if ($('#file-preview').is(':visible')) {
-                showManualPrompt(null, text);
-            }
+            if ($('#file-preview').is(':visible')) { showManualPrompt(null, text); }
         }
-
         $('#status-text').text(isScanning ? 'Escaneando...' : 'Listo');
         $('#status-container').removeClass('status-working');
     }
@@ -924,80 +979,41 @@ async function processDetectedText(text) {
 async function showManualPrompt(failedCode, rawText) {
     if (window.isPrompting) return;
     window.isPrompting = true;
-
     const title = failedCode ? `No se encontró ${failedCode}` : 'Código no detectado';
     const msg = failedCode ? 'El código parece correcto pero no está en la base de datos. ¿Deseas corregirlo?' : 'No pudimos encontrar un código. ¿Deseas ingresarlo manualmente?';
-
-    const { isConfirmed } = await Swal.fire({
-        title: title,
-        text: msg,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, editar',
-        cancelButtonText: 'No'
-    });
-
+    const { isConfirmed } = await Swal.fire({ title: title, text: msg, icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, editar', cancelButtonText: 'No' });
     window.isPrompting = false;
-    if (isConfirmed) {
-        promptCorrection(failedCode || rawText.substring(0, 20));
-    }
+    if (isConfirmed) { promptCorrection(failedCode || rawText.substring(0, 20)); }
 }
 
 async function promptCorrection(detectedText) {
-    const { value: correctedCode } = await Swal.fire({
-        title: 'Corregir Código',
-        input: 'text',
-        inputValue: detectedText,
-        inputLabel: 'Introduce el código correcto:',
-        showCancelButton: true,
-        confirmButtonColor: '#00d2ff',
-        background: '#1a1a2e',
-        color: '#fff'
-    });
-
-    if (correctedCode) {
-        await handleFoundCode(correctedCode.toUpperCase().trim());
-    }
+    const { value: correctedCode } = await Swal.fire({ title: 'Corregir Código', input: 'text', inputValue: detectedText, inputLabel: 'Introduce el código correcto:', showCancelButton: true, confirmButtonColor: '#00d2ff', background: '#1a1a2e', color: '#fff' });
+    if (correctedCode) { await handleFoundCode(correctedCode.toUpperCase().trim()); }
 }
 
-async function handleFoundCode(code, type = null) {
-    if (window.lastProcessedCode === code) return true;
-    window.lastProcessedCode = code;
-
+async function handleFoundCode(code, name, type = null) {
+    const identifier = code || name;
+    if (window.lastProcessedCode === identifier) return true;
+    window.lastProcessedCode = identifier;
     $('#status-text').text('Buscando...');
-
-    if (!type) {
-        if (code.includes('-')) type = 'yugioh';
-        else if (code.includes('/') || /^[A-Z]{2,}\d+/.test(code)) type = 'pokemon';
-        else type = 'pokemon';
-    }
-
-    const cardData = await fetchCardData(code, type);
-
+    const cardData = await fetchCardData(code, name, type || currentCardType);
     if (cardData) {
         const saved = await saveCard(cardData);
-        if (saved) {
-            showToast('success', 'Carta Añadida', cardData.name, cardData.image_url);
-            setTimeout(() => { window.lastProcessedCode = null; }, 4000);
-            return true;
-        }
+        if (saved) { showToast('success', 'Carta Añadida', cardData.name, cardData.image_url); setTimeout(() => { window.lastProcessedCode = null; }, 4000); return true; }
     }
-
     setTimeout(() => { window.lastProcessedCode = null; }, 2000);
     return false;
 }
 
-async function fetchCardData(code, type) {
+async function fetchCardData(code, name, type) {
     try {
         if (type === 'yugioh') {
-            const cleanCode = code.toUpperCase().replace(/\s/g, '-').replace(/-{2,}/g, '-');
             let data = null;
-
-            if (/^\d{5,10}$/.test(cleanCode)) {
+            const cleanCode = code ? code.toUpperCase().replace(/\s/g, '-').replace(/-{2,}/g, '-') : null;
+            if (cleanCode && /^\d{5,10}$/.test(cleanCode)) {
                 const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${cleanCode}`);
                 data = await res.json();
-            }
-            else {
+            } else if (cleanCode) {
                 const setMatch = cleanCode.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
                 if (setMatch) {
                     const prefix = setMatch[1];
@@ -1008,166 +1024,91 @@ async function fetchCardData(code, type) {
                         const fullSetData = await res.json();
                         if (fullSetData.data) {
                             const cardMatch = fullSetData.data.find(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === cleanCode));
-                            if (cardMatch) {
-                                data = { data: [cardMatch] };
-                            }
+                            if (cardMatch) data = { data: [cardMatch] };
                         }
                     }
                 }
             }
-
-            if (!data || !data.data) {
-                const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(cleanCode)}`);
-                data = await res.json();
-            }
-
+            if (cleanCode && (!data || !data.data)) { const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(cleanCode)}`); data = await res.json(); }
+            if (name && (!data || !data.data)) { const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(name)}`); data = await res.json(); }
             if (data && data.data && data.data.length > 0) {
-                const card = data.data[0];
-                const setInfo = card.card_sets?.find(s => s.set_code.toUpperCase() === cleanCode) || card.card_sets?.[0];
-
-                return {
-                    name: card.name,
-                    image_url: card.card_images[0].image_url,
-                    rarity: setInfo?.set_rarity || '',
-                    expansion: setInfo?.set_name || '',
-                    type: 'yugioh'
-                };
+                const card = data.data[0], setInfo = card.card_sets?.find(s => s.set_code.toUpperCase() === cleanCode) || card.card_sets?.[0];
+                return { name: card.name, image_url: card.card_images[0].image_url, rarity: setInfo?.set_rarity || '', expansion: setInfo?.set_name || '', type: 'yugioh' };
             }
         } else {
-            let number, total;
-            if (code.includes('/')) {
-                [number, total] = code.split('/');
-                const query = `number:${number} set.printedTotal:${total}`;
-                const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                if (data.data && data.data.length > 0) return formatPokemonCard(data.data[0]);
-            }
-
-            number = code.includes('/') ? code.split('/')[0] : code;
-            const resNum = await fetch(`https://api.pokemontcg.io/v2/cards?q=number:${number}`);
-            const dataNum = await resNum.json();
-            if (dataNum.data && dataNum.data.length > 0) {
+            if (code) {
+                let number, total;
                 if (code.includes('/')) {
-                    const bestMatch = dataNum.data.find(c => c.set.printedTotal == code.split('/')[1]) || dataNum.data[0];
-                    return formatPokemonCard(bestMatch);
+                    [number, total] = code.split('/');
+                    const query = `number:${number} set.printedTotal:${total}`;
+                    const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
+                    const data = await res.json();
+                    if (data.data && data.data.length > 0) return formatPokemonCard(data.data[0]);
                 }
-                return formatPokemonCard(dataNum.data[0]);
+                number = code.includes('/') ? code.split('/')[0] : code;
+                const resNum = await fetch(`https://api.pokemontcg.io/v2/cards?q=number:${number}`);
+                const dataNum = await resNum.json();
+                if (dataNum.data && dataNum.data.length > 0) {
+                    if (code.includes('/')) { const bestMatch = dataNum.data.find(c => c.set.printedTotal == code.split('/')[1]) || dataNum.data[0]; return formatPokemonCard(bestMatch); }
+                    return formatPokemonCard(dataNum.data[0]);
+                }
             }
-
+            if (name) { const resName = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(name)}"`); const dataName = await resName.json(); if (dataName.data && dataName.data.length > 0) return formatPokemonCard(dataName.data[0]); }
             const langs = ['en', 'es', 'ja'];
             for (const lang of langs) {
                 try {
                     const resFb = await fetch(`https://api.tcgdex.net/v2/${lang}/cards/${code.toLowerCase()}`);
-                    if (resFb.ok) {
-                        const card = await resFb.json();
-                        return {
-                            name: card.name,
-                            image_url: `${card.image}/high.webp`,
-                            rarity: card.rarity || '',
-                            expansion: card.set.name || '',
-                            type: 'pokemon'
-                        };
-                    }
-                } catch (e) {
-                    console.warn(`TCGdex search failed for ${lang}:`, e);
-                }
+                    if (resFb.ok) { const card = await resFb.json(); return { name: card.name, image_url: `${card.image}/high.webp`, rarity: card.rarity || '', expansion: card.set.name || '', type: 'pokemon' }; }
+                } catch (e) {}
             }
         }
-    } catch (err) {
-        console.error("Fetch Error:", err);
-    }
+    } catch (err) {}
     return null;
 }
 
-function formatPokemonCard(card) {
-    return {
-        name: card.name,
-        image_url: card.images.large,
-        rarity: card.rarity || '',
-        expansion: card.set.name || '',
-        type: 'pokemon'
-    };
-}
+function formatPokemonCard(card) { return { name: card.name, image_url: card.images.large, rarity: card.rarity || '', expansion: card.set.name || '', type: 'pokemon' }; }
 
 async function saveCard(cardData) {
-    const targetType = $('#select-target-type').val();
-    const destId = $('#select-dest').val();
-
+    const targetType = $('#select-target-type').val(), destId = $('#select-dest').val();
     if (!destId) return false;
-
     try {
         if (targetType === 'album') {
             let { data: pages } = await _supabase.from('pages').select('id, page_index').eq('album_id', destId).order('page_index', { ascending: true });
-            if (!pages || pages.length === 0) {
-                const { data: newPage } = await _supabase.from('pages').insert([{ album_id: destId, page_index: 0 }]).select();
-                pages = newPage;
-            }
-
+            if (!pages || pages.length === 0) { const { data: newPage } = await _supabase.from('pages').insert([{ album_id: destId, page_index: 0 }]).select(); pages = newPage; }
             const { data: allSlots } = await _supabase.from('card_slots').select('page_id, slot_index').in('page_id', pages.map(p => p.id));
             let saved = false;
             for (const page of pages) {
                 const occupied = (allSlots || []).filter(s => s.page_id === page.id).map(s => s.slot_index);
                 for (let i = 0; i < 9; i++) {
                     if (!occupied.includes(i)) {
-                        await _supabase.from('card_slots').insert([{
-                            page_id: page.id, slot_index: i, name: cardData.name, image_url: cardData.image_url,
-                            rarity: cardData.rarity, expansion: cardData.expansion, condition: 'M', quantity: 1
-                        }]);
+                        await _supabase.from('card_slots').insert([{ page_id: page.id, slot_index: i, name: cardData.name, image_url: cardData.image_url, rarity: cardData.rarity, expansion: cardData.expansion, condition: 'M', quantity: 1 }]);
                         saved = true; break;
                     }
                 }
                 if (saved) break;
             }
-
             if (!saved) {
-                if (pages.length >= (currentUser.max_pages || 5)) {
-                    Swal.fire('Límite alcanzado', `Has alcanzado el límite de ${currentUser.max_pages || 5} páginas en este álbum.`, 'warning');
-                    return false;
-                }
-
+                if (pages.length >= (currentUser.max_pages || 5)) { Swal.fire('Límite alcanzado', `Has alcanzado el límite de ${currentUser.max_pages || 5} páginas en este álbum.`, 'warning'); return false; }
                 const lastIdx = pages[pages.length - 1].page_index;
                 const { data: nPage } = await _supabase.from('pages').insert([{ album_id: destId, page_index: lastIdx + 1 }]).select();
-                await _supabase.from('card_slots').insert([{
-                    page_id: nPage[0].id, slot_index: 0, name: cardData.name, image_url: cardData.image_url,
-                    rarity: cardData.rarity, expansion: cardData.expansion, condition: 'M', quantity: 1
-                }]);
+                await _supabase.from('card_slots').insert([{ page_id: nPage[0].id, slot_index: 0, name: cardData.name, image_url: cardData.image_url, rarity: cardData.rarity, expansion: cardData.expansion, condition: 'M', quantity: 1 }]);
             }
             return true;
         } else {
             const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', destId);
-            if (count >= (currentUser.max_cards_per_deck || 60)) {
-                Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
-                return false;
-            }
-
-            await _supabase.from('deck_cards').insert([{
-                deck_id: destId, name: cardData.name, image_url: cardData.image_url,
-                rarity: cardData.rarity, expansion: cardData.expansion, quantity: 1
-            }]);
+            if (count >= (currentUser.max_cards_per_deck || 60)) { Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning'); return false; }
+            await _supabase.from('deck_cards').insert([{ deck_id: destId, name: cardData.name, image_url: cardData.image_url, rarity: cardData.rarity, expansion: cardData.expansion, quantity: 1 }]);
             return true;
         }
-    } catch (err) {
-        console.error("Save Error:", err);
-        return false;
-    }
+    } catch (err) { return false; }
 }
 
 function showToast(type, title, message, imageUrl = null) {
-    const $toast = $('#result-toast');
-    $toast.removeClass('success error active');
-    $('#toast-title').text(title);
-    $('#toast-name').text(message);
-
-    if (imageUrl) {
-        $('#toast-img').attr('src', imageUrl).show();
-        $('#toast-icon-err').hide();
-    } else {
-        $('#toast-img').hide();
-        $('#toast-icon-err').css('display', 'flex');
-    }
-
-    $toast.addClass(type).addClass('active');
-    setTimeout(() => $toast.removeClass('active'), 3000);
+    const $toast = $('#result-toast'); $toast.removeClass('success error active');
+    $('#toast-title').text(title); $('#toast-name').text(message);
+    if (imageUrl) { $('#toast-img').attr('src', imageUrl).show(); $('#toast-icon-err').hide(); }
+    else { $('#toast-img').hide(); $('#toast-icon-err').css('display', 'flex'); }
+    $toast.addClass(type).addClass('active'); setTimeout(() => $toast.removeClass('active'), 3000);
 }
     </script>
 </body>
