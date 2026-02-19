@@ -113,12 +113,12 @@ async function loadWishlist() {
                 <div class="btn-delete-card-top btn-delete-wishlist" data-id="${item.id}" title="Eliminar"><i class="fas fa-times"></i></div>
 
                 <div style="position: relative; width: 100%;">
-                    <div style="position: absolute; top: 5px; left: 5px; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 20px; padding: 2px 5px; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.2);">
-                        <label class="switch" style="width: 30px; height: 16px; margin: 0;">
+                    <div style="position: absolute; top: 5px; left: 5px; z-index: 10;">
+                        <label class="wishlist-checkbox-container">
                             <input type="checkbox" class="wishlist-toggle-obtained" ${item.obtained ? 'checked' : ''}>
-                            <span class="slider" style="border-radius: 16px;"></span>
+                            <span class="wishlist-checkbox-custom"></span>
+                            <span class="wishlist-status-text">${item.obtained ? '¡CONSEGUIDA!' : 'BUSCANDO'}</span>
                         </label>
-                        <span style="font-size: 9px; color: white; font-weight: bold;">${item.obtained ? 'CONSEGUIDA' : 'BUSCANDO'}</span>
                     </div>
                     <img src="${item.image_url}" style="width: 100%; height: 160px; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
                 </div>
@@ -154,7 +154,7 @@ async function loadWishlist() {
             const obtained = $(this).is(':checked');
             updateWishlistItem(item.id, { obtained });
             $card.css('opacity', obtained ? '0.7' : '1');
-            $(this).parent().next().text(obtained ? '¡Conseguida!' : 'Buscando');
+            $card.find('.wishlist-status-text').text(obtained ? '¡CONSEGUIDA!' : 'BUSCANDO');
         });
 
         $card.find('.btn-delete-wishlist').click(function(e) {
