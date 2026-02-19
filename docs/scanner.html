@@ -450,19 +450,21 @@
     <canvas id="hidden-canvas" style="display:none;"></canvas>
 
     <script>
-// CONFIGURACIÓN DE ÁREAS DE ESCANEO (ROI)
+// CONFIGURACIÓN DE ÁREAS DE ESCANEO (ROI) - HARDCODED PARA MÁXIMA ROBUSTEZ
 const CARD_CONFIGS = {
     yugioh: {
-        width: 348,
-        height: 508,
-        mask: 'images/CardYugiohMask.png',
-        rois: null // Se detectarán automáticamente
+        width: 348, height: 508,
+        rois: {
+            name: { x: 10, y: 5, w: 80, h: 12 }, // Porcentajes
+            code: { x: 5, y: 88, w: 90, h: 10 }
+        }
     },
     pokemon: {
-        width: 372,
-        height: 520,
-        mask: 'images/CardPokemonMask.png',
-        rois: null // Se detectarán automáticamente
+        width: 372, height: 520,
+        rois: {
+            name: { x: 10, y: 5, w: 80, h: 12 },
+            code: { x: 5, y: 88, w: 90, h: 10 }
+        }
     }
 };
 
@@ -493,7 +495,7 @@ $(document).ready(async function() {
     await checkSession();
     await loadInitialData();
     await initTesseract();
-    await initializeMasks();
+    updateScannerLayout();
 
     $('#select-game-type').change(async function() {
         currentCardType = $(this).val();
@@ -523,7 +525,7 @@ $(document).ready(async function() {
     $('#file-upload').change(handleFileUpload);
 
     $('#btn-manual').click(async function() {
-        const { value: code } = await Swal.fire({
+        const { value: input } = await Swal.fire({
             title: 'Entrada Manual',
             input: 'text',
             inputLabel: 'Introduce el código o nombre de la carta',
@@ -534,8 +536,9 @@ $(document).ready(async function() {
             color: '#fff'
         });
 
-        if (code) {
-            await handleFoundCode(null, code.trim());
+        if (input) {
+            const { code, name } = identifyFromText(input);
+            await handleFoundCode(code, name || input.trim());
         }
     });
 });
@@ -566,106 +569,9 @@ async function loadInitialData() {
     await loadDestinations('album');
 }
 
-async function initializeMasks() {
-    $('#status-text').text('Configurando máscaras...');
-    for (let type in CARD_CONFIGS) {
-        const rois = await detectMaskROIs(CARD_CONFIGS[type].mask);
-        CARD_CONFIGS[type].rois = rois;
-    }
-    updateScannerLayout();
-    $('#status-text').text('Motor Listo');
-}
-
-async function detectMaskROIs(maskUrl) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width; canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-            let topBox = { x1: img.width, y1: img.height, x2: 0, y2: 0 };
-            let bottomBox = { x1: img.width, y1: img.height, x2: 0, y2: 0 };
-            const midY = img.height / 2;
-            let foundTop = false, foundBottom = false;
-
-            for (let y = 0; y < img.height; y++) {
-                for (let x = 0; x < img.width; x++) {
-                    const idx = (y * img.width + x) * 4;
-                    if (data[idx] > 200 && data[idx+1] > 200 && data[idx+2] > 200) {
-                        if (y < midY) {
-                            topBox.x1 = Math.min(topBox.x1, x); topBox.y1 = Math.min(topBox.y1, y);
-                            topBox.x2 = Math.max(topBox.x2, x); topBox.y2 = Math.max(topBox.y2, y);
-                            foundTop = true;
-                        } else {
-                            bottomBox.x1 = Math.min(bottomBox.x1, x); bottomBox.y1 = Math.min(bottomBox.y1, y);
-                            bottomBox.x2 = Math.max(bottomBox.x2, x); bottomBox.y2 = Math.max(bottomBox.y2, y);
-                            foundBottom = true;
-                        }
-                    }
-                }
-            }
-
-            // Expand ROIs by 15% for more "forgiveness" (Automaticity)
-            const expand = (box) => {
-                if (!box) return null;
-                const w = box.x2 - box.x1, h = box.y2 - box.y1;
-                const marginW = w * 0.15, marginH = h * 0.15;
-                return {
-                    x: Math.max(0, box.x1 - marginW),
-                    y: Math.max(0, box.y1 - marginH),
-                    w: Math.min(img.width, w + marginW * 2),
-                    h: Math.min(img.height, h + marginH * 2)
-                };
-            };
-
-            resolve({
-                name: foundTop ? expand(topBox) : null,
-                code: foundBottom ? expand(bottomBox) : null,
-                originalSize: { w: img.width, h: img.height }
-            });
-        };
-        img.onerror = () => { resolve(null); };
-        img.src = maskUrl;
-    });
-}
-
 function updateScannerLayout() {
     const config = CARD_CONFIGS[currentCardType];
     $('#scanner-viewport').css('aspect-ratio', `${config.width}/${config.height}`);
-
-    // Internal mask image is hidden from user
-    let $maskOverlay = $('#mask-overlay');
-    if ($maskOverlay.length === 0) {
-        $('.scan-frame').append(`<img id="mask-overlay" src="${config.mask}" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0; pointer-events: none; object-fit: fill; display:none;">`);
-    } else {
-        $maskOverlay.attr('src', config.mask);
-    }
-
-    if (config.rois && config.rois.code) {
-        const roi = config.rois.code;
-        const oS = config.rois.originalSize;
-        $('.main-code-zone').css({
-            left: (roi.x / oS.w * 100) + '%',
-            top: (roi.y / oS.h * 100) + '%',
-            width: (roi.w / oS.w * 100) + '%',
-            height: (roi.h / oS.h * 100) + '%'
-        }).attr('data-label', 'Código');
-
-        if ($('.name-code-zone').length === 0) {
-            $('.scan-frame').append('<div class="code-zone name-code-zone" data-label="Nombre" style="display:none;"></div>');
-        }
-        const nRoi = config.rois.name;
-        $('.name-code-zone').css({
-            left: (nRoi.x / oS.w * 100) + '%',
-            top: (nRoi.y / oS.h * 100) + '%',
-            width: (nRoi.w / oS.w * 100) + '%',
-            height: (nRoi.h / oS.h * 100) + '%'
-        });
-    }
 }
 
 async function loadDestinations(type) {
@@ -826,66 +732,69 @@ async function captureAndProcessFrame(video) {
     canvas.height = 1000 / cardRatio;
     ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
 
-    const oS = config.rois.originalSize;
-    const scaleX = canvas.width / oS.w;
-    const scaleY = canvas.height / oS.h;
-
     $('#status-container').addClass('status-working');
-    await processImageMulti(canvas, config.rois, scaleX, scaleY);
+    await processImageMulti(canvas, config.rois);
 }
 
-async function processImageMulti(sourceCanvas, rois, scaleX, scaleY, threshold = 140) {
+async function processImageMulti(sourceCanvas, rois, passIdx = 0) {
+    const thresholds = [130, 160, 100]; // Normal, Darker, Lighter
+    const threshold = thresholds[passIdx];
+
     try {
         let nameText = "", codeText = "";
         let maxConf = 0;
 
         if (rois.name) {
-            const nameCanvas = extractAndPreprocessROI(sourceCanvas, rois.name, scaleX, scaleY, threshold);
-            await tesseractWorker.setParameters({ tessedit_char_whitelist: '' }); // Reset whitelist
+            const nameCanvas = extractAndPreprocessROI(sourceCanvas, rois.name, threshold);
+            await tesseractWorker.setParameters({ tessedit_char_whitelist: '' });
             const { data: { text, confidence } } = await tesseractWorker.recognize(nameCanvas);
             nameText = text.trim();
             maxConf = Math.max(maxConf, confidence);
         }
 
         if (rois.code) {
-            const codeCanvas = extractAndPreprocessROI(sourceCanvas, rois.code, scaleX, scaleY, threshold);
-            await tesseractWorker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- ' });
+            const codeCanvas = extractAndPreprocessROI(sourceCanvas, rois.code, threshold);
+            await tesseractWorker.setParameters({
+                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-',
+                tessjs_create_hocr: '0',
+                tessjs_create_tsv: '0'
+            });
             const { data: { text, confidence } } = await tesseractWorker.recognize(codeCanvas);
             codeText = text.trim();
             maxConf = Math.max(maxConf, confidence);
         }
 
-        // If confidence is very low, it's likely noise or extreme blur
-        if (maxConf < 40 && !$('#file-preview').is(':visible')) {
-            processDetectedText("");
-            return;
-        }
-
         const combinedText = `${nameText}\n${codeText}`;
         const { code } = identifyFromText(combinedText);
 
-        if (code) {
+        // Si encontramos un código válido o la confianza es decente, procesamos
+        if (code || (maxConf > 60)) {
             await processDetectedText(combinedText);
-        } else if (threshold === 140 && isScanning && !$('#file-preview').is(':visible')) {
-            // Retry with 165 threshold from original canvas
-            await processImageMulti(sourceCanvas, rois, scaleX, scaleY, 165);
+        } else if (passIdx < thresholds.length - 1 && isScanning && !$('#file-preview').is(':visible')) {
+            // Reintento con el siguiente umbral si no hay resultados claros
+            await processImageMulti(sourceCanvas, rois, passIdx + 1);
         } else {
             await processDetectedText(combinedText);
         }
     } catch (err) {
-        console.error("OCR Multi Error:", err);
+        console.error("OCR Multi-Pass Error:", err);
     }
 }
 
-function extractAndPreprocessROI(sourceCanvas, roi, scaleX, scaleY, threshold) {
-    const upscale = 3;
+function extractAndPreprocessROI(sourceCanvas, roi, threshold) {
+    const upscale = 4;
     const procCanvas = document.createElement('canvas');
-    procCanvas.width = roi.w * scaleX * upscale;
-    procCanvas.height = roi.h * scaleY * upscale;
+    const rx = (roi.x / 100) * sourceCanvas.width;
+    const ry = (roi.y / 100) * sourceCanvas.height;
+    const rw = (roi.w / 100) * sourceCanvas.width;
+    const rh = (roi.h / 100) * sourceCanvas.height;
+
+    procCanvas.width = rw * upscale;
+    procCanvas.height = rh * upscale;
     const pctx = procCanvas.getContext('2d');
     pctx.imageSmoothingEnabled = true;
     pctx.imageSmoothingQuality = 'high';
-    pctx.drawImage(sourceCanvas, roi.x * scaleX, roi.y * scaleY, roi.w * scaleX, roi.h * scaleY, 0, 0, procCanvas.width, procCanvas.height);
+    pctx.drawImage(sourceCanvas, rx, ry, rw, rh, 0, 0, procCanvas.width, procCanvas.height);
     preprocessROI(pctx, 0, 0, procCanvas.width, procCanvas.height, threshold);
     return procCanvas;
 }
@@ -893,12 +802,17 @@ function extractAndPreprocessROI(sourceCanvas, roi, scaleX, scaleY, threshold) {
 function preprocessROI(ctx, x, y, w, h, threshold) {
     const imageData = ctx.getImageData(x, y, w, h);
     const data = imageData.data;
-    const contrastFactor = 2.8;
+    const contrastFactor = 3.2; // Más agresivo para compensar borrosidad
     for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
         let v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+        // Simular enfoque (High-pass) aumentando la diferencia con el gris medio
         v = contrastFactor * (v - 128) + 128;
+
+        // Binarización nítida
         v = v > threshold ? 255 : 0;
+
         data[i] = data[i+1] = data[i+2] = v;
     }
     ctx.putImageData(imageData, x, y);
@@ -925,40 +839,58 @@ function smartNormalize(s, forceNumeric = false) {
 function identifyFromText(text) {
     const lines = text.toUpperCase().split('\n');
     let results = [];
-    let potentialName = lines[0] ? lines[0].trim() : null;
+    let potentialName = "";
+
+    // El nombre suele estar en la primera línea del bloque superior
+    if (lines[0] && lines[0].length > 3 && !/\d/.test(lines[0])) {
+        potentialName = lines[0].trim();
+    }
+
     for (let line of lines) {
         line = line.trim(); if (!line) continue;
+
+        // 1. Yu-Gi-Oh Passcode (8 dígitos)
         const regexPasscode = /\b([0-9OIZSGEABDUQ]{8})\b/;
         const matchPass = line.match(regexPasscode);
         if (matchPass) {
             const code = smartNormalize(matchPass[1], true);
-            if (code.length === 8) results.unshift({ code: code, type: 'yugioh' });
+            if (code.length === 8) results.push({ code: code, type: 'yugioh', weight: 10 });
         }
+
+        // 2. Yu-Gi-Oh Set Code (e.g. LOB-EN001)
         const regexYG = /\b([A-Z0-9]{3,6})[\-\s]([A-Z0-9]{3,8})\b/i;
         const matchYG = line.match(regexYG);
         if (matchYG) {
-            let prefix = matchYG[1], suffix = matchYG[2], lang = "", idPart = suffix;
-            if (/^(EN|SP|IT|FR|DE|JP|PT|KR)[0-9OIZSGEAB]{1,}/.test(suffix)) { lang = suffix.substring(0, 2); idPart = suffix.substring(2); }
-            let normalizedID = smartNormalize(idPart, true);
-            results.push({ code: prefix + '-' + lang + normalizedID, type: 'yugioh' });
+            let prefix = matchYG[1], suffix = matchYG[2];
+            let normalizedID = smartNormalize(suffix, true);
+            results.push({ code: prefix + '-' + normalizedID, type: 'yugioh', weight: 8 });
         }
+
+        // 3. Pokémon Fraction (e.g. 123/456)
         const regexPK_F = /\b([0-9OIZSGEAB]{1,5})\/([0-9OIZSGEAB]{1,5})\b/i;
         const matchPK_F = line.match(regexPK_F);
         if (matchPK_F) {
             let n1 = smartNormalize(matchPK_F[1], true), n2 = smartNormalize(matchPK_F[2], true);
-            results.push({ code: n1 + '/' + n2, type: 'pokemon' });
+            results.push({ code: n1 + '/' + n2, type: 'pokemon', weight: 9 });
         }
-        const regexPK_P = /\b([A-Z]{2,5})[\s]?([0-9OIZSGEAB]{2,5})\b/i;
+
+        // 4. Pokémon Promo/Set (e.g. SWSH123, BRS045)
+        const regexPK_P = /\b([A-Z]{2,5})[\s]?([0-9OIZSGEAB]{2,6})\b/i;
         const matchPK_P = line.match(regexPK_P);
         if (matchPK_P) {
             let prefix = matchPK_P[1];
-            if (!['BASIC', 'STAGE', 'HP', 'NO', 'DNA', 'TYPE'].includes(prefix)) {
+            const blacklist = ['BASIC', 'STAGE', 'HP', 'NO', 'DNA', 'TYPE', 'CARD', 'TEAM', 'ITEM'];
+            if (!blacklist.includes(prefix)) {
                 let num = smartNormalize(matchPK_P[2], true);
-                results.push({ code: prefix + num, type: 'pokemon' });
+                results.push({ code: prefix + num, type: 'pokemon', weight: 7 });
             }
         }
     }
-    if (results.length > 0) return { ...results[0], name: potentialName };
+
+    if (results.length > 0) {
+        results.sort((a, b) => b.weight - a.weight);
+        return { ...results[0], name: potentialName };
+    }
     return { code: null, type: currentCardType, name: potentialName };
 }
 
