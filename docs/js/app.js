@@ -1381,16 +1381,11 @@ async function loadPublicSealed() {
 
         $('#sealed-container').empty();
         products.forEach(product => {
-            const productId = `product-ztext-${product.id}`;
             const $item = $(`
                 <div class="deck-public-item sealed-product-item">
-                    <div class="card-3d-container">
-                        <div class="card-3d">
-                            <div id="${productId}" class="z-text-product">
-                                <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
-                                     alt="${product.name}">
-                            </div>
-                        </div>
+                    <div class="product-image-container">
+                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
+                             alt="${product.name}" class="sealed-product-img">
                     </div>
                     <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center;">${product.name}</h3>
                     <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px;">${product.price || 'Consultar'}</div>
@@ -1420,19 +1415,7 @@ async function loadPublicSealed() {
             });
 
             $('#sealed-container').append($item);
-
-            // Apply ztext to each product
-            Ztextify(`#${productId}`, {
-                depth: "10px",
-                layers: 8,
-                fade: true,
-                direction: "backwards",
-                event: "none"
-            });
         });
-
-        // Setup gyroscope for sealed products
-        setupSealedGyroscope();
 
     } catch (e) {
         console.error("Error loading sealed products:", e);
@@ -1440,42 +1423,6 @@ async function loadPublicSealed() {
     } finally {
         hideLoading();
     }
-}
-
-function setupSealedGyroscope() {
-    if (!window.DeviceOrientationEvent) return;
-
-    const handleOrientation = (e) => {
-        if ($('#sealed-view').hasClass('active')) {
-            const rx = Math.max(-15, Math.min(15, e.beta - 45)) * 1.5;
-            const ry = Math.max(-15, Math.min(15, e.gamma)) * 1.5;
-
-            $('.sealed-product-item .card-3d').css('transform', `rotateX(${-rx}deg) rotateY(${ry}deg)`);
-        }
-    };
-
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then(state => {
-            if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-        });
-    } else {
-        window.addEventListener('deviceorientation', handleOrientation);
-    }
-
-    // Mouse parallax for desktop
-    $(document).on('mousemove', '.sealed-product-item', function(e) {
-        const $card = $(this).find('.card-3d');
-        const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const ry = ((x / rect.width) - 0.5) * 30;
-        const rx = ((y / rect.height) - 0.5) * -30;
-        $card.css('transform', `rotateX(${rx}deg) rotateY(${ry}deg)`);
-    });
-
-    $(document).on('mouseleave', '.sealed-product-item', function() {
-        $(this).find('.card-3d').css('transform', 'rotateX(0deg) rotateY(0deg)');
-    });
 }
 
 async function loadPublicWishlist() {
