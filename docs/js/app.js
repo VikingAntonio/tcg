@@ -126,6 +126,8 @@ $(document).ready(async function() {
         switchView('decks');
     } else if (initialView === 'wishlist') {
         switchView('wishlist');
+    } else if (initialView === 'sealed') {
+        switchView('sealed');
     }
 
     $('#spirit-btn').click(function() {
@@ -749,6 +751,10 @@ async function switchView(view) {
     if (view === 'albums') {
         $('#public-view-title').text('Colección de Álbumes');
         $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
+    } else if (view === 'sealed') {
+        $('#public-view-title').text('Productos Sellados');
+        $('.public-header p').text('Encuentra cajas, sobres y productos especiales de tus TCG favoritos.');
+        loadPublicSealed();
     } else if (view === 'decks') {
         $('#public-view-title').text('Decks de Cartas');
         $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
@@ -1338,6 +1344,138 @@ async function renderAlbum(album) {
     if (currentQuery) {
         setTimeout(() => { filterContent(currentQuery); }, 2000);
     }
+}
+
+async function loadPublicSealed() {
+    let userId = window.currentStoreId;
+    if (!userId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeName = urlParams.get('store');
+        const userName = urlParams.get('user');
+        if (!storeName && !userName) return;
+        let query = _supabase.from('usuarios').select('id');
+        if (storeName) query = query.eq('store_name', storeName);
+        else query = query.eq('username', userName);
+        const { data: user } = await query.single();
+        if (user) userId = user.id;
+    }
+    if (!userId) return;
+
+    showLoading('Cargando Productos...');
+    $('#sealed-container').html('<div class="loading">Cargando productos sellados...</div>');
+
+    try {
+        const { data: products, error } = await _supabase
+            .from('sealed_products')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('is_public', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!products || products.length === 0) {
+            $('#sealed-container').html('<div class="empty">No hay productos sellados disponibles.</div>');
+            return;
+        }
+
+        $('#sealed-container').empty();
+        products.forEach(product => {
+            const productId = `product-ztext-${product.id}`;
+            const $item = $(`
+                <div class="deck-public-item sealed-product-item">
+                    <div class="card-3d-container" style="width: 100%; height: 250px; margin-bottom: 15px;">
+                        <div class="card-3d" style="width: 100%; height: 100%;">
+                            <div id="${productId}" class="z-text-product" style="width: 100%; height: 100%;">
+                                <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
+                                     style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px;">
+                            </div>
+                        </div>
+                    </div>
+                    <h3 style="margin: 10px 0;">${product.name}</h3>
+                    <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px;">${product.price || 'Consultar'}</div>
+                    <button class="btn btn-add-sealed-cart" style="width: 100%;">
+                        <i class="fas fa-cart-plus"></i> Agregar al Carrito
+                    </button>
+                </div>
+            `);
+
+            $item.find('.btn-add-sealed-cart').click(function(e) {
+                e.stopPropagation();
+                Cart.add({
+                    name: product.name,
+                    image_url: product.image_url,
+                    price: product.price,
+                    tcg: product.tcg
+                });
+                Swal.fire({
+                    title: '¡Añadido!',
+                    text: `${product.name} se ha agregado al carrito.`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            });
+
+            $('#sealed-container').append($item);
+
+            // Apply ztext to each product
+            Ztextify(`#${productId}`, {
+                depth: "10px",
+                layers: 8,
+                fade: true,
+                direction: "backwards",
+                event: "none"
+            });
+        });
+
+        // Setup gyroscope for sealed products
+        setupSealedGyroscope();
+
+    } catch (e) {
+        console.error("Error loading sealed products:", e);
+        $('#sealed-container').html('<div class="error">Error al cargar productos.</div>');
+    } finally {
+        hideLoading();
+    }
+}
+
+function setupSealedGyroscope() {
+    if (!window.DeviceOrientationEvent) return;
+
+    const handleOrientation = (e) => {
+        if ($('#sealed-view').hasClass('active')) {
+            const rx = Math.max(-15, Math.min(15, e.beta - 45)) * 1.5;
+            const ry = Math.max(-15, Math.min(15, e.gamma)) * 1.5;
+
+            $('.sealed-product-item .card-3d').css('transform', `rotateX(${-rx}deg) rotateY(${ry}deg)`);
+        }
+    };
+
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(state => {
+            if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+        });
+    } else {
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+
+    // Mouse parallax for desktop
+    $(document).on('mousemove', '.sealed-product-item', function(e) {
+        const $card = $(this).find('.card-3d');
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const ry = ((x / rect.width) - 0.5) * 30;
+        const rx = ((y / rect.height) - 0.5) * -30;
+        $card.css('transform', `rotateX(${rx}deg) rotateY(${ry}deg)`);
+    });
+
+    $(document).on('mouseleave', '.sealed-product-item', function() {
+        $(this).find('.card-3d').css('transform', 'rotateX(0deg) rotateY(0deg)');
+    });
 }
 
 async function loadPublicWishlist() {
