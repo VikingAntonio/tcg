@@ -666,6 +666,7 @@ function openCardModal($slot) {
     const quantity = $slot.data("quantity") || "1";
     const price = $slot.data("price") || "-";
     const isWishlist = $slot.hasClass('wishlist-card-item');
+    const notes = $slot.data("notes") || "";
 
     // Reset the card container with a fresh image tag and preserve holo-layer
     $("#card-3d").html(`
@@ -696,9 +697,21 @@ function openCardModal($slot) {
     if (isWishlist) {
         $('#wishlist-contact-buttons').css('display', 'flex');
         $('#btn-add-to-cart').hide();
+
+        // Layout for wishlist: Rarity and Quantity visible, others hidden
+        $('#card-expansion').closest('.info-item').hide();
+        $('#card-condition').closest('.info-item').hide();
+        $('#card-price').closest('.info-item').hide();
+
+        $('#card-notes').text(notes || 'Sin notas adicionales.');
+        $('#wishlist-info-extra').css('display', 'flex');
     } else {
         $('#wishlist-contact-buttons').hide();
         $('#btn-add-to-cart').show();
+
+        // Restore layout for regular cards
+        $('.info-item').show();
+        $('#wishlist-info-extra').hide();
     }
 
     // Store current card data for cart integration
@@ -1384,6 +1397,14 @@ async function loadPublicWishlist() {
             `;
 
             const $el = $($item);
+
+            // Make entire card clickable
+            $el.click(function(e) {
+                if (isDragging) return;
+                openCardModal($el);
+            });
+
+            // Still allow zoom-btn for consistency
             $el.find('.zoom-btn').click(function(e) {
                 e.stopPropagation();
                 openCardModal($el);
