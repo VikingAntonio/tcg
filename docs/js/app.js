@@ -1384,15 +1384,15 @@ async function loadPublicSealed() {
             const productId = `product-ztext-${product.id}`;
             const $item = $(`
                 <div class="deck-public-item sealed-product-item">
-                    <div class="card-3d-container" style="width: 100%; height: 250px; margin-bottom: 15px;">
-                        <div class="card-3d" style="width: 100%; height: 100%;">
-                            <div id="${productId}" class="z-text-product" style="width: 100%; height: 100%;">
+                    <div class="card-3d-container">
+                        <div class="card-3d">
+                            <div id="${productId}" class="z-text-product">
                                 <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
-                                     style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px;">
+                                     alt="${product.name}">
                             </div>
                         </div>
                     </div>
-                    <h3 style="margin: 10px 0;">${product.name}</h3>
+                    <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center;">${product.name}</h3>
                     <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px;">${product.price || 'Consultar'}</div>
                     <button class="btn btn-add-sealed-cart" style="width: 100%;">
                         <i class="fas fa-cart-plus"></i> Agregar al Carrito
