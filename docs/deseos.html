@@ -32,6 +32,60 @@
         .album-list {
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
         }
+
+        /* Pretty Checkbox Styles */
+        .wishlist-checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .wishlist-checkbox-container:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 0, 0, 0.8);
+        }
+        .wishlist-checkbox-container input {
+            display: none;
+        }
+        .wishlist-checkbox-custom {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #666;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: transparent;
+        }
+        .wishlist-checkbox-container input:checked + .wishlist-checkbox-custom {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .wishlist-checkbox-custom::after {
+            content: "\f00c";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: white;
+            font-size: 10px;
+            display: none;
+        }
+        .wishlist-checkbox-container input:checked + .wishlist-checkbox-custom::after {
+            display: block;
+        }
+        .wishlist-status-text {
+            font-size: 10px;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
