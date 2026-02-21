@@ -346,7 +346,7 @@ $(document).ready(async function() {
     });
 
     // Page Management
-    $('#btn-add-page').click(async function(e) {
+    $('#btn-add-page, #btn-add-page-bottom').click(async function(e) {
         e.preventDefault();
 
         // Limite de páginas por álbum
@@ -1694,6 +1694,13 @@ async function loadAlbumPages(albumId, isInitial = true) {
     if (error) {
         $('#page-list').html('<div class="error">Error al cargar páginas.</div>');
         return;
+    }
+
+    // Toggle bottom add button visibility
+    if (pages && pages.length > 0) {
+        $('#btn-add-page-bottom-container').show();
+    } else {
+        $('#btn-add-page-bottom-container').hide();
     }
 
     // Obtener todos los slots de todas las páginas en una sola consulta
