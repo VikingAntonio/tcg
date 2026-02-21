@@ -346,7 +346,7 @@ $(document).ready(async function() {
     });
 
     // Page Management
-    $('#btn-add-page').click(async function(e) {
+    $('#btn-add-page, #btn-add-page-bottom').click(async function(e) {
         e.preventDefault();
 
         // Limite de páginas por álbum
