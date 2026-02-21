@@ -38,7 +38,7 @@ $(document).ready(async function() {
     // --- Navigation (Dashboard Tiles) ---
     $(document).on('click', '#btn-home', function(e) {
         e.preventDefault();
-        showView('main-dashboard');
+        window.location.href = 'index.html';
     });
 
     $(document).on('click', '#btn-show-albums', function(e) {
