@@ -1696,6 +1696,13 @@ async function loadAlbumPages(albumId, isInitial = true) {
         return;
     }
 
+    // Toggle bottom add button visibility
+    if (pages && pages.length > 0) {
+        $('#btn-add-page-bottom-container').show();
+    } else {
+        $('#btn-add-page-bottom-container').hide();
+    }
+
     // Obtener todos los slots de todas las páginas en una sola consulta
     const pageIds = pages.map(p => p.id);
     let allSlots = [];
