@@ -12,7 +12,7 @@ CREATE TABLE public.bot_messages (
     type TEXT NOT NULL, -- 'store_hours', 'store_location', 'album_link', 'pre_sales', 'promo', 'custom_1', 'custom_2'
     view_type TEXT DEFAULT 'public', -- 'public', 'admin', 'both'
     redirect_url TEXT, -- URL o ID de album para navegación
-    duration INTEGER DEFAULT 5, -- Duración del globo en segundos (coincide con el frontend)
+    duration INTEGER DEFAULT 5, -- Duración del globo en segundos
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     UNIQUE(user_id, type)
@@ -21,7 +21,7 @@ CREATE TABLE public.bot_messages (
 -- 3. Habilitar RLS
 ALTER TABLE public.bot_messages ENABLE ROW LEVEL SECURITY;
 
--- 4. Políticas de Seguridad (Asegurarse de que coincidan con tu sistema)
+-- 4. Políticas de Seguridad
 CREATE POLICY "Mensajes visibles para todos"
 ON public.bot_messages FOR SELECT
 USING (true);
@@ -30,10 +30,5 @@ CREATE POLICY "Usuarios gestionan sus propios mensajes"
 ON public.bot_messages FOR ALL
 USING (auth.uid() = user_id);
 
--- 5. Columnas adicionales en la tabla usuarios (Si no existen)
-ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS horario TEXT;
-ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS ubicacion TEXT;
-ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS website TEXT;
-
--- IMPORTANTE: Después de ejecutar este SQL, si el error persiste,
--- refresca la página del dashboard de Supabase para que se actualice la caché del esquema.
+-- Nota: Las columnas de horario y ubicacion en la tabla usuarios ya no son necesarias
+-- para el funcionamiento de los mensajes automáticos, ya que ahora se escriben directamente.

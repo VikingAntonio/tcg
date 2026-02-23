@@ -784,7 +784,7 @@ async function loadStoreData() {
     try {
         let query = _supabase
             .from('usuarios')
-            .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store, horario, ubicacion');
+            .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store');
 
         if (storeName) {
             query = query.eq('store_name', storeName);
