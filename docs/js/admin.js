@@ -63,7 +63,7 @@ $(document).ready(async function() {
         e.preventDefault();
         showView('chatbot-config');
         loadBotMessages();
-        updateBotPreview();
+        updateBotPreviewCycle();
     });
 
     $(document).on('click', '#btn-logout-tile', function(e) {
@@ -1113,93 +1113,62 @@ $(document).ready(async function() {
 
     // Toggle Public/Private from list (Albums, Decks, Spirits)
     // --- Chatbot Config Actions ---
-    $('#bot-msg-type').change(function() {
-        const type = $(this).val();
-        const $container = $('#bot-msg-redirect-container');
-        const $label = $('#bot-msg-redirect-label');
-        const $inputWrapper = $('#bot-msg-redirect-input-wrapper');
-        const $content = $('#bot-msg-content');
+    $(document).on('click', '.btn-save-slot', async function() {
+        const $card = $(this).closest('.bot-slot-card');
+        const type = $card.data('type');
+        const content = $card.find('.slot-content').val().trim();
+        const isActive = $card.find('.toggle-slot').is(':checked');
+        const redirect = $card.find('.slot-redirect').val();
+        const bizData = $card.find('.business-data').val() || '';
+        const duration = parseInt($card.find('.slot-duration').val()) || 5;
 
-        $container.hide();
-
-        if (type === 'album_link') {
-            $container.show();
-            $label.text('Selecciona Carpeta');
-            loadAlbumsToDropdown($inputWrapper);
-            if (!$content.val()) $content.val('¡No te pierdas mi carpeta de [Album]!');
-        } else if (type === 'custom' || type === 'pre_sales' || type === 'website') {
-            $container.show();
-            $label.text('Enlace (URL)');
-            $inputWrapper.html('<input type="text" id="bot-msg-redirect" placeholder="https://...">');
-            if (type === 'website' && !$content.val()) $content.val('Visita mi sitio web:');
-            if (type === 'pre_sales' && !$content.val()) $content.val('¡Ya tenemos preventas disponibles!');
-        } else if (type === 'store_hours') {
-            if (!$content.val()) $content.val(`Nuestro horario es: ${currentUser.horario || 'No configurado'}`);
-        } else if (type === 'store_location') {
-            if (!$content.val()) $content.val(`Visítanos en: ${currentUser.ubicacion || 'No configurado'}`);
-        }
-        updateBotPreview();
-    });
-
-    $('#bot-msg-content, #bot-msg-duration').on('input', function() {
-        updateBotPreview();
-    });
-
-    $('#btn-add-bot-msg').click(async function() {
-        const content = $('#bot-msg-content').val().trim();
-        const type = $('#bot-msg-type').val();
-        const viewType = $('#bot-msg-view-type').val();
-        const duration = parseInt($('#bot-msg-duration').val()) || 3;
-        const redirect = $('#bot-msg-redirect').val();
-
-        if (!content) {
-            Swal.fire('Atención', 'El contenido del mensaje es obligatorio', 'warning');
+        if (!content && isActive) {
+            Swal.fire('Atención', 'Si el mensaje está activo, debe tener contenido.', 'warning');
             return;
         }
 
-        const msgData = {
-            user_id: currentUser.id,
-            content,
-            type,
-            view_type: viewType,
-            display_duration: duration,
-            redirect_url: redirect,
-            is_active: true
-        };
+        Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-        const { error } = await _supabase
-            .from('bot_messages')
-            .insert([msgData]);
+        try {
+            // 1. Sync business data to usuarios table if applicable
+            if (type === 'store_hours' || type === 'store_location') {
+                const updateField = type === 'store_hours' ? 'horario' : 'ubicacion';
+                await _supabase.from('usuarios').update({ [updateField]: bizData }).eq('id', currentUser.id);
+                currentUser[updateField] = bizData; // Update local state
+            }
 
-        if (error) {
-            Swal.fire('Error', 'No se pudo guardar el mensaje: ' + error.message, 'error');
-        } else {
-            Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
-            $('#bot-msg-content').val('');
-            loadBotMessages();
+            // 2. Save bot message
+            const msgData = {
+                user_id: currentUser.id,
+                type: type,
+                content: content,
+                is_active: isActive,
+                redirect_url: redirect || null,
+                duration: duration,
+                view_type: 'public'
+            };
+
+            const { error } = await _supabase
+                .from('bot_messages')
+                .upsert(msgData, { onConflict: 'user_id,type' });
+
+            if (error) throw error;
+
+            Swal.fire({ title: '¡Configuración Guardada!', icon: 'success', timer: 1500, showConfirmButton: false });
+            updateBotPreviewCycle();
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Error', 'No se pudo guardar la configuración: ' + err.message, 'error');
         }
     });
 
-    $(document).on('click', '.btn-delete-bot-msg', async function() {
-        const id = $(this).data('id');
-        const res = await Swal.fire({
-            title: '¿Eliminar mensaje?',
-            text: "Esta acción no se puede deshacer",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, eliminar'
-        });
-
-        if (res.isConfirmed) {
-            await _supabase.from('bot_messages').delete().eq('id', id);
-            loadBotMessages();
-        }
+    // Real-time preview update when typing
+    $(document).on('input', '.slot-content', function() {
+        updateBotPreviewCycle();
     });
 
-    $(document).on('change', '.toggle-bot-msg', async function() {
-        const id = $(this).data('id');
-        const isActive = $(this).is(':checked');
-        await _supabase.from('bot_messages').update({ is_active: isActive }).eq('id', id);
+    $(document).on('change', '.toggle-slot, .slot-redirect', function() {
+        updateBotPreviewCycle();
     });
 
     $(document).on('change', '.toggle-public', async function() {
@@ -2147,95 +2116,65 @@ async function deleteSpirit(id, gltfUrl) {
 }
 
 async function loadBotMessages() {
-    $('#bot-messages-list').html('<div class="loading">Cargando mensajes...</div>');
-
-    const { data: messages, error } = await _supabase
-        .from('bot_messages')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        $('#bot-messages-list').html('<div class="error">Error al cargar mensajes.</div>');
-        return;
-    }
-
-    if (!messages || messages.length === 0) {
-        $('#bot-messages-list').html('<div class="empty">No tienes mensajes configurados.</div>');
-        return;
-    }
-
-    const $list = $('#bot-messages-list');
-    $list.empty();
-
-    messages.forEach(msg => {
-        const typeLabels = {
-            'custom': 'Personalizado',
-            'store_hours': 'Horario',
-            'store_location': 'Ubicación',
-            'website': 'Web',
-            'pre_sales': 'Preventas',
-            'album_link': 'Carpeta'
-        };
-
-        const viewLabels = {
-            'public': 'Público',
-            'admin': 'Admin',
-            'both': 'Ambos'
-        };
-
-        const $card = $(`
-            <div class="album-card" style="padding: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                        <span class="badge" style="background: var(--accent); font-size: 10px;">${typeLabels[msg.type] || msg.type}</span>
-                        <span class="badge" style="background: #444; font-size: 10px;">${viewLabels[msg.view_type] || msg.view_type}</span>
-                        <span style="font-size: 11px; color: #666;"><i class="fas fa-clock"></i> ${msg.display_duration}s</span>
-                    </div>
-                    <div style="font-weight: 500;">${msg.content}</div>
-                    ${msg.redirect_url ? `<div style="font-size: 11px; color: var(--accent); mt-1"><i class="fas fa-link"></i> ${msg.redirect_url}</div>` : ''}
-                </div>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <label class="switch">
-                        <input type="checkbox" class="toggle-bot-msg" data-id="${msg.id}" ${msg.is_active ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                    <button class="btn btn-danger btn-sm btn-delete-bot-msg" data-id="${msg.id}"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `);
-        $list.append($card);
-    });
-}
-
-async function loadAlbumsToDropdown($container) {
+    // 1. Populate albums to dropdowns
     const { data: albums } = await _supabase
         .from('albums')
         .select('title')
         .eq('user_id', currentUser.id);
 
-    const $select = $('<select id="bot-msg-redirect" style="width: 100%;"></select>');
-    $select.append('<option value="">Selecciona un álbum...</option>');
+    $('.album-select').empty().append('<option value="">Selecciona un álbum...</option>');
     if (albums) {
         albums.forEach(a => {
-            $select.append(`<option value="${a.title}">${a.title}</option>`);
+            $('.album-select').append(`<option value="${a.title}">${a.title}</option>`);
         });
     }
-    $container.html($select);
 
-    $select.change(function() {
-        const albumName = $(this).val();
-        if (albumName) {
-            const $content = $('#bot-msg-content');
-            $content.val(`¡Echa un vistazo a mi carpeta de ${albumName}!`);
-            updateBotPreview();
-        }
-    });
+    // 2. Load current business data
+    $('.bot-slot-card[data-type="store_hours"] .business-data').val(currentUser.horario || '');
+    $('.bot-slot-card[data-type="store_location"] .business-data').val(currentUser.ubicacion || '');
+
+    // 3. Load saved messages
+    const { data: messages } = await _supabase
+        .from('bot_messages')
+        .select('*')
+        .eq('user_id', currentUser.id);
+
+    if (messages) {
+        messages.forEach(msg => {
+            const $card = $(`.bot-slot-card[data-type="${msg.type}"]`);
+            if ($card.length) {
+                $card.find('.slot-content').val(msg.content);
+                $card.find('.toggle-slot').prop('checked', msg.is_active);
+                $card.find('.slot-duration').val(msg.duration || 5);
+                if (msg.type === 'album_link') {
+                    $card.find('.album-select').val(msg.redirect_url);
+                } else {
+                    $card.find('.slot-redirect').val(msg.redirect_url);
+                }
+            }
+        });
+    }
+
+    updateBotPreviewCycle();
 }
 
-function updateBotPreview() {
-    const content = $('#bot-msg-content').val() || 'Hola, bienvenido a mi tienda';
-    const duration = $('#bot-msg-duration').val() || 3;
+let botPreviewInterval = null;
+let botPreviewIndex = 0;
+
+function updateBotPreviewCycle() {
+    if (botPreviewInterval) clearInterval(botPreviewInterval);
+
+    // Gather all active messages from the UI (even if unsaved)
+    const previewMessages = [];
+    $('.bot-slot-card').each(function() {
+        const isActive = $(this).find('.toggle-slot').is(':checked');
+        const content = $(this).find('.slot-content').val().trim();
+        const duration = parseInt($(this).find('.slot-duration').val()) || 5;
+        if (isActive && content) {
+            previewMessages.push({ content, duration });
+        }
+    });
+
     const $bubble = $('#bot-preview-bubble');
     const $viewer = $('#bot-preview-viewer');
 
@@ -2243,16 +2182,33 @@ function updateBotPreview() {
         $viewer.attr('src', window.currentSpirit.gltf_url);
     }
 
-    $bubble.text(content).stop(true, true).fadeIn(300);
+    if (previewMessages.length === 0) {
+        $bubble.hide();
+        return;
+    }
 
-    // Emoji stripping for preview
-    const cleanText = content.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
-    $bubble.text(cleanText);
+    botPreviewIndex = 0;
+    const showNext = () => {
+        const msg = previewMessages[botPreviewIndex];
+        const text = msg.content;
+        const duration = msg.duration * 1000;
+        const cleanText = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
 
-    clearTimeout(window.botPreviewTimeout);
-    window.botPreviewTimeout = setTimeout(() => {
-        $bubble.fadeOut(300);
-    }, duration * 1000);
+        $bubble.text(cleanText).stop(true, true).fadeIn(300);
+
+        setTimeout(() => {
+            $bubble.fadeOut(300);
+
+            // Schedule next message after current one fades and a small pause
+            setTimeout(() => {
+                botPreviewIndex = (botPreviewIndex + 1) % previewMessages.length;
+                showNext();
+            }, 1000);
+
+        }, duration - 1000);
+    };
+
+    showNext();
 }
 
 async function loadSlotData(pageId, slotIndex) {

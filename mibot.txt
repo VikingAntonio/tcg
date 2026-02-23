@@ -6,12 +6,13 @@ CREATE TABLE IF NOT EXISTS public.bot_messages (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    type TEXT DEFAULT 'info', -- 'info', 'album_link', 'store_hours', 'store_location', 'promo', 'pre_sales', 'support'
+    type TEXT NOT NULL, -- 'store_hours', 'store_location', 'album_link', 'pre_sales', 'promo', 'custom_1', 'custom_2'
     view_type TEXT DEFAULT 'public', -- 'public', 'admin', 'both'
     redirect_url TEXT, -- URL o ID de album para navegación
     display_duration INTEGER DEFAULT 5, -- segundos
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, type) -- Permite tener un mensaje por cada tipo por usuario
 );
 
 -- RLS para bot_messages
@@ -29,8 +30,6 @@ USING (auth.uid() = user_id);
 ALTER TABLE public.usuarios
 ADD COLUMN IF NOT EXISTS horario TEXT,
 ADD COLUMN IF NOT EXISTS ubicacion TEXT,
-ADD COLUMN IF NOT EXISTS website TEXT,
-ADD COLUMN IF NOT EXISTS facebook_messenger_url TEXT;
+ADD COLUMN IF NOT EXISTS website TEXT;
 
--- Nota: Recordar que la tabla usuarios ya tiene RLS configurada.
--- Los admins pueden editar cualquier perfil, los usuarios el suyo propio.
+-- Nota: Estas columnas permiten que el bot extraiga información real del negocio.
