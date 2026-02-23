@@ -1,26 +1,28 @@
--- SQL for Bot Messages Table
--- This table stores custom messages that the companion can show periodically.
-
+-- Tabla para mensajes personalizados del bot
 CREATE TABLE IF NOT EXISTS public.bot_messages (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now(),
     message_text TEXT NOT NULL,
-    action_url TEXT, -- Optional link to redirect when clicked
-    view_type TEXT DEFAULT 'public', -- 'public', 'admin', or 'both'
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
+    action_url TEXT, -- Opcional: para redirigir si se hace clic (no implementado en burbuja simple pero útil)
+    target_view TEXT DEFAULT 'both', -- 'public', 'admin', 'both'
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    is_active BOOLEAN DEFAULT true
 );
 
--- Enable Row Level Security
+-- Habilitar RLS
 ALTER TABLE public.bot_messages ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
--- Everyone can read bot messages (needed for public view)
+-- Políticas de RLS para bot_messages
+-- 1. Lectura pública (para la vista public.html)
 CREATE POLICY "Bot messages are viewable by everyone"
 ON public.bot_messages FOR SELECT
-USING (true);
+USING (is_active = true);
 
--- Users can manage their own bot messages
+-- 2. Los usuarios pueden gestionar sus propios mensajes
 CREATE POLICY "Users can manage their own bot messages"
 ON public.bot_messages FOR ALL
 USING (auth.uid() = user_id);
+
+-- Asegurar que las columnas de horario y ubicación existan en usuarios
+ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS horario TEXT;
+ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS ubicacion TEXT;
