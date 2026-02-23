@@ -1348,6 +1348,21 @@ input:checked + .slider:before {
         font-size: 1.8rem;
     }
 
+    .public-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        padding: 0 10px;
+    }
+
+    .nav-btn {
+        flex: 0 0 calc(33.33% - 10px);
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        justify-content: center;
+        min-width: 100px;
+    }
+
     .admin-nav {
         display: none;
     }
