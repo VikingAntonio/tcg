@@ -899,22 +899,23 @@ function initFloatingCompanion() {
             userId: window.currentStoreId,
             userType: 'public',
             customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : [],
-            onAction: (action) => {
-                if (action === 'view-pokemon') {
-                    const pokemonAlbum = window.currentAlbums?.find(a => (a.title || a.name || '').toLowerCase().includes('pokemon'));
-                    if (pokemonAlbum) {
-                        switchView('albums');
-                        setTimeout(() => {
-                            const el = document.getElementById(`album-${pokemonAlbum.id}`);
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 500);
-                    }
-                } else if (action === 'view-products') {
+            onAction: (msg) => {
+                if (msg.type === 'album_link' && msg.redirect_url) {
+                    switchView('albums');
+                    setTimeout(() => {
+                        const albumTitle = msg.redirect_url.toLowerCase();
+                        $('.public-album-item').each(function() {
+                            const title = $(this).find('.public-album-header').text().toLowerCase();
+                            if (title.includes(albumTitle)) {
+                                this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                return false;
+                            }
+                        });
+                    }, 600);
+                } else if (msg.type === 'pre_sales') {
                     switchView('sealed');
-                } else if (action === 'view-wishlist') {
-                    switchView('wishlist');
-                } else if (typeof action === 'string' && action.startsWith('http')) {
-                    window.open(action, '_blank');
+                } else if (msg.redirect_url && msg.redirect_url.startsWith('http')) {
+                    window.open(msg.redirect_url, '_blank');
                 }
             }
         });

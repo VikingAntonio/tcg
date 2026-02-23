@@ -115,6 +115,10 @@
                     <i class="fas fa-box"></i>
                     <span>Producto Sellado</span>
                 </a>
+                <a href="#" class="tile tile-purple" id="btn-chatbot-config">
+                    <i class="fas fa-robot"></i>
+                    <span>Chatbot Bot</span>
+                </a>
                 <a href="#" class="tile tile-pink" id="btn-logout-tile">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Salir</span>
@@ -207,6 +211,82 @@
 
             <div id="spirits-grid" class="spirits-grid">
                 <!-- Compañeros will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Chatbot Config View -->
+        <div id="view-chatbot-config" class="admin-section" style="display:none;">
+            <div class="admin-header">
+                <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
+                <h1>Configuración del Chatbot</h1>
+                <p>Personaliza los mensajes automáticos que tu compañero dirá a tus visitantes.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
+                <!-- List and Form -->
+                <div>
+                    <div class="album-card" style="margin-bottom: 30px;">
+                        <h3><i class="fas fa-plus-circle"></i> Nuevo Mensaje</h3>
+                        <div class="form-group">
+                            <label>Contenido del Mensaje</label>
+                            <input type="text" id="bot-msg-content" placeholder="Ej: ¡Bienvenidos a mi tienda!">
+                        </div>
+                        <div class="info-grid">
+                            <div class="form-group">
+                                <label>Tipo / Guía</label>
+                                <select id="bot-msg-type">
+                                    <option value="custom">Mensaje Personalizado</option>
+                                    <option value="store_hours">Horario de Negocio</option>
+                                    <option value="store_location">Ubicación de la Tienda</option>
+                                    <option value="website">Sitio Web</option>
+                                    <option value="pre_sales">Preventas / Novedades</option>
+                                    <option value="album_link">Link a una Carpeta (Álbum)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Visibilidad</label>
+                                <select id="bot-msg-view-type">
+                                    <option value="public">Público (Clientes)</option>
+                                    <option value="admin">Privado (Admin)</option>
+                                    <option value="both">Ambos</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Duración (segundos)</label>
+                                <input type="number" id="bot-msg-duration" value="3" min="1" max="10">
+                            </div>
+                        </div>
+                        <div class="form-group" id="bot-msg-redirect-container" style="display: none;">
+                            <label id="bot-msg-redirect-label">Enlace o Destino</label>
+                            <div id="bot-msg-redirect-input-wrapper">
+                                <input type="text" id="bot-msg-redirect" placeholder="https://...">
+                            </div>
+                        </div>
+                        <button id="btn-add-bot-msg" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Mensaje</button>
+                    </div>
+
+                    <div id="bot-messages-list">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Preview Area -->
+                <div style="position: sticky; top: 20px;">
+                    <div class="album-card" style="text-align: center; overflow: visible;">
+                        <h3>Vista Previa</h3>
+                        <div style="position: relative; height: 300px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-top: 20px; display: flex; align-items: center; justify-content: center;">
+                            <!-- Character Preview -->
+                            <div id="bot-preview-spirit-container" style="width: 200px; height: 200px;">
+                                <model-viewer id="bot-preview-viewer" style="width: 100%; height: 100%;" auto-rotate rotation-per-second="30deg" camera-controls disable-zoom></model-viewer>
+                            </div>
+                            <!-- Bubble Preview -->
+                            <div id="bot-preview-bubble" class="companion-bubble" style="bottom: 220px; left: 50%; transform: translateX(-50%); opacity: 1; visibility: visible; display: none;">
+                                Hola, soy tu mensaje.
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: #aaa; margin-top: 15px;">Así es como verán los globos de texto tus clientes.</p>
+                    </div>
+                </div>
             </div>
         </div>
 

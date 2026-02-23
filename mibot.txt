@@ -1,28 +1,36 @@
--- Tabla para mensajes personalizados del bot
+-- SQL para el sistema de mensajes del Chatbot/Acompañante
+-- Ejecutar esto en el SQL Editor de Supabase
+
+-- 1. Tabla de mensajes configurables
 CREATE TABLE IF NOT EXISTS public.bot_messages (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    message_text TEXT NOT NULL,
-    action_url TEXT, -- Opcional: para redirigir si se hace clic (no implementado en burbuja simple pero útil)
-    target_view TEXT DEFAULT 'both', -- 'public', 'admin', 'both'
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    is_active BOOLEAN DEFAULT true
+    content TEXT NOT NULL,
+    type TEXT DEFAULT 'info', -- 'info', 'album_link', 'store_hours', 'store_location', 'promo', 'pre_sales', 'support'
+    view_type TEXT DEFAULT 'public', -- 'public', 'admin', 'both'
+    redirect_url TEXT, -- URL o ID de album para navegación
+    display_duration INTEGER DEFAULT 5, -- segundos
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Habilitar RLS
+-- RLS para bot_messages
 ALTER TABLE public.bot_messages ENABLE ROW LEVEL SECURITY;
 
--- Políticas de RLS para bot_messages
--- 1. Lectura pública (para la vista public.html)
-CREATE POLICY "Bot messages are viewable by everyone"
+CREATE POLICY "Los usuarios pueden ver mensajes de otros (publicos)"
 ON public.bot_messages FOR SELECT
-USING (is_active = true);
+USING (true);
 
--- 2. Los usuarios pueden gestionar sus propios mensajes
-CREATE POLICY "Users can manage their own bot messages"
+CREATE POLICY "Los usuarios pueden gestionar sus propios mensajes"
 ON public.bot_messages FOR ALL
 USING (auth.uid() = user_id);
 
--- Asegurar que las columnas de horario y ubicación existan en usuarios
-ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS horario TEXT;
-ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS ubicacion TEXT;
+-- 2. Columnas adicionales en la tabla usuarios para info de la tienda
+ALTER TABLE public.usuarios
+ADD COLUMN IF NOT EXISTS horario TEXT,
+ADD COLUMN IF NOT EXISTS ubicacion TEXT,
+ADD COLUMN IF NOT EXISTS website TEXT,
+ADD COLUMN IF NOT EXISTS facebook_messenger_url TEXT;
+
+-- Nota: Recordar que la tabla usuarios ya tiene RLS configurada.
+-- Los admins pueden editar cualquier perfil, los usuarios el suyo propio.
