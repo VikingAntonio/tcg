@@ -66,24 +66,15 @@ class CompanionBot {
 
     async loadCustomMessages() {
         try {
-            let query = this.supabase
+            // All configured messages are for public use per user request
+            const { data, error } = await this.supabase
                 .from('bot_messages')
                 .select('*')
                 .eq('user_id', this.userId)
                 .eq('is_active', true);
 
-            // Filtrar por visibilidad
-            if (this.userType === 'admin') {
-                query = query.or('view_type.eq.admin,view_type.eq.both');
-            } else {
-                query = query.or('view_type.eq.public,view_type.eq.both');
-            }
-
-            const { data, error } = await query;
-
             if (data && data.length > 0) {
-                // Si hay mensajes personalizados, los usamos.
-                // Si somos admin, combinamos con los tips de base.
+                // Combine with base tips if admin, otherwise use directly
                 if (this.userType === 'admin') {
                     this.messages = [...this.messages, ...data];
                 } else {
@@ -121,7 +112,7 @@ class CompanionBot {
         if (this.messages.length === 0 || !this.bubble) return;
 
         const msg = this.messages[this.currentIndex];
-        const duration = (msg.display_duration || 3) * 1000;
+        const duration = (msg.duration || msg.display_duration || 5) * 1000;
 
         this.bubble.textContent = this.stripEmojis(msg.content);
 

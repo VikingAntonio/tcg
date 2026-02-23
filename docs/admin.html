@@ -222,69 +222,168 @@
                 <p>Personaliza los mensajes automáticos que tu compañero dirá a tus visitantes.</p>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
-                <!-- List and Form -->
-                <div>
-                    <div class="album-card" style="margin-bottom: 30px;">
-                        <h3><i class="fas fa-plus-circle"></i> Nuevo Mensaje</h3>
+            <div class="bot-config-layout">
+                <!-- Configuration Slots -->
+                <div class="bot-slots-container">
+
+                    <!-- Slot: Horario -->
+                    <div class="bot-slot-card" data-type="store_hours">
+                        <div class="bot-slot-header">
+                            <h3><i class="fas fa-clock"></i> Horario de la Tienda</h3>
+                            <label class="switch">
+                                <input type="checkbox" class="toggle-slot">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                         <div class="form-group">
                             <label>Contenido del Mensaje</label>
-                            <input type="text" id="bot-msg-content" placeholder="Ej: ¡Bienvenidos a mi tienda!">
+                            <textarea class="slot-content" placeholder="Ej: ¡Visítanos! Abrimos de Lunes a Viernes de 10am a 8pm."></textarea>
                         </div>
-                        <div class="info-grid">
-                            <div class="form-group">
-                                <label>Tipo / Guía</label>
-                                <select id="bot-msg-type">
-                                    <option value="custom">Mensaje Personalizado</option>
-                                    <option value="store_hours">Horario de Negocio</option>
-                                    <option value="store_location">Ubicación de la Tienda</option>
-                                    <option value="website">Sitio Web</option>
-                                    <option value="pre_sales">Preventas / Novedades</option>
-                                    <option value="album_link">Link a una Carpeta (Álbum)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Visibilidad</label>
-                                <select id="bot-msg-view-type">
-                                    <option value="public">Público (Clientes)</option>
-                                    <option value="admin">Privado (Admin)</option>
-                                    <option value="both">Ambos</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Duración (segundos)</label>
-                                <input type="number" id="bot-msg-duration" value="3" min="1" max="10">
-                            </div>
+                        <div class="form-group">
+                            <label>Dato del Negocio (Horario Real)</label>
+                            <input type="text" class="business-data" placeholder="Lunes-Viernes 10:00-20:00">
                         </div>
-                        <div class="form-group" id="bot-msg-redirect-container" style="display: none;">
-                            <label id="bot-msg-redirect-label">Enlace o Destino</label>
-                            <div id="bot-msg-redirect-input-wrapper">
-                                <input type="text" id="bot-msg-redirect" placeholder="https://...">
-                            </div>
+                        <div class="form-group">
+                            <label>Duración (segundos)</label>
+                            <input type="number" class="slot-duration" value="5" min="2" max="30">
                         </div>
-                        <button id="btn-add-bot-msg" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Mensaje</button>
+                        <button class="btn btn-sm btn-save-slot"><i class="fas fa-save"></i> Guardar</button>
                     </div>
 
-                    <div id="bot-messages-list">
-                        <!-- Messages will be loaded here -->
+                    <!-- Slot: Ubicacion -->
+                    <div class="bot-slot-card" data-type="store_location">
+                        <div class="bot-slot-header">
+                            <h3><i class="fas fa-map-marker-alt"></i> Ubicación</h3>
+                            <label class="switch">
+                                <input type="checkbox" class="toggle-slot">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Contenido del Mensaje</label>
+                            <textarea class="slot-content" placeholder="Ej: Encuéntranos en Av. Principal 123. ¡Te esperamos!"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Dato del Negocio (Dirección Real)</label>
+                            <input type="text" class="business-data" placeholder="Calle, Número, Ciudad">
+                        </div>
+                        <div class="form-group">
+                            <label>Duración (segundos)</label>
+                            <input type="number" class="slot-duration" value="5" min="2" max="30">
+                        </div>
+                        <button class="btn btn-sm btn-save-slot"><i class="fas fa-save"></i> Guardar</button>
                     </div>
+
+                    <!-- Slot: Carpeta -->
+                    <div class="bot-slot-card" data-type="album_link">
+                        <div class="bot-slot-header">
+                            <h3><i class="fas fa-book-open"></i> Ver una Carpeta</h3>
+                            <label class="switch">
+                                <input type="checkbox" class="toggle-slot">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Contenido del Mensaje</label>
+                            <textarea class="slot-content" placeholder="Ej: ¿Te gustaría ver nuestra carpeta de Pokémon?"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Seleccionar Álbum Destino</label>
+                            <select class="slot-redirect album-select">
+                                <option value="">Cargando álbumes...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Duración (segundos)</label>
+                            <input type="number" class="slot-duration" value="5" min="2" max="30">
+                        </div>
+                        <button class="btn btn-sm btn-save-slot"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+
+                    <!-- Slot: Preventas -->
+                    <div class="bot-slot-card" data-type="pre_sales">
+                        <div class="bot-slot-header">
+                            <h3><i class="fas fa-fire"></i> Preventas</h3>
+                            <label class="switch">
+                                <input type="checkbox" class="toggle-slot">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Contenido del Mensaje</label>
+                            <textarea class="slot-content" placeholder="Ej: ¡Ya tenemos preventas disponibles para la nueva expansión!"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Enlace (Opcional)</label>
+                            <input type="text" class="slot-redirect" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Duración (segundos)</label>
+                            <input type="number" class="slot-duration" value="5" min="2" max="30">
+                        </div>
+                        <button class="btn btn-sm btn-save-slot"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+
+                    <!-- Slot: Promo -->
+                    <div class="bot-slot-card" data-type="promo">
+                        <div class="bot-slot-header">
+                            <h3><i class="fas fa-tag"></i> Promociones</h3>
+                            <label class="switch">
+                                <input type="checkbox" class="toggle-slot">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Contenido del Mensaje</label>
+                            <textarea class="slot-content" placeholder="Ej: ¡10% de descuento en cartas sueltas este fin de semana!"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Duración (segundos)</label>
+                            <input type="number" class="slot-duration" value="5" min="2" max="30">
+                        </div>
+                        <button class="btn btn-sm btn-save-slot"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+
+                    <!-- Slot: Custom 1 -->
+                    <div class="bot-slot-card" data-type="custom_1">
+                        <div class="bot-slot-header">
+                            <h3><i class="fas fa-comment"></i> Mensaje Personalizado 1</h3>
+                            <label class="switch">
+                                <input type="checkbox" class="toggle-slot">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Contenido del Mensaje</label>
+                            <textarea class="slot-content" placeholder="Ej: ¡Síguenos en nuestras redes sociales!"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Enlace (Opcional)</label>
+                            <input type="text" class="slot-redirect" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Duración (segundos)</label>
+                            <input type="number" class="slot-duration" value="5" min="2" max="30">
+                        </div>
+                        <button class="btn btn-sm btn-save-slot"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+
                 </div>
 
-                <!-- Preview Area -->
-                <div style="position: sticky; top: 20px;">
-                    <div class="album-card" style="text-align: center; overflow: visible;">
-                        <h3>Vista Previa</h3>
-                        <div style="position: relative; height: 300px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-top: 20px; display: flex; align-items: center; justify-content: center;">
-                            <!-- Character Preview -->
-                            <div id="bot-preview-spirit-container" style="width: 200px; height: 200px;">
-                                <model-viewer id="bot-preview-viewer" style="width: 100%; height: 100%;" auto-rotate rotation-per-second="30deg" camera-controls disable-zoom></model-viewer>
-                            </div>
-                            <!-- Bubble Preview -->
-                            <div id="bot-preview-bubble" class="companion-bubble" style="bottom: 220px; left: 50%; transform: translateX(-50%); opacity: 1; visibility: visible; display: none;">
+                <!-- Character Preview Sticky -->
+                <div class="bot-preview-column">
+                    <div class="bot-preview-sticky-card">
+                        <div class="character-preview-container">
+                            <!-- Character -->
+                            <model-viewer id="bot-preview-viewer" auto-rotate rotation-per-second="30deg" camera-controls disable-zoom></model-viewer>
+                            <!-- Bubble -->
+                            <div id="bot-preview-bubble" class="companion-bubble preview-mode">
                                 Hola, soy tu mensaje.
                             </div>
                         </div>
-                        <p style="font-size: 12px; color: #aaa; margin-top: 15px;">Así es como verán los globos de texto tus clientes.</p>
+                        <div class="preview-info">
+                            <p><i class="fas fa-info-circle"></i> Esta es una vista previa de cómo aparecerán los globos de texto sobre tu compañero.</p>
+                        </div>
                     </div>
                 </div>
             </div>
