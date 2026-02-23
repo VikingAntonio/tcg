@@ -128,6 +128,8 @@ $(document).ready(async function() {
         switchView('wishlist');
     } else if (initialView === 'sealed') {
         switchView('sealed');
+    } else if (initialView === 'preorders') {
+        switchView('preorders');
     }
 
     $('#spirit-btn').click(function() {
@@ -137,6 +139,10 @@ $(document).ready(async function() {
 
     $('#wishlist-nav-btn').click(function() {
         switchView('wishlist');
+    });
+
+    $('#preorders-nav-btn').click(function() {
+        switchView('preorders');
     });
 
     $('#close-spirit-modal').click(function() {
@@ -755,6 +761,10 @@ async function switchView(view) {
         $('#public-view-title').text('Productos Sellados');
         $('.public-header p').text('Encuentra cajas, sobres y productos especiales de tus TCG favoritos.');
         loadPublicSealed();
+    } else if (view === 'preorders') {
+        $('#public-view-title').text('Preventas');
+        $('.public-header p').text('Asegura tus productos antes que nadie con nuestras preventas exclusivas.');
+        loadPublicPreorders();
     } else if (view === 'decks') {
         $('#public-view-title').text('Decks de Cartas');
         $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
@@ -870,6 +880,87 @@ async function loadStoreData() {
     }
 }
 
+async function loadPublicPreorders() {
+    let userId = window.currentStoreId;
+    if (!userId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeName = urlParams.get('store');
+        const userName = urlParams.get('user');
+        if (!storeName && !userName) return;
+        let query = _supabase.from('usuarios').select('id');
+        if (storeName) query = query.eq('store_name', storeName);
+        else query = query.eq('username', userName);
+        const { data: user } = await query.single();
+        if (user) userId = user.id;
+    }
+    if (!userId) return;
+
+    showLoading('Cargando Preventas...');
+    $('#preorders-container').html('<div class="loading">Cargando preventas...</div>');
+
+    try {
+        const { data: preorders, error } = await _supabase
+            .from('preorders')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('is_public', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!preorders || preorders.length === 0) {
+            $('#preorders-container').html('<div class="empty">No hay preventas disponibles.</div>');
+            return;
+        }
+
+        $('#preorders-container').empty();
+        preorders.forEach(preorder => {
+            const $item = $(`
+                <div class="deck-public-item sealed-product-item">
+                    <div class="product-image-container">
+                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
+                             alt="${preorder.name}" class="sealed-product-img">
+                    </div>
+                    <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center;">${preorder.name}</h3>
+                    <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem;">${preorder.price || 'Consultar'}</div>
+                    <div style="color: #ff4757; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px;">Límite: ${preorder.payment_deadline || '-'}</div>
+                    <button class="btn btn-add-preorder-cart" style="width: 100%;">
+                        <i class="fas fa-cart-plus"></i> Agregar al Carrito
+                    </button>
+                </div>
+            `);
+
+            $item.find('.btn-add-preorder-cart').click(function(e) {
+                e.stopPropagation();
+                Cart.add({
+                    name: preorder.name,
+                    image_url: preorder.image_url,
+                    price: preorder.price,
+                    tcg: preorder.tcg,
+                    deadline: preorder.payment_deadline
+                });
+                Swal.fire({
+                    title: '¡Añadido!',
+                    text: `${preorder.name} se ha agregado al carrito.`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            });
+
+            $('#preorders-container').append($item);
+        });
+
+    } catch (e) {
+        console.error("Error loading preorders:", e);
+        $('#preorders-container').html('<div class="error">Error al cargar preventas.</div>');
+    } finally {
+        hideLoading();
+    }
+}
+
 function initFloatingCompanion() {
     if (!window.currentSpirit) return;
 
@@ -913,7 +1004,7 @@ function initFloatingCompanion() {
                         });
                     }, 600);
                 } else if (msg.type === 'pre_sales') {
-                    switchView('sealed');
+                    switchView('preorders');
                 } else if (msg.redirect_url && msg.redirect_url.startsWith('http')) {
                     window.open(msg.redirect_url, '_blank');
                 }
