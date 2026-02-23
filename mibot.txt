@@ -1,0 +1,26 @@
+-- SQL for Bot Messages Table
+-- This table stores custom messages that the companion can show periodically.
+
+CREATE TABLE IF NOT EXISTS public.bot_messages (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
+    message_text TEXT NOT NULL,
+    action_url TEXT, -- Optional link to redirect when clicked
+    view_type TEXT DEFAULT 'public', -- 'public', 'admin', or 'both'
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.bot_messages ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+-- Everyone can read bot messages (needed for public view)
+CREATE POLICY "Bot messages are viewable by everyone"
+ON public.bot_messages FOR SELECT
+USING (true);
+
+-- Users can manage their own bot messages
+CREATE POLICY "Users can manage their own bot messages"
+ON public.bot_messages FOR ALL
+USING (auth.uid() = user_id);

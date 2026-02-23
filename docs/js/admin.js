@@ -1209,7 +1209,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, horario, ubicacion')
             .eq('id', session.user.id)
             .single();
 
@@ -1375,6 +1375,19 @@ async function showAuthenticatedContent() {
             .single();
         if (spiritData) {
             window.currentSpirit = spiritData;
+
+            // Fetch additional data for CompanionBot
+            const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
+                _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true).or('view_type.eq.admin,view_type.eq.both'),
+                _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1)
+            ]);
+
+            window.currentStoreDataForBot = {
+                user: currentUser,
+                customMessages: botMessages,
+                hasSealed: sealedProducts && sealedProducts.length > 0
+            };
+
             initFloatingCompanion();
         }
     }
@@ -1956,7 +1969,120 @@ function initFloatingCompanion() {
         e.stopPropagation();
         $('#companion-menu').toggleClass('active');
     });
+
+    // Initialize CompanionBot Tips
+    if (typeof CompanionBot !== 'undefined') {
+        CompanionBot.init({
+            user: window.currentStoreDataForBot?.user,
+            customMessages: window.currentStoreDataForBot?.customMessages,
+            hasSealed: window.currentStoreDataForBot?.hasSealed,
+            view: 'admin'
+        });
+    }
 }
+
+const CompanionBot = {
+    tips: [],
+    interval: null,
+    lastIndex: -1,
+
+    init: function(data) {
+        this.tips = this.generateTips(data);
+        if (this.tips.length > 0) {
+            this.start();
+        }
+    },
+
+    generateTips: function(data) {
+        const tips = [];
+        const { user, customMessages } = data;
+
+        // Admin messages
+        if (customMessages && customMessages.length > 0) {
+            customMessages.forEach(m => {
+                tips.push({ text: m.message_text, action: m.action_url });
+            });
+        }
+        tips.push({ text: "👋 ¡Hola! Recuerda que puedes personalizar tu tienda en el Perfil." });
+        tips.push({ text: "📸 ¿Probaste el scanner? Es la forma más rápida de subir cartas." });
+        tips.push({ text: "📦 Gestiona tus productos sellados desde la sección de Productos." });
+        tips.push({ text: "🤝 Si necesitas soporte técnico, contáctanos por el grupo de ayuda." });
+        tips.push({
+            text: "🌐 Haz clic aquí para ver cómo luce tu tienda pública.",
+            action: () => {
+                const storeName = user?.store_name || user?.username;
+                if (storeName) {
+                    const identifier = user.is_store ? `store=${encodeURIComponent(user.store_name)}` : `user=${encodeURIComponent(user.username)}`;
+                    window.open(`public.html?${identifier}`, '_blank');
+                }
+            }
+        });
+
+        return tips;
+    },
+
+    start: function() {
+        if (this.interval) clearTimeout(this.interval);
+
+        const scheduleNext = () => {
+            // Tiempo aleatorio entre 30 y 60 segundos
+            const delay = Math.floor(Math.random() * (60000 - 30000 + 1)) + 30000;
+            this.interval = setTimeout(() => {
+                this.showNextTip();
+                scheduleNext();
+            }, delay);
+        };
+
+        // Primer mensaje después de un tiempo aleatorio (5-12 segundos)
+        setTimeout(() => {
+            this.showNextTip();
+            scheduleNext();
+        }, Math.floor(Math.random() * 7000) + 5000);
+    },
+
+    showNextTip: function() {
+        if (this.tips.length === 0) return;
+
+        // Seleccionar un mensaje aleatorio que no sea el mismo de justo antes
+        let nextIndex;
+        if (this.tips.length > 1) {
+            do {
+                nextIndex = Math.floor(Math.random() * this.tips.length);
+            } while (nextIndex === this.lastIndex);
+        } else {
+            nextIndex = 0;
+        }
+
+        this.lastIndex = nextIndex;
+        this.displayTip(this.tips[nextIndex]);
+    },
+
+    displayTip: function(tip) {
+        const $bubble = $('#companion-bubble');
+        if (!$bubble.length) return;
+
+        $bubble.text(tip.text).removeClass('bubble-out clickable').off('click').hide();
+        if (tip.action) {
+            $bubble.addClass('clickable');
+            $bubble.on('click', () => {
+                if (typeof tip.action === 'function') {
+                    tip.action();
+                } else {
+                    window.open(tip.action, '_blank');
+                }
+                $bubble.addClass('bubble-out');
+            });
+        }
+        $bubble.fadeIn(500);
+
+        // Clear previous timeout if exists
+        if (this.hideTimeout) clearTimeout(this.hideTimeout);
+        this.hideTimeout = setTimeout(() => {
+            $bubble.addClass('bubble-out');
+            setTimeout(() => $bubble.hide(), 500);
+        }, 10000);
+    }
+};
 
 async function deleteSpirit(id, gltfUrl) {
     const result = await Swal.fire({
