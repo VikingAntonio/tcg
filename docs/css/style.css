@@ -2779,6 +2779,15 @@ input:checked + .slider:before {
     filter: brightness(1.1);
 }
 
+#companion-bubble.fade-in {
+    display: block !important;
+    animation: fadeInBubble 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+#companion-bubble.fade-out {
+    animation: fadeOutBubble 0.4s ease-in forwards;
+}
+
 #companion-bubble::after {
     content: '';
     position: absolute;
