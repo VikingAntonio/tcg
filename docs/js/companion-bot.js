@@ -9,6 +9,7 @@ class CompanionBot {
         this.userType = options.userType || 'public'; // 'public' o 'admin'
         this.elementId = options.elementId || 'companion-bubble';
         this.intervalRange = options.intervalRange || [30000, 60000]; // 30-60s
+        this.onAction = options.onAction;
 
         this.messages = [];
         this.currentIndex = 0;
@@ -28,7 +29,13 @@ class CompanionBot {
         }
 
         await this.loadBaseMessages();
-        await this.loadCustomMessages();
+
+        // Solo cargar si no se pasaron mensajes en el constructor
+        // loadBaseMessages añade 2 mensajes si es admin
+        const baseLength = (this.userType === 'admin') ? 2 : 0;
+        if (this.messages.length <= baseLength) {
+            await this.loadCustomMessages();
+        }
 
         // Shuffler inicial
         this.shuffleMessages();
@@ -45,27 +52,11 @@ class CompanionBot {
         const base = [];
         try {
             if (this.userType === 'public') {
-                // Info de la tienda
-                const { data: user } = await this.supabase
-                    .from('usuarios')
-                    .select('horario, ubicacion')
-                    .eq('id', this.userId)
-                    .single();
-
-                if (user) {
-                    if (user.horario) base.push({ message_text: `Nuestro horario es: ${user.horario}` });
-                    if (user.ubicacion) base.push({ message_text: `Visítanos en: ${user.ubicacion}` });
-                }
-
-                // Links contextuales
-                base.push({ message_text: "¿Te gustaría ver nuestra carpeta de Pokémon?", action_url: 'view-pokemon' });
-                base.push({ message_text: "Mira nuestras preventas y productos sellados", action_url: 'view-products' });
-                base.push({ message_text: "¿Buscas algo? Revisa nuestra lista de buscados", action_url: 'view-wishlist' });
+                // No base messages for public anymore, everything comes from DB custom messages
             } else {
-                // Tips para Admin
-                base.push({ message_text: "Tip: Usa el escáner para registrar cartas más rápido." });
-                base.push({ message_text: "Puedes personalizar los mensajes de este bot en la base de datos." });
-                base.push({ message_text: "¿Necesitas soporte? Contáctanos por Messenger.", action_url: 'https://m.me/vikingdevtcg' });
+                // Tips for Admin
+                base.push({ content: "Tip: Usa el escáner para registrar cartas más rápido.", type: 'custom', display_duration: 5 });
+                base.push({ content: "¿Necesitas soporte? Contáctanos por Messenger.", type: 'custom', redirect_url: 'https://m.me/vikingdevtj', display_duration: 5 });
             }
         } catch (err) {
             console.error("Error loading base bot messages:", err);
@@ -74,20 +65,30 @@ class CompanionBot {
     }
 
     async loadCustomMessages() {
-        // Si ya tenemos mensajes (pasados por constructor), evitamos redundancia
-        // Pero si queremos asegurar frescura o complementar, podemos buscar aquí.
-        // Por ahora, asumimos que si se pasaron en el constructor ya son los de la DB.
-        if (this.messages.some(m => m.id)) return;
-
         try {
-            const { data, error } = await this.supabase
+            let query = this.supabase
                 .from('bot_messages')
                 .select('*')
-                .eq('is_active', true)
-                .or(`view_type.eq.${this.userType},view_type.eq.both`);
+                .eq('user_id', this.userId)
+                .eq('is_active', true);
 
-            if (data) {
-                this.messages = [...this.messages, ...data];
+            // Filtrar por visibilidad
+            if (this.userType === 'admin') {
+                query = query.or('view_type.eq.admin,view_type.eq.both');
+            } else {
+                query = query.or('view_type.eq.public,view_type.eq.both');
+            }
+
+            const { data, error } = await query;
+
+            if (data && data.length > 0) {
+                // Si hay mensajes personalizados, los usamos.
+                // Si somos admin, combinamos con los tips de base.
+                if (this.userType === 'admin') {
+                    this.messages = [...this.messages, ...data];
+                } else {
+                    this.messages = data;
+                }
             }
         } catch (err) {
             console.error("Error loading custom bot messages:", err);
@@ -120,10 +121,12 @@ class CompanionBot {
         if (this.messages.length === 0 || !this.bubble) return;
 
         const msg = this.messages[this.currentIndex];
-        this.bubble.textContent = this.stripEmojis(msg.message_text);
+        const duration = (msg.display_duration || 3) * 1000;
+
+        this.bubble.textContent = this.stripEmojis(msg.content);
 
         // Configurar acción al hacer clic
-        const hasAction = msg.action_url || (msg.message_text && msg.message_text.toLowerCase().includes('pokemon'));
+        const hasAction = (msg.redirect_url && msg.redirect_url !== '') || msg.type === 'album_link';
 
         if (hasAction) {
             this.bubble.classList.add('clickable');
@@ -137,11 +140,11 @@ class CompanionBot {
         this.bubble.classList.remove('fade-out');
         this.bubble.classList.add('fade-in');
 
-        // Ocultar después de 10 segundos
+        // Ocultar después de la duración configurada
         setTimeout(() => {
             this.bubble.classList.remove('fade-in');
             this.bubble.classList.add('fade-out');
-        }, 10000);
+        }, duration);
 
         // Avanzar índice
         this.currentIndex++;
@@ -152,33 +155,12 @@ class CompanionBot {
     }
 
     handleAction(msg) {
-        const action = msg.action_url;
-
-        // Acciones especiales predefinidas
-        if (action === 'view-pokemon' || (msg.message_text && msg.message_text.toLowerCase().includes('pokemon'))) {
-            this.navigateToPokemon();
-        } else if (action === 'view-products') {
-            if (typeof showView === 'function') showView('sealed-products');
-        } else if (action === 'view-wishlist') {
-            if (typeof showView === 'function') showView('wishlist');
-        } else if (action && action.startsWith('http')) {
-            window.open(action, '_blank');
-        }
-    }
-
-    navigateToPokemon() {
-        // En el link público, cambiar a vista albums y buscar Pokémon
-        if (typeof showView === 'function') {
-            showView('public-albums');
-            setTimeout(() => {
-                const searchInput = document.getElementById('album-search');
-                if (searchInput) {
-                    searchInput.value = 'Pokemon';
-                    searchInput.dispatchEvent(new Event('input'));
-                    // Scroll suave
-                    window.scrollTo({ top: searchInput.offsetTop - 100, behavior: 'smooth' });
-                }
-            }, 300);
+        if (this.onAction) {
+            this.onAction(msg);
+        } else {
+            if (msg.redirect_url && msg.redirect_url.startsWith('http')) {
+                window.open(msg.redirect_url, '_blank');
+            }
         }
     }
 }

@@ -792,7 +792,7 @@ footer {
 }
 
 /* Companion Message Bubble */
-#companion-bubble {
+.companion-bubble {
     position: fixed;
     bottom: 140px;
     left: 40px;

@@ -59,6 +59,13 @@ $(document).ready(async function() {
         loadSpirits();
     });
 
+    $(document).on('click', '#btn-chatbot-config', function(e) {
+        e.preventDefault();
+        showView('chatbot-config');
+        loadBotMessages();
+        updateBotPreview();
+    });
+
     $(document).on('click', '#btn-logout-tile', function(e) {
         e.preventDefault();
         handleLogout();
@@ -1105,6 +1112,96 @@ $(document).ready(async function() {
     });
 
     // Toggle Public/Private from list (Albums, Decks, Spirits)
+    // --- Chatbot Config Actions ---
+    $('#bot-msg-type').change(function() {
+        const type = $(this).val();
+        const $container = $('#bot-msg-redirect-container');
+        const $label = $('#bot-msg-redirect-label');
+        const $inputWrapper = $('#bot-msg-redirect-input-wrapper');
+        const $content = $('#bot-msg-content');
+
+        $container.hide();
+
+        if (type === 'album_link') {
+            $container.show();
+            $label.text('Selecciona Carpeta');
+            loadAlbumsToDropdown($inputWrapper);
+            if (!$content.val()) $content.val('¡No te pierdas mi carpeta de [Album]!');
+        } else if (type === 'custom' || type === 'pre_sales' || type === 'website') {
+            $container.show();
+            $label.text('Enlace (URL)');
+            $inputWrapper.html('<input type="text" id="bot-msg-redirect" placeholder="https://...">');
+            if (type === 'website' && !$content.val()) $content.val('Visita mi sitio web:');
+            if (type === 'pre_sales' && !$content.val()) $content.val('¡Ya tenemos preventas disponibles!');
+        } else if (type === 'store_hours') {
+            if (!$content.val()) $content.val(`Nuestro horario es: ${currentUser.horario || 'No configurado'}`);
+        } else if (type === 'store_location') {
+            if (!$content.val()) $content.val(`Visítanos en: ${currentUser.ubicacion || 'No configurado'}`);
+        }
+        updateBotPreview();
+    });
+
+    $('#bot-msg-content, #bot-msg-duration').on('input', function() {
+        updateBotPreview();
+    });
+
+    $('#btn-add-bot-msg').click(async function() {
+        const content = $('#bot-msg-content').val().trim();
+        const type = $('#bot-msg-type').val();
+        const viewType = $('#bot-msg-view-type').val();
+        const duration = parseInt($('#bot-msg-duration').val()) || 3;
+        const redirect = $('#bot-msg-redirect').val();
+
+        if (!content) {
+            Swal.fire('Atención', 'El contenido del mensaje es obligatorio', 'warning');
+            return;
+        }
+
+        const msgData = {
+            user_id: currentUser.id,
+            content,
+            type,
+            view_type: viewType,
+            display_duration: duration,
+            redirect_url: redirect,
+            is_active: true
+        };
+
+        const { error } = await _supabase
+            .from('bot_messages')
+            .insert([msgData]);
+
+        if (error) {
+            Swal.fire('Error', 'No se pudo guardar el mensaje: ' + error.message, 'error');
+        } else {
+            Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
+            $('#bot-msg-content').val('');
+            loadBotMessages();
+        }
+    });
+
+    $(document).on('click', '.btn-delete-bot-msg', async function() {
+        const id = $(this).data('id');
+        const res = await Swal.fire({
+            title: '¿Eliminar mensaje?',
+            text: "Esta acción no se puede deshacer",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar'
+        });
+
+        if (res.isConfirmed) {
+            await _supabase.from('bot_messages').delete().eq('id', id);
+            loadBotMessages();
+        }
+    });
+
+    $(document).on('change', '.toggle-bot-msg', async function() {
+        const id = $(this).data('id');
+        const isActive = $(this).is(':checked');
+        await _supabase.from('bot_messages').update({ is_active: isActive }).eq('id', id);
+    });
+
     $(document).on('change', '.toggle-public', async function() {
         const id = $(this).data('id');
         const type = $(this).data('type');
@@ -1977,11 +2074,12 @@ function initFloatingCompanion() {
             userId: currentUser.id,
             userType: 'admin',
             customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : [],
-            onAction: (action) => {
-                if (action === 'support') {
-                    window.open('https://m.me/vikingdevtj', '_blank');
-                } else if (typeof action === 'string' && action.startsWith('http')) {
-                    window.open(action, '_blank');
+            onAction: (msg) => {
+                if (msg.type === 'album_link') {
+                    showView('dashboard');
+                    loadAlbums();
+                } else if (msg.redirect_url && msg.redirect_url.startsWith('http')) {
+                    window.open(msg.redirect_url, '_blank');
                 }
             }
         });
@@ -2046,6 +2144,115 @@ async function deleteSpirit(id, gltfUrl) {
             Swal.fire('Error', 'No se pudo eliminar el compañero: ' + (err.message || ''), 'error');
         }
     }
+}
+
+async function loadBotMessages() {
+    $('#bot-messages-list').html('<div class="loading">Cargando mensajes...</div>');
+
+    const { data: messages, error } = await _supabase
+        .from('bot_messages')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        $('#bot-messages-list').html('<div class="error">Error al cargar mensajes.</div>');
+        return;
+    }
+
+    if (!messages || messages.length === 0) {
+        $('#bot-messages-list').html('<div class="empty">No tienes mensajes configurados.</div>');
+        return;
+    }
+
+    const $list = $('#bot-messages-list');
+    $list.empty();
+
+    messages.forEach(msg => {
+        const typeLabels = {
+            'custom': 'Personalizado',
+            'store_hours': 'Horario',
+            'store_location': 'Ubicación',
+            'website': 'Web',
+            'pre_sales': 'Preventas',
+            'album_link': 'Carpeta'
+        };
+
+        const viewLabels = {
+            'public': 'Público',
+            'admin': 'Admin',
+            'both': 'Ambos'
+        };
+
+        const $card = $(`
+            <div class="album-card" style="padding: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span class="badge" style="background: var(--accent); font-size: 10px;">${typeLabels[msg.type] || msg.type}</span>
+                        <span class="badge" style="background: #444; font-size: 10px;">${viewLabels[msg.view_type] || msg.view_type}</span>
+                        <span style="font-size: 11px; color: #666;"><i class="fas fa-clock"></i> ${msg.display_duration}s</span>
+                    </div>
+                    <div style="font-weight: 500;">${msg.content}</div>
+                    ${msg.redirect_url ? `<div style="font-size: 11px; color: var(--accent); mt-1"><i class="fas fa-link"></i> ${msg.redirect_url}</div>` : ''}
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label class="switch">
+                        <input type="checkbox" class="toggle-bot-msg" data-id="${msg.id}" ${msg.is_active ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                    <button class="btn btn-danger btn-sm btn-delete-bot-msg" data-id="${msg.id}"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `);
+        $list.append($card);
+    });
+}
+
+async function loadAlbumsToDropdown($container) {
+    const { data: albums } = await _supabase
+        .from('albums')
+        .select('title')
+        .eq('user_id', currentUser.id);
+
+    const $select = $('<select id="bot-msg-redirect" style="width: 100%;"></select>');
+    $select.append('<option value="">Selecciona un álbum...</option>');
+    if (albums) {
+        albums.forEach(a => {
+            $select.append(`<option value="${a.title}">${a.title}</option>`);
+        });
+    }
+    $container.html($select);
+
+    $select.change(function() {
+        const albumName = $(this).val();
+        if (albumName) {
+            const $content = $('#bot-msg-content');
+            $content.val(`¡Echa un vistazo a mi carpeta de ${albumName}!`);
+            updateBotPreview();
+        }
+    });
+}
+
+function updateBotPreview() {
+    const content = $('#bot-msg-content').val() || 'Hola, bienvenido a mi tienda';
+    const duration = $('#bot-msg-duration').val() || 3;
+    const $bubble = $('#bot-preview-bubble');
+    const $viewer = $('#bot-preview-viewer');
+
+    if (window.currentSpirit) {
+        $viewer.attr('src', window.currentSpirit.gltf_url);
+    }
+
+    $bubble.text(content).stop(true, true).fadeIn(300);
+
+    // Emoji stripping for preview
+    const cleanText = content.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+    $bubble.text(cleanText);
+
+    clearTimeout(window.botPreviewTimeout);
+    window.botPreviewTimeout = setTimeout(() => {
+        $bubble.fadeOut(300);
+    }, duration * 1000);
 }
 
 async function loadSlotData(pageId, slotIndex) {

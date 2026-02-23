@@ -2750,7 +2750,7 @@ input:checked + .slider:before {
 }
 
 /* Companion Message Bubble */
-#companion-bubble {
+.companion-bubble {
     position: fixed;
     bottom: 140px;
     left: 40px;
@@ -2769,26 +2769,26 @@ input:checked + .slider:before {
     border: 1px solid var(--primary-color);
 }
 
-#companion-bubble.clickable {
+.companion-bubble.clickable {
     cursor: pointer;
     border-width: 2px;
 }
 
-#companion-bubble.clickable:hover {
+.companion-bubble.clickable:hover {
     transform: scale(1.05);
     filter: brightness(1.1);
 }
 
-#companion-bubble.fade-in {
+.companion-bubble.fade-in {
     display: block !important;
     animation: fadeInBubble 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-#companion-bubble.fade-out {
+.companion-bubble.fade-out {
     animation: fadeOutBubble 0.4s ease-in forwards;
 }
 
-#companion-bubble::after {
+.companion-bubble::after {
     content: '';
     position: absolute;
     bottom: -11px;
