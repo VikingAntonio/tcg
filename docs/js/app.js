@@ -784,7 +784,7 @@ async function loadStoreData() {
     try {
         let query = _supabase
             .from('usuarios')
-            .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store');
+            .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store, horario, ubicacion');
 
         if (storeName) {
             query = query.eq('store_name', storeName);
@@ -848,7 +848,21 @@ async function loadStoreData() {
         const identifier = userData.is_store ? `store=${encodeURIComponent(userData.store_name)}` : `user=${encodeURIComponent(userData.username)}`;
         $('#cart-btn').attr('href', `carrito.html?${identifier}`);
 
-        loadPublicAlbums(userData.id);
+        // Fetch additional data for CompanionBot
+        const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
+            _supabase.from('bot_messages').select('*').eq('user_id', userData.id).eq('is_active', true).or('view_type.eq.public,view_type.eq.both'),
+            _supabase.from('sealed_products').select('id').eq('user_id', userData.id).limit(1)
+        ]);
+
+        // AWAITing albums to avoid race condition with CompanionBot tips
+        await loadPublicAlbums(userData.id);
+
+        window.currentStoreDataForBot = {
+            user: userData,
+            customMessages: botMessages,
+            hasSealed: sealedProducts && sealedProducts.length > 0
+        };
+
         initFloatingCompanion();
     } catch (e) {
         console.error("Error in loadStoreData:", e);
@@ -877,7 +891,150 @@ function initFloatingCompanion() {
         e.stopPropagation();
         $('#companion-menu').toggleClass('active');
     });
+
+    // Initialize CompanionBot Tips
+    if (typeof CompanionBot !== 'undefined') {
+        CompanionBot.init({
+            user: window.currentStoreDataForBot?.user,
+            customMessages: window.currentStoreDataForBot?.customMessages,
+            hasSealed: window.currentStoreDataForBot?.hasSealed,
+            albums: window.currentAlbums,
+            view: 'public'
+        });
+    }
 }
+
+const CompanionBot = {
+    tips: [],
+    interval: null,
+    lastIndex: -1,
+
+    init: function(data) {
+        this.tips = this.generateTips(data);
+        if (this.tips.length > 0) {
+            this.start();
+        }
+    },
+
+    generateTips: function(data) {
+        const tips = [];
+        const { user, albums, hasSealed, customMessages, view } = data;
+
+        if (view === 'public') {
+            if (customMessages && customMessages.length > 0) {
+                customMessages.forEach(m => {
+                    tips.push({ text: m.message_text, action: m.action_url });
+                });
+            }
+
+            if (user?.ubicacion) {
+                tips.push({ text: `📍 Estamos en: ${user.ubicacion}` });
+            }
+            if (user?.horario) {
+                tips.push({ text: `⏰ Horario: ${user.horario}` });
+            }
+
+            const pokemonAlbum = albums?.find(a => (a.title || a.name || '').toLowerCase().includes('pokemon'));
+            if (pokemonAlbum) {
+                tips.push({
+                    text: "✨ ¿Te gustaría ver nuestra carpeta de Pokémon?",
+                    action: () => {
+                        const el = document.getElementById(`album-${pokemonAlbum.id}`);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            }
+
+            if (hasSealed) {
+                tips.push({
+                    text: "📦 ¡Mira nuestras preventas y productos sellados!",
+                    action: () => { if (typeof showView === 'function') showView('sealed'); }
+                });
+            }
+
+            tips.push({
+                text: "❤️ ¿Tienes cartas que buscamos? ¡Mira nuestra lista de deseos!",
+                action: () => { if (typeof showView === 'function') showView('wishlist'); }
+            });
+        } else {
+            // Admin messages
+            tips.push({ text: "👋 ¡Hola! Recuerda que puedes personalizar tu tienda en el Perfil." });
+            tips.push({ text: "📸 ¿Probaste el scanner? Es la forma más rápida de subir cartas." });
+            tips.push({ text: "📦 Gestiona tus productos sellados desde la sección de Productos." });
+            tips.push({ text: "🤝 Si necesitas soporte técnico, contáctanos por el grupo de ayuda." });
+            tips.push({
+                text: "🌐 Haz clic aquí para ver cómo luce tu tienda pública.",
+                action: () => {
+                    const storeName = user?.store_name || user?.username;
+                    if (storeName) window.open(`public.html?store=${encodeURIComponent(storeName)}`, '_blank');
+                }
+            });
+        }
+        return tips;
+    },
+
+    start: function() {
+        if (this.interval) clearTimeout(this.interval);
+
+        const scheduleNext = () => {
+            // Tiempo aleatorio entre 30 y 60 segundos
+            const delay = Math.floor(Math.random() * (60000 - 30000 + 1)) + 30000;
+            this.interval = setTimeout(() => {
+                this.showNextTip();
+                scheduleNext();
+            }, delay);
+        };
+
+        // Primer mensaje después de un tiempo aleatorio (5-12 segundos)
+        setTimeout(() => {
+            this.showNextTip();
+            scheduleNext();
+        }, Math.floor(Math.random() * 7000) + 5000);
+    },
+
+    showNextTip: function() {
+        if (this.tips.length === 0) return;
+
+        // Seleccionar un mensaje aleatorio que no sea el mismo de justo antes
+        let nextIndex;
+        if (this.tips.length > 1) {
+            do {
+                nextIndex = Math.floor(Math.random() * this.tips.length);
+            } while (nextIndex === this.lastIndex);
+        } else {
+            nextIndex = 0;
+        }
+
+        this.lastIndex = nextIndex;
+        this.displayTip(this.tips[nextIndex]);
+    },
+
+    displayTip: function(tip) {
+        const $bubble = $('#companion-bubble');
+        if (!$bubble.length) return;
+
+        $bubble.text(tip.text).removeClass('bubble-out clickable').off('click').hide();
+        if (tip.action) {
+            $bubble.addClass('clickable');
+            $bubble.on('click', () => {
+                if (typeof tip.action === 'function') {
+                    tip.action();
+                } else {
+                    window.open(tip.action, '_blank');
+                }
+                $bubble.addClass('bubble-out');
+            });
+        }
+        $bubble.fadeIn(500);
+
+        // Clear previous timeout if exists
+        if (this.hideTimeout) clearTimeout(this.hideTimeout);
+        this.hideTimeout = setTimeout(() => {
+            $bubble.addClass('bubble-out');
+            setTimeout(() => $bubble.hide(), 500);
+        }, 10000);
+    }
+};
 
 async function loadPublicAlbums(userId) {
     showLoading('Cargando interfaz...');
@@ -906,6 +1063,7 @@ async function loadPublicAlbums(userId) {
             // Filtrar en JS para tratar null como público (true)
             // Solo ocultamos si is_public es explícitamente false
             albums = albums.filter(a => a.is_public !== false);
+            window.currentAlbums = albums;
         }
 
         if (error) {
