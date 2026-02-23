@@ -1,35 +1,39 @@
 -- SQL para el sistema de mensajes del Chatbot/Acompañante
--- Ejecutar esto en el SQL Editor de Supabase
+-- Ejecutar esto en el SQL Editor de Supabase para corregir errores de columnas
 
--- 1. Tabla de mensajes configurables
-CREATE TABLE IF NOT EXISTS public.bot_messages (
+-- 1. Eliminar la tabla si existe para asegurar una creación limpia con todas las columnas
+DROP TABLE IF EXISTS public.bot_messages CASCADE;
+
+-- 2. Crear la tabla de mensajes configurables
+CREATE TABLE public.bot_messages (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL, -- Referencia al ID del usuario
     content TEXT NOT NULL,
     type TEXT NOT NULL, -- 'store_hours', 'store_location', 'album_link', 'pre_sales', 'promo', 'custom_1', 'custom_2'
     view_type TEXT DEFAULT 'public', -- 'public', 'admin', 'both'
     redirect_url TEXT, -- URL o ID de album para navegación
-    display_duration INTEGER DEFAULT 5, -- segundos
+    duration INTEGER DEFAULT 5, -- Duración del globo en segundos (coincide con el frontend)
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(user_id, type) -- Permite tener un mensaje por cada tipo por usuario
+    UNIQUE(user_id, type)
 );
 
--- RLS para bot_messages
+-- 3. Habilitar RLS
 ALTER TABLE public.bot_messages ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Los usuarios pueden ver mensajes de otros (publicos)"
+-- 4. Políticas de Seguridad (Asegurarse de que coincidan con tu sistema)
+CREATE POLICY "Mensajes visibles para todos"
 ON public.bot_messages FOR SELECT
 USING (true);
 
-CREATE POLICY "Los usuarios pueden gestionar sus propios mensajes"
+CREATE POLICY "Usuarios gestionan sus propios mensajes"
 ON public.bot_messages FOR ALL
 USING (auth.uid() = user_id);
 
--- 2. Columnas adicionales en la tabla usuarios para info de la tienda
-ALTER TABLE public.usuarios
-ADD COLUMN IF NOT EXISTS horario TEXT,
-ADD COLUMN IF NOT EXISTS ubicacion TEXT,
-ADD COLUMN IF NOT EXISTS website TEXT;
+-- 5. Columnas adicionales en la tabla usuarios (Si no existen)
+ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS horario TEXT;
+ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS ubicacion TEXT;
+ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS website TEXT;
 
--- Nota: Estas columnas permiten que el bot extraiga información real del negocio.
+-- IMPORTANTE: Después de ejecutar este SQL, si el error persiste,
+-- refresca la página del dashboard de Supabase para que se actualice la caché del esquema.

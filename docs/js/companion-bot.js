@@ -55,8 +55,8 @@ class CompanionBot {
                 // No base messages for public anymore, everything comes from DB custom messages
             } else {
                 // Tips for Admin
-                base.push({ content: "Tip: Usa el escáner para registrar cartas más rápido.", type: 'custom', display_duration: 5 });
-                base.push({ content: "¿Necesitas soporte? Contáctanos por Messenger.", type: 'custom', redirect_url: 'https://m.me/vikingdevtj', display_duration: 5 });
+                base.push({ content: "Tip: Usa el escáner para registrar cartas más rápido.", type: 'custom', duration: 5 });
+                base.push({ content: "¿Necesitas soporte? Contáctanos por Messenger.", type: 'custom', redirect_url: 'https://m.me/vikingdevtj', duration: 5 });
             }
         } catch (err) {
             console.error("Error loading base bot messages:", err);
