@@ -219,7 +219,7 @@
             <div class="admin-header">
                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
                 <h1>Configuración del Chatbot</h1>
-                <p>Personaliza los mensajes automáticos que tu compañero dirá a tus visitantes.</p>
+                <p>Personaliza los mensajes automáticos para tus clientes.</p>
             </div>
 
             <div class="bot-config-layout">
@@ -240,10 +240,6 @@
                             <textarea class="slot-content" placeholder="Ej: ¡Visítanos! Abrimos de Lunes a Viernes de 10am a 8pm."></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Dato del Negocio (Horario Real)</label>
-                            <input type="text" class="business-data" placeholder="Lunes-Viernes 10:00-20:00">
-                        </div>
-                        <div class="form-group">
                             <label>Duración (segundos)</label>
                             <input type="number" class="slot-duration" value="5" min="2" max="30">
                         </div>
@@ -262,10 +258,6 @@
                         <div class="form-group">
                             <label>Contenido del Mensaje</label>
                             <textarea class="slot-content" placeholder="Ej: Encuéntranos en Av. Principal 123. ¡Te esperamos!"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Dato del Negocio (Dirección Real)</label>
-                            <input type="text" class="business-data" placeholder="Calle, Número, Ciudad">
                         </div>
                         <div class="form-group">
                             <label>Duración (segundos)</label>
@@ -370,22 +362,6 @@
 
                 </div>
 
-                <!-- Character Preview Sticky -->
-                <div class="bot-preview-column">
-                    <div class="bot-preview-sticky-card">
-                        <div class="character-preview-container">
-                            <!-- Character -->
-                            <model-viewer id="bot-preview-viewer" auto-rotate rotation-per-second="30deg" camera-controls disable-zoom></model-viewer>
-                            <!-- Bubble -->
-                            <div id="bot-preview-bubble" class="companion-bubble preview-mode">
-                                Hola, soy tu mensaje.
-                            </div>
-                        </div>
-                        <div class="preview-info">
-                            <p><i class="fas fa-info-circle"></i> Esta es una vista previa de cómo aparecerán los globos de texto sobre tu compañero.</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 

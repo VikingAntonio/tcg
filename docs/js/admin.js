@@ -63,7 +63,6 @@ $(document).ready(async function() {
         e.preventDefault();
         showView('chatbot-config');
         loadBotMessages();
-        updateBotPreviewCycle();
     });
 
     $(document).on('click', '#btn-logout-tile', function(e) {
@@ -1119,7 +1118,6 @@ $(document).ready(async function() {
         const content = $card.find('.slot-content').val().trim();
         const isActive = $card.find('.toggle-slot').is(':checked');
         const redirect = $card.find('.slot-redirect').val();
-        const bizData = $card.find('.business-data').val() || '';
         const duration = parseInt($card.find('.slot-duration').val()) || 5;
 
         if (!content && isActive) {
@@ -1130,14 +1128,6 @@ $(document).ready(async function() {
         Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
-            // 1. Sync business data to usuarios table if applicable
-            if (type === 'store_hours' || type === 'store_location') {
-                const updateField = type === 'store_hours' ? 'horario' : 'ubicacion';
-                await _supabase.from('usuarios').update({ [updateField]: bizData }).eq('id', currentUser.id);
-                currentUser[updateField] = bizData; // Update local state
-            }
-
-            // 2. Save bot message
             const msgData = {
                 user_id: currentUser.id,
                 type: type,
@@ -1155,20 +1145,10 @@ $(document).ready(async function() {
             if (error) throw error;
 
             Swal.fire({ title: '¡Configuración Guardada!', icon: 'success', timer: 1500, showConfirmButton: false });
-            updateBotPreviewCycle();
         } catch (err) {
             console.error(err);
             Swal.fire('Error', 'No se pudo guardar la configuración: ' + err.message, 'error');
         }
-    });
-
-    // Real-time preview update when typing
-    $(document).on('input', '.slot-content', function() {
-        updateBotPreviewCycle();
-    });
-
-    $(document).on('change', '.toggle-slot, .slot-redirect', function() {
-        updateBotPreviewCycle();
     });
 
     $(document).on('change', '.toggle-public', async function() {
@@ -1275,7 +1255,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, horario, ubicacion')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids')
             .eq('id', session.user.id)
             .single();
 
@@ -2129,11 +2109,7 @@ async function loadBotMessages() {
         });
     }
 
-    // 2. Load current business data
-    $('.bot-slot-card[data-type="store_hours"] .business-data').val(currentUser.horario || '');
-    $('.bot-slot-card[data-type="store_location"] .business-data').val(currentUser.ubicacion || '');
-
-    // 3. Load saved messages
+    // 2. Load saved messages
     const { data: messages } = await _supabase
         .from('bot_messages')
         .select('*')
@@ -2154,61 +2130,6 @@ async function loadBotMessages() {
             }
         });
     }
-
-    updateBotPreviewCycle();
-}
-
-let botPreviewInterval = null;
-let botPreviewIndex = 0;
-
-function updateBotPreviewCycle() {
-    if (botPreviewInterval) clearInterval(botPreviewInterval);
-
-    // Gather all active messages from the UI (even if unsaved)
-    const previewMessages = [];
-    $('.bot-slot-card').each(function() {
-        const isActive = $(this).find('.toggle-slot').is(':checked');
-        const content = $(this).find('.slot-content').val().trim();
-        const duration = parseInt($(this).find('.slot-duration').val()) || 5;
-        if (isActive && content) {
-            previewMessages.push({ content, duration });
-        }
-    });
-
-    const $bubble = $('#bot-preview-bubble');
-    const $viewer = $('#bot-preview-viewer');
-
-    if (window.currentSpirit) {
-        $viewer.attr('src', window.currentSpirit.gltf_url);
-    }
-
-    if (previewMessages.length === 0) {
-        $bubble.hide();
-        return;
-    }
-
-    botPreviewIndex = 0;
-    const showNext = () => {
-        const msg = previewMessages[botPreviewIndex];
-        const text = msg.content;
-        const duration = msg.duration * 1000;
-        const cleanText = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
-
-        $bubble.text(cleanText).stop(true, true).fadeIn(300);
-
-        setTimeout(() => {
-            $bubble.fadeOut(300);
-
-            // Schedule next message after current one fades and a small pause
-            setTimeout(() => {
-                botPreviewIndex = (botPreviewIndex + 1) % previewMessages.length;
-                showNext();
-            }, 1000);
-
-        }, duration - 1000);
-    };
-
-    showNext();
 }
 
 async function loadSlotData(pageId, slotIndex) {
