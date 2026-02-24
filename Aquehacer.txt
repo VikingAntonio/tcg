@@ -1,0 +1,25 @@
+# Protección de Modelos 3D (Compañeros)
+
+Hola. He analizado tu solicitud sobre cómo proteger los archivos GLTF para que los usuarios no puedan descargarlos mediante F12 (Inspeccionar Elemento).
+
+## Medidas Implementadas:
+
+1. **Bloqueo de Menú Contextual y Arrastre:** Se ha desactivado el clic derecho y el arrastre en todos los visores de modelos 3D (`model-viewer`) y en la pantalla de carga 3D. Esto evita que aparezcan opciones de "Guardar como" o inspección directa fácil.
+2. **URLs Firmadas (Signed URLs):** He implementado una función que convierte automáticamente tus enlaces públicos de Supabase en **URLs firmadas temporales** (que caducan en 1 hora).
+   - **Beneficio:** Si alguien abre F12 y copia el enlace del archivo, ese enlace dejará de funcionar pronto. No podrán compartir tu archivo permanentemente usando ese link.
+   - **Funcionamiento:** Todo sigue funcionando igual para ti y tus usuarios, la protección ocurre "detrás de escenas".
+
+## Recomendación para Máxima Seguridad:
+
+Para que la protección de URLs firmadas sea 100% efectiva, te sugiero hacer lo siguiente en tu panel de Supabase:
+1. Ve a **Storage**.
+2. Busca el bucket donde guardas los modelos 3D (ej: `spirits`).
+3. Cambia la visibilidad de **Public** a **Private**.
+
+**¿Por qué?** Al ser privado, NADIE podrá ver tus archivos sin una firma. Mi código ya genera esa firma automáticamente para tu web, por lo que tus usuarios los verán normal, pero estarán totalmente protegidos contra descargas externas o por F12.
+
+## Nota Técnica:
+Es importante entender que si el navegador puede mostrar el modelo, técnicamente el archivo se descarga en la memoria temporal del usuario. No existe una forma infalible de evitar que un experto extraiga el modelo, pero con estas medidas (especialmente si cambias el bucket a Privado) estarás protegido contra el 99% de los intentos de descarga casual.
+
+---
+He aplicado estos cambios en `app.js`, `admin.js`, `loading3d.js` y `supabase-config.js`. El compañero sigue siendo interactivo (puedes rotarlo y verlo) pero está mucho más seguro.

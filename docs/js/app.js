@@ -145,19 +145,26 @@ $(document).ready(async function() {
         switchView('preorders');
     });
 
+    // Global protection for 3D models (disable context menu)
+    $(document).on('contextmenu', 'model-viewer', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
     $('#close-spirit-modal').click(function() {
         $('#spirit-modal').removeClass('active');
         if (window.spiritViewer) window.spiritViewer.cleanupAllViewers();
     });
 
     // --- Expanded GLTF Viewer Logic ---
-    $(document).on('click', '.spirit-card', function() {
+    $(document).on('click', '.spirit-card', async function() {
         const gltf = $(this).data('gltf');
         const name = $(this).data('name');
         const spiritId = $(this).data('id');
 
         if (gltf) {
-            $('#expanded-gltf-viewer').attr('src', gltf);
+            const protectedUrl = await getProtectedUrl(gltf);
+            $('#expanded-gltf-viewer').attr('src', protectedUrl);
             $('#expanded-gltf-name').text(name);
             $('#gltf-overlay').addClass('active');
             $('body').addClass('modal-open');
@@ -321,9 +328,10 @@ $(document).ready(async function() {
         $('#companion-menu').removeClass('active');
     });
 
-    $('#menu-item-details').click(function() {
+    $('#menu-item-details').click(async function() {
         if (window.currentSpirit) {
-            $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
+            const protectedUrl = await getProtectedUrl(window.currentSpirit.gltf_url);
+            $('#expanded-gltf-viewer').attr('src', protectedUrl);
             $('#expanded-gltf-name').text(window.currentSpirit.name);
             $('#gltf-overlay').addClass('active');
             $('body').addClass('modal-open');
@@ -961,13 +969,15 @@ async function loadPublicPreorders() {
     }
 }
 
-function initFloatingCompanion() {
+async function initFloatingCompanion() {
     if (!window.currentSpirit) return;
+
+    const protectedUrl = await getProtectedUrl(window.currentSpirit.gltf_url);
 
     const $container = $('#floating-companion-container');
     $container.html(`
         <model-viewer
-            src="${window.currentSpirit.gltf_url}"
+            src="${protectedUrl}"
             auto-rotate
             camera-controls
             rotation="0deg 0deg 0deg"
@@ -1275,17 +1285,23 @@ async function loadPublicSpirits() {
 
     window.dispatchEvent(new CustomEvent('hide-loading'));
 
-    visibleSpirits.forEach(spirit => {
+    // Obtener URLs protegidas para todos los compañeros
+    const spiritsWithProtectedUrls = await Promise.all(visibleSpirits.map(async s => ({
+        ...s,
+        protectedUrl: await getProtectedUrl(s.gltf_url)
+    })));
+
+    spiritsWithProtectedUrls.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
 
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}"
                  data-id="${spirit.id}"
-                 data-gltf="${spirit.gltf_url}"
+                 data-gltf="${spirit.protectedUrl}"
                  data-name="${spirit.name}">
                 <div class="badge-selected">Actual</div>
                 <model-viewer
-                    src="${spirit.gltf_url}"
+                    src="${spirit.protectedUrl}"
                     loading="lazy"
                     camera-controls
                     shadow-intensity="1"
