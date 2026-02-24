@@ -47,12 +47,6 @@ $(document).ready(async function() {
         loadAlbums();
     });
 
-    // Global protection for 3D models (disable context menu)
-    $(document).on('contextmenu', 'model-viewer', function(e) {
-        e.preventDefault();
-        return false;
-    });
-
     $(document).on('click', '#btn-show-decks', function(e) {
         e.preventDefault();
         showView('decks');
@@ -166,6 +160,12 @@ $(document).ready(async function() {
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
+
+    // Global protection for 3D models (disable context menu)
+    $(document).on('contextmenu', 'model-viewer', function(e) {
+        e.preventDefault();
+        return false;
+    });
 
     // --- Upgrade Button Logic ---
     $(document).on('click', '#btn-upgrade-plan', function(e) {

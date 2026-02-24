@@ -39,8 +39,8 @@ function init() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Protection: Disable context menu on the 3D container
-    container.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Block right-click on the 3D canvas
+    renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 
     // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);

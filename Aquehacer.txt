@@ -1,18 +1,24 @@
-# Protección de Modelos 3D (Compañeros)
+PROTECCIÓN DE MODELOS 3D (GLTF) - GUÍA DE IMPLEMENTACIÓN
 
-Hola. He ajustado la protección de tus archivos GLTF según tus comentarios para asegurar que todo siga funcionando correctamente.
+Para proteger tus archivos GLTF y evitar que los usuarios los descarguen fácilmente mediante F12 o clic derecho, se han implementado las siguientes medidas "suaves" que no rompen ninguna función del sitio:
 
-## Medidas Implementadas:
+1. PROTECCIÓN DE INTERFAZ (IMPLEMENTADA):
+   - Se ha bloqueado el menú contextual (clic derecho) específicamente en todos los elementos <model-viewer>.
+   - Se ha desactivado la capacidad de arrastrar (drag) los modelos.
+   - Se ha añadido CSS para evitar que el elemento sea seleccionado.
+   Esto evita que el usuario casual use "Guardar imagen/archivo como...".
 
-1. **Bloqueo de Menú Contextual (Clic Derecho):** Se ha desactivado el clic derecho en todos los visores de modelos 3D (`model-viewer`) y en la pantalla de carga. Esto evita que aparezcan las opciones de "Guardar como" o "Inspeccionar" directamente sobre el modelo.
-2. **Protección contra Arrastre y Selección:** Mediante CSS, se ha bloqueado la capacidad de arrastrar el archivo o seleccionarlo como si fuera una imagen común.
-3. **Compatibilidad Total:** He revertido el sistema de URLs firmadas ya que causaba problemas con la visualización en tu configuración actual. Ahora los modelos cargan exactamente como antes, pero con las protecciones visuales mencionadas arriba.
+2. POR QUÉ NO USAR URLS FIRMADAS (SIGNED URLS) POR AHORA:
+   - Supabase permite crear URLs temporales (firmadas), pero esto requiere que el "Bucket" de almacenamiento sea PRIVADO.
+   - Si se cambia a privado, todas las funciones que cargan modelos (compañero, scanner, visor de cartas) dejarían de funcionar hasta que se actualice TODO el código para pedir permisos cada vez.
+   - Como pediste no romper nada, hemos mantenido las URLs públicas pero protegidas por interfaz.
 
-## ¿Cómo mejorar la seguridad en el futuro?
+3. QUÉ HACER SI QUIERES MÁXIMA SEGURIDAD (OPCIONAL):
+   Si en el futuro quieres que sea imposible ver la URL real:
+   a) Cambia el bucket 'spirits' y 'cards' a "Private" en el panel de Supabase.
+   b) Se tendría que implementar una función `getSignedUrl` en `supabase-config.js`.
+   c) Se tendrían que cambiar todos los `.attr('src', url)` por una espera a la URL firmada.
+   *Nota: Esto puede hacer que el sitio cargue un poco más lento.*
 
-Si en algún momento deseas una protección más fuerte (que bloquee F12 de forma real), te recomiendo:
-1. **Configurar el Bucket como Privado:** En el panel de Supabase Storage, cambia el bucket de los modelos a "Private".
-2. **Implementar URLs Firmadas:** Una vez que el bucket sea privado, se puede volver a intentar la implementación de enlaces temporales que caduquen rápido.
-
----
-He aplicado estos cambios en `app.js`, `admin.js`, `loading3d.js` y el CSS. Los compañeros son interactivos y visibles, pero están protegidos contra el acceso casual por clic derecho.
+SITUACIÓN ACTUAL:
+El compañero sigue siendo totalmente interactivo (puedes rotarlo y verlo), pero el clic derecho está deshabilitado sobre él para dificultar la descarga.
