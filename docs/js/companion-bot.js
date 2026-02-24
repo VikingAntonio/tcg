@@ -8,7 +8,7 @@ class CompanionBot {
         this.userId = options.userId;
         this.userType = options.userType || 'public'; // 'public' o 'admin'
         this.elementId = options.elementId || 'companion-bubble';
-        this.intervalRange = options.intervalRange || [30000, 60000]; // 30-60s
+        this.intervalRange = options.intervalRange || [28000, 58000]; // 28-58s (reducido 2s)
         this.onAction = options.onAction;
 
         this.messages = [];
@@ -71,12 +71,20 @@ class CompanionBot {
 
     async loadCustomMessages() {
         try {
-            // All configured messages are for public use per user request
-            const { data, error } = await this.supabase
+            // Cargar mensajes según el tipo de usuario (public o admin)
+            let query = this.supabase
                 .from('bot_messages')
                 .select('*')
                 .eq('user_id', this.userId)
                 .eq('is_active', true);
+
+            // Filtrar solo si es admin para evitar mensajes de clientes en el panel
+            // Para public se mantiene sin filtrar para asegurar compatibilidad con mensajes existentes
+            if (this.userType === 'admin') {
+                query = query.or('view_type.eq.admin,view_type.eq.both');
+            }
+
+            const { data, error } = await query;
 
             if (data && data.length > 0) {
                 // Combine with base tips if admin, otherwise use directly
