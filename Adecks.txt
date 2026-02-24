@@ -1,0 +1,78 @@
+-- SQL para la gestión de Decks y Cartas de Decks
+-- Este archivo contiene la estructura necesaria para que los decks funcionen correctamente
+
+-- Tabla de Decks
+CREATE TABLE IF NOT EXISTS public.decks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    is_public BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Tabla de Cartas en Decks
+CREATE TABLE IF NOT EXISTS public.deck_cards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    deck_id UUID REFERENCES public.decks(id) ON DELETE CASCADE NOT NULL,
+    image_url TEXT NOT NULL,
+    name TEXT,
+    holo_effect TEXT,
+    custom_mask_url TEXT,
+    rarity TEXT,
+    expansion TEXT,
+    condition TEXT,
+    quantity INTEGER DEFAULT 1,
+    price TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Asegurar que la columna 'name' existe si la tabla ya fue creada previamente
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deck_cards' AND column_name='name') THEN
+        ALTER TABLE public.deck_cards ADD COLUMN name TEXT;
+    END IF;
+END $$;
+
+-- Habilitar RLS
+ALTER TABLE public.decks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.deck_cards ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para Decks
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Decks públicos son visibles por todos') THEN
+        CREATE POLICY "Decks públicos son visibles por todos" ON public.decks FOR SELECT USING (is_public = true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Usuarios pueden gestionar sus propios decks') THEN
+        CREATE POLICY "Usuarios pueden gestionar sus propios decks" ON public.decks FOR ALL USING (auth.uid() = user_id);
+    END IF;
+END $$;
+
+-- Políticas para Deck Cards
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Cartas de decks públicos son visibles por todos') THEN
+        CREATE POLICY "Cartas de decks públicos son visibles por todos" ON public.deck_cards
+            FOR SELECT USING (
+                EXISTS (
+                    SELECT 1 FROM public.decks
+                    WHERE decks.id = deck_cards.deck_id AND decks.is_public = true
+                )
+            );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Usuarios pueden gestionar cartas de sus propios decks') THEN
+        CREATE POLICY "Usuarios pueden gestionar cartas de sus propios decks" ON public.deck_cards
+            FOR ALL USING (
+                EXISTS (
+                    SELECT 1 FROM public.decks
+                    WHERE decks.id = deck_cards.deck_id AND decks.user_id = auth.uid()
+                )
+            );
+    END IF;
+END $$;
+
+-- Índices para mejorar el rendimiento
+CREATE INDEX IF NOT EXISTS idx_deck_cards_deck_id_name ON public.deck_cards (deck_id, name);
+CREATE INDEX IF NOT EXISTS idx_deck_cards_deck_id ON public.deck_cards (deck_id);
+CREATE INDEX IF NOT EXISTS idx_decks_user_id ON public.decks (user_id);

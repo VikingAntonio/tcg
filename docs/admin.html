@@ -160,6 +160,7 @@
         <!-- Deck Editor View -->
         <div id="view-deck-editor" class="admin-section" style="display:none;">
             <div class="admin-header">
+                <button id="btn-back-to-decks" class="btn btn-secondary" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver a Decks</button>
                 <h1 id="deck-editor-title">Editar Deck</h1>
                 <button id="btn-save-deck-meta" class="btn"><i class="fas fa-save"></i> Guardar Nombre</button>
             </div>
@@ -194,8 +195,12 @@
                 </div>
             </div>
 
-            <div class="admin-header" style="justify-content: flex-end; margin-bottom: 20px;">
-                <button id="btn-add-deck-card" class="btn"><i class="fas fa-plus-circle"></i> Añadir Imagen</button>
+            <div class="deck-editor-controls">
+                <button onclick="showView('decks'); loadDecks();" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-sort-deck-name" class="btn btn-secondary"><i class="fas fa-sort-alpha-down"></i> Ordenar por Nombre</button>
+                    <button id="btn-add-deck-card" class="btn"><i class="fas fa-plus-circle"></i> Añadir Imagen</button>
+                </div>
             </div>
             <div id="deck-card-list" class="album-list">
                 <!-- Deck cards will be loaded here -->
