@@ -685,7 +685,7 @@ function openCardModal($slot) {
     `);
 
     const $card3d = $("#card-3d-container");
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow custom-texture active");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture active");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     if (holo) {

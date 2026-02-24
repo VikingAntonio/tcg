@@ -1,0 +1,13 @@
+127.0.0.1 - - [24/Feb/2026 14:38:24] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:24] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:24] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:24] "GET /js/cart.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:24] "GET /js/companion-bot.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:24] "GET /js/admin.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:25] "GET /public.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:25] "GET /css/barajaryg.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:25] "GET /js/turn.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:25] "GET /js/ztext.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:25] "GET /js/loading3d.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:25] "GET /js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 14:38:26] "GET /cerezo.png HTTP/1.1" 200 -
