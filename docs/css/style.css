@@ -2953,3 +2953,31 @@ input:checked + .slider:before {
 .bubble-out {
     animation: fadeOutBubble 0.4s ease-in forwards !important;
 }
+
+/* Deck Pricing Styles */
+.deck-price-container {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+}
+
+.price-total {
+    color: #00d2ff;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.price-strikethrough {
+    text-decoration: line-through;
+    opacity: 0.6;
+    font-size: 0.9rem;
+}
+
+.price-special {
+    color: #ff4757;
+    font-weight: 800;
+    font-size: 1.4rem;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}

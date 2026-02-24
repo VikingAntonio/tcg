@@ -1133,9 +1133,29 @@ async function loadPublicDecks() {
 
         decks.forEach(deck => {
             const deckId = `deck-swiper-${deck.id}`;
+
+            // Calculate Total Sum
+            const totalSum = (deck.deck_cards || []).reduce((sum, card) => {
+                const priceStr = card.price || '0';
+                const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                const qty = parseInt(card.quantity) || 1;
+                return sum + (price * qty);
+            }, 0);
+
+            const hasSpecialPrice = deck.use_special_price && deck.special_price;
+            const priceDisplay = hasSpecialPrice
+                ? `<div class="deck-price-container">
+                    <span class="price-total price-strikethrough">$${totalSum.toFixed(2)}</span>
+                    <span class="price-special">${deck.special_price}</span>
+                   </div>`
+                : `<div class="deck-price-container">
+                    <span class="price-total">$${totalSum.toFixed(2)}</span>
+                   </div>`;
+
             const $deckItem = $(`
                 <div class="deck-public-item">
                     <h3>${deck.name}</h3>
+                    ${priceDisplay}
                     <div class="container">
                         <div class="swiper swiperyg ${deckId}">
                             <div class="swiper-wrapper">

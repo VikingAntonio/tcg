@@ -62,6 +62,7 @@ class CompanionBot {
                 base.push({ content: "Efecto especial: Prueba el 'CustomTexture' y el editor de máscaras para resaltar el foil de tus cartas favoritas.", type: 'custom', duration: 7 });
                 base.push({ content: "Sugerencia: Usa la sección de 'Deseos' para listar las cartas que buscas; así tus clientes sabrán qué ofrecerte.", type: 'custom', duration: 6 });
                 base.push({ content: "Consejo: Mantén tus 'Preventas' actualizadas para que tus clientes puedan apartar lo más nuevo de inmediato.", type: 'custom', duration: 6 });
+                base.push({ content: "Tip: ¡Ya puedes poner precio a tus Decks! Puedes usar la suma automática o definir un precio especial.", type: 'custom', duration: 6 });
             }
         } catch (err) {
             console.error("Error loading base bot messages:", err);
