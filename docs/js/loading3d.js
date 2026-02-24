@@ -39,6 +39,9 @@ function init() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
+    // Protection: Disable context menu on the 3D container
+    container.addEventListener('contextmenu', (e) => e.preventDefault());
+
     // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
@@ -55,7 +58,7 @@ function init() {
     animate();
 }
 
-function loadSpiritModel() {
+async function loadSpiritModel() {
     if (character) {
         scene.remove(character);
         character = null;
@@ -71,8 +74,11 @@ function loadSpiritModel() {
 
     const textureLoader = new THREE.TextureLoader();
 
-    // REMOVED ash.png fallback as requested
-    const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || null;
+    // Obtener URL protegida si es posible
+    let modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || null;
+    if (modelUrl && typeof getProtectedUrl === 'function') {
+        modelUrl = await getProtectedUrl(modelUrl);
+    }
     const textureUrl = (window.currentSpirit && window.currentSpirit.texture_url) || null;
 
     // Detect Ash Blossom for special effects
@@ -324,7 +330,7 @@ window.addEventListener('show-loading', (e) => {
     const newSpiritId = window.currentSpirit ? window.currentSpirit.id : null;
     if (scene) {
         if (window.lastLoadedSpiritId !== newSpiritId) {
-            loadSpiritModel();
+            await loadSpiritModel();
             window.lastLoadedSpiritId = newSpiritId;
         }
     } else {
