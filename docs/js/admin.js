@@ -90,7 +90,11 @@ $(document).ready(async function() {
     // --- Chatbot Logic ---
     const faqResponses = {
         'album': 'Para crear un álbum, haz clic en "Crear Nuevo Álbum" en esta misma pantalla. Luego puedes entrar a "Editar" para añadir páginas y cartas.',
+        'add_card': 'Para añadir cartas, entra en "Mis Álbumes", selecciona "Editar" y haz clic en cualquier espacio vacío para abrir el buscador.',
         'scanner': 'El scanner te permite añadir cartas rápidamente usando la cámara de tu móvil. Escanea el código de la carta y se añadirá automáticamente a tu álbum o deck.',
+        'notifications': 'En la sección "Mi Perfil", puedes configurar tus enlaces de WhatsApp y Messenger. Esto permitirá que los pedidos de tus clientes lleguen directamente a tu chat.',
+        'foil': 'Al editar una carta, selecciona el efecto "CustomTexture". Luego haz clic en "Editar Máscara" para dibujar exactamente qué partes de la carta tendrán el brillo foil.',
+        'wishlist_faq': 'La sección "Deseos" te permite listar cartas que estás buscando. Tus clientes podrán ver esta lista y contactarte si tienen alguna de ellas.',
         'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
         'spirit': 'Elige a tu Compañero ideal, quien te guiará y acompañará a través de toda la web en tu aventura coleccionista.'
     };

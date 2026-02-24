@@ -31,8 +31,8 @@ class CompanionBot {
         await this.loadBaseMessages();
 
         // Solo cargar si no se pasaron mensajes en el constructor
-        // loadBaseMessages añade 2 mensajes si es admin
-        const baseLength = (this.userType === 'admin') ? 2 : 0;
+        // loadBaseMessages añade 7 mensajes si es admin
+        const baseLength = (this.userType === 'admin') ? 7 : 0;
         if (this.messages.length <= baseLength) {
             await this.loadCustomMessages();
         }
@@ -57,6 +57,11 @@ class CompanionBot {
                 // Tips for Admin
                 base.push({ content: "Tip: Usa el escáner para registrar cartas más rápido.", type: 'custom', duration: 5 });
                 base.push({ content: "¿Necesitas soporte? Contáctanos por Messenger.", type: 'custom', redirect_url: 'https://m.me/vikingdevtj', duration: 5 });
+                base.push({ content: "Dato útil: Para añadir cartas a tu álbum, entra a 'Editar' y haz clic en un espacio vacío.", type: 'custom', duration: 6 });
+                base.push({ content: "Sabías que: Si vinculas tu WhatsApp en 'Mi Perfil', los pedidos de tus clientes te llegarán directamente.", type: 'custom', duration: 7 });
+                base.push({ content: "Efecto especial: Prueba el 'CustomTexture' y el editor de máscaras para resaltar el foil de tus cartas favoritas.", type: 'custom', duration: 7 });
+                base.push({ content: "Sugerencia: Usa la sección de 'Deseos' para listar las cartas que buscas; así tus clientes sabrán qué ofrecerte.", type: 'custom', duration: 6 });
+                base.push({ content: "Consejo: Mantén tus 'Preventas' actualizadas para que tus clientes puedan apartar lo más nuevo de inmediato.", type: 'custom', duration: 6 });
             }
         } catch (err) {
             console.error("Error loading base bot messages:", err);
