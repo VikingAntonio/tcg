@@ -1721,39 +1721,18 @@ input:checked + .slider:before {
 .starlight-rare .holo-layer {
     background-image:
         /* The sparkly texture (glitter/diamantina) */
-        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='10' intercept='-5'/%3E%3CfeFuncG type='linear' slope='10' intercept='-5'/%3E%3CfeFuncB type='linear' slope='10' intercept='-5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
         /* Fine grid mesh (horizontal) */
-        repeating-linear-gradient(
-            0deg,
-            rgba(255, 255, 255, 0.3) 0px,
-            rgba(255, 255, 255, 0.3) 0.5px,
-            transparent 0.5px,
-            transparent 3px
-        ),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.4) 0px, rgba(255, 255, 255, 0.4) 1px, transparent 1px, transparent 5px),
         /* Fine grid mesh (vertical) */
-        repeating-linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.3) 0px,
-            rgba(255, 255, 255, 0.3) 0.5px,
-            transparent 0.5px,
-            transparent 3px
-        ),
-        /* Shifting iridescent shimmer */
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 0, 0, 0.7) 0%,
-            rgba(255, 255, 0, 0.7) 15%,
-            rgba(0, 255, 0, 0.7) 30%,
-            rgba(0, 255, 255, 0.7) 50%,
-            rgba(0, 0, 255, 0.7) 70%,
-            rgba(255, 0, 255, 0.7) 85%,
-            rgba(255, 0, 0, 0.7) 100%
-        );
-    background-size: 150px 150px, 100% 100%, 100% 100%, 400% 400%;
-    background-position: 0 0, 0 0, 0 0, calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
-    background-blend-mode: color-dodge, normal, normal, color-dodge;
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.4) 0px, rgba(255, 255, 255, 0.4) 1px, transparent 1px, transparent 5px),
+        /* Shifting iridescent shimmer (Conic for better starlight effect) */
+        conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #00ffff, #0000ff, #8b00ff, #ff0000);
+    background-size: 180px 180px, auto, auto, 200% 200%;
+    background-position: calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), 0 0, 0 0, calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
+    background-blend-mode: color-dodge, color-dodge, color-dodge, normal;
     mix-blend-mode: color-dodge;
-    opacity: 0.95;
+    opacity: 0.85;
 }
 
 /* Prevent transition lag during page flips */
