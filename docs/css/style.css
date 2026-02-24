@@ -1717,6 +1717,32 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
 }
 
+/* STARLIGHT RARE */
+.starlight-rare .holo-layer {
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            rgba(255, 255, 255, 0.3) 0px,
+            rgba(255, 255, 255, 0.3) 1px,
+            transparent 1px,
+            transparent 5px
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 0, 0, 0.4) 0%,
+            rgba(255, 255, 0, 0.4) 15%,
+            rgba(0, 255, 0, 0.4) 30%,
+            rgba(0, 255, 255, 0.4) 50%,
+            rgba(0, 0, 255, 0.4) 70%,
+            rgba(255, 0, 255, 0.4) 85%,
+            rgba(255, 0, 0, 0.4) 100%
+        );
+    background-size: 100% 100%, 400% 400%;
+    background-position: 0 0, calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
+    mix-blend-mode: color-dodge;
+    opacity: 0.8;
+}
+
 /* Prevent transition lag during page flips */
 .album.is-turning .card-slot,
 .album.is-turning .zoom-btn {

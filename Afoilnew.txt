@@ -1,0 +1,4 @@
+No se requiere actualización de SQL para Supabase.
+La columna 'holo_effect' en la tabla 'public.card_slots' es de tipo TEXT, lo que permite almacenar cualquier valor de cadena, incluyendo el nuevo efecto 'starlight-rare'.
+
+Nuevo valor de efecto holográfico agregado: 'starlight-rare'
