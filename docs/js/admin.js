@@ -1,5 +1,6 @@
 let currentAlbumId = null;
 let currentDeckId = null;
+let deckSortOrder = 'id';
 
 let ygoSetsCache = null;
 async function getYgoSets() {
@@ -45,6 +46,20 @@ $(document).ready(async function() {
         e.preventDefault();
         showView('dashboard');
         loadAlbums();
+    });
+
+    $(document).on('click', '#btn-back-to-decks', function(e) {
+        e.preventDefault();
+        showView('decks');
+        loadDecks();
+    });
+
+    $(document).on('click', '#btn-sort-deck-name', function(e) {
+        e.preventDefault();
+        deckSortOrder = (deckSortOrder === 'name') ? 'id' : 'name';
+        const isName = deckSortOrder === 'name';
+        $(this).html(`<i class="fas fa-sort-alpha-${isName ? 'down' : 'up'}"></i> ${isName ? 'Ordenado por Nombre' : 'Ordenar por Nombre'}`);
+        loadDeckCards(currentDeckId);
     });
 
     $(document).on('click', '#btn-show-decks', function(e) {
@@ -96,7 +111,7 @@ $(document).ready(async function() {
         'foil': 'Al editar una carta, selecciona el efecto "CustomTexture". Luego haz clic en "Editar Máscara" para dibujar exactamente qué partes de la carta tendrán el brillo foil.',
         'wishlist_faq': 'La sección "Deseos" te permite listar cartas que estás buscando. Tus clientes podrán ver esta lista y contactarte si tienen alguna de ellas.',
         'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
-        'spirit': 'Elige a tu Compañero ideal, quien te guiará y acompañará a través de toda la web en tu aventura coleccionista.'
+        'spirit': 'El compañero es tu asistente virtual que acompaña a tus clientes mientras navegan. Sirve para mostrar mensajes automáticos sobre próximas preventas, horarios, noticias de la tienda y ubicación, además de funcionar como una guía interactiva para navegar por tu web.'
     };
 
     window.addChatMessage = function(sender, text) {
@@ -1564,7 +1579,7 @@ async function loadDeckCards(deckId) {
         .from('deck_cards')
         .select('*')
         .eq('deck_id', deckId)
-        .order('id', { ascending: true });
+        .order(deckSortOrder, { ascending: true });
 
     if (error) {
         $('#deck-card-list').html('<div class="error">Error al cargar imágenes.</div>');
