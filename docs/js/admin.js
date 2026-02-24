@@ -102,6 +102,15 @@ $(document).ready(async function() {
         applyTheme(theme);
     });
 
+    // Special Price Toggle
+    $(document).on('change', '#input-deck-use-special', function() {
+        if ($(this).is(':checked')) {
+            $('#special-price-container').show();
+        } else {
+            $('#special-price-container').hide();
+        }
+    });
+
     // --- Chatbot Logic ---
     const faqResponses = {
         'album': 'Para crear un álbum, haz clic en "Crear Nuevo Álbum" en esta misma pantalla. Luego puedes entrar a "Editar" para añadir páginas y cartas.',
@@ -111,7 +120,8 @@ $(document).ready(async function() {
         'foil': 'Al editar una carta, selecciona el efecto "CustomTexture". Luego haz clic en "Editar Máscara" para dibujar exactamente qué partes de la carta tendrán el brillo foil.',
         'wishlist_faq': 'La sección "Deseos" te permite listar cartas que estás buscando. Tus clientes podrán ver esta lista y contactarte si tienen alguna de ellas.',
         'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
-        'spirit': 'El compañero es tu asistente virtual que acompaña a tus clientes mientras navegan. Sirve para mostrar mensajes automáticos sobre próximas preventas, horarios, noticias de la tienda y ubicación, además de funcionar como una guía interactiva para navegar por tu web.'
+        'spirit': 'El compañero es tu asistente virtual que acompaña a tus clientes mientras navegan. Sirve para mostrar mensajes automáticos sobre próximas preventas, horarios, noticias de la tienda y ubicación, además de funcionar como una guía interactiva para navegar por tu web.',
+        'deck_prices': 'Ahora puedes gestionar los precios de tus Decks. El sistema suma automáticamente el precio de cada carta para mostrar un "Precio Total". Si lo deseas, puedes habilitar un "Precio Especial" (por ejemplo, un descuento por el deck completo) que se mostrará como el precio principal, tachando el total automático.'
     };
 
     window.addChatMessage = function(sender, text) {
@@ -897,20 +907,22 @@ $(document).ready(async function() {
         e.preventDefault();
         const name = $('#input-deck-name').val();
         const is_public = $('#input-deck-public').is(':checked');
+        const use_special_price = $('#input-deck-use-special').is(':checked');
+        const special_price = $('#input-deck-special-price').val();
 
-        let updateData = { name, is_public };
+        let updateData = { name, is_public, use_special_price, special_price };
         let { error } = await _supabase
             .from('decks')
             .update(updateData)
             .eq('id', currentDeckId);
 
-        // Fallback for missing column
-        if (error && (error.code === '42703' || (error.message && error.message.includes('is_public')))) {
-            console.warn("is_public column missing, retrying update without it.");
-            delete updateData.is_public;
+        // Fallback for missing columns
+        if (error && error.code === '42703') {
+            console.warn("Some columns might be missing, retrying update with basic fields.");
+            const basicData = { name, is_public };
             const retry = await _supabase
                 .from('decks')
-                .update(updateData)
+                .update(basicData)
                 .eq('id', currentDeckId);
             error = retry.error;
         }
@@ -1548,6 +1560,15 @@ async function editDeck(deck) {
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
 
+    // Load pricing fields
+    $('#input-deck-use-special').prop('checked', target.use_special_price === true);
+    $('#input-deck-special-price').val(target.special_price || '');
+    if (target.use_special_price) {
+        $('#special-price-container').show();
+    } else {
+        $('#special-price-container').hide();
+    }
+
     showView('deck-editor');
     loadDeckCards(target.id);
 }
@@ -1585,6 +1606,14 @@ async function loadDeckCards(deckId) {
         $('#deck-card-list').html('<div class="error">Error al cargar imágenes.</div>');
         return;
     }
+
+    // Calculate total sum
+    const totalSum = (cards || []).reduce((sum, card) => {
+        const price = parseFloat((card.price || '0').replace(/[^0-9.]/g, '')) || 0;
+        const qty = parseInt(card.quantity) || 1;
+        return sum + (price * qty);
+    }, 0);
+    $('#deck-total-sum').text('$' + totalSum.toFixed(2));
 
     const $tempContainer = $('<div></div>');
     cards.forEach(card => {
