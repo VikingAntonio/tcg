@@ -58,7 +58,7 @@ function init() {
     animate();
 }
 
-async function loadSpiritModel() {
+function loadSpiritModel() {
     if (character) {
         scene.remove(character);
         character = null;
@@ -74,11 +74,8 @@ async function loadSpiritModel() {
 
     const textureLoader = new THREE.TextureLoader();
 
-    // Obtener URL protegida si es posible
-    let modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || null;
-    if (modelUrl && typeof getProtectedUrl === 'function') {
-        modelUrl = await getProtectedUrl(modelUrl);
-    }
+    // REMOVED ash.png fallback as requested
+    const modelUrl = (window.currentSpirit && window.currentSpirit.gltf_url) || null;
     const textureUrl = (window.currentSpirit && window.currentSpirit.texture_url) || null;
 
     // Detect Ash Blossom for special effects
@@ -330,7 +327,7 @@ window.addEventListener('show-loading', (e) => {
     const newSpiritId = window.currentSpirit ? window.currentSpirit.id : null;
     if (scene) {
         if (window.lastLoadedSpiritId !== newSpiritId) {
-            await loadSpiritModel();
+            loadSpiritModel();
             window.lastLoadedSpiritId = newSpiritId;
         }
     } else {
