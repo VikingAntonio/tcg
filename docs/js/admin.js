@@ -149,12 +149,11 @@ $(document).ready(async function() {
         $('#companion-menu').removeClass('active');
     });
 
-    $('#menu-item-details').click(async function() {
+    $('#menu-item-details').click(function() {
         if (window.currentSpirit) {
-            const protectedUrl = await getProtectedUrl(window.currentSpirit.gltf_url);
             Swal.fire({
                 title: window.currentSpirit.name,
-                html: `<model-viewer src="${protectedUrl}" auto-rotate camera-controls style="width:100%; height:300px; background:#000; border-radius:15px;"></model-viewer>`,
+                html: `<model-viewer src="${window.currentSpirit.gltf_url}" auto-rotate camera-controls style="width:100%; height:300px; background:#000; border-radius:15px;" oncontextmenu="return false;"></model-viewer>`,
                 showCloseButton: true,
                 showConfirmButton: false
             });
@@ -1899,13 +1898,7 @@ async function loadSpirits() {
     const $grid = $('#spirits-grid');
     $grid.empty();
 
-    // Obtener URLs protegidas
-    const spiritsWithProtectedUrls = await Promise.all(spirits.map(async s => ({
-        ...s,
-        protectedUrl: await getProtectedUrl(s.gltf_url)
-    })));
-
-    spiritsWithProtectedUrls.forEach(spirit => {
+    spirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
         const isAsh = spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf');
         const isPublic = spirit.is_public !== false;
@@ -1941,12 +1934,13 @@ async function loadSpirits() {
             <div class="spirit-card ${isSelected ? 'selected' : ''}">
                 <div class="badge-selected">Seleccionado</div>
                 <model-viewer
-                    src="${spirit.protectedUrl}"
+                    src="${spirit.gltf_url}"
                     loading="lazy"
                     camera-controls
                     shadow-intensity="1"
                     environment-image="neutral"
-                    exposure="1.2">
+                    exposure="1.2"
+                    oncontextmenu="return false;">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
                 <div style="margin-bottom: 15px; width: 100%;">
@@ -2007,22 +2001,21 @@ async function loadSpirits() {
     });
 }
 
-async function initFloatingCompanion() {
+function initFloatingCompanion() {
     if (!window.currentSpirit) return;
-
-    const protectedUrl = await getProtectedUrl(window.currentSpirit.gltf_url);
 
     const $container = $('#floating-companion-container');
     $container.html(`
         <model-viewer
-            src="${protectedUrl}"
+            src="${window.currentSpirit.gltf_url}"
             auto-rotate
             camera-controls
             rotation="0deg 0deg 0deg"
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none">
+            interaction-prompt="none"
+            oncontextmenu="return false;">
         </model-viewer>
     `);
 

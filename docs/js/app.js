@@ -157,14 +157,13 @@ $(document).ready(async function() {
     });
 
     // --- Expanded GLTF Viewer Logic ---
-    $(document).on('click', '.spirit-card', async function() {
+    $(document).on('click', '.spirit-card', function() {
         const gltf = $(this).data('gltf');
         const name = $(this).data('name');
         const spiritId = $(this).data('id');
 
         if (gltf) {
-            const protectedUrl = await getProtectedUrl(gltf);
-            $('#expanded-gltf-viewer').attr('src', protectedUrl);
+            $('#expanded-gltf-viewer').attr('src', gltf);
             $('#expanded-gltf-name').text(name);
             $('#gltf-overlay').addClass('active');
             $('body').addClass('modal-open');
@@ -328,10 +327,9 @@ $(document).ready(async function() {
         $('#companion-menu').removeClass('active');
     });
 
-    $('#menu-item-details').click(async function() {
+    $('#menu-item-details').click(function() {
         if (window.currentSpirit) {
-            const protectedUrl = await getProtectedUrl(window.currentSpirit.gltf_url);
-            $('#expanded-gltf-viewer').attr('src', protectedUrl);
+            $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
             $('#expanded-gltf-name').text(window.currentSpirit.name);
             $('#gltf-overlay').addClass('active');
             $('body').addClass('modal-open');
@@ -969,22 +967,21 @@ async function loadPublicPreorders() {
     }
 }
 
-async function initFloatingCompanion() {
+function initFloatingCompanion() {
     if (!window.currentSpirit) return;
-
-    const protectedUrl = await getProtectedUrl(window.currentSpirit.gltf_url);
 
     const $container = $('#floating-companion-container');
     $container.html(`
         <model-viewer
-            src="${protectedUrl}"
+            src="${window.currentSpirit.gltf_url}"
             auto-rotate
             camera-controls
             rotation="0deg 0deg 0deg"
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none">
+            interaction-prompt="none"
+            oncontextmenu="return false;">
         </model-viewer>
     `);
 
@@ -1285,28 +1282,23 @@ async function loadPublicSpirits() {
 
     window.dispatchEvent(new CustomEvent('hide-loading'));
 
-    // Obtener URLs protegidas para todos los compañeros
-    const spiritsWithProtectedUrls = await Promise.all(visibleSpirits.map(async s => ({
-        ...s,
-        protectedUrl: await getProtectedUrl(s.gltf_url)
-    })));
-
-    spiritsWithProtectedUrls.forEach(spirit => {
+    visibleSpirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
 
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''}"
                  data-id="${spirit.id}"
-                 data-gltf="${spirit.protectedUrl}"
+                 data-gltf="${spirit.gltf_url}"
                  data-name="${spirit.name}">
                 <div class="badge-selected">Actual</div>
                 <model-viewer
-                    src="${spirit.protectedUrl}"
+                    src="${spirit.gltf_url}"
                     loading="lazy"
                     camera-controls
                     shadow-intensity="1"
                     environment-image="neutral"
-                    exposure="1.2">
+                    exposure="1.2"
+                    oncontextmenu="return false;">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
                 <div class="zoom-btn" style="display: flex;"><i class="fas fa-search-plus"></i></div>
