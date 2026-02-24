@@ -145,12 +145,6 @@ $(document).ready(async function() {
         switchView('preorders');
     });
 
-    // Global protection for 3D models (disable context menu)
-    $(document).on('contextmenu', 'model-viewer', function(e) {
-        e.preventDefault();
-        return false;
-    });
-
     $('#close-spirit-modal').click(function() {
         $('#spirit-modal').removeClass('active');
         if (window.spiritViewer) window.spiritViewer.cleanupAllViewers();
@@ -980,8 +974,7 @@ function initFloatingCompanion() {
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none"
-            oncontextmenu="return false;">
+            interaction-prompt="none">
         </model-viewer>
     `);
 
@@ -1297,8 +1290,7 @@ async function loadPublicSpirits() {
                     camera-controls
                     shadow-intensity="1"
                     environment-image="neutral"
-                    exposure="1.2"
-                    oncontextmenu="return false;">
+                    exposure="1.2">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
                 <div class="zoom-btn" style="display: flex;"><i class="fas fa-search-plus"></i></div>

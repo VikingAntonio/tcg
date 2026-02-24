@@ -847,11 +847,3 @@ footer {
     from { opacity: 1; transform: translateY(0) scale(1); }
     to { opacity: 0; transform: translateY(10px) scale(0.9); }
 }
-
-/* Protection for 3D Models */
-model-viewer {
-    -webkit-user-drag: none;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-    outline: none;
-}

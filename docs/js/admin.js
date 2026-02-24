@@ -47,12 +47,6 @@ $(document).ready(async function() {
         loadAlbums();
     });
 
-    // Global protection for 3D models (disable context menu)
-    $(document).on('contextmenu', 'model-viewer', function(e) {
-        e.preventDefault();
-        return false;
-    });
-
     $(document).on('click', '#btn-show-decks', function(e) {
         e.preventDefault();
         showView('decks');
@@ -153,7 +147,7 @@ $(document).ready(async function() {
         if (window.currentSpirit) {
             Swal.fire({
                 title: window.currentSpirit.name,
-                html: `<model-viewer src="${window.currentSpirit.gltf_url}" auto-rotate camera-controls style="width:100%; height:300px; background:#000; border-radius:15px;" oncontextmenu="return false;"></model-viewer>`,
+                html: `<model-viewer src="${window.currentSpirit.gltf_url}" auto-rotate camera-controls style="width:100%; height:300px; background:#000; border-radius:15px;"></model-viewer>`,
                 showCloseButton: true,
                 showConfirmButton: false
             });
@@ -1939,8 +1933,7 @@ async function loadSpirits() {
                     camera-controls
                     shadow-intensity="1"
                     environment-image="neutral"
-                    exposure="1.2"
-                    oncontextmenu="return false;">
+                    exposure="1.2">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
                 <div style="margin-bottom: 15px; width: 100%;">
@@ -2014,8 +2007,7 @@ function initFloatingCompanion() {
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none"
-            oncontextmenu="return false;">
+            interaction-prompt="none">
         </model-viewer>
     `);
 

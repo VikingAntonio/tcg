@@ -39,9 +39,6 @@ function init() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Protection: Disable context menu on the 3D container
-    container.addEventListener('contextmenu', (e) => e.preventDefault());
-
     // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
