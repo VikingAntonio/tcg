@@ -10,11 +10,16 @@ const POKEMON_FOILS = {
     'pk-rare-holo-vmax': 'rare holo vmax',
     'pk-rare-holo-vstar': 'rare holo vstar',
     'pk-rare-rainbow': 'rare rainbow',
+    'pk-rare-rainbow-alt': 'rare rainbow alt',
     'pk-rare-secret': 'rare secret',
     'pk-rare-shiny': 'rare shiny',
+    'pk-rare-shiny-v': 'rare shiny v',
+    'pk-rare-shiny-vmax': 'rare shiny vmax',
     'pk-amazing-rare': 'amazing rare',
     'pk-radiant-rare': 'radiant rare',
-    'pk-rare-ultra': 'rare ultra'
+    'pk-rare-ultra': 'rare ultra',
+    'pk-trainer-gallery': 'trainer gallery rare holo',
+    'pk-reverse-holo': 'reverse holo'
 };
 
 // --- Loading Screen Functions ---
@@ -735,6 +740,11 @@ function openCardModal($slot) {
         if (POKEMON_FOILS[holo]) {
             $card.addClass("card");
             $card.attr("data-rarity", POKEMON_FOILS[holo]);
+            if (POKEMON_FOILS[holo].includes('trainer gallery')) {
+                $card.attr("data-trainer-gallery", "true");
+            } else {
+                $card.removeAttr("data-trainer-gallery");
+            }
             if (mask) {
                 $card.addClass("masked");
                 $card.css("--mask", `url(${mask})`);
