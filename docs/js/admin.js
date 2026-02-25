@@ -715,12 +715,26 @@ $(document).ready(async function() {
                 // Pokémon TCGdex - Spanish
                 fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
                 // Pokémon TCGdex - Japanese
-                fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => [])
+                fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+                // Lorcana Search
+                fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => [])
             ];
 
-            const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa] = await Promise.all(searchPromises);
+            const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults] = await Promise.all(searchPromises);
 
             let combinedResults = [];
+
+            // Process Lorcana Results
+            const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
+            lorResultsSafe.forEach(c => {
+                if (c.Image) {
+                    combinedResults.push({
+                        name: c.Name,
+                        image: c.Image,
+                        high_res: c.Image
+                    });
+                }
+            });
 
             // Process Yu-Gi-Oh Results
             const ygoResults = [...(ygName.data || []), ...(ygCode.data || []), ...ygSpecial];

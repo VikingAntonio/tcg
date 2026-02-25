@@ -173,7 +173,7 @@ async function addCardToWishlist(card) {
             user_id: currentUser.id,
             name: card.name,
             image_url: card.high_res,
-            game: card.image.includes('tcgdex') ? 'pokemon' : 'yugioh'
+            game: card.image.includes('tcgdex') ? 'pokemon' : (card.image.includes('lorcana-api') ? 'lorcana' : 'yugioh')
         }]);
 
     if (error) {
@@ -256,12 +256,22 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
             fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
             ygoSpecialSearch(),
             fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => [])
+            fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => [])
         ];
 
-        const [ygName, ygSpecial, pkEn, pkEs] = await Promise.all(searchPromises);
+        const [ygName, ygSpecial, pkEn, pkEs, lorResults] = await Promise.all(searchPromises);
 
         let combinedResults = [];
+
+        // Process Lorcana
+        const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
+        lorResultsSafe.forEach(c => {
+            if (c.Image) {
+                combinedResults.push({ name: c.Name, image: c.Image, high_res: c.Image });
+            }
+        });
+
         [...(ygName.data || []), ...ygSpecial].forEach(c => {
             if (c.card_images) {
                 c.card_images.forEach(img => {
