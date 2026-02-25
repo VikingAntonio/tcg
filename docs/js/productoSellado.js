@@ -139,14 +139,43 @@ async function searchExternalSets() {
         let results = [];
 
         if (tcg === 'yugioh') {
-            const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
-            const data = await response.json();
-            results = data.filter(s => s.set_name.toLowerCase().includes(query)).map(s => ({
+            const [setsRes, cardsRes] = await Promise.all([
+                fetch('https://db.ygoprodeck.com/api/v7/cardsets.php').then(r => r.json()),
+                fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => ({data:[]}))
+            ]);
+
+            const sets = setsRes.filter(s => s.set_name.toLowerCase().includes(query)).map(s => ({
                 name: s.set_name,
-                image: `https://images.ygoprodeck.com/images/sets/${s.set_code}.jpg`, // YGOProDeck sets images follow this pattern sometimes, but not always.
+                image: `https://images.ygoprodeck.com/images/sets/${s.set_code}.jpg`,
                 tcg: 'yugioh'
             }));
-            // If images fail, we'll use a placeholder in the display
+
+            const cards = (cardsRes.data || []).map(c => ({
+                name: c.name,
+                image: c.card_images[0].image_url_small,
+                tcg: 'yugioh'
+            }));
+
+            results = [...sets, ...cards];
+        } else if (tcg === 'lorcana') {
+            const [setsRes, cardsRes] = await Promise.all([
+                fetch(`https://api.lorcana-api.com/sets/fetch?search=name~${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []),
+                fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image`).then(r => r.json()).catch(() => [])
+            ]);
+
+            const sets = (Array.isArray(setsRes) ? setsRes : []).map(s => ({
+                name: s.Name,
+                image: 'https://lorcana-api.com/img/logo.svg',
+                tcg: 'lorcana'
+            }));
+
+            const cards = (Array.isArray(cardsRes) ? cardsRes : []).map(c => ({
+                name: c.Name,
+                image: c.Image,
+                tcg: 'lorcana'
+            }));
+
+            results = [...sets, ...cards];
         } else if (tcg === 'pokemon') {
             const response = await fetch('https://api.tcgdex.net/v2/en/sets');
             const data = await response.json();
