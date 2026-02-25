@@ -1,6 +1,28 @@
+@import "cards/base.css";
+@import "cards/amazing-rare.css";
+@import "cards/basic.css";
+@import "cards/cosmos-holo.css";
+@import "cards/radiant-holo.css";
+@import "cards/rainbow-alt.css";
+@import "cards/rainbow-holo.css";
+@import "cards/regular-holo.css";
+@import "cards/reverse-holo.css";
+@import "cards/secret-rare.css";
+@import "cards/shiny-rare.css";
+@import "cards/shiny-v.css";
+@import "cards/shiny-vmax.css";
+@import "cards/swsh-pikachu.css";
+@import "cards/trainer-full-art.css";
+@import "cards/trainer-gallery-holo.css";
+@import "cards/trainer-gallery-secret-rare.css";
+@import "cards/trainer-gallery-v-max.css";
+@import "cards/trainer-gallery-v-regular.css";
+@import "cards/v-full-art.css";
+@import "cards/v-max.css";
+@import "cards/v-regular.css";
+@import "cards/v-star.css";
 
 .card {
-
   --space: 5%;
   --angle: 133deg;
   --imgsize: cover;
@@ -24,8 +46,6 @@
 
 .card__shine,
 .card__glare {
-  
   will-change: transform, opacity, background-image, background-size,
     background-position, background-blend-mode, filter;
- 
 }

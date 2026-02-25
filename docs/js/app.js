@@ -3,6 +3,20 @@ let isMoving = false;
 let isManualPageTurn = false;
 let startX, startY;
 
+const POKEMON_FOILS = {
+    'pk-rare-holo': 'rare holo',
+    'pk-rare-holo-cosmos': 'rare holo cosmos',
+    'pk-rare-holo-v': 'rare holo v',
+    'pk-rare-holo-vmax': 'rare holo vmax',
+    'pk-rare-holo-vstar': 'rare holo vstar',
+    'pk-rare-rainbow': 'rare rainbow',
+    'pk-rare-secret': 'rare secret',
+    'pk-rare-shiny': 'rare shiny',
+    'pk-amazing-rare': 'amazing rare',
+    'pk-radiant-rare': 'radiant rare',
+    'pk-rare-ultra': 'rare ultra'
+};
+
 // --- Loading Screen Functions ---
 window.isLoading = false;
 window.loadingMessage = '';
@@ -550,10 +564,25 @@ function updateRotation() {
         const my = (currentRX + 20) / 40;
         const angle = (Math.atan2(currentRX, currentRY) * 180 / Math.PI) + 135;
 
+        // Pokemon style variables
+        const px = mx * 100;
+        const py = my * 100;
+        const cx = (mx - 0.5) * 100;
+        const cy = (my - 0.5) * 100;
+        const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
+
         $card.css({
             '--mx': mx,
             '--my': my,
-            '--angle': `${angle}deg`
+            '--angle': `${angle}deg`,
+            '--pointer-x': `${px}%`,
+            '--pointer-y': `${py}%`,
+            '--background-x': `${px}%`,
+            '--background-y': `${py}%`,
+            '--pointer-from-center': pointerFromCenter,
+            '--pointer-from-top': my,
+            '--pointer-from-left': mx,
+            '--card-opacity': '1'
         });
     }
 
@@ -679,19 +708,51 @@ function openCardModal($slot) {
     // Reset the card container with a fresh image tag and preserve holo-layer
     $("#card-3d").html(`
         <div id="z-text-container">
-            <img id="expanded-image" src="${imgSrc}" alt="${name}">
+            <img id="expanded-image" src="${imgSrc}" alt="${name}" class="card__front">
         </div>
         <div class="holo-layer"></div>
+        <div class="card__shine"></div>
+        <div class="card__glare"></div>
     `);
 
     const $card3d = $("#card-3d-container");
+    const $card = $("#card-3d");
+
+    // Cleanup Pokemon styles
+    $card.removeClass("card masked interacting");
+    $card.removeAttr("data-rarity");
+    $card.css({
+        '--seedx': '',
+        '--seedy': '',
+        '--cosmosbg': '',
+        '--card-opacity': '0'
+    });
+
     $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture active");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     if (holo) {
-        $card3d.addClass(holo);
-        if (holo === 'custom-texture' && mask) {
-            $card3d.find('.holo-layer').css('--mask-url', `url(${mask})`);
+        if (POKEMON_FOILS[holo]) {
+            $card.addClass("card");
+            $card.attr("data-rarity", POKEMON_FOILS[holo]);
+            if (mask) {
+                $card.addClass("masked");
+                $card.css("--mask", `url(${mask})`);
+            }
+
+            // Random seed for cosmos and others
+            const rx = Math.random();
+            const ry = Math.random();
+            $card.css({
+                '--seedx': rx,
+                '--seedy': ry,
+                '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`
+            });
+        } else {
+            $card3d.addClass(holo);
+            if (holo === 'custom-texture' && mask) {
+                $card3d.find('.holo-layer').css('--mask-url', `url(${mask})`);
+            }
         }
     }
 
