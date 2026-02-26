@@ -8,7 +8,7 @@ class CompanionBot {
         this.userId = options.userId;
         this.userType = options.userType || 'public'; // 'public' o 'admin'
         this.elementId = options.elementId || 'companion-bubble';
-        this.intervalRange = options.intervalRange || [28000, 58000]; // 28-58s (reducido 2s)
+        this.intervalRange = options.intervalRange || [23000, 53000]; // 23-53s (reducido 5s más)
         this.onAction = options.onAction;
 
         this.messages = [];
