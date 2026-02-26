@@ -561,12 +561,13 @@ let card3dTouchHandler = null;
 window.updateRotation = function() {
     if (!window.card3dActive) return;
 
-    const $interactiveCards = $('.card-3d:visible');
-
-    if ($interactiveCards.length === 0) {
+    const card3d = document.getElementById('card-3d');
+    if (!card3d || !$(card3d).is(':visible')) {
         window.card3dActive = false;
         return;
     }
+
+    const $c = $(card3d);
 
     // LERP for smooth motion
     currentRX += (targetRX - currentRX) * 0.1;
@@ -583,28 +584,25 @@ window.updateRotation = function() {
     const cy = (my - 0.5) * 100;
     const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
 
-    $interactiveCards.each(function() {
-        const $c = $(this);
-        $c.css('transform', `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`);
+    $c.css('transform', `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`);
 
-        const $holo = $c.find('.holo-layer');
-        if ($holo.length > 0) {
-            $holo.css('background-position', `${px}% ${py}%`);
-        }
+    const $holo = $c.find('.holo-layer');
+    if ($holo.length > 0) {
+        $holo.css('background-position', `${px}% ${py}%`);
+    }
 
-        $c.css({
-            '--mx': mx,
-            '--my': my,
-            '--angle': `${angle}deg`,
-            '--pointer-x': `${px}%`,
-            '--pointer-y': `${py}%`,
-            '--background-x': `${px}%`,
-            '--background-y': `${py}%`,
-            '--pointer-from-center': pointerFromCenter,
-            '--pointer-from-top': my,
-            '--pointer-from-left': mx,
-            '--card-opacity': '1'
-        });
+    $c.css({
+        '--mx': mx,
+        '--my': my,
+        '--angle': `${angle}deg`,
+        '--pointer-x': `${px}%`,
+        '--pointer-y': `${py}%`,
+        '--background-x': `${px}%`,
+        '--background-y': `${py}%`,
+        '--pointer-from-center': pointerFromCenter,
+        '--pointer-from-top': my,
+        '--pointer-from-left': mx,
+        '--card-opacity': '1'
     });
 
     requestAnimationFrame(window.updateRotation);
@@ -733,6 +731,7 @@ function openCardModal($slot) {
     const notes = $slot.data("notes") || "";
 
     // Reset the card container with a fresh image tag and preserve holo-layer
+    // Re-adding card-3d class to ensure it's always present for the rotation logic
     $("#card-3d").html(`
         <div id="z-text-container">
             <img id="expanded-image" src="${imgSrc}" alt="${name}" class="card__front">
@@ -740,14 +739,14 @@ function openCardModal($slot) {
         <div class="holo-layer"></div>
         <div class="card__shine"></div>
         <div class="card__glare"></div>
-    `);
+    `).addClass("card-3d");
 
     const $card3d = $("#card-3d-container");
     const $card = $("#card-3d");
 
     // Cleanup Pokemon styles
     $card.removeClass("card masked interacting");
-    $card.removeAttr("data-rarity");
+    $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({
         '--seedx': '',
         '--seedy': '',
