@@ -1785,20 +1785,21 @@ async function loadPublicWishlist() {
 
 function makeCompanionDraggable() {
     const wrapper = document.getElementById('companion-wrapper');
-    const companion = document.getElementById('floating-companion-container');
-    if (!wrapper || !companion) return;
+    const handle = document.getElementById('companion-drag-handle');
+    if (!wrapper || !handle) return;
 
     let isDragging = false;
     let startX, startY;
     let initialX, initialY;
     window.isCompanionDragging = false;
 
-    // persistence removed as requested: resets on refresh
+    // Reset touchAction on the companion container to allow internal interactions
+    const companion = document.getElementById('floating-companion-container');
+    if (companion) companion.style.touchAction = 'auto';
 
-    companion.style.touchAction = 'none';
+    handle.style.touchAction = 'none';
 
-    companion.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('.companion-menu-item')) return;
+    handle.addEventListener('pointerdown', (e) => {
         isDragging = true;
         window.isCompanionDragging = false;
         startX = e.clientX;
@@ -1806,7 +1807,8 @@ function makeCompanionDraggable() {
         const rect = wrapper.getBoundingClientRect();
         initialX = rect.left;
         initialY = rect.top;
-        companion.setPointerCapture(e.pointerId);
+        handle.setPointerCapture(e.pointerId);
+        e.stopPropagation();
     });
 
     window.addEventListener('pointermove', (e) => {
