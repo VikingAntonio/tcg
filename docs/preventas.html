@@ -80,6 +80,12 @@
 
             <div class="form-group">
                 <label>URL de la Imagen</label>
+                <div class="file-drop-zone" id="drop-zone-preorder">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Arrastra una imagen aquí o haz clic para subir a Cloudinary</p>
+                    <input type="file" id="input-preorder-file" accept="image/*" style="display: none;">
+                    <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                </div>
                 <input type="text" id="preorder-image-url" placeholder="https://...">
             </div>
 
@@ -119,6 +125,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/viking-data.js"></script>
     <script src="js/preventas.js"></script>
 </body>
 </html>

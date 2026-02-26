@@ -36,6 +36,59 @@ $(document).ready(async function() {
     $('#btn-save-preorder').click(function() {
         savePreorder();
     });
+
+    // Cloudinary Drag & Drop for Preorder
+    $(document).on('drop', '#drop-zone-preorder', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#preorder-image-url', '#drop-zone-preorder .file-name');
+        }
+    });
+
+    $(document).on('dragover dragenter', '#drop-zone-preorder', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).addClass('dragover');
+    });
+
+    $(document).on('dragleave dragend drop', '#drop-zone-preorder', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+    });
+
+    $(document).on('click', '#drop-zone-preorder', function() {
+        $('#input-preorder-file').click();
+    });
+
+    $(document).on('change', '#input-preorder-file', function() {
+        if (this.files.length > 0) {
+            handleCloudinaryUpload(this.files[0], '#preorder-image-url', '#drop-zone-preorder .file-name');
+        }
+    });
+
+    async function handleCloudinaryUpload(file, inputSelector, nameSelector) {
+        $(nameSelector).text("Subiendo...").css('color', '#aaa');
+        try {
+            const url = await CloudinaryUpload.uploadImage(file);
+            $(inputSelector).val(url);
+            $(nameSelector).text("¡Imagen subida!").css('color', '#00ff88');
+            Swal.fire({
+                title: '¡Subida Exitosa!',
+                text: 'Imagen cargada en Cloudinary',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } catch (err) {
+            $(nameSelector).text("Error al subir").css('color', '#ff4757');
+            Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
+        }
+    }
 });
 
 async function checkSession() {
@@ -198,6 +251,10 @@ async function searchExternalSets() {
             results = opSets.filter(s => s.name.toLowerCase().includes(query));
         }
 
+        // Viking Search
+        const vikResults = await VikingData.search(query);
+        results = [...vikResults, ...results];
+
         displayExternalResults(results);
     } catch (e) {
         console.error(e);
@@ -280,6 +337,12 @@ async function savePreorder() {
     if (error) {
         Swal.fire('Error', 'No se pudo guardar la preventa: ' + error.message, 'error');
     } else {
+        // Save to VikingData
+        VikingData.save({
+            ...preorderData,
+            type: 'preorder'
+        });
+
         Swal.fire('Guardado', 'Preventa actualizada correctamente', 'success');
         $('#preorder-modal').removeClass('active');
         loadPreorders();
@@ -331,11 +394,13 @@ async function updateVisibility(id, isPublic) {
     }
 }
 
+
 function resetModal() {
     $('#modal-title').text('Añadir Preventa');
     $('#edit-preorder-id').val('');
     $('#preorder-name').val('');
     $('#preorder-image-url').val('');
+    $('#drop-zone-preorder .file-name').text('');
     $('#preorder-price').val('');
     $('#preorder-deadline').val('');
     $('#preorder-tcg').val('yugioh');

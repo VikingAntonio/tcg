@@ -404,6 +404,12 @@
                 </div>
                 <div class="form-group">
                     <label>Portada (Imagen o Color con Textura)</label>
+                    <div class="file-drop-zone" id="drop-zone-album-cover">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Arrastra la portada aquí o haz clic para subir</p>
+                        <input type="file" id="input-album-cover-file" accept="image/*" style="display: none;">
+                        <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                    </div>
                     <div class="color-input-wrapper">
                         <input type="text" id="input-album-cover" placeholder="midominio.com/portada.png" style="flex:1;">
                         <input type="color" id="input-album-cover-color" value="#1a1a1a" title="Color de Portada" class="color-picker-custom">
@@ -411,6 +417,12 @@
                 </div>
                 <div class="form-group">
                     <label>Contraportada (Imagen o Color con Textura)</label>
+                    <div class="file-drop-zone" id="drop-zone-album-back">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Arrastra la contraportada aquí o haz clic para subir</p>
+                        <input type="file" id="input-album-back-file" accept="image/*" style="display: none;">
+                        <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                    </div>
                     <div class="color-input-wrapper">
                         <input type="text" id="input-album-back" placeholder="midominio.com/contraportada.png" style="flex:1;">
                         <input type="color" id="input-album-back-color" value="#1a1a1a" title="Color de Contraportada" class="color-picker-custom">
@@ -458,6 +470,12 @@
 
             <div class="form-group">
                 <label>URL de la Imagen</label>
+                <div class="file-drop-zone" id="drop-zone-slot">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Arrastra una imagen aquí o haz clic para subir a Cloudinary</p>
+                    <input type="file" id="input-slot-file" accept="image/*" style="display: none;">
+                    <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                </div>
                 <input type="text" id="slot-image-url" placeholder="midominio.com/carta.png">
             </div>
 
@@ -623,6 +641,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/cart.js"></script>
+    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/viking-data.js"></script>
     <script src="js/companion-bot.js"></script>
     <script src="js/admin.js"></script>
 

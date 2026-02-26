@@ -445,6 +445,14 @@ $(document).ready(async function() {
             price: $('#slot-price').val() || ''
         };
 
+        // Save to VikingData (Shared Database)
+        VikingData.save({
+            ...cardData,
+            tcg: 'custom',
+            type: 'card',
+            user_id: currentUser.id
+        });
+
         let error;
         if (editingType === 'slot') {
             const slotData = { ...cardData, page_id: currentPageId, slot_index: currentSlotIndex };
@@ -719,12 +727,19 @@ $(document).ready(async function() {
                 // Pokémon TCGdex - Japanese
                 fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
                 // Lorcana Search
-                fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => [])
+                fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
+                // Viking Search
+                VikingData.search(query)
             ];
 
-            const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults] = await Promise.all(searchPromises);
+            const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults] = await Promise.all(searchPromises);
 
             let combinedResults = [];
+
+            // Process VikingData
+            if (Array.isArray(vikResults)) {
+                combinedResults.push(...vikResults);
+            }
 
             // Process Lorcana Results
             const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
@@ -1029,6 +1044,81 @@ $(document).ready(async function() {
     $(document).on('click', '#drop-zone-spirit', function() {
         $('#input-spirit-files').click();
     });
+
+    // Cloudinary Drag & Drop for Slot
+    $(document).on('drop', '#drop-zone-slot', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#slot-image-url', '#drop-zone-slot .file-name');
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-slot', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-slot', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+
+    $(document).on('click', '#drop-zone-slot', function() {
+        $('#input-slot-file').click();
+    });
+
+    $(document).on('change', '#input-slot-file', function() {
+        if (this.files.length > 0) {
+            handleCloudinaryUpload(this.files[0], '#slot-image-url', '#drop-zone-slot .file-name');
+        }
+    });
+
+    // Album Cover
+    $(document).on('drop', '#drop-zone-album-cover', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#input-album-cover', '#drop-zone-album-cover .file-name');
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-album-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-album-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('click', '#drop-zone-album-cover', function() { $('#input-album-cover-file').click(); });
+    $(document).on('change', '#input-album-cover-file', function() {
+        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-cover', '#drop-zone-album-cover .file-name');
+    });
+
+    // Album Back
+    $(document).on('drop', '#drop-zone-album-back', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#input-album-back', '#drop-zone-album-back .file-name');
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-album-back', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-album-back', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('click', '#drop-zone-album-back', function() { $('#input-album-back-file').click(); });
+    $(document).on('change', '#input-album-back-file', function() {
+        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-back', '#drop-zone-album-back .file-name');
+    });
+
+    async function handleCloudinaryUpload(file, inputSelector, nameSelector) {
+        $(nameSelector).text("Subiendo...").css('color', '#aaa');
+        try {
+            const url = await CloudinaryUpload.uploadImage(file);
+            $(inputSelector).val(url);
+            $(nameSelector).text("¡Imagen subida!").css('color', '#00ff88');
+            Swal.fire({
+                title: '¡Subida Exitosa!',
+                text: 'Imagen cargada en Cloudinary',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } catch (err) {
+            $(nameSelector).text("Error al subir").css('color', '#ff4757');
+            Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
+        }
+    }
 
     $(document).on('change', '#input-spirit-files', function() {
         if (this.files.length > 0) {
@@ -1772,6 +1862,8 @@ async function editAlbum(album) {
     $('#input-album-title').val(target.title);
     $('#input-album-cover').val(target.cover_image_url || '');
     $('#input-album-back').val(target.back_image_url || '');
+    $('#drop-zone-album-cover .file-name').text('');
+    $('#drop-zone-album-back .file-name').text('');
     $('#input-album-cover-color').val(target.cover_color || '#1a1a1a');
     $('#input-album-back-color').val(target.back_color || '#1a1a1a');
     $('#input-album-public').prop('checked', target.is_public !== false);
@@ -2206,6 +2298,7 @@ async function loadSlotData(pageId, slotIndex) {
         .single();
 
     $('#slot-image-url').val('');
+    $('#drop-zone-slot .file-name').text('');
     $('#slot-name').val('');
     $('#external-search-input').val('');
     $('#external-search-results').empty();
