@@ -967,36 +967,6 @@ $(document).ready(async function() {
         }
     });
 
-    $('#btn-add-deck-card').click(async function(e) {
-        e.preventDefault();
-
-        // Limite de cartas por deck
-        const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', currentDeckId);
-        if (count >= (currentUser.max_cards_per_deck || 60)) {
-            Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
-            return;
-        }
-
-        const { value: url } = await Swal.fire({
-            title: 'Añadir imagen al deck',
-            input: 'url',
-            inputLabel: 'URL de la imagen',
-            inputPlaceholder: 'https://...',
-            showCancelButton: true
-        });
-
-        if (url) {
-            const { error } = await _supabase
-                .from('deck_cards')
-                .insert([{ deck_id: currentDeckId, image_url: url }]);
-
-            if (error) {
-                Swal.fire('Error', 'No se pudo añadir la imagen', 'error');
-            } else {
-                loadDeckCards(currentDeckId);
-            }
-        }
-    });
 
     // --- Spirit Management ---
     function updateDropZoneUI(zoneId, files) {
@@ -1098,6 +1068,54 @@ $(document).ready(async function() {
     $(document).on('change', '#input-album-back-file', function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-back', '#drop-zone-album-back .file-name');
     });
+
+    // Deck Drop Zone
+    $(document).on('drop', '#drop-zone-deck', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleDeckImageUpload(files[0]);
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-deck', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-deck', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('click', '#drop-zone-deck', function() { $('#input-deck-file').click(); });
+    $(document).on('change', '#input-deck-file', function() {
+        if (this.files.length > 0) handleDeckImageUpload(this.files[0]);
+    });
+
+    async function handleDeckImageUpload(file) {
+        const $fileName = $('#drop-zone-deck .file-name');
+        $fileName.text("Subiendo...").css('color', '#aaa');
+        try {
+            // Limite de cartas por deck
+            const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', currentDeckId);
+            if (count >= (currentUser.max_cards_per_deck || 60)) {
+                Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
+                $fileName.text("");
+                return;
+            }
+
+            const url = await CloudinaryUpload.uploadImage(file);
+            const { error } = await _supabase
+                .from('deck_cards')
+                .insert([{
+                    deck_id: currentDeckId,
+                    image_url: url,
+                    name: file.name.split('.')[0]
+                }]);
+
+            if (error) throw error;
+
+            $fileName.text("¡Añadida!").css('color', '#00ff88');
+            setTimeout(() => $fileName.text(""), 2000);
+            loadDeckCards(currentDeckId);
+        } catch (err) {
+            $fileName.text("Error al subir").css('color', '#ff4757');
+            Swal.fire('Error', 'No se pudo añadir al deck: ' + err.message, 'error');
+        }
+    }
 
     async function handleCloudinaryUpload(file, inputSelector, nameSelector) {
         $(nameSelector).text("Subiendo...").css('color', '#aaa');
