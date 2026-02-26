@@ -1690,6 +1690,9 @@ function editDeckCard(card) {
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
 
+    // Update preview
+    updateAdminPreview();
+
     $('#slot-modal').addClass('active');
 }
 
@@ -2232,7 +2235,101 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-condition').val(data.condition || '');
         $('#slot-quantity').val(data.quantity || '');
         $('#slot-price').val(data.price || '');
+
+        // Show preview if image exists
+        if (data.image_url) {
+            updateAdminPreview();
+        }
     }
 
     $('#slot-modal').addClass('active');
 }
+
+// Function to update the 3D preview in the admin modal
+function updateAdminPreview() {
+    const imageUrl = $('#slot-image-url').val();
+    const holoEffect = $('#slot-holo-effect').val();
+
+    if (imageUrl) {
+        $('#admin-preview-image').attr('src', imageUrl);
+        $('#admin-slot-preview-container').show();
+
+        const $card = $('#admin-card-3d');
+        const $holoLayer = $card.find('.holo-layer');
+
+        // Cleanup
+        $card.find('.card__shine, .card__glare').remove();
+        $card.removeClass('card interacting');
+        $card.removeAttr('data-rarity data-trainer-gallery');
+        $holoLayer.attr('class', 'holo-layer'); // Reset classes
+        $holoLayer.css({ 'mask-image': '', '-webkit-mask-image': '' });
+
+        if (holoEffect && holoEffect.startsWith('pk-')) {
+            const pkRarity = holoEffect.replace('pk-', '').replace(/-/g, ' ');
+            $card.addClass('card interacting');
+            $card.attr('data-rarity', pkRarity);
+
+            if (pkRarity.includes('trainer gallery')) {
+                $card.attr('data-trainer-gallery', 'true');
+            }
+
+            $card.append('<div class="card__shine"></div><div class="card__glare"></div>');
+
+            const seedX = Math.random();
+            const seedY = Math.random();
+            $card.css({
+                '--seedx': seedX,
+                '--seedy': seedY,
+                '--cosmosbg': `${Math.floor(seedX * 734)}px ${Math.floor(seedY * 1280)}px`
+            });
+        } else if (holoEffect) {
+            $holoLayer.addClass(holoEffect);
+            if (holoEffect === 'custom-texture') {
+                const maskUrl = $('#slot-custom-mask').val();
+                if (maskUrl) {
+                    $holoLayer.css('mask-image', `url(${maskUrl})`);
+                    $holoLayer.css('-webkit-mask-image', `url(${maskUrl})`);
+                }
+            }
+        }
+
+        // Ensure 3D loop is running
+        if (window.updateRotation && !window.card3dActive) {
+            window.card3dActive = true;
+            requestAnimationFrame(window.updateRotation);
+        }
+    } else {
+        $('#admin-slot-preview-container').hide();
+    }
+}
+
+// Add listeners for preview updates and 3D interaction
+$(document).ready(function() {
+    $('#slot-image-url, #slot-holo-effect, #slot-custom-mask').on('change input', function() {
+        updateAdminPreview();
+    });
+
+    const $previewContainer = $('#admin-slot-preview-container');
+    if ($previewContainer.length) {
+        $previewContainer.on('mousemove', (e) => {
+            const $container = $previewContainer.find('.card-3d-container');
+            if (!$container.length) return;
+            const rect = $container[0].getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const ry = ((x / rect.width) - 0.5) * 40;
+            const rx = ((y / rect.height) - 0.5) * -40;
+
+            if (window.set3DTarget) {
+                window.set3DTarget(rx, ry);
+            }
+        });
+
+        $previewContainer.on('mouseleave', () => {
+            if (window.set3DTarget) {
+                window.set3DTarget(0, 0);
+            }
+        });
+    }
+});

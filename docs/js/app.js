@@ -253,7 +253,7 @@ $(document).ready(async function() {
             $("body").removeClass("modal-open");
 
             // Clean up 3D effects
-            card3dActive = false;
+            window.card3dActive = false;
             if (card3dOrientationHandler) {
                 window.removeEventListener('deviceorientation', card3dOrientationHandler);
                 card3dOrientationHandler = null;
@@ -549,34 +549,43 @@ let targetRX = 0;
 let targetRY = 0;
 let currentRX = 0;
 let currentRY = 0;
-let card3dActive = false;
+window.card3dActive = false;
 let card3dOrientationHandler = null;
 let card3dTouchHandler = null;
 
-function updateRotation() {
-    if (!card3dActive) return;
+window.updateRotation = function() {
+    const $interactiveCards = $('.card-3d:visible');
+
+    if ($interactiveCards.length === 0) {
+        requestAnimationFrame(window.updateRotation);
+        return;
+    }
 
     // LERP for smooth motion
     currentRX += (targetRX - currentRX) * 0.1;
     currentRY += (targetRY - currentRY) * 0.1;
 
-    const $card = $('#card-3d');
-    if ($card.length) {
-        $card.css('transform', `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`);
+    const mx = (currentRY + 20) / 40;
+    const my = (currentRX + 20) / 40;
+    const angle = (Math.atan2(currentRX, currentRY) * 180 / Math.PI) + 135;
 
-        // Update holo effects variables
-        const mx = (currentRY + 20) / 40;
-        const my = (currentRX + 20) / 40;
-        const angle = (Math.atan2(currentRX, currentRY) * 180 / Math.PI) + 135;
+    // Pokemon style variables
+    const px = mx * 100;
+    const py = my * 100;
+    const cx = (mx - 0.5) * 100;
+    const cy = (my - 0.5) * 100;
+    const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
 
-        // Pokemon style variables
-        const px = mx * 100;
-        const py = my * 100;
-        const cx = (mx - 0.5) * 100;
-        const cy = (my - 0.5) * 100;
-        const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
+    $interactiveCards.each(function() {
+        const $c = $(this);
+        $c.css('transform', `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`);
 
-        $card.css({
+        const $holo = $c.find('.holo-layer');
+        if ($holo.length > 0) {
+            $holo.css('background-position', `${px}% ${py}%`);
+        }
+
+        $c.css({
             '--mx': mx,
             '--my': my,
             '--angle': `${angle}deg`,
@@ -589,9 +598,9 @@ function updateRotation() {
             '--pointer-from-left': mx,
             '--card-opacity': '1'
         });
-    }
+    });
 
-    requestAnimationFrame(updateRotation);
+    requestAnimationFrame(window.updateRotation);
 }
 
 function init3DCard() {
@@ -667,7 +676,7 @@ function init3DCard() {
             window.removeEventListener('deviceorientation', card3dOrientationHandler);
         }
         card3dOrientationHandler = (e) => {
-            if (!card3dActive) return;
+            if (!window.card3dActive) return;
             if (e.gamma !== null && e.beta !== null) {
                 targetRY = Math.max(-20, Math.min(20, e.gamma)) * 1.5;
                 targetRX = Math.max(-20, Math.min(20, e.beta - 45)) * 1.5;
@@ -688,11 +697,17 @@ function init3DCard() {
         }
     }
 
-    if (!card3dActive) {
-        card3dActive = true;
-        requestAnimationFrame(updateRotation);
+    if (!window.card3dActive) {
+        window.card3dActive = true;
+        requestAnimationFrame(window.updateRotation);
     }
 }
+
+// Global target values for LERP
+window.set3DTarget = function(rx, ry) {
+    targetRX = rx;
+    targetRY = ry;
+};
 
 function openCardModal($slot) {
     const imgSrc = $slot.find("img").attr("src");
