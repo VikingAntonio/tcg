@@ -1814,13 +1814,20 @@ input:checked + .slider:before {
 #loading-screen {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.9);
     z-index: 99999;
     display: none;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
     padding-bottom: 12vh;
+}
+
+#loading-screen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: -1;
 }
 
 #loading-screen.active {
