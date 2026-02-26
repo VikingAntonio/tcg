@@ -36,6 +36,59 @@ $(document).ready(async function() {
     $('#btn-save-product').click(function() {
         saveProduct();
     });
+
+    // Cloudinary Drag & Drop for Product
+    $(document).on('drop', '#drop-zone-product', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#product-image-url', '#drop-zone-product .file-name');
+        }
+    });
+
+    $(document).on('dragover dragenter', '#drop-zone-product', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).addClass('dragover');
+    });
+
+    $(document).on('dragleave dragend drop', '#drop-zone-product', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+    });
+
+    $(document).on('click', '#drop-zone-product', function() {
+        $('#input-product-file').click();
+    });
+
+    $(document).on('change', '#input-product-file', function() {
+        if (this.files.length > 0) {
+            handleCloudinaryUpload(this.files[0], '#product-image-url', '#drop-zone-product .file-name');
+        }
+    });
+
+    async function handleCloudinaryUpload(file, inputSelector, nameSelector) {
+        $(nameSelector).text("Subiendo...").css('color', '#aaa');
+        try {
+            const url = await CloudinaryUpload.uploadImage(file);
+            $(inputSelector).val(url);
+            $(nameSelector).text("¡Imagen subida!").css('color', '#00ff88');
+            Swal.fire({
+                title: '¡Subida Exitosa!',
+                text: 'Imagen cargada en Cloudinary',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } catch (err) {
+            $(nameSelector).text("Error al subir").css('color', '#ff4757');
+            Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
+        }
+    }
 });
 
 async function checkSession() {
@@ -198,6 +251,10 @@ async function searchExternalSets() {
             results = opSets.filter(s => s.name.toLowerCase().includes(query));
         }
 
+        // Viking Search
+        const vikResults = await VikingData.search(query);
+        results = [...vikResults, ...results];
+
         displayExternalResults(results);
     } catch (e) {
         console.error(e);
@@ -278,6 +335,12 @@ async function saveProduct() {
     if (error) {
         Swal.fire('Error', 'No se pudo guardar el producto: ' + error.message, 'error');
     } else {
+        // Save to VikingData
+        VikingData.save({
+            ...productData,
+            type: 'product'
+        });
+
         Swal.fire('Guardado', 'Producto actualizado correctamente', 'success');
         $('#product-modal').removeClass('active');
         loadProducts();
@@ -328,11 +391,13 @@ async function updateVisibility(id, isPublic) {
     }
 }
 
+
 function resetModal() {
     $('#modal-title').text('Añadir Producto Sellado');
     $('#edit-product-id').val('');
     $('#product-name').val('');
     $('#product-image-url').val('');
+    $('#drop-zone-product .file-name').text('');
     $('#product-price').val('');
     $('#product-tcg').val('yugioh');
     $('#product-public').prop('checked', true);

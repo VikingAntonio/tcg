@@ -257,12 +257,17 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
             ygoSpecialSearch(),
             fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
             fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => [])
+            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
+            VikingData.search(query)
         ];
 
-        const [ygName, ygSpecial, pkEn, pkEs, lorResults] = await Promise.all(searchPromises);
+        const [ygName, ygSpecial, pkEn, pkEs, lorResults, vikResults] = await Promise.all(searchPromises);
 
         let combinedResults = [];
+
+        if (Array.isArray(vikResults)) {
+            combinedResults.push(...vikResults);
+        }
 
         // Process Lorcana
         const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
@@ -301,6 +306,7 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
         $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar.</div>');
     }
 }
+
 
 function displayExternalResults(results, resultsSelector, onSelectCallback) {
     const $container = $(resultsSelector);
