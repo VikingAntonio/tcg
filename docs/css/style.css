@@ -121,6 +121,7 @@ body {
     touch-action: none !important;
     backface-visibility: hidden;
     transform: translate3d(0,0,0);
+    transform-style: preserve-3d;
 }
 
 
@@ -141,6 +142,7 @@ body {
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     transform: translate3d(0,0,0);
+    transform-style: preserve-3d;
 }
 
 
@@ -1737,7 +1739,8 @@ input:checked + .slider:before {
 
 /* Prevent transition lag during page flips */
 .album.is-turning .card-slot,
-.album.is-turning .zoom-btn {
+.album.is-turning .zoom-btn,
+.album.is-turning .page {
     transition: none !important;
 }
 
