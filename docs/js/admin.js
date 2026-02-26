@@ -21,6 +21,30 @@ let currentPageId = null;
 let currentUser = null;
 let editingType = 'slot'; // 'slot' or 'deck-card'
 
+const POKEMON_FOILS = {
+    'pk-rare-holo': 'rare holo',
+    'pk-rare-holo-cosmos': 'rare holo cosmos',
+    'pk-rare-holo-v': 'rare holo v',
+    'pk-rare-holo-vmax': 'rare holo vmax',
+    'pk-rare-holo-vstar': 'rare holo vstar',
+    'pk-rare-rainbow': 'rare rainbow',
+    'pk-rare-rainbow-alt': 'rare rainbow alt',
+    'pk-rare-secret': 'rare secret',
+    'pk-rare-shiny': 'rare shiny',
+    'pk-rare-shiny-v': 'rare shiny v',
+    'pk-rare-shiny-vmax': 'rare shiny vmax',
+    'pk-amazing-rare': 'amazing rare',
+    'pk-radiant-rare': 'radiant rare',
+    'pk-rare-ultra': 'rare ultra pokemon',
+    'pk-trainer-gallery': 'trainer gallery rare holo',
+    'pk-trainer-gallery-secret-rare': 'trainer gallery rare secret',
+    'pk-trainer-gallery-v-max': 'trainer gallery rare holo vmax',
+    'pk-trainer-gallery-v-regular': 'trainer gallery rare holo v',
+    'pk-trainer-full-art': 'rare ultra supporter',
+    'pk-rare-holo-v-full-art': 'rare holo v full art',
+    'pk-reverse-holo': 'reverse holo'
+};
+
 // Mask Editor State
 let maskCanvas, maskCtx;
 let isPainting = false;
@@ -1692,9 +1716,6 @@ function editDeckCard(card) {
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
 
-    // Update preview
-    updateAdminPreview();
-
     $('#slot-modal').addClass('active');
 }
 
@@ -2238,10 +2259,6 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-quantity').val(data.quantity || '');
         $('#slot-price').val(data.price || '');
 
-        // Show preview if image exists
-        if (data.image_url) {
-            updateAdminPreview();
-        }
     }
 
     $('#slot-modal').addClass('active');
@@ -2254,7 +2271,7 @@ function updateAdminPreview() {
 
     if (imageUrl) {
         $('#admin-preview-image').attr('src', imageUrl);
-        $('#admin-slot-preview-container').show();
+        $('#preview-3d-modal').addClass('active');
 
         const $card = $('#admin-card-3d');
         const $holoLayer = $card.find('.holo-layer');
@@ -2262,18 +2279,37 @@ function updateAdminPreview() {
         // Cleanup
         $card.find('.card__shine, .card__glare').remove();
         $card.removeClass('card interacting');
-        $card.removeAttr('data-rarity data-trainer-gallery');
+        $card.removeAttr('data-rarity data-trainer-gallery data-subtypes data-supertype');
         $holoLayer.attr('class', 'holo-layer'); // Reset classes
         $holoLayer.css({ 'mask-image': '', '-webkit-mask-image': '' });
 
         if (holoEffect && holoEffect.startsWith('pk-')) {
-            const pkRarity = holoEffect.replace('pk-', '').replace(/-/g, ' ');
+            let pkRarity = POKEMON_FOILS[holoEffect] || holoEffect.replace('pk-', '').replace(/-/g, ' ');
+
             $card.addClass('card interacting admin-preview');
-            $card.attr('data-rarity', pkRarity);
 
             if (pkRarity.includes('trainer gallery')) {
                 $card.attr('data-trainer-gallery', 'true');
+                pkRarity = pkRarity.replace('trainer gallery', '');
+            } else {
+                $card.removeAttr('data-trainer-gallery');
             }
+
+            if (pkRarity.includes('supporter')) {
+                $card.attr('data-subtypes', 'supporter');
+                pkRarity = pkRarity.replace('supporter', '');
+            } else {
+                $card.removeAttr('data-subtypes');
+            }
+
+            if (pkRarity.includes('pokemon')) {
+                $card.attr('data-supertype', 'pokémon');
+                pkRarity = pkRarity.replace('pokemon', '');
+            } else {
+                $card.removeAttr('data-supertype');
+            }
+
+            $card.attr('data-rarity', pkRarity.trim());
 
             $card.append('<div class="card__shine"></div><div class="card__glare"></div>');
 
@@ -2301,22 +2337,28 @@ function updateAdminPreview() {
             requestAnimationFrame(window.updateRotation);
         }
     } else {
-        $('#admin-slot-preview-container').hide();
+        Swal.fire('Atención', 'Primero debes poner la URL de la imagen de la carta.', 'warning');
     }
 }
 
 // Add listeners for preview updates and 3D interaction
 $(document).ready(function() {
-    $('#slot-image-url, #slot-holo-effect, #slot-custom-mask').on('change input', function() {
+    $('#btn-show-admin-preview').on('click', function(e) {
+        e.preventDefault();
         updateAdminPreview();
     });
 
-    const $previewContainer = $('#admin-slot-preview-container');
+    $('#close-preview-3d, #preview-3d-modal').on('click', function(e) {
+        if (e.target === this || $(this).attr('id') === 'close-preview-3d') {
+            $('#preview-3d-modal').removeClass('active');
+            window.card3dActive = false;
+        }
+    });
+
+    const $previewContainer = $('#admin-preview-container');
     if ($previewContainer.length) {
-        $previewContainer.on('mousemove', (e) => {
-            const $container = $previewContainer.find('.card-3d-container');
-            if (!$container.length) return;
-            const rect = $container[0].getBoundingClientRect();
+        $previewContainer.parent().on('mousemove', (e) => {
+            const rect = $previewContainer[0].getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
@@ -2328,7 +2370,7 @@ $(document).ready(function() {
             }
         });
 
-        $previewContainer.on('mouseleave', () => {
+        $previewContainer.parent().on('mouseleave', () => {
             if (window.set3DTarget) {
                 window.set3DTarget(0, 0);
             }
