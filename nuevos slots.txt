@@ -1,0 +1,78 @@
+-- Tablas para nuevos slots: Tracking, Clientes y Subastas
+
+-- Tabla de Tracking
+CREATE TABLE IF NOT EXISTS tracking (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    guia TEXT,
+    paqueteria TEXT,
+    nombre_cliente TEXT,
+    ubicacion TEXT,
+    telefono TEXT,
+    detalles_pedido TEXT,
+    fecha_envio DATE,
+    fecha_llegada DATE,
+    status TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Tabla de Clientes
+CREATE TABLE IF NOT EXISTS clientes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    nombre TEXT,
+    detalles TEXT,
+    precio_total TEXT,
+    descuento TEXT,
+    status TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Tabla de Subastas
+CREATE TABLE IF NOT EXISTS subastas (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    nombre TEXT,
+    detalles TEXT,
+    precio_total TEXT,
+    dia_entrega TEXT,
+    status TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Habilitar RLS (Row Level Security)
+ALTER TABLE tracking ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subastas ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para Tracking
+CREATE POLICY "Usuarios pueden ver sus propios tracking" ON tracking FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden insertar sus propios tracking" ON tracking FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden actualizar sus propios tracking" ON tracking FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden eliminar sus propios tracking" ON tracking FOR DELETE USING (auth.uid() = user_id);
+
+-- Políticas para Clientes
+CREATE POLICY "Usuarios pueden ver sus propios clientes" ON clientes FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden insertar sus propios clientes" ON clientes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden actualizar sus propios clientes" ON clientes FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden eliminar sus propios clientes" ON clientes FOR DELETE USING (auth.uid() = user_id);
+
+-- Políticas para Subastas
+CREATE POLICY "Usuarios pueden ver sus propias subastas" ON subastas FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden insertar sus propias subastas" ON subastas FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden actualizar sus propias subastas" ON subastas FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Usuarios pueden eliminar sus propias subastas" ON subastas FOR DELETE USING (auth.uid() = user_id);
+
+-- Actualización de la tabla usuarios para permisos individuales
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS has_tracking BOOLEAN DEFAULT FALSE;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS has_clients BOOLEAN DEFAULT FALSE;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS has_auctions BOOLEAN DEFAULT FALSE;
+
+-- Configurar permisos por defecto según el rol
+-- Starter/User: Sin acceso por defecto
+UPDATE usuarios SET has_tracking = FALSE, has_clients = FALSE, has_auctions = FALSE
+WHERE role IN ('user', 'starter');
+
+-- Premium/Admin: Acceso total por defecto
+UPDATE usuarios SET has_tracking = TRUE, has_clients = TRUE, has_auctions = TRUE
+WHERE role IN ('premium', 'admin', 'admin_store');

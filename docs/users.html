@@ -104,6 +104,18 @@
                     <input type="number" id="limit-cards" min="1">
                 </div>
             </div>
+
+            <div style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="perm-tracking" style="width: auto;"> Tracking
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="perm-clients" style="width: auto;"> Clientes
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="perm-auctions" style="width: auto;"> Subastas
+                </label>
+            </div>
             <div class="form-group" style="margin-top: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <label style="margin-bottom: 0;">Compañeros Desbloqueados</label>
@@ -162,7 +174,7 @@
             async function loadUsers() {
                 const { data: users, error } = await _supabase
                     .from('usuarios')
-                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link')
+                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link, has_tracking, has_clients, has_auctions')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -251,10 +263,10 @@
                 const newRole = $(this).val();
 
                 const roleDefaults = {
-                    'starter': { max_albums: 3, max_pages: 5, max_decks: 1, max_cards_per_deck: 60, allowed_spirit_ids: '1' },
-                    'premium': { max_albums: 5, max_pages: 10, max_decks: 5, max_cards_per_deck: 60, allowed_spirit_ids: 'all' },
-                    'admin_store': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all' },
-                    'admin': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all' }
+                    'starter': { max_albums: 3, max_pages: 5, max_decks: 1, max_cards_per_deck: 60, allowed_spirit_ids: '1', has_tracking: false, has_clients: false, has_auctions: false },
+                    'premium': { max_albums: 5, max_pages: 10, max_decks: 5, max_cards_per_deck: 60, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true },
+                    'admin_store': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true },
+                    'admin': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true }
                 };
 
                 const result = await Swal.fire({
@@ -402,6 +414,10 @@
                 $('#user-whatsapp').val(user.whatsapp_link || '');
                 $('#user-messenger').val(user.messenger_link || '');
 
+                $('#perm-tracking').prop('checked', user.has_tracking || false);
+                $('#perm-clients').prop('checked', user.has_clients || false);
+                $('#perm-auctions').prop('checked', user.has_auctions || false);
+
                 renderSpiritsCheckboxes(user.allowed_spirit_ids || '');
 
                 $('#manage-limits-panel').slideDown();
@@ -437,7 +453,10 @@
                     max_cards_per_deck: parseInt($('#limit-cards').val()),
                     allowed_spirit_ids: allowed_spirit_ids,
                     whatsapp_link: $('#user-whatsapp').val().trim(),
-                    messenger_link: $('#user-messenger').val().trim()
+                    messenger_link: $('#user-messenger').val().trim(),
+                    has_tracking: $('#perm-tracking').is(':checked'),
+                    has_clients: $('#perm-clients').is(':checked'),
+                    has_auctions: $('#perm-auctions').is(':checked')
                 };
 
                 const { error } = await _supabase
