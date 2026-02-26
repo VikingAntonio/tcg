@@ -383,7 +383,7 @@ $(document).ready(async function() {
                     const $container = $album.closest('.public-album-item');
                     if ($container.length) {
                         const { width, height } = getAlbumSize($container);
-                        $album.turn('size', width, height);
+                        $album.turn('size', width, height).turn('center');
                     }
                 }
             });
@@ -1590,12 +1590,10 @@ async function renderAlbum(album) {
             acceleration: true,
             display: 'double',
             elevation: 50,
-            duration: 1500, // Aumentado para mayor suavidad y evitar brusquedad
-            // Ajustar cornerSize basado en el tamaño del álbum
-            cornerSize: isMobile ? 80 : 100,
+            duration: 1000, // Duración equilibrada para rapidez y suavidad
+            cornerSize: isMobile ? 50 : 100, // Menor área en móvil para evitar tirones accidentales
             when: {
                 start: function(event, pageObject, corner) {
-                    // Solo permitir el giro si es desde una esquina o disparado manualmente por búsqueda
                     if (!corner && !isManualPageTurn) {
                         event.preventDefault();
                         return;
@@ -1606,6 +1604,8 @@ async function renderAlbum(album) {
                 },
                 turned: function() {
                     $(this).removeClass('is-turning');
+                    // Forzamos el centrado y re-ajuste de posición para evitar deformaciones
+                    $(this).turn('center');
                 }
             }
         });
