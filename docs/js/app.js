@@ -17,8 +17,13 @@ const POKEMON_FOILS = {
     'pk-rare-shiny-vmax': 'rare shiny vmax',
     'pk-amazing-rare': 'amazing rare',
     'pk-radiant-rare': 'radiant rare',
-    'pk-rare-ultra': 'rare ultra',
+    'pk-rare-ultra': 'rare ultra pokemon',
     'pk-trainer-gallery': 'trainer gallery rare holo',
+    'pk-trainer-gallery-secret-rare': 'trainer gallery rare secret',
+    'pk-trainer-gallery-v-max': 'trainer gallery rare holo vmax',
+    'pk-trainer-gallery-v-regular': 'trainer gallery rare holo v',
+    'pk-trainer-full-art': 'rare ultra supporter',
+    'pk-rare-holo-v-full-art': 'rare holo v full art',
     'pk-reverse-holo': 'reverse holo'
 };
 
@@ -755,13 +760,33 @@ function openCardModal($slot) {
 
     if (holo) {
         if (POKEMON_FOILS[holo]) {
+            let rarityVal = POKEMON_FOILS[holo];
             $card.addClass("card");
-            $card.attr("data-rarity", POKEMON_FOILS[holo]);
-            if (POKEMON_FOILS[holo].includes('trainer gallery')) {
+
+            // Handle flags based on substrings
+            if (rarityVal.includes('trainer gallery')) {
                 $card.attr("data-trainer-gallery", "true");
+                rarityVal = rarityVal.replace('trainer gallery', '');
             } else {
                 $card.removeAttr("data-trainer-gallery");
             }
+
+            if (rarityVal.includes('supporter')) {
+                $card.attr("data-subtypes", "supporter");
+                rarityVal = rarityVal.replace('supporter', '');
+            } else {
+                $card.removeAttr("data-subtypes");
+            }
+
+            if (rarityVal.includes('pokemon')) {
+                $card.attr("data-supertype", "pokémon");
+                rarityVal = rarityVal.replace('pokemon', '');
+            } else {
+                $card.removeAttr("data-supertype");
+            }
+
+            $card.attr("data-rarity", rarityVal.trim());
+
             if (mask) {
                 $card.addClass("masked");
                 $card.css("--mask", `url(${mask})`);
