@@ -554,10 +554,12 @@ let card3dOrientationHandler = null;
 let card3dTouchHandler = null;
 
 window.updateRotation = function() {
+    if (!window.card3dActive) return;
+
     const $interactiveCards = $('.card-3d:visible');
 
     if ($interactiveCards.length === 0) {
-        requestAnimationFrame(window.updateRotation);
+        window.card3dActive = false;
         return;
     }
 
