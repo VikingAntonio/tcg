@@ -96,7 +96,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username')
+            .select('id, username, max_preorders')
             .eq('id', session.user.id)
             .single();
 
@@ -351,6 +351,28 @@ function displayExternalResults(results) {
 
 async function savePreorder() {
     const id = $('#edit-preorder-id').val();
+
+    // Limit check for new preorders
+    if (!id) {
+        const { count, error: countError } = await _supabase
+            .from('preorders')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id);
+
+        if (!countError) {
+            const limit = currentUser.max_preorders || 1;
+            if (count >= limit) {
+                Swal.fire({
+                    title: 'Límite alcanzado',
+                    text: `Has alcanzado el límite de ${limit} preventas.`,
+                    icon: 'warning',
+                    footer: '<a href="admin.html">Sube a Premium para aumentar tu límite</a>'
+                });
+                return;
+            }
+        }
+    }
+
     const name = $('#preorder-name').val().trim();
     const imageUrl = $('#preorder-image-url').val().trim();
     const price = $('#preorder-price').val().trim();

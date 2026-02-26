@@ -103,6 +103,26 @@
                     <label>Cartas por Deck</label>
                     <input type="number" id="limit-cards" min="1">
                 </div>
+                <div class="form-group">
+                    <label>Máximo Deseos</label>
+                    <input type="number" id="limit-wishlist" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Máximo Sellado</label>
+                    <input type="number" id="limit-sealed" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Máximo Preventas</label>
+                    <input type="number" id="limit-preorders" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Máximo Clientes</label>
+                    <input type="number" id="limit-clients-count" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Máximo Subastas</label>
+                    <input type="number" id="limit-auctions-count" min="1">
+                </div>
             </div>
 
             <div style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;">
@@ -174,7 +194,7 @@
             async function loadUsers() {
                 const { data: users, error } = await _supabase
                     .from('usuarios')
-                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link, has_tracking, has_clients, has_auctions')
+                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link, has_tracking, has_clients, has_auctions, max_wishlist, max_sealed, max_preorders, max_clients_count, max_auctions_count')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -263,10 +283,10 @@
                 const newRole = $(this).val();
 
                 const roleDefaults = {
-                    'starter': { max_albums: 3, max_pages: 5, max_decks: 1, max_cards_per_deck: 60, allowed_spirit_ids: '1', has_tracking: false, has_clients: false, has_auctions: false },
-                    'premium': { max_albums: 5, max_pages: 10, max_decks: 5, max_cards_per_deck: 60, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true },
-                    'admin_store': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true },
-                    'admin': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true }
+                    'starter': { max_albums: 3, max_pages: 5, max_decks: 1, max_cards_per_deck: 60, allowed_spirit_ids: '1', has_tracking: false, has_clients: true, has_auctions: true, max_wishlist: 10, max_sealed: 5, max_preorders: 1, max_clients_count: 3, max_auctions_count: 3 },
+                    'premium': { max_albums: 5, max_pages: 10, max_decks: 5, max_cards_per_deck: 60, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, max_wishlist: 50, max_sealed: 20, max_preorders: 5, max_clients_count: 10, max_auctions_count: 15 },
+                    'admin_store': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, max_wishlist: 999, max_sealed: 999, max_preorders: 999, max_clients_count: 999, max_auctions_count: 999 },
+                    'admin': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, max_wishlist: 999, max_sealed: 999, max_preorders: 999, max_clients_count: 999, max_auctions_count: 999 }
                 };
 
                 const result = await Swal.fire({
@@ -411,6 +431,11 @@
                 $('#limit-pages').val(user.max_pages || 5);
                 $('#limit-decks').val(user.max_decks || 1);
                 $('#limit-cards').val(user.max_cards_per_deck || 60);
+                $('#limit-wishlist').val(user.max_wishlist || 10);
+                $('#limit-sealed').val(user.max_sealed || 5);
+                $('#limit-preorders').val(user.max_preorders || 1);
+                $('#limit-clients-count').val(user.max_clients_count || 3);
+                $('#limit-auctions-count').val(user.max_auctions_count || 3);
                 $('#user-whatsapp').val(user.whatsapp_link || '');
                 $('#user-messenger').val(user.messenger_link || '');
 
@@ -451,6 +476,11 @@
                     max_pages: parseInt($('#limit-pages').val()),
                     max_decks: parseInt($('#limit-decks').val()),
                     max_cards_per_deck: parseInt($('#limit-cards').val()),
+                    max_wishlist: parseInt($('#limit-wishlist').val()),
+                    max_sealed: parseInt($('#limit-sealed').val()),
+                    max_preorders: parseInt($('#limit-preorders').val()),
+                    max_clients_count: parseInt($('#limit-clients-count').val()),
+                    max_auctions_count: parseInt($('#limit-auctions-count').val()),
                     allowed_spirit_ids: allowed_spirit_ids,
                     whatsapp_link: $('#user-whatsapp').val().trim(),
                     messenger_link: $('#user-messenger').val().trim(),

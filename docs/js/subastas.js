@@ -49,7 +49,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo')
+            .select('id, username, store_name, store_logo, role, max_auctions_count')
             .eq('id', session.user.id)
             .single();
 
@@ -61,7 +61,13 @@ async function checkSession() {
             // Set store data in template
             $('#tpl-store-name').text(user.store_name || user.username);
             $('.tpl-store-name-inline').text(user.store_name || user.username);
-            if (user.store_logo) $('#tpl-logo').attr('src', user.store_logo);
+
+            // Starter users only see their name, no logo
+            if (user.store_logo && user.role !== 'starter') {
+                $('#tpl-logo').attr('src', user.store_logo).show();
+            } else {
+                $('#tpl-logo').hide();
+            }
 
             loadAuctions();
         } else {
@@ -125,6 +131,28 @@ async function loadAuctions() {
 
 async function saveAuction() {
     const id = $('#edit-id').val();
+
+    // Limit check for new auctions
+    if (!id) {
+        const { count, error: countError } = await _supabase
+            .from('subastas')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id);
+
+        if (!countError) {
+            const limit = currentUser.max_auctions_count || 3;
+            if (count >= limit) {
+                Swal.fire({
+                    title: 'Límite alcanzado',
+                    text: `Has alcanzado el límite de ${limit} subastas registradas.`,
+                    icon: 'warning',
+                    footer: '<a href="admin.html">Sube a Premium para aumentar tu límite</a>'
+                });
+                return;
+            }
+        }
+    }
+
     const nombre = $('#input-nombre').val().trim();
     const detalles = $('#input-detalles').val().trim();
     const total = $('#input-total').val().trim();
