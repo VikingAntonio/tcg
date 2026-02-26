@@ -96,7 +96,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username')
+            .select('id, username, max_sealed')
             .eq('id', session.user.id)
             .single();
 
@@ -350,6 +350,28 @@ function displayExternalResults(results) {
 
 async function saveProduct() {
     const id = $('#edit-product-id').val();
+
+    // Limit check for new products
+    if (!id) {
+        const { count, error: countError } = await _supabase
+            .from('sealed_products')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id);
+
+        if (!countError) {
+            const limit = currentUser.max_sealed || 5;
+            if (count >= limit) {
+                Swal.fire({
+                    title: 'Límite alcanzado',
+                    text: `Has alcanzado el límite de ${limit} productos sellados.`,
+                    icon: 'warning',
+                    footer: '<a href="admin.html">Sube a Premium para aumentar tu límite</a>'
+                });
+                return;
+            }
+        }
+    }
+
     const name = $('#product-name').val().trim();
     const imageUrl = $('#product-image-url').val().trim();
     const price = $('#product-price').val().trim();

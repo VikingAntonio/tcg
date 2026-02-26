@@ -56,7 +56,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username')
+            .select('id, username, max_wishlist')
             .eq('id', session.user.id)
             .single();
 
@@ -167,6 +167,27 @@ async function loadWishlist() {
 }
 
 async function addCardToWishlist(card) {
+    // Check limit
+    const { count, error: countError } = await _supabase
+        .from('wishlist')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id);
+
+    if (countError) {
+        console.error("Error checking wishlist limit:", countError);
+    } else {
+        const limit = currentUser.max_wishlist || 10;
+        if (count >= limit) {
+            Swal.fire({
+                title: 'Límite alcanzado',
+                text: `Has alcanzado el límite de ${limit} cartas en tu lista de deseos.`,
+                icon: 'warning',
+                footer: '<a href="admin.html">Sube a Premium para aumentar tu límite</a>'
+            });
+            return;
+        }
+    }
+
     const { error } = await _supabase
         .from('wishlist')
         .insert([{

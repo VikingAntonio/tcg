@@ -1,0 +1,29 @@
+-- SQL Migration: Add new limits to usuarios table
+ALTER TABLE public.usuarios
+ADD COLUMN IF NOT EXISTS max_wishlist INTEGER DEFAULT 10,
+ADD COLUMN IF NOT EXISTS max_sealed INTEGER DEFAULT 5,
+ADD COLUMN IF NOT EXISTS max_preorders INTEGER DEFAULT 1,
+ADD COLUMN IF NOT EXISTS max_clients_count INTEGER DEFAULT 3,
+ADD COLUMN IF NOT EXISTS max_auctions_count INTEGER DEFAULT 3;
+
+-- Update defaults for existing roles
+-- Starter / User
+UPDATE public.usuarios
+SET max_wishlist = 10, max_sealed = 5, max_preorders = 1, max_clients_count = 3, max_auctions_count = 3,
+    has_clients = TRUE, has_auctions = TRUE
+WHERE role IN ('starter', 'user');
+
+-- Premium
+UPDATE public.usuarios
+SET max_wishlist = 50, max_sealed = 20, max_preorders = 5, max_clients_count = 10, max_auctions_count = 15
+WHERE role = 'premium';
+
+-- Admin / Admin Store
+UPDATE public.usuarios
+SET max_wishlist = 999, max_sealed = 999, max_preorders = 999, max_clients_count = 999, max_auctions_count = 999
+WHERE role IN ('admin', 'admin_store');
+
+-- Policies (RLS)
+-- Existing policies for sealed_products, preorders, clientes, and subastas
+-- already restrict access based on auth.uid() = user_id.
+-- The limits will be enforced at the application level as requested.
