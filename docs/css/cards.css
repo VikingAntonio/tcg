@@ -51,7 +51,8 @@
 }
 
 /* Fix for integration with the existing project's 3D cards */
-#card-3d.card, .card-slot.card, #admin-card-3d.card {
+/* These styles ensure that the Pokemon holographic effects work correctly within the modal */
+#card-3d.card, .card-slot.card {
   display: grid !important;
   justify-items: center;
   align-items: center;
@@ -62,7 +63,7 @@
   box-shadow: none !important;
 }
 
-#card-3d.card > *, .card-slot.card > *, #admin-card-3d.card > * {
+#card-3d.card > *, .card-slot.card > * {
   grid-area: 1/1;
   width: 100%;
   height: 100%;
@@ -71,28 +72,16 @@
 #card-3d.card .card__shine,
 #card-3d.card .card__glare,
 .card-slot.card .card__shine,
-.card-slot.card .card__glare,
-#admin-card-3d.card .card__shine,
-#admin-card-3d.card .card__glare {
+.card-slot.card .card__glare {
   z-index: 10;
   pointer-events: none;
 }
 
-#card-3d.card #z-text-container, #admin-card-3d.card #z-text-container {
+#card-3d.card #z-text-container {
   z-index: 1;
 }
 
 .card-slot.card .tcg-card {
   z-index: 1;
   object-fit: cover;
-}
-
-/* Reducir saturación y brillo en la vista previa del administrador para que no sea molesto */
-#admin-card-3d.admin-preview .card__shine {
-  filter: brightness(0.7) contrast(1.5) saturate(0.4) !important;
-  opacity: 0.6 !important;
-}
-
-#admin-card-3d.admin-preview .card__glare {
-  opacity: 0.3 !important;
 }
