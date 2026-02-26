@@ -1403,7 +1403,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions')
             .eq('id', session.user.id)
             .single();
 
@@ -1456,7 +1456,7 @@ async function handleLogin() {
     } else {
         const { data: profile } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions')
             .eq('id', data.user.id)
             .single();
 
@@ -1521,6 +1521,11 @@ async function showAuthenticatedContent() {
             $('#admin-upload-container').hide();
         }
     }
+
+    // Show/Hide feature tiles based on permissions
+    if (currentUser.has_tracking) $('#btn-tracking').show(); else $('#btn-tracking').hide();
+    if (currentUser.has_clients) $('#btn-clientes').show(); else $('#btn-clientes').hide();
+    if (currentUser.has_auctions) $('#btn-subastas').show(); else $('#btn-subastas').hide();
 
     // Upgrade button for starter users
     if (currentUser.role === 'starter' || currentUser.role === 'user') {
