@@ -214,9 +214,19 @@
                 <button onclick="showView('decks'); loadDecks();" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</button>
                 <div style="display: flex; gap: 10px;">
                     <button id="btn-sort-deck-name" class="btn btn-secondary"><i class="fas fa-sort-alpha-down"></i> Ordenar por Nombre</button>
-                    <button id="btn-add-deck-card" class="btn"><i class="fas fa-plus-circle"></i> Añadir Imagen</button>
                 </div>
             </div>
+
+            <div class="form-group" style="max-width: 600px; margin: 20px auto;">
+                <label>Añadir Imagen Directa (Drag & Drop)</label>
+                <div class="file-drop-zone" id="drop-zone-deck">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Arrastra una imagen aquí para añadirla al deck</p>
+                    <input type="file" id="input-deck-file" accept="image/*" style="display: none;">
+                    <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                </div>
+            </div>
+
             <div id="deck-card-list" class="album-list">
                 <!-- Deck cards will be loaded here -->
             </div>

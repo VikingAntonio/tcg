@@ -177,85 +177,132 @@ async function loadProducts() {
     });
 }
 
+let ygoSetsCache = null;
+async function getYgoSets() {
+    if (ygoSetsCache) return ygoSetsCache;
+    try {
+        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
+        ygoSetsCache = await response.json();
+    } catch (e) {
+        console.warn("Error fetching YGO sets:", e);
+        ygoSetsCache = [];
+    }
+    return ygoSetsCache;
+}
+
 async function searchExternalSets() {
-    const tcg = $('#search-tcg').val();
     const query = $('#external-search-input').val().trim().toLowerCase();
 
-    if (!query) {
-        Swal.fire('Atención', 'Ingresa un término de búsqueda', 'info');
+    if (query.length < 3) {
+        Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
         return;
     }
 
-    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando...</div>');
+    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando en todas las bases de datos...</div>');
 
     try {
-        let results = [];
+        const searchPromises = [
+            // Yu-Gi-Oh Sets
+            getYgoSets(),
+            // Yu-Gi-Oh Cards
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Pokémon Sets
+            fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json()).catch(() => []),
+            // Lorcana Sets
+            fetch(`https://api.lorcana-api.com/sets/fetch?search=name~${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []),
+            // Lorcana Cards
+            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image`).then(r => r.json()).catch(() => []),
+            // Viking Search
+            VikingData.search(query)
+        ];
 
-        if (tcg === 'yugioh') {
-            const [setsRes, cardsRes] = await Promise.all([
-                fetch('https://db.ygoprodeck.com/api/v7/cardsets.php').then(r => r.json()),
-                fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => ({data:[]}))
-            ]);
+        const [ygoSets, ygoCards, pkSets, lorSets, lorCards, vikResults] = await Promise.all(searchPromises);
 
-            const sets = setsRes.filter(s => s.set_name.toLowerCase().includes(query)).map(s => ({
-                name: s.set_name,
-                image: `https://images.ygoprodeck.com/images/sets/${s.set_code}.jpg`,
-                tcg: 'yugioh'
-            }));
+        let combinedResults = [];
 
-            const cards = (cardsRes.data || []).map(c => ({
-                name: c.name,
-                image: c.card_images[0].image_url_small,
-                tcg: 'yugioh'
-            }));
-
-            results = [...sets, ...cards];
-        } else if (tcg === 'lorcana') {
-            const [setsRes, cardsRes] = await Promise.all([
-                fetch(`https://api.lorcana-api.com/sets/fetch?search=name~${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []),
-                fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image`).then(r => r.json()).catch(() => [])
-            ]);
-
-            const sets = (Array.isArray(setsRes) ? setsRes : []).map(s => ({
-                name: s.Name,
-                image: 'https://lorcana-api.com/img/logo.svg',
-                tcg: 'lorcana'
-            }));
-
-            const cards = (Array.isArray(cardsRes) ? cardsRes : []).map(c => ({
-                name: c.Name,
-                image: c.Image,
-                tcg: 'lorcana'
-            }));
-
-            results = [...sets, ...cards];
-        } else if (tcg === 'pokemon') {
-            const response = await fetch('https://api.tcgdex.net/v2/en/sets');
-            const data = await response.json();
-            results = data.filter(s => s.name.toLowerCase().includes(query)).map(s => ({
-                name: s.name,
-                image: `${s.logo}.png`,
-                tcg: 'pokemon'
-            }));
-        } else if (tcg === 'onepiece') {
-            // Static fallback for One Piece sets if no API found
-            const opSets = [
-                { name: 'Romance Dawn (OP-01)', image: 'https://m.media-amazon.com/images/I/71b2S7A7VWL._AC_SL1500_.jpg', tcg: 'onepiece' },
-                { name: 'Paramount War (OP-02)', image: 'https://m.media-amazon.com/images/I/71-0fV5oIIL._AC_SL1500_.jpg', tcg: 'onepiece' },
-                { name: 'Pillars of Strength (OP-03)', image: 'https://m.media-amazon.com/images/I/71K6Ew5L9VL._AC_SL1500_.jpg', tcg: 'onepiece' },
-                { name: 'Kingdoms of Intrigue (OP-04)', image: 'https://m.media-amazon.com/images/I/71Y8e6lE-KL._AC_SL1500_.jpg', tcg: 'onepiece' },
-                { name: 'Awakening of the New Era (OP-05)', image: 'https://m.media-amazon.com/images/I/71f-W-q7GOL._AC_SL1500_.jpg', tcg: 'onepiece' },
-                { name: 'Wings of the Captain (OP-06)', image: 'https://m.media-amazon.com/images/I/71Z8I6qG5OL._AC_SL1500_.jpg', tcg: 'onepiece' },
-                { name: '500 Years in the Future (OP-07)', image: 'https://m.media-amazon.com/images/I/71H-Z-W-GOL._AC_SL1500_.jpg', tcg: 'onepiece' }
-            ];
-            results = opSets.filter(s => s.name.toLowerCase().includes(query));
+        // Process Viking
+        if (Array.isArray(vikResults)) {
+            combinedResults.push(...vikResults.map(i => ({ ...i, tcg: i.tcg || 'custom' })));
         }
 
-        // Viking Search
-        const vikResults = await VikingData.search(query);
-        results = [...vikResults, ...results];
+        // Process YGO Sets
+        if (Array.isArray(ygoSets)) {
+            ygoSets.filter(s => s.set_name.toLowerCase().includes(query)).forEach(s => {
+                combinedResults.push({
+                    name: s.set_name,
+                    image: `https://images.ygoprodeck.com/images/sets/${s.set_code}.jpg`,
+                    tcg: 'yugioh'
+                });
+            });
+        }
 
-        displayExternalResults(results);
+        // Process YGO Cards
+        if (ygoCards.data) {
+            ygoCards.data.forEach(c => {
+                combinedResults.push({
+                    name: c.name,
+                    image: c.card_images[0].image_url_small,
+                    tcg: 'yugioh'
+                });
+            });
+        }
+
+        // Process PKM Sets
+        if (Array.isArray(pkSets)) {
+            pkSets.filter(s => s.name.toLowerCase().includes(query)).forEach(s => {
+                combinedResults.push({
+                    name: s.name,
+                    image: `${s.logo}.png`,
+                    tcg: 'pokemon'
+                });
+            });
+        }
+
+        // Process Lorcana Sets
+        if (Array.isArray(lorSets)) {
+            lorSets.forEach(s => {
+                combinedResults.push({
+                    name: s.Name,
+                    image: 'https://lorcana-api.com/img/logo.svg',
+                    tcg: 'lorcana'
+                });
+            });
+        }
+
+        // Process Lorcana Cards
+        if (Array.isArray(lorCards)) {
+            lorCards.forEach(c => {
+                combinedResults.push({
+                    name: c.Name,
+                    image: c.Image,
+                    tcg: 'lorcana'
+                });
+            });
+        }
+
+        // Static One Piece
+        const opSets = [
+            { name: 'Romance Dawn (OP-01)', image: 'https://m.media-amazon.com/images/I/71b2S7A7VWL._AC_SL1500_.jpg', tcg: 'onepiece' },
+            { name: 'Paramount War (OP-02)', image: 'https://m.media-amazon.com/images/I/71-0fV5oIIL._AC_SL1500_.jpg', tcg: 'onepiece' },
+            { name: 'Pillars of Strength (OP-03)', image: 'https://m.media-amazon.com/images/I/71K6Ew5L9VL._AC_SL1500_.jpg', tcg: 'onepiece' },
+            { name: 'Kingdoms of Intrigue (OP-04)', image: 'https://m.media-amazon.com/images/I/71Y8e6lE-KL._AC_SL1500_.jpg', tcg: 'onepiece' },
+            { name: 'Awakening of the New Era (OP-05)', image: 'https://m.media-amazon.com/images/I/71f-W-q7GOL._AC_SL1500_.jpg', tcg: 'onepiece' },
+            { name: 'Wings of the Captain (OP-06)', image: 'https://m.media-amazon.com/images/I/71Z8I6qG5OL._AC_SL1500_.jpg', tcg: 'onepiece' },
+            { name: '500 Years in the Future (OP-07)', image: 'https://m.media-amazon.com/images/I/71H-Z-W-GOL._AC_SL1500_.jpg', tcg: 'onepiece' }
+        ];
+        opSets.filter(s => s.name.toLowerCase().includes(query)).forEach(s => combinedResults.push(s));
+
+        // Deduplicate
+        const unique = [];
+        const seen = new Set();
+        combinedResults.forEach(i => {
+            if (!seen.has(i.image + i.name)) {
+                seen.add(i.image + i.name);
+                unique.push(i);
+            }
+        });
+
+        displayExternalResults(unique);
     } catch (e) {
         console.error(e);
         $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar.</div>');
@@ -273,11 +320,16 @@ function displayExternalResults(results) {
 
     results.forEach(item => {
         const $item = $(`
-            <div class="external-card-result" title="${item.name}" style="cursor: pointer; padding: 5px; border: 1px solid #333; border-radius: 8px; text-align: center;">
+            <div class="external-card-result" title="${item.name}" style="cursor: pointer; transition: transform 0.2s; padding: 5px; border: 1px solid #333; border-radius: 8px; text-align: center;">
                 <img src="${item.image}" style="width: 100%; height: 80px; object-fit: contain; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x80?text=Set'">
                 <div style="font-size: 10px; margin-top: 5px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
             </div>
         `);
+
+        $item.hover(
+            function() { $(this).css('transform', 'scale(1.1)'); },
+            function() { $(this).css('transform', 'scale(1)'); }
+        );
 
         $item.click(() => {
             $('#product-name').val(item.name);
