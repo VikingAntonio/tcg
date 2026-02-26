@@ -228,15 +228,18 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
         return;
     }
 
-    $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando...</div>');
+    $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando en todas las bases de datos...</div>');
 
     try {
+        // Special YGO search logic for passcodes and set codes
         const ygoSpecialSearch = async () => {
             const q = query.toUpperCase();
+            // Passcode (Numeric 5-10 digits)
             if (/^\d{5,10}$/.test(q)) {
                 const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
                 return r.data || [];
             }
+            // Set Code (Format XXX-123 or XXX-EN123)
             const setMatch = q.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
             if (setMatch) {
                 const prefix = setMatch[1];
@@ -245,6 +248,7 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
                 if (setObj) {
                     const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
                     if (r.data) {
+                        // Filter for the exact set code
                         return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
                     }
                 }
@@ -252,45 +256,75 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
             return [];
         };
 
+        // Concurrent search across all databases (Yu-Gi-Oh and Pokémon in 3 languages)
         const searchPromises = [
+            // Yu-Gi-Oh! Name Search
             fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Yu-Gi-Oh! Code/Set Search
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Special YGO Search
             ygoSpecialSearch(),
+            // Pokémon TCGdex - English
             fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Pokémon TCGdex - Spanish
             fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Pokémon TCGdex - Japanese
+            fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Lorcana Search
             fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Viking Search
             VikingData.search(query)
         ];
 
-        const [ygName, ygSpecial, pkEn, pkEs, lorResults, vikResults] = await Promise.all(searchPromises);
+        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults] = await Promise.all(searchPromises);
 
         let combinedResults = [];
 
+        // Process VikingData
         if (Array.isArray(vikResults)) {
             combinedResults.push(...vikResults);
         }
 
-        // Process Lorcana
+        // Process Lorcana Results
         const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
         lorResultsSafe.forEach(c => {
             if (c.Image) {
-                combinedResults.push({ name: c.Name, image: c.Image, high_res: c.Image });
-            }
-        });
-
-        [...(ygName.data || []), ...ygSpecial].forEach(c => {
-            if (c.card_images) {
-                c.card_images.forEach(img => {
-                    combinedResults.push({ name: c.name, image: img.image_url_small, high_res: img.image_url });
+                combinedResults.push({
+                    name: c.Name,
+                    image: c.Image,
+                    high_res: c.Image
                 });
             }
         });
 
-        [...(pkEn || []), ...(pkEs || [])].forEach(c => {
-            if (c.image) {
-                combinedResults.push({ name: c.name, image: `${c.image}/low.webp`, high_res: `${c.image}/high.webp` });
+        // Process Yu-Gi-Oh Results
+        const ygoResults = [...(ygName.data || []), ...(ygCode.data || []), ...ygSpecial];
+        ygoResults.forEach(c => {
+            if (c.card_images && c.card_images.length > 0) {
+                // Iterate through all alternate arts
+                c.card_images.forEach(img => {
+                    combinedResults.push({
+                        name: c.name,
+                        image: img.image_url_small,
+                        high_res: img.image_url
+                    });
+                });
             }
         });
 
+        // Process Pokémon Results
+        const pkResults = [...(pkEn || []), ...(pkEs || []), ...(pkJa || [])];
+        pkResults.forEach(c => {
+            if (c.image) {
+                combinedResults.push({
+                    name: c.name,
+                    image: `${c.image}/low.webp`,
+                    high_res: `${c.image}/high.webp`
+                });
+            }
+        });
+
+        // Deduplicate by Image URL
         const uniqueResults = [];
         const seenImages = new Set();
         combinedResults.forEach(card => {
@@ -300,10 +334,15 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
             }
         });
 
-        displayExternalResults(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
+        if (uniqueResults.length === 0) {
+            $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en ninguna base de datos.</div>');
+        } else {
+            displayExternalResults(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
+        }
+
     } catch (err) {
         console.error(err);
-        $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar.</div>');
+        $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
     }
 }
 
@@ -311,17 +350,28 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
 function displayExternalResults(results, resultsSelector, onSelectCallback) {
     const $container = $(resultsSelector);
     $container.empty();
+
     if (results.length === 0) {
-        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No hay resultados.</div>');
+        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No se encontraron resultados.</div>');
         return;
     }
+
     results.forEach(card => {
         const $item = $(`
             <div class="external-card-result" title="${card.name}" style="cursor: pointer; transition: transform 0.2s;">
                 <img src="${card.image}" style="width: 100%; border-radius: 4px; border: 1px solid #333;">
             </div>
         `);
-        $item.click(() => onSelectCallback(card));
+
+        $item.hover(
+            function() { $(this).css('transform', 'scale(1.1)'); },
+            function() { $(this).css('transform', 'scale(1)'); }
+        );
+
+        $item.click(function() {
+            onSelectCallback(card);
+        });
+
         $container.append($item);
     });
 }
