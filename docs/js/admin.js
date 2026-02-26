@@ -2380,38 +2380,29 @@ async function loadSlotData(pageId, slotIndex) {
 }
 
 function makeCompanionDraggable() {
-    const container = document.getElementById('floating-companion-container');
-    if (!container) return;
+    const wrapper = document.getElementById('companion-wrapper');
+    const companion = document.getElementById('floating-companion-container');
+    if (!wrapper || !companion) return;
 
     let isDragging = false;
     let startX, startY;
     let initialX, initialY;
     window.isCompanionDragging = false;
 
-    const savedPos = localStorage.getItem('companionPosition');
-    if (savedPos) {
-        try {
-            const pos = JSON.parse(savedPos);
-            container.style.left = pos.x + 'px';
-            container.style.top = pos.y + 'px';
-            container.style.bottom = 'auto';
-            container.style.right = 'auto';
-            container.style.margin = '0';
-        } catch(e) {}
-    }
+    // persistence removed as requested: resets on refresh
 
-    container.style.touchAction = 'none';
+    companion.style.touchAction = 'none';
 
-    container.addEventListener('pointerdown', (e) => {
+    companion.addEventListener('pointerdown', (e) => {
         if (e.target.closest('.companion-menu-item')) return;
         isDragging = true;
         window.isCompanionDragging = false;
         startX = e.clientX;
         startY = e.clientY;
-        const rect = container.getBoundingClientRect();
+        const rect = wrapper.getBoundingClientRect();
         initialX = rect.left;
         initialY = rect.top;
-        container.setPointerCapture(e.pointerId);
+        companion.setPointerCapture(e.pointerId);
     });
 
     window.addEventListener('pointermove', (e) => {
@@ -2421,23 +2412,19 @@ function makeCompanionDraggable() {
         if (Math.abs(dx) > 5 || Math.abs(dy) > 5) window.isCompanionDragging = true;
         let newX = initialX + dx;
         let newY = initialY + dy;
-        newX = Math.max(0, Math.min(window.innerWidth - container.offsetWidth, newX));
-        newY = Math.max(0, Math.min(window.innerHeight - container.offsetHeight, newY));
-        container.style.left = newX + 'px';
-        container.style.top = newY + 'px';
-        container.style.bottom = 'auto';
-        container.style.right = 'auto';
-        container.style.margin = '0';
+        newX = Math.max(0, Math.min(window.innerWidth - wrapper.offsetWidth, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - wrapper.offsetHeight, newY));
+
+        wrapper.style.left = newX + 'px';
+        wrapper.style.top = newY + 'px';
+        wrapper.style.bottom = 'auto';
+        wrapper.style.right = 'auto';
+        wrapper.style.margin = '0';
     });
 
     window.addEventListener('pointerup', (e) => {
         if (!isDragging) return;
         isDragging = false;
-        const rect = container.getBoundingClientRect();
-        localStorage.setItem('companionPosition', JSON.stringify({
-            x: rect.left,
-            y: rect.top
-        }));
         setTimeout(() => { window.isCompanionDragging = false; }, 100);
     });
 }
