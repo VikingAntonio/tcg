@@ -1077,6 +1077,7 @@ function initFloatingCompanion() {
     if (!window.currentSpirit) return;
 
     const $container = $('#floating-companion-container');
+    setTimeout(makeCompanionDraggable, 1000);
     $container.html(`
         <model-viewer
             src="${window.currentSpirit.gltf_url}"
@@ -1091,6 +1092,7 @@ function initFloatingCompanion() {
     `);
 
     $container.on('click', function(e) {
+        if (window.isCompanionDragging) return;
         e.stopPropagation();
         $('#companion-menu').toggleClass('active');
     });
@@ -1208,7 +1210,8 @@ async function loadPublicDecks() {
                 deck_cards (*)
             `)
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .order('position', { foreignTable: 'deck_cards', ascending: true });
 
         let { data: decks, error } = await deckQuery;
 
@@ -1222,7 +1225,8 @@ async function loadPublicDecks() {
                     deck_cards (*)
                 `)
                 .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .order('position', { foreignTable: 'deck_cards', ascending: true });
             decks = retry.data;
             error = retry.error;
         }
@@ -1266,8 +1270,13 @@ async function loadPublicDecks() {
 
             const $deckItem = $(`
                 <div class="deck-public-item">
-                    <h3>${deck.name}</h3>
-                    ${priceDisplay}
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div>
+                            <h3 style="margin-bottom: 5px;">${deck.name}</h3>
+                            ${priceDisplay}
+                        </div>
+                        <button class="btn btn-sm btn-sort-public-deck" title="Ordenar por Nombre"><i class="fas fa-sort-alpha-down"></i></button>
+                    </div>
                     <div class="container">
                         <div class="swiper swiperyg ${deckId}">
                             <div class="swiper-wrapper">
@@ -1773,3 +1782,99 @@ async function loadPublicWishlist() {
         hideLoading();
     }
 }
+
+function makeCompanionDraggable() {
+    const container = document.getElementById('floating-companion-container');
+    if (!container) return;
+
+    let isDragging = false;
+    let startX, startY;
+    let initialX, initialY;
+    window.isCompanionDragging = false;
+
+    const savedPos = localStorage.getItem('companionPosition');
+    if (savedPos) {
+        try {
+            const pos = JSON.parse(savedPos);
+            container.style.left = pos.x + 'px';
+            container.style.top = pos.y + 'px';
+            container.style.bottom = 'auto';
+            container.style.right = 'auto';
+            container.style.margin = '0';
+        } catch(e) {}
+    }
+
+    container.style.touchAction = 'none';
+
+    container.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.companion-menu-item')) return;
+        isDragging = true;
+        window.isCompanionDragging = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = container.getBoundingClientRect();
+        initialX = rect.left;
+        initialY = rect.top;
+        container.setPointerCapture(e.pointerId);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) window.isCompanionDragging = true;
+        let newX = initialX + dx;
+        let newY = initialY + dy;
+        newX = Math.max(0, Math.min(window.innerWidth - container.offsetWidth, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - container.offsetHeight, newY));
+        container.style.left = newX + 'px';
+        container.style.top = newY + 'px';
+        container.style.bottom = 'auto';
+        container.style.right = 'auto';
+        container.style.margin = '0';
+    });
+
+    window.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const rect = container.getBoundingClientRect();
+        localStorage.setItem('companionPosition', JSON.stringify({
+            x: rect.left,
+            y: rect.top
+        }));
+        setTimeout(() => { window.isCompanionDragging = false; }, 100);
+    });
+}
+
+// Sort buttons logic for public view
+$(document).on('click', '.btn-sort-public-deck', function() {
+    const $deckItem = $(this).closest('.deck-public-item');
+    const $wrapper = $deckItem.find('.swiper-wrapper');
+    const $slides = $wrapper.children('.swiper-slide').get();
+
+    $slides.sort(function(a, b) {
+        const nameA = $(a).attr('data-name').toUpperCase();
+        const nameB = $(b).attr('data-name').toUpperCase();
+        return (nameA < nameB) ? -1 : (nameA > nameB) ? 1 : 0;
+    });
+
+    $.each($slides, function(i, slide) {
+        $wrapper.append(slide);
+    });
+
+    // Update Swiper
+    const swiperEl = $deckItem.find('.swiper')[0];
+    if (swiperEl && swiperEl.swiper) {
+        swiperEl.swiper.update();
+        swiperEl.swiper.slideTo(0);
+    }
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Ordenado por nombre',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000
+    });
+});

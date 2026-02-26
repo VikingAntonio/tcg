@@ -1,6 +1,6 @@
 let currentAlbumId = null;
 let currentDeckId = null;
-let deckSortOrder = 'id';
+let deckSortOrder = 'position';
 
 let ygoSetsCache = null;
 async function getYgoSets() {
@@ -54,13 +54,6 @@ $(document).ready(async function() {
         loadDecks();
     });
 
-    $(document).on('click', '#btn-sort-deck-name', function(e) {
-        e.preventDefault();
-        deckSortOrder = (deckSortOrder === 'name') ? 'id' : 'name';
-        const isName = deckSortOrder === 'name';
-        $(this).html(`<i class="fas fa-sort-alpha-${isName ? 'down' : 'up'}"></i> ${isName ? 'Ordenado por Nombre' : 'Ordenar por Nombre'}`);
-        loadDeckCards(currentDeckId);
-    });
 
     $(document).on('click', '#btn-show-decks', function(e) {
         e.preventDefault();
@@ -1742,7 +1735,7 @@ async function loadDeckCards(deckId) {
     const $tempContainer = $('<div></div>');
     cards.forEach(card => {
         const $cardItem = $(`
-            <div class="album-card deck-card-item" style="cursor:pointer; position:relative;">
+            <div class="album-card deck-card-item" data-id="${card.id}" style="cursor:pointer; position:relative;">
                 <div class="btn-delete-card-top btn-delete-deck-card"><i class="fas fa-times"></i></div>
                 <img src="${card.image_url}" style="width:100%; height:150px; object-fit:contain;">
                 <div style="font-size: 12px; margin-top: 5px; color: #aaa; text-align: center;">${card.name || 'Sin nombre'}</div>
@@ -1777,6 +1770,39 @@ async function loadDeckCards(deckId) {
         $tempContainer.append($cardItem);
     });
     $('#deck-card-list').html($tempContainer.contents());
+    initDeckSorting();
+}
+
+function initDeckSorting() {
+    const el = document.getElementById('deck-card-list');
+    if (!el || !window.Sortable) return;
+
+    // Destroy existing instance if any
+    if (el._sortable) el._sortable.destroy();
+
+    el._sortable = Sortable.create(el, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: async function() {
+            const cardIds = [];
+            $('#deck-card-list .deck-card-item').each(function() {
+                cardIds.push($(this).data('id'));
+            });
+            await updateCardOrder(cardIds);
+        }
+    });
+}
+
+async function updateCardOrder(cardIds) {
+    try {
+        const promises = cardIds.map((id, index) =>
+            _supabase.from('deck_cards').update({ position: index }).eq('id', id)
+        );
+        await Promise.all(promises);
+        console.log("Orden de cartas actualizado");
+    } catch (err) {
+        console.error("Error al actualizar orden:", err);
+    }
 }
 
 function editDeckCard(card) {
@@ -2172,6 +2198,7 @@ function initFloatingCompanion() {
     if (!window.currentSpirit) return;
 
     const $container = $('#floating-companion-container');
+    setTimeout(makeCompanionDraggable, 1000);
     $container.html(`
         <model-viewer
             src="${window.currentSpirit.gltf_url}"
@@ -2186,6 +2213,7 @@ function initFloatingCompanion() {
     `);
 
     $container.off('click').on('click', function(e) {
+        if (window.isCompanionDragging) return;
         e.stopPropagation();
         $('#companion-menu').toggleClass('active');
     });
@@ -2349,4 +2377,67 @@ async function loadSlotData(pageId, slotIndex) {
     }
 
     $('#slot-modal').addClass('active');
+}
+
+function makeCompanionDraggable() {
+    const container = document.getElementById('floating-companion-container');
+    if (!container) return;
+
+    let isDragging = false;
+    let startX, startY;
+    let initialX, initialY;
+    window.isCompanionDragging = false;
+
+    const savedPos = localStorage.getItem('companionPosition');
+    if (savedPos) {
+        try {
+            const pos = JSON.parse(savedPos);
+            container.style.left = pos.x + 'px';
+            container.style.top = pos.y + 'px';
+            container.style.bottom = 'auto';
+            container.style.right = 'auto';
+            container.style.margin = '0';
+        } catch(e) {}
+    }
+
+    container.style.touchAction = 'none';
+
+    container.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.companion-menu-item')) return;
+        isDragging = true;
+        window.isCompanionDragging = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = container.getBoundingClientRect();
+        initialX = rect.left;
+        initialY = rect.top;
+        container.setPointerCapture(e.pointerId);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) window.isCompanionDragging = true;
+        let newX = initialX + dx;
+        let newY = initialY + dy;
+        newX = Math.max(0, Math.min(window.innerWidth - container.offsetWidth, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - container.offsetHeight, newY));
+        container.style.left = newX + 'px';
+        container.style.top = newY + 'px';
+        container.style.bottom = 'auto';
+        container.style.right = 'auto';
+        container.style.margin = '0';
+    });
+
+    window.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const rect = container.getBoundingClientRect();
+        localStorage.setItem('companionPosition', JSON.stringify({
+            x: rect.left,
+            y: rect.top
+        }));
+        setTimeout(() => { window.isCompanionDragging = false; }, 100);
+    });
 }
