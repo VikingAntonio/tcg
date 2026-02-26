@@ -461,16 +461,6 @@
                 <input type="text" id="slot-image-url" placeholder="midominio.com/carta.png">
             </div>
 
-            <!-- Preview Container -->
-            <div id="admin-slot-preview-container" style="display: none; text-align: center; margin-bottom: 20px;">
-                <div class="card-3d-container" style="display: inline-block; transform: scale(0.6); margin: -60px 0;">
-                    <div class="card-3d" id="admin-card-3d">
-                        <img id="admin-preview-image" src="" alt="Vista previa">
-                        <div class="holo-layer"></div>
-                    </div>
-                </div>
-            </div>
-
             <div class="info-grid">
                 <div class="form-group">
                     <label>Nombre de la Carta</label>
@@ -537,6 +527,16 @@
                     <input type="text" id="slot-price">
                 </div>
             </div>
+            <!-- Preview Container -->
+            <div id="admin-slot-preview-container" style="display: none; text-align: center; margin-top: 20px; margin-bottom: 20px; height: 180px; overflow: visible;">
+                <div class="card-3d-container" style="display: inline-block; transform: scale(0.35); transform-origin: center; margin: 0 auto;">
+                    <div class="card-3d" id="admin-card-3d">
+                        <img id="admin-preview-image" src="" alt="Vista previa">
+                        <div class="holo-layer"></div>
+                    </div>
+                </div>
+            </div>
+
             <button id="btn-save-slot" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-check-circle"></i> Guardar Carta</button>
         </div>
     </div>

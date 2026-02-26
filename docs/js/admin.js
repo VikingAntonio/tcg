@@ -472,6 +472,7 @@ $(document).ready(async function() {
                 showConfirmButton: false
             });
             $('#slot-modal').removeClass('active');
+            window.card3dActive = false;
             if (editingType === 'slot') {
                 loadAlbumPages(currentAlbumId);
             } else {
@@ -511,6 +512,7 @@ $(document).ready(async function() {
 
     $('#close-slot-modal').click(function() {
         $('#slot-modal').removeClass('active');
+        window.card3dActive = false;
     });
 
     $('#slot-holo-effect').change(function() {
@@ -2266,7 +2268,7 @@ function updateAdminPreview() {
 
         if (holoEffect && holoEffect.startsWith('pk-')) {
             const pkRarity = holoEffect.replace('pk-', '').replace(/-/g, ' ');
-            $card.addClass('card interacting');
+            $card.addClass('card interacting admin-preview');
             $card.attr('data-rarity', pkRarity);
 
             if (pkRarity.includes('trainer gallery')) {
