@@ -23,8 +23,17 @@ CREATE TABLE IF NOT EXISTS public.deck_cards (
     condition TEXT,
     quantity INTEGER DEFAULT 1,
     price TEXT,
+    position INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Asegurar que la columna 'position' existe si la tabla ya fue creada previamente
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deck_cards' AND column_name='position') THEN
+        ALTER TABLE public.deck_cards ADD COLUMN position INTEGER DEFAULT 0;
+    END IF;
+END $$;
 
 -- Asegurar que la columna 'name' existe si la tabla ya fue creada previamente
 DO $$
