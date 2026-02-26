@@ -52,9 +52,10 @@ class CompanionBot {
         const base = [];
         try {
             if (this.userType === 'public') {
-                // No base messages for public anymore, everything comes from DB custom messages
+                base.push({ content: "Sugerencia: Puedes colocar a tu compañero en la posición que prefieras usando el icono de movimiento.", type: 'custom', duration: 7 });
             } else {
                 // Tips for Admin
+                base.push({ content: "Dato útil: Ahora puedes mover libremente a tu compañero por la pantalla usando su icono de movimiento.", type: 'custom', duration: 7 });
                 base.push({ content: "Tip: Usa el escáner para registrar cartas más rápido.", type: 'custom', duration: 5 });
                 base.push({ content: "¿Necesitas soporte? Contáctanos por Messenger.", type: 'custom', redirect_url: 'https://m.me/vikingdevtj', duration: 5 });
                 base.push({ content: "Dato útil: Para añadir cartas a tu álbum, entra a 'Editar' y haz clic en un espacio vacío.", type: 'custom', duration: 6 });
