@@ -154,6 +154,8 @@ $(document).ready(async function() {
         switchView('sealed');
     } else if (initialView === 'preorders') {
         switchView('preorders');
+    } else if (initialView === 'tournaments') {
+        switchView('tournaments');
     }
 
     $('#spirit-btn').click(function() {
@@ -331,6 +333,59 @@ $(document).ready(async function() {
 
     $('#close-chatbot').click(function() {
         $('#chatbot-container').removeClass('active');
+    });
+
+    // --- Tournament Listeners ---
+    $(document).on('click', '.btn-reg-tournament', function() {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+        $('#reg-modal-title').text(`Registro: ${name}`);
+        $('#btn-submit-reg').data('id', id);
+        $('#tournament-reg-modal').addClass('active');
+    });
+
+    $('#close-reg-modal').click(() => $('#tournament-reg-modal').removeClass('active'));
+
+    $('#btn-submit-reg').click(async function() {
+        const tId = $(this).data('id');
+        const name = $('#reg-name').val().trim();
+        const deckName = $('#reg-deck-name').val().trim();
+        const playerId = $('#reg-player-id').val().trim();
+        const deckList = $('#reg-decklist').val().trim();
+
+        if (!name) return Swal.fire('Error', 'El nombre es obligatorio', 'warning');
+
+        const { error } = await _supabase.from('tournament_participants').insert([{
+            tournament_id: tId,
+            name,
+            deck_name: deckName,
+            player_id: playerId,
+            deck_list: deckList
+        }]);
+
+        if (error) Swal.fire('Error', error.message, 'error');
+        else {
+            Swal.fire('¡Registrado!', 'Tu registro se ha enviado correctamente', 'success');
+            $('#tournament-reg-modal').removeClass('active');
+            $('#reg-name, #reg-deck-name, #reg-player-id, #reg-decklist').val('');
+        }
+    });
+
+    $(document).on('click', '.btn-view-tournament', function() {
+        const id = $(this).data('id');
+        showTournamentDetails(id);
+    });
+
+    $('#close-td-overlay').click(() => $('#tournament-details-overlay').removeClass('active'));
+
+    $('.mgmt-tab').click(function() {
+        if ($(this).closest('#tournament-details-overlay').length) {
+            const target = $(this).data('target');
+            $('#tournament-details-overlay .mgmt-tab').removeClass('active');
+            $(this).addClass('active');
+            $('#tournament-details-overlay .mgmt-section').removeClass('active');
+            $(`#${target}`).addClass('active');
+        }
     });
 
     // --- Companion Menu Logic ---
@@ -885,6 +940,10 @@ async function switchView(view) {
         $('#public-view-title').text('Buscamos lo siguiente');
         $('.public-header p').text('Si tienes alguno de estos productos ponte en coontacto con nosotros');
         loadPublicWishlist();
+    } else if (view === 'tournaments') {
+        $('#public-view-title').text('Próximos Torneos');
+        $('.public-header p').text('Participa en nuestros eventos y demuestra que eres el mejor.');
+        loadPublicTournaments();
     }
 
     const url = new URL(window.location);
@@ -1698,6 +1757,129 @@ async function loadPublicSealed() {
     } catch (e) {
         console.error("Error loading sealed products:", e);
         $('#sealed-container').html('<div class="error">Error al cargar productos.</div>');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function loadPublicTournaments() {
+    let userId = window.currentStoreId;
+    if (!userId) return;
+
+    showLoading('Cargando Torneos...');
+    $('#tournaments-container').html('<div class="loading">Cargando eventos...</div>');
+
+    try {
+        const { data: tournaments, error } = await _supabase
+            .from('tournaments')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!tournaments || tournaments.length === 0) {
+            $('#tournaments-container').html('<div class="empty">No hay torneos programados.</div>');
+            return;
+        }
+
+        $('#tournaments-container').empty();
+        tournaments.forEach(t => {
+            const $card = $(`
+                <div class="deck-public-item">
+                    <div style="font-size: 2rem; margin-bottom: 15px; color: #f1c40f;"><i class="fas fa-trophy"></i></div>
+                    <h3 style="margin-bottom: 10px;">${t.name}</h3>
+                    <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px;">
+                        ${t.tcg.toUpperCase()} | ${t.tournament_type.replace('_', ' ')}
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <span class="tournament-status status-${t.status}">${t.status.toUpperCase()}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="btn btn-view-tournament" data-id="${t.id}">Ver Detalles</button>
+                        ${t.registration_enabled && t.status === 'planned' ? `
+                            <button class="btn btn-secondary btn-reg-tournament" data-id="${t.id}" data-name="${t.name}">
+                                <i class="fas fa-user-plus"></i> Registrarme
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `);
+            $('#tournaments-container').append($card);
+        });
+    } catch (e) {
+        console.error(e);
+        $('#tournaments-container').html('<div class="error">Error al cargar torneos.</div>');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function showTournamentDetails(id) {
+    showLoading('Cargando detalles...');
+    try {
+        const [tRes, pRes, mRes] = await Promise.all([
+            _supabase.from('tournaments').select('*').eq('id', id).single(),
+            _supabase.from('tournament_participants').select('*').eq('tournament_id', id).order('points', { ascending: false }),
+            _supabase.from('tournament_matches').select('*, p1:player1_id(name), p2:player2_id(name)').eq('tournament_id', id).order('round', { ascending: false })
+        ]);
+
+        if (tRes.error) throw tRes.error;
+
+        const t = tRes.data;
+        $('#td-name').text(t.name);
+        $('#td-desc').text(t.description || 'Sin descripción.');
+        $('#td-tcg').text(t.tcg.toUpperCase());
+        $('#td-participants').text(`${pRes.data ? pRes.data.length : 0} Participantes`);
+        $('#td-status-badge').html(`<span class="tournament-status status-${t.status}">${t.status.toUpperCase()}</span>`);
+
+        // Standings
+        const $sList = $('#td-standings-list');
+        $sList.empty();
+        (pRes.data || []).forEach((p, idx) => {
+            const isTop3 = idx < 3;
+            $sList.append(`
+                <tr style="${isTop3 ? 'background: rgba(241, 196, 15, 0.1); font-weight: bold;' : ''}">
+                    <td>${idx + 1}</td>
+                    <td>${p.name} ${idx === 0 ? '🏆' : ''}</td>
+                    <td>${p.points}</td>
+                </tr>
+            `);
+        });
+
+        // Rounds
+        const $rCont = $('#td-rounds-container');
+        $rCont.empty();
+        const rounds = {};
+        (mRes.data || []).forEach(m => {
+            if (!rounds[m.round]) rounds[m.round] = [];
+            rounds[m.round].push(m);
+        });
+
+        Object.keys(rounds).sort((a, b) => b - a).forEach(rNum => {
+            const $rDiv = $(`<div style="margin-bottom: 25px;"><h4 style="color: var(--primary-color); border-bottom: 1px solid #333; padding-bottom: 5px;">Ronda ${rNum}</h4></div>`);
+            rounds[rNum].forEach(m => {
+                const p1Name = m.p1 ? m.p1.name : 'Unknown';
+                const p2Name = m.p2 ? m.p2.name : 'BYE';
+                let resText = "Pendiente";
+                if (m.result === 'p1_win') resText = `${p1Name} Ganó`;
+                else if (m.result === 'p2_win') resText = `${p2Name} Ganó`;
+                else if (m.result === 'draw') resText = "Empate";
+
+                $rDiv.append(`
+                    <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem;">
+                        <span>${p1Name} vs ${p2Name}</span>
+                        <span style="color: #aaa;">${resText}</span>
+                    </div>
+                `);
+            });
+            $rCont.append($rDiv);
+        });
+
+        $('#tournament-details-overlay').addClass('active');
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudieron cargar los detalles.', 'error');
     } finally {
         hideLoading();
     }
