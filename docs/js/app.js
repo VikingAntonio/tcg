@@ -1590,7 +1590,7 @@ async function renderAlbum(album) {
             acceleration: true,
             display: 'double',
             elevation: 50,
-            duration: 1000, // Duración equilibrada para rapidez y suavidad
+            duration: 800, // Duración equilibrada para rapidez y suavidad
             cornerSize: isMobile ? 50 : 100, // Menor área en móvil para evitar tirones accidentales
             when: {
                 start: function(event, pageObject, corner) {
@@ -1604,8 +1604,11 @@ async function renderAlbum(album) {
                 },
                 turned: function() {
                     $(this).removeClass('is-turning');
-                    // Forzamos el centrado y re-ajuste de posición para evitar deformaciones
-                    $(this).turn('center');
+                    // Forzamos el re-ajuste y centrado para asegurar que la hoja quede bien anclada
+                    const $el = $(this);
+                    setTimeout(() => {
+                        $el.turn('resize').turn('center');
+                    }, 0);
                 }
             }
         });

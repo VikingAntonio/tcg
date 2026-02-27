@@ -1737,11 +1737,13 @@ input:checked + .slider:before {
     opacity: 0.85;
 }
 
-/* Prevent transition lag during page flips */
+/* Prevent transition lag during page flips and ensure strict anchoring */
 .album.is-turning .card-slot,
 .album.is-turning .zoom-btn,
-.album.is-turning .page {
+.album.is-turning .page,
+.album .page-wrapper {
     transition: none !important;
+    animation: none !important;
 }
 
 /* Search Highlight Effect */
