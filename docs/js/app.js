@@ -111,7 +111,7 @@ $(document).ready(async function() {
     // --- Mobile Interaction Priority (Priority over turn.js) ---
     // Interceptamos eventos en la fase de captura para evitar que turn.js
     // detecte el toque si el usuario está interactuando con un botón.
-    const protectedElements = '.zoom-btn, #close-btn, .nav-btn, #clear-search';
+    const protectedElements = '.zoom-btn, #close-btn, .nav-btn, #clear-search, .btn-reg-tournament, .btn-view-tournament';
 
     const stopInterference = (e) => {
         if (e.target.closest(protectedElements)) {

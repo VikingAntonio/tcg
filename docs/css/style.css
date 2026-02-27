@@ -641,7 +641,7 @@ body.modal-open {
     font-weight: 700;
 }
 
-.form-group input, .form-group select {
+.form-group input, .form-group select, .form-group textarea {
     width: 100%;
     background: var(--slot-bg);
     border: 1px solid var(--slot-border);
@@ -651,9 +651,22 @@ body.modal-open {
     font-family: inherit;
 }
 
-.form-group input:focus {
+.form-group input:focus, .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
+}
+
+input[type="datetime-local"] {
+    cursor: pointer;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+body.theme-light input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: none;
 }
 
 #admin-panel {
