@@ -200,6 +200,7 @@ $(document).ready(async function() {
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 preventas</strong> activas.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>10 clientes</strong>.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>15 subastas</strong>.</li>
+                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>10 torneos</strong>.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>5 eventos</strong>.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Acceso a <strong>todos los compañeros</strong>.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Soporte prioritario.</li>
@@ -1409,7 +1410,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, has_tournaments, max_tournaments')
             .eq('id', session.user.id)
             .single();
 
@@ -1462,7 +1463,7 @@ async function handleLogin() {
     } else {
         const { data: profile } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, has_tournaments, max_tournaments')
             .eq('id', data.user.id)
             .single();
 
@@ -1532,6 +1533,7 @@ async function showAuthenticatedContent() {
     if (currentUser.has_tracking) $('#btn-tracking').show(); else $('#btn-tracking').hide();
     if (currentUser.has_clients) $('#btn-clientes').show(); else $('#btn-clientes').hide();
     if (currentUser.has_auctions) $('#btn-subastas').show(); else $('#btn-subastas').hide();
+    if (currentUser.has_tournaments !== false) $('#btn-torneos').show(); else $('#btn-torneos').hide();
     if (currentUser.has_events !== false) $('#btn-eventos').show(); else $('#btn-eventos').hide();
 
     // Upgrade button for starter users

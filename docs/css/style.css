@@ -1506,6 +1506,36 @@ input:checked + .slider:before {
     }
 }
 
+/* --- TOURNAMENT RANKINGS --- */
+.top-rank-1 {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, transparent 100%) !important;
+    border-left: 4px solid #ffd700 !important;
+}
+.top-rank-1 td:first-child {
+    color: #ffd700;
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.top-rank-2 {
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.2) 0%, transparent 100%) !important;
+    border-left: 4px solid #c0c0c0 !important;
+}
+.top-rank-2 td:first-child {
+    color: #c0c0c0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.top-rank-3 {
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.2) 0%, transparent 100%) !important;
+    border-left: 4px solid #cd7f32 !important;
+}
+.top-rank-3 td:first-child {
+    color: #cd7f32;
+    font-weight: 700;
+}
+
 /* --- HOLOGRAPHIC EFFECTS --- */
 
 .card-3d-container {
