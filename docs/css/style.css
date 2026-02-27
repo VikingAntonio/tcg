@@ -3064,3 +3064,26 @@ input:checked + .slider:before {
     font-size: 1.4rem;
     text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
 }
+
+/* Featured Event Styles */
+.featured-event {
+    border: 2px solid var(--primary-color) !important;
+    background: rgba(0, 210, 255, 0.05) !important;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.2) !important;
+    position: relative;
+}
+
+.featured-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--primary-color);
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}

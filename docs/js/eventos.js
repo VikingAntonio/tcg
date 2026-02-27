@@ -1,5 +1,5 @@
 let currentUser = null;
-let currentTournament = null;
+let currentEvent = null;
 let currentParticipants = [];
 
 $(document).ready(async function() {
@@ -18,18 +18,37 @@ $(document).ready(async function() {
     $('#btn-back-to-list').click(() => {
         $('#view-tournament-mgmt').hide();
         $('#view-tournament-list').show();
-        loadTournaments();
+        loadEvents();
     });
 
-    // Tournament Modal
+    // Event Modal
     $('#btn-open-create-modal').click(() => {
-        resetTournamentModal();
+        resetEventModal();
         $('#tournament-modal').addClass('active');
     });
 
     $('#close-modal').click(() => $('#tournament-modal').removeClass('active'));
 
-    $('#btn-save-tournament').click(saveTournament);
+    $('#btn-save-tournament').click(saveEvent);
+
+    $('#input-is-tournament').change(function() {
+        $('#tournament-fields').toggle($(this).is(':checked'));
+    });
+
+    // Cloudinary Upload for Event Image
+    $(document).on('click', '#drop-zone-event', () => $('#input-event-file').click());
+    $(document).on('change', '#input-event-file', async function() {
+        if (this.files.length > 0) {
+            $('#event-file-name').text("Subiendo...").css('color', '#aaa');
+            try {
+                const url = await CloudinaryUpload.uploadImage(this.files[0]);
+                $('#input-image-url').val(url);
+                $('#event-file-name').text("¡Imagen subida!").css('color', '#00ff88');
+            } catch (err) {
+                $('#event-file-name').text("Error al subir").css('color', '#ff4757');
+            }
+        }
+    });
 
     // Participant Modal
     $('#btn-add-participant').click(() => {
@@ -56,19 +75,19 @@ $(document).ready(async function() {
     $('#mgmt-registration-enabled').change(updateRegistrationStatus);
     $('#btn-copy-mgmt-link').click(copyPublicLink);
     $('#btn-edit-tournament-meta').click(() => {
-        populateTournamentModal(currentTournament);
+        populateEventModal(currentEvent);
         $('#tournament-modal').addClass('active');
     });
-    $('#btn-delete-tournament').click(() => deleteTournament(currentTournament.id));
+    $('#btn-delete-tournament').click(() => deleteEvent(currentEvent.id));
 
     // Round Logic
     $('#btn-generate-round').click(generateNextRound);
     $('#btn-finish-tournament').click(finishTournament);
 
     // UI Events
-    $(document).on('click', '.btn-manage-tournament', function() {
-        const tId = $(this).data('id');
-        manageTournament(tId);
+    $(document).on('click', '.btn-manage-event', function() {
+        const eId = $(this).data('id');
+        manageEvent(eId);
     });
 
     $(document).on('click', '#avatar-btn', function(e) {
@@ -96,7 +115,7 @@ async function checkSession() {
             currentUser = user;
             $('#dropdown-user-name').text(user.username);
             $('#top-panel, #authenticated-content').show();
-            loadTournaments();
+            loadEvents();
         } else {
             window.location.href = 'admin.html';
         }
@@ -105,13 +124,13 @@ async function checkSession() {
     }
 }
 
-async function loadTournaments() {
-    $('#tournament-container').html('<div class="loading">Cargando torneos...</div>');
+async function loadEvents() {
+    $('#tournament-container').html('<div class="loading">Cargando eventos...</div>');
     const { data: items, error } = await _supabase
-        .from('tournaments')
+        .from('events')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
+        .order('event_date', { ascending: true });
 
     if (error) {
         $('#tournament-container').html('<div class="error">Error al cargar datos.</div>');
@@ -119,30 +138,34 @@ async function loadTournaments() {
     }
 
     if (!items || items.length === 0) {
-        $('#tournament-container').html('<div class="empty">No tienes torneos creados.</div>');
+        $('#tournament-container').html('<div class="empty">No tienes eventos creados.</div>');
         return;
     }
 
     $('#tournament-container').empty();
-    items.forEach(t => {
+    items.forEach(e => {
+        const isPast = e.event_date && new Date(e.event_date) < new Date();
         const $card = $(`
-            <div class="tournament-card">
-                <h3>${t.name}</h3>
-                <div style="font-size: 12px; color: #aaa;">${t.tcg.toUpperCase()} | ${t.tournament_type.replace('_', ' ')}</div>
-                <div><span class="tournament-status status-${t.status}">${t.status.toUpperCase()}</span></div>
-                <button class="btn btn-manage-tournament" data-id="${t.id}" style="margin-top: 10px;">Gestionar</button>
+            <div class="tournament-card" style="${isPast ? 'opacity: 0.7; border-color: #333;' : ''}">
+                ${e.image_url ? `<img src="${e.image_url}" class="event-card-img">` : ''}
+                <h3>${e.name}</h3>
+                <div style="font-size: 12px; color: #aaa;">
+                    <i class="fas fa-calendar-day"></i> ${e.event_date ? new Date(e.event_date).toLocaleString() : 'Sin fecha'}
+                </div>
+                <div><span class="tournament-status status-${e.status}">${e.status.toUpperCase()}</span></div>
+                <button class="btn btn-manage-event" data-id="${e.id}" style="margin-top: 10px;">Gestionar</button>
             </div>
         `);
         $('#tournament-container').append($card);
     });
 }
 
-async function saveTournament() {
+async function saveEvent() {
     const id = $('#edit-id').val();
     if (!id) {
-        const { count } = await _supabase.from('tournaments').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id);
-        if (count >= (currentUser.max_tournaments || 1)) {
-            Swal.fire('Límite alcanzado', `Tu plan permite máximo ${currentUser.max_tournaments || 1} torneo(s).`, 'warning');
+        const { count } = await _supabase.from('events').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id);
+        if (count >= (currentUser.max_events || 1)) {
+            Swal.fire('Límite alcanzado', `Tu plan permite máximo ${currentUser.max_events || 1} evento(s).`, 'warning');
             return;
         }
     }
@@ -150,50 +173,69 @@ async function saveTournament() {
     const data = {
         user_id: currentUser.id,
         name: $('#input-name').val().trim(),
-        tcg: $('#input-tcg').val(),
-        tournament_type: $('#input-type').val(),
-        max_participants: parseInt($('#input-max').val()) || 32,
-        description: $('#input-description').val().trim()
+        event_date: $('#input-date').val(),
+        image_url: $('#input-image-url').val().trim(),
+        is_tournament: $('#input-is-tournament').is(':checked'),
+        is_featured: $('#input-is-featured').is(':checked'),
+        description: $('#input-description').val().trim(),
+        promo_details: $('#input-promo').val().trim()
     };
+
+    if (data.is_tournament) {
+        data.tcg = $('#input-tcg').val();
+        data.tournament_type = $('#input-type').val();
+        data.max_participants = parseInt($('#input-max').val()) || 32;
+    }
 
     if (!data.name) return Swal.fire('Error', 'El nombre es obligatorio', 'warning');
 
     let res;
-    if (id) res = await _supabase.from('tournaments').update(data).eq('id', id);
-    else res = await _supabase.from('tournaments').insert([data]);
+    if (id) res = await _supabase.from('events').update(data).eq('id', id);
+    else res = await _supabase.from('events').insert([data]);
 
     if (res.error) Swal.fire('Error', res.error.message, 'error');
     else {
-        Swal.fire('Guardado', 'Torneo guardado correctamente', 'success');
+        Swal.fire('Guardado', 'Evento guardado correctamente', 'success');
         $('#tournament-modal').removeClass('active');
-        if (id) manageTournament(id); else loadTournaments();
+        if (id) manageEvent(id); else loadEvents();
     }
 }
 
-async function manageTournament(id) {
-    const { data: t } = await _supabase.from('tournaments').select('*').eq('id', id).single();
-    if (!t) return;
+async function manageEvent(id) {
+    const { data: e } = await _supabase.from('events').select('*').eq('id', id).single();
+    if (!e) return;
 
-    currentTournament = t;
-    $('#mgmt-tournament-name').text(t.name);
-    $('#mgmt-tournament-status-badge').html(`<span class="tournament-status status-${t.status}">${t.status.toUpperCase()}</span>`);
-    $('#mgmt-registration-enabled').prop('checked', t.registration_enabled);
+    currentEvent = e;
+    $('#mgmt-tournament-name').text(e.name);
+    $('#mgmt-tournament-status-badge').html(`<span class="tournament-status status-${e.status}">${e.status.toUpperCase()}</span>`);
+    $('#mgmt-registration-enabled').prop('checked', e.registration_enabled);
+
+    // UI adaptation
+    $('.tournament-only').toggle(e.is_tournament);
+    $('#mgmt-event-img').attr('src', e.image_url || 'https://via.placeholder.com/400x200?text=Vikingdev+Events');
+    $('#mgmt-info-name').text(e.name);
+    $('#mgmt-info-date').html(`<i class="fas fa-clock"></i> ${e.event_date ? new Date(e.event_date).toLocaleString() : 'Fecha no definida'}`);
+    $('#mgmt-info-tcg').text(e.is_tournament ? `TCG: ${e.tcg.toUpperCase()}` : 'Evento General');
+    $('#mgmt-info-desc').text(e.description || 'Sin descripción.');
+    $('#mgmt-info-promo').text(e.promo_details || 'Sin detalles de promoción.');
 
     // Generate public link
     const identifier = currentUser.is_store ? `store=${encodeURIComponent(currentUser.store_name)}` : `user=${encodeURIComponent(currentUser.username)}`;
-    const publicUrl = `${window.location.origin}${window.location.pathname.replace('torneos.html', 'public.html')}?${identifier}&view=tournaments&tid=${t.id}`;
+    const publicUrl = `${window.location.origin}${window.location.pathname.replace('eventos.html', 'public.html')}?${identifier}&view=events&tid=${e.id}`;
     $('#mgmt-public-link').val(publicUrl);
-    $('#registration-link-container').toggle(t.registration_enabled);
+    $('#registration-link-container').toggle(e.registration_enabled);
 
-    loadParticipants(id);
-    loadRounds(id);
+    if (e.is_tournament) {
+        loadParticipants(id);
+        loadRounds(id);
+    }
 
     $('#view-tournament-list').hide();
     $('#view-tournament-mgmt').show();
 }
 
-async function loadParticipants(tId) {
-    const { data: participants } = await _supabase.from('tournament_participants').select('*').eq('tournament_id', tId).order('points', { ascending: false });
+async function loadParticipants(eId) {
+    const { data: participants } = await _supabase.from('event_participants').select('*').eq('event_id', eId).order('points', { ascending: false });
     currentParticipants = participants || [];
     $('#participant-count').text(currentParticipants.length);
     const $list = $('#participant-list');
@@ -221,9 +263,7 @@ async function loadParticipants(tId) {
         Swal.fire({
             title: 'Decklist',
             html: `
-                <div class="deck-list-popup">
-                    <pre id="deck-list-text">${list || 'Lista vacía'}</pre>
-                </div>
+                <div class="deck-list-popup"><pre id="deck-list-text">${list || 'Lista vacía'}</pre></div>
                 <button class="btn btn-sm" onclick="copyDeckList()" style="margin-top: 15px; width: 100%;">
                     <i class="fas fa-copy"></i> Copiar al Portapapeles
                 </button>
@@ -249,8 +289,8 @@ async function loadParticipants(tId) {
         const pId = $(this).data('id');
         const { isConfirmed } = await Swal.fire({ title: '¿Eliminar?', text: 'Se quitará al jugador del torneo', icon: 'warning', showCancelButton: true });
         if (isConfirmed) {
-            await _supabase.from('tournament_participants').delete().eq('id', pId);
-            loadParticipants(tId);
+            await _supabase.from('event_participants').delete().eq('id', pId);
+            loadParticipants(eId);
         }
     });
 
@@ -260,23 +300,23 @@ async function loadParticipants(tId) {
 async function saveParticipant() {
     const id = $('#p-edit-id').val();
     const data = {
-        tournament_id: currentTournament.id,
+        event_id: currentEvent.id,
         name: $('#p-name').val().trim(),
         deck_name: $('#p-deck-name').val().trim(),
         player_id: $('#p-player-id').val().trim(),
-        deck_list: $('#p-deck-list').val().trim()
+        deck_list: $('#p-deck_list') ? $('#p-deck_list').val() : $('#p-deck-list').val()
     };
 
     if (!data.name) return Swal.fire('Error', 'El nombre es obligatorio', 'warning');
 
     let res;
-    if (id) res = await _supabase.from('tournament_participants').update(data).eq('id', id);
-    else res = await _supabase.from('tournament_participants').insert([data]);
+    if (id) res = await _supabase.from('event_participants').update(data).eq('id', id);
+    else res = await _supabase.from('event_participants').insert([data]);
 
     if (res.error) Swal.fire('Error', res.error.message, 'error');
     else {
         $('#participant-modal').removeClass('active');
-        loadParticipants(currentTournament.id);
+        loadParticipants(currentEvent.id);
     }
 }
 
@@ -335,7 +375,7 @@ async function fetchDeckDetails(deckId, deckName) {
 
 async function updateRegistrationStatus() {
     const enabled = $(this).is(':checked');
-    await _supabase.from('tournaments').update({ registration_enabled: enabled }).eq('id', currentTournament.id);
+    await _supabase.from('events').update({ registration_enabled: enabled }).eq('id', currentEvent.id);
     $('#registration-link-container').toggle(enabled);
 }
 
@@ -349,25 +389,23 @@ function copyPublicLink() {
 async function generateNextRound() {
     if (currentParticipants.length < 2) return Swal.fire('Error', 'Se necesitan al menos 2 participantes', 'warning');
 
-    const { data: rounds } = await _supabase.from('tournament_matches').select('round').eq('tournament_id', currentTournament.id).order('round', { ascending: false }).limit(1);
+    const { data: rounds } = await _supabase.from('event_matches').select('round').eq('event_id', currentEvent.id).order('round', { ascending: false }).limit(1);
     const nextRound = (rounds && rounds.length > 0) ? rounds[0].round + 1 : 1;
 
-    // Pairing Logic (Simple Swiss: sorted by points)
     let sorted = [...currentParticipants].sort((a, b) => b.points - a.points);
     let matches = [];
 
     for (let i = 0; i < sorted.length; i += 2) {
         if (i + 1 < sorted.length) {
             matches.push({
-                tournament_id: currentTournament.id,
+                event_id: currentEvent.id,
                 round: nextRound,
                 player1_id: sorted[i].id,
                 player2_id: sorted[i + 1].id
             });
         } else {
-            // BYE
             matches.push({
-                tournament_id: currentTournament.id,
+                event_id: currentEvent.id,
                 round: nextRound,
                 player1_id: sorted[i].id,
                 player2_id: null,
@@ -376,21 +414,21 @@ async function generateNextRound() {
         }
     }
 
-    const { error } = await _supabase.from('tournament_matches').insert(matches);
+    const { error } = await _supabase.from('event_matches').insert(matches);
     if (error) Swal.fire('Error', error.message, 'error');
     else {
-        if (currentTournament.status === 'planned') {
-            await _supabase.from('tournaments').update({ status: 'active' }).eq('id', currentTournament.id);
-            currentTournament.status = 'active';
+        if (currentEvent.status === 'planned') {
+            await _supabase.from('events').update({ status: 'active' }).eq('id', currentEvent.id);
+            currentEvent.status = 'active';
             $('#mgmt-tournament-status-badge').html(`<span class="tournament-status status-active">ACTIVE</span>`);
         }
-        loadRounds(currentTournament.id);
+        loadRounds(currentEvent.id);
         Swal.fire('Ronda ' + nextRound, 'Emparejamientos generados', 'success');
     }
 }
 
-async function loadRounds(tId) {
-    const { data: matches } = await _supabase.from('tournament_matches').select('*, p1:player1_id(name), p2:player2_id(name)').eq('tournament_id', tId).order('round', { ascending: false });
+async function loadRounds(eId) {
+    const { data: matches } = await _supabase.from('event_matches').select('*, p1:player1_id(name), p2:player2_id(name)').eq('event_id', eId).order('round', { ascending: false });
     const $container = $('#rounds-container');
     $container.empty();
 
@@ -438,20 +476,18 @@ async function loadRounds(tId) {
 }
 
 async function updateMatchResult(matchId, result) {
-    const { error } = await _supabase.from('tournament_matches').update({ result }).eq('id', matchId);
+    const { error } = await _supabase.from('event_matches').update({ result }).eq('id', matchId);
     if (!error) {
         recalculatePoints();
     }
 }
 
 async function recalculatePoints() {
-    // 1. Reset points
     const pIds = currentParticipants.map(p => p.id);
     const participantPoints = {};
     pIds.forEach(id => participantPoints[id] = 0);
 
-    // 2. Fetch all matches
-    const { data: matches } = await _supabase.from('tournament_matches').select('*').eq('tournament_id', currentTournament.id);
+    const { data: matches } = await _supabase.from('event_matches').select('*').eq('event_id', currentEvent.id);
 
     matches.forEach(m => {
         if (m.result === 'p1_win') {
@@ -464,11 +500,10 @@ async function recalculatePoints() {
         }
     });
 
-    // 3. Update DB
     for (const pId in participantPoints) {
-        await _supabase.from('tournament_participants').update({ points: participantPoints[pId] }).eq('id', pId);
+        await _supabase.from('event_participants').update({ points: participantPoints[pId] }).eq('id', pId);
     }
-    loadParticipants(currentTournament.id);
+    loadParticipants(currentEvent.id);
 }
 
 function updateStandingsTable() {
@@ -491,141 +526,89 @@ function updateStandingsTable() {
 function renderStandingsChart() {
     const canvas = document.getElementById('standings-canvas');
     if (!canvas) return;
-
-    // Auto-resize canvas to match its displayed size
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
-
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-
     const width = rect.width;
     const height = rect.height;
-
     const sorted = [...currentParticipants].sort((a, b) => b.points - a.points).slice(0, 10);
     if (sorted.length === 0) {
-        ctx.fillStyle = '#666';
-        ctx.textAlign = 'center';
-        ctx.fillText('Esperando participantes...', width / 2, height / 2);
+        ctx.fillStyle = '#666'; ctx.textAlign = 'center'; ctx.fillText('Esperando participantes...', width / 2, height / 2);
         return;
     }
-
     ctx.clearRect(0, 0, width, height);
-
     const margin = { top: 40, right: 20, bottom: 60, left: 40 };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
-
     const maxPoints = Math.max(...sorted.map(p => p.points), 1);
     const barGap = 15;
     const barWidth = (chartWidth / sorted.length) - barGap;
-
-    // Draw grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-        const y = margin.top + (chartHeight / 5) * i;
-        ctx.beginPath();
-        ctx.moveTo(margin.left, y);
-        ctx.lineTo(width - margin.right, y);
-        ctx.stroke();
-    }
-
     sorted.forEach((p, i) => {
         const x = margin.left + i * (barWidth + barGap);
         const bHeight = (p.points / maxPoints) * chartHeight;
         const y = height - margin.bottom - bHeight;
-
-        // Gradient for bars
         const grad = ctx.createLinearGradient(x, y, x, height - margin.bottom);
-        if (i === 0) {
-            grad.addColorStop(0, '#f1c40f');
-            grad.addColorStop(1, '#d4ac0d');
-        } else if (i === 1) {
-            grad.addColorStop(0, '#bdc3c7');
-            grad.addColorStop(1, '#95a5a6');
-        } else if (i === 2) {
-            grad.addColorStop(0, '#e67e22');
-            grad.addColorStop(1, '#d35400');
-        } else {
-            grad.addColorStop(0, '#3498db');
-            grad.addColorStop(1, '#2980b9');
-        }
-
-        // Draw Bar with rounded corners
-        ctx.fillStyle = grad;
-        const radius = 8;
-        ctx.beginPath();
-        ctx.moveTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.lineTo(x + barWidth - radius, y);
-        ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
-        ctx.lineTo(x + barWidth, height - margin.bottom);
-        ctx.lineTo(x, height - margin.bottom);
-        ctx.closePath();
-        ctx.fill();
-
-        // Shadow
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetY = 5;
-
-        // Labels
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 12px Montserrat';
-        ctx.textAlign = 'center';
-        ctx.fillText(p.points, x + barWidth / 2, y - 10);
-
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = '10px Montserrat';
-        ctx.save();
-        ctx.translate(x + barWidth / 2, height - margin.bottom + 20);
-        ctx.rotate(-Math.PI / 4);
-        ctx.fillText(p.name.length > 10 ? p.name.substring(0, 8) + '..' : p.name, 0, 0);
-        ctx.restore();
+        if (i === 0) { grad.addColorStop(0, '#f1c40f'); grad.addColorStop(1, '#d4ac0d'); }
+        else if (i === 1) { grad.addColorStop(0, '#bdc3c7'); grad.addColorStop(1, '#95a5a6'); }
+        else if (i === 2) { grad.addColorStop(0, '#e67e22'); grad.addColorStop(1, '#d35400'); }
+        else { grad.addColorStop(0, '#3498db'); grad.addColorStop(1, '#2980b9'); }
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(x, y + 8); ctx.quadraticCurveTo(x, y, x + 8, y); ctx.lineTo(x + barWidth - 8, y); ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + 8); ctx.lineTo(x + barWidth, height - margin.bottom); ctx.lineTo(x, height - margin.bottom); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'white'; ctx.font = 'bold 12px Montserrat'; ctx.textAlign = 'center'; ctx.fillText(p.points, x + barWidth / 2, y - 10);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '10px Montserrat'; ctx.save(); ctx.translate(x + barWidth / 2, height - margin.bottom + 20); ctx.rotate(-Math.PI / 4); ctx.fillText(p.name.length > 10 ? p.name.substring(0, 8) + '..' : p.name, 0, 0); ctx.restore();
     });
 }
 
 async function finishTournament() {
     const { isConfirmed } = await Swal.fire({ title: '¿Finalizar Torneo?', text: 'No se podrán generar más rondas', icon: 'question', showCancelButton: true });
     if (isConfirmed) {
-        await _supabase.from('tournaments').update({ status: 'finished' }).eq('id', currentTournament.id);
-        currentTournament.status = 'finished';
+        await _supabase.from('events').update({ status: 'finished' }).eq('id', currentEvent.id);
+        currentEvent.status = 'finished';
         $('#mgmt-tournament-status-badge').html(`<span class="tournament-status status-finished">FINISHED</span>`);
         Swal.fire('Torneo Finalizado', 'Los resultados han sido guardados', 'success');
     }
 }
 
-async function deleteTournament(id) {
-    const { isConfirmed } = await Swal.fire({ title: '¿Eliminar Torneo?', text: 'Se borrarán todos los datos asociados permanentemente', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff4757' });
+async function deleteEvent(id) {
+    const { isConfirmed } = await Swal.fire({ title: '¿Eliminar Evento?', text: 'Se borrarán todos los datos asociados permanentemente', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff4757' });
     if (isConfirmed) {
-        await _supabase.from('tournaments').delete().eq('id', id);
+        await _supabase.from('events').delete().eq('id', id);
         $('#view-tournament-mgmt').hide();
         $('#view-tournament-list').show();
-        loadTournaments();
+        loadEvents();
     }
 }
 
-function resetTournamentModal() {
+function resetEventModal() {
     $('#edit-id').val('');
     $('#input-name').val('');
-    $('#input-max').val(32);
+    $('#input-date').val('');
+    $('#input-image-url').val('');
+    $('#event-file-name').text('');
+    $('#input-is-tournament').prop('checked', false);
+    $('#tournament-fields').hide();
     $('#input-description').val('');
-    $('#modal-title').text('Nuevo Torneo');
+    $('#input-promo').val('');
+    $('#modal-title').text('Nuevo Evento');
 }
 
-function populateTournamentModal(t) {
-    $('#edit-id').val(t.id);
-    $('#input-name').val(t.name);
-    $('#input-tcg').val(t.tcg);
-    $('#input-type').val(t.tournament_type);
-    $('#input-max').val(t.max_participants);
-    $('#input-description').val(t.description);
-    $('#modal-title').text('Editar Torneo');
+function populateEventModal(e) {
+    $('#edit-id').val(e.id);
+    $('#input-name').val(e.name);
+    $('#input-date').val(e.event_date ? e.event_date.slice(0, 16) : '');
+    $('#input-image-url').val(e.image_url || '');
+    $('#input-is-tournament').prop('checked', e.is_tournament).trigger('change');
+    $('#input-is-featured').prop('checked', e.is_featured);
+    if (e.is_tournament) {
+        $('#input-tcg').val(e.tcg);
+        $('#input-type').val(e.tournament_type);
+        $('#input-max').val(e.max_participants);
+    }
+    $('#input-description').val(e.description);
+    $('#input-promo').val(e.promo_details);
+    $('#modal-title').text('Editar Evento');
 }
 
 function resetParticipantModal() {

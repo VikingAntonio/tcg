@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
-    <title>Torneos - Vikingdev TCG</title>
+    <title>Eventos - Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -25,6 +25,15 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            overflow: hidden;
+        }
+        .event-card-img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #000;
         }
         .tournament-card h3 { margin: 0; color: var(--primary-color); }
         .tournament-status {
@@ -134,16 +143,16 @@
                 <a href="admin.html" class="btn btn-secondary" style="margin-bottom: 20px; text-decoration: none; display: inline-block;">
                     <i class="fas fa-arrow-left"></i> Volver al Panel
                 </a>
-                <h1>Gestión de Torneos</h1>
-                <p>Organiza eventos, gestiona participantes y calcula resultados.</p>
+                <h1>Gestión de Eventos</h1>
+                <p>Organiza torneos y eventos especiales para tu tienda.</p>
                 <button id="btn-open-create-modal" class="btn" style="margin-top: 20px;">
-                    <i class="fas fa-plus"></i> Nuevo Torneo
+                    <i class="fas fa-plus"></i> Nuevo Evento
                 </button>
             </div>
 
             <div id="tournament-container" class="tournament-list">
-                <!-- Torneos cargados aquí -->
-                <div class="loading">Cargando torneos...</div>
+                <!-- Eventos cargados aquí -->
+                <div class="loading">Cargando eventos...</div>
             </div>
         </div>
 
@@ -152,19 +161,42 @@
                 <button id="btn-back-to-list" class="btn btn-secondary" style="margin-bottom: 20px;">
                     <i class="fas fa-arrow-left"></i> Volver a la Lista
                 </button>
-                <h1 id="mgmt-tournament-name">Nombre del Torneo</h1>
+                <h1 id="mgmt-tournament-name">Nombre del Evento</h1>
                 <div id="mgmt-tournament-status-badge"></div>
             </div>
 
             <div class="mgmt-tabs">
-                <div class="mgmt-tab active" data-target="tab-participants">Participantes</div>
-                <div class="mgmt-tab" data-target="tab-rounds">Rondas y Emparejamientos</div>
-                <div class="mgmt-tab" data-target="tab-standings">Clasificación y Gráfica</div>
+                <div class="mgmt-tab active" data-target="tab-info">Información General</div>
+                <div class="mgmt-tab tournament-only" data-target="tab-participants">Participantes</div>
+                <div class="mgmt-tab tournament-only" data-target="tab-rounds">Rondas y Emparejamientos</div>
+                <div class="mgmt-tab tournament-only" data-target="tab-standings">Clasificación</div>
                 <div class="mgmt-tab" data-target="tab-config">Configuración y Link</div>
             </div>
 
+            <!-- Tab: Info -->
+            <div id="tab-info" class="mgmt-section active">
+                <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                    <div id="mgmt-event-img-container" style="flex: 1; min-width: 300px;">
+                        <img id="mgmt-event-img" src="" style="width: 100%; border-radius: 16px; border: 1px solid var(--card-border);">
+                    </div>
+                    <div style="flex: 2; min-width: 300px;">
+                        <h2 id="mgmt-info-name"></h2>
+                        <p id="mgmt-info-date" style="color: #00d2ff; font-weight: bold;"></p>
+                        <p id="mgmt-info-tcg"></p>
+                        <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-top: 15px;">
+                            <label style="font-size: 12px; color: #aaa;">Descripción / Premios:</label>
+                            <div id="mgmt-info-desc"></div>
+                        </div>
+                        <div style="background: rgba(0,210,255,0.05); padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid rgba(0,210,255,0.2);">
+                            <label style="font-size: 12px; color: #00d2ff;">Detalles de Promoción:</label>
+                            <div id="mgmt-info-promo"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tab: Participants -->
-            <div id="tab-participants" class="mgmt-section active">
+            <div id="tab-participants" class="mgmt-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>Participantes (<span id="participant-count">0</span>)</h2>
                     <button id="btn-add-participant" class="btn btn-sm"><i class="fas fa-user-plus"></i> Añadir Manual</button>
@@ -227,54 +259,88 @@
                     <label style="margin-bottom: 0; cursor: pointer;" for="mgmt-registration-enabled">Habilitar Registro Público (Formulario)</label>
                 </div>
                 <div id="registration-link-container" style="display: none; margin-bottom: 20px;">
-                    <label>Link de Registro para Clientes:</label>
+                    <label>Link de Evento para Clientes:</label>
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
                         <input type="text" id="mgmt-public-link" readonly style="flex: 1;">
                         <button id="btn-copy-mgmt-link" class="btn btn-sm btn-secondary"><i class="fas fa-copy"></i></button>
                     </div>
                 </div>
-                <button id="btn-edit-tournament-meta" class="btn"><i class="fas fa-edit"></i> Editar Detalles del Torneo</button>
-                <button id="btn-delete-tournament" class="btn btn-danger" style="margin-left: 10px;"><i class="fas fa-trash"></i> Eliminar Torneo</button>
+                <button id="btn-edit-tournament-meta" class="btn"><i class="fas fa-edit"></i> Editar Detalles del Evento</button>
+                <button id="btn-delete-tournament" class="btn btn-danger" style="margin-left: 10px;"><i class="fas fa-trash"></i> Eliminar Evento</button>
             </div>
         </div>
     </div>
 
-    <!-- Tournament Create/Edit Modal -->
+    <!-- Event Create/Edit Modal -->
     <div id="tournament-modal" class="overlay">
         <div class="overlay-content" style="max-width: 600px;">
             <span id="close-modal" class="close-btn">&times;</span>
-            <h2 id="modal-title">Nuevo Torneo</h2>
+            <h2 id="modal-title">Nuevo Evento</h2>
             <input type="hidden" id="edit-id">
 
             <div class="form-group">
-                <label>Nombre del Torneo</label>
+                <label>Nombre del Evento</label>
                 <input type="text" id="input-name" placeholder="Ej: Regional Primavera 2024">
             </div>
 
             <div class="form-group">
-                <label>TCG</label>
-                <select id="input-tcg">
-                    <option value="yugioh">Yu-Gi-Oh!</option>
-                    <option value="pokemon">Pokémon</option>
-                    <option value="one_piece">One Piece</option>
-                    <option value="lorcana">Lorcana</option>
-                    <option value="digimon">Digimon</option>
-                    <option value="other">Otro</option>
-                </select>
+                <label>Fecha y Hora del Evento</label>
+                <input type="datetime-local" id="input-date">
             </div>
 
             <div class="form-group">
-                <label>Tipo de Torneo</label>
-                <select id="input-type">
-                    <option value="swiss">Reglas Suizas</option>
-                    <option value="single_elimination">Eliminación Directa</option>
-                    <option value="round_robin">Round Robin (Todos contra todos)</option>
-                </select>
+                <label>Imagen del Evento (Drag & Drop)</label>
+                <div class="file-drop-zone" id="drop-zone-event">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Arrastra una imagen aquí o haz clic para subir</p>
+                    <input type="file" id="input-event-file" accept="image/*" style="display: none;">
+                    <div class="file-name" id="event-file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                </div>
+                <input type="text" id="input-image-url" placeholder="https://...">
             </div>
 
-            <div class="form-group">
-                <label>Máximo de Participantes</label>
-                <input type="number" id="input-max" value="32">
+            <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <label class="switch">
+                    <input type="checkbox" id="input-is-tournament">
+                    <span class="slider"></span>
+                </label>
+                <label style="margin-bottom: 0; cursor: pointer;" for="input-is-tournament">¿Es un Torneo? (Habilitar emparejamientos)</label>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <label class="switch">
+                    <input type="checkbox" id="input-is-featured">
+                    <span class="slider"></span>
+                </label>
+                <label style="margin-bottom: 0; cursor: pointer;" for="input-is-featured">Marcar como Evento Principal</label>
+            </div>
+
+            <div id="tournament-fields" style="display: none; border-left: 4px solid var(--primary-color); padding-left: 15px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label>TCG</label>
+                    <select id="input-tcg">
+                        <option value="yugioh">Yu-Gi-Oh!</option>
+                        <option value="pokemon">Pokémon</option>
+                        <option value="one_piece">One Piece</option>
+                        <option value="lorcana">Lorcana</option>
+                        <option value="digimon">Digimon</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Torneo</label>
+                    <select id="input-type">
+                        <option value="swiss">Reglas Suizas</option>
+                        <option value="single_elimination">Eliminación Directa</option>
+                        <option value="round_robin">Round Robin</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Máximo de Participantes</label>
+                    <input type="number" id="input-max" value="32">
+                </div>
             </div>
 
             <div class="form-group">
@@ -282,8 +348,13 @@
                 <textarea id="input-description" rows="3" style="width:100%; background:var(--slot-bg); border:1px solid var(--slot-border); color:white; border-radius:8px; padding:10px;"></textarea>
             </div>
 
+            <div class="form-group">
+                <label>Detalles para Promocionar (Keywords, Requisitos, etc.)</label>
+                <textarea id="input-promo" rows="2" style="width:100%; background:var(--slot-bg); border:1px solid var(--slot-border); color:white; border-radius:8px; padding:10px;"></textarea>
+            </div>
+
             <button id="btn-save-tournament" class="btn" style="width: 100%; margin-top: 20px;">
-                <i class="fas fa-save"></i> Guardar Torneo
+                <i class="fas fa-save"></i> Guardar Evento
             </button>
         </div>
     </div>
@@ -345,7 +416,8 @@
         </div>
     </div>
 
+    <script src="js/cloudinary-upload.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="js/torneos.js"></script>
+    <script src="js/eventos.js"></script>
 </body>
 </html>

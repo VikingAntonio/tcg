@@ -154,11 +154,11 @@ $(document).ready(async function() {
         switchView('sealed');
     } else if (initialView === 'preorders') {
         switchView('preorders');
-    } else if (initialView === 'tournaments') {
-        switchView('tournaments');
+    } else if (initialView === 'events') {
+        switchView('events');
         const tid = urlParams.get('tid');
         if (tid) {
-            setTimeout(() => showTournamentDetails(tid), 1500);
+            setTimeout(() => showEventDetails(tid), 1500);
         }
     }
 
@@ -395,8 +395,8 @@ $(document).ready(async function() {
 
         if (!name) return Swal.fire('Error', 'El nombre es obligatorio', 'warning');
 
-        const { error } = await _supabase.from('tournament_participants').insert([{
-            tournament_id: tId,
+        const { error } = await _supabase.from('event_participants').insert([{
+            event_id: tId,
             name,
             deck_name: deckName,
             player_id: playerId,
@@ -413,7 +413,7 @@ $(document).ready(async function() {
 
     $(document).on('click', '.btn-view-tournament', function() {
         const id = $(this).data('id');
-        showTournamentDetails(id);
+        showEventDetails(id);
     });
 
     $('#close-td-overlay').click(() => $('#tournament-details-overlay').removeClass('active'));
@@ -980,10 +980,10 @@ async function switchView(view) {
         $('#public-view-title').text('Buscamos lo siguiente');
         $('.public-header p').text('Si tienes alguno de estos productos ponte en coontacto con nosotros');
         loadPublicWishlist();
-    } else if (view === 'tournaments') {
-        $('#public-view-title').text('Próximos Torneos');
+    } else if (view === 'events') {
+        $('#public-view-title').text('Próximos Eventos');
         $('.public-header p').text('Participa en nuestros eventos y demuestra que eres el mejor.');
-        loadPublicTournaments();
+        loadPublicEvents();
     }
 
     const url = new URL(window.location);
@@ -1802,76 +1802,82 @@ async function loadPublicSealed() {
     }
 }
 
-async function loadPublicTournaments() {
+async function loadPublicEvents() {
     let userId = window.currentStoreId;
     if (!userId) return;
 
-    showLoading('Cargando Torneos...');
-    $('#tournaments-container').html('<div class="loading">Cargando eventos...</div>');
+    showLoading('Cargando Eventos...');
+    $('#events-container').html('<div class="loading">Cargando eventos...</div>');
 
     try {
-        const { data: tournaments, error } = await _supabase
-            .from('tournaments')
+        const { data: events, error } = await _supabase
+            .from('events')
             .select('*')
             .eq('user_id', userId)
-            .order('created_at', { ascending: false });
+            .order('event_date', { ascending: true });
 
         if (error) throw error;
 
-        if (!tournaments || tournaments.length === 0) {
-            $('#tournaments-container').html('<div class="empty">No hay torneos programados.</div>');
+        if (!events || events.length === 0) {
+            $('#events-container').html('<div class="empty">No hay eventos programados.</div>');
             return;
         }
 
-        $('#tournaments-container').empty();
-        tournaments.forEach(t => {
+        $('#events-container').empty();
+        events.forEach(e => {
+            const isPast = e.event_date && new Date(e.event_date) < new Date();
+            const isFeatured = e.is_featured === true;
             const $card = $(`
-                <div class="deck-public-item">
-                    <div style="font-size: 2rem; margin-bottom: 15px; color: #f1c40f;"><i class="fas fa-trophy"></i></div>
-                    <h3 style="margin-bottom: 10px;">${t.name}</h3>
-                    <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px;">
-                        ${t.tcg.toUpperCase()} | ${t.tournament_type.replace('_', ' ')}
+                <div class="deck-public-item sealed-product-item ${isFeatured ? 'featured-event' : ''}" style="${isPast ? 'opacity: 0.6; pointer-events: none; filter: grayscale(1);' : ''}">
+                    ${isFeatured ? '<div class="featured-badge"><i class="fas fa-star"></i> Principal</div>' : ''}
+                    <div class="product-image-container">
+                        <img src="${e.image_url || 'https://via.placeholder.com/300x150?text=Vikingdev+Events'}" class="sealed-product-img">
                     </div>
-                    <div style="margin-bottom: 20px;">
-                        <span class="tournament-status status-${t.status}">${t.status.toUpperCase()}</span>
+                    <h3 style="margin: 10px 0;">${e.name}</h3>
+                    <div style="font-size: 0.85rem; color: #00d2ff; font-weight: bold; margin-bottom: 5px;">
+                        <i class="fas fa-calendar-day"></i> ${e.event_date ? new Date(e.event_date).toLocaleString() : 'Próximamente'}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">
+                        ${e.is_tournament ? `${e.tcg.toUpperCase()} | ${e.tournament_type.replace('_', ' ')}` : 'Evento General'}
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button class="btn btn-view-tournament" data-id="${t.id}">Ver Detalles</button>
-                        ${t.registration_enabled && t.status === 'planned' ? `
-                            <button class="btn btn-secondary btn-reg-tournament" data-id="${t.id}" data-name="${t.name}">
+                        <button class="btn btn-view-tournament" data-id="${e.id}" style="${isPast ? 'display:none;' : ''}">Ver Detalles</button>
+                        ${e.registration_enabled && e.status === 'planned' && !isPast ? `
+                            <button class="btn btn-secondary btn-reg-tournament" data-id="${e.id}" data-name="${e.name}">
                                 <i class="fas fa-user-plus"></i> Registrarme
                             </button>
                         ` : ''}
+                        ${isPast ? '<div style="color: #666; font-weight: bold; text-transform: uppercase;">Evento Finalizado</div>' : ''}
                     </div>
                 </div>
             `);
-            $('#tournaments-container').append($card);
+            $('#events-container').append($card);
         });
     } catch (e) {
         console.error(e);
-        $('#tournaments-container').html('<div class="error">Error al cargar torneos.</div>');
+        $('#events-container').html('<div class="error">Error al cargar eventos.</div>');
     } finally {
         hideLoading();
     }
 }
 
-async function showTournamentDetails(id) {
+async function showEventDetails(id) {
     showLoading('Cargando detalles...');
     try {
-        const [tRes, pRes, mRes] = await Promise.all([
-            _supabase.from('tournaments').select('*').eq('id', id).single(),
-            _supabase.from('tournament_participants').select('*').eq('tournament_id', id).order('points', { ascending: false }),
-            _supabase.from('tournament_matches').select('*, p1:player1_id(name), p2:player2_id(name)').eq('tournament_id', id).order('round', { ascending: false })
+        const [eRes, pRes, mRes] = await Promise.all([
+            _supabase.from('events').select('*').eq('id', id).single(),
+            _supabase.from('event_participants').select('*').eq('event_id', id).order('points', { ascending: false }),
+            _supabase.from('event_matches').select('*, p1:player1_id(name), p2:player2_id(name)').eq('event_id', id).order('round', { ascending: false })
         ]);
 
-        if (tRes.error) throw tRes.error;
+        if (eRes.error) throw eRes.error;
 
-        const t = tRes.data;
-        $('#td-name').text(t.name);
-        $('#td-desc').text(t.description || 'Sin descripción.');
-        $('#td-tcg').text(t.tcg.toUpperCase());
+        const e = eRes.data;
+        $('#td-name').text(e.name);
+        $('#td-desc').text(e.description || 'Sin descripción.');
+        $('#td-tcg').text(e.is_tournament ? e.tcg.toUpperCase() : 'Evento General');
         $('#td-participants').text(`${pRes.data ? pRes.data.length : 0} Participantes`);
-        $('#td-status-badge').html(`<span class="tournament-status status-${t.status}">${t.status.toUpperCase()}</span>`);
+        $('#td-status-badge').html(`<span class="tournament-status status-${e.status}">${e.status.toUpperCase()}</span>`);
 
         // Standings
         const $sList = $('#td-standings-list');
