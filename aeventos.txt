@@ -1,0 +1,23 @@
+CREATE TABLE public.events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    event_date TIMESTAMP WITH TIME ZONE,
+    image_url TEXT,
+    is_featured BOOLEAN DEFAULT false,
+    promo_details TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- RLS for events
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own events" ON public.events
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Public access
+CREATE POLICY "Public can view events" ON public.events FOR SELECT USING (true);
+
+-- Update usuarios table
+ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS max_events INTEGER DEFAULT 3;
+ALTER TABLE public.usuarios ADD COLUMN IF NOT EXISTS has_events BOOLEAN DEFAULT true;
