@@ -42,8 +42,15 @@ $(document).ready(async function() {
     $('#btn-save-participant').click(saveParticipant);
 
     // Deck Loading Logic
-    $('#btn-load-user-deck').click(loadUserDecks);
+    $('#btn-load-user-deck').click(() => loadUserDecks(currentUser.id));
+    $('#btn-load-customer-deck').click(function() {
+        const userId = $(this).data('user-id');
+        if (userId) loadUserDecks(userId);
+    });
     $('#close-ds-modal').click(() => $('#deck-select-modal').removeClass('active'));
+
+    $('#btn-search-user').click(searchUser);
+    $('#p-user-search').keypress(function(e) { if (e.which == 13) searchUser(); });
 
     // Config Actions
     $('#mgmt-registration-enabled').change(updateRegistrationStatus);
@@ -174,7 +181,7 @@ async function manageTournament(id) {
 
     // Generate public link
     const identifier = currentUser.is_store ? `store=${encodeURIComponent(currentUser.store_name)}` : `user=${encodeURIComponent(currentUser.username)}`;
-    const publicUrl = `${window.location.origin}${window.location.pathname.replace('torneos.html', 'public.html')}?${identifier}&view=torneos&tid=${t.id}`;
+    const publicUrl = `${window.location.origin}${window.location.pathname.replace('torneos.html', 'public.html')}?${identifier}&view=tournaments&tid=${t.id}`;
     $('#mgmt-public-link').val(publicUrl);
     $('#registration-link-container').toggle(t.registration_enabled);
 
@@ -213,11 +220,24 @@ async function loadParticipants(tId) {
         const list = decodeURIComponent($(this).data('list'));
         Swal.fire({
             title: 'Decklist',
-            html: `<div class="deck-list-popup"><pre>${list || 'Lista vacía'}</pre></div>`,
+            html: `
+                <div class="deck-list-popup">
+                    <pre id="deck-list-text">${list || 'Lista vacía'}</pre>
+                </div>
+                <button class="btn btn-sm" onclick="copyDeckList()" style="margin-top: 15px; width: 100%;">
+                    <i class="fas fa-copy"></i> Copiar al Portapapeles
+                </button>
+            `,
             showConfirmButton: false,
             showCloseButton: true
         });
     });
+
+    window.copyDeckList = function() {
+        const text = document.getElementById('deck-list-text').innerText;
+        navigator.clipboard.writeText(text);
+        Swal.fire({ title: 'Copiado', icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' });
+    };
 
     $(document).on('click', '.btn-edit-p', function() {
         const pId = $(this).data('id');
@@ -260,13 +280,36 @@ async function saveParticipant() {
     }
 }
 
-async function loadUserDecks() {
-    const { data: decks } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id);
+async function searchUser() {
+    const query = $('#p-user-search').val().trim();
+    if (query.length < 3) return Swal.fire('Info', 'Escribe al menos 3 letras', 'info');
+
+    const { data: users } = await _supabase.from('usuarios').select('id, username').ilike('username', `%${query}%`).limit(5);
+    const $results = $('#user-search-results');
+    $results.empty().show();
+
+    if (!users || users.length === 0) {
+        $results.append('<div style="padding: 10px; color: #666;">No se encontraron usuarios</div>');
+    } else {
+        users.forEach(u => {
+            const $div = $(`<div style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);">${u.username}</div>`);
+            $div.click(() => {
+                $('#p-name').val(u.username);
+                $('#btn-load-customer-deck').data('user-id', u.id).show();
+                $results.hide();
+            });
+            $results.append($div);
+        });
+    }
+}
+
+async function loadUserDecks(userId) {
+    const { data: decks } = await _supabase.from('decks').select('id, name').eq('user_id', userId);
     const $container = $('#user-deck-list');
     $container.empty();
 
     if (!decks || decks.length === 0) {
-        $container.append('<p style="color: #aaa;">No tienes decks creados.</p>');
+        $container.append('<p style="color: #aaa;">No hay decks disponibles para este usuario.</p>');
     } else {
         decks.forEach(d => {
             const $btn = $(`<button class="btn btn-secondary" style="text-align: left;">${d.name}</button>`);
@@ -448,28 +491,102 @@ function updateStandingsTable() {
 function renderStandingsChart() {
     const canvas = document.getElementById('standings-canvas');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const sorted = [...currentParticipants].sort((a, b) => b.points - a.points).slice(0, 10);
 
-    // Simple bar chart
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const barWidth = 40;
-    const gap = 20;
-    const maxPoints = sorted.length > 0 ? Math.max(...sorted.map(p => p.points), 1) : 1;
+    // Auto-resize canvas to match its displayed size
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const width = rect.width;
+    const height = rect.height;
+
+    const sorted = [...currentParticipants].sort((a, b) => b.points - a.points).slice(0, 10);
+    if (sorted.length === 0) {
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('Esperando participantes...', width / 2, height / 2);
+        return;
+    }
+
+    ctx.clearRect(0, 0, width, height);
+
+    const margin = { top: 40, right: 20, bottom: 60, left: 40 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+
+    const maxPoints = Math.max(...sorted.map(p => p.points), 1);
+    const barGap = 15;
+    const barWidth = (chartWidth / sorted.length) - barGap;
+
+    // Draw grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+        const y = margin.top + (chartHeight / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(width - margin.right, y);
+        ctx.stroke();
+    }
 
     sorted.forEach((p, i) => {
-        const x = 50 + i * (barWidth + gap);
-        const barHeight = (p.points / maxPoints) * 200;
-        const y = canvas.height - 50 - barHeight;
+        const x = margin.left + i * (barWidth + barGap);
+        const bHeight = (p.points / maxPoints) * chartHeight;
+        const y = height - margin.bottom - bHeight;
 
-        ctx.fillStyle = i === 0 ? '#f1c40f' : (i === 1 ? '#bdc3c7' : (i === 2 ? '#e67e22' : '#3498db'));
-        ctx.fillRect(x, y, barWidth, barHeight);
+        // Gradient for bars
+        const grad = ctx.createLinearGradient(x, y, x, height - margin.bottom);
+        if (i === 0) {
+            grad.addColorStop(0, '#f1c40f');
+            grad.addColorStop(1, '#d4ac0d');
+        } else if (i === 1) {
+            grad.addColorStop(0, '#bdc3c7');
+            grad.addColorStop(1, '#95a5a6');
+        } else if (i === 2) {
+            grad.addColorStop(0, '#e67e22');
+            grad.addColorStop(1, '#d35400');
+        } else {
+            grad.addColorStop(0, '#3498db');
+            grad.addColorStop(1, '#2980b9');
+        }
 
+        // Draw Bar with rounded corners
+        ctx.fillStyle = grad;
+        const radius = 8;
+        ctx.beginPath();
+        ctx.moveTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.lineTo(x + barWidth - radius, y);
+        ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
+        ctx.lineTo(x + barWidth, height - margin.bottom);
+        ctx.lineTo(x, height - margin.bottom);
+        ctx.closePath();
+        ctx.fill();
+
+        // Shadow
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 5;
+
+        // Labels
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
         ctx.fillStyle = 'white';
-        ctx.font = '10px Montserrat';
+        ctx.font = 'bold 12px Montserrat';
         ctx.textAlign = 'center';
-        ctx.fillText(p.name.substring(0, 6), x + barWidth/2, canvas.height - 30);
-        ctx.fillText(p.points, x + barWidth/2, y - 10);
+        ctx.fillText(p.points, x + barWidth / 2, y - 10);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = '10px Montserrat';
+        ctx.save();
+        ctx.translate(x + barWidth / 2, height - margin.bottom + 20);
+        ctx.rotate(-Math.PI / 4);
+        ctx.fillText(p.name.length > 10 ? p.name.substring(0, 8) + '..' : p.name, 0, 0);
+        ctx.restore();
     });
 }
 
@@ -517,6 +634,9 @@ function resetParticipantModal() {
     $('#p-deck-name').val('');
     $('#p-player-id').val('');
     $('#p-deck-list').val('');
+    $('#p-user-search').val('');
+    $('#user-search-results').empty().hide();
+    $('#btn-load-customer-deck').hide();
 }
 
 function populateParticipantModal(p) {

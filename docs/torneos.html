@@ -87,12 +87,18 @@
             align-items: center;
         }
 
+        .standings-chart-container {
+            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
         #standings-canvas {
             width: 100%;
-            height: 300px;
-            background: #000;
-            border-radius: 12px;
-            margin-top: 20px;
+            height: 350px;
+            display: block;
         }
 
         .deck-list-popup {
@@ -194,7 +200,9 @@
             <!-- Tab: Standings -->
             <div id="tab-standings" class="mgmt-section">
                 <h2>Clasificación Actual</h2>
-                <canvas id="standings-canvas"></canvas>
+                <div class="standings-chart-container">
+                    <canvas id="standings-canvas"></canvas>
+                </div>
                 <table class="participant-table" style="margin-top: 30px;">
                     <thead>
                         <tr>
@@ -303,9 +311,19 @@
             </div>
 
             <div class="form-group">
+                <label>Buscar Usuario del Sistema (Opcional)</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="p-user-search" placeholder="Username del cliente..." style="flex: 1;">
+                    <button id="btn-search-user" class="btn btn-sm"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="user-search-results" style="max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 10px; display: none;"></div>
+            </div>
+
+            <div class="form-group">
                 <label>Decklist (Modo Lista)</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <button id="btn-load-user-deck" class="btn btn-sm btn-secondary"><i class="fas fa-upload"></i> Cargar de mis Decks</button>
+                    <button id="btn-load-user-deck" class="btn btn-sm btn-secondary"><i class="fas fa-upload"></i> Mis Decks</button>
+                    <button id="btn-load-customer-deck" class="btn btn-sm btn-secondary" style="display: none;"><i class="fas fa-user"></i> Decks de Cliente</button>
                 </div>
                 <textarea id="p-deck-list" rows="6" placeholder="1x Card Name&#10;2x Another Card..." style="width:100%; background:var(--slot-bg); border:1px solid var(--slot-border); color:white; border-radius:8px; padding:10px;"></textarea>
             </div>

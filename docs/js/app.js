@@ -156,6 +156,10 @@ $(document).ready(async function() {
         switchView('preorders');
     } else if (initialView === 'tournaments') {
         switchView('tournaments');
+        const tid = urlParams.get('tid');
+        if (tid) {
+            setTimeout(() => showTournamentDetails(tid), 1500);
+        }
     }
 
     $('#spirit-btn').click(function() {
@@ -342,6 +346,42 @@ $(document).ready(async function() {
         $('#reg-modal-title').text(`Registro: ${name}`);
         $('#btn-submit-reg').data('id', id);
         $('#tournament-reg-modal').addClass('active');
+
+        // Show Load My Deck if logged in
+        const session = localStorage.getItem('tcg_session');
+        if (session) {
+            $('#reg-load-deck-container').show();
+            const user = JSON.parse(session);
+            $('#reg-name').val(user.username);
+        } else {
+            $('#reg-load-deck-container').hide();
+        }
+    });
+
+    $('#btn-reg-load-my-deck').click(async function() {
+        const session = JSON.parse(localStorage.getItem('tcg_session'));
+        if (!session) return;
+
+        const { data: decks } = await _supabase.from('decks').select('id, name').eq('user_id', session.id);
+        if (!decks || decks.length === 0) return Swal.fire('Info', 'No tienes decks creados', 'info');
+
+        const inputOptions = {};
+        decks.forEach(d => inputOptions[d.id] = d.name);
+
+        const { value: deckId } = await Swal.fire({
+            title: 'Selecciona tu Deck',
+            input: 'select',
+            inputOptions: inputOptions,
+            showCancelButton: true
+        });
+
+        if (deckId) {
+            const { data: cards } = await _supabase.from('deck_cards').select('name, quantity').eq('deck_id', deckId);
+            let listStr = "";
+            if (cards) cards.forEach(c => listStr += `${c.quantity}x ${c.name}\n`);
+            $('#reg-deck-name').val(inputOptions[deckId]);
+            $('#reg-decklist').val(listStr);
+        }
     });
 
     $('#close-reg-modal').click(() => $('#tournament-reg-modal').removeClass('active'));
