@@ -133,9 +133,7 @@ $(document).ready(async function() {
     const urlParams = new URLSearchParams(window.location.search);
     const initialView = urlParams.get('view') || 'albums';
 
-    if (initialView === 'decks') {
-        showLoading('Cargando Decks...');
-    } else {
+    if (initialView === 'albums') {
         showLoading('Cargando interfaz...');
     }
 
@@ -156,10 +154,6 @@ $(document).ready(async function() {
         switchView('preorders');
     } else if (initialView === 'events') {
         switchView('events');
-        const tid = urlParams.get('tid');
-        if (tid) {
-            setTimeout(() => showEventDetails(tid), 1500);
-        }
     }
 
     $('#spirit-btn').click(function() {
@@ -1106,7 +1100,6 @@ async function loadPublicPreorders() {
     }
     if (!userId) return;
 
-    showLoading('Cargando Preventas...');
     $('#preorders-container').html('<div class="loading">Cargando preventas...</div>');
 
     try {
@@ -1229,7 +1222,8 @@ function initFloatingCompanion() {
 }
 
 async function loadPublicAlbums(userId) {
-    showLoading('Cargando interfaz...');
+    const isAlbumsView = $('.nav-btn[data-view="albums"]').hasClass('active');
+    if (isAlbumsView) showLoading('Cargando interfaz...');
     try {
         let query = _supabase
             .from('albums')
@@ -1286,7 +1280,6 @@ async function loadPublicDecks() {
     const userName = urlParams.get('user');
     if (!storeName && !userName) return;
 
-    showLoading('Cargando Decks...');
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
     try {
@@ -1741,7 +1734,6 @@ async function loadPublicSealed() {
     }
     if (!userId) return;
 
-    showLoading('Cargando Productos...');
     $('#sealed-container').html('<div class="loading">Cargando productos sellados...</div>');
 
     try {
@@ -1807,14 +1799,24 @@ async function loadPublicSealed() {
 
 async function loadPublicEvents() {
     let userId = window.currentStoreId;
+    if (!userId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeName = urlParams.get('store');
+        const userName = urlParams.get('user');
+        if (!storeName && !userName) return;
+        let query = _supabase.from('usuarios').select('id');
+        if (storeName) query = query.eq('store_name', storeName);
+        else query = query.eq('username', userName);
+        const { data: user } = await query.single();
+        if (user) userId = user.id;
+    }
     if (!userId) return;
 
-    showLoading('Cargando Eventos...');
     $('#events-container').html('<div class="loading">Cargando...</div>');
 
     try {
         const [eRes, tRes] = await Promise.all([
-            _supabase.from('events').select('*').eq('user_id', userId).order('event_date', { ascending: true }),
+            _supabase.from('events').select('*').eq('user_id', userId).eq('is_public', true).order('event_date', { ascending: true }),
             _supabase.from('tournaments').select('*').eq('user_id', userId).order('event_date', { ascending: true })
         ]);
 
@@ -1833,8 +1835,9 @@ async function loadPublicEvents() {
         combined.forEach(item => {
             const isPast = item.event_date && new Date(item.event_date) < new Date();
             const isTournament = item.type === 'tournament';
+            const itemId = isTournament ? `tournament-${item.id}` : `event-${item.id}`;
             const $card = $(`
-                <div class="deck-public-item sealed-product-item" style="${isPast ? 'opacity: 0.6; filter: grayscale(1);' : ''}">
+                <div id="${itemId}" class="deck-public-item sealed-product-item" style="${isPast ? 'opacity: 0.6; filter: grayscale(1);' : ''}">
                     <div class="product-image-container">
                         <img src="${item.image_url || 'https://via.placeholder.com/300x150?text=Vikingdev'}" class="sealed-product-img">
                     </div>
@@ -1843,7 +1846,7 @@ async function loadPublicEvents() {
                         <i class="fas fa-calendar-day"></i> ${item.event_date ? new Date(item.event_date).toLocaleString() : 'Próximamente'}
                     </div>
                     <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">
-                        ${isTournament ? `Torneo ${item.tcg.toUpperCase()}` : 'Evento General'}
+                        ${isTournament ? `Torneo ${item.tcg ? item.tcg.toUpperCase() : 'General'}` : 'Evento General'}
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         ${isTournament ? `
@@ -1861,6 +1864,16 @@ async function loadPublicEvents() {
             `);
             $('#events-container').append($card);
         });
+
+        // Autoscroll to specific tournament if tid is present
+        const urlParams = new URLSearchParams(window.location.search);
+        const tid = urlParams.get('tid');
+        if (tid && $(`#tournament-${tid}`).length) {
+            setTimeout(() => {
+                $(`#tournament-${tid}`)[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                $(`#tournament-${tid}`).css('border-color', 'var(--primary-color)').css('box-shadow', '0 0 20px var(--primary-color)');
+            }, 500);
+        }
     } catch (e) {
         console.error(e);
         $('#events-container').html('<div class="error">Error al cargar la sección.</div>');
@@ -1870,7 +1883,6 @@ async function loadPublicEvents() {
 }
 
 async function showEventDetails(id) {
-    showLoading('Cargando detalles...');
     try {
         const [eRes, pRes, mRes] = await Promise.all([
             _supabase.from('tournaments').select('*').eq('id', id).single(),
@@ -1967,7 +1979,6 @@ async function loadPublicWishlist() {
 
     if (!userId) return;
 
-    showLoading('Cargando Buscamos...');
     $('#wishlist-container').html('<div class="loading">Cargando lista de deseos...</div>');
 
     try {
