@@ -18,7 +18,27 @@ $(document).ready(async function() {
         deleteEvent($(this).data('id'));
     });
 
-    $('#drop-zone').click(() => $('#input-file').click());
+    const $dropZone = $('#drop-zone');
+    $dropZone.click(() => $('#input-file').click());
+
+    $dropZone.on('dragover', function(e) {
+        e.preventDefault();
+        $(this).addClass('dragover');
+    });
+
+    $dropZone.on('dragleave drop', function(e) {
+        e.preventDefault();
+        $(this).removeClass('dragover');
+    });
+
+    $dropZone.on('drop', async function(e) {
+        const file = e.originalEvent.dataTransfer.files[0];
+        if (file) {
+            const url = await CloudinaryUpload.uploadImage(file);
+            $('#input-image-url').val(url);
+        }
+    });
+
     $('#input-file').change(async function() {
         if (this.files[0]) {
             const url = await CloudinaryUpload.uploadImage(this.files[0]);

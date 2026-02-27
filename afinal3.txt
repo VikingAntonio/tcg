@@ -1,0 +1,5 @@
+-- Migration to add missing columns to the events table
+-- Supported features: Featured events and Promo details
+
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS promo_details TEXT;
