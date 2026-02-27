@@ -44,15 +44,26 @@ async function loadEvents() {
     const $container = $('#event-container');
     $container.empty();
 
-    items?.forEach(e => {
+    if (!items || items.length === 0) {
+        $container.html('<div class="empty">No hay eventos creados.</div>');
+        return;
+    }
+
+    items.forEach(e => {
+        const dateStr = e.event_date ? new Date(e.event_date).toLocaleString() : 'Sin fecha';
+        const featuredBadge = e.is_featured ? '<div class="featured-badge">Destacado</div>' : '';
+
         $container.append(`
-            <div class="event-card">
-                ${e.image_url ? `<img src="${e.image_url}">` : ''}
+            <div class="album-card ${e.is_featured ? 'featured-event' : ''}">
+                ${featuredBadge}
+                <div class="product-image-container" style="height: 150px; background: rgba(0,0,0,0.2);">
+                    <img src="${e.image_url || 'https://via.placeholder.com/300x150?text=Vikingdev'}" class="sealed-product-img">
+                </div>
                 <h3>${e.name}</h3>
-                <p style="font-size:12px; color:#aaa;">${e.event_date ? new Date(e.event_date).toLocaleString() : ''}</p>
-                <div style="display:flex; gap:10px; margin-top:auto;">
-                    <button class="btn btn-sm btn-edit-event" data-id="${e.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger btn-delete-event" data-id="${e.id}">Borrar</button>
+                <div style="font-size: 12px; color: var(--text-muted);"><i class="fas fa-calendar"></i> ${dateStr}</div>
+                <div style="display:flex; gap:10px; margin-top:auto; width: 100%;">
+                    <button class="btn btn-sm btn-edit-event" data-id="${e.id}" style="flex: 1;">Editar</button>
+                    <button class="btn btn-sm btn-danger btn-delete-event" data-id="${e.id}" style="flex: 1;">Borrar</button>
                 </div>
             </div>
         `);

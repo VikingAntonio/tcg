@@ -981,7 +981,7 @@ async function switchView(view) {
         $('.public-header p').text('Si tienes alguno de estos productos ponte en coontacto con nosotros');
         loadPublicWishlist();
     } else if (view === 'events') {
-        $('#public-view-title').text('Eventos y Torneos');
+        $('#public-view-title').text('Eventos');
         $('.public-header p').text('Participa en nuestros eventos y torneos para ganar premios increíbles.');
         loadPublicEvents();
     }
@@ -1806,7 +1806,7 @@ async function loadPublicEvents() {
     let userId = window.currentStoreId;
     if (!userId) return;
 
-    showLoading('Cargando Eventos y Torneos...');
+    showLoading('Cargando Eventos...');
     $('#events-container').html('<div class="loading">Cargando...</div>');
 
     try {
@@ -1883,6 +1883,17 @@ async function showEventDetails(id) {
         $('#td-tcg').text(e.tcg.toUpperCase());
         $('#td-participants').text(`${pRes.data ? pRes.data.length : 0} Participantes`);
         $('#td-status-badge').html(`<span class="tournament-status status-${e.status}">${e.status.toUpperCase()}</span>`);
+
+        const isPast = e.event_date && new Date(e.event_date) < new Date();
+        if (e.registration_enabled && e.status === 'planned' && !isPast) {
+            $('#td-reg-container').html(`
+                <button class="btn btn-secondary btn-reg-tournament" data-id="${e.id}" data-name="${e.name}">
+                    <i class="fas fa-user-plus"></i> Registrarme
+                </button>
+            `);
+        } else {
+            $('#td-reg-container').empty();
+        }
 
         const $sList = $('#td-standings-list');
         $sList.empty();

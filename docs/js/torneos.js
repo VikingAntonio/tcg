@@ -38,6 +38,8 @@ $(document).ready(async function() {
     $('#btn-finish-tournament').click(finishTournament);
     $('#mgmt-reg-enabled').change(updateRegistrationStatus);
     $('#btn-delete-tournament').click(() => deleteTournament(currentTournament.id));
+    $('#btn-edit-meta').click(editTournamentMeta);
+    $('#btn-copy-mgmt-link').click(copyTournamentLink);
 
     $(document).on('click', '.btn-manage-tournament', function() {
         manageTournament($(this).data('id'));
@@ -47,12 +49,9 @@ $(document).ready(async function() {
         const deck = $(this).data('deck');
         if (!deck) return Swal.fire('Info', 'Este jugador no proporcionó una decklist.', 'info');
 
-        Swal.fire({
-            title: 'Decklist',
-            html: `<textarea readonly style="width: 100%; height: 300px; background: #222; color: #fff; padding: 10px; border: 1px solid #444; border-radius: 8px; font-family: monospace;">${deck}</textarea>`,
-            confirmButtonText: 'Cerrar',
-            footer: `<button class="btn btn-sm" onclick="downloadDecklist(\`${deck.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)"><i class="fas fa-download"></i> Descargar .txt</button>`
-        });
+        $('#dp-content').text(deck);
+        $('#btn-download-dp').off('click').click(() => downloadDecklist(deck));
+        $('#deck-preview-modal').addClass('active');
     });
 
     $(document).on('click', '.btn-del-p', async function() {
@@ -272,6 +271,33 @@ async function updateRegistrationStatus() {
 async function finishTournament() {
     await _supabase.from('tournaments').update({ status: 'finished' }).eq('id', currentTournament.id);
     loadTournaments();
+}
+
+async function editTournamentMeta() {
+    if (!currentTournament) return;
+    $('#modal-title').text('Editar Torneo');
+    $('#edit-id').val(currentTournament.id);
+    $('#input-name').val(currentTournament.name);
+    $('#input-date').val(currentTournament.event_date ? currentTournament.event_date.slice(0, 16) : '');
+    $('#input-tcg').val(currentTournament.tcg);
+    $('#input-max').val(currentTournament.max_participants);
+    $('#input-desc').val(currentTournament.description);
+    $('#tournament-modal').addClass('active');
+}
+
+function copyTournamentLink() {
+    const link = $('#mgmt-link').val();
+    navigator.clipboard.writeText(link).then(() => {
+        Swal.fire({
+            title: '¡Copiado!',
+            text: 'El link público se ha copiado al portapapeles',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    });
 }
 
 async function deleteTournament(id) {
