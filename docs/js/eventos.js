@@ -84,15 +84,22 @@ async function loadEvents() {
     items.forEach(e => {
         const dateStr = e.event_date ? new Date(e.event_date).toLocaleString() : 'Sin fecha';
         const featuredBadge = e.is_featured ? '<div class="featured-badge">Destacado</div>' : '';
+        const typeLabel = e.type ? e.type.charAt(0).toUpperCase() + e.type.slice(1) : 'General';
 
         $container.append(`
-            <div class="album-card ${e.is_featured ? 'featured-event' : ''}">
+            <div class="album-card ${e.is_featured ? 'featured-event' : ''} event-type-${e.type || 'informativo'}">
                 ${featuredBadge}
+                <div class="event-type-badge">${typeLabel}</div>
+                ${e.image_url ? `
                 <div class="product-image-container" style="height: 150px; background: rgba(0,0,0,0.2);">
-                    <img src="${e.image_url || 'https://via.placeholder.com/300x150?text=Vikingdev'}" class="sealed-product-img">
+                    <img src="${e.image_url}" class="sealed-product-img">
                 </div>
-                <h3>${e.name}</h3>
-                <div style="font-size: 12px; color: var(--text-muted);"><i class="fas fa-calendar"></i> ${dateStr}</div>
+                ` : '<div style="height: 20px;"></div>'}
+                <h3 style="margin-top: 10px;">${e.name}</h3>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;"><i class="fas fa-calendar"></i> ${dateStr}</div>
+                <div class="event-desc-preview" style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    ${e.description || 'Sin descripción'}
+                </div>
                 <div style="display:flex; gap:10px; margin-top:auto; width: 100%;">
                     <button class="btn btn-sm btn-edit-event" data-id="${e.id}" style="flex: 1;">Editar</button>
                     <button class="btn btn-sm btn-danger btn-delete-event" data-id="${e.id}" style="flex: 1;">Borrar</button>
@@ -105,11 +112,20 @@ async function loadEvents() {
 async function saveEvent() {
     const id = $('#edit-id').val();
     const eventDate = $('#input-date').val();
+    const name = $('#input-name').val().trim();
+    const imageUrl = $('#input-image-url').val();
+
+    if (!name && !imageUrl) {
+        Swal.fire('Atención', 'Debes poner al menos un nombre o una imagen.', 'warning');
+        return;
+    }
+
     const data = {
         user_id: currentUser.id,
-        name: $('#input-name').val() || 'Nuevo Evento',
+        name: name || 'Evento sin nombre',
+        type: $('#input-type').val() || 'informativo',
         event_date: eventDate || null,
-        image_url: $('#input-image-url').val() || null,
+        image_url: imageUrl || null,
         description: $('#input-desc').val() || null,
         is_featured: $('#input-featured').is(':checked'),
         promo_details: $('#input-promo').val() || null
@@ -125,6 +141,7 @@ async function editEvent(id) {
     const { data: e } = await _supabase.from('events').select('*').eq('id', id).single();
     $('#edit-id').val(e.id);
     $('#input-name').val(e.name);
+    $('#input-type').val(e.type || 'informativo');
     $('#input-date').val(e.event_date ? e.event_date.slice(0, 16) : '');
     $('#input-image-url').val(e.image_url);
     if (e.image_url) {
@@ -150,6 +167,7 @@ async function deleteEvent(id) {
 function resetModal() {
     $('#edit-id').val('');
     $('#input-name').val('');
+    $('#input-type').val('informativo');
     $('#input-image-url').val('');
     $('#img-preview').hide().attr('src', '');
     $('#drop-text').show();

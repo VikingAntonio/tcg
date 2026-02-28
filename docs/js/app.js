@@ -111,7 +111,7 @@ $(document).ready(async function() {
     // --- Mobile Interaction Priority (Priority over turn.js) ---
     // Interceptamos eventos en la fase de captura para evitar que turn.js
     // detecte el toque si el usuario está interactuando con un botón.
-    const protectedElements = '.zoom-btn, #close-btn, .nav-btn, #clear-search, .btn-reg-tournament, .btn-view-tournament';
+    const protectedElements = '.zoom-btn, #close-btn, .nav-btn, #clear-search';
 
     const stopInterference = (e) => {
         if (e.target.closest(protectedElements)) {
@@ -333,106 +333,16 @@ $(document).ready(async function() {
         $('#chatbot-container').removeClass('active');
     });
 
-    // --- Tournament Listeners ---
-    $(document).on('click', '.btn-reg-tournament', function() {
-        const id = $(this).data('id');
-        const name = $(this).data('name');
-        $('#reg-modal-title').text(`Registro: ${name}`);
-        $('#btn-submit-reg').data('id', id);
-        $('#tournament-reg-modal').addClass('active');
-
-        // Show Load My Deck if logged in
-        const session = localStorage.getItem('tcg_session');
-        if (session) {
-            $('#reg-load-deck-container').show();
-            const user = JSON.parse(session);
-            $('#reg-name').val(user.username);
-        } else {
-            $('#reg-load-deck-container').hide();
-        }
-    });
-
-    $('#btn-reg-load-my-deck').click(async function() {
-        const session = JSON.parse(localStorage.getItem('tcg_session'));
-        if (!session) return;
-
-        const { data: decks } = await _supabase.from('decks').select('id, name').eq('user_id', session.id);
-        if (!decks || decks.length === 0) return Swal.fire('Info', 'No tienes decks creados', 'info');
-
-        const inputOptions = {};
-        decks.forEach(d => inputOptions[d.id] = d.name);
-
-        const { value: deckId } = await Swal.fire({
-            title: 'Selecciona tu Deck',
-            input: 'select',
-            inputOptions: inputOptions,
-            showCancelButton: true
-        });
-
-        if (deckId) {
-            const { data: cards } = await _supabase.from('deck_cards').select('name, quantity').eq('deck_id', deckId);
-            let listStr = "";
-            if (cards) cards.forEach(c => listStr += `${c.quantity}x ${c.name}\n`);
-            $('#reg-deck-name').val(inputOptions[deckId]);
-            $('#reg-decklist').val(listStr);
-        }
-    });
-
-    $('#close-reg-modal').click(() => $('#tournament-reg-modal').removeClass('active'));
-
-    $('#btn-submit-reg').click(async function() {
-        const tId = $(this).data('id');
-        const name = $('#reg-name').val().trim();
-        const deckName = $('#reg-deck-name').val().trim();
-        const playerId = $('#reg-player-id').val().trim();
-        const deckList = $('#reg-decklist').val().trim();
-
-        if (!name) return Swal.fire('Error', 'El nombre es obligatorio', 'warning');
-
-        const { error } = await _supabase.from('tournament_participants').insert([{
-            tournament_id: tId,
-            name,
-            deck_name: deckName,
-            player_id: playerId,
-            deck_list: deckList
-        }]);
-
-        if (error) Swal.fire('Error', error.message, 'error');
-        else {
-            Swal.fire('¡Registrado!', 'Tu registro se ha enviado correctamente', 'success');
-            $('#tournament-reg-modal').removeClass('active');
-            $('#reg-name, #reg-deck-name, #reg-player-id, #reg-decklist').val('');
-        }
-    });
-
-    $(document).on('click', '.btn-view-tournament', function() {
-        const id = $(this).data('id');
-        showEventDetails(id);
-    });
-
     $(document).on('click', '#events-container .deck-public-item', function(e) {
         if ($(e.target).closest('button').length) return;
         const id = $(this).attr('id');
-        if (id && id.startsWith('tournament-')) {
-            showEventDetails(id.replace('tournament-', ''));
-        } else if (id && id.startsWith('event-')) {
+        if (id && id.startsWith('event-')) {
             const eventId = id.replace('event-', '');
             showGeneralEventDetails(eventId);
         }
     });
 
-    $('#close-td-overlay').click(() => $('#tournament-details-overlay').removeClass('active'));
     $('#close-ed-overlay').click(() => $('#event-details-overlay').removeClass('active'));
-
-    $('.mgmt-tab').click(function() {
-        if ($(this).closest('#tournament-details-overlay').length) {
-            const target = $(this).data('target');
-            $('#tournament-details-overlay .mgmt-tab').removeClass('active');
-            $(this).addClass('active');
-            $('#tournament-details-overlay .mgmt-section').removeClass('active');
-            $(`#${target}`).addClass('active');
-        }
-    });
 
     // --- Companion Menu Logic ---
     $(document).on('click', function(e) {
@@ -988,7 +898,7 @@ async function switchView(view) {
         loadPublicWishlist();
     } else if (view === 'events') {
         $('#public-view-title').text('Eventos');
-        $('.public-header p').text('Participa en nuestros eventos y torneos para ganar premios increíbles.');
+        $('.public-header p').text('Participa en nuestros eventos para ganar premios increíbles.');
         loadPublicEvents();
     }
 
@@ -1833,72 +1743,57 @@ async function loadPublicEvents() {
     $('#events-container').html('<div class="loading">Cargando...</div>');
 
     try {
-        const [eRes, tRes] = await Promise.allSettled([
-            _supabase.from('events').select('*').eq('user_id', userId).eq('is_public', true).order('event_date', { ascending: true }),
-            _supabase.from('tournaments').select('*').eq('user_id', userId).order('event_date', { ascending: true })
-        ]);
+        const { data: events, error } = await _supabase.from('events').select('*').eq('user_id', userId).eq('is_public', true).order('event_date', { ascending: true });
 
-        let combined = [];
-        if (eRes.status === 'fulfilled') {
-            if (eRes.value.error) console.warn("Events error:", eRes.value.error);
-            else if (eRes.value.data) combined.push(...eRes.value.data.map(i => ({ ...i, type: 'event' })));
-        }
+        if (error) throw error;
 
-        if (tRes.status === 'fulfilled') {
-            if (tRes.value.error) console.warn("Tournaments error:", tRes.value.error);
-            else if (tRes.value.data) combined.push(...tRes.value.data.map(i => ({ ...i, type: 'tournament' })));
-        }
-
-        combined.sort((a, b) => new Date(a.event_date || 0) - new Date(b.event_date || 0));
-
-        if (combined.length === 0) {
-            $('#events-container').html('<div class="empty">No hay eventos ni torneos programados.</div>');
+        if (!events || events.length === 0) {
+            $('#events-container').html('<div class="empty">No hay eventos programados.</div>');
             return;
         }
 
         $('#events-container').empty();
-        combined.forEach(item => {
-            const isPast = item.event_date && new Date(item.event_date) < new Date();
-            const isTournament = item.type === 'tournament';
-            const itemId = isTournament ? `tournament-${item.id}` : `event-${item.id}`;
+        events.forEach((item, index) => {
+            const now = new Date();
+            const eventDate = item.event_date ? new Date(item.event_date) : null;
+            const isPast = eventDate && eventDate < now;
+            const itemId = `event-${item.id}`;
+
+            // Check if ending soon (within 2 days)
+            let endingSoonHtml = "";
+            if (eventDate && !isPast) {
+                const diffTime = eventDate - now;
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                if (diffDays <= 2) {
+                    endingSoonHtml = `<div class="ending-soon-warning"><i class="fas fa-exclamation-triangle"></i> Queda poco para que este evento termine</div>`;
+                }
+            }
+
+            const typeClass = item.type ? `public-event-${item.type}` : 'public-event-informativo';
+            const typeLabel = item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'Evento';
+
             const $card = $(`
-                <div id="${itemId}" class="deck-public-item sealed-product-item" style="${isPast ? 'opacity: 0.6; filter: grayscale(1);' : ''}">
+                <div id="${itemId}" class="deck-public-item sealed-product-item public-event-card ${typeClass}"
+                     style="${isPast ? 'opacity: 0.6; filter: grayscale(1);' : ''}; animation-delay: ${index * 0.1}s;">
+                    <div class="event-type-badge">${typeLabel}</div>
+                    ${item.image_url ? `
                     <div class="product-image-container">
-                        <img src="${item.image_url || 'https://via.placeholder.com/300x150?text=Vikingdev'}" class="sealed-product-img">
+                        <img src="${item.image_url}" class="sealed-product-img">
                     </div>
+                    ` : '<div style="height: 20px;"></div>'}
                     <h3 style="margin: 10px 0;">${item.name}</h3>
                     <div style="font-size: 0.85rem; color: #00d2ff; font-weight: bold; margin-bottom: 5px;">
-                        <i class="fas fa-calendar-day"></i> ${item.event_date ? new Date(item.event_date).toLocaleString() : 'Próximamente'}
+                        <i class="fas fa-calendar-day"></i> ${eventDate ? eventDate.toLocaleString() : 'Próximamente'}
                     </div>
-                    <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">
-                        ${isTournament ? `Torneo ${item.tcg ? item.tcg.toUpperCase() : 'General'}` : (item.description ? 'Evento General' : '')}
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        ${isTournament ? `
-                            <button class="btn btn-view-tournament" data-id="${item.id}" style="${isPast ? 'display:none;' : ''}">Ver Ranking</button>
-                            ${item.registration_enabled && item.status === 'planned' && !isPast ? `
-                                <button class="btn btn-secondary btn-reg-tournament" data-id="${item.id}" data-name="${item.name}">
-                                    <i class="fas fa-user-plus"></i> Registrarme
-                                </button>
-                            ` : ''}
-                        ` : ''}
-                        ${!isTournament && item.description ? `<p style="font-size: 0.8rem; color: #888;">${item.description}</p>` : ''}
-                        ${isPast ? '<div style="color: #666; font-weight: bold; text-transform: uppercase; font-size: 0.8rem;">Finalizado</div>' : ''}
+                    ${endingSoonHtml}
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                        ${item.description ? `<p style="font-size: 0.85rem; color: #aaa; text-align: left; line-height: 1.5;">${item.description}</p>` : ''}
+                        ${isPast ? '<div style="color: #666; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; margin-top: 10px;">Finalizado</div>' : ''}
                     </div>
                 </div>
             `);
             $('#events-container').append($card);
         });
-
-        // Autoscroll to specific tournament if tid is present
-        const urlParams = new URLSearchParams(window.location.search);
-        const tid = urlParams.get('tid');
-        if (tid && $(`#tournament-${tid}`).length) {
-            setTimeout(() => {
-                $(`#tournament-${tid}`)[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                $(`#tournament-${tid}`).css('border-color', 'var(--primary-color)').css('box-shadow', '0 0 20px var(--primary-color)');
-            }, 500);
-        }
     } catch (e) {
         console.error(e);
         $('#events-container').html('<div class="error">Error al cargar la sección.</div>');
@@ -1907,83 +1802,6 @@ async function loadPublicEvents() {
     }
 }
 
-async function showEventDetails(id) {
-    try {
-        const [eRes, pRes, mRes] = await Promise.all([
-            _supabase.from('tournaments').select('*').eq('id', id).single(),
-            _supabase.from('tournament_participants').select('*').eq('tournament_id', id).order('points', { ascending: false }),
-            _supabase.from('tournament_matches').select('*, p1:player1_id(name), p2:player2_id(name)').eq('tournament_id', id).order('round', { ascending: false })
-        ]);
-
-        if (eRes.error) throw eRes.error;
-
-        const e = eRes.data;
-        $('#td-name').text(e.name);
-        $('#td-desc').text(e.description || 'Sin descripción.');
-        $('#td-tcg').text(e.tcg.toUpperCase());
-        $('#td-participants').text(`${pRes.data ? pRes.data.length : 0} Participantes`);
-        $('#td-status-badge').html(`<span class="tournament-status status-${e.status}">${e.status.toUpperCase()}</span>`);
-
-        const isPast = e.event_date && new Date(e.event_date) < new Date();
-        if (e.registration_enabled && e.status === 'planned' && !isPast) {
-            $('#td-reg-container').html(`
-                <button class="btn btn-secondary btn-reg-tournament" data-id="${e.id}" data-name="${e.name}">
-                    <i class="fas fa-user-plus"></i> Registrarme
-                </button>
-            `);
-        } else {
-            $('#td-reg-container').empty();
-        }
-
-        const $sList = $('#td-standings-list');
-        $sList.empty();
-        (pRes.data || []).forEach((p, idx) => {
-            const isTop3 = idx < 3;
-            $sList.append(`
-                <tr style="${isTop3 ? 'background: rgba(241, 196, 15, 0.1); font-weight: bold;' : ''}">
-                    <td>${idx + 1}</td>
-                    <td>${p.name} ${idx === 0 ? '🏆' : ''}</td>
-                    <td>${p.points}</td>
-                </tr>
-            `);
-        });
-
-        const $rCont = $('#td-rounds-container');
-        $rCont.empty();
-        const rounds = {};
-        (mRes.data || []).forEach(m => {
-            if (!rounds[m.round]) rounds[m.round] = [];
-            rounds[m.round].push(m);
-        });
-
-        Object.keys(rounds).sort((a, b) => b - a).forEach(rNum => {
-            const $rDiv = $(`<div style="margin-bottom: 25px;"><h4 style="color: var(--primary-color); border-bottom: 1px solid #333; padding-bottom: 5px;">Ronda ${rNum}</h4></div>`);
-            rounds[rNum].forEach(m => {
-                const p1Name = m.p1 ? m.p1.name : 'Unknown';
-                const p2Name = m.p2 ? m.p2.name : 'BYE';
-                let resText = "Pendiente";
-                if (m.result === 'p1_win') resText = `${p1Name} Ganó`;
-                else if (m.result === 'p2_win') resText = `${p2Name} Ganó`;
-                else if (m.result === 'draw') resText = "Empate";
-
-                $rDiv.append(`
-                    <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem;">
-                        <span>${p1Name} vs ${p2Name}</span>
-                        <span style="color: #aaa;">${resText}</span>
-                    </div>
-                `);
-            });
-            $rCont.append($rDiv);
-        });
-
-        $('#tournament-details-overlay').addClass('active');
-    } catch (e) {
-        console.error(e);
-        Swal.fire('Error', 'No se pudieron cargar los detalles.', 'error');
-    } finally {
-        hideLoading();
-    }
-}
 
 async function loadPublicWishlist() {
     let userId = window.currentStoreId;
