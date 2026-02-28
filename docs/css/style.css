@@ -46,18 +46,32 @@ body.theme-light {
 }
 
 body.theme-medium {
-    --bg-color: #2d3436;
+    --bg-color: #b2bec3;
     --bg-gradient: none;
     --text-color: #000000;
-    --text-muted: #1a1a1a;
-    --card-bg: #3d4648;
-    --card-border: #4a5557;
-    --slot-bg: #4a5557;
-    --slot-border: #5a6567;
-    --overlay-bg: rgba(45, 52, 54, 0.95);
-    --header-gradient: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+    --text-muted: #2d3436;
+    --card-bg: #dfe6e9; /* Adjusted for better contrast with black text */
+    --card-border: #b2bec3;
+    --slot-bg: #f1f2f6;
+    --slot-border: #ced6e0;
+    --overlay-bg: rgba(178, 190, 195, 0.98);
+    --header-gradient: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
     --header-text: #000000;
     --tile-text: #000000;
+}
+
+body.theme-medium h1,
+body.theme-medium h2,
+body.theme-medium h3,
+body.theme-medium .card-name,
+body.theme-medium .admin-header h1,
+body.theme-medium .public-header h1,
+body.theme-medium .textured-cover h2,
+body.theme-medium .info-value,
+body.theme-medium .album-card h3,
+body.theme-medium .admin-page-item h3,
+body.theme-medium .user-dropdown-name {
+    color: #000000 !important;
 }
 
 body {
@@ -2119,7 +2133,7 @@ input:checked + .slider:before {
 }
 
 .theme-btn-small[data-theme="theme-medium"] {
-    background-color: #2d3436;
+    background-color: #b2bec3;
 }
 
 .theme-btn-small[data-theme="theme-dark"] {
@@ -3152,18 +3166,18 @@ input:checked + .slider:before {
     box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
-/* Promocion: Tipografia publicitaria, vibrante */
+/* Promocion: Tipografia publicitaria, vibrante (Naranja/Amarillo para evitar agresividad) */
 .public-event-promocion {
-    background: linear-gradient(145deg, #1a1a1a, #2a1a1a) !important;
-    border: 1px solid #ff4757 !important;
+    background: linear-gradient(145deg, #1a1a1a, #2a221a) !important;
+    border: 1px solid #f0932b !important;
 }
 .public-event-promocion h3 {
     font-family: 'Montserrat', sans-serif;
     font-weight: 900;
     text-transform: uppercase;
-    color: #ff4757 !important;
-    letter-spacing: 1px;
-    text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+    color: #f9ca24 !important;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
 }
 
 /* Informativo: Serio, limpio, tipografia clasica */
@@ -3173,32 +3187,70 @@ input:checked + .slider:before {
 }
 .public-event-informativo h3 {
     font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
+    font-weight: 700;
     color: #fff !important;
+    border-bottom: 2px solid var(--primary-color);
+    display: inline-block;
+    padding-bottom: 5px;
 }
 
 /* Anuncio: Estilo de alarma, llama la atencion */
 .public-event-anuncio {
     background: linear-gradient(145deg, #1a1a1a, #2a2a1a) !important;
-    border: 1px solid #ffa502 !important;
-    animation: pulseAlarm 2s infinite ease-in-out;
+    border: 1px solid #eb4d4b !important;
+    position: relative;
+    overflow: hidden;
 }
-@keyframes pulseAlarm {
-    0% { box-shadow: 0 0 10px rgba(255, 165, 2, 0.2); }
-    50% { box-shadow: 0 0 25px rgba(255, 165, 2, 0.5); }
-    100% { box-shadow: 0 0 10px rgba(255, 165, 2, 0.2); }
+
+.public-event-anuncio::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(235, 77, 75, 0.1) 0%, transparent 70%);
+    animation: pulseAlarmBackground 2s infinite ease-in-out;
+    pointer-events: none;
 }
+
+@keyframes pulseAlarmBackground {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+}
+
 .public-event-anuncio h3 {
-    color: #ffa502 !important;
+    color: #ff7979 !important;
     font-weight: 800;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.public-event-anuncio h3::before,
+.public-event-anuncio h3::after {
+    content: '\f0f3'; /* FontAwesome Bell */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.8em;
+    animation: bellRing 0.5s infinite ease-in-out alternate;
+}
+
+@keyframes bellRing {
+    from { transform: rotate(-15deg); }
+    to { transform: rotate(15deg); }
 }
 
 /* Noticia: Estilo fresco */
 .public-event-noticia {
-    border: 1px solid #2ed573 !important;
+    border: 1px solid #6ab04c !important;
+    background: linear-gradient(145deg, #1a1a1a, #1a2a1a) !important;
 }
 .public-event-noticia h3 {
-    color: #2ed573 !important;
+    color: #badc58 !important;
+    font-style: italic;
+    border-left: 4px solid #badc58;
+    padding-left: 10px;
+    text-align: left;
 }
 
 .ending-soon-warning {
