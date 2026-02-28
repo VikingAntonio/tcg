@@ -1691,8 +1691,11 @@ input:checked + .slider:before {
     opacity: 0.6;
 }
 
-/* Generic masking for any legacy foil used with CustomFoil */
-.card-3d-container .card-3d.masked .holo-layer {
+/* Generic masking for all foil types used with CustomTexture or CustomFoil */
+.card-3d-container .card-3d.masked .holo-layer,
+.card-3d-container .card-3d.masked .card__shine,
+.card-3d-container .card-3d.masked .card__shine:before,
+.card-3d-container .card-3d.masked .card__shine:after {
     -webkit-mask-image: var(--mask-url);
     mask-image: var(--mask-url);
     -webkit-mask-size: 100% 100%;
@@ -1701,9 +1704,14 @@ input:checked + .slider:before {
     mask-position: center;
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
-    /* Ensure it works with both B&W and Alpha masks if supported */
-    mask-mode: luminance;
-    -webkit-mask-source-type: luminance;
+    /* Force luminance mode for Black & White masks from the editor */
+    mask-mode: luminance !important;
+    -webkit-mask-source-type: luminance !important;
+}
+
+/* Ensure the --mask-url is also set on the card for Pokemon foils logic */
+.card-3d.masked {
+    --mask: var(--mask-url);
 }
 
 /* SECRET RARE */

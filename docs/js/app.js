@@ -805,12 +805,11 @@ function openCardModal($slot) {
 
             $card.attr("data-rarity", rarityVal.trim());
 
-            if (mask || isCustomFoil) {
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
                 $card.addClass("masked");
-                if (mask) {
-                    $card.css("--mask", `url(${mask})`);
-                    $card3d.find('.holo-layer').css('--mask-url', `url(${mask})`);
-                }
+                const maskVal = `url(${mask})`;
+                $card.css("--mask", maskVal);
+                $card.css("--mask-url", maskVal);
             }
 
             // Random seed for cosmos and others
@@ -822,11 +821,13 @@ function openCardModal($slot) {
                 '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`
             });
         } else {
+            // Handle as standard holo class
             $card3d.addClass(baseHolo);
-            if ((baseHolo === 'custom-texture' || isCustomFoil) && mask) {
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
                 $card.addClass("masked");
-                $card.css("--mask", `url(${mask})`);
-                $card3d.find('.holo-layer').css('--mask-url', `url(${mask})`);
+                const maskVal = `url(${mask})`;
+                $card.css("--mask", maskVal);
+                $card.css("--mask-url", maskVal);
             }
         }
     }
