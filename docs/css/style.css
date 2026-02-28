@@ -1838,6 +1838,10 @@ input:checked + .slider:before {
     z-index: 999999 !important;
 }
 
+#tournament-reg-modal {
+    z-index: 10001 !important;
+}
+
 /* --- Tablet Kamvas Slot 10 (1920x1200) Responsive --- */
 /* Target resolutions higher than standard 1080p to avoid affecting PC users */
 @media screen and (min-width: 1920px) and (min-height: 1081px) {
