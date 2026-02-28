@@ -1069,16 +1069,17 @@ async function loadStoreData() {
             _supabase.from('sealed_products').select('id').eq('user_id', userData.id).limit(1)
         ]);
 
-        // AWAITing albums to avoid race condition with CompanionBot tips
-        await loadPublicAlbums(userData.id);
-
         window.currentStoreDataForBot = {
             user: userData,
             customMessages: botMessages,
             hasSealed: sealedProducts && sealedProducts.length > 0
         };
 
+        // Initialize companion bot first for speed
         initFloatingCompanion();
+
+        // Start loading content in parallel
+        loadPublicAlbums(userData.id);
     } catch (e) {
         console.error("Error in loadStoreData:", e);
         hideLoading();
@@ -1803,26 +1804,38 @@ async function loadPublicEvents() {
         const urlParams = new URLSearchParams(window.location.search);
         const storeName = urlParams.get('store');
         const userName = urlParams.get('user');
-        if (!storeName && !userName) return;
-        let query = _supabase.from('usuarios').select('id');
-        if (storeName) query = query.eq('store_name', storeName);
-        else query = query.eq('username', userName);
-        const { data: user } = await query.single();
-        if (user) userId = user.id;
+
+        if (storeName || userName) {
+            let query = _supabase.from('usuarios').select('id');
+            if (storeName) query = query.eq('store_name', storeName);
+            else query = query.eq('username', userName);
+            const { data: user } = await query.single();
+            if (user) {
+                userId = user.id;
+                window.currentStoreId = userId;
+            }
+        }
     }
     if (!userId) return;
 
     $('#events-container').html('<div class="loading">Cargando...</div>');
 
     try {
-        const [eRes, tRes] = await Promise.all([
+        const [eRes, tRes] = await Promise.allSettled([
             _supabase.from('events').select('*').eq('user_id', userId).eq('is_public', true).order('event_date', { ascending: true }),
             _supabase.from('tournaments').select('*').eq('user_id', userId).order('event_date', { ascending: true })
         ]);
 
         let combined = [];
-        if (eRes.data) combined.push(...eRes.data.map(i => ({ ...i, type: 'event' })));
-        if (tRes.data) combined.push(...tRes.data.map(i => ({ ...i, type: 'tournament' })));
+        if (eRes.status === 'fulfilled') {
+            if (eRes.value.error) console.warn("Events error:", eRes.value.error);
+            else if (eRes.value.data) combined.push(...eRes.value.data.map(i => ({ ...i, type: 'event' })));
+        }
+
+        if (tRes.status === 'fulfilled') {
+            if (tRes.value.error) console.warn("Tournaments error:", tRes.value.error);
+            else if (tRes.value.data) combined.push(...tRes.value.data.map(i => ({ ...i, type: 'tournament' })));
+        }
 
         combined.sort((a, b) => new Date(a.event_date || 0) - new Date(b.event_date || 0));
 
