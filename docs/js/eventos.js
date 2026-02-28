@@ -72,16 +72,19 @@ async function checkSession() {
 }
 
 async function loadEvents() {
-    const { data: items } = await _supabase.from('events').select('*').eq('user_id', currentUser.id).order('event_date', { ascending: true });
-    const $container = $('#event-container');
-    $container.empty();
+    try {
+        const { data: items, error } = await _supabase.from('events').select('*').eq('user_id', currentUser.id).order('event_date', { ascending: true });
+        if (error) throw error;
 
-    if (!items || items.length === 0) {
-        $container.html('<div class="empty">No hay eventos creados.</div>');
-        return;
-    }
+        const $container = $('#event-container');
+        $container.empty();
 
-    items.forEach(e => {
+        if (!items || items.length === 0) {
+            $container.html('<div class="empty">No hay eventos creados.</div>');
+            return;
+        }
+
+        items.forEach(e => {
         const dateStr = e.event_date ? new Date(e.event_date).toLocaleString() : 'Sin fecha';
         const featuredBadge = e.is_featured ? '<div class="featured-badge">Destacado</div>' : '';
         const typeLabel = e.type ? e.type.charAt(0).toUpperCase() + e.type.slice(1) : 'General';
@@ -106,39 +109,62 @@ async function loadEvents() {
                 </div>
             </div>
         `);
-    });
+        });
+    } catch (e) {
+        console.error("Error loading events:", e);
+        $('#event-container').html('<div class="error">Error al cargar eventos.</div>');
+    }
 }
 
 async function saveEvent() {
-    const id = $('#edit-id').val();
-    const eventDate = $('#input-date').val();
-    const name = $('#input-name').val().trim();
-    const imageUrl = $('#input-image-url').val();
+    try {
+        const id = $('#edit-id').val();
+        const eventDate = $('#input-date').val();
+        const name = $('#input-name').val().trim();
+        const imageUrl = $('#input-image-url').val();
 
-    if (!name && !imageUrl) {
-        Swal.fire('Atención', 'Debes poner al menos un nombre o una imagen.', 'warning');
-        return;
+        if (!name && !imageUrl) {
+            Swal.fire('Atención', 'Debes poner al menos un nombre o una imagen.', 'warning');
+            return;
+        }
+
+        Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
+        const data = {
+            user_id: currentUser.id,
+            name: name || 'Evento sin nombre',
+            type: $('#input-type').val() || 'informativo',
+            event_date: eventDate || null,
+            image_url: imageUrl || null,
+            description: $('#input-desc').val() || null,
+            is_featured: $('#input-featured').is(':checked'),
+            is_public: true
+        };
+
+        let result;
+        if (id) {
+            result = await _supabase.from('events').update(data).eq('id', id);
+        } else {
+            result = await _supabase.from('events').insert([data]);
+        }
+
+        if (result.error) throw result.error;
+
+        Swal.fire({ title: '¡Éxito!', text: 'Evento guardado correctamente', icon: 'success', timer: 1500, showConfirmButton: false });
+        $('#event-modal').removeClass('active');
+        loadEvents();
+    } catch (e) {
+        console.error("Error saving event:", e);
+        Swal.fire('Error', 'No se pudo guardar el evento: ' + e.message, 'error');
     }
-
-    const data = {
-        user_id: currentUser.id,
-        name: name || 'Evento sin nombre',
-        type: $('#input-type').val() || 'informativo',
-        event_date: eventDate || null,
-        image_url: imageUrl || null,
-        description: $('#input-desc').val() || null,
-        is_featured: $('#input-featured').is(':checked'),
-        promo_details: $('#input-promo').val() || null
-    };
-
-    if (id) await _supabase.from('events').update(data).eq('id', id);
-    else await _supabase.from('events').insert([data]);
-    $('#event-modal').removeClass('active');
-    loadEvents();
 }
 
 async function editEvent(id) {
-    const { data: e } = await _supabase.from('events').select('*').eq('id', id).single();
+    const { data: e, error } = await _supabase.from('events').select('*').eq('id', id).single();
+    if (error) {
+        Swal.fire('Error', 'No se pudo cargar el evento', 'error');
+        return;
+    }
     $('#edit-id').val(e.id);
     $('#input-name').val(e.name);
     $('#input-type').val(e.type || 'informativo');
@@ -153,14 +179,21 @@ async function editEvent(id) {
     }
     $('#input-desc').val(e.description);
     $('#input-featured').prop('checked', e.is_featured);
-    $('#input-promo').val(e.promo_details);
     $('#event-modal').addClass('active');
 }
 
 async function deleteEvent(id) {
-    if ((await Swal.fire({ title: '¿Borrar evento?', icon: 'warning', showCancelButton: true })).isConfirmed) {
-        await _supabase.from('events').delete().eq('id', id);
-        loadEvents();
+    try {
+        if ((await Swal.fire({ title: '¿Borrar evento?', icon: 'warning', showCancelButton: true })).isConfirmed) {
+            Swal.fire({ title: 'Borrando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+            const { error } = await _supabase.from('events').delete().eq('id', id);
+            if (error) throw error;
+            Swal.fire({ title: '¡Borrado!', icon: 'success', timer: 1000, showConfirmButton: false });
+            loadEvents();
+        }
+    } catch (e) {
+        console.error("Error deleting event:", e);
+        Swal.fire('Error', 'No se pudo borrar el evento', 'error');
     }
 }
 
@@ -173,6 +206,5 @@ function resetModal() {
     $('#drop-text').show();
     $('#input-date').val('');
     $('#input-desc').val('');
-    $('#input-promo').val('');
     $('#input-featured').prop('checked', false);
 }
