@@ -1,5 +1,21 @@
--- Migration to add missing columns to the events table
--- Supported features: Featured events and Promo details
+-- Migration to fix missing columns in tournaments and events tables
+-- Run this in Supabase SQL Editor to resolve "column not found" errors
 
+-- 1. Ensure all columns in tournaments table exist
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS event_date TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'planned';
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS tcg TEXT;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS max_participants INTEGER DEFAULT 32;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS registration_enabled BOOLEAN DEFAULT false;
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS tournament_type TEXT DEFAULT 'swiss';
+
+-- 2. Ensure all columns in events table exist
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_date TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS promo_details TEXT;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT true;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS name TEXT;

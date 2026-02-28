@@ -19,7 +19,7 @@ $(document).ready(async function() {
     });
 
     const $dropZone = $('#drop-zone');
-    $dropZone.click(() => $('#input-file').click());
+    // Jules: Click handled by label/for logic in HTML
 
     $dropZone.on('dragover', function(e) {
         e.preventDefault();
@@ -34,18 +34,30 @@ $(document).ready(async function() {
     $dropZone.on('drop', async function(e) {
         const file = e.originalEvent.dataTransfer.files[0];
         if (file) {
-            const url = await CloudinaryUpload.uploadImage(file);
-            $('#input-image-url').val(url);
+            handleFileUpload(file);
         }
     });
 
-    $('#input-file').change(async function() {
+    $('#input-file').on('change', async function() {
         if (this.files[0]) {
-            const url = await CloudinaryUpload.uploadImage(this.files[0]);
-            $('#input-image-url').val(url);
+            handleFileUpload(this.files[0]);
         }
     });
 });
+
+async function handleFileUpload(file) {
+    try {
+        Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+        const url = await CloudinaryUpload.uploadImage(file);
+        $('#input-image-url').val(url);
+        $('#img-preview').attr('src', url).show();
+        $('#drop-text').hide();
+        Swal.close();
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudo subir la imagen', 'error');
+    }
+}
 
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();
@@ -92,15 +104,17 @@ async function loadEvents() {
 
 async function saveEvent() {
     const id = $('#edit-id').val();
+    const eventDate = $('#input-date').val();
     const data = {
         user_id: currentUser.id,
-        name: $('#input-name').val(),
-        event_date: $('#input-date').val(),
-        image_url: $('#input-image-url').val(),
-        description: $('#input-desc').val(),
+        name: $('#input-name').val() || 'Nuevo Evento',
+        event_date: eventDate || null,
+        image_url: $('#input-image-url').val() || null,
+        description: $('#input-desc').val() || null,
         is_featured: $('#input-featured').is(':checked'),
-        promo_details: $('#input-promo').val()
+        promo_details: $('#input-promo').val() || null
     };
+
     if (id) await _supabase.from('events').update(data).eq('id', id);
     else await _supabase.from('events').insert([data]);
     $('#event-modal').removeClass('active');
@@ -113,6 +127,13 @@ async function editEvent(id) {
     $('#input-name').val(e.name);
     $('#input-date').val(e.event_date ? e.event_date.slice(0, 16) : '');
     $('#input-image-url').val(e.image_url);
+    if (e.image_url) {
+        $('#img-preview').attr('src', e.image_url).show();
+        $('#drop-text').hide();
+    } else {
+        $('#img-preview').hide();
+        $('#drop-text').show();
+    }
     $('#input-desc').val(e.description);
     $('#input-featured').prop('checked', e.is_featured);
     $('#input-promo').val(e.promo_details);
@@ -130,4 +151,10 @@ function resetModal() {
     $('#edit-id').val('');
     $('#input-name').val('');
     $('#input-image-url').val('');
+    $('#img-preview').hide().attr('src', '');
+    $('#drop-text').show();
+    $('#input-date').val('');
+    $('#input-desc').val('');
+    $('#input-promo').val('');
+    $('#input-featured').prop('checked', false);
 }

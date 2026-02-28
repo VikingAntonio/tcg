@@ -36,12 +36,13 @@
             <div class="form-group"><label>Título</label><input type="text" id="input-name"></div>
             <div class="form-group"><label>Fecha</label><input type="datetime-local" id="input-date"></div>
             <div class="form-group">
-                <label>Imagen (Drag & Drop)</label>
-                <div class="file-drop-zone" id="drop-zone">
-                    <p>Sube una imagen</p>
+                <label>Imagen</label>
+                <label class="file-drop-zone" id="drop-zone" for="input-file" style="cursor: pointer; display: block;">
+                    <p id="drop-text" style="pointer-events: none;">Sube una imagen (Click o Arrastra)</p>
+                    <img id="img-preview" style="display:none; max-width: 100%; max-height: 150px; border-radius: 8px; margin: 0 auto; pointer-events: none;">
                     <input type="file" id="input-file" accept="image/*" style="display:none;">
-                </div>
-                <input type="text" id="input-image-url" placeholder="O pega el link aquí">
+                </label>
+                <input type="hidden" id="input-image-url">
             </div>
             <div class="form-group" style="display:flex; align-items:center; gap:10px;">
                 <label class="switch"><input type="checkbox" id="input-featured"><span class="slider"></span></label>
