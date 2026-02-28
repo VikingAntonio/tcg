@@ -1775,20 +1775,21 @@ async function loadPublicEvents() {
             const $card = $(`
                 <div id="${itemId}" class="deck-public-item sealed-product-item public-event-card ${typeClass}"
                      style="${isPast ? 'opacity: 0.6; filter: grayscale(1);' : ''}; animation-delay: ${index * 0.1}s;">
-                    <div class="event-type-badge">${typeLabel}</div>
                     ${item.image_url ? `
                     <div class="product-image-container">
                         <img src="${item.image_url}" class="sealed-product-img">
                     </div>
-                    ` : '<div style="height: 20px;"></div>'}
-                    <h3 style="margin: 10px 0;">${item.name}</h3>
-                    <div style="font-size: 0.85rem; color: #00d2ff; font-weight: bold; margin-bottom: 5px;">
-                        <i class="fas fa-calendar-day"></i> ${eventDate ? eventDate.toLocaleString() : 'Próximamente'}
-                    </div>
-                    ${endingSoonHtml}
-                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                        ${item.description ? `<p style="font-size: 0.85rem; color: #aaa; text-align: left; line-height: 1.5;">${item.description}</p>` : ''}
-                        ${isPast ? '<div style="color: #666; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; margin-top: 10px;">Finalizado</div>' : ''}
+                    ` : ''}
+                    <div class="event-content-wrapper" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+                        ${item.name ? `<h3 style="margin: 10px 0;">${item.name}</h3>` : ''}
+                        ${item.event_date ? `
+                        <div style="font-size: 0.85rem; color: #00d2ff; font-weight: bold; margin-bottom: 5px;">
+                            <i class="fas fa-calendar-day"></i> ${eventDate.toLocaleString()}
+                        </div>
+                        ` : ''}
+                        ${endingSoonHtml}
+                        ${item.description ? `<p style="font-size: 0.85rem; color: #aaa; text-align: left; line-height: 1.5; margin-top: 10px;">${item.description}</p>` : ''}
+                        ${isPast ? '<div style="color: #666; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; margin-top: auto; padding-top: 15px;">Finalizado</div>' : ''}
                     </div>
                 </div>
             `);

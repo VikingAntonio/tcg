@@ -85,30 +85,34 @@ async function loadEvents() {
         }
 
         items.forEach(e => {
-        const dateStr = e.event_date ? new Date(e.event_date).toLocaleString() : 'Sin fecha';
-        const featuredBadge = e.is_featured ? '<div class="featured-badge">Destacado</div>' : '';
-        const typeLabel = e.type ? e.type.charAt(0).toUpperCase() + e.type.slice(1) : 'General';
+            const dateStr = e.event_date ? new Date(e.event_date).toLocaleString() : 'Sin fecha';
+            const featuredBadge = e.is_featured ? '<div class="featured-badge">Destacado</div>' : '';
+            const typeLabel = e.type ? e.type.charAt(0).toUpperCase() + e.type.slice(1) : 'General';
+            const nameToDisplay = (e.name && e.name !== 'Evento sin nombre') ? e.name : '';
 
-        $container.append(`
-            <div class="album-card ${e.is_featured ? 'featured-event' : ''} event-type-${e.type || 'informativo'}">
-                ${featuredBadge}
-                <div class="event-type-badge">${typeLabel}</div>
-                ${e.image_url ? `
-                <div class="product-image-container" style="height: 150px; background: rgba(0,0,0,0.2);">
-                    <img src="${e.image_url}" class="sealed-product-img">
+            $container.append(`
+                <div class="album-card ${e.is_featured ? 'featured-event' : ''} event-type-${e.type || 'informativo'} admin-event-card">
+                    ${featuredBadge}
+                    ${e.image_url ? `
+                    <div class="product-image-container" style="height: 150px; background: rgba(0,0,0,0.2);">
+                        <img src="${e.image_url}" class="sealed-product-img">
+                    </div>
+                    ` : ''}
+                    <div style="padding: 10px; flex: 1; display: flex; flex-direction: column;">
+                        ${nameToDisplay ? `<h3 style="margin-top: 10px; margin-bottom: 5px;">${nameToDisplay}</h3>` : ''}
+                        ${e.event_date ? `<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;"><i class="fas fa-calendar"></i> ${dateStr}</div>` : ''}
+                        ${e.description ? `
+                        <div class="event-desc-preview" style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            ${e.description}
+                        </div>
+                        ` : ''}
+                        <div style="display:flex; gap:10px; margin-top:auto; width: 100%;">
+                            <button class="btn btn-sm btn-edit-event" data-id="${e.id}" style="flex: 1;"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="btn btn-sm btn-danger btn-delete-event" data-id="${e.id}" style="flex: 1;"><i class="fas fa-trash"></i> Borrar</button>
+                        </div>
+                    </div>
                 </div>
-                ` : '<div style="height: 20px;"></div>'}
-                <h3 style="margin-top: 10px;">${e.name}</h3>
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;"><i class="fas fa-calendar"></i> ${dateStr}</div>
-                <div class="event-desc-preview" style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                    ${e.description || 'Sin descripción'}
-                </div>
-                <div style="display:flex; gap:10px; margin-top:auto; width: 100%;">
-                    <button class="btn btn-sm btn-edit-event" data-id="${e.id}" style="flex: 1;">Editar</button>
-                    <button class="btn btn-sm btn-danger btn-delete-event" data-id="${e.id}" style="flex: 1;">Borrar</button>
-                </div>
-            </div>
-        `);
+            `);
         });
     } catch (e) {
         console.error("Error loading events:", e);
@@ -132,7 +136,7 @@ async function saveEvent() {
 
         const data = {
             user_id: currentUser.id,
-            name: name || 'Evento sin nombre',
+            name: name || null,
             type: $('#input-type').val() || 'informativo',
             event_date: eventDate || null,
             image_url: imageUrl || null,

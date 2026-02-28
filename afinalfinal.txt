@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.events (
     description TEXT,
     event_date TIMESTAMP WITH TIME ZONE,
     image_url TEXT,
+    type TEXT DEFAULT 'informativo',
     is_public BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );

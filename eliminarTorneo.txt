@@ -1,3 +1,7 @@
 DROP TABLE IF EXISTS tournament_matches;
 DROP TABLE IF EXISTS tournament_participants;
 DROP TABLE IF EXISTS tournaments;
+
+-- Eliminar columnas relacionadas en usuarios
+ALTER TABLE public.usuarios DROP COLUMN IF EXISTS max_tournaments;
+ALTER TABLE public.usuarios DROP COLUMN IF EXISTS has_tournaments;
