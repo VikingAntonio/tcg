@@ -765,12 +765,20 @@ function openCardModal($slot) {
         '--card-opacity': '0'
     });
 
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture active");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
-    if (holo) {
-        if (POKEMON_FOILS[holo]) {
-            let rarityVal = POKEMON_FOILS[holo];
+    let baseHolo = holo;
+    let isCustomFoil = false;
+
+    if (holo.startsWith('custom-foil|')) {
+        isCustomFoil = true;
+        baseHolo = holo.split('|')[1] || 'foil';
+    }
+
+    if (baseHolo) {
+        if (POKEMON_FOILS[baseHolo]) {
+            let rarityVal = POKEMON_FOILS[baseHolo];
             $card.addClass("card");
 
             // Handle flags based on substrings
@@ -797,9 +805,12 @@ function openCardModal($slot) {
 
             $card.attr("data-rarity", rarityVal.trim());
 
-            if (mask) {
+            if (mask || isCustomFoil) {
                 $card.addClass("masked");
-                $card.css("--mask", `url(${mask})`);
+                if (mask) {
+                    $card.css("--mask", `url(${mask})`);
+                    $card3d.find('.holo-layer').css('--mask-url', `url(${mask})`);
+                }
             }
 
             // Random seed for cosmos and others
@@ -811,8 +822,10 @@ function openCardModal($slot) {
                 '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`
             });
         } else {
-            $card3d.addClass(holo);
-            if (holo === 'custom-texture' && mask) {
+            $card3d.addClass(baseHolo);
+            if ((baseHolo === 'custom-texture' || isCustomFoil) && mask) {
+                $card.addClass("masked");
+                $card.css("--mask", `url(${mask})`);
                 $card3d.find('.holo-layer').css('--mask-url', `url(${mask})`);
             }
         }

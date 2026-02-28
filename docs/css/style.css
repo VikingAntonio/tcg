@@ -1691,6 +1691,21 @@ input:checked + .slider:before {
     opacity: 0.6;
 }
 
+/* Generic masking for any legacy foil used with CustomFoil */
+.card-3d-container .card-3d.masked .holo-layer {
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    /* Ensure it works with both B&W and Alpha masks if supported */
+    mask-mode: luminance;
+    -webkit-mask-source-type: luminance;
+}
+
 /* SECRET RARE */
 .secret-rare .holo-layer {
     background-image:
