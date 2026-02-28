@@ -432,10 +432,16 @@ $(document).ready(async function() {
             return;
         }
 
+        let holoEffect = $('#slot-holo-effect').val() || '';
+        if (holoEffect === 'custom-foil') {
+            const subType = $('#slot-custom-foil-type').val() || 'foil';
+            holoEffect = `custom-foil|${subType}`;
+        }
+
         const cardData = {
             image_url: imageUrl,
             name: $('#slot-name').val() || '',
-            holo_effect: $('#slot-holo-effect').val() || '',
+            holo_effect: holoEffect,
             custom_mask_url: $('#slot-custom-mask').val() || '',
             rarity: $('#slot-rarity').val() || '',
             expansion: $('#slot-expansion').val() || '',
@@ -523,10 +529,17 @@ $(document).ready(async function() {
     });
 
     $('#slot-holo-effect').change(function() {
-        if ($(this).val() === 'custom-texture') {
+        const val = $(this).val();
+        if (val === 'custom-texture' || val === 'custom-foil') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
+        }
+
+        if (val === 'custom-foil') {
+            $('#custom-foil-type-container').show();
+        } else {
+            $('#custom-foil-type-container').hide();
         }
     });
 
@@ -1823,14 +1836,25 @@ function editDeckCard(card) {
 
     $('#slot-image-url').val(card.image_url || '');
     $('#slot-name').val(card.name || '');
-    $('#slot-holo-effect').val(card.holo_effect || '');
-    $('#slot-custom-mask').val(card.custom_mask_url || '');
 
-    if (card.holo_effect === 'custom-texture') {
+    let holo = card.holo_effect || '';
+    if (holo.startsWith('custom-foil|')) {
+        const parts = holo.split('|');
+        $('#slot-holo-effect').val('custom-foil');
+        $('#slot-custom-foil-type').val(parts[1] || 'foil');
+        $('#custom-foil-type-container').show();
         $('#custom-mask-container').show();
     } else {
-        $('#custom-mask-container').hide();
+        $('#slot-holo-effect').val(holo);
+        $('#custom-foil-type-container').hide();
+        if (holo === 'custom-texture') {
+            $('#custom-mask-container').show();
+        } else {
+            $('#custom-mask-container').hide();
+        }
     }
+
+    $('#slot-custom-mask').val(card.custom_mask_url || '');
 
     $('#slot-rarity').val(card.rarity || '');
     $('#slot-expansion').val(card.expansion || '');
@@ -2361,7 +2385,10 @@ async function loadSlotData(pageId, slotIndex) {
     $('#external-search-input').val('');
     $('#external-search-results').empty();
     $('#slot-holo-effect').val('');
+    $('#slot-custom-foil-type').val('foil');
+    $('#custom-foil-type-container').hide();
     $('#slot-custom-mask').val('');
+    $('#custom-mask-container').hide();
     $('#slot-rarity').val('');
     $('#slot-expansion').val('');
     $('#slot-condition').val('');
@@ -2371,14 +2398,25 @@ async function loadSlotData(pageId, slotIndex) {
     if (data) {
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
-        $('#slot-holo-effect').val(data.holo_effect || '');
-        $('#slot-custom-mask').val(data.custom_mask_url || '');
 
-        if (data.holo_effect === 'custom-texture') {
+        let holo = data.holo_effect || '';
+        if (holo.startsWith('custom-foil|')) {
+            const parts = holo.split('|');
+            $('#slot-holo-effect').val('custom-foil');
+            $('#slot-custom-foil-type').val(parts[1] || 'foil');
+            $('#custom-foil-type-container').show();
             $('#custom-mask-container').show();
         } else {
-            $('#custom-mask-container').hide();
+            $('#slot-holo-effect').val(holo);
+            $('#custom-foil-type-container').hide();
+            if (holo === 'custom-texture') {
+                $('#custom-mask-container').show();
+            } else {
+                $('#custom-mask-container').hide();
+            }
         }
+
+        $('#slot-custom-mask').val(data.custom_mask_url || '');
 
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');
