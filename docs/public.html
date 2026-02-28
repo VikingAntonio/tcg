@@ -168,36 +168,6 @@
         </div>
     </div>
 
-    <!-- Tournament Registration Modal -->
-    <div id="tournament-reg-modal" class="overlay">
-        <div class="overlay-content" style="max-width: 500px;">
-            <span id="close-reg-modal" class="close-btn">&times;</span>
-            <h2 id="reg-modal-title">Registro al Evento</h2>
-            <p id="reg-modal-desc" style="font-size: 0.9rem; color: #aaa; margin-bottom: 20px;"></p>
-
-            <div class="form-group">
-                <label>Tu Nombre</label>
-                <input type="text" id="reg-name" placeholder="Tu nombre completo">
-            </div>
-            <div class="form-group">
-                <label>Nombre de tu Deck</label>
-                <input type="text" id="reg-deck-name" placeholder="Ej: Dragon Link">
-            </div>
-            <div class="form-group">
-                <label>Player ID (Opcional)</label>
-                <input type="text" id="reg-player-id" placeholder="ID de Jugador">
-            </div>
-            <div class="form-group">
-                <label>Tu Decklist (Lista de cartas)</label>
-                <div id="reg-load-deck-container" style="display: none; margin-bottom: 10px;">
-                    <button id="btn-reg-load-my-deck" class="btn btn-sm btn-secondary"><i class="fas fa-upload"></i> Cargar de mis Decks</button>
-                </div>
-                <textarea id="reg-decklist" rows="5" placeholder="1x Card Name..." style="width: 100%; background: var(--slot-bg); border: 1px solid var(--slot-border); color: var(--text-color); border-radius: 8px; padding: 10px;"></textarea>
-            </div>
-            <button id="btn-submit-reg" class="btn" style="width: 100%; margin-top: 15px;">Enviar Registro</button>
-        </div>
-    </div>
-
     <!-- Event Details Modal -->
     <div id="event-details-overlay" class="overlay">
         <div class="overlay-content" style="max-width: 600px; width: 95%;">
@@ -211,45 +181,6 @@
         </div>
     </div>
 
-    <!-- Tournament Details Modal -->
-    <div id="tournament-details-overlay" class="overlay">
-        <div class="overlay-content" style="max-width: 800px; width: 95%;">
-            <span id="close-td-overlay" class="close-btn">&times;</span>
-            <h2 id="td-name">Detalles del Evento</h2>
-            <div id="td-status-badge"></div>
-
-            <div id="td-info" style="margin: 20px 0; text-align: left; width: 100%;">
-                <p id="td-desc" style="color: #bbb; line-height: 1.5;"></p>
-                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-top: 15px;">
-                    <div><i class="fas fa-gamepad color-primary"></i> <span id="td-tcg"></span></div>
-                    <div><i class="fas fa-users color-primary"></i> <span id="td-participants"></span></div>
-                    <div id="td-reg-container" style="margin-left: auto;"></div>
-                </div>
-            </div>
-
-            <div class="mgmt-tabs" style="width: 100%;">
-                <div class="mgmt-tab active" data-target="td-tab-standings">Clasificación</div>
-                <div class="mgmt-tab" data-target="td-tab-matches">Emparejamientos</div>
-            </div>
-
-            <div id="td-tab-standings" class="mgmt-section active" style="width: 100%; text-align: left;">
-                <table class="client-table participant-table" style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th>Pos</th>
-                            <th>Jugador</th>
-                            <th>Puntos</th>
-                        </tr>
-                    </thead>
-                    <tbody id="td-standings-list"></tbody>
-                </table>
-            </div>
-
-            <div id="td-tab-matches" class="mgmt-section" style="width: 100%; text-align: left;">
-                <div id="td-rounds-container"></div>
-            </div>
-        </div>
-    </div>
 
     <div id="image-overlay" class="overlay">
         <div class="overlay-content">

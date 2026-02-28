@@ -48,14 +48,16 @@ body.theme-light {
 body.theme-medium {
     --bg-color: #2d3436;
     --bg-gradient: none;
-    --text-color: #dfe6e9;
+    --text-color: #000000;
+    --text-muted: #1a1a1a;
     --card-bg: #3d4648;
     --card-border: #4a5557;
     --slot-bg: #4a5557;
     --slot-border: #5a6567;
     --overlay-bg: rgba(45, 52, 54, 0.95);
     --header-gradient: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
-    --tile-text: #ffffff;
+    --header-text: #000000;
+    --tile-text: #000000;
 }
 
 body {
@@ -1545,35 +1547,6 @@ input:checked + .slider:before {
     }
 }
 
-/* --- TOURNAMENT RANKINGS --- */
-.top-rank-1 {
-    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, transparent 100%) !important;
-    border-left: 4px solid #ffd700 !important;
-}
-.top-rank-1 td:first-child {
-    color: #ffd700;
-    font-size: 1.2rem;
-    font-weight: 800;
-}
-
-.top-rank-2 {
-    background: linear-gradient(90deg, rgba(192, 192, 192, 0.2) 0%, transparent 100%) !important;
-    border-left: 4px solid #c0c0c0 !important;
-}
-.top-rank-2 td:first-child {
-    color: #c0c0c0;
-    font-size: 1.1rem;
-    font-weight: 700;
-}
-
-.top-rank-3 {
-    background: linear-gradient(90deg, rgba(205, 127, 50, 0.2) 0%, transparent 100%) !important;
-    border-left: 4px solid #cd7f32 !important;
-}
-.top-rank-3 td:first-child {
-    color: #cd7f32;
-    font-weight: 700;
-}
 
 /* --- HOLOGRAPHIC EFFECTS --- */
 
@@ -1864,9 +1837,6 @@ input:checked + .slider:before {
     z-index: 999999 !important;
 }
 
-#tournament-reg-modal {
-    z-index: 10001 !important;
-}
 
 /* --- Tablet Kamvas Slot 10 (1920x1200) Responsive --- */
 /* Target resolutions higher than standard 1080p to avoid affecting PC users */
@@ -3163,4 +3133,117 @@ input:checked + .slider:before {
     text-transform: uppercase;
     z-index: 10;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Public Event Card Enhancements */
+.public-event-card {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    animation: fadeInEvent 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInEvent {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.public-event-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+/* Promocion: Tipografia publicitaria, vibrante */
+.public-event-promocion {
+    background: linear-gradient(145deg, #1a1a1a, #2a1a1a) !important;
+    border: 1px solid #ff4757 !important;
+}
+.public-event-promocion h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #ff4757 !important;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}
+
+/* Informativo: Serio, limpio, tipografia clasica */
+.public-event-informativo {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+.public-event-informativo h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    color: #fff !important;
+}
+
+/* Anuncio: Estilo de alarma, llama la atencion */
+.public-event-anuncio {
+    background: linear-gradient(145deg, #1a1a1a, #2a2a1a) !important;
+    border: 1px solid #ffa502 !important;
+    animation: pulseAlarm 2s infinite ease-in-out;
+}
+@keyframes pulseAlarm {
+    0% { box-shadow: 0 0 10px rgba(255, 165, 2, 0.2); }
+    50% { box-shadow: 0 0 25px rgba(255, 165, 2, 0.5); }
+    100% { box-shadow: 0 0 10px rgba(255, 165, 2, 0.2); }
+}
+.public-event-anuncio h3 {
+    color: #ffa502 !important;
+    font-weight: 800;
+}
+
+/* Noticia: Estilo fresco */
+.public-event-noticia {
+    border: 1px solid #2ed573 !important;
+}
+.public-event-noticia h3 {
+    color: #2ed573 !important;
+}
+
+.ending-soon-warning {
+    color: #ff4757 !important;
+    font-weight: 800;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: flashWarning 1s infinite alternate;
+}
+
+@keyframes flashWarning {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}
+
+.event-type-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    z-index: 10;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Event Type Specific Admin Styles */
+.event-type-promocion {
+    border-left: 5px solid #ff4757 !important;
+}
+.event-type-anuncio {
+    border-left: 5px solid #ffa502 !important;
+}
+.event-type-noticia {
+    border-left: 5px solid #2ed573 !important;
+}
+.event-type-informativo {
+    border-left: 5px solid #1e90ff !important;
 }

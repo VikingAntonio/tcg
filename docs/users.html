@@ -128,10 +128,6 @@
                     <label>Máximo Eventos</label>
                     <input type="number" id="limit-events" min="1">
                 </div>
-                <div class="form-group">
-                    <label>Máximo Torneos</label>
-                    <input type="number" id="limit-tournaments" min="1">
-                </div>
             </div>
 
             <div style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;">
@@ -146,9 +142,6 @@
                 </label>
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                     <input type="checkbox" id="perm-events" style="width: auto;"> Eventos
-                </label>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="perm-tournaments" style="width: auto;"> Torneos
                 </label>
             </div>
             <div class="form-group" style="margin-top: 15px;">
@@ -238,7 +231,7 @@
             async function loadUsers() {
                 const { data: users, error } = await _supabase
                     .from('usuarios')
-                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link, has_tracking, has_clients, has_auctions, has_events, max_events, max_wishlist, max_sealed, max_preorders, max_clients_count, max_auctions_count, public_link, has_tournaments, max_tournaments')
+                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link, has_tracking, has_clients, has_auctions, has_events, max_events, max_wishlist, max_sealed, max_preorders, max_clients_count, max_auctions_count, public_link')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -331,10 +324,10 @@
                 const newRole = $(this).val();
 
                 const roleDefaults = {
-                    'starter': { max_albums: 3, max_pages: 5, max_decks: 1, max_cards_per_deck: 60, allowed_spirit_ids: '1', has_tracking: false, has_clients: true, has_auctions: true, has_events: true, max_events: 1, max_wishlist: 10, max_sealed: 5, max_preorders: 1, max_clients_count: 3, max_auctions_count: 3, has_tournaments: true, max_tournaments: 1 },
-                    'premium': { max_albums: 5, max_pages: 10, max_decks: 5, max_cards_per_deck: 60, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, has_events: true, max_events: 5, max_wishlist: 50, max_sealed: 20, max_preorders: 5, max_clients_count: 10, max_auctions_count: 15, has_tournaments: true, max_tournaments: 10 },
-                    'admin_store': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, has_events: true, max_events: 999, max_wishlist: 999, max_sealed: 999, max_preorders: 999, max_clients_count: 999, max_auctions_count: 999, has_tournaments: true, max_tournaments: 999 },
-                    'admin': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, has_events: true, max_events: 999, max_wishlist: 999, max_sealed: 999, max_preorders: 999, max_clients_count: 999, max_auctions_count: 999, has_tournaments: true, max_tournaments: 999 }
+                    'starter': { max_albums: 3, max_pages: 5, max_decks: 1, max_cards_per_deck: 60, allowed_spirit_ids: '1', has_tracking: false, has_clients: true, has_auctions: true, has_events: true, max_events: 1, max_wishlist: 10, max_sealed: 5, max_preorders: 1, max_clients_count: 3, max_auctions_count: 3 },
+                    'premium': { max_albums: 5, max_pages: 10, max_decks: 5, max_cards_per_deck: 60, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, has_events: true, max_events: 5, max_wishlist: 50, max_sealed: 20, max_preorders: 5, max_clients_count: 10, max_auctions_count: 15 },
+                    'admin_store': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, has_events: true, max_events: 999, max_wishlist: 999, max_sealed: 999, max_preorders: 999, max_clients_count: 999, max_auctions_count: 999 },
+                    'admin': { max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, allowed_spirit_ids: 'all', has_tracking: true, has_clients: true, has_auctions: true, has_events: true, max_events: 999, max_wishlist: 999, max_sealed: 999, max_preorders: 999, max_clients_count: 999, max_auctions_count: 999 }
                 };
 
                 const result = await Swal.fire({
@@ -486,7 +479,6 @@
                 $('#limit-clients-count').val(user.max_clients_count || 3);
                 $('#limit-auctions-count').val(user.max_auctions_count || 3);
                 $('#limit-events').val(user.max_events || 1);
-                $('#limit-tournaments').val(user.max_tournaments || 1);
                 $('#user-whatsapp').val(user.whatsapp_link || '');
                 $('#user-messenger').val(user.messenger_link || '');
 
@@ -494,7 +486,6 @@
                 $('#perm-clients').prop('checked', user.has_clients || false);
                 $('#perm-auctions').prop('checked', user.has_auctions || false);
                 $('#perm-events').prop('checked', user.has_events || false);
-                $('#perm-tournaments').prop('checked', user.has_tournaments || false);
 
                 renderSpiritsCheckboxes(user.allowed_spirit_ids || '');
 
@@ -542,8 +533,6 @@
                     has_clients: $('#perm-clients').is(':checked'),
                     has_auctions: $('#perm-auctions').is(':checked'),
                     has_events: $('#perm-events').is(':checked'),
-                    has_tournaments: $('#perm-tournaments').is(':checked'),
-                    max_tournaments: parseInt($('#limit-tournaments').val()),
                     public_link: $('#user-public-link').val()
                 };
 
