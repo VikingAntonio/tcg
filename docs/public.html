@@ -192,9 +192,22 @@
                 <div id="reg-load-deck-container" style="display: none; margin-bottom: 10px;">
                     <button id="btn-reg-load-my-deck" class="btn btn-sm btn-secondary"><i class="fas fa-upload"></i> Cargar de mis Decks</button>
                 </div>
-                <textarea id="reg-decklist" rows="5" placeholder="1x Card Name..." style="width: 100%; background: var(--slot-bg); border: 1px solid var(--slot-border); color: white; border-radius: 8px; padding: 10px;"></textarea>
+                <textarea id="reg-decklist" rows="5" placeholder="1x Card Name..." style="width: 100%; background: var(--slot-bg); border: 1px solid var(--slot-border); color: var(--text-color); border-radius: 8px; padding: 10px;"></textarea>
             </div>
             <button id="btn-submit-reg" class="btn" style="width: 100%; margin-top: 15px;">Enviar Registro</button>
+        </div>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div id="event-details-overlay" class="overlay">
+        <div class="overlay-content" style="max-width: 600px; width: 95%;">
+            <span id="close-ed-overlay" class="close-btn">&times;</span>
+            <h2 id="ed-name">Detalles del Evento</h2>
+            <div id="ed-info" style="margin: 20px 0; text-align: center; width: 100%;">
+                <img id="ed-image" src="" style="width: 100%; border-radius: 12px; margin-bottom: 20px; display: none;">
+                <p id="ed-desc" style="color: var(--text-color); line-height: 1.6; text-align: left;"></p>
+            </div>
+            <button onclick="$('#event-details-overlay').removeClass('active')" class="btn" style="width: 100%;">Cerrar</button>
         </div>
     </div>
 

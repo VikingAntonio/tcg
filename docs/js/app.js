@@ -410,7 +410,19 @@ $(document).ready(async function() {
         showEventDetails(id);
     });
 
+    $(document).on('click', '#events-container .deck-public-item', function(e) {
+        if ($(e.target).closest('button').length) return;
+        const id = $(this).attr('id');
+        if (id && id.startsWith('tournament-')) {
+            showEventDetails(id.replace('tournament-', ''));
+        } else if (id && id.startsWith('event-')) {
+            const eventId = id.replace('event-', '');
+            showGeneralEventDetails(eventId);
+        }
+    });
+
     $('#close-td-overlay').click(() => $('#tournament-details-overlay').removeClass('active'));
+    $('#close-ed-overlay').click(() => $('#event-details-overlay').removeClass('active'));
 
     $('.mgmt-tab').click(function() {
         if ($(this).closest('#tournament-details-overlay').length) {
@@ -1859,7 +1871,7 @@ async function loadPublicEvents() {
                         <i class="fas fa-calendar-day"></i> ${item.event_date ? new Date(item.event_date).toLocaleString() : 'Próximamente'}
                     </div>
                     <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">
-                        ${isTournament ? `Torneo ${item.tcg ? item.tcg.toUpperCase() : 'General'}` : 'Evento General'}
+                        ${isTournament ? `Torneo ${item.tcg ? item.tcg.toUpperCase() : 'General'}` : (item.description ? 'Evento General' : '')}
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         ${isTournament ? `
@@ -2136,3 +2148,23 @@ $(document).on('click', '.btn-sort-public-deck', function() {
         timer: 2000
     });
 });
+
+async function showGeneralEventDetails(id) {
+    try {
+        const { data: event, error } = await _supabase.from('events').select('*').eq('id', id).single();
+        if (error) throw error;
+
+        $('#ed-name').text(event.name);
+        $('#ed-desc').text(event.description || 'Sin descripción.');
+        if (event.image_url) {
+            $('#ed-image').attr('src', event.image_url).show();
+        } else {
+            $('#ed-image').hide();
+        }
+
+        $('#event-details-overlay').addClass('active');
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudieron cargar los detalles del evento.', 'error');
+    }
+}
