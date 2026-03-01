@@ -1,0 +1,26 @@
+-- SQL para habilitar el orden personalizado de álbumes y decks
+-- Ejecutar este script en el editor SQL de Supabase
+
+-- 1. Añadir columna 'position' a la tabla de álbumes si no existe
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='albums' AND column_name='position') THEN
+        ALTER TABLE public.albums ADD COLUMN position INTEGER DEFAULT 0;
+    END IF;
+END $$;
+
+-- 2. Añadir columna 'position' a la tabla de decks si no existe
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decks' AND column_name='position') THEN
+        ALTER TABLE public.decks ADD COLUMN position INTEGER DEFAULT 0;
+    END IF;
+END $$;
+
+-- 3. Añadir columna 'position' a la tabla de deck_cards si no existe
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deck_cards' AND column_name='position') THEN
+        ALTER TABLE public.deck_cards ADD COLUMN position INTEGER DEFAULT 0;
+    END IF;
+END $$;
