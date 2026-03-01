@@ -921,33 +921,38 @@ async function switchView(view) {
     window.history.pushState({}, '', url);
 }
 
+// Helper to resolve user by identifier (store_name or username)
+async function resolveUser(identifier) {
+    if (!identifier) return null;
+    const { data } = await _supabase
+        .from('usuarios')
+        .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store')
+        .or(`store_name.eq."${identifier}",username.eq."${identifier}"`)
+        .maybeSingle();
+    return data;
+}
+
 async function loadStoreData() {
     const urlParams = new URLSearchParams(window.location.search);
-    const storeName = urlParams.get('store');
-    const userName = urlParams.get('user');
+    const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
 
-    if (!storeName && !userName) {
+    if (!identifier) {
         $('#public-store-name').hide();
         hideLoading();
         return;
     }
 
+    // --- Clean URL Handling ---
+    if (urlParams.has('id')) {
+        const newUrl = `${window.location.origin}/${encodeURIComponent(identifier)}${window.location.hash}`;
+        window.history.replaceState({}, '', newUrl);
+    }
+
     try {
-        let query = _supabase
-            .from('usuarios')
-            .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store');
+        const userData = await resolveUser(identifier);
 
-        if (storeName) {
-            query = query.eq('store_name', storeName);
-        } else {
-            query = query.eq('username', userName);
-        }
-
-        const { data: userData, error: userError } = await query.single();
-
-        if (userError || !userData) {
-            const errorMsg = storeName ? 'Tienda no encontrada.' : 'Usuario no encontrado.';
-            $('#albums-container').html(`<div class="error">${errorMsg}</div>`);
+        if (!userData) {
+            $('#albums-container').html(`<div class="error">Tienda o Usuario no encontrado.</div>`);
             hideLoading();
             return;
         }
@@ -1026,13 +1031,8 @@ async function loadPublicPreorders() {
     let userId = window.currentStoreId;
     if (!userId) {
         const urlParams = new URLSearchParams(window.location.search);
-        const storeName = urlParams.get('store');
-        const userName = urlParams.get('user');
-        if (!storeName && !userName) return;
-        let query = _supabase.from('usuarios').select('id');
-        if (storeName) query = query.eq('store_name', storeName);
-        else query = query.eq('username', userName);
-        const { data: user } = await query.single();
+        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+        const user = await resolveUser(identifier);
         if (user) userId = user.id;
     }
     if (!userId) return;
@@ -1213,20 +1213,13 @@ async function loadPublicAlbums(userId) {
 
 async function loadPublicDecks() {
     const urlParams = new URLSearchParams(window.location.search);
-    const storeName = urlParams.get('store');
-    const userName = urlParams.get('user');
-    if (!storeName && !userName) return;
+    const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+    if (!identifier) return;
 
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
     try {
-        let query = _supabase.from('usuarios').select('id');
-        if (storeName) {
-            query = query.eq('store_name', storeName);
-        } else {
-            query = query.eq('username', userName);
-        }
-        const { data: user } = await query.single();
+        const user = await resolveUser(identifier);
 
         if (!user) {
             return;
@@ -1660,13 +1653,8 @@ async function loadPublicSealed() {
     let userId = window.currentStoreId;
     if (!userId) {
         const urlParams = new URLSearchParams(window.location.search);
-        const storeName = urlParams.get('store');
-        const userName = urlParams.get('user');
-        if (!storeName && !userName) return;
-        let query = _supabase.from('usuarios').select('id');
-        if (storeName) query = query.eq('store_name', storeName);
-        else query = query.eq('username', userName);
-        const { data: user } = await query.single();
+        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+        const user = await resolveUser(identifier);
         if (user) userId = user.id;
     }
     if (!userId) return;
@@ -1738,18 +1726,12 @@ async function loadPublicEvents() {
     let userId = window.currentStoreId;
     if (!userId) {
         const urlParams = new URLSearchParams(window.location.search);
-        const storeName = urlParams.get('store');
-        const userName = urlParams.get('user');
+        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
 
-        if (storeName || userName) {
-            let query = _supabase.from('usuarios').select('id');
-            if (storeName) query = query.eq('store_name', storeName);
-            else query = query.eq('username', userName);
-            const { data: user } = await query.single();
-            if (user) {
-                userId = user.id;
-                window.currentStoreId = userId;
-            }
+        const user = await resolveUser(identifier);
+        if (user) {
+            userId = user.id;
+            window.currentStoreId = userId;
         }
     }
     if (!userId) return;
@@ -1823,15 +1805,8 @@ async function loadPublicWishlist() {
 
     if (!userId) {
         const urlParams = new URLSearchParams(window.location.search);
-        const storeName = urlParams.get('store');
-        const userName = urlParams.get('user');
-        if (!storeName && !userName) return;
-
-        let query = _supabase.from('usuarios').select('id');
-        if (storeName) query = query.eq('store_name', storeName);
-        else query = query.eq('username', userName);
-
-        const { data: user } = await query.single();
+        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+        const user = await resolveUser(identifier);
         if (user) userId = user.id;
     }
 

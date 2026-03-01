@@ -187,6 +187,23 @@ $(document).ready(async function() {
             return;
         }
 
+        // --- Duplicate Check ---
+        const { data: existing, error: checkError } = await _supabase
+            .from('usuarios')
+            .select('id')
+            .or(`username.eq."${username}",store_name.eq."${username}"`)
+            .maybeSingle();
+
+        if (existing) {
+            Swal.fire({
+                title: 'Atención',
+                text: 'Este nombre de usuario ya está en uso. Por favor, elige otro.',
+                icon: 'warning',
+                position: 'top'
+            });
+            return;
+        }
+
         const { data, error } = await _supabase.auth.signUp({
             email,
             password,
@@ -378,7 +395,7 @@ $(document).ready(async function() {
         $('#modal-business-address').text(store.ubicacion || 'Ubicación no disponible');
         $('#modal-business-hours').text(store.horario || 'Horario no disponible');
 
-        const publicUrl = `public.html?store=${encodeURIComponent(storeDisplay)}`;
+        const publicUrl = `${window.location.origin}/${encodeURIComponent(storeDisplay)}`;
         $('#modal-business-link').attr('href', publicUrl);
 
         $('#business-modal').addClass('active');
