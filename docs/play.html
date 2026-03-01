@@ -92,52 +92,6 @@
             border: none;
         }
 
-        .round-winner-tracker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            background: var(--card-bg);
-            padding: 8px 15px;
-            border-radius: 50px;
-            width: fit-content;
-            margin: 0 auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 0.9rem;
-        }
-
-        .round-chips {
-            display: flex;
-            gap: 8px;
-        }
-
-        .round-chip {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            font-weight: 800;
-            font-size: 0.7rem;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-
-        .round-chip.p1-win {
-            background: var(--primary-color);
-            color: black;
-            box-shadow: 0 0 10px var(--primary-color);
-        }
-
-        .round-chip.p2-win {
-            background: #ff7979;
-            color: black;
-            box-shadow: 0 0 10px #ff7979;
-        }
-
         .main-layout {
             display: grid;
             grid-template-columns: 1fr 180px 1fr;
@@ -435,7 +389,6 @@
             }
 
             .play-header { width: 100%; }
-            .round-winner-tracker { width: 100%; }
 
             .main-layout {
                 grid-template-columns: 1fr 1fr;
@@ -472,15 +425,6 @@
             <h1>Yu-Gi-Oh! Play!</h1>
             <button id="reset-game" class="btn-reset-top" onclick="resetGame()"><i class="fas fa-redo"></i> <span>Reset</span></button>
         </header>
-
-        <div class="round-winner-tracker">
-            <span>Ronda:</span>
-            <div class="round-chips">
-                <div class="round-chip" onclick="toggleWinner(this)" data-round="1">R1</div>
-                <div class="round-chip" onclick="toggleWinner(this)" data-round="2">R2</div>
-                <div class="round-chip" onclick="toggleWinner(this)" data-round="3">R3</div>
-            </div>
-        </div>
 
         <div class="main-layout">
             <!-- Player 1 -->
@@ -561,6 +505,12 @@
             'fa-dice-four', 'fa-dice-five', 'fa-dice-six'
         ];
 
+        function getRandomInt(max) {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            return array[0] % max;
+        }
+
         function operate(playerIdx, type) {
             const index = playerIdx - 1;
             const inputEl = document.getElementById(`input-${playerIdx}`);
@@ -639,22 +589,8 @@
             document.getElementById('lp-2').innerText = 8000;
             document.getElementById('input-1').value = '';
             document.getElementById('input-2').value = '';
-            document.querySelectorAll('.round-chip').forEach(c => {
-                c.classList.remove('p1-win', 'p2-win');
-            });
             document.getElementById('coin-result').innerText = 'Moneda';
             document.getElementById('dice-result').innerText = 'Dado';
-        }
-
-        function toggleWinner(el) {
-            if (el.classList.contains('p1-win')) {
-                el.classList.remove('p1-win');
-                el.classList.add('p2-win');
-            } else if (el.classList.contains('p2-win')) {
-                el.classList.remove('p2-win');
-            } else {
-                el.classList.add('p1-win');
-            }
         }
 
         let isFlipping = false;
@@ -666,12 +602,14 @@
             const resultText = document.getElementById('coin-result');
 
             resultText.innerText = 'Girando...';
-            const random = Math.random();
-            const result = random < 0.5 ? 'Cara' : 'Cruz';
+
+            const isHeads = getRandomInt(2) === 0;
+            const result = isHeads ? 'Cara' : 'Cruz';
 
             // Add at least 5 full rotations (1800 deg)
-            const rotations = 5 + Math.floor(Math.random() * 5);
-            coinRotation += rotations * 360 + (random < 0.5 ? 0 : 180);
+            const extraRotations = 5 + getRandomInt(5);
+            const currentFullRotations = Math.floor(coinRotation / 360);
+            coinRotation = (currentFullRotations + extraRotations) * 360 + (isHeads ? 0 : 180);
 
             coin.style.transform = `rotateY(${coinRotation}deg)`;
 
@@ -693,15 +631,15 @@
 
             let rolls = 0;
             const interval = setInterval(() => {
-                const randomIdx = Math.floor(Math.random() * 6);
+                const randomIdx = getRandomInt(6);
                 dice.innerHTML = `<i class="fas ${diceIcons[randomIdx]}"></i>`;
                 rolls++;
                 if (rolls > 15) {
                     clearInterval(interval);
-                    const finalIdx = Math.floor(Math.random() * 6);
-                    dice.innerHTML = `<i class="fas ${diceIcons[finalIdx]}"></i>`;
+                    const finalVal = getRandomInt(6);
+                    dice.innerHTML = `<i class="fas ${diceIcons[finalVal]}"></i>`;
                     dice.classList.remove('animate-dice');
-                    resultText.innerText = `Resultado: ${finalIdx + 1}`;
+                    resultText.innerText = `Resultado: ${finalVal + 1}`;
                     isRolling = false;
                 }
             }, 60);
