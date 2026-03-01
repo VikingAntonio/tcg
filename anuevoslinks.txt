@@ -1,0 +1,19 @@
+-- SQL para asegurar unicidad de nombres de usuario y tiendas
+-- Esto evitará duplicados en el login y registro.
+
+-- 1. Asegurar que el nombre de usuario sea único
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'usuarios_username_key') THEN
+        ALTER TABLE public.usuarios ADD CONSTRAINT usuarios_username_key UNIQUE (username);
+    END IF;
+END $$;
+
+-- 2. Asegurar que el nombre de la tienda sea único
+-- Nota: En PostgreSQL, la restricción UNIQUE permite múltiples valores NULL.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'usuarios_store_name_key') THEN
+        ALTER TABLE public.usuarios ADD CONSTRAINT usuarios_store_name_key UNIQUE (store_name);
+    END IF;
+END $$;

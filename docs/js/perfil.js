@@ -101,6 +101,25 @@ $(document).ready(async function() {
         });
 
         try {
+            // --- Duplicate Store Name Check ---
+            if (storeName && storeName !== currentUser.store_name) {
+                const { data: existing, error: storeCheckError } = await _supabase
+                    .from('usuarios')
+                    .select('id')
+                    .or(`store_name.eq."${storeName}",username.eq."${storeName}"`)
+                    .neq('id', currentUser.id)
+                    .maybeSingle();
+
+                if (existing) {
+                    Swal.fire({
+                        title: 'Atención',
+                        text: 'Este nombre de tienda ya está en uso. Por favor, elige otro.',
+                        icon: 'warning'
+                    });
+                    return;
+                }
+            }
+
             let logoUrl = currentUser.store_logo;
 
             // 1. Upload Logo if changed
