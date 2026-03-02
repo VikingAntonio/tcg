@@ -9,19 +9,23 @@
         // This script takes the current url and converts the path into a query parameter,
         // then redirects the browser to the new url with the query parameter and
         // hash fragment.
-        var pathSegmentsToKeep = 0;
-
         var l = window.location;
         var path = l.pathname.split('/').filter(Boolean);
 
         // If there's at least one path segment, it's likely a store/user identifier
-        if (path.length > pathSegmentsToKeep) {
-            var identifier = path[path.length - 1];
-            // Redirect to public.html with the identifier as 'id'
+        // Format: vikingtcg.xyz/toonShop
+        if (path.length > 0) {
+            var identifier = path[0]; // Take the first segment as the store identifier
+
+            // Reconstruct the base path (excluding the identifier)
+            var basePath = l.pathname.split('/').slice(0, -1).join('/');
+            if (basePath === '') basePath = '';
+
+            var newSearch = (l.search ? l.search + '&' : '?') + 'id=' + identifier;
+
             l.replace(
                 l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-                l.pathname.split('/').slice(0, 1 * -1).join('/') + '/public.html?id=' +
-                identifier + (l.search ? '&' + l.search.slice(1) : '') + l.hash
+                basePath + '/public.html' + newSearch + l.hash
             );
         } else {
             // Fallback to index if no path
