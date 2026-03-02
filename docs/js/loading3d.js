@@ -317,10 +317,7 @@ function updateLoadingScreen(active, message = null) {
     }
 }
 
-window.addEventListener('show-loading', (e) => {
-    isAnimating = true;
-    updateLoadingScreen(true, e.detail ? e.detail.message : null);
-
+function checkSpiritAndInit() {
     const newSpiritId = window.currentSpirit ? window.currentSpirit.id : null;
     if (scene) {
         if (window.lastLoadedSpiritId !== newSpiritId) {
@@ -331,6 +328,35 @@ window.addEventListener('show-loading', (e) => {
         init();
         window.lastLoadedSpiritId = newSpiritId;
     }
+}
+
+let spiritWaitInterval = null;
+
+function ensureSpiritAndInit() {
+    if (spiritWaitInterval) clearInterval(spiritWaitInterval);
+
+    // If currentSpirit is not yet available, wait for it (app.js will set it)
+    if (!window.currentSpirit) {
+        let attempts = 0;
+        spiritWaitInterval = setInterval(() => {
+            attempts++;
+            // We check for both window.currentSpirit (set by app.js)
+            // OR if window.currentStoreId is null after some time (means no store to load)
+            if (window.currentSpirit || attempts > 50) {
+                clearInterval(spiritWaitInterval);
+                spiritWaitInterval = null;
+                checkSpiritAndInit();
+            }
+        }, 100);
+    } else {
+        checkSpiritAndInit();
+    }
+}
+
+window.addEventListener('show-loading', (e) => {
+    isAnimating = true;
+    updateLoadingScreen(true, e.detail ? e.detail.message : null);
+    ensureSpiritAndInit();
 });
 
 window.addEventListener('hide-loading', () => {
@@ -357,7 +383,5 @@ window.addEventListener('hide-loading', () => {
 if (window.isLoading) {
     isAnimating = true;
     updateLoadingScreen(true, window.loadingMessage);
-    if (!scene) {
-        init();
-    }
+    ensureSpiritAndInit();
 }

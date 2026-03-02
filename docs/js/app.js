@@ -133,27 +133,21 @@ $(document).ready(async function() {
     const urlParams = new URLSearchParams(window.location.search);
     const initialView = urlParams.get('view') || 'albums';
 
-    if (initialView === 'albums') {
-        showLoading('Cargando interfaz...');
-    }
+    showLoading('Cargando Tienda...');
 
-    loadStoreData();
+    await loadStoreData();
 
     $('.nav-btn').click(function() {
         const view = $(this).data('view');
         if (view) switchView(view);
     });
 
-    if (initialView === 'decks') {
-        switchView('decks');
-    } else if (initialView === 'wishlist') {
-        switchView('wishlist');
-    } else if (initialView === 'sealed') {
-        switchView('sealed');
-    } else if (initialView === 'preorders') {
-        switchView('preorders');
-    } else if (initialView === 'events') {
-        switchView('events');
+    // Explicitly call the initial loader
+    if (initialView === 'albums' || !initialView) {
+        if (window.currentStoreId) loadPublicAlbums(window.currentStoreId);
+        else hideLoading();
+    } else {
+        switchView(initialView);
     }
 
     $('#spirit-btn').click(function() {
@@ -894,6 +888,7 @@ async function switchView(view) {
     if (view === 'albums') {
         $('#public-view-title').text('Colección de Álbumes');
         $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
+        if (window.currentStoreId) loadPublicAlbums(window.currentStoreId);
     } else if (view === 'sealed') {
         $('#public-view-title').text('Productos Sellados');
         $('.public-header p').text('Encuentra cajas, sobres y productos especiales de tus TCG favoritos.');
@@ -924,10 +919,11 @@ async function switchView(view) {
 // Helper to resolve user by identifier (store_name or username)
 async function resolveUser(identifier) {
     if (!identifier) return null;
+    const safeId = identifier.replace(/['"]/g, '');
     const { data } = await _supabase
         .from('usuarios')
         .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store')
-        .or(`store_name.eq."${identifier}",username.eq."${identifier}"`)
+        .or(`store_name.eq."${safeId}",username.eq."${safeId}"`)
         .maybeSingle();
     return data;
 }
@@ -938,7 +934,6 @@ async function loadStoreData() {
 
     if (!identifier) {
         $('#public-store-name').hide();
-        hideLoading();
         return;
     }
 
@@ -946,6 +941,9 @@ async function loadStoreData() {
     if (urlParams.has('id')) {
         const newUrl = `${window.location.origin}/${encodeURIComponent(identifier)}${window.location.hash}`;
         window.history.replaceState({}, '', newUrl);
+        window.currentStoreIdentifier = identifier;
+    } else {
+        window.currentStoreIdentifier = identifier;
     }
 
     try {
@@ -953,9 +951,15 @@ async function loadStoreData() {
 
         if (!userData) {
             $('#albums-container').html(`<div class="error">Tienda o Usuario no encontrado.</div>`);
-            hideLoading();
             return;
         }
+
+        // --- Immediate Identity Assignment ---
+        window.currentStoreId = userData.id;
+        window.currentStoreContact = {
+            whatsapp: userData.whatsapp_link,
+            messenger: userData.messenger_link
+        };
 
         // Check localStorage first for guest selection
         const localSpirit = localStorage.getItem('selected_spirit');
@@ -994,15 +998,9 @@ async function loadStoreData() {
             $('#public-store-name').text(userData.username).show();
         }
 
-        window.currentStoreId = userData.id;
-        window.currentStoreContact = {
-            whatsapp: userData.whatsapp_link,
-            messenger: userData.messenger_link
-        };
-
         // Update cart link to include store name or user name
-        const identifier = userData.is_store ? `store=${encodeURIComponent(userData.store_name)}` : `user=${encodeURIComponent(userData.username)}`;
-        $('#cart-btn').attr('href', `carrito.html?${identifier}`);
+        const cartIdentifier = userData.is_store ? `store=${encodeURIComponent(userData.store_name)}` : `user=${encodeURIComponent(userData.username)}`;
+        $('#cart-btn').attr('href', `carrito.html?${cartIdentifier}`);
 
         // Fetch additional data for CompanionBot
         const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
@@ -1016,24 +1014,22 @@ async function loadStoreData() {
             hasSealed: sealedProducts && sealedProducts.length > 0
         };
 
-        // Initialize companion bot first for speed
+        // Initialize companion bot
         initFloatingCompanion();
-
-        // Start loading content in parallel
-        loadPublicAlbums(userData.id);
     } catch (e) {
         console.error("Error in loadStoreData:", e);
-        hideLoading();
     }
 }
 
 async function loadPublicPreorders() {
     let userId = window.currentStoreId;
     if (!userId) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+        const identifier = window.currentStoreIdentifier;
         const user = await resolveUser(identifier);
-        if (user) userId = user.id;
+        if (user) {
+            userId = user.id;
+            window.currentStoreId = userId;
+        }
     }
     if (!userId) return;
 
@@ -1212,14 +1208,19 @@ async function loadPublicAlbums(userId) {
 }
 
 async function loadPublicDecks() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+    const identifier = window.currentStoreIdentifier;
     if (!identifier) return;
 
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
     try {
-        const user = await resolveUser(identifier);
+        let user;
+        if (window.currentStoreId) {
+            user = { id: window.currentStoreId };
+        } else {
+            user = await resolveUser(identifier);
+            if (user) window.currentStoreId = user.id;
+        }
 
         if (!user) {
             return;
@@ -1652,10 +1653,12 @@ async function renderAlbum(album) {
 async function loadPublicSealed() {
     let userId = window.currentStoreId;
     if (!userId) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+        const identifier = window.currentStoreIdentifier;
         const user = await resolveUser(identifier);
-        if (user) userId = user.id;
+        if (user) {
+            userId = user.id;
+            window.currentStoreId = userId;
+        }
     }
     if (!userId) return;
 
@@ -1725,8 +1728,7 @@ async function loadPublicSealed() {
 async function loadPublicEvents() {
     let userId = window.currentStoreId;
     if (!userId) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+        const identifier = window.currentStoreIdentifier;
 
         const user = await resolveUser(identifier);
         if (user) {
@@ -1804,10 +1806,12 @@ async function loadPublicWishlist() {
     let userId = window.currentStoreId;
 
     if (!userId) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+        const identifier = window.currentStoreIdentifier;
         const user = await resolveUser(identifier);
-        if (user) userId = user.id;
+        if (user) {
+            userId = user.id;
+            window.currentStoreId = userId;
+        }
     }
 
     if (!userId) return;
