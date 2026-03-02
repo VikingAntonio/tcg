@@ -1638,7 +1638,7 @@ async function loadDecks() {
         .from('decks')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('id', { ascending: true });
+        .order('position', { ascending: true });
 
     if (error) {
         $('#deck-list').html('<div class="error">Error al cargar decks.</div>');
@@ -1664,7 +1664,7 @@ async function loadDecks() {
         `;
 
         const $card = $(`
-            <div class="album-card">
+            <div class="album-card deck-item" data-id="${deck.id}">
                 <div class="deck-preview-icon"><i class="fas fa-layer-group fa-3x"></i></div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                     <h3 style="margin:0;">${deck.name}</h3>
@@ -1685,6 +1685,38 @@ async function loadDecks() {
         $tempContainer.append($card);
     });
     $('#deck-list').html($tempContainer.contents());
+    initDecksSorting();
+}
+
+function initDecksSorting() {
+    const el = document.getElementById('deck-list');
+    if (!el || !window.Sortable) return;
+
+    if (el._sortable) el._sortable.destroy();
+
+    el._sortable = Sortable.create(el, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: async function() {
+            const ids = [];
+            $('#deck-list .deck-item').each(function() {
+                ids.push($(this).data('id'));
+            });
+            await updateDeckOrder(ids);
+        }
+    });
+}
+
+async function updateDeckOrder(ids) {
+    try {
+        const promises = ids.map((id, index) =>
+            _supabase.from('decks').update({ position: index }).eq('id', id)
+        );
+        await Promise.all(promises);
+        console.log("Orden de decks actualizado");
+    } catch (err) {
+        console.error("Error al actualizar orden de decks:", err);
+    }
 }
 
 async function editDeck(deck) {
@@ -1795,10 +1827,10 @@ async function loadDeckCards(deckId) {
         $tempContainer.append($cardItem);
     });
     $('#deck-card-list').html($tempContainer.contents());
-    initDeckSorting();
+    initDeckCardsSorting();
 }
 
-function initDeckSorting() {
+function initDeckCardsSorting() {
     const el = document.getElementById('deck-card-list');
     if (!el || !window.Sortable) return;
 
@@ -1872,7 +1904,7 @@ async function loadAlbums() {
         .from('albums')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('id', { ascending: true });
+        .order('position', { ascending: true });
 
     if (error) {
         $('#album-list').html('<div class="error">Error al cargar álbumes.</div>');
@@ -1899,7 +1931,7 @@ async function loadAlbums() {
         `;
 
         const $card = $(`
-            <div class="album-card">
+            <div class="album-card album-item" data-id="${album.id}">
                 <img src="${cover}" alt="${album.title}">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                     <h3 style="margin:0;">${album.title}</h3>
@@ -1920,6 +1952,38 @@ async function loadAlbums() {
         $tempContainer.append($card);
     });
     $('#album-list').html($tempContainer.contents());
+    initAlbumSorting();
+}
+
+function initAlbumSorting() {
+    const el = document.getElementById('album-list');
+    if (!el || !window.Sortable) return;
+
+    if (el._sortable) el._sortable.destroy();
+
+    el._sortable = Sortable.create(el, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: async function() {
+            const ids = [];
+            $('#album-list .album-item').each(function() {
+                ids.push($(this).data('id'));
+            });
+            await updateAlbumOrder(ids);
+        }
+    });
+}
+
+async function updateAlbumOrder(ids) {
+    try {
+        const promises = ids.map((id, index) =>
+            _supabase.from('albums').update({ position: index }).eq('id', id)
+        );
+        await Promise.all(promises);
+        console.log("Orden de álbumes actualizado");
+    } catch (err) {
+        console.error("Error al actualizar orden de álbumes:", err);
+    }
 }
 
 function showView(view) {

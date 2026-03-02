@@ -1166,7 +1166,7 @@ async function loadPublicAlbums(userId) {
             .from('albums')
             .select('*')
             .eq('user_id', userId)
-            .order('id', { ascending: true });
+            .order('position', { ascending: true });
 
         let { data: albums, error } = await query;
 
@@ -1177,7 +1177,7 @@ async function loadPublicAlbums(userId) {
                 .from('albums')
                 .select('*')
                 .eq('user_id', userId)
-                .order('id', { ascending: true });
+                .order('position', { ascending: true });
             albums = retry.data;
             error = retry.error;
         }
@@ -1232,7 +1232,7 @@ async function loadPublicDecks() {
                 deck_cards (*)
             `)
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
+            .order('position', { ascending: true })
             .order('position', { foreignTable: 'deck_cards', ascending: true });
 
         let { data: decks, error } = await deckQuery;
@@ -1247,7 +1247,7 @@ async function loadPublicDecks() {
                     deck_cards (*)
                 `)
                 .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
+                .order('position', { ascending: true })
                 .order('position', { foreignTable: 'deck_cards', ascending: true });
             decks = retry.data;
             error = retry.error;
