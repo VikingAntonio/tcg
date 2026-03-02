@@ -1196,14 +1196,12 @@ async function loadPublicAlbums(userId) {
         }
 
         $('#albums-container').empty();
-        for (const album of albums) {
-            await renderAlbum(album);
-        }
+        await Promise.all(albums.map(album => renderAlbum(album)));
     } catch (e) {
         console.error("Error in loadPublicAlbums:", e);
         $('#albums-container').html('<div class="error">Error al cargar la colección.</div>');
     } finally {
-        setTimeout(hideLoading, 500);
+        hideLoading();
     }
 }
 
@@ -1480,7 +1478,23 @@ function getAlbumSize($albumContainer) {
     return { width, height };
 }
 
-async function renderAlbum(album) {
+function loadPageImages($album, page) {
+    // turn.js standard class is .p[number], and we also use data-page-num
+    const $page = $album.find(`.page[data-page-num="${page}"], .p${page}`);
+    if (!$page.length) return;
+
+    $page.find('img[data-src]').each(function() {
+        const $img = $(this);
+        const src = $img.attr('data-src');
+        if (src) {
+            $img.attr('src', src);
+            $img.removeAttr('data-src');
+        }
+    });
+}
+
+function renderAlbum(album) {
+    return new Promise(async (resolve) => {
     const $albumContainer = $(`
         <div class="public-album-item">
             <div class="public-album-header">
@@ -1550,7 +1564,7 @@ async function renderAlbum(album) {
                 });
                 if (slotData.image_url) {
                     const cardAlt = slotData.name || 'Carta';
-                    $slot.append(`<img src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}">`);
+                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}">`);
                     const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
 
                     // Prioridad para móvil: el listener global captura el touchstart.
@@ -1622,8 +1636,13 @@ async function renderAlbum(album) {
                         return;
                     }
                 },
-                turning: function() {
+                turning: function(e, page) {
                     $(this).addClass('is-turning');
+                    // Pre-load images for the current, next and following pages
+                    loadPageImages($(this), page);
+                    loadPageImages($(this), page + 1);
+                    loadPageImages($(this), page + 2);
+                    loadPageImages($(this), page + 3);
                 },
                 turned: function() {
                     $(this).removeClass('is-turning');
@@ -1635,12 +1654,27 @@ async function renderAlbum(album) {
                 }
             }
         });
+        resolve();
     };
 
-    if ($images.length === 0) setTimeout(initTurn, 150);
+    // Pre-load first 4 pages
+    loadPageImages($albumDiv, 1);
+    loadPageImages($albumDiv, 2);
+    loadPageImages($albumDiv, 3);
+    loadPageImages($albumDiv, 4);
+
+    const $initialImages = $albumDiv.find('img').filter(function() {
+        return $(this).attr('src') && !$(this).attr('src').startsWith('data:image');
+    });
+
+    if ($initialImages.length === 0) setTimeout(initTurn, 150);
     else {
-        $images.on('load error', () => { if (++loadedCount >= $images.length) setTimeout(initTurn, 200); });
-        setTimeout(initTurn, 1500);
+        $initialImages.on('load error', function() {
+            loadedCount++;
+            if (loadedCount >= $initialImages.length) setTimeout(initTurn, 200);
+        });
+        // Safety timeout
+        setTimeout(initTurn, 3000);
     }
 
     // Si ya hay una búsqueda activa al terminar de cargar el álbum, aplicarla
@@ -1648,6 +1682,7 @@ async function renderAlbum(album) {
     if (currentQuery) {
         setTimeout(() => { filterContent(currentQuery); }, 2000);
     }
+    });
 }
 
 async function loadPublicSealed() {
