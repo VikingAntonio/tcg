@@ -1457,17 +1457,12 @@ input:checked + .slider:before {
 
 @media (max-width: 480px) {
     .tile-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: minmax(120px, auto);
         gap: 10px;
-    }
-    .tile-large, .tile-wide, .tile-tall {
-        grid-column: span 1;
-        grid-row: span 1;
-        aspect-ratio: 16/9;
     }
     .tile {
         height: auto;
-        min-height: 120px;
     }
 }
 
