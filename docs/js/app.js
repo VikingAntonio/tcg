@@ -1607,7 +1607,7 @@ async function renderAlbum(album) {
                     // Forzamos el re-ajuste y centrado para asegurar que la hoja quede bien anclada
                     const $el = $(this);
                     setTimeout(() => {
-                        $el.turn('resize').turn('center');
+                        $el.turn('stop').turn('resize').turn('center');
                     }, 0);
                 }
             }
