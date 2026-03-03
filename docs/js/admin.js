@@ -37,11 +37,6 @@ $(document).ready(async function() {
     initTheme();
 
     // --- Navigation (Dashboard Tiles) ---
-    $(document).on('click', '#btn-home', function(e) {
-        e.preventDefault();
-        showView('main-dashboard');
-    });
-
     $(document).on('click', '#btn-show-albums', function(e) {
         e.preventDefault();
         showView('dashboard');
