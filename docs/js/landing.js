@@ -119,7 +119,7 @@ $(document).ready(async function() {
                 timer: 1500,
                 showConfirmButton: false
             }).then(() => {
-                location.reload();
+                window.location.href = 'https://vikingtcg.xyz/admin.html';
             });
         }
     }
