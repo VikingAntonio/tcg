@@ -108,62 +108,70 @@ $(document).ready(function() {
         }, 500);
     });
 
-    async function performFastSearch(query) {
+    window.performFastSearch = async function(inputQueries) {
+        const queries = Array.isArray(inputQueries) ? inputQueries : [inputQueries];
+
         $('#fast-search-loading').show();
-        $('#fast-results-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Buscando en todas las bases de datos...</div>');
+        $('#fast-results-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Buscando coincidencias...</div>');
 
         try {
-            // Reusing logic from admin.js but adapted for fast mode
-            const ygoSpecialSearch = async () => {
-                const q = query.toUpperCase();
-                if (/^\d{5,10}$/.test(q)) {
-                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
-                    return r.data || [];
-                }
-                const setMatch = q.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
-                if (setMatch) {
-                    const prefix = setMatch[1];
-                    const sets = await getYgoSets();
-                    const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
-                    if (setObj) {
-                        const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
-                        if (r.data) return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
+            const allResultsPromises = queries.map(async (query) => {
+                const ygoSpecialSearch = async () => {
+                    const q = query.toUpperCase();
+                    if (/^\d{5,10}$/.test(q)) {
+                        const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
+                        return r.data || [];
                     }
-                }
-                return [];
-            };
+                    const setMatch = q.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
+                    if (setMatch) {
+                        const prefix = setMatch[1];
+                        const sets = typeof getYgoSets === 'function' ? await getYgoSets() : [];
+                        const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
+                        if (setObj) {
+                            const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
+                            if (r.data) return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
+                        }
+                    }
+                    return [];
+                };
 
-            const searchPromises = [
-                fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
-                ygoSpecialSearch(),
-                fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-                fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-                fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
-                VikingData.search(query)
-            ];
+                const searchPromises = [
+                    fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+                    ygoSpecialSearch(),
+                    fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+                    fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+                    fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
+                    VikingData.search(query)
+                ];
 
-            const [ygName, ygSpecial, pkEn, pkEs, lorResults, vikResults] = await Promise.all(searchPromises);
+                const [ygName, ygSpecial, pkEn, pkEs, lorResults, vikResults] = await Promise.all(searchPromises);
 
-            let combinedResults = [];
-            if (Array.isArray(vikResults)) combinedResults.push(...vikResults);
+                let localResults = [];
+                if (Array.isArray(vikResults)) localResults.push(...vikResults);
 
-            (Array.isArray(lorResults) ? lorResults : []).forEach(c => {
-                if (c.Image) combinedResults.push({ name: c.Name, image: c.Image, high_res: c.Image });
+                (Array.isArray(lorResults) ? lorResults : []).forEach(c => {
+                    if (c.Image) localResults.push({ name: c.Name, image: c.Image, high_res: c.Image });
+                });
+
+                const ygoResults = [...(ygName.data || []), ...ygSpecial];
+                ygoResults.forEach(c => {
+                    if (c.card_images) {
+                        c.card_images.forEach(img => {
+                            localResults.push({ name: c.name, image: img.image_url_small, high_res: img.image_url });
+                        });
+                    }
+                });
+
+                const pkResults = [...(pkEn || []), ...(pkEs || [])];
+                pkResults.forEach(c => {
+                    if (c.image) localResults.push({ name: c.name, image: `${c.image}/low.webp`, high_res: `${c.image}/high.webp` });
+                });
+
+                return localResults;
             });
 
-            const ygoResults = [...(ygName.data || []), ...ygSpecial];
-            ygoResults.forEach(c => {
-                if (c.card_images) {
-                    c.card_images.forEach(img => {
-                        combinedResults.push({ name: c.name, image: img.image_url_small, high_res: img.image_url });
-                    });
-                }
-            });
-
-            const pkResults = [...(pkEn || []), ...(pkEs || [])];
-            pkResults.forEach(c => {
-                if (c.image) combinedResults.push({ name: c.name, image: `${c.image}/low.webp`, high_res: `${c.image}/high.webp` });
-            });
+            const allBatches = await Promise.all(allResultsPromises);
+            const combinedResults = [].concat(...allBatches);
 
             const uniqueResults = [];
             const seenImages = new Set();
@@ -174,7 +182,7 @@ $(document).ready(function() {
                 }
             });
 
-            displayFastResults(uniqueResults.slice(0, 30));
+            displayFastResults(uniqueResults.slice(0, 60));
 
         } catch (err) {
             console.error(err);
@@ -339,6 +347,12 @@ $(document).ready(function() {
         finalizeFastRegistration(card.name);
     }
 
+    function cleanFastTranscript(text) {
+        if (!text) return "";
+        // Remove extra spaces and leading/trailing whitespace
+        return text.replace(/\s+/g, ' ').trim();
+    }
+
     function finalizeFastRegistration(cardName) {
         // Feedback
         Swal.fire({
@@ -362,14 +376,27 @@ $(document).ready(function() {
         const recognition = new SpeechRecognition();
         recognition.lang = 'es-ES';
         recognition.interimResults = false;
+        recognition.maxAlternatives = 5;
 
         recognition.onstart = () => {
             $('#btn-fast-voice').addClass('voice-pulse').find('i').removeClass('fa-microphone').addClass('fa-spinner fa-spin');
         };
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            $('#fast-search-input').val(transcript).trigger('input');
+            const results = event.results[0];
+            const queries = [];
+
+            for (let i = 0; i < results.length; i++) {
+                const cleaned = cleanFastTranscript(results[i].transcript);
+                if (cleaned && !queries.includes(cleaned)) {
+                    queries.push(cleaned);
+                }
+            }
+
+            if (queries.length > 0) {
+                $('#fast-search-input').val(queries[0]);
+                performFastSearch(queries);
+            }
         };
 
         recognition.onerror = (event) => {
@@ -388,45 +415,13 @@ $(document).ready(function() {
         $('#btn-fast-voice').hide();
     }
 
-    // --- Image Input (OCR) ---
+    // --- Image/Drawing Helper (OCR) ---
     let tesseractWorker = null;
     async function getTesseractWorker() {
         if (tesseractWorker) return tesseractWorker;
         tesseractWorker = await Tesseract.createWorker('eng');
         return tesseractWorker;
     }
-
-    $('#btn-fast-image').click(function() {
-        $('#fast-image-input').click();
-    });
-
-    $('#fast-image-input').change(async function() {
-        const file = this.files[0];
-        if (!file) return;
-
-        Swal.fire({
-            title: 'Procesando Imagen...',
-            text: 'Estamos leyendo el texto de la carta',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
-
-        try {
-            const worker = await getTesseractWorker();
-            const { data: { text } } = await worker.recognize(file);
-
-            const cleanText = text.replace(/[^a-zA-Z0-9\s-]/g, ' ').split('\n')[0].trim();
-            if (cleanText.length > 2) {
-                $('#fast-search-input').val(cleanText).trigger('input');
-                Swal.close();
-            } else {
-                Swal.fire('Atención', 'No se pudo leer texto claro de la imagen. Intenta con otra.', 'warning');
-            }
-        } catch (err) {
-            console.error("OCR Error:", err);
-            Swal.fire('Error', 'No se pudo procesar la imagen.', 'error');
-        }
-    });
 
     // --- Drawing Input ---
     const drawCanvas = document.getElementById('fast-draw-canvas');
