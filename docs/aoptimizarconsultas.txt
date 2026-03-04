@@ -1,0 +1,7 @@
+No se requirieron cambios en el esquema de la base de datos (SQL) para esta optimización.
+Se implementó una lógica de guardado por lotes (batch saving) en el frontend (admin.js) que utiliza las tablas existentes:
+- 'card_slots' para álbumes (usando upsert con onConflict: 'page_id,slot_index').
+- 'deck_cards' para decks (usando upsert).
+- 'viking_data' para el historial global de cartas.
+
+Ahora, al editar álbumes o decks, las cartas se mantienen en un estado local y solo se envían a Supabase en una única consulta por lote al presionar el botón "Guardar Cambios".

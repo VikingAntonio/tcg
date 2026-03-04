@@ -21,6 +21,13 @@ let currentPageId = null;
 let currentUser = null;
 let editingType = 'slot'; // 'slot' or 'deck-card'
 
+// Local state for batch saving
+let localAlbumSlots = [];
+let albumSlotsToDelete = [];
+let localDeckCards = [];
+let deckCardsToDelete = [];
+let localVikingData = [];
+
 // Mask Editor State
 let maskCanvas, maskCtx;
 let isPainting = false;
@@ -324,9 +331,17 @@ $(document).ready(async function() {
         }
     });
 
-    // Album Meta Save
+    // Album Meta Save (Batch Save)
     $('#btn-save-album-meta').click(async function(e) {
         e.preventDefault();
+
+        Swal.fire({
+            title: 'Guardando cambios...',
+            text: 'Esto puede tardar unos segundos dependiendo del volumen de cartas.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
         const title = $('#input-album-title').val();
         const cover = $('#input-album-cover').val();
         const back = $('#input-album-back').val();
@@ -342,35 +357,78 @@ $(document).ready(async function() {
             back_color: backColor,
             is_public
         };
-        let { error } = await _supabase
-            .from('albums')
-            .update(updateData)
-            .eq('id', currentAlbumId);
 
-        // Fallback for missing column
-        if (error && (error.code === '42703' || (error.message && error.message.includes('is_public')))) {
-            console.warn("is_public column missing, retrying update without it.");
-            delete updateData.is_public;
-            const retry = await _supabase
+        try {
+            // 1. Save Album Metadata
+            let { error: albumErr } = await _supabase
                 .from('albums')
                 .update(updateData)
                 .eq('id', currentAlbumId);
-            error = retry.error;
-        }
 
-        if (error) {
-            Swal.fire('Error', 'No se pudieron guardar los cambios: ' + (error.message || ''), 'error');
-            console.error(error);
-        } else {
+            if (albumErr && (albumErr.code === '42703' || (albumErr.message && albumErr.message.includes('is_public')))) {
+                delete updateData.is_public;
+                const retry = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
+                albumErr = retry.error;
+            }
+            if (albumErr) throw albumErr;
+
+            // 2. Perform Batch Deletions
+            if (albumSlotsToDelete.length > 0) {
+                const { error: delErr } = await _supabase
+                    .from('card_slots')
+                    .delete()
+                    .in('id', albumSlotsToDelete);
+                if (delErr) throw delErr;
+            }
+
+            // 3. Perform Batch Upsert for Slots
+            if (localAlbumSlots.length > 0) {
+                // Remove ID from objects to allow upsert by unique constraint (page_id, slot_index)
+                const slotsToUpsert = localAlbumSlots.map(s => {
+                    const { id, ...rest } = s;
+                    return rest;
+                });
+                const { error: upsertErr } = await _supabase
+                    .from('card_slots')
+                    .upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
+                if (upsertErr) throw upsertErr;
+            }
+
+            // 4. Batch Save to VikingData
+            if (localVikingData.length > 0) {
+                const sanitizedVikingData = localVikingData.map(item => ({
+                    name: item.name,
+                    image_url: item.image_url,
+                    expansion: item.expansion || '',
+                    rarity: item.rarity || '',
+                    tcg: item.tcg || 'custom',
+                    price: item.price || '',
+                    type: item.type || 'card',
+                    user_id: item.user_id
+                }));
+                const { error: vikErr } = await _supabase.from('viking_data').insert(sanitizedVikingData);
+                if (vikErr) console.warn("Error saving to viking_data:", vikErr);
+            }
+
             Swal.fire({
                 title: '¡Actualizado!',
-                text: 'El álbum se ha actualizado correctamente',
+                text: 'Todos los cambios se han guardado correctamente',
                 icon: 'success',
                 timer: 2000,
                 showConfirmButton: false
             });
+
+            // Clear local state
+            localAlbumSlots = [];
+            albumSlotsToDelete = [];
+            localVikingData = [];
+
             loadAlbums();
             showView('dashboard');
+
+        } catch (err) {
+            Swal.fire('Error', 'No se pudieron guardar los cambios: ' + (err.message || ''), 'error');
+            console.error(err);
         }
     });
 
@@ -445,47 +503,52 @@ $(document).ready(async function() {
             price: $('#slot-price').val() || ''
         };
 
-        // Save to VikingData (Shared Database)
-        VikingData.save({
+        // Queue to VikingData (Shared Database)
+        localVikingData.push({
             ...cardData,
             tcg: 'custom',
             type: 'card',
             user_id: currentUser.id
         });
 
-        let error;
         if (editingType === 'slot') {
             const slotData = { ...cardData, page_id: currentPageId, slot_index: currentSlotIndex };
-            const result = await _supabase
-                .from('card_slots')
-                .upsert(slotData, { onConflict: 'page_id,slot_index' });
-            error = result.error;
-        } else {
-            const result = await _supabase
-                .from('deck_cards')
-                .update(cardData)
-                .eq('id', currentDeckCardId);
-            error = result.error;
-        }
+            // Update local state
+            const existingIdx = localAlbumSlots.findIndex(s => s.page_id === currentPageId && s.slot_index === currentSlotIndex);
+            if (existingIdx !== -1) {
+                localAlbumSlots[existingIdx] = { ...localAlbumSlots[existingIdx], ...slotData };
+            } else {
+                localAlbumSlots.push(slotData);
+            }
 
-        if (error) {
-            Swal.fire('Error', 'No se pudo guardar la información de la carta: ' + (error.message || ''), 'error');
-            console.error(error);
-        } else {
             Swal.fire({
-                title: 'Guardado',
-                text: 'Carta actualizada',
+                title: 'Preparado',
+                text: 'Carta lista para guardar (haz clic en "Guardar Cambios" para finalizar)',
                 icon: 'success',
                 timer: 1500,
                 showConfirmButton: false
             });
             $('#slot-modal').removeClass('active');
             window.card3dActive = false;
-            if (editingType === 'slot') {
-                loadAlbumPages(currentAlbumId);
-            } else {
-                loadDeckCards(currentDeckId);
+            loadAlbumPages(currentAlbumId, false);
+            return;
+        } else {
+            // Update local state
+            const existingIdx = localDeckCards.findIndex(c => (c.id && c.id === currentDeckCardId) || (c.localId && c.localId === currentDeckCardId));
+            if (existingIdx !== -1) {
+                localDeckCards[existingIdx] = { ...localDeckCards[existingIdx], ...cardData };
             }
+
+            Swal.fire({
+                title: 'Preparado',
+                text: 'Carta actualizada (haz clic en "Guardar Cambios" para finalizar)',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            $('#slot-modal').removeClass('active');
+            window.card3dActive = false;
+            renderDeckCardsLocal();
         }
     });
 
@@ -646,33 +709,30 @@ $(document).ready(async function() {
         e.preventDefault();
         searchExternalCard('#deck-external-search-input', '#deck-external-search-results', async function(card) {
             // Limite de cartas por deck
-            const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', currentDeckId);
-            if (count >= (currentUser.max_cards_per_deck || 60)) {
+            if (localDeckCards.length >= (currentUser.max_cards_per_deck || 60)) {
                 Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
                 return;
             }
 
-            // Immediate add to deck
-            const { error } = await _supabase
-                .from('deck_cards')
-                .insert([{
-                    deck_id: currentDeckId,
-                    image_url: card.high_res,
-                    name: card.name
-                }]);
+            // Local add to deck
+            const newCard = {
+                localId: 'new_' + Date.now(),
+                deck_id: currentDeckId,
+                image_url: card.high_res,
+                name: card.name,
+                quantity: 1,
+                position: localDeckCards.length
+            };
+            localDeckCards.push(newCard);
 
-            if (error) {
-                Swal.fire('Error', 'No se pudo añadir la carta al deck', 'error');
-            } else {
-                Swal.fire({
-                    title: '¡Añadida!',
-                    text: card.name,
-                    icon: 'success',
-                    timer: 1000,
-                    showConfirmButton: false
-                });
-                loadDeckCards(currentDeckId);
-            }
+            Swal.fire({
+                title: '¡Añadida!',
+                text: card.name + ' (haz clic en "Guardar Cambios" para finalizar)',
+                icon: 'success',
+                timer: 1000,
+                showConfirmButton: false
+            });
+            renderDeckCardsLocal();
         });
     });
 
@@ -941,36 +1001,87 @@ $(document).ready(async function() {
     });
 
 
+    // Deck Meta Save (Batch Save)
     $('#btn-save-deck-meta').click(async function(e) {
         e.preventDefault();
+
+        Swal.fire({
+            title: 'Guardando cambios...',
+            text: 'Estamos procesando todas las cartas de tu deck.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
         const name = $('#input-deck-name').val();
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
 
         let updateData = { name, is_public, use_special_price, special_price };
-        let { error } = await _supabase
-            .from('decks')
-            .update(updateData)
-            .eq('id', currentDeckId);
 
-        // Fallback for missing columns
-        if (error && error.code === '42703') {
-            console.warn("Some columns might be missing, retrying update with basic fields.");
-            const basicData = { name, is_public };
-            const retry = await _supabase
+        try {
+            // 1. Save Deck Metadata
+            let { error: deckErr } = await _supabase
                 .from('decks')
-                .update(basicData)
+                .update(updateData)
                 .eq('id', currentDeckId);
-            error = retry.error;
-        }
 
-        if (error) {
-            Swal.fire('Error', 'No se pudo actualizar el deck: ' + (error.message || ''), 'error');
-            console.error(error);
-        } else {
-            Swal.fire('¡Éxito!', 'Nombre del deck actualizado', 'success');
+            if (deckErr && deckErr.code === '42703') {
+                const basicData = { name, is_public };
+                const retry = await _supabase.from('decks').update(basicData).eq('id', currentDeckId);
+                deckErr = retry.error;
+            }
+            if (deckErr) throw deckErr;
+
+            // 2. Perform Batch Deletions
+            if (deckCardsToDelete.length > 0) {
+                const { error: delErr } = await _supabase
+                    .from('deck_cards')
+                    .delete()
+                    .in('id', deckCardsToDelete);
+                if (delErr) throw delErr;
+            }
+
+            // 3. Perform Batch Upsert for Cards
+            if (localDeckCards.length > 0) {
+                const cardsToUpsert = localDeckCards.map(c => {
+                    const card = { ...c };
+                    if (card.localId) delete card.localId;
+                    return card;
+                });
+                const { error: upsertErr } = await _supabase
+                    .from('deck_cards')
+                    .upsert(cardsToUpsert);
+                if (upsertErr) throw upsertErr;
+            }
+
+            // 4. Batch Save to VikingData
+            if (localVikingData.length > 0) {
+                const sanitizedVikingData = localVikingData.map(item => ({
+                    name: item.name,
+                    image_url: item.image_url,
+                    expansion: item.expansion || '',
+                    rarity: item.rarity || '',
+                    tcg: item.tcg || 'custom',
+                    price: item.price || '',
+                    type: item.type || 'card',
+                    user_id: item.user_id
+                }));
+                const { error: vikErr } = await _supabase.from('viking_data').insert(sanitizedVikingData);
+                if (vikErr) console.warn("Error saving to viking_data:", vikErr);
+            }
+
+            Swal.fire('¡Éxito!', 'Todos los cambios del deck se han guardado correctamente', 'success');
+
+            // Clear local state
+            localDeckCards = [];
+            deckCardsToDelete = [];
+            localVikingData = [];
+
             loadDecks();
+        } catch (err) {
+            Swal.fire('Error', 'No se pudo actualizar el deck: ' + (err.message || ''), 'error');
+            console.error(err);
         }
     });
 
@@ -1097,27 +1208,26 @@ $(document).ready(async function() {
         $fileName.text("Subiendo...").css('color', '#aaa');
         try {
             // Limite de cartas por deck
-            const { count } = await _supabase.from('deck_cards').select('*', { count: 'exact', head: true }).eq('deck_id', currentDeckId);
-            if (count >= (currentUser.max_cards_per_deck || 60)) {
+            if (localDeckCards.length >= (currentUser.max_cards_per_deck || 60)) {
                 Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
                 $fileName.text("");
                 return;
             }
 
             const url = await CloudinaryUpload.uploadImage(file);
-            const { error } = await _supabase
-                .from('deck_cards')
-                .insert([{
-                    deck_id: currentDeckId,
-                    image_url: url,
-                    name: file.name.split('.')[0]
-                }]);
-
-            if (error) throw error;
+            const newCard = {
+                localId: 'new_' + Date.now(),
+                deck_id: currentDeckId,
+                image_url: url,
+                name: file.name.split('.')[0],
+                quantity: 1,
+                position: localDeckCards.length
+            };
+            localDeckCards.push(newCard);
 
             $fileName.text("¡Añadida!").css('color', '#00ff88');
             setTimeout(() => $fileName.text(""), 2000);
-            loadDeckCards(currentDeckId);
+            renderDeckCardsLocal();
         } catch (err) {
             $fileName.text("Error al subir").css('color', '#ff4757');
             Swal.fire('Error', 'No se pudo añadir al deck: ' + err.message, 'error');
@@ -1715,6 +1825,11 @@ async function updateDeckOrder(ids) {
 }
 
 async function editDeck(deck) {
+    // Reset local state
+    localDeckCards = [];
+    deckCardsToDelete = [];
+    localVikingData = [];
+
     // Re-fetch para evitar datos obsoletos del cierre
     const { data: latestDeck } = await _supabase
         .from('decks')
@@ -1739,7 +1854,7 @@ async function editDeck(deck) {
     }
 
     showView('deck-editor');
-    loadDeckCards(target.id);
+    loadDeckCards(target.id, true);
 }
 
 async function deleteDeck(id) {
@@ -1762,22 +1877,28 @@ async function deleteDeck(id) {
     }
 }
 
-async function loadDeckCards(deckId) {
-    $('#deck-card-list').html('<div class="loading">Cargando imágenes...</div>');
+async function loadDeckCards(deckId, fetchCards = true) {
+    if (fetchCards) {
+        $('#deck-card-list').html('<div class="loading">Cargando cartas...</div>');
+        const { data: cards, error } = await _supabase
+            .from('deck_cards')
+            .select('*')
+            .eq('deck_id', deckId)
+            .order(deckSortOrder, { ascending: true });
 
-    const { data: cards, error } = await _supabase
-        .from('deck_cards')
-        .select('*')
-        .eq('deck_id', deckId)
-        .order(deckSortOrder, { ascending: true });
-
-    if (error) {
-        $('#deck-card-list').html('<div class="error">Error al cargar imágenes.</div>');
-        return;
+        if (error) {
+            $('#deck-card-list').html('<div class="error">Error al cargar imágenes.</div>');
+            return;
+        }
+        localDeckCards = cards || [];
     }
 
+    renderDeckCardsLocal();
+}
+
+function renderDeckCardsLocal() {
     // Calculate total sum
-    const totalSum = (cards || []).reduce((sum, card) => {
+    const totalSum = localDeckCards.reduce((sum, card) => {
         const price = parseFloat((card.price || '0').replace(/[^0-9.]/g, '')) || 0;
         const qty = parseInt(card.quantity) || 1;
         return sum + (price * qty);
@@ -1785,9 +1906,9 @@ async function loadDeckCards(deckId) {
     $('#deck-total-sum').text('$' + totalSum.toFixed(2));
 
     const $tempContainer = $('<div></div>');
-    cards.forEach(card => {
+    localDeckCards.forEach(card => {
         const $cardItem = $(`
-            <div class="album-card deck-card-item" data-id="${card.id}" style="cursor:pointer; position:relative;">
+            <div class="album-card deck-card-item" data-id="${card.id || card.localId}" style="cursor:pointer; position:relative;">
                 <div class="btn-delete-card-top btn-delete-deck-card"><i class="fas fa-times"></i></div>
                 <img src="${card.image_url}" style="width:100%; height:150px; object-fit:contain;">
                 <div style="font-size: 12px; margin-top: 5px; color: #aaa; text-align: center;">${card.name || 'Sin nombre'}</div>
@@ -1805,7 +1926,7 @@ async function loadDeckCards(deckId) {
             e.stopPropagation();
             const res = await Swal.fire({
                 title: '¿Eliminar carta?',
-                text: "¿Estás seguro de que quieres eliminar esta carta del deck?",
+                text: "¿Estás seguro de que quieres eliminar esta carta del deck (recuerda guardar cambios)?",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ff4757',
@@ -1814,8 +1935,11 @@ async function loadDeckCards(deckId) {
                 cancelButtonText: 'Cancelar'
             });
             if (res.isConfirmed) {
-                await _supabase.from('deck_cards').delete().eq('id', card.id);
-                loadDeckCards(deckId);
+                if (card.id) {
+                    deckCardsToDelete.push(card.id);
+                }
+                localDeckCards = localDeckCards.filter(c => c !== card);
+                renderDeckCardsLocal();
             }
         });
 
@@ -1846,20 +1970,17 @@ function initDeckCardsSorting() {
 }
 
 async function updateCardOrder(cardIds) {
-    try {
-        const promises = cardIds.map((id, index) =>
-            _supabase.from('deck_cards').update({ position: index }).eq('id', id)
-        );
-        await Promise.all(promises);
-        console.log("Orden de cartas actualizado");
-    } catch (err) {
-        console.error("Error al actualizar orden:", err);
-    }
+    cardIds.forEach((id, index) => {
+        const card = localDeckCards.find(c => (c.id && c.id === id) || (c.localId && c.localId === id));
+        if (card) card.position = index;
+    });
+    console.log("Orden de cartas actualizado localmente");
+    renderDeckCardsLocal();
 }
 
 function editDeckCard(card) {
     editingType = 'deck-card';
-    currentDeckCardId = card.id;
+    currentDeckCardId = card.id || card.localId;
 
     $('#slot-image-url').val(card.image_url || '');
     $('#slot-name').val(card.name || '');
@@ -1987,6 +2108,11 @@ function showView(view) {
 }
 
 async function editAlbum(album) {
+    // Reset local state
+    localAlbumSlots = [];
+    albumSlotsToDelete = [];
+    localVikingData = [];
+
     // Re-fetch para evitar datos obsoletos del cierre
     const { data: latestAlbum } = await _supabase
         .from('albums')
@@ -2008,7 +2134,7 @@ async function editAlbum(album) {
     $('#input-album-public').prop('checked', target.is_public !== false);
     
     showView('editor');
-    loadAlbumPages(target.id);
+    loadAlbumPages(target.id, true);
 }
 
 async function deleteAlbum(id) {
@@ -2034,9 +2160,9 @@ async function deleteAlbum(id) {
     }
 }
 
-async function loadAlbumPages(albumId, isInitial = true) {
-    if (isInitial) {
-        $('#page-list').html('<div class="loading">Cargando páginas...</div>');
+async function loadAlbumPages(albumId, fetchSlots = true) {
+    if (fetchSlots) {
+        $('#page-list').html('<div class="loading">Cargando páginas y cartas...</div>');
     }
 
     const { data: pages, error } = await _supabase
@@ -2050,22 +2176,32 @@ async function loadAlbumPages(albumId, isInitial = true) {
         return;
     }
 
+    if (fetchSlots) {
+        const pageIds = pages.map(p => p.id);
+        if (pageIds.length > 0) {
+            const { data: slotsData } = await _supabase
+                .from('card_slots')
+                .select('*')
+                .in('page_id', pageIds);
+            localAlbumSlots = slotsData || [];
+        } else {
+            localAlbumSlots = [];
+        }
+    } else {
+        // If not fetching slots, we should at least filter out slots from pages that might have been deleted locally
+        const pageIds = new Set(pages.map(p => p.id));
+        localAlbumSlots = localAlbumSlots.filter(s => pageIds.has(s.page_id));
+    }
+
+    renderAlbumPagesLocal(pages);
+}
+
+function renderAlbumPagesLocal(pages) {
     // Toggle bottom add button visibility
     if (pages && pages.length > 0) {
         $('#btn-add-page-bottom-container').show();
     } else {
         $('#btn-add-page-bottom-container').hide();
-    }
-
-    // Obtener todos los slots de todas las páginas en una sola consulta
-    const pageIds = pages.map(p => p.id);
-    let allSlots = [];
-    if (pageIds.length > 0) {
-        const { data: slotsData } = await _supabase
-            .from('card_slots')
-            .select('*')
-            .in('page_id', pageIds);
-        allSlots = slotsData || [];
     }
 
     const $tempContainer = $('<div></div>');
@@ -2089,7 +2225,7 @@ async function loadAlbumPages(albumId, isInitial = true) {
         });
 
         const $grid = $pageItem.find('.grid-container');
-        const pageSlots = allSlots.filter(s => s.page_id === page.id);
+        const pageSlots = localAlbumSlots.filter(s => s.page_id === page.id);
 
         for (let i = 0; i < 9; i++) {
             const slotData = pageSlots.find(s => s.slot_index === i);
@@ -2104,7 +2240,7 @@ async function loadAlbumPages(albumId, isInitial = true) {
                     e.stopPropagation();
                     const res = await Swal.fire({
                         title: '¿Eliminar carta?',
-                        text: "¿Estás seguro de que quieres quitar esta carta del álbum?",
+                        text: "¿Estás seguro de que quieres quitar esta carta del álbum (recuerda guardar cambios)?",
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#ff4757',
@@ -2113,17 +2249,13 @@ async function loadAlbumPages(albumId, isInitial = true) {
                         cancelButtonText: 'Cancelar'
                     });
                     if (res.isConfirmed) {
-                        const { error } = await _supabase
-                            .from('card_slots')
-                            .delete()
-                            .eq('page_id', page.id)
-                            .eq('slot_index', i);
-
-                        if (error) {
-                            Swal.fire('Error', 'No se pudo eliminar la carta', 'error');
-                        } else {
-                            loadAlbumPages(albumId, false);
+                        // Track deletion
+                        if (slotData.id) {
+                            albumSlotsToDelete.push(slotData.id);
                         }
+                        // Remove from local state
+                        localAlbumSlots = localAlbumSlots.filter(s => !(s.page_id === page.id && s.slot_index === i));
+                        loadAlbumPages(currentAlbumId, false);
                     }
                 });
                 $slot.append($btnDelete);
