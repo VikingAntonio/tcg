@@ -1,4 +1,6 @@
 $(document).ready(function() {
+    let pendingFastCards = [];
+
     // --- Navigation ---
     $(document).on('click', '#btn-fast-mode', function(e) {
         e.preventDefault();
@@ -13,12 +15,22 @@ $(document).ready(function() {
 
     // --- Target Selection ---
     $('#fast-target-type').change(function() {
+        pendingFastCards = [];
+        renderPendingFastCards();
         const type = $(this).val();
         $('#fast-target-label').text(type === 'album' ? 'Seleccionar Álbum' : 'Seleccionar Deck');
         loadFastTargets();
     });
 
+    $('#fast-target-select').change(function() {
+        pendingFastCards = [];
+        renderPendingFastCards();
+    });
+
     window.loadFastTargets = async function() {
+        pendingFastCards = [];
+        renderPendingFastCards();
+
         const type = $('#fast-target-type').val();
         const table = type === 'album' ? 'albums' : 'decks';
         const $select = $('#fast-target-select');
@@ -218,7 +230,6 @@ $(document).ready(function() {
     }
 
     async function registerFastCard(card) {
-        const targetType = $('#fast-target-type').val();
         const targetId = $('#fast-target-select').val();
 
         if (!targetId) {
@@ -226,20 +237,42 @@ $(document).ready(function() {
             return;
         }
 
-        $('#fast-search-loading').show();
+        pendingFastCards.push(card);
+        renderPendingFastCards();
+        finalizeFastRegistration(card.name);
+    }
 
-        try {
-            if (targetType === 'album') {
-                await handleFastAlbumRegistration(card, targetId);
-            } else {
-                await handleFastDeckRegistration(card, targetId);
-            }
-        } catch (err) {
-            console.error("Fast Registration Error:", err);
-            Swal.fire('Error', 'No se pudo registrar la carta: ' + err.message, 'error');
-        } finally {
-            $('#fast-search-loading').hide();
+    function renderPendingFastCards() {
+        const $container = $('#fast-pending-container');
+        const $grid = $('#fast-pending-grid');
+        $grid.empty();
+
+        if (pendingFastCards.length === 0) {
+            $container.hide();
+            return;
         }
+
+        $container.show();
+
+        pendingFastCards.forEach((card, index) => {
+            const $item = $(`
+                <div class="fast-result-item" style="position: relative; width: 80px; height: 110px;" title="${card.name}">
+                    <img src="${card.image}" alt="${card.name}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;">
+                    <span style="font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${card.name}</span>
+                    <div class="btn-delete-card-top" style="top: -5px; right: -5px; width: 20px; height: 20px; font-size: 10px; line-height: 20px;" data-index="${index}">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+            `);
+
+            $item.find('.btn-delete-card-top').click((e) => {
+                e.stopPropagation();
+                pendingFastCards.splice(index, 1);
+                renderPendingFastCards();
+            });
+
+            $grid.append($item);
+        });
     }
 
     async function handleFastAlbumRegistration(card, albumId) {
@@ -356,7 +389,7 @@ $(document).ready(function() {
     function finalizeFastRegistration(cardName) {
         // Feedback
         Swal.fire({
-            title: '¡Registrada!',
+            title: 'Añadida a la lista',
             text: cardName,
             icon: 'success',
             timer: 1000,
@@ -413,6 +446,176 @@ $(document).ready(function() {
         });
     } else {
         $('#btn-fast-voice').hide();
+    }
+
+    $('#btn-fast-save-all').click(function() {
+        saveAllFastCards();
+    });
+
+    async function saveAllFastCards() {
+        const targetType = $('#fast-target-type').val();
+        const targetId = $('#fast-target-select').val();
+
+        if (pendingFastCards.length === 0) return;
+
+        Swal.fire({
+            title: 'Guardando todas las cartas...',
+            text: `Procesando ${pendingFastCards.length} cartas.`,
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            if (targetType === 'album') {
+                await handleBatchAlbumRegistration(targetId);
+            } else {
+                await handleBatchDeckRegistration(targetId);
+            }
+
+            Swal.fire({
+                title: '¡Guardado!',
+                text: 'Todas las cartas se han registrado con éxito.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            pendingFastCards = [];
+            renderPendingFastCards();
+
+        } catch (err) {
+            console.error("Batch Registration Error:", err);
+            Swal.fire('Error', 'No se pudieron registrar las cartas: ' + err.message, 'error');
+        }
+    }
+
+    async function handleBatchDeckRegistration(deckId) {
+        // 1. Check current deck count
+        const { count, error: cErr } = await _supabase
+            .from('deck_cards')
+            .select('*', { count: 'exact', head: true })
+            .eq('deck_id', deckId);
+
+        if (cErr) throw cErr;
+
+        const limit = (currentUser.max_cards_per_deck || 60);
+        if (count + pendingFastCards.length > limit) {
+            throw new Error(`Límite de cartas en deck excedido. Espacio restante: ${limit - count}.`);
+        }
+
+        // 2. Prepare cards for batch insert
+        const cardsToInsert = pendingFastCards.map((card, index) => ({
+            deck_id: deckId,
+            name: card.name,
+            image_url: card.high_res || card.image,
+            quantity: 1,
+            position: count + index // Maintaining order
+        }));
+
+        // 3. Batch insert
+        const { error: insErr } = await _supabase
+            .from('deck_cards')
+            .insert(cardsToInsert);
+
+        if (insErr) throw insErr;
+    }
+
+    async function handleBatchAlbumRegistration(albumId) {
+        // 1. Get all pages
+        let { data: pages, error: pErr } = await _supabase
+            .from('pages')
+            .select('id, page_index')
+            .eq('album_id', albumId)
+            .order('page_index', { ascending: true });
+
+        if (pErr) throw pErr;
+
+        if (!pages || pages.length === 0) {
+            const { data: newPage, error: npe } = await _supabase
+                .from('pages')
+                .insert([{ album_id: albumId, page_index: 0 }])
+                .select();
+            if (npe) throw npe;
+            pages = newPage;
+        }
+
+        // 2. Get occupied slots
+        const pageIds = pages.map(p => p.id);
+        const { data: occupiedSlots, error: sErr } = await _supabase
+            .from('card_slots')
+            .select('page_id, slot_index')
+            .in('page_id', pageIds);
+
+        if (sErr) throw sErr;
+
+        const cardsToInsert = [];
+        const maxPages = (currentUser.max_pages || 5);
+
+        // Track state across pages during processing
+        let currentPageIndex = 0;
+        let currentSlotIndex = 0;
+
+        for (const card of pendingFastCards) {
+            let assigned = false;
+
+            while (!assigned) {
+                const page = pages[currentPageIndex];
+                const pageOccupied = occupiedSlots.filter(s => s.page_id === page.id).map(s => s.slot_index);
+                const localOccupied = cardsToInsert.filter(s => s.page_id === page.id).map(s => s.slot_index);
+                const allOccupied = [...pageOccupied, ...localOccupied];
+
+                // Find next free slot on THIS page starting from currentSlotIndex
+                let freeSlot = -1;
+                for (let i = currentSlotIndex; i < 9; i++) {
+                    if (!allOccupied.includes(i)) {
+                        freeSlot = i;
+                        break;
+                    }
+                }
+
+                if (freeSlot !== -1) {
+                    cardsToInsert.push({
+                        page_id: page.id,
+                        slot_index: freeSlot,
+                        name: card.name,
+                        image_url: card.high_res || card.image,
+                        condition: 'M',
+                        quantity: 1
+                    });
+                    currentSlotIndex = freeSlot + 1;
+                    assigned = true;
+                } else {
+                    // Page Full, move to next
+                    currentPageIndex++;
+                    currentSlotIndex = 0;
+
+                    if (currentPageIndex >= pages.length) {
+                        // Need new page
+                        if (pages.length >= maxPages) {
+                            throw new Error(`Límite de páginas alcanzado (${maxPages}). No se pudieron guardar todas las cartas.`);
+                        }
+
+                        const nextIdx = pages[pages.length - 1].page_index + 1;
+                        const { data: nPage, error: npe2 } = await _supabase
+                            .from('pages')
+                            .insert([{ album_id: albumId, page_index: nextIdx }])
+                            .select();
+
+                        if (npe2) throw npe2;
+                        pages.push(nPage[0]);
+                        // Stay in loop to assign to this new page
+                    }
+                }
+            }
+        }
+
+        // 3. Perform batch insert
+        if (cardsToInsert.length > 0) {
+            const { error: insErr } = await _supabase
+                .from('card_slots')
+                .insert(cardsToInsert);
+            if (insErr) throw insErr;
+        }
     }
 
     // --- Image/Drawing Helper (OCR) ---
