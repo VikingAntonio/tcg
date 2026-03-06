@@ -156,7 +156,7 @@ $(document).ready(async function() {
         }
 
         const { error } = await _supabase.auth.resetPasswordForEmail(emailToUse, {
-            redirectTo: window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/perfil.html'),
+            redirectTo: window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/reset-password.html'),
         });
 
         if (error) {

@@ -1,0 +1,13 @@
+-- El sistema de restablecimiento de contraseña utiliza Supabase Auth de forma nativa.
+-- No se requiere ninguna migración SQL para que esto funcione, ya que las tablas de Auth son gestionadas por Supabase.
+--
+-- Asegúrate de que en el Panel de Control de Supabase (Authentication -> URL Configuration):
+-- 1. Site URL esté configurado a: https://vikingtcg.xyz/
+-- 2. Redirect URLs incluya: https://vikingtcg.xyz/reset-password.html
+--
+-- El flujo es:
+-- 1. El usuario solicita el reset en index.html enviando su usuario/email.
+-- 2. Supabase envía un correo con un enlace que incluye un access_token.
+-- 3. Al hacer click, el usuario es redirigido a reset-password.html.
+-- 4. Supabase detecta el token y crea una sesión temporal de recuperación.
+-- 5. El archivo reset-password.js detecta la sesión y permite al usuario actualizar su contraseña mediante _supabase.auth.updateUser().
