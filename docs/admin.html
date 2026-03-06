@@ -111,6 +111,10 @@
                     <i class="fas fa-rocket"></i>
                     <span>Modo Rápido</span>
                 </a>
+                <a href="#" class="tile tile-orange" id="btn-show-expansiones">
+                    <i class="fas fa-th-large"></i>
+                    <span>Expansiones</span>
+                </a>
                 <a href="users.html" class="tile tile-pink" id="btn-users-panel" style="display:none;">
                     <i class="fas fa-users"></i>
                     <span>Usuarios</span>
@@ -323,6 +327,60 @@
                         <!-- Pending cards will appear here -->
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Expansiones View -->
+        <div id="view-expansiones" class="admin-section" style="display:none;">
+            <div class="admin-header">
+                <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
+                <h1>Explorar Expansiones</h1>
+                <p>Añade cartas de expansiones completas a tus álbumes.</p>
+            </div>
+
+            <div class="album-card" style="max-width: 800px; width: 100%; margin: 0 auto 30px;">
+                <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label>TCG</label>
+                        <select id="expansion-tcg-select">
+                            <option value="yugioh">Yu-Gi-Oh!</option>
+                            <option value="pokemon">Pokémon</option>
+                            <option value="onepiece">One Piece</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Expansión</label>
+                        <select id="expansion-set-select">
+                            <option value="">Cargando expansiones...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+                    <div class="form-group">
+                        <label>Guardar en</label>
+                        <select id="expansion-album-dest">
+                            <option value="new">Nuevo Álbum</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="expansion-new-album-group">
+                        <label>Nombre del Nuevo Álbum</label>
+                        <input type="text" id="expansion-new-album-name" placeholder="Ej: Mi Colección de OP-01">
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="expansion-select-all" checked style="width: 20px; height: 20px;">
+                        <span>Seleccionar Todas</span>
+                    </label>
+                    <button id="btn-save-expansion-cards" class="btn"><i class="fas fa-save"></i> Guardar Seleccionadas</button>
+                </div>
+            </div>
+
+            <div id="expansiones-card-grid" class="expansion-grid">
+                <!-- Cards will appear here -->
+                <div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">Selecciona una expansión para cargar las cartas.</div>
             </div>
         </div>
 
@@ -775,6 +833,7 @@
     <script src="js/companion-bot.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/fast-mode.js"></script>
+    <script src="js/expansiones.js"></script>
 
     <!-- Floating Companion (Jules: Draggable wrapper) -->
     <div id="companion-wrapper">
