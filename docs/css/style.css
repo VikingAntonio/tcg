@@ -3422,23 +3422,57 @@ input:checked + .slider:before {
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
     width: 100%;
+    max-width: 100%;
+    padding: 10px;
 }
 
 @media (max-width: 1024px) {
     .expansion-grid {
         grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
     }
 }
 
 @media (max-width: 768px) {
     .expansion-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
 }
 
 @media (max-width: 480px) {
     .expansion-grid {
-        grid-template-columns: repeat(2, 1fr); /* Stay at 2 columns as requested for responsive and common in the app */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 5px;
+    }
+
+    .expansion-card-item {
+        padding: 5px;
+        border-radius: 10px;
+    }
+
+    .expansion-card-info {
+        font-size: 0.7rem;
+    }
+
+    #view-expansiones .album-card {
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    #view-expansiones .info-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .expansion-controls-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 15px !important;
+    }
+
+    .expansion-controls-row button {
+        width: 100% !important;
     }
 }
 
