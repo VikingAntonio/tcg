@@ -3442,18 +3442,26 @@ input:checked + .slider:before {
 
 @media (max-width: 480px) {
     .expansion-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
         padding: 5px;
     }
 
     .expansion-card-item {
-        padding: 5px;
-        border-radius: 10px;
+        padding: 3px;
+        border-radius: 6px;
     }
 
     .expansion-card-info {
-        font-size: 0.7rem;
+        font-size: 0.5rem;
+        margin-top: 2px;
+    }
+
+    .expansion-card-checkbox {
+        width: 14px !important;
+        height: 14px !important;
+        top: 5px !important;
+        left: 5px !important;
     }
 
     #view-expansiones .album-card {

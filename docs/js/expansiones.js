@@ -4,11 +4,6 @@ $(document).ready(function() {
     let searchTimer = null;
 
     // --- Navigation ---
-    $(document).on('click', '#btn-show-expansiones', function(e) {
-        e.preventDefault();
-        showExpansionView();
-    });
-
     window.showExpansionView = function() {
         showView('expansiones');
         loadExpansionAlbums();
