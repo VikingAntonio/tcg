@@ -72,8 +72,9 @@ $(document).ready(function() {
                 const data = await response.json();
                 cards = (data.cards || []).map(c => ({
                     name: c.name,
-                    image_url: `${c.image}/high.webp`,
-                    expansion: data.name
+                    image_url: c.image ? `${c.image}/high.webp` : 'https://via.placeholder.com/150x210?text=Sin+Imagen',
+                    expansion: data.name,
+                    rarity: c.rarity || ''
                 }));
             } else if (tcg === 'onepiece') {
                 const { data: dbCards } = await _supabase
@@ -308,6 +309,7 @@ $(document).ready(function() {
     });
 
     async function handleBatchExpansionRegistration(albumId, cards) {
+        // Fetch existing pages for this album
         let { data: pages, error: pErr } = await _supabase
             .from('pages')
             .select('id, page_index')
@@ -316,6 +318,7 @@ $(document).ready(function() {
 
         if (pErr) throw pErr;
 
+        // If no pages exist, create the first one
         if (!pages || pages.length === 0) {
             const { data: newPage, error: npe } = await _supabase
                 .from('pages')
@@ -325,6 +328,7 @@ $(document).ready(function() {
             pages = newPage;
         }
 
+        // Fetch all currently occupied slots in these pages
         const pageIds = pages.map(p => p.id);
         const { data: occupiedSlots, error: sErr } = await _supabase
             .from('card_slots')
@@ -336,20 +340,22 @@ $(document).ready(function() {
         const cardsToInsert = [];
         const maxPages = (currentUser.max_pages || 5);
 
-        let currentPageIndex = 0;
-        let currentSlotIndex = 0;
+        let currentPageIdx = 0;
+        let startSlotIdx = 0;
 
         for (const card of cards) {
             let assigned = false;
 
             while (!assigned) {
-                const page = pages[currentPageIndex];
+                const page = pages[currentPageIdx];
+                if (!page) break;
+
                 const pageOccupied = occupiedSlots.filter(s => s.page_id === page.id).map(s => s.slot_index);
                 const localOccupied = cardsToInsert.filter(s => s.page_id === page.id).map(s => s.slot_index);
                 const allOccupied = [...pageOccupied, ...localOccupied];
 
                 let freeSlot = -1;
-                for (let i = currentSlotIndex; i < 9; i++) {
+                for (let i = startSlotIdx; i < 9; i++) {
                     if (!allOccupied.includes(i)) {
                         freeSlot = i;
                         break;
@@ -365,20 +371,22 @@ $(document).ready(function() {
                         expansion: card.expansion,
                         rarity: card.rarity || '',
                         condition: 'M',
-                        quantity: 1
+                        quantity: 1,
+                        price: ''
                     });
-                    currentSlotIndex = freeSlot + 1;
+                    startSlotIdx = freeSlot + 1;
                     assigned = true;
                 } else {
-                    currentPageIndex++;
-                    currentSlotIndex = 0;
+                    // Page full, move to next or create new
+                    currentPageIdx++;
+                    startSlotIdx = 0;
 
-                    if (currentPageIndex >= pages.length) {
+                    if (currentPageIdx >= pages.length) {
                         if (pages.length >= maxPages) {
-                            throw new Error(`Límite de páginas alcanzado (${maxPages}).`);
+                            throw new Error(`Se ha alcanzado el límite de ${maxPages} páginas para este álbum.`);
                         }
 
-                        const nextIdx = pages[pages.length - 1].page_index + 1;
+                        const nextIdx = (pages.length > 0) ? pages[pages.length - 1].page_index + 1 : 0;
                         const { data: nPage, error: npe2 } = await _supabase
                             .from('pages')
                             .insert([{ album_id: albumId, page_index: nextIdx }])
@@ -391,11 +399,16 @@ $(document).ready(function() {
             }
         }
 
+        // Batch insert all cards
         if (cardsToInsert.length > 0) {
-            const { error: insErr } = await _supabase
-                .from('card_slots')
-                .insert(cardsToInsert);
-            if (insErr) throw insErr;
+            // Split into chunks of 50 to avoid potential URL/payload limits
+            for (let i = 0; i < cardsToInsert.length; i += 50) {
+                const chunk = cardsToInsert.slice(i, i + 50);
+                const { error: insErr } = await _supabase
+                    .from('card_slots')
+                    .insert(chunk);
+                if (insErr) throw insErr;
+            }
         }
     }
 });

@@ -3422,20 +3422,21 @@ input:checked + .slider:before {
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
     width: 100%;
-    max-width: 100%;
+    max-width: 1000px; /* Center and restrict width for PC */
+    margin: 0 auto;
     padding: 10px;
 }
 
 @media (max-width: 1024px) {
     .expansion-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 15px;
     }
 }
 
 @media (max-width: 768px) {
     .expansion-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 10px;
     }
 }
@@ -3443,23 +3444,28 @@ input:checked + .slider:before {
 @media (max-width: 480px) {
     .expansion-grid {
         grid-template-columns: repeat(4, 1fr);
-        gap: 5px;
+        gap: 8px;
         padding: 5px;
     }
 
     .expansion-card-item {
-        padding: 3px;
-        border-radius: 6px;
+        padding: 5px;
+        border-radius: 8px;
     }
 
     .expansion-card-info {
-        font-size: 0.5rem;
-        margin-top: 2px;
+        font-size: 0.6rem;
+        margin-top: 4px;
+        -webkit-line-clamp: 1;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: normal;
     }
 
     .expansion-card-checkbox {
-        width: 14px !important;
-        height: 14px !important;
+        width: 16px !important;
+        height: 16px !important;
         top: 5px !important;
         left: 5px !important;
     }
@@ -3492,9 +3498,10 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     position: relative;
     transition: transform 0.2s ease;
+    cursor: pointer;
 }
 
 .expansion-card-item:hover {
@@ -3506,15 +3513,16 @@ input:checked + .slider:before {
     width: 100%;
     aspect-ratio: 2.5 / 3.5;
     object-fit: contain;
-    border-radius: 8px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.2);
 }
 
 .expansion-card-checkbox {
     position: absolute;
     top: 10px;
     left: 10px;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     z-index: 5;
     cursor: pointer;
 }
