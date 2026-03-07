@@ -1,5 +1,7 @@
 $(document).ready(function() {
     let currentExpansionCards = [];
+    let allSets = []; // Cache for all sets across TCGs
+    let searchTimer = null;
 
     // --- Navigation ---
     $(document).on('click', '#btn-show-expansiones', function(e) {
@@ -10,49 +12,38 @@ $(document).ready(function() {
     window.showExpansionView = function() {
         showView('expansiones');
         loadExpansionAlbums();
-        loadTCGExpansionSets();
+        fetchAllTCGSets();
     }
 
     // --- Data Fetching ---
-    async function loadTCGExpansionSets() {
-        const tcg = $('#expansion-tcg-select').val();
-        const $select = $('#expansion-set-select');
-        $select.html('<option value="">Cargando expansiones...</option>');
+    async function fetchAllTCGSets() {
+        if (allSets.length > 0) return; // Use cache
 
         try {
-            let sets = [];
-            if (tcg === 'yugioh') {
-                const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
-                sets = await response.json();
-                sets = sets.map(s => ({ id: s.set_name, name: s.set_name }));
-            } else if (tcg === 'pokemon') {
-                const response = await fetch('https://api.tcgdex.net/v2/en/sets');
-                sets = await response.json();
-                sets = sets.map(s => ({ id: s.id, name: s.name }));
-            } else if (tcg === 'onepiece') {
-                sets = [
-                    { id: 'OP-01', name: 'Romance Dawn (OP-01)' },
-                    { id: 'OP-02', name: 'Paramount War (OP-02)' },
-                    { id: 'OP-03', name: 'Pillars of Strength (OP-03)' },
-                    { id: 'OP-04', name: 'Kingdoms of Intrigue (OP-04)' },
-                    { id: 'OP-05', name: 'Awakening of the New Era (OP-05)' },
-                    { id: 'OP-06', name: 'Wings of the Captain (OP-06)' },
-                    { id: 'OP-07', name: '500 Years in the Future (OP-07)' }
-                ];
-            }
+            const [ygRes, pkRes] = await Promise.all([
+                fetch('https://db.ygoprodeck.com/api/v7/cardsets.php').then(r => r.json()),
+                fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json())
+            ]);
 
-            $select.empty().append('<option value="">Selecciona una expansión...</option>');
-            sets.forEach(s => {
-                $select.append(`<option value="${s.id}">${s.name}</option>`);
-            });
+            const ygSets = ygRes.map(s => ({ id: s.set_name, name: s.set_name, tcg: 'yugioh' }));
+            const pkSets = pkRes.map(s => ({ id: s.id, name: s.name, tcg: 'pokemon' }));
+            const opSets = [
+                { id: 'OP-01', name: 'Romance Dawn (OP-01)', tcg: 'onepiece' },
+                { id: 'OP-02', name: 'Paramount War (OP-02)', tcg: 'onepiece' },
+                { id: 'OP-03', name: 'Pillars of Strength (OP-03)', tcg: 'onepiece' },
+                { id: 'OP-04', name: 'Kingdoms of Intrigue (OP-04)', tcg: 'onepiece' },
+                { id: 'OP-05', name: 'Awakening of the New Era (OP-05)', tcg: 'onepiece' },
+                { id: 'OP-06', name: 'Wings of the Captain (OP-06)', tcg: 'onepiece' },
+                { id: 'OP-07', name: '500 Years in the Future (OP-07)', tcg: 'onepiece' }
+            ];
+
+            allSets = [...ygSets, ...pkSets, ...opSets];
         } catch (err) {
-            console.error("Error fetching sets:", err);
-            $select.html('<option value="">Error al cargar</option>');
+            console.error("Error pre-fetching sets:", err);
         }
     }
 
-    async function fetchExpansionCards(setId) {
-        const tcg = $('#expansion-tcg-select').val();
+    async function fetchExpansionCards(setId, tcg) {
         $('#expansiones-card-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Cargando cartas de la expansión...</div>');
 
         try {
@@ -60,11 +51,27 @@ $(document).ready(function() {
             if (tcg === 'yugioh') {
                 const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setId)}`);
                 const data = await response.json();
-                cards = (data.data || []).map(c => ({
-                    name: c.name,
-                    image_url: c.card_images[0].image_url,
-                    expansion: setId
-                }));
+
+                // Improvement: Ensure all card instances are shown (including reprints/variants in the same set)
+                (data.data || []).forEach(c => {
+                    if (c.card_sets) {
+                        const setInstances = c.card_sets.filter(s => s.set_name === setId);
+                        setInstances.forEach(inst => {
+                            cards.push({
+                                name: c.name + (inst.set_rarity ? ` (${inst.set_rarity})` : ''),
+                                image_url: c.card_images[0].image_url,
+                                expansion: setId,
+                                rarity: inst.set_rarity
+                            });
+                        });
+                    } else {
+                        cards.push({
+                            name: c.name,
+                            image_url: c.card_images[0].image_url,
+                            expansion: setId
+                        });
+                    }
+                });
             } else if (tcg === 'pokemon') {
                 const response = await fetch(`https://api.tcgdex.net/v2/en/sets/${setId}`);
                 const data = await response.json();
@@ -134,23 +141,68 @@ $(document).ready(function() {
     }
 
     function updateSelectAllState() {
-        const allChecked = $('.expansion-card-checkbox:checked').length === currentExpansionCards.length;
+        const allChecked = currentExpansionCards.length > 0 && $('.expansion-card-checkbox:checked').length === currentExpansionCards.length;
         $('#expansion-select-all').prop('checked', allChecked);
     }
 
-    // --- Event Listeners ---
-    $('#expansion-tcg-select').change(function() {
-        loadTCGExpansionSets();
-        $('#expansiones-card-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">Selecciona una expansión para cargar las cartas.</div>');
+    // --- Autocomplete Logic ---
+    $('#expansion-search-input').on('input', function() {
+        clearTimeout(searchTimer);
+        const query = $(this).val().toLowerCase().trim();
+        const tcgFilter = $('#expansion-tcg-select').val();
+
+        if (query.length < 2) {
+            $('#expansion-search-results').removeClass('active').empty();
+            return;
+        }
+
+        searchTimer = setTimeout(() => {
+            const filtered = allSets.filter(s => {
+                const matchesTcg = tcgFilter === 'all' || s.tcg === tcgFilter;
+                const matchesQuery = s.name.toLowerCase().includes(query);
+                return matchesTcg && matchesQuery;
+            }).slice(0, 50);
+
+            displayAutocompleteResults(filtered);
+        }, 300);
     });
 
-    $('#expansion-set-select').change(function() {
-        const setId = $(this).val();
-        if (setId) {
-            fetchExpansionCards(setId);
+    function displayAutocompleteResults(results) {
+        const $container = $('#expansion-search-results');
+        $container.empty();
+
+        if (results.length === 0) {
+            $container.append('<div class="menu-item">Sin resultados</div>');
         } else {
-            $('#expansiones-card-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">Selecciona una expansión para cargar las cartas.</div>');
+            results.forEach(s => {
+                const $item = $(`
+                    <div class="menu-item" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${s.name}</span>
+                        <small style="opacity:0.5; font-size:10px; text-transform:uppercase;">${s.tcg}</small>
+                    </div>
+                `);
+                $item.click(() => {
+                    $('#expansion-search-input').val(s.name);
+                    $('#expansion-selected-id').val(s.id);
+                    $container.removeClass('active').empty();
+                    fetchExpansionCards(s.id, s.tcg);
+                });
+                $container.append($item);
+            });
         }
+        $container.addClass('active');
+    }
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.form-group').length) {
+            $('#expansion-search-results').removeClass('active');
+        }
+    });
+
+    // --- Event Listeners ---
+    $('#expansion-tcg-select').change(function() {
+        $('#expansion-search-input').val('').trigger('input');
+        $('#expansiones-card-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">Selecciona una expansión para cargar las cartas.</div>');
     });
 
     $('#expansion-select-all').change(function() {
@@ -208,7 +260,6 @@ $(document).ready(function() {
                 return;
             }
 
-            // Check album limit
             const { count } = await _supabase
                 .from('albums')
                 .select('*', { count: 'exact', head: true })
@@ -262,7 +313,6 @@ $(document).ready(function() {
     });
 
     async function handleBatchExpansionRegistration(albumId, cards) {
-        // 1. Get all pages
         let { data: pages, error: pErr } = await _supabase
             .from('pages')
             .select('id, page_index')
@@ -280,7 +330,6 @@ $(document).ready(function() {
             pages = newPage;
         }
 
-        // 2. Get occupied slots
         const pageIds = pages.map(p => p.id);
         const { data: occupiedSlots, error: sErr } = await _supabase
             .from('card_slots')
@@ -319,6 +368,7 @@ $(document).ready(function() {
                         name: card.name,
                         image_url: card.image_url,
                         expansion: card.expansion,
+                        rarity: card.rarity || '',
                         condition: 'M',
                         quantity: 1
                     });
@@ -347,7 +397,6 @@ $(document).ready(function() {
         }
 
         if (cardsToInsert.length > 0) {
-            // Batch insert in chunks if needed (Supabase has limits, but here cards usually < 100-200)
             const { error: insErr } = await _supabase
                 .from('card_slots')
                 .insert(cardsToInsert);

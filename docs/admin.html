@@ -343,16 +343,21 @@
                     <div class="form-group">
                         <label>TCG</label>
                         <select id="expansion-tcg-select">
+                            <option value="all">Todos los TCG</option>
                             <option value="yugioh">Yu-Gi-Oh!</option>
                             <option value="pokemon">Pokémon</option>
                             <option value="onepiece">One Piece</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Expansión</label>
-                        <select id="expansion-set-select">
-                            <option value="">Cargando expansiones...</option>
-                        </select>
+                    <div class="form-group" style="position: relative;">
+                        <label>Buscar Expansión</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="expansion-search-input" placeholder="Nombre de la expansión..." autocomplete="off">
+                            <input type="hidden" id="expansion-selected-id">
+                        </div>
+                        <div id="expansion-search-results" class="user-dropdown-menu" style="width: 100%; top: 70px; max-height: 250px; overflow-y: auto;">
+                            <!-- Autocomplete results here -->
+                        </div>
                     </div>
                 </div>
 
@@ -369,7 +374,7 @@
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                <div class="expansion-controls-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="expansion-select-all" checked style="width: 20px; height: 20px;">
                         <span>Seleccionar Todas</span>
