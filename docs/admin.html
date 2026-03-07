@@ -164,7 +164,10 @@
             <div class="admin-header">
                 <button id="btn-back-to-main" class="btn btn-secondary" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
                 <h1>Mis Álbumes</h1>
-                <button id="btn-create-album" class="btn"><i class="fas fa-plus"></i> Crear Nuevo Álbum</button>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-create-album" class="btn"><i class="fas fa-plus"></i> Crear Nuevo Álbum</button>
+                    <button id="btn-organize-albums" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                </div>
             </div>
             <div id="album-list" class="album-list">
                 <!-- Albums will be loaded here -->
@@ -177,7 +180,10 @@
             <div class="admin-header">
                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
                 <h1>Mis Decks</h1>
-                <button id="btn-create-deck" class="btn"><i class="fas fa-plus"></i> Crear Nuevo Deck</button>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-create-deck" class="btn"><i class="fas fa-plus"></i> Crear Nuevo Deck</button>
+                    <button id="btn-organize-decks" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                </div>
             </div>
             <div id="deck-list" class="album-list">
                 <!-- Decks will be loaded here -->
@@ -190,7 +196,10 @@
             <div class="admin-header">
                 <button id="btn-back-to-decks" class="btn btn-secondary" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver a Decks</button>
                 <h1 id="deck-editor-title">Editar Deck</h1>
-                <button id="btn-save-deck-meta" class="btn"><i class="fas fa-save"></i> Guardar Cambios</button>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-save-deck-meta" class="btn"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    <button id="btn-organize-cards" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                </div>
             </div>
 
             <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
@@ -880,6 +889,19 @@
                 <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
                 <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
             </div>
+        </div>
+    </div>
+
+    <!-- Organize Modal -->
+    <div id="organize-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 800px; width: 95%;">
+            <span id="close-organize-modal" class="close-btn">&times;</span>
+            <h2>Organizar</h2>
+            <p style="font-size: 14px; color: #aaa; margin-bottom: 20px;">Arrastra los elementos para cambiar su posición.</p>
+            <div id="organize-grid" class="organize-grid">
+                <!-- Items will be loaded here -->
+            </div>
+            <button id="btn-finish-organize" class="btn" style="width: 100%; margin-top: 25px;"><i class="fas fa-check-circle"></i> Finalizar</button>
         </div>
     </div>
 </body>    
