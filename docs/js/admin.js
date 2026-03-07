@@ -75,6 +75,15 @@ $(document).ready(async function() {
         loadBotMessages();
     });
 
+    $(document).on('click', '#btn-show-expansiones', function(e) {
+        e.preventDefault();
+        if (typeof showExpansionView === 'function') {
+            showExpansionView();
+        } else {
+            showView('expansiones');
+        }
+    });
+
     $(document).on('click', '#btn-logout-tile', function(e) {
         e.preventDefault();
         handleLogout();
