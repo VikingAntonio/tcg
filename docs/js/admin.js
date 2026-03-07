@@ -1432,6 +1432,12 @@ $(document).ready(async function() {
         }
     });
 
+    // --- Organize Modal Listeners ---
+    $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('albums'); });
+    $(document).on('click', '#btn-organize-decks', function(e) { e.preventDefault(); openOrganizeModal('decks'); });
+    $(document).on('click', '#btn-organize-cards', function(e) { e.preventDefault(); openOrganizeModal('cards'); });
+    $(document).on('click', '#close-organize-modal, #btn-finish-organize', function() { $('#organize-modal').removeClass('active'); });
+
     $(document).on('change', '.toggle-public', async function() {
         const id = $(this).data('id');
         const type = $(this).data('type');
@@ -1799,7 +1805,7 @@ async function loadDecks() {
         $tempContainer.append($card);
     });
     $('#deck-list').html($tempContainer.contents());
-    initDecksSorting();
+    // initDecksSorting(); // Blocked reordering from main view
 }
 
 function initDecksSorting() {
@@ -1955,7 +1961,7 @@ function renderDeckCardsLocal() {
         $tempContainer.append($cardItem);
     });
     $('#deck-card-list').html($tempContainer.contents());
-    initDeckCardsSorting();
+    // initDeckCardsSorting(); // Blocked reordering from main view
 }
 
 function initDeckCardsSorting() {
@@ -2077,7 +2083,7 @@ async function loadAlbums() {
         $tempContainer.append($card);
     });
     $('#album-list').html($tempContainer.contents());
-    initAlbumSorting();
+    // initAlbumSorting(); // Blocked reordering from main view
 }
 
 function initAlbumSorting() {
@@ -2679,4 +2685,69 @@ function makeCompanionDraggable() {
         isDragging = false;
         setTimeout(() => { window.isCompanionDragging = false; }, 100);
     });
+}
+
+async function openOrganizeModal(type) {
+    const $grid = $('#organize-grid');
+    $grid.html('<div class="loading">Cargando...</div>');
+    $('#organize-modal').addClass('active');
+
+    let items = [];
+    if (type === 'albums') {
+        const { data } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true });
+        items = data || [];
+    } else if (type === 'decks') {
+        const { data } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id).order('position', { ascending: true });
+        items = data || [];
+    } else if (type === 'cards') {
+        // Use localDeckCards for current deck editing session
+        items = localDeckCards || [];
+    }
+
+    $grid.empty();
+    items.forEach(item => {
+        const title = item.title || item.name || 'Sin nombre';
+        const id = item.id || item.localId;
+        let previewHtml = '';
+
+        if (type === 'albums' && item.cover_image_url) {
+            previewHtml = `<img src="${item.cover_image_url}">`;
+        } else if (type === 'cards' && item.image_url) {
+            previewHtml = `<img src="${item.image_url}">`;
+        } else {
+            previewHtml = `<div class="organize-item-icon"><i class="fas ${type === 'decks' ? 'fa-layer-group' : 'fa-book'} fa-2x"></i></div>`;
+        }
+
+        const $el = $(`
+            <div class="organize-item" data-id="${id}">
+                ${previewHtml}
+                <span>${title}</span>
+            </div>
+        `);
+        $grid.append($el);
+    });
+
+    if (window.Sortable) {
+        if ($grid[0]._sortable) $grid[0]._sortable.destroy();
+        $grid[0]._sortable = Sortable.create($grid[0], {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: async function() {
+                const ids = [];
+                $grid.find('.organize-item').each(function() {
+                    ids.push($(this).data('id'));
+                });
+
+                if (type === 'albums') {
+                    await updateAlbumOrder(ids);
+                    loadAlbums(); // Refresh main view
+                } else if (type === 'decks') {
+                    await updateDeckOrder(ids);
+                    loadDecks(); // Refresh main view
+                } else if (type === 'cards') {
+                    await updateCardOrder(ids); // updateCardOrder already handles local state update & refresh
+                }
+            }
+        });
+    }
 }
