@@ -3612,3 +3612,120 @@ input:checked + .slider:before {
     opacity: 0.4;
     background: var(--primary-color);
 }
+
+/* Wishlist Enhanced Styles */
+.wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.wishlist-card-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 12px;
+    text-align: center;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.wishlist-card-item h3 {
+    font-size: 0.95rem;
+    margin: 8px 0;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wishlist-card-item img {
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.1);
+}
+
+.wishlist-edit-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 4px;
+    padding: 4px 8px;
+    width: 100%;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
+.wishlist-edit-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.btn-delete-wishlist {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 71, 87, 0.8);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+    font-size: 0.8rem;
+}
+
+.btn-delete-wishlist:hover {
+    background: #ff4757;
+    transform: scale(1.1);
+}
+
+.wishlist-owner-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wishlist-obtained-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: #aaa;
+    cursor: pointer;
+    justify-content: center;
+    margin-top: 5px;
+}
+
+@media (max-width: 480px) {
+    .wishlist-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .wishlist-card-item {
+        padding: 8px;
+    }
+
+    .wishlist-card-item img {
+        height: 120px;
+    }
+
+    .wishlist-card-item h3 {
+        font-size: 0.8rem;
+    }
+}
