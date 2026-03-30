@@ -1,0 +1,6 @@
+-- SQL para mejorar la Wishlist
+-- 1. Agregar soporte para pestañas (5 listas diferentes)
+ALTER TABLE wishlist ADD COLUMN list_index INTEGER DEFAULT 0;
+
+-- 2. Asegurar que las búsquedas se filtren por usuario y lista
+CREATE INDEX idx_wishlist_user_list ON wishlist(user_id, list_index);
