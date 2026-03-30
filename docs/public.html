@@ -195,33 +195,61 @@
                 </div>
             </div>
             <div class="card-info">
-                <div id="card-name" class="card-name">Nombre de la Carta</div>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Rareza</div>
-                        <div id="card-rarity" class="info-value">-</div>
+                <div id="owner-wishlist-controls" style="display: none; width: 100%; margin-bottom: 20px;">
+                    <input type="text" id="owner-card-name" class="wishlist-edit-input" style="font-size: 1.2rem; font-weight: 800; text-align: center; margin-bottom: 15px;" placeholder="Nombre de la carta">
+
+                    <div class="info-grid" style="margin-top: 0;">
+                        <div class="info-item">
+                            <div class="info-label">Rareza</div>
+                            <input type="text" id="owner-card-rarity" class="wishlist-edit-input" style="margin: 0; padding: 2px 5px;" placeholder="Ej: Super Rare">
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Cantidad</div>
+                            <input type="number" id="owner-card-quantity" class="wishlist-edit-input" style="margin: 0; padding: 2px 5px;" placeholder="1">
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Expansión</div>
-                        <div id="card-expansion" class="info-value">-</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Estado</div>
-                        <div id="card-condition" class="info-value">-</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Cantidad</div>
-                        <div id="card-quantity" class="info-value">1</div>
-                    </div>
-                    <div class="info-item price-item">
-                        <div class="info-label">Precio Estimado</div>
-                        <div id="card-price" class="info-value">-</div>
+
+                    <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+                        <label class="wishlist-obtained-toggle" style="margin: 0; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 50px;">
+                            <input type="checkbox" id="owner-card-obtained">
+                            <span id="owner-obtained-label">BUSCANDO</span>
+                        </label>
+                        <button id="btn-owner-delete-wishlist" class="btn btn-danger" style="padding: 8px 15px; border-radius: 50px; font-size: 0.8rem;">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
                     </div>
                 </div>
-                <div id="wishlist-info-extra" style="display: none; flex-direction: column; gap: 5px; width: 100%; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
-                    <div class="info-label" style="font-size: 0.8rem; opacity: 0.7; text-align: left;">Notas:</div>
-                    <div id="card-notes" style="font-size: 0.9rem; color: white; line-height: 1.4; text-align: left;">-</div>
+
+                <div id="visitor-card-info" style="width: 100%;">
+                    <div id="card-name" class="card-name">Nombre de la Carta</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Rareza</div>
+                            <div id="card-rarity" class="info-value">-</div>
+                        </div>
+                        <div class="info-item" id="expansion-item">
+                            <div class="info-label">Expansión</div>
+                            <div id="card-expansion" class="info-value">-</div>
+                        </div>
+                        <div class="info-item" id="condition-item">
+                            <div class="info-label">Estado</div>
+                            <div id="card-condition" class="info-value">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Cantidad</div>
+                            <div id="card-quantity" class="info-value">1</div>
+                        </div>
+                        <div class="info-item price-item">
+                            <div class="info-label">Precio Estimado</div>
+                            <div id="card-price" class="info-value">-</div>
+                        </div>
+                    </div>
+                    <div id="wishlist-info-extra" style="display: none; flex-direction: column; gap: 5px; width: 100%; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                        <div class="info-label" style="font-size: 0.8rem; opacity: 0.7; text-align: left;">Notas:</div>
+                        <div id="card-notes" style="font-size: 0.9rem; color: white; line-height: 1.4; text-align: left;">-</div>
+                    </div>
                 </div>
+
                 <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 25px;">
                     <button id="btn-add-to-cart" class="btn btn-add-cart-modal" style="margin-top: 0;">
                         <i class="fas fa-cart-plus"></i> Agregar al Carrito

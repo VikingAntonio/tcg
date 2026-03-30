@@ -719,11 +719,12 @@ window.set3DTarget = function(rx, ry) {
     targetRY = ry;
 };
 
-function openCardModal($slot) {
+async function openCardModal($slot) {
     const imgSrc = $slot.find("img").attr("src");
 
     if (!imgSrc || imgSrc.includes('placeholder')) return;
 
+    const id = $slot.data("id");
     const name = $slot.data("name") || "Carta de Colección";
     const rarity = $slot.data("rarity") || "-";
     const holo = $slot.data("holo") || "";
@@ -734,9 +735,12 @@ function openCardModal($slot) {
     const price = $slot.data("price") || "-";
     const isWishlist = $slot.hasClass('wishlist-card-item');
     const notes = $slot.data("notes") || "";
+    const obtained = $slot.data("obtained") === true || $slot.data("obtained") === "true";
 
-    // Reset the card container with a fresh image tag and preserve holo-layer
-    // Re-adding card-3d class to ensure it's always present for the rotation logic
+    // Detect if owner
+    const isOwner = window.currentUserId === window.currentStoreId;
+
+    // Reset the card container
     $("#card-3d").html(`
         <div id="z-text-container">
             <img id="expanded-image" src="${imgSrc}" alt="${name}" class="card__front">
@@ -752,19 +756,12 @@ function openCardModal($slot) {
     // Cleanup Pokemon styles
     $card.removeClass("card masked interacting");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
-    $card.css({
-        '--seedx': '',
-        '--seedy': '',
-        '--cosmosbg': '',
-        '--card-opacity': '0'
-    });
-
+    $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0'});
     $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     let baseHolo = holo;
     let isCustomFoil = false;
-
     if (holo.startsWith('custom-foil|')) {
         isCustomFoil = true;
         baseHolo = holo.split('|')[1] || 'foil';
@@ -774,48 +771,22 @@ function openCardModal($slot) {
         if (POKEMON_FOILS[baseHolo]) {
             let rarityVal = POKEMON_FOILS[baseHolo];
             $card.addClass("card");
-
-            // Handle flags based on substrings
-            if (rarityVal.includes('trainer gallery')) {
-                $card.attr("data-trainer-gallery", "true");
-                rarityVal = rarityVal.replace('trainer gallery', '');
-            } else {
-                $card.removeAttr("data-trainer-gallery");
-            }
-
-            if (rarityVal.includes('supporter')) {
-                $card.attr("data-subtypes", "supporter");
-                rarityVal = rarityVal.replace('supporter', '');
-            } else {
-                $card.removeAttr("data-subtypes");
-            }
-
-            if (rarityVal.includes('pokemon')) {
-                $card.attr("data-supertype", "pokémon");
-                rarityVal = rarityVal.replace('pokemon', '');
-            } else {
-                $card.removeAttr("data-supertype");
-            }
-
+            if (rarityVal.includes('trainer gallery')) { $card.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+            else { $card.removeAttr("data-trainer-gallery"); }
+            if (rarityVal.includes('supporter')) { $card.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+            else { $card.removeAttr("data-subtypes"); }
+            if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+            else { $card.removeAttr("data-supertype"); }
             $card.attr("data-rarity", rarityVal.trim());
-
             if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
                 $card.addClass("masked");
                 const maskVal = `url(${mask})`;
                 $card.css("--mask", maskVal);
                 $card.css("--mask-url", maskVal);
             }
-
-            // Random seed for cosmos and others
-            const rx = Math.random();
-            const ry = Math.random();
-            $card.css({
-                '--seedx': rx,
-                '--seedy': ry,
-                '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`
-            });
+            const rx = Math.random(), ry = Math.random();
+            $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
         } else {
-            // Handle as standard holo class
             $card3d.addClass(baseHolo);
             if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
                 $card.addClass("masked");
@@ -826,42 +797,101 @@ function openCardModal($slot) {
         }
     }
 
-    $("#card-name").text(name);
-    $("#card-rarity").text(rarity);
-    $("#card-expansion").text(expansion);
-    $("#card-condition").text(condition);
-    $("#card-quantity").text(quantity);
-    $("#card-price").text(price);
-
-    if (isWishlist) {
-        $('#wishlist-contact-buttons').css('display', 'flex');
+    // Modal UI logic
+    if (isWishlist && isOwner) {
+        $('#owner-wishlist-controls').show();
+        $('#visitor-card-info').hide();
         $('#btn-add-to-cart').hide();
-
-        // Layout for wishlist: Rarity and Quantity visible, others hidden
-        $('#card-expansion').closest('.info-item').hide();
-        $('#card-condition').closest('.info-item').hide();
-        $('#card-price').closest('.info-item').hide();
-
-        $('#card-notes').text(notes || 'Sin notas adicionales.');
-        $('#wishlist-info-extra').css('display', 'flex');
-    } else {
         $('#wishlist-contact-buttons').hide();
-        $('#btn-add-to-cart').show();
 
-        // Restore layout for regular cards
-        $('.info-item').show();
-        $('#wishlist-info-extra').hide();
+        $('#owner-card-name').val(name);
+        $('#owner-card-rarity').val(rarity === '-' ? '' : rarity);
+        $('#owner-card-quantity').val(quantity);
+        $('#owner-card-obtained').prop('checked', obtained);
+        $('#owner-obtained-label').text(obtained ? 'CONSEGUIDA' : 'BUSCANDO');
+
+        // Setup real-time listeners for owner
+        $('.wishlist-edit-input, #owner-card-obtained').off('change').on('change', async function() {
+            const updName = $('#owner-card-name').val();
+            const updRarity = $('#owner-card-rarity').val();
+            const updQty = parseInt($('#owner-card-quantity').val()) || 1;
+            const updObtained = $('#owner-card-obtained').is(':checked');
+
+            $('#owner-obtained-label').text(updObtained ? 'CONSEGUIDA' : 'BUSCANDO');
+
+            const { error } = await _supabase.from('wishlist').update({
+                name: updName,
+                rarity: updRarity,
+                quantity: updQty,
+                obtained: updObtained
+            }).eq('id', id);
+
+            if (!error) {
+                // Update the grid item attributes and style
+                $slot.data('name', updName).attr('data-name', updName);
+                $slot.data('rarity', updRarity).attr('data-rarity', updRarity);
+                $slot.data('quantity', updQty).attr('data-quantity', updQty);
+                $slot.data('obtained', updObtained).attr('data-obtained', updObtained);
+                $slot.find('h3').text(updName);
+                $slot.css('opacity', updObtained ? '0.5' : '1');
+
+                // Re-render the "CONSEGUIDA" badge if needed
+                $slot.find('.event-type-badge').remove();
+                if (updObtained) {
+                    $slot.append('<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>');
+                }
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error al guardar', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            }
+        });
+
+        $('#btn-owner-delete-wishlist').off('click').on('click', async function() {
+            const { isConfirmed } = await Swal.fire({
+                title: '¿Eliminar de la lista?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4757',
+                confirmButtonText: 'Sí, eliminar'
+            });
+
+            if (isConfirmed) {
+                const { error } = await _supabase.from('wishlist').delete().eq('id', id);
+                if (!error) {
+                    $("#image-overlay").removeClass("active");
+                    $("body").removeClass("modal-open");
+                    $slot.fadeOut(300, function() { $(this).remove(); });
+                }
+            }
+        });
+
+    } else {
+        $('#owner-wishlist-controls').hide();
+        $('#visitor-card-info').show();
+
+        $("#card-name").text(name);
+        $("#card-rarity").text(rarity);
+        $("#card-expansion").text(expansion);
+        $("#card-condition").text(condition);
+        $("#card-quantity").text(quantity);
+        $("#card-price").text(price);
+
+        if (isWishlist) {
+            $('#wishlist-contact-buttons').css('display', 'flex');
+            $('#btn-add-to-cart').hide();
+            $('#expansion-item, #condition-item, #price-item').hide();
+            $('#card-notes').text(notes || 'Sin notas adicionales.');
+            $('#wishlist-info-extra').css('display', 'flex');
+        } else {
+            $('#wishlist-contact-buttons').hide();
+            $('#btn-add-to-cart').show();
+            $('#expansion-item, #condition-item, #price-item').show();
+            $('#wishlist-info-extra').hide();
+        }
     }
 
-    // Store current card data for cart integration
+    // Store current card data for cart
     window.currentCardData = {
-        name,
-        image_url: imgSrc,
-        rarity,
-        expansion,
-        condition,
-        price,
-        quantity,
+        name, image_url: imgSrc, rarity, expansion, condition, price, quantity,
         whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
         messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
     };
@@ -869,7 +899,6 @@ function openCardModal($slot) {
     $("#image-overlay").addClass("active");
     $("body").addClass("modal-open");
 
-    // Defer initialization to allow DOM update
     setTimeout(() => {
         init3DCard();
         $card3d.addClass("active");
@@ -1379,6 +1408,7 @@ function applyTheme(theme) {
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
+        window.currentUserId = session.user.id;
         const { data: user } = await _supabase
             .from('usuarios')
             .select('id, username, store_name, store_logo, is_store, role')
@@ -1388,6 +1418,7 @@ async function checkSession() {
         try {
             if (user) {
                 localStorage.setItem('tcg_session', JSON.stringify(user));
+                window.currentUser = user;
                 if (user.is_store) {
                     $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
                     $('#dropdown-user-name').text(user.store_name || user.username);
@@ -1855,9 +1886,6 @@ async function loadPublicWishlist() {
     $('#wishlist-container').html('<div class="loading">Cargando lista de deseos...</div>');
 
     try {
-        const { data: { session } } = await _supabase.auth.getSession();
-        const isOwner = session && session.user.id === userId;
-
         const { data: wishlist, error } = await _supabase
             .from('wishlist')
             .select('*')
@@ -1873,110 +1901,24 @@ async function loadPublicWishlist() {
 
         $('#wishlist-container').empty();
         wishlist.forEach(item => {
-            let itemHtml = "";
+            const $el = $(`
+                <div class="wishlist-card-item card-slot"
+                     data-id="${item.id}"
+                     data-name="${item.name}"
+                     data-rarity="${item.rarity || '-'}"
+                     data-notes="${item.notes || ''}"
+                     data-quantity="${item.quantity || '1'}"
+                     data-obtained="${item.obtained}"
+                     style="${item.obtained ? 'opacity: 0.5;' : ''}">
+                    <h3>${item.name}</h3>
+                    <img src="${item.image_url}" alt="${item.name}">
+                    ${item.obtained ? '<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>' : ''}
+                    <div class="zoom-btn" style="display: flex; bottom: 5px; right: 5px; left: auto;"><i class="fas fa-search-plus"></i></div>
+                </div>
+            `);
 
-            if (isOwner) {
-                itemHtml = `
-                    <div class="wishlist-card-item card-slot" data-id="${item.id}"
-                         data-name="${item.name}"
-                         data-rarity="${item.rarity || '-'}"
-                         data-notes="${item.notes || ''}"
-                         data-quantity="${item.quantity || '1'}"
-                         style="${item.obtained ? 'opacity: 0.6;' : ''}">
-                        <div class="btn-delete-wishlist" title="Eliminar"><i class="fas fa-trash"></i></div>
-
-                        <img src="${item.image_url}" style="width: 100%; border-radius: 12px; margin-bottom: 5px;">
-
-                        <input type="text" class="wishlist-edit-input" data-field="name" value="${item.name}" placeholder="Nombre">
-
-                        <div style="display: flex; gap: 5px;">
-                            <input type="text" class="wishlist-edit-input" data-field="rarity" value="${item.rarity || ''}" placeholder="Rareza" style="flex: 2;">
-                            <input type="number" class="wishlist-edit-input" data-field="quantity" value="${item.quantity || 1}" style="flex: 1;">
-                        </div>
-
-                        <label class="wishlist-obtained-toggle">
-                            <input type="checkbox" class="wishlist-owner-obtained" ${item.obtained ? 'checked' : ''}>
-                            <span>${item.obtained ? 'CONSEGUIDA' : 'BUSCANDO'}</span>
-                        </label>
-
-                        <div class="zoom-btn" style="display: flex; bottom: 5px; right: 5px; left: auto;"><i class="fas fa-search-plus"></i></div>
-                    </div>
-                `;
-            } else {
-                itemHtml = `
-                    <div class="deck-public-item wishlist-card-item card-slot"
-                         data-name="${item.name}"
-                         data-rarity="${item.rarity || '-'}"
-                         data-notes="${item.notes || ''}"
-                         data-quantity="${item.quantity || '1'}"
-                         style="${item.obtained ? 'opacity: 0.5;' : ''}">
-                        <h3>${item.name}</h3>
-                        <img src="${item.image_url}" style="width: 100%; border-radius: 12px; margin-bottom: 10px;">
-                        <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 5px; flex-grow: 1;">
-                            ${item.rarity ? `<div>Rareza: ${item.rarity}</div>` : ''}
-                            ${item.quantity > 1 ? `<div>Cantidad: ${item.quantity}</div>` : ''}
-                            ${item.obtained ? '<div style="color: #00ff88; font-weight: bold;">¡Ya conseguida!</div>' : ''}
-                        </div>
-                        <div class="zoom-btn" style="display: flex; bottom: 5px; right: 5px; left: auto;"><i class="fas fa-search-plus"></i></div>
-                    </div>
-                `;
-            }
-
-            const $el = $(itemHtml);
-
-            if (isOwner) {
-                // Owner Listeners
-                $el.find('.wishlist-edit-input').on('change', async function() {
-                    const field = $(this).data('field');
-                    const val = $(this).val();
-                    const updateData = {};
-                    updateData[field] = (field === 'quantity') ? parseInt(val) : val;
-
-                    const { error } = await _supabase.from('wishlist').update(updateData).eq('id', item.id);
-                    if (error) {
-                        Swal.fire({ icon: 'error', title: 'Error al actualizar', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-                    } else {
-                        // Update data attributes for search/modal
-                        $el.attr(`data-${field}`, val);
-                    }
-                });
-
-                $el.find('.wishlist-owner-obtained').on('change', async function() {
-                    const obtained = $(this).is(':checked');
-                    const { error } = await _supabase.from('wishlist').update({ obtained }).eq('id', item.id);
-                    if (error) {
-                        Swal.fire({ icon: 'error', title: 'Error', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-                        $(this).prop('checked', !obtained);
-                    } else {
-                        $el.css('opacity', obtained ? '0.6' : '1');
-                        $(this).next().text(obtained ? 'CONSEGUIDA' : 'BUSCANDO');
-                    }
-                });
-
-                $el.find('.btn-delete-wishlist').on('click', async function(e) {
-                    e.stopPropagation();
-                    const { isConfirmed } = await Swal.fire({
-                        title: '¿Eliminar de la lista?',
-                        text: "Esta acción no se puede deshacer.",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ff4757',
-                        confirmButtonText: 'Sí, eliminar'
-                    });
-
-                    if (isConfirmed) {
-                        const { error } = await _supabase.from('wishlist').delete().eq('id', item.id);
-                        if (!error) {
-                            $el.fadeOut(300, function() { $(this).remove(); });
-                        }
-                    }
-                });
-            }
-
-            // Common Click logic (but only if not interacting with inputs/buttons)
             $el.click(function(e) {
                 if (isDragging) return;
-                if ($(e.target).closest('.wishlist-edit-input, .btn-delete-wishlist, .wishlist-owner-obtained').length) return;
                 openCardModal($el);
             });
 
