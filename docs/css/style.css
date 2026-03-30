@@ -3616,8 +3616,8 @@ input:checked + .slider:before {
 /* Wishlist Enhanced Styles */
 .wishlist-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
     width: 100%;
     margin-top: 20px;
 }
@@ -3625,19 +3625,20 @@ input:checked + .slider:before {
 .wishlist-card-item {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 12px;
+    border-radius: 12px;
+    padding: 5px;
     text-align: center;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     position: relative;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    aspect-ratio: 2.5 / 3.8;
 }
 
 .wishlist-card-item h3 {
-    font-size: 0.95rem;
-    margin: 8px 0;
+    font-size: 0.75rem;
+    margin: 5px 0 2px;
     color: var(--text-color);
     white-space: nowrap;
     overflow: hidden;
@@ -3646,9 +3647,10 @@ input:checked + .slider:before {
 
 .wishlist-card-item img {
     width: 100%;
-    height: 160px;
-    object-fit: contain;
-    border-radius: 10px;
+    height: auto;
+    aspect-ratio: 2.5 / 3.5;
+    object-fit: cover;
+    border-radius: 8px;
     background: rgba(0,0,0,0.1);
 }
 
@@ -3692,40 +3694,110 @@ input:checked + .slider:before {
 }
 
 .wishlist-owner-controls {
+    background: rgba(20, 20, 20, 0.9);
+    padding: 20px;
+    border-radius: 20px;
+    margin-top: 15px;
+    text-align: left;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.wishlist-obtained-toggle {
+.wishlist-owner-controls h3 {
+    margin: 0 0 15px 0;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.wishlist-owner-controls .input-group { margin-bottom: 15px; }
+
+.wishlist-owner-controls label {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.wishlist-owner-controls input[type="text"],
+.wishlist-owner-controls input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: white;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.wishlist-owner-controls input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: rgba(255,255,255,0.1);
+}
+
+.wishlist-owner-controls .toggle-group {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.75rem;
-    color: #aaa;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.05);
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin: 15px 0;
     cursor: pointer;
-    justify-content: center;
-    margin-top: 5px;
+}
+
+.wishlist-owner-controls .toggle-group label { margin-bottom: 0; cursor: pointer; }
+
+.wishlist-owner-controls input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.wishlist-owner-controls .btn-delete {
+    background: rgba(255, 71, 87, 0.15);
+    color: #ff4757;
+    border: 1px solid #ff4757;
+    padding: 12px;
+    border-radius: 12px;
+    width: 100%;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+.wishlist-owner-controls .btn-delete:hover {
+    background: #ff4757;
+    color: white;
 }
 
 @media (max-width: 480px) {
     .wishlist-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
     }
 
     .wishlist-card-item {
-        padding: 8px;
+        padding: 4px;
+        border-radius: 8px;
     }
 
     .wishlist-card-item img {
-        height: 120px;
+        height: auto;
     }
 
     .wishlist-card-item h3 {
-        font-size: 0.8rem;
+        font-size: 0.65rem;
+        margin: 3px 0 1px;
     }
 }
