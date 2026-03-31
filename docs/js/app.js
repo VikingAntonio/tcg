@@ -781,6 +781,7 @@ async function openCardModal($slot) {
     const rarity = $slot.data("rarity") || "-";
     const holo = $slot.data("holo") || "";
     const mask = $slot.data("mask") || "";
+    const use3d = $slot.data("3d") !== false && $slot.data("3d") !== "false";
     const expansion = $slot.data("expansion") || "-";
     const condition = $slot.data("condition") || "-";
     const quantity = $slot.data("quantity") || "1";
@@ -861,13 +862,25 @@ async function openCardModal($slot) {
         $('#owner-card-quantity').val(quantity);
         $('#owner-card-obtained').prop('checked', obtained);
         $('#owner-obtained-label').text(obtained ? 'CONSEGUIDA' : 'BUSCANDO');
+        $('#owner-card-holo').val(holo);
+        $('#owner-card-mask').val(mask);
+        $('#owner-card-3d').prop('checked', use3d);
+
+        if (holo === 'custom-texture' || holo === 'custom-foil') $('#owner-mask-container').show();
+        else $('#owner-mask-container').hide();
 
         // Setup real-time listeners for owner
-        $('.wishlist-edit-input, #owner-card-obtained').off('change').on('change', async function() {
+        $('.wishlist-edit-input, #owner-card-obtained, #owner-card-3d').off('change').on('change', async function() {
             const updName = $('#owner-card-name').val();
             const updRarity = $('#owner-card-rarity').val();
             const updQty = parseInt($('#owner-card-quantity').val()) || 1;
             const updObtained = $('#owner-card-obtained').is(':checked');
+            const updHolo = $('#owner-card-holo').val();
+            const updMask = $('#owner-card-mask').val();
+            const upd3d = $('#owner-card-3d').is(':checked');
+
+            if (updHolo === 'custom-texture' || updHolo === 'custom-foil') $('#owner-mask-container').show();
+            else $('#owner-mask-container').hide();
 
             $('#owner-obtained-label').text(updObtained ? 'CONSEGUIDA' : 'BUSCANDO');
 
@@ -875,7 +888,10 @@ async function openCardModal($slot) {
                 name: updName,
                 rarity: updRarity,
                 quantity: updQty,
-                obtained: updObtained
+                obtained: updObtained,
+                holo_effect: updHolo,
+                custom_mask_url: updMask,
+                use_3d: upd3d
             }).eq('id', id);
 
             if (!error) {
@@ -884,6 +900,9 @@ async function openCardModal($slot) {
                 $slot.data('rarity', updRarity).attr('data-rarity', updRarity);
                 $slot.data('quantity', updQty).attr('data-quantity', updQty);
                 $slot.data('obtained', updObtained).attr('data-obtained', updObtained);
+                $slot.data('holo', updHolo).attr('data-holo', updHolo);
+                $slot.data('mask', updMask).attr('data-mask', updMask);
+                $slot.data('3d', upd3d).attr('data-3d', upd3d);
                 $slot.find('h3').text(updName);
                 $slot.css('opacity', updObtained ? '0.5' : '1');
 
@@ -892,6 +911,9 @@ async function openCardModal($slot) {
                 if (updObtained) {
                     $slot.append('<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>');
                 }
+
+                // Update visual effects in the current modal without closing it
+                applyVisualsToModal(updHolo, updMask, upd3d);
             } else {
                 Swal.fire({ icon: 'error', title: 'Error al guardar', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
             }
@@ -952,9 +974,69 @@ async function openCardModal($slot) {
     $("body").addClass("modal-open");
 
     setTimeout(() => {
-        init3DCard();
+        applyVisualsToModal(holo, mask, use3d);
         $card3d.addClass("active");
     }, 150);
+}
+
+function applyVisualsToModal(holo, mask, use3d) {
+    const $card3d = $("#card-3d-container");
+    const $card = $("#card-3d");
+
+    // Cleanup all possible holo classes and styles
+    $card.removeClass("card masked interacting");
+    $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
+    $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active");
+    $card3d.find('.holo-layer').css('--mask-url', '');
+
+    let baseHolo = holo;
+    let isCustomFoil = false;
+    if (holo && holo.startsWith('custom-foil|')) {
+        isCustomFoil = true;
+        baseHolo = holo.split('|')[1] || 'foil';
+    }
+
+    if (baseHolo) {
+        if (POKEMON_FOILS[baseHolo]) {
+            let rarityVal = POKEMON_FOILS[baseHolo];
+            $card.addClass("card");
+            if (rarityVal.includes('trainer gallery')) { $card.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+            if (rarityVal.includes('supporter')) { $card.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+            if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+            $card.attr("data-rarity", rarityVal.trim());
+
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                $card.addClass("masked");
+                const maskVal = `url(${mask})`;
+                $card.css("--mask", maskVal);
+                $card.css("--mask-url", maskVal);
+            }
+            const rx = Math.random(), ry = Math.random();
+            $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+        } else {
+            $card3d.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                $card.addClass("masked");
+                const maskVal = `url(${mask})`;
+                $card.css("--mask", maskVal);
+                $card.css("--mask-url", maskVal);
+            }
+        }
+    }
+
+    if (use3d) {
+        init3DCard();
+    } else {
+        $card.css('transform', 'none');
+        window.card3dActive = false;
+        if (card3dOrientationHandler) {
+            window.removeEventListener('deviceorientation', card3dOrientationHandler);
+            card3dOrientationHandler = null;
+        }
+    }
+
+    $card3d.addClass("active");
 }
 
 async function switchView(view) {
@@ -2004,6 +2086,9 @@ async function loadPublicWishlist() {
                      data-notes="${item.notes || ''}"
                      data-quantity="${item.quantity || '1'}"
                      data-obtained="${item.obtained}"
+                     data-holo="${item.holo_effect || ''}"
+                     data-mask="${item.custom_mask_url || ''}"
+                     data-3d="${item.use_3d !== false}"
                      style="${item.obtained ? 'opacity: 0.5;' : ''}">
                     <h3>${item.name}</h3>
                     <img src="${item.image_url}" alt="${item.name}">

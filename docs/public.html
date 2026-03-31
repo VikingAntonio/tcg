@@ -239,7 +239,47 @@
                         </div>
                     </div>
 
+                    <div class="form-group" style="margin-top: 10px; text-align: left;">
+                        <label style="font-size: 10px; opacity: 0.7;">Efecto Holo</label>
+                        <select id="owner-card-holo" class="wishlist-edit-input">
+                            <option value="">Ninguno</option>
+                            <option value="foil">Foil</option>
+                            <option value="custom-texture">CustomTexture</option>
+                            <option value="custom-foil">CustomFoil</option>
+                            <option value="pk-rare-holo">PK: Rare Holo</option>
+                            <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
+                            <option value="pk-rare-holo-v">PK: Rare Holo V</option>
+                            <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
+                            <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
+                            <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
+                            <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
+                            <option value="pk-rare-secret">PK: Rare Secret</option>
+                            <option value="pk-rare-shiny">PK: Rare Shiny</option>
+                            <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
+                            <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
+                            <option value="pk-amazing-rare">PK: Amazing Rare</option>
+                            <option value="pk-radiant-rare">PK: Radiant Rare</option>
+                            <option value="pk-rare-ultra">PK: Rare Ultra</option>
+                            <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
+                            <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
+                            <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
+                            <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
+                            <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
+                            <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
+                            <option value="pk-reverse-holo">PK: Reverse Holo</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="owner-mask-container" style="display: none; text-align: left;">
+                        <label style="font-size: 10px; opacity: 0.7;">URL Máscara</label>
+                        <input type="text" id="owner-card-mask" class="wishlist-edit-input" placeholder="https://...">
+                    </div>
+
                     <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+                        <label class="wishlist-obtained-toggle" style="margin: 0; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 50px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="owner-card-3d" checked>
+                            <span style="font-size: 10px; font-weight: 800;">3D</span>
+                        </label>
                         <label class="wishlist-obtained-toggle" style="margin: 0; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 50px;">
                             <input type="checkbox" id="owner-card-obtained">
                             <span id="owner-obtained-label">BUSCANDO</span>

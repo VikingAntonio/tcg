@@ -1,6 +1,7 @@
 let currentUser = null;
 let ygoSetsCache = null;
 let currentSlot = 0;
+let currentEditingId = null;
 
 async function getYgoSets() {
     if (ygoSetsCache) return ygoSetsCache;
@@ -57,6 +58,39 @@ $(document).ready(async function() {
         e.preventDefault();
         await _supabase.auth.signOut();
         location.href = 'admin.html';
+    });
+
+    // Modal listeners
+    $('#close-wishlist-modal').click(() => $('#wishlist-modal').removeClass('active'));
+
+    $('#modal-holo-effect').on('change', function() {
+        const val = $(this).val();
+        if (val === 'custom-texture' || val === 'custom-foil') {
+            $('#modal-mask-container').show();
+        } else {
+            $('#modal-mask-container').hide();
+        }
+    });
+
+    $('#btn-save-wishlist-modal').click(async function() {
+        if (!currentEditingId) return;
+
+        const data = {
+            rarity: $('#modal-rarity').val(),
+            quantity: parseInt($('#modal-quantity').val()) || 1,
+            holo_effect: $('#modal-holo-effect').val(),
+            custom_mask_url: $('#modal-custom-mask').val(),
+            use_3d: $('#modal-use-3d').is(':checked'),
+            notes: $('#modal-notes').val()
+        };
+
+        Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        await updateWishlistItem(currentEditingId, data);
+
+        Swal.fire({ icon: 'success', title: '¡Guardado!', timer: 1500, showConfirmButton: false });
+        $('#wishlist-modal').removeClass('active');
+        loadWishlist();
     });
 });
 
@@ -120,7 +154,10 @@ async function loadWishlist() {
     wishlist.forEach(item => {
         const $card = $(`
             <div class="album-card wishlist-item" data-id="${item.id}" style="position: relative; padding: 15px; gap: 8px; ${item.obtained ? 'opacity: 0.7;' : ''}">
-                <div class="btn-delete-card-top btn-delete-wishlist" data-id="${item.id}" title="Eliminar"><i class="fas fa-times"></i></div>
+                <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 20;">
+                    <div class="btn-delete-card-top btn-edit-wishlist" data-id="${item.id}" title="Efectos y Más" style="background: var(--primary-color) !important; position: static;"><i class="fas fa-magic"></i></div>
+                    <div class="btn-delete-card-top btn-delete-wishlist" data-id="${item.id}" title="Eliminar" style="position: static;"><i class="fas fa-times"></i></div>
+                </div>
 
                 <div style="position: relative; width: 100%;">
                     <div style="position: absolute; top: 5px; left: 5px; z-index: 10;">
@@ -172,8 +209,33 @@ async function loadWishlist() {
             deleteWishlistItem(item.id);
         });
 
+        $card.find('.btn-edit-wishlist').click(function(e) {
+            e.stopPropagation();
+            openEditModal(item);
+        });
+
         $container.append($card);
     });
+}
+
+function openEditModal(item) {
+    currentEditingId = item.id;
+    $('#modal-card-img').attr('src', item.image_url);
+    $('#modal-card-name').text(item.name);
+    $('#modal-rarity').val(item.rarity || '');
+    $('#modal-quantity').val(item.quantity || 1);
+    $('#modal-holo-effect').val(item.holo_effect || '');
+    $('#modal-custom-mask').val(item.custom_mask_url || '');
+    $('#modal-use-3d').prop('checked', item.use_3d !== false);
+    $('#modal-notes').val(item.notes || '');
+
+    if (item.holo_effect === 'custom-texture' || item.holo_effect === 'custom-foil') {
+        $('#modal-mask-container').show();
+    } else {
+        $('#modal-mask-container').hide();
+    }
+
+    $('#wishlist-modal').addClass('active');
 }
 
 async function addCardToWishlist(card) {
