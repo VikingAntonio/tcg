@@ -1664,7 +1664,8 @@ input:checked + .slider:before {
     opacity: 0;
     transition: opacity 0.3s;
     backface-visibility: hidden;
-    transform: translateZ(1px);
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(1.1px);
 }
 
 .card-3d-container.active .holo-layer {

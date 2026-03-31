@@ -133,7 +133,10 @@ $(document).ready(async function() {
     const urlParams = new URLSearchParams(window.location.search);
     const initialView = urlParams.get('view') || 'albums';
 
-    showLoading('Cargando Tienda...');
+    // Solo mostramos pantalla de carga inicial si la vista es álbumes
+    if (initialView === 'albums') {
+        showLoading('Cargando Tienda...');
+    }
 
     await loadStoreData();
 
