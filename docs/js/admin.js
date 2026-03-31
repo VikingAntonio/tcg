@@ -75,6 +75,12 @@ $(document).ready(async function() {
         loadBotMessages();
     });
 
+    $(document).on('click', '#btn-bdd-panel', function(e) {
+        e.preventDefault();
+        showView('bdd');
+        resetBddForm();
+    });
+
     $(document).on('click', '#btn-show-expansiones', function(e) {
         e.preventDefault();
         if (typeof showExpansionView === 'function') {
@@ -1212,6 +1218,71 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleDeckImageUpload(this.files[0]);
     });
 
+    // BDD Drop Zone
+    $(document).on('drop', '#drop-zone-bdd', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-bdd', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-bdd', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('click', '#drop-zone-bdd', function() { $('#input-bdd-file').click(); });
+    $(document).on('change', '#input-bdd-file', function() {
+        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
+    });
+
+    $('#btn-save-bdd').click(async function() {
+        const type = $('#bdd-type').val();
+        const name = $('#bdd-name').val().trim();
+        const imageUrl = $('#bdd-image-url').val().trim();
+        const tcg = $('#bdd-tcg').val();
+        const expansion = $('#bdd-expansion').val().trim();
+        const rarity = $('#bdd-rarity').val().trim();
+        const price = $('#bdd-price').val().trim();
+
+        if (!name || !imageUrl) {
+            Swal.fire('Atención', 'El nombre y la imagen son obligatorios.', 'warning');
+            return;
+        }
+
+        Swal.fire({ title: 'Guardando en BDD...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const result = await VikingData.save({
+                name,
+                image_url: imageUrl,
+                expansion,
+                rarity,
+                tcg,
+                price,
+                type,
+                user_id: currentUser.id
+            });
+
+            if (result) {
+                Swal.fire('¡Éxito!', 'Elemento guardado correctamente en la BDD global.', 'success');
+                resetBddForm();
+            } else {
+                throw new Error("Error al guardar en viking_data");
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Error', 'No se pudo guardar: ' + err.message, 'error');
+        }
+    });
+
+    function resetBddForm() {
+        $('#bdd-name').val('');
+        $('#bdd-image-url').val('');
+        $('#bdd-expansion').val('');
+        $('#bdd-rarity').val('');
+        $('#bdd-price').val('');
+        $('#drop-zone-bdd .file-name').text('');
+    }
+
     async function handleDeckImageUpload(file) {
         const $fileName = $('#drop-zone-deck .file-name');
         $fileName.text("Subiendo...").css('color', '#aaa');
@@ -1654,9 +1725,11 @@ async function showAuthenticatedContent() {
     if (currentUser) {
         if (currentUser.role === 'admin') {
             $('#btn-users-panel').show();
+            $('#btn-bdd-panel').show();
             $('#admin-upload-container').show();
         } else {
             $('#btn-users-panel').hide();
+            $('#btn-bdd-panel').hide();
             $('#admin-upload-container').hide();
         }
     }
