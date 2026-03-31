@@ -1090,12 +1090,8 @@ $(document).ready(async function() {
 
             Swal.fire('¡Éxito!', 'Todos los cambios del deck se han guardado correctamente', 'success');
 
-            // Clear local state
-            localDeckCards = [];
-            deckCardsToDelete = [];
-            localVikingData = [];
-
-            loadDecks();
+            // Refrescar para ver el orden guardado
+            loadDeckCards(currentDeckId, true);
         } catch (err) {
             Swal.fire('Error', 'No se pudo actualizar el deck: ' + (err.message || ''), 'error');
             console.error(err);
@@ -2102,9 +2098,12 @@ function initDeckCardsSorting() {
 
 async function updateCardOrder(cardIds) {
     cardIds.forEach((id, index) => {
-        const card = localDeckCards.find(c => (c.id && c.id === id) || (c.localId && c.localId === id));
+        const card = localDeckCards.find(c => (c.id == id) || (c.localId == id));
         if (card) card.position = index;
     });
+
+    // Sort local array by the new positions
+    localDeckCards.sort((a, b) => (a.position || 0) - (b.position || 0));
 
     try {
         const promises = cardIds
