@@ -1453,7 +1453,6 @@ async function loadPublicDecks() {
                             <h3 style="margin-bottom: 5px;">${deck.name}</h3>
                             ${priceDisplay}
                         </div>
-                        <button class="btn btn-sm btn-sort-public-deck" title="Ordenar por Nombre"><i class="fas fa-sort-alpha-down"></i></button>
                     </div>
                     <div class="container">
                         <div class="swiper swiperyg ${deckId}">
@@ -1500,6 +1499,9 @@ async function loadPublicDecks() {
                         if (!isDragging) {
                             const $slot = $(e.target).closest('.card-slot');
                             if ($slot.length) {
+                                // Only open if it's the active slide
+                                if (s.clickedIndex !== s.activeIndex) return;
+
                                 const isMobile = window.innerWidth <= 640;
                                 if (isMobile) {
                                     if (!$(e.target).closest('.zoom-btn').length) return;
@@ -2163,38 +2165,6 @@ function makeCompanionDraggable() {
     });
 }
 
-// Sort buttons logic for public view
-$(document).on('click', '.btn-sort-public-deck', function() {
-    const $deckItem = $(this).closest('.deck-public-item');
-    const $wrapper = $deckItem.find('.swiper-wrapper');
-    const $slides = $wrapper.children('.swiper-slide').get();
-
-    $slides.sort(function(a, b) {
-        const nameA = $(a).attr('data-name').toUpperCase();
-        const nameB = $(b).attr('data-name').toUpperCase();
-        return (nameA < nameB) ? -1 : (nameA > nameB) ? 1 : 0;
-    });
-
-    $.each($slides, function(i, slide) {
-        $wrapper.append(slide);
-    });
-
-    // Update Swiper
-    const swiperEl = $deckItem.find('.swiper')[0];
-    if (swiperEl && swiperEl.swiper) {
-        swiperEl.swiper.update();
-        swiperEl.swiper.slideTo(0);
-    }
-
-    Swal.fire({
-        icon: 'success',
-        title: 'Ordenado por nombre',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2000
-    });
-});
 
 async function showGeneralEventDetails(id) {
     try {
