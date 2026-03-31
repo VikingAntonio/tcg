@@ -1614,7 +1614,6 @@ input:checked + .slider:before {
     height: 308px;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.1s ease;
     border-radius: 8px;
     display: flex;
     justify-content: center;
@@ -1664,6 +1663,8 @@ input:checked + .slider:before {
     z-index: 100; /* Above all z-layers */
     opacity: 0;
     transition: opacity 0.3s;
+    backface-visibility: hidden;
+    transform: translateZ(1px);
 }
 
 .card-3d-container.active .holo-layer {

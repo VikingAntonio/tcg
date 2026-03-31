@@ -46,8 +46,7 @@
 
 .card__shine,
 .card__glare {
-  will-change: transform, opacity, background-image, background-size,
-    background-position, background-blend-mode, filter;
+  will-change: transform, opacity;
 }
 
 /* Fix for integration with the existing project's 3D cards */

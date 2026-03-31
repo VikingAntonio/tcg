@@ -624,8 +624,6 @@ window.updateRotation = function() {
         return;
     }
 
-    const $c = $(card3d);
-
     // LERP for smooth motion
     currentRX += (targetRX - currentRX) * 0.1;
     currentRY += (targetRY - currentRY) * 0.1;
@@ -641,26 +639,19 @@ window.updateRotation = function() {
     const cy = (my - 0.5) * 100;
     const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
 
-    $c.css('transform', `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`);
-
-    const $holo = $c.find('.holo-layer');
-    if ($holo.length > 0) {
-        $holo.css('background-position', `${px}% ${py}%`);
-    }
-
-    $c.css({
-        '--mx': mx,
-        '--my': my,
-        '--angle': `${angle}deg`,
-        '--pointer-x': `${px}%`,
-        '--pointer-y': `${py}%`,
-        '--background-x': `${px}%`,
-        '--background-y': `${py}%`,
-        '--pointer-from-center': pointerFromCenter,
-        '--pointer-from-top': my,
-        '--pointer-from-left': mx,
-        '--card-opacity': '1'
-    });
+    const s = card3d.style;
+    s.transform = `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`;
+    s.setProperty('--mx', mx);
+    s.setProperty('--my', my);
+    s.setProperty('--angle', `${angle}deg`);
+    s.setProperty('--pointer-x', `${px}%`);
+    s.setProperty('--pointer-y', `${py}%`);
+    s.setProperty('--background-x', `${px}%`);
+    s.setProperty('--background-y', `${py}%`);
+    s.setProperty('--pointer-from-center', pointerFromCenter);
+    s.setProperty('--pointer-from-top', my);
+    s.setProperty('--pointer-from-left', mx);
+    s.setProperty('--card-opacity', '1');
 
     requestAnimationFrame(window.updateRotation);
 }
