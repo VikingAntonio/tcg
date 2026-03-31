@@ -1434,6 +1434,10 @@ async function loadPublicDecks() {
         }
 
         decks.forEach(deck => {
+            // Ensure cards are sorted by position locally as a fallback
+            if (deck.deck_cards) {
+                deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
+            }
             const deckId = `deck-swiper-${deck.id}`;
 
             // Calculate Total Sum
