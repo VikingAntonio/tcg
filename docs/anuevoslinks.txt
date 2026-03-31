@@ -1,12 +1,12 @@
 -- SQL para mejorar la Wishlist
 -- 1. Soporte para múltiples slots (5 listas diferentes) y estado de obtención
-ALTER TABLE wishlist ADD COLUMN list_index INTEGER DEFAULT 0;
-ALTER TABLE wishlist ADD COLUMN obtained BOOLEAN DEFAULT FALSE;
+ALTER TABLE wishlist ADD COLUMN IF NOT EXISTS list_index INTEGER DEFAULT 0;
+ALTER TABLE wishlist ADD COLUMN IF NOT EXISTS obtained BOOLEAN DEFAULT FALSE;
 
 -- 2. Optimización de consultas
-CREATE INDEX idx_wishlist_user_list ON wishlist(user_id, list_index);
+CREATE INDEX IF NOT EXISTS idx_wishlist_user_list ON wishlist(user_id, list_index);
 
 -- 3. Efectos visuales para Wishlist
-ALTER TABLE wishlist ADD COLUMN holo_effect TEXT DEFAULT '';
-ALTER TABLE wishlist ADD COLUMN custom_mask_url TEXT DEFAULT '';
-ALTER TABLE wishlist ADD COLUMN use_3d BOOLEAN DEFAULT TRUE;
+ALTER TABLE wishlist ADD COLUMN IF NOT EXISTS holo_effect TEXT DEFAULT '';
+ALTER TABLE wishlist ADD COLUMN IF NOT EXISTS custom_mask_url TEXT DEFAULT '';
+ALTER TABLE wishlist ADD COLUMN IF NOT EXISTS use_3d BOOLEAN DEFAULT TRUE;
