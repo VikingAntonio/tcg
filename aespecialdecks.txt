@@ -1,8 +1,0 @@
--- SQL para habilitar precios especiales en Decks
--- Este archivo agrega las columnas necesarias a la tabla 'decks'
-
-ALTER TABLE public.decks ADD COLUMN IF NOT EXISTS special_price TEXT;
-ALTER TABLE public.decks ADD COLUMN IF NOT EXISTS use_special_price BOOLEAN DEFAULT false;
-
--- No es necesario actualizar RLS ya que las políticas existentes
--- para la tabla 'decks' cubren todas las columnas.

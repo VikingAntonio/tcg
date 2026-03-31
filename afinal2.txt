@@ -1,1 +1,0 @@
--- No SQL updates were needed for this task as all requirements were met using the existing database schema.

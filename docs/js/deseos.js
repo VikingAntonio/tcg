@@ -1,5 +1,6 @@
 let currentUser = null;
 let ygoSetsCache = null;
+let currentSlot = 0;
 
 async function getYgoSets() {
     if (ygoSetsCache) return ygoSetsCache;
@@ -42,6 +43,14 @@ $(document).ready(async function() {
         if (!$(e.target).closest('.user-menu-container').length) {
             $('#user-dropdown').removeClass('active');
         }
+    });
+
+    // Slot switching
+    $('.wishlist-tab-btn').click(function() {
+        $('.wishlist-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        currentSlot = parseInt($(this).data('index'));
+        loadWishlist();
     });
 
     $('#menu-btn-logout').click(async function(e) {
@@ -91,6 +100,7 @@ async function loadWishlist() {
         .from('wishlist')
         .select('*')
         .eq('user_id', currentUser.id)
+        .eq('list_index', currentSlot)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -194,6 +204,7 @@ async function addCardToWishlist(card) {
             user_id: currentUser.id,
             name: card.name,
             image_url: card.high_res,
+            list_index: currentSlot,
             game: card.image.includes('tcgdex') ? 'pokemon' : (card.image.includes('lorcana-api') ? 'lorcana' : 'yugioh')
         }]);
 
