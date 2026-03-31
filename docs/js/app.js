@@ -159,6 +159,58 @@ $(document).ready(async function() {
         switchView('wishlist');
     });
 
+    // Wishlist Tabs Logic
+    window.currentWishlistTab = 0;
+    $(document).on('click', '.wishlist-tab', function() {
+        $('.wishlist-tab').removeClass('active');
+        $(this).addClass('active');
+        window.currentWishlistTab = parseInt($(this).data('index')) || 0;
+        loadPublicWishlist();
+    });
+
+    // Owner "Add Card" Modal Logic
+    $('#btn-owner-add-wishlist').click(function() {
+        $('#wishlist-external-search-results').empty();
+        $('#wishlist-external-search-input').val('');
+        $('#wishlist-search-modal').addClass('active');
+    });
+
+    $('#close-wishlist-search-modal').click(function() {
+        $('#wishlist-search-modal').removeClass('active');
+    });
+
+    $('#btn-wishlist-external-search').click(function(e) {
+        e.preventDefault();
+        searchExternalCard('#wishlist-external-search-input', '#wishlist-external-search-results', async function(card) {
+            const { isConfirmed } = await Swal.fire({
+                title: '¿Añadir a la Wishlist?',
+                text: card.name,
+                imageUrl: card.high_res,
+                imageWidth: 200,
+                showCancelButton: true,
+                confirmButtonText: 'Sí, añadir'
+            });
+
+            if (isConfirmed) {
+                const { error } = await _supabase.from('wishlist').insert([{
+                    user_id: window.currentStoreId,
+                    name: card.name,
+                    image_url: card.high_res,
+                    list_index: window.currentWishlistTab,
+                    obtained: false,
+                    quantity: 1
+                }]);
+
+                if (!error) {
+                    Swal.fire({ icon: 'success', title: 'Añadida', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+                    loadPublicWishlist();
+                } else {
+                    Swal.fire('Error', 'No se pudo añadir la carta.', 'error');
+                }
+            }
+        });
+    });
+
     $('#preorders-nav-btn').click(function() {
         switchView('preorders');
     });
@@ -1882,25 +1934,41 @@ async function loadPublicWishlist() {
 
     if (!userId) return;
 
+    // Show/Hide owner controls
+    const isOwner = window.currentUserId === window.currentStoreId;
+    if (isOwner) {
+        $('#btn-owner-add-wishlist').show();
+    } else {
+        $('#btn-owner-add-wishlist').hide();
+    }
+
     $('#wishlist-container').removeClass('decks-grid').addClass('wishlist-grid');
     $('#wishlist-container').html('<div class="loading">Cargando lista de deseos...</div>');
 
     try {
+        const listIdx = window.currentWishlistTab || 0;
         const { data: wishlist, error } = await _supabase
             .from('wishlist')
             .select('*')
             .eq('user_id', userId)
+            .eq('list_index', listIdx)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        let finalWishlist = wishlist;
+        if (error) {
+            // Reintentar sin filtro de list_index si falla (por si la columna no existe aún)
+            const retry = await _supabase.from('wishlist').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            if (retry.error) throw retry.error;
+            finalWishlist = retry.data;
+        }
 
-        if (!wishlist || wishlist.length === 0) {
+        if (!finalWishlist || finalWishlist.length === 0) {
             $('#wishlist-container').html('<div class="empty">Esta tienda no tiene una lista de deseos pública.</div>');
             return;
         }
 
         $('#wishlist-container').empty();
-        wishlist.forEach(item => {
+        finalWishlist.forEach(item => {
             const $el = $(`
                 <div class="wishlist-card-item card-slot"
                      data-id="${item.id}"

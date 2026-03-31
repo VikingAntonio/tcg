@@ -3614,6 +3614,54 @@ input:checked + .slider:before {
 }
 
 /* Wishlist Enhanced Styles */
+.wishlist-controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.wishlist-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.wishlist-tab {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.wishlist-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.wishlist-tab.active {
+    background: var(--primary-color);
+    color: #000;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+}
+
+#btn-owner-add-wishlist {
+    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+    color: white;
+    box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
+}
+
 .wishlist-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

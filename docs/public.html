@@ -126,6 +126,18 @@
         </div>
 
         <div id="wishlist-view" class="view-section">
+            <div class="wishlist-controls-row" id="wishlist-tabs-container">
+                <div class="wishlist-tabs" id="wishlist-tabs">
+                    <button class="wishlist-tab active" data-index="0">Lista 1</button>
+                    <button class="wishlist-tab" data-index="1">Lista 2</button>
+                    <button class="wishlist-tab" data-index="2">Lista 3</button>
+                    <button class="wishlist-tab" data-index="3">Lista 4</button>
+                    <button class="wishlist-tab" data-index="4">Lista 5</button>
+                </div>
+                <button id="btn-owner-add-wishlist" class="btn btn-sm" style="display: none; border-radius: 50px;">
+                    <i class="fas fa-plus"></i> Añadir Carta
+                </button>
+            </div>
             <div id="wishlist-container" class="wishlist-grid">
                 <!-- Wishlist items will be loaded here -->
             </div>
@@ -182,6 +194,24 @@
         </div>
     </div>
 
+
+    <!-- External Search Modal for Wishlist Owner -->
+    <div id="wishlist-search-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 800px; width: 95%;">
+            <span id="close-wishlist-search-modal" class="close-btn">&times;</span>
+            <h2 style="color: #00d2ff; text-align: center; margin-bottom: 20px;">Añadir a la Wishlist</h2>
+
+            <div class="search-box" style="margin-bottom: 20px; max-width: 100%;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="wishlist-external-search-input" placeholder="Buscar por nombre o código (Ej: Dark Magician)...">
+                <button id="btn-wishlist-external-search" class="btn btn-sm" style="margin-left: 10px;">Buscar</button>
+            </div>
+
+            <div id="wishlist-external-search-results" class="expansion-grid" style="max-height: 400px; overflow-y: auto;">
+                <!-- Resultados de búsqueda aquí -->
+            </div>
+        </div>
+    </div>
 
     <div id="image-overlay" class="overlay">
         <div class="overlay-content">
