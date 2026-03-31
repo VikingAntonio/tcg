@@ -27,6 +27,7 @@ let albumSlotsToDelete = [];
 let localDeckCards = [];
 let deckCardsToDelete = [];
 let localVikingData = [];
+let bddQueue = [];
 
 // Mask Editor State
 let maskCanvas, maskCtx;
@@ -79,6 +80,7 @@ $(document).ready(async function() {
         e.preventDefault();
         showView('bdd');
         resetBddForm();
+        if (typeof renderPendingBdd === 'function') renderPendingBdd();
     });
 
     $(document).on('click', '#btn-show-expansiones', function(e) {
@@ -1234,7 +1236,7 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
     });
 
-    $('#btn-save-bdd').click(async function() {
+    $('#btn-queue-bdd').click(function() {
         const type = $('#bdd-type').val();
         const name = $('#bdd-name').val().trim();
         const imageUrl = $('#bdd-image-url').val().trim();
@@ -1248,31 +1250,72 @@ $(document).ready(async function() {
             return;
         }
 
-        Swal.fire({ title: 'Guardando en BDD...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        bddQueue.push({
+            name,
+            image_url: imageUrl,
+            expansion,
+            rarity,
+            tcg,
+            price,
+            type,
+            user_id: currentUser.id
+        });
+
+        renderPendingBdd();
+        resetBddForm();
+        Swal.fire({ icon: 'success', title: 'Añadido a la cola', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' });
+    });
+
+    $('#btn-save-bdd-batch').click(async function() {
+        if (bddQueue.length === 0) return;
+
+        Swal.fire({ title: 'Guardando en BDD...', text: `Subiendo ${bddQueue.length} elementos.`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
-            const result = await VikingData.save({
-                name,
-                image_url: imageUrl,
-                expansion,
-                rarity,
-                tcg,
-                price,
-                type,
-                user_id: currentUser.id
-            });
+            const { error } = await _supabase.from('viking_data').insert(bddQueue);
+            if (error) throw error;
 
-            if (result) {
-                Swal.fire('¡Éxito!', 'Elemento guardado correctamente en la BDD global.', 'success');
-                resetBddForm();
-            } else {
-                throw new Error("Error al guardar en viking_data");
-            }
+            Swal.fire('¡Éxito!', 'Todos los elementos han sido guardados en la BDD global.', 'success');
+            bddQueue = [];
+            renderPendingBdd();
         } catch (err) {
             console.error(err);
-            Swal.fire('Error', 'No se pudo guardar: ' + err.message, 'error');
+            Swal.fire('Error', 'No se pudo guardar la cola: ' + err.message, 'error');
         }
     });
+
+    function renderPendingBdd() {
+        const $container = $('#pending-bdd-container');
+        const $grid = $('#pending-bdd-grid');
+        $grid.empty();
+
+        if (bddQueue.length === 0) {
+            $container.hide();
+            return;
+        }
+
+        $container.show();
+
+        bddQueue.forEach((item, index) => {
+            const $el = $(`
+                <div class="fast-result-item" style="position: relative; width: 80px; height: 110px;" title="${item.name}">
+                    <img src="${item.image_url}" alt="${item.name}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;">
+                    <span style="font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: #fff;">${item.name}</span>
+                    <div class="btn-delete-card-top" style="top: -5px; right: -5px; width: 20px; height: 20px; font-size: 10px; line-height: 20px;" data-index="${index}">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+            `);
+
+            $el.find('.btn-delete-card-top').click(function(e) {
+                e.stopPropagation();
+                bddQueue.splice(index, 1);
+                renderPendingBdd();
+            });
+
+            $grid.append($el);
+        });
+    }
 
     function resetBddForm() {
         $('#bdd-name').val('');

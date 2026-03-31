@@ -457,9 +457,20 @@
                         <input type="text" id="bdd-price" placeholder="Ej: $25.00">
                     </div>
                 </div>
-                <button id="btn-save-bdd" class="btn" style="width: 100%; margin-top: 20px;">
-                    <i class="fas fa-save"></i> Guardar en BDD
+                <button id="btn-queue-bdd" class="btn" style="width: 100%; margin-top: 20px;">
+                    <i class="fas fa-plus-circle"></i> Añadir a la Cola
                 </button>
+            </div>
+
+            <!-- Pending BDD Tray (Jules) -->
+            <div id="pending-bdd-container" class="album-card" style="max-width: 800px; width: 100%; margin: 0 auto 30px; display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; font-size: 1.2rem; color: #00d2ff;"><i class="fas fa-list-ul"></i> Elementos por Guardar en BDD</h2>
+                    <button id="btn-save-bdd-batch" class="btn btn-success"><i class="fas fa-save"></i> Guardar Todo en BDD</button>
+                </div>
+                <div id="pending-bdd-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; padding: 10px; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; background: rgba(0,0,0,0.05); max-height: 400px; overflow-y: auto;">
+                    <!-- Pending BDD items will appear here -->
+                </div>
             </div>
         </div>
 

@@ -2,6 +2,7 @@ let currentUser = null;
 let ygoSetsCache = null;
 let currentSlot = 0;
 let currentEditingId = null;
+let pendingWishlist = [];
 
 async function getYgoSets() {
     if (ygoSetsCache) return ygoSetsCache;
@@ -72,6 +73,10 @@ $(document).ready(async function() {
         }
     });
 
+    $('#btn-wishlist-save-batch').click(function() {
+        saveWishlistBatch();
+    });
+
     $('#btn-save-wishlist-modal').click(async function() {
         if (!currentEditingId) return;
 
@@ -93,6 +98,82 @@ $(document).ready(async function() {
         loadWishlist();
     });
 });
+
+function renderPendingWishlist() {
+    const $container = $('#pending-wishlist-container');
+    const $grid = $('#pending-wishlist-grid');
+    $grid.empty();
+
+    if (pendingWishlist.length === 0) {
+        $container.hide();
+        return;
+    }
+
+    $container.show();
+
+    pendingWishlist.forEach((card, index) => {
+        const $item = $(`
+            <div class="fast-result-item" style="position: relative; width: 80px; height: 110px;" title="${card.name}">
+                <img src="${card.image}" alt="${card.name}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;">
+                <span style="font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: #fff;">${card.name}</span>
+                <div class="btn-delete-card-top" style="top: -5px; right: -5px; width: 20px; height: 20px; font-size: 10px; line-height: 20px;" data-index="${index}">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+        `);
+
+        $item.find('.btn-delete-card-top').click((e) => {
+            e.stopPropagation();
+            pendingWishlist.splice(index, 1);
+            renderPendingWishlist();
+        });
+
+        $grid.append($item);
+    });
+}
+
+async function saveWishlistBatch() {
+    if (pendingWishlist.length === 0) return;
+
+    Swal.fire({
+        title: 'Guardando...',
+        text: `Añadiendo ${pendingWishlist.length} cartas a tu lista.`,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const cardsToInsert = pendingWishlist.map(card => ({
+            user_id: currentUser.id,
+            name: card.name,
+            image_url: card.high_res,
+            list_index: currentSlot,
+            game: card.image.includes('tcgdex') ? 'pokemon' : (card.image.includes('lorcana-api') ? 'lorcana' : 'yugioh'),
+            obtained: false,
+            quantity: 1
+        }));
+
+        const { error } = await _supabase.from('wishlist').insert(cardsToInsert);
+
+        if (error) throw error;
+
+        Swal.fire({
+            title: '¡Guardado!',
+            text: 'Todas las cartas se han añadido con éxito.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+        pendingWishlist = [];
+        renderPendingWishlist();
+        loadWishlist();
+
+    } catch (err) {
+        console.error("Batch Error:", err);
+        Swal.fire('Error', 'No se pudieron añadir las cartas: ' + err.message, 'error');
+    }
+}
 
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();
@@ -239,7 +320,7 @@ function openEditModal(item) {
 }
 
 async function addCardToWishlist(card) {
-    // Check limit
+    // Check limit (Including pending)
     const { count, error: countError } = await _supabase
         .from('wishlist')
         .select('*', { count: 'exact', head: true })
@@ -249,7 +330,8 @@ async function addCardToWishlist(card) {
         console.error("Error checking wishlist limit:", countError);
     } else {
         const limit = currentUser.max_wishlist || 10;
-        if (count >= limit) {
+        const total = count + pendingWishlist.length;
+        if (total >= limit) {
             Swal.fire({
                 title: 'Límite alcanzado',
                 text: `Has alcanzado el límite de ${limit} cartas en tu lista de deseos.`,
@@ -260,28 +342,18 @@ async function addCardToWishlist(card) {
         }
     }
 
-    const { error } = await _supabase
-        .from('wishlist')
-        .insert([{
-            user_id: currentUser.id,
-            name: card.name,
-            image_url: card.high_res,
-            list_index: currentSlot,
-            game: card.image.includes('tcgdex') ? 'pokemon' : (card.image.includes('lorcana-api') ? 'lorcana' : 'yugioh')
-        }]);
+    pendingWishlist.push(card);
+    renderPendingWishlist();
 
-    if (error) {
-        Swal.fire('Error', 'No se pudo añadir a la lista', 'error');
-    } else {
-        Swal.fire({
-            title: '¡Añadida!',
-            text: card.name,
-            icon: 'success',
-            timer: 1000,
-            showConfirmButton: false
-        });
-        loadWishlist();
-    }
+    Swal.fire({
+        title: '¡Preparada!',
+        text: card.name + ' añadida a la cola.',
+        icon: 'success',
+        timer: 1000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+    });
 }
 
 async function updateWishlistItem(id, data) {

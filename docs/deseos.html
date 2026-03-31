@@ -156,6 +156,17 @@
                 <div id="deseos-external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; max-height: 250px; overflow-y: auto; padding: 10px; border-top: 1px solid #333;">
                     <!-- Results will appear here -->
                 </div>
+
+                <!-- Pending Wishlist Tray (Jules) -->
+                <div id="pending-wishlist-container" style="display: none; margin-top: 30px; border-top: 2px dashed rgba(255,255,255,0.1); padding-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--primary-color);"><i class="fas fa-list-ul"></i> Cartas para Añadir</h3>
+                        <button id="btn-wishlist-save-batch" class="btn btn-success"><i class="fas fa-save"></i> Guardar Todas</button>
+                    </div>
+                    <div id="pending-wishlist-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px; padding: 10px; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; background: rgba(0,0,0,0.05); max-height: 200px; overflow-y: auto;">
+                        <!-- Pending cards will appear here -->
+                    </div>
+                </div>
             </div>
         </div>
 
