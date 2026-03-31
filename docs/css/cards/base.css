@@ -261,6 +261,8 @@ Shine & Glare Effects
   mix-blend-mode: color-dodge;
 
   opacity: var(--card-opacity);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 
 }
 
@@ -308,6 +310,8 @@ Shine & Glare Effects
 
   opacity: var(--card-opacity);
   mix-blend-mode: overlay;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   
 }
 
