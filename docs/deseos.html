@@ -187,6 +187,81 @@
         </div>
     </div>
 
+    <!-- Wishlist Edit Modal -->
+    <div id="wishlist-modal" class="overlay">
+        <div class="overlay-content">
+            <span id="close-wishlist-modal" class="close-btn">&times;</span>
+            <h2>Editar Carta</h2>
+
+            <div class="form-group" style="text-align: center;">
+                <img id="modal-card-img" src="" style="width: 150px; height: 210px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.2);">
+                <h3 id="modal-card-name">Nombre de la Carta</h3>
+            </div>
+
+            <div class="info-grid">
+                <div class="form-group">
+                    <label>Rareza</label>
+                    <input type="text" id="modal-rarity" class="wishlist-field">
+                </div>
+                <div class="form-group">
+                    <label>Cantidad</label>
+                    <input type="number" id="modal-quantity" class="wishlist-field">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Efecto Holo</label>
+                <select id="modal-holo-effect" class="wishlist-field" style="padding: 10px;">
+                    <option value="">Ninguno</option>
+                    <option value="foil">Foil</option>
+                    <option value="custom-texture">CustomTexture</option>
+                    <option value="custom-foil">CustomFoil</option>
+                    <option value="pk-rare-holo">PK: Rare Holo</option>
+                    <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
+                    <option value="pk-rare-holo-v">PK: Rare Holo V</option>
+                    <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
+                    <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
+                    <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
+                    <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
+                    <option value="pk-rare-secret">PK: Rare Secret</option>
+                    <option value="pk-rare-shiny">PK: Rare Shiny</option>
+                    <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
+                    <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
+                    <option value="pk-amazing-rare">PK: Amazing Rare</option>
+                    <option value="pk-radiant-rare">PK: Radiant Rare</option>
+                    <option value="pk-rare-ultra">PK: Rare Ultra</option>
+                    <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
+                    <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
+                    <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
+                    <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
+                    <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
+                    <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
+                    <option value="pk-reverse-holo">PK: Reverse Holo</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="modal-mask-container" style="display: none;">
+                <label>URL de la Máscara</label>
+                <input type="text" id="modal-custom-mask" class="wishlist-field" placeholder="https://...">
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; margin-top: 10px;">
+                <label class="switch">
+                    <input type="checkbox" id="modal-use-3d" checked>
+                    <span class="slider"></span>
+                </label>
+                <label style="margin-bottom: 0; cursor: pointer;" for="modal-use-3d">Habilitar Movimiento 3D</label>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Notas</label>
+                <textarea id="modal-notes" class="wishlist-field" rows="3" style="resize: none; padding: 10px;"></textarea>
+            </div>
+
+            <button id="btn-save-wishlist-modal" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-save"></i> Guardar Cambios</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/viking-data.js"></script>
     <script src="js/deseos.js"></script>

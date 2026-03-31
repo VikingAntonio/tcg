@@ -5,3 +5,8 @@ ALTER TABLE wishlist ADD COLUMN obtained BOOLEAN DEFAULT FALSE;
 
 -- 2. Optimización de consultas
 CREATE INDEX idx_wishlist_user_list ON wishlist(user_id, list_index);
+
+-- 3. Efectos visuales para Wishlist
+ALTER TABLE wishlist ADD COLUMN holo_effect TEXT DEFAULT '';
+ALTER TABLE wishlist ADD COLUMN custom_mask_url TEXT DEFAULT '';
+ALTER TABLE wishlist ADD COLUMN use_3d BOOLEAN DEFAULT TRUE;
