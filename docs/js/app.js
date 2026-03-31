@@ -1938,8 +1938,35 @@ async function loadPublicWishlist() {
     const isOwner = window.currentUserId === window.currentStoreId;
     if (isOwner) {
         $('#btn-owner-add-wishlist').show();
+        // Owners see all tabs
+        $('.wishlist-tab').show();
     } else {
         $('#btn-owner-add-wishlist').hide();
+
+        // Non-owners: only show tabs that have items
+        try {
+            const { data: slotCounts } = await _supabase
+                .from('wishlist')
+                .select('list_index')
+                .eq('user_id', userId);
+
+            const activeSlots = new Set((slotCounts || []).map(s => s.list_index));
+            $('.wishlist-tab').each(function() {
+                const idx = parseInt($(this).data('index'));
+                if (activeSlots.has(idx)) $(this).show();
+                else $(this).hide();
+            });
+
+            // If current tab is hidden, switch to first visible
+            if (!activeSlots.has(window.currentWishlistTab || 0)) {
+                const firstSlot = Array.from(activeSlots).sort((a,b) => a-b)[0];
+                if (firstSlot !== undefined) {
+                    window.currentWishlistTab = firstSlot;
+                    $('.wishlist-tab').removeClass('active');
+                    $(`.wishlist-tab[data-index="${firstSlot}"]`).addClass('active');
+                }
+            }
+        } catch(e) { console.warn(e); }
     }
 
     $('#wishlist-container').removeClass('decks-grid').addClass('wishlist-grid');
@@ -1963,7 +1990,7 @@ async function loadPublicWishlist() {
         }
 
         if (!finalWishlist || finalWishlist.length === 0) {
-            $('#wishlist-container').html('<div class="empty">Esta tienda no tiene una lista de deseos pública.</div>');
+            $('#wishlist-container').html('<div class="empty">Este slot está vacío.</div>');
             return;
         }
 

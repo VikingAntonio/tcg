@@ -1,3 +1,0 @@
--- SQL to add WhatsApp and Messenger link columns to the usuarios table
-ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS whatsapp_link TEXT;
-ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS messenger_link TEXT;

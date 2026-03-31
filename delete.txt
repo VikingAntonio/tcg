@@ -1,1 +1,0 @@
-No se requieren cambios en la base de datos SQL, ya que las tablas 'deck_cards' y 'card_slots' ya permiten la eliminación de registros mediante el cliente de Supabase implementado en admin.js.

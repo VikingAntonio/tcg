@@ -1,7 +1,0 @@
--- Ejecuta este SQL en tu editor de consultas de Supabase para añadir soporte a CustomTexture.
-
-ALTER TABLE card_slots
-ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
-
-ALTER TABLE deck_cards
-ADD COLUMN IF NOT EXISTS custom_mask_url TEXT;
