@@ -2105,7 +2105,21 @@ async function updateCardOrder(cardIds) {
         const card = localDeckCards.find(c => (c.id && c.id === id) || (c.localId && c.localId === id));
         if (card) card.position = index;
     });
-    console.log("Orden de cartas actualizado localmente");
+
+    try {
+        const promises = cardIds
+            .filter(id => !String(id).startsWith('new_'))
+            .map((id, index) =>
+                _supabase.from('deck_cards').update({ position: index }).eq('id', id)
+            );
+        if (promises.length > 0) {
+            await Promise.all(promises);
+            console.log("Orden de cartas guardado en Supabase");
+        }
+    } catch (err) {
+        console.error("Error al persistir el orden de las cartas:", err);
+    }
+
     renderDeckCardsLocal();
 }
 

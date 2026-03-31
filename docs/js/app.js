@@ -286,11 +286,19 @@ $(document).ready(async function() {
         if (isDragging) return;
         const $slot = $(this);
 
+        // If it's part of a Swiper (carousel), we skip this global listener
+        // and let the Swiper's own click handler deal with it.
+        if ($slot.closest('.swiperyg').length > 0) {
+            return;
+        }
+
         // On mobile, the zoom button handles the click directly to avoid turn.js interference.
         // If we are here on mobile and it's not the zoom button, we ignore it.
         const isMobile = window.innerWidth <= 640;
         if (isMobile) {
-            if (!$(e.target).closest('.zoom-btn').length) {
+            if ($slot.hasClass('grid-card-item')) {
+                // In grid mode, we allow clicks directly on the card
+            } else if (!$(e.target).closest('.zoom-btn').length) {
                 return;
             }
         }
@@ -1447,14 +1455,18 @@ async function loadPublicDecks() {
                    </div>`;
 
             const $deckItem = $(`
-                <div class="deck-public-item">
+                <div class="deck-public-item" id="deck-item-${deck.id}">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                         <div>
                             <h3 style="margin-bottom: 5px;">${deck.name}</h3>
                             ${priceDisplay}
                         </div>
+                        <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Cambiar Vista">
+                            <i class="fas fa-th"></i> Modo Lista
+                        </button>
                     </div>
-                    <div class="container">
+
+                    <div class="container deck-carousel-container">
                         <div class="swiper swiperyg ${deckId}">
                             <div class="swiper-wrapper">
                                 ${deck.deck_cards.map(card => `
@@ -1473,6 +1485,22 @@ async function loadPublicDecks() {
                                 `).join('')}
                             </div>
                         </div>
+                    </div>
+
+                    <div class="deck-grid-view" style="display: none;">
+                        ${deck.deck_cards.map(card => `
+                            <div class="grid-card-item card-slot"
+                                 data-name="${card.name || ''}"
+                                 data-rarity="${card.rarity || ''}"
+                                 data-holo="${card.holo_effect || ''}"
+                                 data-mask="${card.custom_mask_url || ''}"
+                                 data-expansion="${card.expansion || ''}"
+                                 data-condition="${card.condition || ''}"
+                                 data-quantity="${card.quantity || '1'}"
+                                 data-price="${card.price || ''}">
+                                <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `);
@@ -1499,13 +1527,9 @@ async function loadPublicDecks() {
                         if (!isDragging) {
                             const $slot = $(e.target).closest('.card-slot');
                             if ($slot.length) {
-                                // Only open if it's the active slide
+                                // Popup fix: Only open if it's the active slide
                                 if (s.clickedIndex !== s.activeIndex) return;
 
-                                const isMobile = window.innerWidth <= 640;
-                                if (isMobile) {
-                                    if (!$(e.target).closest('.zoom-btn').length) return;
-                                }
                                 openCardModal($slot);
                             }
                         }
@@ -2165,6 +2189,27 @@ function makeCompanionDraggable() {
     });
 }
 
+$(document).on('click', '.btn-toggle-deck-view', function() {
+    const deckId = $(this).data('deck-id');
+    const $deckItem = $(`#deck-item-${deckId}`);
+    const $carousel = $deckItem.find('.deck-carousel-container');
+    const $grid = $deckItem.find('.deck-grid-view');
+    const $btn = $(this);
+
+    if ($grid.is(':hidden')) {
+        $carousel.hide();
+        $grid.show();
+        $btn.html('<i class="fas fa-layer-group"></i> Modo Carrusel');
+    } else {
+        $grid.hide();
+        $carousel.show();
+        $btn.html('<i class="fas fa-th"></i> Modo Lista');
+        const swiperEl = $carousel.find('.swiper')[0];
+        if (swiperEl && swiperEl.swiper) {
+            swiperEl.swiper.update();
+        }
+    }
+});
 
 async function showGeneralEventDetails(id) {
     try {
