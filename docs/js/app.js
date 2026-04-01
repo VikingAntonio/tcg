@@ -1460,14 +1460,9 @@ async function loadPublicDecks() {
 
             const $deckItem = $(`
                 <div class="deck-public-item" id="deck-item-${deck.id}">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                        <div>
-                            <h3 style="margin-bottom: 5px;">${deck.name}</h3>
-                            ${priceDisplay}
-                        </div>
-                        <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Cambiar Vista">
-                            <i class="fas fa-th"></i> Modo Lista
-                        </button>
+                    <div class="deck-header-info">
+                        <h3 style="margin-bottom: 5px;">${deck.name}</h3>
+                        ${priceDisplay}
                     </div>
 
                     <div class="container deck-carousel-container">
@@ -1491,20 +1486,10 @@ async function loadPublicDecks() {
                         </div>
                     </div>
 
-                    <div class="deck-grid-view" style="display: none;">
-                        ${deck.deck_cards.map(card => `
-                            <div class="grid-card-item card-slot"
-                                 data-name="${card.name || ''}"
-                                 data-rarity="${card.rarity || ''}"
-                                 data-holo="${card.holo_effect || ''}"
-                                 data-mask="${card.custom_mask_url || ''}"
-                                 data-expansion="${card.expansion || ''}"
-                                 data-condition="${card.condition || ''}"
-                                 data-quantity="${card.quantity || '1'}"
-                                 data-price="${card.price || ''}">
-                                <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
-                            </div>
-                        `).join('')}
+                    <div class="deck-toggle-container">
+                        <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Ver Lista">
+                            <i class="fas fa-th"></i> Modo Lista
+                        </button>
                     </div>
                 </div>
             `);
@@ -2196,21 +2181,40 @@ function makeCompanionDraggable() {
 $(document).on('click', '.btn-toggle-deck-view', function() {
     const deckId = $(this).data('deck-id');
     const $deckItem = $(`#deck-item-${deckId}`);
-    const $carousel = $deckItem.find('.deck-carousel-container');
-    const $grid = $deckItem.find('.deck-grid-view');
-    const $btn = $(this);
+    const deckName = $deckItem.find('h3').text();
 
-    if ($grid.is(':hidden')) {
-        $carousel.hide();
-        $grid.show();
-        $btn.html('<i class="fas fa-layer-group"></i> Modo Carrusel');
-    } else {
-        $grid.hide();
-        $carousel.show();
-        $btn.html('<i class="fas fa-th"></i> Modo Lista');
-        const swiperEl = $carousel.find('.swiper')[0];
-        if (swiperEl && swiperEl.swiper) {
-            swiperEl.swiper.update();
+    // Fill modal with cards from Swiper slides
+    const $container = $('#deck-grid-container');
+    $container.empty();
+    $('#deck-list-title').text(deckName);
+
+    $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
+        const $slide = $(this);
+        const $card = $(`
+            <div class="grid-card-item card-slot"
+                 data-name="${$slide.data('name')}"
+                 data-rarity="${$slide.data('rarity')}"
+                 data-holo="${$slide.data('holo')}"
+                 data-mask="${$slide.data('mask')}"
+                 data-expansion="${$slide.data('expansion')}"
+                 data-condition="${$slide.data('condition')}"
+                 data-quantity="${$slide.data('quantity')}"
+                 data-price="${$slide.data('price')}">
+                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
+            </div>
+        `);
+        $container.append($card);
+    });
+
+    $('#deck-list-overlay').addClass('active');
+    $('body').addClass('modal-open');
+});
+
+$(document).on('click', '#close-deck-list, #deck-list-overlay', function(e) {
+    if (e.target === this || $(this).attr('id') === 'close-deck-list') {
+        $('#deck-list-overlay').removeClass('active');
+        if (!$("#image-overlay").hasClass("active") && !$('#spirit-modal').hasClass('active')) {
+            $('body').removeClass('modal-open');
         }
     }
 });
