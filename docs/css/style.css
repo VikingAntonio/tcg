@@ -3859,6 +3859,10 @@ input:checked + .slider:before {
     backdrop-filter: blur(15px);
 }
 
+#image-overlay {
+    z-index: 11001; /* Must be higher than #deck-list-overlay and #gltf-overlay */
+}
+
 .deck-list-modal {
     width: 95%;
     max-width: 1300px;
