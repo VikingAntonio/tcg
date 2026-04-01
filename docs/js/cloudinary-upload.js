@@ -16,13 +16,13 @@ const CloudinaryUpload = {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.message || 'Error al subir a Cloudinary');
+                throw new Error(error.message || 'Error al subir la imagen');
             }
 
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
-            console.error('Cloudinary Upload Error:', error);
+            console.error('Upload Error:', error);
             throw error;
         }
     }

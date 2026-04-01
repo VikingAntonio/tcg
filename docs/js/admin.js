@@ -1361,7 +1361,7 @@ $(document).ready(async function() {
             $(nameSelector).text("¡Imagen subida!").css('color', '#00ff88');
             Swal.fire({
                 title: '¡Subida Exitosa!',
-                text: 'Imagen cargada en Cloudinary',
+                text: 'Imagen cargada con éxito',
                 icon: 'success',
                 timer: 1500,
                 showConfirmButton: false,
@@ -2113,7 +2113,7 @@ async function updateCardOrder(cardIds) {
             );
         if (promises.length > 0) {
             await Promise.all(promises);
-            console.log("Orden de cartas guardado en Supabase");
+            console.log("Orden de cartas guardado con éxito");
         }
     } catch (err) {
         console.error("Error al persistir el orden de las cartas:", err);
