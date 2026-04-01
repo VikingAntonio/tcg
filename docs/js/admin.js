@@ -1050,26 +1050,28 @@ $(document).ready(async function() {
             }
             if (deckErr) throw deckErr;
 
-            // 2. Perform Batch Deletions
-            if (deckCardsToDelete.length > 0) {
-                const { error: delErr } = await _supabase
-                    .from('deck_cards')
-                    .delete()
-                    .in('id', deckCardsToDelete);
-                if (delErr) throw delErr;
-            }
+            // 2. Clear all existing cards for this deck
+            const { error: delErr } = await _supabase
+                .from('deck_cards')
+                .delete()
+                .eq('deck_id', currentDeckId);
+            if (delErr) throw delErr;
 
-            // 3. Perform Batch Upsert for Cards
+            // 3. Perform Batch Insert for all current cards
             if (localDeckCards.length > 0) {
-                const cardsToUpsert = localDeckCards.map(c => {
+                const cardsToInsert = localDeckCards.map((c, index) => {
                     const card = { ...c };
+                    // Ensure we don't send old IDs or local IDs to trigger serial generation
+                    delete card.id;
                     if (card.localId) delete card.localId;
+                    card.deck_id = currentDeckId; // Ensure correct association
+                    card.position = index; // Persist current order
                     return card;
                 });
-                const { error: upsertErr } = await _supabase
+                const { error: insErr } = await _supabase
                     .from('deck_cards')
-                    .upsert(cardsToUpsert);
-                if (upsertErr) throw upsertErr;
+                    .insert(cardsToInsert);
+                if (insErr) throw insErr;
             }
 
             // 4. Batch Save to VikingData
@@ -2097,28 +2099,19 @@ function initDeckCardsSorting() {
 }
 
 async function updateCardOrder(cardIds) {
+    // Reorder localDeckCards array to match the order of cardIds
+    const newOrderedCards = [];
     cardIds.forEach((id, index) => {
         const card = localDeckCards.find(c => (c.id == id) || (c.localId == id));
-        if (card) card.position = index;
+        if (card) {
+            card.position = index;
+            newOrderedCards.push(card);
+        }
     });
 
-    // Sort local array by the new positions
-    localDeckCards.sort((a, b) => (a.position || 0) - (b.position || 0));
+    localDeckCards = newOrderedCards;
 
-    try {
-        const promises = cardIds
-            .filter(id => !String(id).startsWith('new_'))
-            .map((id, index) =>
-                _supabase.from('deck_cards').update({ position: index }).eq('id', id)
-            );
-        if (promises.length > 0) {
-            await Promise.all(promises);
-            console.log("Orden de cartas guardado con éxito");
-        }
-    } catch (err) {
-        console.error("Error al persistir el orden de las cartas:", err);
-    }
-
+    // Re-render local UI with new order
     renderDeckCardsLocal();
 }
 
