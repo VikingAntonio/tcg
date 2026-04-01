@@ -1,0 +1,39 @@
+-- SQL para asegurar el esquema correcto de deck_cards y habilitar el ordenamiento
+-- Ejecuta este script en el Editor SQL de Supabase
+
+-- 1. Crear la tabla deck_cards si no existe (asegurando el id auto-incrementable)
+CREATE TABLE IF NOT EXISTS public.deck_cards (
+    id BIGSERIAL PRIMARY KEY,
+    deck_id BIGINT REFERENCES public.decks(id) ON DELETE CASCADE,
+    name TEXT,
+    image_url TEXT,
+    rarity TEXT,
+    expansion TEXT,
+    condition TEXT,
+    quantity INTEGER DEFAULT 1,
+    price TEXT,
+    holo_effect TEXT,
+    custom_mask_url TEXT,
+    position INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 2. Asegurar que 'position' existe en la tabla 'decks'
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decks' AND column_name='position') THEN
+        ALTER TABLE public.decks ADD COLUMN position INTEGER DEFAULT 0;
+    END IF;
+END $$;
+
+-- 3. Habilitar RLS si no está habilitado
+ALTER TABLE public.deck_cards ENABLE ROW LEVEL SECURITY;
+
+-- 4. Crear políticas básicas (asumiendo que los usuarios son propietarios de sus decks)
+-- Nota: Ajusta según tus necesidades específicas de seguridad si es necesario
+DROP POLICY IF EXISTS "Users can manage cards in their own decks" ON public.deck_cards;
+CREATE POLICY "Users can manage cards in their own decks" ON public.deck_cards
+    FOR ALL
+    USING (
+        deck_id IN (SELECT id FROM public.decks WHERE user_id = auth.uid())
+    );
