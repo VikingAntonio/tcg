@@ -875,7 +875,8 @@
 
             if (e.target === calcHeader || calcHeader.contains(e.target)) {
                 isDragging = true;
-                if (e.type === 'touchstart') e.preventDefault();
+                // Prevent text selection while dragging
+                e.preventDefault();
             }
         }
 

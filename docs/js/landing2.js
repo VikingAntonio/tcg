@@ -181,12 +181,13 @@ $(document).ready(async function() {
     async function handleRegister() {
         const email = $('#reg-email').val().trim();
         const username = $('#reg-username').val().trim();
+        const domain = $('#reg-domain').val().trim();
         const password = $('#reg-password').val().trim();
 
         if (!email || !username || !password) {
             Swal.fire({
                 title: 'Atención',
-                text: 'Por favor, completa todos los campos',
+                text: 'Por favor, completa los campos: Nombre, Correo y Contraseña',
                 icon: 'warning',
                 position: 'top'
             });
@@ -214,7 +215,10 @@ $(document).ready(async function() {
             email,
             password,
             options: {
-                data: { username }
+                data: {
+                    username: username,
+                    store_name: domain || username
+                }
             }
         });
 
