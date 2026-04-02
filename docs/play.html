@@ -509,6 +509,152 @@
             transform: scale(0.95);
         }
 
+        /* Floating Calculator Styles */
+        .floating-calc-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            color: black;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+            z-index: 999;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none;
+        }
+
+        .floating-calc-btn:hover {
+            transform: scale(1.1) rotate(15deg);
+        }
+
+        .floating-calc-container {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 280px;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 15px;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            user-select: none;
+            touch-action: none;
+        }
+
+        .floating-calc-container.active {
+            display: flex;
+            animation: calcIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes calcIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .calc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: move;
+        }
+
+        .calc-header span {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary-color);
+        }
+
+        .calc-close {
+            background: none;
+            border: none;
+            color: #ff4757;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .calc-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: right;
+            font-size: 1.5rem;
+            font-weight: 700;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            word-break: break-all;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .calc-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calc-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .calc-btn.op {
+            color: var(--primary-color);
+        }
+
+        .calc-btn.equal {
+            background: var(--primary-color);
+            color: black;
+            grid-column: span 2;
+        }
+
+        .calc-btn.clear {
+            color: #ff4757;
+        }
+
+        @media (max-width: 640px) {
+            .floating-calc-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+            }
+            .floating-calc-container {
+                right: 20px;
+                bottom: 80px;
+                width: 260px;
+            }
+        }
+
     </style>
 </head>
 <body class="play-body">
@@ -603,9 +749,164 @@
         </div>
     </div>
 
+    <!-- Floating Calculator -->
+    <button class="floating-calc-btn" onclick="toggleCalculator()" title="Calculadora">
+        <i class="fas fa-calculator"></i>
+    </button>
+
+    <div id="floating-calculator" class="floating-calc-container">
+        <div class="calc-header" id="calc-header">
+            <span>Calculadora</span>
+            <button class="calc-close" onclick="toggleCalculator()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="calc-display" id="calc-display">0</div>
+        <div class="calc-grid">
+            <button class="calc-btn clear" onclick="handleCalcInput('C')">C</button>
+            <button class="calc-btn op" onclick="handleCalcInput('/')">/</button>
+            <button class="calc-btn op" onclick="handleCalcInput('*')">×</button>
+            <button class="calc-btn op" onclick="handleCalcInput('-')">-</button>
+
+            <button class="calc-btn" onclick="handleCalcInput('7')">7</button>
+            <button class="calc-btn" onclick="handleCalcInput('8')">8</button>
+            <button class="calc-btn" onclick="handleCalcInput('9')">9</button>
+            <button class="calc-btn op" onclick="handleCalcInput('+')">+</button>
+
+            <button class="calc-btn" onclick="handleCalcInput('4')">4</button>
+            <button class="calc-btn" onclick="handleCalcInput('5')">5</button>
+            <button class="calc-btn" onclick="handleCalcInput('6')">6</button>
+            <button class="calc-btn" onclick="handleCalcInput('0')">0</button>
+
+            <button class="calc-btn" onclick="handleCalcInput('1')">1</button>
+            <button class="calc-btn" onclick="handleCalcInput('2')">2</button>
+            <button class="calc-btn" onclick="handleCalcInput('3')">3</button>
+            <button class="calc-btn equal" onclick="handleCalcInput('=')">=</button>
+        </div>
+    </div>
+
     <script>
         let lp = [8000, 8000];
         let animationRefs = [null, null];
+
+        // Calculator Logic
+        let calcExpression = '';
+        const calcDisplay = document.getElementById('calc-display');
+
+        function toggleCalculator() {
+            const calc = document.getElementById('floating-calculator');
+            calc.classList.toggle('active');
+            if (!calc.classList.contains('active')) {
+                handleCalcInput('C');
+            }
+        }
+
+        function handleCalcInput(input) {
+            if (input === 'C') {
+                calcExpression = '';
+                updateCalcDisplay('0');
+            } else if (input === '=') {
+                evaluateCalcExpression();
+            } else {
+                // Prevent starting with operators except minus
+                if (calcExpression === '' && ['+', '*', '/'].includes(input)) return;
+
+                // Prevent double operators
+                const lastChar = calcExpression.slice(-1);
+                if (['+', '-', '*', '/'].includes(lastChar) && ['+', '-', '*', '/'].includes(input)) {
+                    calcExpression = calcExpression.slice(0, -1) + input;
+                } else {
+                    calcExpression += input;
+                }
+                updateCalcDisplay(calcExpression);
+            }
+        }
+
+        function updateCalcDisplay(val) {
+            calcDisplay.innerText = val.replace(/\*/g, '×').replace(/\//g, '÷') || '0';
+        }
+
+        function evaluateCalcExpression() {
+            if (!calcExpression) return;
+            try {
+                // Use a safe evaluation (only numbers and basic operators)
+                // We'll use a simple approach for this basic calculator
+                let result = eval(calcExpression);
+                if (result === Infinity || isNaN(result)) {
+                    updateCalcDisplay('Error');
+                    calcExpression = '';
+                } else {
+                    // Limit decimals
+                    result = Math.round(result * 100) / 100;
+                    calcExpression = result.toString();
+                    updateCalcDisplay(calcExpression);
+                }
+            } catch (e) {
+                updateCalcDisplay('Error');
+                calcExpression = '';
+            }
+        }
+
+        // Draggable Logic
+        const calcContainer = document.getElementById('floating-calculator');
+        const calcHeader = document.getElementById('calc-header');
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        calcHeader.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        calcHeader.addEventListener('touchstart', dragStart, { passive: false });
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+
+        function dragStart(e) {
+            if (e.type === 'touchstart') {
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+            } else {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+            }
+
+            if (e.target === calcHeader || calcHeader.contains(e.target)) {
+                isDragging = true;
+                if (e.type === 'touchstart') e.preventDefault();
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                if (e.type === 'touchmove') {
+                    e.preventDefault();
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                } else {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                }
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                setTranslate(currentX, currentY, calcContainer);
+            }
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+        }
+
+        function dragEnd() {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+
         const diceIcons = [
             'fa-dice-one', 'fa-dice-two', 'fa-dice-three',
             'fa-dice-four', 'fa-dice-five', 'fa-dice-six'
