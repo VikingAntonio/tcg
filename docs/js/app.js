@@ -152,9 +152,16 @@ window.handleDeepLinking = function() {
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             $(targetEl).addClass('shared-highlight');
 
-            // If it's a wishlist item specifically, maybe open it?
+            // Automatically open details for specific shared items
             if (params.has('wishlistId') && $(targetEl).hasClass('card-slot')) {
                 openCardModal($(targetEl));
+            } else if (params.has('deckId')) {
+                // Trigger "Modo Lista" for shared deck
+                const $deckBtn = $(targetEl).find('.btn-toggle-deck-view');
+                if ($deckBtn.length) $deckBtn.click();
+            } else if (params.has('eventId')) {
+                // Open event details
+                showGeneralEventDetails(params.get('eventId'));
             }
 
             // Remove highlighting after animation
