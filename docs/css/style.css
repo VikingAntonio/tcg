@@ -4022,8 +4022,23 @@ input:checked + .slider:before {
     top: 15px;
     right: 15px;
     z-index: 10;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--primary-color);
+    color: #000;
     backdrop-filter: blur(5px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    opacity: 1 !important;
+    display: flex !important;
+}
+
+/* Ensure share buttons are always visible on mobile */
+@media (max-width: 768px) {
+    .btn-share-item {
+        opacity: 1 !important;
+        display: flex !important;
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
 }
 
 .share-modal-content {
@@ -4068,12 +4083,14 @@ input:checked + .slider:before {
 
 /* Deep-link Highlight */
 @keyframes sharedHighlight {
-    0% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); }
-    50% { outline: 4px solid var(--primary-color); box-shadow: 0 0 30px var(--primary-color); }
-    100% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); }
+    0% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); filter: brightness(1); }
+    50% { outline: 6px solid var(--primary-color); box-shadow: 0 0 50px var(--primary-color); filter: brightness(1.2); }
+    100% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); filter: brightness(1); }
 }
 
 .shared-highlight {
     animation: sharedHighlight 2s ease-in-out 3;
     border-color: var(--primary-color) !important;
+    position: relative;
+    z-index: 1000; /* Ensure it's above other elements during highlight */
 }
