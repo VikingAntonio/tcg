@@ -51,6 +51,20 @@ const hideLoading = window.hideLoading;
 // --- Sharing System Functions ---
 window.shareQR = null;
 
+window.clearShareFilters = function() {
+    const url = new URL(window.location);
+    url.searchParams.delete('albumId');
+    url.searchParams.delete('deckId');
+    url.searchParams.delete('productId');
+    url.searchParams.delete('preorderId');
+    url.searchParams.delete('eventId');
+    window.history.replaceState({}, '', url);
+
+    // Refresh current view
+    const view = url.searchParams.get('view') || 'albums';
+    switchView(view);
+};
+
 window.openShareModal = function(title, type, id) {
     const baseUrl = window.location.origin + window.location.pathname;
     const identifier = window.currentStoreIdentifier || '';
@@ -1317,13 +1331,22 @@ function loadPublicPreorders() {
 
     $('#preorders-container').html('<div class="loading">Cargando preventas...</div>');
 
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('preorderId');
+
     try {
-        const { data: preorders, error } = await _supabase
+        let query = _supabase
             .from('preorders')
             .select('*')
             .eq('user_id', userId)
             .eq('is_public', true)
             .order('created_at', { ascending: false });
+
+        if (filterId) {
+            query = query.eq('id', filterId);
+        }
+
+        const { data: preorders, error } = await query;
 
         if (error) throw error;
 
@@ -1333,6 +1356,9 @@ function loadPublicPreorders() {
         }
 
         $('#preorders-container').empty();
+        if (filterId && preorders && preorders.length > 0) {
+            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todas las Preventas</button></div>').appendTo('#preorders-container');
+        }
         preorders.forEach(preorder => {
             const $item = $(`
                 <div class="deck-public-item sealed-product-item" id="preorder-item-${preorder.id}">
@@ -1447,12 +1473,20 @@ function loadPublicAlbums(userId) {
     return new Promise(async (resolve) => {
     const isAlbumsView = $('.nav-btn[data-view="albums"]').hasClass('active');
     if (isAlbumsView) showLoading('Cargando interfaz...');
+
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('albumId');
+
     try {
         let query = _supabase
             .from('albums')
             .select('*')
             .eq('user_id', userId)
             .order('position', { ascending: true });
+
+        if (filterId) {
+            query = query.eq('id', filterId);
+        }
 
         let { data: albums, error } = await query;
 
@@ -1486,6 +1520,9 @@ function loadPublicAlbums(userId) {
         }
 
         $('#albums-container').empty();
+        if (filterId && albums && albums.length > 0) {
+            $('<div style="margin-bottom: 30px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Toda la Colección</button></div>').appendTo('#albums-container');
+        }
         await Promise.all(albums.map(album => renderAlbum(album)));
     } catch (e) {
         console.error("Error in loadPublicAlbums:", e);
@@ -1503,6 +1540,9 @@ function loadPublicDecks() {
     if (!identifier) return;
 
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
+
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('deckId');
 
     try {
         let user;
@@ -1526,6 +1566,10 @@ function loadPublicDecks() {
             .eq('user_id', user.id)
             .order('position', { ascending: true })
             .order('position', { foreignTable: 'deck_cards', ascending: true });
+
+        if (filterId) {
+            deckQuery = deckQuery.eq('id', filterId);
+        }
 
         let { data: decks, error } = await deckQuery;
 
@@ -1556,6 +1600,9 @@ function loadPublicDecks() {
         }
 
         $('#decks-container').empty();
+        if (filterId && decks && decks.length > 0) {
+            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Decks</button></div>').appendTo('#decks-container');
+        }
         if (decks.length === 0) {
             $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
             return;
@@ -2012,13 +2059,22 @@ function loadPublicSealed() {
 
     $('#sealed-container').html('<div class="loading">Cargando productos sellados...</div>');
 
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('productId');
+
     try {
-        const { data: products, error } = await _supabase
+        let query = _supabase
             .from('sealed_products')
             .select('*')
             .eq('user_id', userId)
             .eq('is_public', true)
             .order('created_at', { ascending: false });
+
+        if (filterId) {
+            query = query.eq('id', filterId);
+        }
+
+        const { data: products, error } = await query;
 
         if (error) throw error;
 
@@ -2028,6 +2084,9 @@ function loadPublicSealed() {
         }
 
         $('#sealed-container').empty();
+        if (filterId && products && products.length > 0) {
+            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Productos</button></div>').appendTo('#sealed-container');
+        }
         products.forEach(product => {
             const $item = $(`
                 <div class="deck-public-item sealed-product-item" id="product-item-${product.id}">
@@ -2096,8 +2155,17 @@ function loadPublicEvents() {
 
     $('#events-container').html('<div class="loading">Cargando...</div>');
 
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('eventId');
+
     try {
-        const { data: events, error } = await _supabase.from('events').select('*').eq('user_id', userId).eq('is_public', true).order('event_date', { ascending: true });
+        let query = _supabase.from('events').select('*').eq('user_id', userId).eq('is_public', true).order('event_date', { ascending: true });
+
+        if (filterId) {
+            query = query.eq('id', filterId);
+        }
+
+        const { data: events, error } = await query;
 
         if (error) throw error;
 
@@ -2107,6 +2175,9 @@ function loadPublicEvents() {
         }
 
         $('#events-container').empty();
+        if (filterId && events && events.length > 0) {
+            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Eventos</button></div>').appendTo('#events-container');
+        }
         events.forEach((item, index) => {
             const now = new Date();
             const eventDate = item.event_date ? new Date(item.event_date) : null;
