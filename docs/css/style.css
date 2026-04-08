@@ -3995,49 +3995,75 @@ input:checked + .slider:before {
 }
 
 .btn-share-item {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
+    background: #00d2ff !important;
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    color: #000 !important;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     margin-left: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    opacity: 1 !important;
 }
 
 .btn-share-item:hover {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    color: #000;
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 0 15px var(--primary-color);
+    background: #fff !important;
+    border-color: #00d2ff !important;
+    color: #00d2ff !important;
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5);
 }
 
 .btn-share-floating {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 10;
-    background: var(--primary-color);
-    color: #000;
+    position: absolute !important;
+    top: 15px !important;
+    right: 15px !important;
+    z-index: 100 !important;
+    background: #00d2ff !important;
+    color: #000 !important;
     backdrop-filter: blur(5px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
     opacity: 1 !important;
     display: flex !important;
 }
 
-/* Ensure share buttons are always visible on mobile */
+/* Ensure share buttons are always visible on mobile and aligned */
 @media (max-width: 768px) {
     .btn-share-item {
         opacity: 1 !important;
         display: flex !important;
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
+        width: 42px;
+        height: 42px;
+        font-size: 1.2rem;
+    }
+
+    .public-album-header {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 10px 15px !important;
+    }
+
+    .btn-share-floating {
+        top: 10px !important;
+        right: 10px !important;
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .share-modal-content {
+        padding: 20px 15px !important;
+        width: 95% !important;
+    }
+
+    #share-qr-code canvas {
+        max-width: 180px !important;
+        height: auto !important;
     }
 }
 
@@ -4081,16 +4107,23 @@ input:checked + .slider:before {
 .social-share-btn.fb { background: #1877f2; }
 .social-share-btn.ms { background: #006aff; }
 
-/* Deep-link Highlight */
+/* Deep-link Highlight - Professional Effect */
 @keyframes sharedHighlight {
-    0% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); filter: brightness(1); }
-    50% { outline: 6px solid var(--primary-color); box-shadow: 0 0 50px var(--primary-color); filter: brightness(1.2); }
-    100% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); filter: brightness(1); }
+    0% { transform: scale(1); outline: 0px solid #00d2ff; box-shadow: 0 0 0px rgba(0,210,255,0); }
+    10% { transform: scale(1.02); outline: 4px solid #00d2ff; box-shadow: 0 0 40px rgba(0,210,255,0.6); }
+    20% { transform: scale(1); outline: 2px solid #00d2ff; box-shadow: 0 0 20px rgba(0,210,255,0.3); }
+    100% { transform: scale(1); outline: 0px solid #00d2ff; box-shadow: 0 0 0px rgba(0,210,255,0); }
 }
 
 .shared-highlight {
-    animation: sharedHighlight 2s ease-in-out 3;
-    border-color: var(--primary-color) !important;
+    animation: sharedHighlight 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    border-color: #00d2ff !important;
     position: relative;
-    z-index: 1000; /* Ensure it's above other elements during highlight */
+    z-index: 5000;
+}
+
+@media (max-width: 768px) {
+    .shared-highlight {
+        animation: sharedHighlight 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
 }
