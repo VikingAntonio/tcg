@@ -58,14 +58,17 @@ window.clearShareFilters = function() {
     url.searchParams.delete('productId');
     url.searchParams.delete('preorderId');
     url.searchParams.delete('eventId');
+    url.searchParams.delete('wishlistId');
     window.history.replaceState({}, '', url);
+
+    $('body').removeClass('focus-mode-active');
 
     // Refresh current view
     const view = url.searchParams.get('view') || 'albums';
     switchView(view);
 };
 
-window.openShareModal = function(title, type, id) {
+window.openShareModal = function(title, type, id, extraId) {
     const baseUrl = window.location.origin + window.location.pathname;
     const identifier = window.currentStoreIdentifier || '';
 
@@ -74,6 +77,7 @@ window.openShareModal = function(title, type, id) {
     if (id !== null && id !== undefined) {
         if (type === 'wishlist') {
             shareUrl += `&slot=${id}`;
+            if (extraId) shareUrl += `&wishlistId=${extraId}`;
         } else {
             const paramName = type === 'albums' ? 'albumId' :
                             type === 'decks' ? 'deckId' :
@@ -111,21 +115,35 @@ window.openShareModal = function(title, type, id) {
 window.handleDeepLinking = function() {
     const params = new URLSearchParams(window.location.search);
     let targetEl = null;
+    let isDeepLink = false;
 
     if (params.has('albumId')) {
         targetEl = document.getElementById(`album-container-${params.get('albumId')}`);
+        isDeepLink = true;
     } else if (params.has('deckId')) {
         targetEl = document.getElementById(`deck-item-${params.get('deckId')}`);
+        isDeepLink = true;
     } else if (params.has('productId')) {
         targetEl = document.getElementById(`product-item-${params.get('productId')}`);
+        isDeepLink = true;
     } else if (params.has('preorderId')) {
         targetEl = document.getElementById(`preorder-item-${params.get('preorderId')}`);
+        isDeepLink = true;
     } else if (params.has('eventId')) {
         targetEl = document.getElementById(`event-${params.get('eventId')}`);
+        isDeepLink = true;
+    } else if (params.has('wishlistId')) {
+        targetEl = document.getElementById(`wishlist-item-${params.get('wishlistId')}`);
+        isDeepLink = true;
     } else if (params.has('slot')) {
         const slotIdx = params.get('slot');
         $('.wishlist-tab[data-index="' + slotIdx + '"]').click();
         targetEl = document.getElementById('wishlist-container');
+        isDeepLink = true;
+    }
+
+    if (isDeepLink) {
+        $('body').addClass('focus-mode-active');
     }
 
     if (targetEl) {
@@ -134,16 +152,31 @@ window.handleDeepLinking = function() {
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             $(targetEl).addClass('shared-highlight');
 
+            // If it's a wishlist item specifically, maybe open it?
+            if (params.has('wishlistId') && $(targetEl).hasClass('card-slot')) {
+                openCardModal($(targetEl));
+            }
+
             // Remove highlighting after animation
             setTimeout(() => {
                 $(targetEl).removeClass('shared-highlight');
             }, 6000);
-        }, 300);
+        }, 500);
     }
 };
 
 $(document).ready(async function() {
     // --- Share Modal Close & Actions ---
+    $(document).on('click', '#btn-share-card-modal', function() {
+        if (!window.currentCardData || !window.currentCardData.id) return;
+        const name = window.currentCardData.name;
+        const id = window.currentCardData.id;
+        const type = window.currentCardData.type || 'wishlist'; // Default to wishlist if type not set
+        const slot = window.currentCardData.slot || 0;
+
+        window.openShareModal(name, type, slot, id);
+    });
+
     $('#close-share-modal, #share-overlay').on('click', function(e) {
         if (e.target === this || $(this).hasClass('close-btn')) {
             $('#share-overlay').removeClass('active');
@@ -1095,12 +1128,17 @@ async function openCardModal($slot) {
         }
     }
 
-    // Store current card data for cart
+    // Store current card data for cart and sharing
     window.currentCardData = {
-        name, image_url: imgSrc, rarity, expansion, condition, price, quantity,
+        id, name, image_url: imgSrc, rarity, expansion, condition, price, quantity,
+        type: isWishlist ? 'wishlist' : 'albums',
+        slot: isWishlist ? window.currentWishlistTab : null,
         whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
         messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
     };
+
+    if (isWishlist) $('#btn-share-card-modal').show();
+    else $('#btn-share-card-modal').hide();
 
     $("#image-overlay").addClass("active");
     $("body").addClass("modal-open");
@@ -1327,7 +1365,7 @@ function loadPublicPreorders() {
             window.currentStoreId = userId;
         }
     }
-    if (!userId) return;
+    if (!userId) { resolve(); return; }
 
     $('#preorders-container').html('<div class="loading">Cargando preventas...</div>');
 
@@ -1357,11 +1395,14 @@ function loadPublicPreorders() {
 
         $('#preorders-container').empty();
         if (filterId && preorders && preorders.length > 0) {
-            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todas las Preventas</button></div>').appendTo('#preorders-container');
+            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todas las Preventas</button></div>').appendTo('#preorders-container');
         }
         preorders.forEach(preorder => {
             const $item = $(`
-                <div class="deck-public-item sealed-product-item" id="preorder-item-${preorder.id}">
+                <div class="deck-public-item sealed-product-item" id="preorder-item-${preorder.id}" style="position: relative;">
+                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
                     <div class="product-image-container">
                         <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
                              alt="${preorder.name}" class="sealed-product-img">
@@ -1471,6 +1512,7 @@ function initFloatingCompanion() {
 
 function loadPublicAlbums(userId) {
     return new Promise(async (resolve) => {
+    if (!userId) { resolve(); return; }
     const isAlbumsView = $('.nav-btn[data-view="albums"]').hasClass('active');
     if (isAlbumsView) showLoading('Cargando interfaz...');
 
@@ -1521,7 +1563,7 @@ function loadPublicAlbums(userId) {
 
         $('#albums-container').empty();
         if (filterId && albums && albums.length > 0) {
-            $('<div style="margin-bottom: 30px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Toda la Colección</button></div>').appendTo('#albums-container');
+            $('<div class="focus-mode-exception" style="margin-bottom: 30px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Toda la Colección</button></div>').appendTo('#albums-container');
         }
         await Promise.all(albums.map(album => renderAlbum(album)));
     } catch (e) {
@@ -1537,7 +1579,7 @@ function loadPublicAlbums(userId) {
 function loadPublicDecks() {
     return new Promise(async (resolve) => {
     const identifier = window.currentStoreIdentifier;
-    if (!identifier) return;
+    if (!identifier) { resolve(); return; }
 
     $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
@@ -1554,6 +1596,7 @@ function loadPublicDecks() {
         }
 
         if (!user) {
+            resolve();
             return;
         }
 
@@ -1601,7 +1644,7 @@ function loadPublicDecks() {
 
         $('#decks-container').empty();
         if (filterId && decks && decks.length > 0) {
-            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Decks</button></div>').appendTo('#decks-container');
+            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Decks</button></div>').appendTo('#decks-container');
         }
         if (decks.length === 0) {
             $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
@@ -2055,7 +2098,7 @@ function loadPublicSealed() {
             window.currentStoreId = userId;
         }
     }
-    if (!userId) return;
+    if (!userId) { resolve(); return; }
 
     $('#sealed-container').html('<div class="loading">Cargando productos sellados...</div>');
 
@@ -2085,11 +2128,14 @@ function loadPublicSealed() {
 
         $('#sealed-container').empty();
         if (filterId && products && products.length > 0) {
-            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Productos</button></div>').appendTo('#sealed-container');
+            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Productos</button></div>').appendTo('#sealed-container');
         }
         products.forEach(product => {
             const $item = $(`
-                <div class="deck-public-item sealed-product-item" id="product-item-${product.id}">
+                <div class="deck-public-item sealed-product-item" id="product-item-${product.id}" style="position: relative;">
+                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${product.name.replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir Producto">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
                     <div class="product-image-container">
                         <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
                              alt="${product.name}" class="sealed-product-img">
@@ -2151,7 +2197,7 @@ function loadPublicEvents() {
             window.currentStoreId = userId;
         }
     }
-    if (!userId) return;
+    if (!userId) { resolve(); return; }
 
     $('#events-container').html('<div class="loading">Cargando...</div>');
 
@@ -2176,7 +2222,7 @@ function loadPublicEvents() {
 
         $('#events-container').empty();
         if (filterId && events && events.length > 0) {
-            $('<div style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Eventos</button></div>').appendTo('#events-container');
+            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Eventos</button></div>').appendTo('#events-container');
         }
         events.forEach((item, index) => {
             const now = new Date();
@@ -2247,14 +2293,14 @@ function loadPublicWishlist() {
         }
     }
 
-    if (!userId) return;
+    if (!userId) { resolve(); return; }
 
     // Show/Hide owner controls
     const isOwner = window.currentUserId === window.currentStoreId;
 
     // Share button for current slot
     if (!$('#btn-share-wishlist').length) {
-        $('<button id="btn-share-wishlist" class="btn btn-sm" style="border-radius: 50px; background: rgba(255,255,255,0.1);"><i class="fas fa-share-alt"></i> Compartir Slot</button>')
+        $('<button id="btn-share-wishlist" class="btn btn-sm" style="border-radius: 50px; background: rgba(255,255,255,0.1); margin-right: 10px;"><i class="fas fa-share-alt"></i> Compartir Lista</button>')
             .insertAfter('#btn-owner-add-wishlist')
             .on('click', () => {
                 const activeSlot = $('.wishlist-tab.active').data('index') || 0;
@@ -2298,14 +2344,24 @@ function loadPublicWishlist() {
     $('#wishlist-container').removeClass('decks-grid').addClass('wishlist-grid');
     $('#wishlist-container').html('<div class="loading">Cargando lista de deseos...</div>');
 
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('wishlistId');
+
     try {
         const listIdx = window.currentWishlistTab || 0;
-        const { data: wishlist, error } = await _supabase
+        let query = _supabase
             .from('wishlist')
             .select('*')
             .eq('user_id', userId)
-            .eq('list_index', listIdx)
             .order('created_at', { ascending: false });
+
+        if (filterId) {
+            query = query.eq('id', filterId);
+        } else {
+            query = query.eq('list_index', listIdx);
+        }
+
+        const { data: wishlist, error } = await query;
 
         let finalWishlist = wishlist;
         if (error) {
@@ -2316,14 +2372,17 @@ function loadPublicWishlist() {
         }
 
         if (!finalWishlist || finalWishlist.length === 0) {
-            $('#wishlist-container').html('<div class="empty">Este slot está vacío.</div>');
+            $('#wishlist-container').html('<div class="empty">No se encontró el elemento o la lista está vacía.</div>');
             return;
         }
 
         $('#wishlist-container').empty();
+        if (filterId && finalWishlist && finalWishlist.length > 0) {
+            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Lista Completa</button></div>').appendTo('#wishlist-container');
+        }
         finalWishlist.forEach(item => {
             const $el = $(`
-                <div class="wishlist-card-item card-slot"
+                <div class="wishlist-card-item card-slot" id="wishlist-item-${item.id}"
                      data-id="${item.id}"
                      data-name="${item.name}"
                      data-rarity="${item.rarity || '-'}"
@@ -2334,6 +2393,9 @@ function loadPublicWishlist() {
                      data-mask="${item.custom_mask_url || ''}"
                      data-3d="${item.use_3d !== false}"
                      style="${item.obtained ? 'opacity: 0.5;' : ''}">
+                    <button class="btn-share-item btn-share-floating" onclick="event.stopPropagation(); window.openShareModal('${item.name.replace(/'/g, "\\'")}', 'wishlist', '${item.list_index}', '${item.id}')" title="Compartir Carta">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
                     <h3>${item.name}</h3>
                     <img src="${item.image_url}" alt="${item.name}">
                     ${item.obtained ? '<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>' : ''}

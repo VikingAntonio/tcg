@@ -2763,6 +2763,76 @@ input:checked + .slider:before {
     }
 }
 
+/* Focus Mode - Shows only the shared item */
+body.focus-mode-active .top-nav,
+body.focus-mode-active .view-header,
+body.focus-mode-active header,
+body.focus-mode-active .section-title,
+body.focus-mode-active .loading-screen,
+body.focus-mode-active footer {
+    display: none !important;
+}
+
+/* Ensure containers are visible but children are hidden except the focused one */
+body.focus-mode-active .decks-grid > div:not(.shared-highlight),
+body.focus-mode-active .wishlist-grid > div:not(.shared-highlight),
+body.focus-mode-active .public-album-item:not(.shared-highlight) {
+    display: none !important;
+}
+
+/* Specific fix for deep-linked albums */
+body.focus-mode-active .public-album-item.shared-highlight {
+    display: flex !important;
+    margin-top: 50px;
+}
+
+.btn-close-focus {
+    position: fixed;
+    top: 20px;
+    right: 20px; /* Changed to right for better thumb reach */
+    z-index: 9999;
+    background: rgba(0, 210, 255, 0.2);
+    color: #00d2ff;
+    border: 2px solid #00d2ff;
+    padding: 12px 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    backdrop-filter: blur(15px);
+    font-weight: 600;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+    transition: all 0.3s ease;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
+body.focus-mode-active .btn-close-focus {
+    display: flex !important;
+}
+
+.btn-close-focus:hover {
+    background: #00d2ff;
+    color: #000;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 25px rgba(0, 210, 255, 0.5);
+}
+
+/* Animations for focus mode items */
+body.focus-mode-active .card-item,
+body.focus-mode-active .deck-card,
+body.focus-mode-active .sealed-item,
+body.focus-mode-active .event-card {
+    animation: focusAppear 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes focusAppear {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 /* Business Card Modal */
 .business-overlay {
     display: none;
@@ -3995,28 +4065,37 @@ input:checked + .slider:before {
 }
 
 .btn-share-item {
-    background: #00d2ff !important;
-    border: 2px solid rgba(255, 255, 255, 0.8) !important;
-    color: #000 !important;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(0, 210, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    border: 2px solid #00d2ff !important;
+    color: #00d2ff !important;
+    width: 40px;
+    height: 40px;
+    border-radius: 50% !important; /* Perfect circle */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     margin-left: auto;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2);
     opacity: 1 !important;
+    line-height: 0 !important; /* Fix crooked icons */
+}
+
+.btn-share-item i {
+    font-size: 1.1rem;
+    display: block;
+    margin: 0;
+    line-height: 1;
 }
 
 .btn-share-item:hover {
-    background: #fff !important;
-    border-color: #00d2ff !important;
-    color: #00d2ff !important;
-    transform: scale(1.1) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5);
+    background: #00d2ff !important;
+    color: #000 !important;
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
 }
 
 .btn-share-floating {
@@ -4024,12 +4103,7 @@ input:checked + .slider:before {
     top: 15px !important;
     right: 15px !important;
     z-index: 100 !important;
-    background: #00d2ff !important;
-    color: #000 !important;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
-    opacity: 1 !important;
-    display: flex !important;
+    margin: 0 !important;
 }
 
 /* Ensure share buttons are always visible on mobile and aligned */
@@ -4037,9 +4111,8 @@ input:checked + .slider:before {
     .btn-share-item {
         opacity: 1 !important;
         display: flex !important;
-        width: 42px;
-        height: 42px;
-        font-size: 1.2rem;
+        width: 44px;
+        height: 44px;
     }
 
     .public-album-header {
