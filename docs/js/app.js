@@ -48,7 +48,112 @@ window.hideLoading = function() {
 const showLoading = window.showLoading;
 const hideLoading = window.hideLoading;
 
+// --- Sharing System Functions ---
+window.shareQR = null;
+
+window.openShareModal = function(title, type, id) {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const identifier = window.currentStoreIdentifier || '';
+
+    // Build direct link
+    let shareUrl = `${baseUrl}?id=${encodeURIComponent(identifier)}&view=${type}`;
+    if (id !== null && id !== undefined) {
+        if (type === 'wishlist') {
+            shareUrl += `&slot=${id}`;
+        } else {
+            const paramName = type === 'albums' ? 'albumId' :
+                            type === 'decks' ? 'deckId' :
+                            type === 'sealed' ? 'productId' :
+                            type === 'preorders' ? 'preorderId' : 'eventId';
+            shareUrl += `&${paramName}=${id}`;
+        }
+    }
+
+    $('#share-modal-title').text(`Compartir ${title}`);
+    $('#share-link-input').val(shareUrl);
+    $('#share-overlay').addClass('active');
+
+    // Generate QR Code
+    $('#share-qr-code').empty();
+    window.shareQR = new QRCode(document.getElementById("share-qr-code"), {
+        text: shareUrl,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Setup Social Links
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(`¡Mira esto en VikingTCG: ${title}!`);
+
+    $('#share-wa').off('click').on('click', () => window.open(`https://wa.me/?text=${encodedText}%20${encodedUrl}`, '_blank'));
+    $('#share-tg').off('click').on('click', () => window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank'));
+    $('#share-fb').off('click').on('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank'));
+    $('#share-ms').off('click').on('click', () => window.open(`fb-messenger://share/?link=${encodedUrl}`, '_blank'));
+};
+
+window.handleDeepLinking = function() {
+    const params = new URLSearchParams(window.location.search);
+    let targetEl = null;
+
+    if (params.has('albumId')) {
+        targetEl = document.getElementById(`album-container-${params.get('albumId')}`);
+    } else if (params.has('deckId')) {
+        targetEl = document.getElementById(`deck-item-${params.get('deckId')}`);
+    } else if (params.has('productId')) {
+        targetEl = document.getElementById(`product-item-${params.get('productId')}`);
+    } else if (params.has('preorderId')) {
+        targetEl = document.getElementById(`preorder-item-${params.get('preorderId')}`);
+    } else if (params.has('eventId')) {
+        targetEl = document.getElementById(`event-${params.get('eventId')}`);
+    } else if (params.has('slot')) {
+        const slotIdx = params.get('slot');
+        $('.wishlist-tab[data-index="' + slotIdx + '"]').click();
+        targetEl = document.getElementById('wishlist-container');
+    }
+
+    if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $(targetEl).addClass('shared-highlight');
+        setTimeout(() => {
+            $(targetEl).removeClass('shared-highlight');
+        }, 5000);
+    }
+};
+
 $(document).ready(async function() {
+    // --- Share Modal Close & Actions ---
+    $('#close-share-modal, #share-overlay').on('click', function(e) {
+        if (e.target === this || $(this).hasClass('close-btn')) {
+            $('#share-overlay').removeClass('active');
+        }
+    });
+
+    $('#btn-copy-share-link').on('click', function() {
+        const input = document.getElementById('share-link-input');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value);
+
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        $btn.html('<i class="fas fa-check"></i>').css('background', '#22c55e');
+        setTimeout(() => {
+            $btn.html(originalHtml).css('background', '');
+        }, 2000);
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Enlace copiado',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    });
+
     await checkSession();
     initTheme();
 
@@ -147,10 +252,16 @@ $(document).ready(async function() {
 
     // Explicitly call the initial loader
     if (initialView === 'albums' || !initialView) {
-        if (window.currentStoreId) loadPublicAlbums(window.currentStoreId);
+        if (window.currentStoreId) {
+            loadPublicAlbums(window.currentStoreId).then(() => {
+                setTimeout(window.handleDeepLinking, 800);
+            });
+        }
         else hideLoading();
     } else {
-        switchView(initialView);
+        switchView(initialView).then(() => {
+            setTimeout(window.handleDeepLinking, 800);
+        });
     }
 
     $('#spirit-btn').click(function() {
@@ -1218,7 +1329,7 @@ async function loadPublicPreorders() {
         $('#preorders-container').empty();
         preorders.forEach(preorder => {
             const $item = $(`
-                <div class="deck-public-item sealed-product-item">
+                <div class="deck-public-item sealed-product-item" id="preorder-item-${preorder.id}">
                     <div class="product-image-container">
                         <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
                              alt="${preorder.name}" class="sealed-product-img">
@@ -1226,9 +1337,14 @@ async function loadPublicPreorders() {
                     <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center;">${preorder.name}</h3>
                     <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem;">${preorder.price || 'Consultar'}</div>
                     <div style="color: #ff4757; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px;">Límite: ${preorder.payment_deadline || '-'}</div>
-                    <button class="btn btn-add-preorder-cart" style="width: 100%;">
-                        <i class="fas fa-cart-plus"></i> Agregar al Carrito
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-add-preorder-cart" style="flex: 1;">
+                            <i class="fas fa-cart-plus"></i>
+                        </button>
+                        <button class="btn btn-secondary" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
                 </div>
             `);
 
@@ -1464,6 +1580,9 @@ async function loadPublicDecks() {
                         <h3 style="margin-bottom: 5px;">${deck.name}</h3>
                         ${priceDisplay}
                     </div>
+                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" title="Compartir Deck">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
 
                     <div class="container deck-carousel-container">
                         <div class="swiper swiperyg ${deckId}">
@@ -1670,9 +1789,12 @@ function loadPageImages($album, page) {
 function renderAlbum(album) {
     return new Promise(async (resolve) => {
     const $albumContainer = $(`
-        <div class="public-album-item">
+        <div class="public-album-item" id="album-container-${album.id}">
             <div class="public-album-header">
                 <i class="fas fa-book-open"></i> ${album.title}
+                <button class="btn-share-item" onclick="openShareModal('${album.title.replace(/'/g, "\\'")}', 'albums', '${album.id}')" title="Compartir Álbum">
+                    <i class="fas fa-share-alt"></i>
+                </button>
             </div>
             <div class="album-wrapper">
                 <div id="album-${album.id}" class="album"></div>
@@ -1891,16 +2013,21 @@ async function loadPublicSealed() {
         $('#sealed-container').empty();
         products.forEach(product => {
             const $item = $(`
-                <div class="deck-public-item sealed-product-item">
+                <div class="deck-public-item sealed-product-item" id="product-item-${product.id}">
                     <div class="product-image-container">
                         <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
                              alt="${product.name}" class="sealed-product-img">
                     </div>
                     <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center;">${product.name}</h3>
                     <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px;">${product.price || 'Consultar'}</div>
-                    <button class="btn btn-add-sealed-cart" style="width: 100%;">
-                        <i class="fas fa-cart-plus"></i> Agregar al Carrito
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-add-sealed-cart" style="flex: 1;">
+                            <i class="fas fa-cart-plus"></i>
+                        </button>
+                        <button class="btn btn-secondary" onclick="openShareModal('${product.name.replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
                 </div>
             `);
 
@@ -1981,7 +2108,10 @@ async function loadPublicEvents() {
 
             const $card = $(`
                 <div id="${itemId}" class="deck-public-item sealed-product-item public-event-card ${typeClass}"
-                     style="${isPast ? 'opacity: 0.6; filter: grayscale(1);' : ''}; animation-delay: ${index * 0.1}s;">
+                     style="${isPast ? 'opacity: 0.6; filter: grayscale(1);' : ''}; animation-delay: ${index * 0.1}s; position: relative;">
+                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${item.name.replace(/'/g, "\\'")}', 'events', '${item.id}')" title="Compartir Evento">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
                     ${item.image_url ? `
                     <div class="product-image-container">
                         <img src="${item.image_url}" class="sealed-product-img">
@@ -2027,6 +2157,17 @@ async function loadPublicWishlist() {
 
     // Show/Hide owner controls
     const isOwner = window.currentUserId === window.currentStoreId;
+
+    // Share button for current slot
+    if (!$('#btn-share-wishlist').length) {
+        $('<button id="btn-share-wishlist" class="btn btn-sm" style="border-radius: 50px; background: rgba(255,255,255,0.1);"><i class="fas fa-share-alt"></i> Compartir Slot</button>')
+            .insertAfter('#btn-owner-add-wishlist')
+            .on('click', () => {
+                const activeSlot = $('.wishlist-tab.active').data('index') || 0;
+                window.openShareModal(`Buscamos - Slot ${parseInt(activeSlot)+1}`, 'wishlist', activeSlot);
+            });
+    }
+
     if (isOwner) {
         $('#btn-owner-add-wishlist').show();
         // Owners see all tabs

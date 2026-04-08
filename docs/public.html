@@ -213,6 +213,33 @@
         </div>
     </div>
 
+    <!-- Share Modal -->
+    <div id="share-overlay" class="overlay">
+        <div class="overlay-content share-modal-content">
+            <span id="close-share-modal" class="close-btn">&times;</span>
+            <h2 id="share-modal-title">Compartir</h2>
+
+            <div id="share-qr-container" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <div id="share-qr-code"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Enlace Directo</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="share-link-input" readonly>
+                    <button id="btn-copy-share-link" class="btn btn-sm" style="white-space: nowrap;"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="social-share-grid">
+                <button class="social-share-btn wa" id="share-wa"><i class="fab fa-whatsapp"></i></button>
+                <button class="social-share-btn tg" id="share-tg"><i class="fab fa-telegram-plane"></i></button>
+                <button class="social-share-btn fb" id="share-fb"><i class="fab fa-facebook-f"></i></button>
+                <button class="social-share-btn ms" id="share-ms"><i class="fab fa-facebook-messenger"></i></button>
+            </div>
+        </div>
+    </div>
+
     <div id="image-overlay" class="overlay">
         <div class="overlay-content">
             <span id="close-btn">&times;</span>
@@ -339,6 +366,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/companion-bot.js"></script>
     <script src="js/ztext.js"></script>

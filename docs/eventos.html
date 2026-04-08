@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
 </head>
@@ -24,6 +25,33 @@
 
         <div id="event-container" class="album-list">
             <div class="loading">Cargando eventos...</div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-overlay" class="overlay">
+        <div class="overlay-content share-modal-content">
+            <span id="close-share-modal" class="close-btn" onclick="$('#share-overlay').removeClass('active')">&times;</span>
+            <h2 id="share-modal-title">Compartir</h2>
+
+            <div id="share-qr-container" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <div id="share-qr-code"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Enlace Directo</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="share-link-input" readonly>
+                    <button id="btn-copy-share-link" class="btn btn-sm" style="white-space: nowrap;"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="social-share-grid">
+                <button class="social-share-btn wa" id="share-wa"><i class="fab fa-whatsapp"></i></button>
+                <button class="social-share-btn tg" id="share-tg"><i class="fab fa-telegram-plane"></i></button>
+                <button class="social-share-btn fb" id="share-fb"><i class="fab fa-facebook-f"></i></button>
+                <button class="social-share-btn ms" id="share-ms"><i class="fab fa-facebook-messenger"></i></button>
+            </div>
         </div>
     </div>
 

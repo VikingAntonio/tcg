@@ -160,9 +160,10 @@ async function loadProducts() {
                     <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-top:auto;">
-                    <button class="btn btn-edit" data-id="${product.id}">Editar</button>
-                    <button class="btn btn-danger btn-delete" data-id="${product.id}">Eliminar</button>
+                <div style="display:flex; gap:10px; margin-top:auto; flex-wrap: wrap;">
+                    <button class="btn btn-edit" data-id="${product.id}" style="flex: 1;">Editar</button>
+                    <button class="btn btn-secondary" onclick="openShareModal('${product.name.replace(/'/g, "\\'")}', 'sealed', '${product.id}')"><i class="fas fa-share-alt"></i></button>
+                    <button class="btn btn-danger btn-delete" data-id="${product.id}" style="flex: 1;">Eliminar</button>
                 </div>
             </div>
         `);
