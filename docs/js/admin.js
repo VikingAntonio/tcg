@@ -24,7 +24,7 @@ let editingType = 'slot'; // 'slot' or 'deck-card'
 // --- Sharing System Functions ---
 window.shareQR = null;
 
-window.openShareModal = function(title, type, id) {
+window.openShareModal = function(title, type, id, extraId) {
     const baseUrl = window.location.origin + '/public.html';
     const identifier = currentUser.is_store && currentUser.store_name ? currentUser.store_name : currentUser.username;
 
@@ -33,6 +33,7 @@ window.openShareModal = function(title, type, id) {
     if (id !== null && id !== undefined) {
         if (type === 'wishlist') {
             shareUrl += `&slot=${id}`;
+            if (extraId) shareUrl += `&wishlistId=${extraId}`;
         } else {
             const paramName = type === 'albums' ? 'albumId' :
                             type === 'decks' ? 'deckId' :
