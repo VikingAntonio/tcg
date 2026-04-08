@@ -16,7 +16,77 @@ async function getYgoSets() {
     return ygoSetsCache;
 }
 
+// --- Sharing System Functions ---
+window.shareQR = null;
+
+window.openShareModal = function(title, type, id) {
+    const baseUrl = window.location.origin + '/public.html';
+    const identifier = currentUser.username;
+
+    // Build direct link
+    let shareUrl = `${baseUrl}?id=${encodeURIComponent(identifier)}&view=${type}`;
+    if (id !== null && id !== undefined) {
+        if (type === 'wishlist') {
+            shareUrl += `&slot=${id}`;
+        }
+    }
+
+    $('#share-modal-title').text(`Compartir ${title}`);
+    $('#share-link-input').val(shareUrl);
+    $('#share-overlay').addClass('active');
+
+    // Generate QR Code
+    $('#share-qr-code').empty();
+    window.shareQR = new QRCode(document.getElementById("share-qr-code"), {
+        text: shareUrl,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Setup Social Links
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(`¡Mira esto en VikingTCG: ${title}!`);
+
+    $('#share-wa').off('click').on('click', () => window.open(`https://wa.me/?text=${encodedText}%20${encodedUrl}`, '_blank'));
+    $('#share-tg').off('click').on('click', () => window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank'));
+    $('#share-fb').off('click').on('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank'));
+    $('#share-ms').off('click').on('click', () => window.open(`fb-messenger://share/?link=${encodedUrl}`, '_blank'));
+};
+
 $(document).ready(async function() {
+    // --- Share Modal Close & Actions ---
+    $(document).on('click', '#close-share-modal, #share-overlay', function(e) {
+        if (e.target === this || $(this).hasClass('close-btn')) {
+            $('#share-overlay').removeClass('active');
+        }
+    });
+
+    $(document).on('click', '#btn-copy-share-link', function() {
+        const input = document.getElementById('share-link-input');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value);
+
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        $btn.html('<i class="fas fa-check"></i>').css('background', '#22c55e');
+        setTimeout(() => {
+            $btn.html(originalHtml).css('background', '');
+        }, 2000);
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Enlace copiado',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    });
+
     await checkSession();
     initTheme();
 
@@ -54,6 +124,13 @@ $(document).ready(async function() {
         currentSlot = parseInt($(this).data('index'));
         loadWishlist();
     });
+
+    // Share current slot button
+    $('<button id="btn-share-slot" class="btn btn-sm" style="margin-left: 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-share-alt"></i> Compartir Slot</button>')
+        .appendTo('.wishlist-tabs-container')
+        .on('click', () => {
+            window.openShareModal(`Buscamos - Slot ${currentSlot+1}`, 'wishlist', currentSlot);
+        });
 
     $('#menu-btn-logout').click(async function(e) {
         e.preventDefault();

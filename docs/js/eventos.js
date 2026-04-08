@@ -106,8 +106,9 @@ async function loadEvents() {
                             ${e.description}
                         </div>
                         ` : ''}
-                        <div style="display:flex; gap:10px; margin-top:auto; width: 100%;">
+                        <div style="display:flex; gap:10px; margin-top:auto; width: 100%; flex-wrap: wrap;">
                             <button class="btn btn-sm btn-edit-event" data-id="${e.id}" style="flex: 1;"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="btn btn-sm btn-secondary" onclick="openShareModal('${(e.name || 'Evento').replace(/'/g, "\\'")}', 'events', '${e.id}')"><i class="fas fa-share-alt"></i></button>
                             <button class="btn btn-sm btn-danger btn-delete-event" data-id="${e.id}" style="flex: 1;"><i class="fas fa-trash"></i> Borrar</button>
                         </div>
                     </div>

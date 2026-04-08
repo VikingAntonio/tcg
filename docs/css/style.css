@@ -3988,3 +3988,92 @@ input:checked + .slider:before {
         gap: 5px;
     }
 }
+
+/* --- Sharing System Styles --- */
+#share-overlay {
+    z-index: 12000;
+}
+
+.btn-share-item {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin-left: auto;
+}
+
+.btn-share-item:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #000;
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 0 15px var(--primary-color);
+}
+
+.btn-share-floating {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+}
+
+.share-modal-content {
+    text-align: center;
+}
+
+#share-qr-code canvas, #share-qr-code img {
+    margin: 0 auto;
+    border-radius: 8px;
+}
+
+.social-share-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    width: 100%;
+    margin-top: 25px;
+}
+
+.social-share-btn {
+    height: 50px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.social-share-btn:hover {
+    transform: translateY(-5px);
+    filter: brightness(1.1);
+}
+
+.social-share-btn.wa { background: #25d366; }
+.social-share-btn.tg { background: #0088cc; }
+.social-share-btn.fb { background: #1877f2; }
+.social-share-btn.ms { background: #006aff; }
+
+/* Deep-link Highlight */
+@keyframes sharedHighlight {
+    0% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); }
+    50% { outline: 4px solid var(--primary-color); box-shadow: 0 0 30px var(--primary-color); }
+    100% { outline: 0px solid var(--primary-color); box-shadow: 0 0 0px var(--primary-color); }
+}
+
+.shared-highlight {
+    animation: sharedHighlight 2s ease-in-out 3;
+    border-color: var(--primary-color) !important;
+}

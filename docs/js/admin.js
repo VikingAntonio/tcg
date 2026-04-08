@@ -21,6 +21,52 @@ let currentPageId = null;
 let currentUser = null;
 let editingType = 'slot'; // 'slot' or 'deck-card'
 
+// --- Sharing System Functions ---
+window.shareQR = null;
+
+window.openShareModal = function(title, type, id) {
+    const baseUrl = window.location.origin + '/public.html';
+    const identifier = currentUser.is_store && currentUser.store_name ? currentUser.store_name : currentUser.username;
+
+    // Build direct link
+    let shareUrl = `${baseUrl}?id=${encodeURIComponent(identifier)}&view=${type}`;
+    if (id !== null && id !== undefined) {
+        if (type === 'wishlist') {
+            shareUrl += `&slot=${id}`;
+        } else {
+            const paramName = type === 'albums' ? 'albumId' :
+                            type === 'decks' ? 'deckId' :
+                            type === 'sealed' ? 'productId' :
+                            type === 'preorders' ? 'preorderId' : 'eventId';
+            shareUrl += `&${paramName}=${id}`;
+        }
+    }
+
+    $('#share-modal-title').text(`Compartir ${title}`);
+    $('#share-link-input').val(shareUrl);
+    $('#share-overlay').addClass('active');
+
+    // Generate QR Code
+    $('#share-qr-code').empty();
+    window.shareQR = new QRCode(document.getElementById("share-qr-code"), {
+        text: shareUrl,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Setup Social Links
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(`¡Mira esto en VikingTCG: ${title}!`);
+
+    $('#share-wa').off('click').on('click', () => window.open(`https://wa.me/?text=${encodedText}%20${encodedUrl}`, '_blank'));
+    $('#share-tg').off('click').on('click', () => window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank'));
+    $('#share-fb').off('click').on('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank'));
+    $('#share-ms').off('click').on('click', () => window.open(`fb-messenger://share/?link=${encodedUrl}`, '_blank'));
+};
+
 // Local state for batch saving
 let localAlbumSlots = [];
 let albumSlotsToDelete = [];
@@ -1544,6 +1590,36 @@ $(document).ready(async function() {
         }
     });
 
+    // --- Share Modal Close & Actions ---
+    $(document).on('click', '#close-share-modal, #share-overlay', function(e) {
+        if (e.target === this || $(this).hasClass('close-btn')) {
+            $('#share-overlay').removeClass('active');
+        }
+    });
+
+    $(document).on('click', '#btn-copy-share-link', function() {
+        const input = document.getElementById('share-link-input');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value);
+
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        $btn.html('<i class="fas fa-check"></i>').css('background', '#22c55e');
+        setTimeout(() => {
+            $btn.html(originalHtml).css('background', '');
+        }, 2000);
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Enlace copiado',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    });
+
     // --- Organize Modal Listeners ---
     $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('albums'); });
     $(document).on('click', '#btn-organize-decks', function(e) { e.preventDefault(); openOrganizeModal('decks'); });
@@ -1906,9 +1982,10 @@ async function loadDecks() {
                 <div style="margin-top: 5px;">
                     ${publicSwitch}
                 </div>
-                <div style="display:flex; gap:10px; margin-top:auto;">
-                    <button class="btn btn-edit-deck" data-id="${deck.id}">Editar</button>
-                    <button class="btn btn-danger btn-delete-deck" data-id="${deck.id}">Eliminar</button>
+                <div style="display:flex; gap:10px; margin-top:auto; flex-wrap: wrap;">
+                    <button class="btn btn-edit-deck" data-id="${deck.id}" style="flex: 1;">Editar</button>
+                    <button class="btn btn-secondary" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" style="padding: 10px 15px;"><i class="fas fa-share-alt"></i></button>
+                    <button class="btn btn-danger btn-delete-deck" data-id="${deck.id}" style="flex: 1;">Eliminar</button>
                 </div>
             </div>
         `);
@@ -2192,9 +2269,10 @@ async function loadAlbums() {
                 <div style="margin-top: 5px;">
                     ${publicSwitch}
                 </div>
-                <div style="display:flex; gap:10px; margin-top:auto;">
-                    <button class="btn btn-edit-album" data-id="${album.id}">Editar</button>
-                    <button class="btn btn-danger btn-delete-album" data-id="${album.id}">Eliminar</button>
+                <div style="display:flex; gap:10px; margin-top:auto; flex-wrap: wrap;">
+                    <button class="btn btn-edit-album" data-id="${album.id}" style="flex: 1;">Editar</button>
+                    <button class="btn btn-secondary" onclick="openShareModal('${album.title.replace(/'/g, "\\'")}', 'albums', '${album.id}')" style="padding: 10px 15px;"><i class="fas fa-share-alt"></i></button>
+                    <button class="btn btn-danger btn-delete-album" data-id="${album.id}" style="flex: 1;">Eliminar</button>
                 </div>
             </div>
         `);

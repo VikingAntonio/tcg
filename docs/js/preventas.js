@@ -161,9 +161,10 @@ async function loadPreorders() {
                     <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-top:auto;">
-                    <button class="btn btn-edit" data-id="${preorder.id}">Editar</button>
-                    <button class="btn btn-danger btn-delete" data-id="${preorder.id}">Eliminar</button>
+                <div style="display:flex; gap:10px; margin-top:auto; flex-wrap: wrap;">
+                    <button class="btn btn-edit" data-id="${preorder.id}" style="flex: 1;">Editar</button>
+                    <button class="btn btn-secondary" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')"><i class="fas fa-share-alt"></i></button>
+                    <button class="btn btn-danger btn-delete" data-id="${preorder.id}" style="flex: 1;">Eliminar</button>
                 </div>
             </div>
         `);
