@@ -115,11 +115,16 @@ window.handleDeepLinking = function() {
     }
 
     if (targetEl) {
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        $(targetEl).addClass('shared-highlight');
+        // Delay slightly to allow any final CSS layouts to settle
         setTimeout(() => {
-            $(targetEl).removeClass('shared-highlight');
-        }, 5000);
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            $(targetEl).addClass('shared-highlight');
+
+            // Remove highlighting after animation
+            setTimeout(() => {
+                $(targetEl).removeClass('shared-highlight');
+            }, 6000);
+        }, 300);
     }
 };
 
@@ -1164,27 +1169,27 @@ async function switchView(view) {
     if (view === 'albums') {
         $('#public-view-title').text('Colección de Álbumes');
         $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
-        if (window.currentStoreId) loadPublicAlbums(window.currentStoreId);
+        if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
     } else if (view === 'sealed') {
         $('#public-view-title').text('Productos Sellados');
         $('.public-header p').text('Encuentra cajas, sobres y productos especiales de tus TCG favoritos.');
-        loadPublicSealed();
+        await loadPublicSealed();
     } else if (view === 'preorders') {
         $('#public-view-title').text('Preventas');
         $('.public-header p').text('Asegura tus productos antes que nadie con nuestras preventas exclusivas.');
-        loadPublicPreorders();
+        await loadPublicPreorders();
     } else if (view === 'decks') {
         $('#public-view-title').text('Decks de Cartas');
         $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
-        loadPublicDecks();
+        await loadPublicDecks();
     } else if (view === 'wishlist') {
         $('#public-view-title').text('Buscamos lo siguiente');
         $('.public-header p').text('Si tienes alguno de estos productos ponte en coontacto con nosotros');
-        loadPublicWishlist();
+        await loadPublicWishlist();
     } else if (view === 'events') {
         $('#public-view-title').text('Eventos');
         $('.public-header p').text('Participa en nuestros eventos para ganar premios increíbles.');
-        loadPublicEvents();
+        await loadPublicEvents();
     }
 
     const url = new URL(window.location);
@@ -1297,7 +1302,8 @@ async function loadStoreData() {
     }
 }
 
-async function loadPublicPreorders() {
+function loadPublicPreorders() {
+    return new Promise(async (resolve) => {
     let userId = window.currentStoreId;
     if (!userId) {
         const identifier = window.currentStoreIdentifier;
@@ -1376,7 +1382,9 @@ async function loadPublicPreorders() {
         $('#preorders-container').html('<div class="error">Error al cargar preventas.</div>');
     } finally {
         hideLoading();
+        resolve();
     }
+    });
 }
 
 function initFloatingCompanion() {
@@ -1435,7 +1443,8 @@ function initFloatingCompanion() {
     }
 }
 
-async function loadPublicAlbums(userId) {
+function loadPublicAlbums(userId) {
+    return new Promise(async (resolve) => {
     const isAlbumsView = $('.nav-btn[data-view="albums"]').hasClass('active');
     if (isAlbumsView) showLoading('Cargando interfaz...');
     try {
@@ -1483,10 +1492,13 @@ async function loadPublicAlbums(userId) {
         $('#albums-container').html('<div class="error">Error al cargar la colección.</div>');
     } finally {
         hideLoading();
+        resolve();
     }
+    });
 }
 
-async function loadPublicDecks() {
+function loadPublicDecks() {
+    return new Promise(async (resolve) => {
     const identifier = window.currentStoreIdentifier;
     if (!identifier) return;
 
@@ -1649,8 +1661,12 @@ async function loadPublicDecks() {
         console.error("Error in loadPublicDecks:", e);
         $('#decks-container').html('<div class="error">Error al cargar los decks.</div>');
     } finally {
-        setTimeout(hideLoading, 500);
+        setTimeout(() => {
+            hideLoading();
+            resolve();
+        }, 500);
     }
+    });
 }
 
 function initTheme() {
@@ -1981,7 +1997,8 @@ function renderAlbum(album) {
     });
 }
 
-async function loadPublicSealed() {
+function loadPublicSealed() {
+    return new Promise(async (resolve) => {
     let userId = window.currentStoreId;
     if (!userId) {
         const identifier = window.currentStoreIdentifier;
@@ -2058,10 +2075,13 @@ async function loadPublicSealed() {
         $('#sealed-container').html('<div class="error">Error al cargar productos.</div>');
     } finally {
         hideLoading();
+        resolve();
     }
+    });
 }
 
-async function loadPublicEvents() {
+function loadPublicEvents() {
+    return new Promise(async (resolve) => {
     let userId = window.currentStoreId;
     if (!userId) {
         const identifier = window.currentStoreIdentifier;
@@ -2137,11 +2157,14 @@ async function loadPublicEvents() {
         $('#events-container').html('<div class="error">Error al cargar la sección.</div>');
     } finally {
         hideLoading();
+        resolve();
     }
+    });
 }
 
 
-async function loadPublicWishlist() {
+function loadPublicWishlist() {
+    return new Promise(async (resolve) => {
     let userId = window.currentStoreId;
 
     if (!userId) {
@@ -2264,7 +2287,9 @@ async function loadPublicWishlist() {
         $('#wishlist-container').html('<div class="error">Error al cargar los deseos.</div>');
     } finally {
         hideLoading();
+        resolve();
     }
+    });
 }
 
 function makeCompanionDraggable() {
