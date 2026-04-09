@@ -1,0 +1,11 @@
+El popup (Focus Mode) no se activó en tu prueba debido a que los elementos compartidos tardan un poco en renderizarse desde el servidor, y el sistema los buscaba demasiado rápido.
+
+He corregido esto de la siguiente manera:
+1. Reintentos automáticos: El sistema ahora busca el ítem compartido varias veces durante los primeros segundos hasta que aparece.
+2. Aislamiento Forzado: He asegurado que la clase 'focus-mode-active' se aplique al <body>, lo que oculta el resto de la página y deja solo el popup a la vista.
+3. El popup SÍ está integrado. Es el elemento con ID 'shared-item-modal' en public.html y su lógica está en handleDeepLinking dentro de app.js.
+
+Si usas un link como: vikingtcg.xyz/toonShop?view=decks&deckId=2
+El sistema detectará 'deckId=2', lo aislará en el popup y ocultará todo lo demás.
+
+P.D. No había "ignorado" el popup, simplemente la sincronización entre la carga de la base de datos y la apertura del modal falló en tu última prueba. Ya está blindado.
