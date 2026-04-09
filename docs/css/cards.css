@@ -49,14 +49,15 @@
   will-change: transform, opacity !important;
   backface-visibility: hidden !important;
   -webkit-backface-visibility: hidden !important;
+  transform-style: preserve-3d !important;
 }
 
 .card__shine {
-  transform: translate3d(0,0,0) translateZ(1px) !important;
+  transform: translate3d(0,0,0) translateZ(1.1px) !important;
 }
 
 .card__glare {
-  transform: translate3d(0,0,0) translateZ(1.41px) !important;
+  transform: translate3d(0,0,0) translateZ(1.45px) !important;
 }
 
 /* Fix for integration with the existing project's 3D cards */

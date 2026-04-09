@@ -1669,8 +1669,10 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
-    transform: translate3d(0,0,0) translateZ(1.4px) !important;
+    transform: translate3d(0,0,0) translateZ(1.5px) !important; /* Slightly increased for stability */
     will-change: transform, opacity !important;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
 }
 
 .card-3d-container.active .holo-layer {
@@ -4073,6 +4075,10 @@ body.focus-mode-active .event-card {
     text-align: center;
     margin-bottom: 20px;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .deck-toggle-container {
@@ -4121,34 +4127,38 @@ body.focus-mode-active .event-card {
 @media (max-width: 480px) {
     .deck-grid-popup {
         grid-template-columns: repeat(3, 1fr) !important;
-        gap: 15px 8px !important;
-        padding: 10px 5px !important;
+        gap: 25px 10px !important; /* Increased vertical gap to prevent sticking */
+        padding: 10px 10px 80px 10px !important; /* Extra bottom padding for scroll space */
         align-items: start !important;
-        grid-auto-rows: auto !important;
-        max-height: none !important; /* Ensure it can grow if parent allows */
+        grid-auto-rows: min-content !important;
+        height: auto !important;
+        overflow-y: auto !important;
     }
 
     .grid-card-item {
         width: 100% !important;
         height: auto !important;
+        min-height: min-content !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: center !important;
+        justify-content: flex-start !important;
         align-items: center !important;
         margin: 0 !important;
-        padding: 2px !important;
-        background: none !important; /* Remove background to avoid alignment visual noise */
+        padding: 0 !important;
+        background: none !important;
         border: none !important;
+        overflow: visible !important;
     }
 
     .grid-card-item img {
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
-        aspect-ratio: auto !important; /* Allow natural aspect ratio */
+        aspect-ratio: auto !important;
         object-fit: contain !important;
         display: block !important;
         filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)) !important;
+        border-radius: 4px;
     }
 
     .deck-carousel-container {
@@ -4167,6 +4177,14 @@ body.focus-mode-active .event-card {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
+        width: 100% !important;
+    }
+
+    .swiper-slide {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        left: 0 !important; /* Fix potential offset in cards effect */
     }
 }
 
