@@ -4174,17 +4174,6 @@ body.focus-mode-active .event-card {
 
     .swiper, .swiperyg {
         margin: 0 auto !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-    }
-
-    .swiper-slide {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        left: 0 !important; /* Fix potential offset in cards effect */
     }
 }
 
@@ -4376,8 +4365,5 @@ body.focus-mode-active .event-card {
 
     .swiper, .swiperyg {
         margin: 0 auto !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
     }
 }
