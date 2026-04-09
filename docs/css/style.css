@@ -2772,15 +2772,22 @@ body.focus-mode-active .section-title,
 body.focus-mode-active .loading-screen,
 body.focus-mode-active .search-container,
 body.focus-mode-active .public-nav,
+body.focus-mode-active .wishlist-controls-row,
 body.focus-mode-active footer {
     display: none !important;
 }
 
 /* Ensure containers are visible but children are hidden except the focused one */
-body.focus-mode-active .decks-grid > div:not(.shared-highlight),
-body.focus-mode-active .wishlist-grid > div:not(.shared-highlight),
-body.focus-mode-active .public-album-item:not(.shared-highlight) {
+body.focus-mode-active .decks-grid > div:not(.shared-highlight):not(.focus-mode-exception),
+body.focus-mode-active .wishlist-grid > div:not(.shared-highlight):not(.focus-mode-exception),
+body.focus-mode-active .public-album-item:not(.shared-highlight):not(.focus-mode-exception) {
     display: none !important;
+}
+
+body.focus-mode-active .focus-mode-exception {
+    display: block !important;
+    width: 100% !important;
+    order: 100 !important; /* Move to bottom */
 }
 
 /* Disable grid layouts and force centered flexbox for isolation */
@@ -2807,6 +2814,7 @@ body.focus-mode-active .public-event-card.shared-highlight {
     width: 95% !important;
     margin: 20px auto !important;
     box-shadow: 0 30px 60px rgba(0,0,0,0.5) !important;
+    display: flex !important;
 }
 
 /* Specific fix for deep-linked albums */
@@ -2818,6 +2826,7 @@ body.focus-mode-active .public-album-item.shared-highlight {
     box-shadow: 0 30px 60px rgba(0,0,0,0.5) !important;
 }
 
+/* Custom indicator for Focus Mode */
 body.focus-mode-active .shared-highlight::before {
     content: 'ITEM COMPARTIDO';
     position: absolute;
@@ -2840,8 +2849,8 @@ body.focus-mode-active .shared-highlight::before {
 .btn-close-focus {
     position: fixed;
     top: 20px;
-    right: 20px; /* Changed to right for better thumb reach */
-    z-index: 9999;
+    left: 20px; /* Changed to top-left for clear exit visibility */
+    z-index: 10005;
     background: rgba(0, 210, 255, 0.2);
     color: #00d2ff;
     border: 2px solid #00d2ff;
@@ -2849,15 +2858,15 @@ body.focus-mode-active .shared-highlight::before {
     border-radius: 50px;
     cursor: pointer;
     backdrop-filter: blur(15px);
-    font-weight: 600;
-    box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+    font-weight: 800;
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.5);
     transition: all 0.3s ease;
     display: none;
     align-items: center;
     gap: 10px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 body.focus-mode-active .btn-close-focus {
