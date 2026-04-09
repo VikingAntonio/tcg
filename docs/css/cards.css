@@ -46,17 +46,17 @@
 
 .card__shine,
 .card__glare {
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
 }
 
 .card__shine {
-  transform: translate3d(0,0,0) translateZ(1px);
+  transform: translate3d(0,0,0) translateZ(1px) !important;
 }
 
 .card__glare {
-  transform: translate3d(0,0,0) translateZ(1.41px);
+  transform: translate3d(0,0,0) translateZ(1.41px) !important;
 }
 
 /* Fix for integration with the existing project's 3D cards */
