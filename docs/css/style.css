@@ -1333,6 +1333,7 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    position: relative; /* Anchor for share button */
 }
 
 .sealed-product-item {
@@ -3801,7 +3802,7 @@ body.focus-mode-active .event-card {
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
-    position: relative;
+    position: relative; /* Anchor for share button */
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     aspect-ratio: 2.5 / 3.8;
 }
@@ -4131,6 +4132,7 @@ body.focus-mode-active .event-card {
     margin-left: auto;
     box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2);
     opacity: 1 !important;
+    visibility: visible !important;
     line-height: 0 !important; /* Fix crooked icons */
 }
 
@@ -4243,6 +4245,39 @@ body.focus-mode-active .event-card {
     border-color: #00d2ff !important;
     position: relative;
     z-index: 5000;
+}
+
+.shared-preview-content {
+    max-width: 1000px !important;
+    width: 98% !important;
+    max-height: 98vh !important;
+    border-radius: 30px !important;
+    border: 2px solid var(--primary-color) !important;
+    padding: 20px !important;
+    overflow-x: hidden !important;
+    background: radial-gradient(circle at top, #1a2a3a 0%, #000000 100%) !important;
+}
+
+#shared-item-modal {
+    background: rgba(0, 0, 0, 0.98) !important;
+    backdrop-filter: blur(15px) !important;
+}
+
+/* Ensure items cloned into modal look isolated */
+.shared-preview-content .deck-public-item,
+.shared-preview-content .public-album-item,
+.shared-preview-content .wishlist-card-item,
+.shared-preview-content .sealed-product-item {
+    box-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
+    margin: 0 !important;
+    transform: none !important;
+}
+
+.shared-preview-content .btn-share-item,
+.shared-preview-content .btn-share-floating {
+    display: none !important; /* Hide share icons inside the preview modal to avoid recursion */
 }
 
 @media (max-width: 768px) {
