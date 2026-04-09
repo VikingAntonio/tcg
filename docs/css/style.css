@@ -1666,7 +1666,7 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    transform: translateZ(1.4px);
+    transform: translate3d(0,0,0) translateZ(1.4px);
 }
 
 .card-3d-container.active .holo-layer {
@@ -4029,6 +4029,7 @@ body.focus-mode-active .event-card {
     padding: 10px;
     flex: 1;
     justify-items: center;
+    align-items: center;
 }
 
 .deck-grid-popup::-webkit-scrollbar {
@@ -4046,6 +4047,7 @@ body.focus-mode-active .event-card {
     border-radius: 8px;
     padding: 4px;
     border: 1px solid rgba(255,255,255,0.05);
+    width: 100%;
 }
 
 .grid-card-item:hover {
@@ -4059,7 +4061,6 @@ body.focus-mode-active .event-card {
 .grid-card-item img {
     width: 100%;
     height: auto;
-    aspect-ratio: 2.5 / 3.5;
     object-fit: contain;
     border-radius: 6px;
     display: block;
@@ -4119,6 +4120,13 @@ body.focus-mode-active .event-card {
     .deck-grid-popup {
         grid-template-columns: repeat(3, 1fr);
         gap: 12px;
+    }
+
+    .deck-carousel-container {
+        padding: 0 !important;
+        width: 100%;
+        display: flex;
+        justify-content: center;
     }
 }
 
@@ -4295,5 +4303,12 @@ body.focus-mode-active .event-card {
 @media (max-width: 768px) {
     .shared-highlight {
         animation: sharedHighlight 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .deck-carousel-container {
+        padding: 0 !important;
+        width: 100%;
+        display: flex;
+        justify-content: center;
     }
 }
