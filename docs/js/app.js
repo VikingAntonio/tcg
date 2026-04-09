@@ -116,59 +116,112 @@ window.handleDeepLinking = function() {
     const params = new URLSearchParams(window.location.search);
     let targetEl = null;
     let isDeepLink = false;
+    let shareType = '';
 
     if (params.has('albumId')) {
         targetEl = document.getElementById(`album-container-${params.get('albumId')}`);
         isDeepLink = true;
+        shareType = 'album';
     } else if (params.has('deckId')) {
         targetEl = document.getElementById(`deck-item-${params.get('deckId')}`);
         isDeepLink = true;
+        shareType = 'deck';
     } else if (params.has('productId')) {
         targetEl = document.getElementById(`product-item-${params.get('productId')}`);
         isDeepLink = true;
+        shareType = 'product';
     } else if (params.has('preorderId')) {
         targetEl = document.getElementById(`preorder-item-${params.get('preorderId')}`);
         isDeepLink = true;
+        shareType = 'preorder';
     } else if (params.has('eventId')) {
         targetEl = document.getElementById(`event-${params.get('eventId')}`);
         isDeepLink = true;
+        shareType = 'event';
     } else if (params.has('wishlistId')) {
         targetEl = document.getElementById(`wishlist-item-${params.get('wishlistId')}`);
         isDeepLink = true;
+        shareType = 'wishlist-item';
     } else if (params.has('slot')) {
         const slotIdx = params.get('slot');
         $('.wishlist-tab[data-index="' + slotIdx + '"]').click();
         targetEl = document.getElementById('wishlist-container');
         isDeepLink = true;
+        shareType = 'wishlist-slot';
     }
 
-    if (isDeepLink) {
-        $('body').addClass('focus-mode-active');
-    }
-
-    if (targetEl) {
-        // Delay slightly to allow any final CSS layouts to settle
+    if (targetEl && isDeepLink) {
         setTimeout(() => {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            $(targetEl).addClass('shared-highlight');
+            // "Show only one thing" - Clone to Dedicated Shared Modal
+            const $clonedItem = $(targetEl).clone(true, true);
+            $clonedItem.addClass('shared-highlight');
 
-            // Automatically open details for specific shared items
-            if (params.has('wishlistId') && $(targetEl).hasClass('card-slot')) {
-                openCardModal($(targetEl));
-            } else if (params.has('deckId')) {
-                // Trigger "Modo Lista" for shared deck
-                const $deckBtn = $(targetEl).find('.btn-toggle-deck-view');
-                if ($deckBtn.length) $deckBtn.click();
-            } else if (params.has('eventId')) {
-                // Open event details
-                showGeneralEventDetails(params.get('eventId'));
+            // If it's a Deck, we need to handle the Swiper carefully
+            if (shareType === 'deck') {
+                // Remove existing swiper markup to re-init
+                $clonedItem.find('.swiper-wrapper').empty();
+                // Find original cards
+                const originalCards = $(targetEl).find('.swiper-slide:not(.swiper-slide-duplicate)');
+                originalCards.each(function() {
+                    $clonedItem.find('.swiper-wrapper').append($(this).clone(true));
+                });
             }
 
-            // Remove highlighting after animation
-            setTimeout(() => {
-                $(targetEl).removeClass('shared-highlight');
-            }, 6000);
-        }, 500);
+            $('#shared-content-container').empty().append($clonedItem);
+            $('#shared-item-modal').addClass('active');
+            $('body').addClass('modal-open');
+
+            // Re-init Swiper if it's a deck
+            if (shareType === 'deck') {
+                const uniqueId = `shared-deck-${Date.now()}`;
+                $clonedItem.find('.swiper').removeClass().addClass(`swiper swiperyg ${uniqueId}`);
+                new Swiper(`.${uniqueId}`, {
+                    effect: "cards", grabCursor: true, perSlideOffset: 8, perSlideRotate: 2, rotate: true, slideShadows: true,
+                    on: {
+                        click: function(s, e) {
+                            if (!isDragging) {
+                                const $slot = $(e.target).closest('.card-slot');
+                                if ($slot.length && s.clickedIndex === s.activeIndex) openCardModal($slot);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Automations
+            if (shareType === 'wishlist-item' && $clonedItem.hasClass('card-slot')) {
+                openCardModal($clonedItem);
+            } else if (shareType === 'event') {
+                showGeneralEventDetails(params.get('eventId'));
+            } else if (shareType === 'deck') {
+                const $deckBtn = $clonedItem.find('.btn-toggle-deck-view');
+                if ($deckBtn.length) $deckBtn.click();
+            }
+
+            // Update integrated sharing tools with current data
+            const title = $clonedItem.find('h3, .public-album-header').first().text().trim() || 'Ítem Compartido';
+            const currentUrl = window.location.href;
+
+            $('#btn-shared-copy-link').off('click').on('click', function() {
+                navigator.clipboard.writeText(currentUrl);
+                Swal.fire({ icon: 'success', title: 'Link Copiado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+            });
+
+            $('#btn-shared-show-qr').off('click').on('click', function() {
+                window.openShareModal(title, params.get('view'), null); // Use generic share to show QR
+            });
+
+            $('.shared-social-btn').off('click').on('click', function() {
+                const platform = $(this).data('platform');
+                const encodedUrl = encodeURIComponent(currentUrl);
+                const encodedText = encodeURIComponent(`¡Mira esto en VikingTCG: ${title}!`);
+                if (platform === 'wa') window.open(`https://wa.me/?text=${encodedText}%20${encodedUrl}`, '_blank');
+                if (platform === 'tg') window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank');
+                if (platform === 'fb') window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank');
+                if (platform === 'ms') window.open(`fb-messenger://share/?link=${encodedUrl}`, '_blank');
+            });
+
+        }, 800);
     }
 };
 
@@ -187,6 +240,14 @@ $(document).ready(async function() {
     $('#close-share-modal, #share-overlay').on('click', function(e) {
         if (e.target === this || $(this).hasClass('close-btn')) {
             $('#share-overlay').removeClass('active');
+        }
+    });
+
+    $('#close-shared-modal, #shared-item-modal').on('click', function(e) {
+        if (e.target === this || $(this).attr('id') === 'close-shared-modal' || $(this).closest('#close-shared-modal').length) {
+            $('#shared-item-modal').removeClass('active');
+            $('body').removeClass('modal-open');
+            window.clearShareFilters();
         }
     });
 

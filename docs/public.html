@@ -409,6 +409,32 @@
     </div>
 
     <!-- Chatbot Window -->
+    <!-- Shared Item Dedicated Modal -->
+    <div id="shared-item-modal" class="overlay">
+        <div class="overlay-content shared-preview-content">
+            <button class="btn btn-close-focus" id="close-shared-modal" style="display: flex; position: absolute; top: 15px; left: 15px; width: auto; height: auto;">
+                <i class="fas fa-arrow-left"></i> Ver Catálogo Completo
+            </button>
+            <div id="shared-content-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; margin-top: 40px;">
+                <!-- Cloned content here -->
+            </div>
+
+            <div class="share-tools-integrated" style="width: 100%; margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
+                <h4 style="margin-bottom: 15px; color: var(--primary-color);">¿Te gusta lo que ves? ¡Compártelo!</h4>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-sm" id="btn-shared-copy-link"><i class="fas fa-copy"></i> Copiar Link</button>
+                    <button class="btn btn-sm btn-secondary" id="btn-shared-show-qr"><i class="fas fa-qrcode"></i> QR</button>
+                </div>
+                <div class="social-share-grid" style="margin-top: 0; transform: scale(0.9);">
+                    <button class="social-share-btn wa shared-social-btn" data-platform="wa"><i class="fab fa-whatsapp"></i></button>
+                    <button class="social-share-btn tg shared-social-btn" data-platform="tg"><i class="fab fa-telegram-plane"></i></button>
+                    <button class="social-share-btn fb shared-social-btn" data-platform="fb"><i class="fab fa-facebook-f"></i></button>
+                    <button class="social-share-btn ms shared-social-btn" data-platform="ms"><i class="fab fa-facebook-messenger"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="chatbot-container">
         <div class="chatbot-header">
             <h3>Asistente Vikingdev</h3>
