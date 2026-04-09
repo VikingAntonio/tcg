@@ -47,6 +47,7 @@
 .card__shine,
 .card__glare {
   will-change: transform, opacity;
+  transform: translate3d(0,0,0);
 }
 
 /* Fix for integration with the existing project's 3D cards */

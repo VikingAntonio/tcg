@@ -19,6 +19,7 @@ body {
   position: relative;
   width: 240px;
   height: 360px;
+  margin: 0 auto;
 }
 
 .swiper-slide {
