@@ -1,0 +1,3 @@
+-- SQL para agregar la columna 'obtained' a la tabla 'deck_cards'
+-- Por defecto es TRUE ya que en un deck normalmente se asume que tienes las cartas.
+ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS obtained BOOLEAN DEFAULT TRUE;

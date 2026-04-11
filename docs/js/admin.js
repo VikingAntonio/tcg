@@ -2,6 +2,26 @@ let currentAlbumId = null;
 let currentDeckId = null;
 let deckSortOrder = 'position';
 
+function getActiveScrollContainer() {
+    const activeView = $('.admin-section.active')[0];
+    if (activeView) return activeView;
+    return window;
+}
+
+function captureScroll() {
+    const container = getActiveScrollContainer();
+    return container === window ? window.scrollY : container.scrollTop;
+}
+
+function restoreScroll(pos) {
+    const container = getActiveScrollContainer();
+    if (container === window) {
+        window.scrollTo(0, pos);
+    } else {
+        container.scrollTop = pos;
+    }
+}
+
 let ygoSetsCache = null;
 async function getYgoSets() {
     if (ygoSetsCache) return ygoSetsCache;
@@ -564,7 +584,8 @@ $(document).ready(async function() {
             expansion: $('#slot-expansion').val() || '',
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
-            price: $('#slot-price').val() || ''
+            price: $('#slot-price').val() || '',
+            obtained: $('#slot-obtained').is(':checked')
         };
 
         // Queue to VikingData (Shared Database)
@@ -577,6 +598,7 @@ $(document).ready(async function() {
 
         if (editingType === 'slot') {
             const slotData = { ...cardData, page_id: currentPageId, slot_index: currentSlotIndex };
+            delete slotData.obtained; // obtained only for decks
             // Update local state
             const existingIdx = localAlbumSlots.findIndex(s => s.page_id === currentPageId && s.slot_index === currentSlotIndex);
             if (existingIdx !== -1) {
@@ -1943,7 +1965,10 @@ function copyPublicLink() {
 // Data Functions
 // Deck Functions
 async function loadDecks() {
-    $('#deck-list').html('<div class="loading">Cargando decks...</div>');
+    const scrollPos = captureScroll();
+    if ($('#deck-list').children().length === 0) {
+        $('#deck-list').html('<div class="loading">Cargando decks...</div>');
+    }
 
     const { data: decks, error } = await _supabase
         .from('decks')
@@ -1997,6 +2022,7 @@ async function loadDecks() {
         $tempContainer.append($card);
     });
     $('#deck-list').html($tempContainer.contents());
+    restoreScroll(scrollPos);
     // initDecksSorting(); // Blocked reordering from main view
 }
 
@@ -2085,8 +2111,11 @@ async function deleteDeck(id) {
 }
 
 async function loadDeckCards(deckId, fetchCards = true) {
+    const scrollPos = captureScroll();
     if (fetchCards) {
-        $('#deck-card-list').html('<div class="loading">Cargando cartas...</div>');
+        if ($('#deck-card-list').children().length === 0) {
+            $('#deck-card-list').html('<div class="loading">Cargando cartas...</div>');
+        }
         const { data: cards, error } = await _supabase
             .from('deck_cards')
             .select('*')
@@ -2100,10 +2129,10 @@ async function loadDeckCards(deckId, fetchCards = true) {
         localDeckCards = cards || [];
     }
 
-    renderDeckCardsLocal();
+    renderDeckCardsLocal(scrollPos);
 }
 
-function renderDeckCardsLocal() {
+function renderDeckCardsLocal(scrollPos = null) {
     // Calculate total sum
     const totalSum = localDeckCards.reduce((sum, card) => {
         const price = parseFloat((card.price || '0').replace(/[^0-9.]/g, '')) || 0;
@@ -2114,11 +2143,13 @@ function renderDeckCardsLocal() {
 
     const $tempContainer = $('<div></div>');
     localDeckCards.forEach(card => {
+        const isObtained = card.obtained !== false;
         const $cardItem = $(`
             <div class="album-card deck-card-item" data-id="${card.id || card.localId}" style="cursor:pointer; position:relative;">
                 <div class="btn-delete-card-top btn-delete-deck-card"><i class="fas fa-times"></i></div>
                 <img src="${card.image_url}" style="width:100%; height:150px; object-fit:contain;">
                 <div style="font-size: 12px; margin-top: 5px; color: #aaa; text-align: center;">${card.name || 'Sin nombre'}</div>
+                ${!isObtained ? '<div style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>' : ''}
             </div>
         `);
 
@@ -2153,6 +2184,7 @@ function renderDeckCardsLocal() {
         $tempContainer.append($cardItem);
     });
     $('#deck-card-list').html($tempContainer.contents());
+    if (scrollPos !== null) restoreScroll(scrollPos);
     // initDeckCardsSorting(); // Blocked reordering from main view
 }
 
@@ -2225,11 +2257,21 @@ function editDeckCard(card) {
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
 
+    if (editingType === 'deck-card') {
+        $('#slot-obtained-container').show();
+        $('#slot-obtained').prop('checked', card.obtained !== false);
+    } else {
+        $('#slot-obtained-container').hide();
+    }
+
     $('#slot-modal').addClass('active');
 }
 
 async function loadAlbums() {
-    $('#album-list').html('<div class="loading">Cargando álbumes...</div>');
+    const scrollPos = captureScroll();
+    if ($('#album-list').children().length === 0) {
+        $('#album-list').html('<div class="loading">Cargando álbumes...</div>');
+    }
 
     const { data: albums, error } = await _supabase
         .from('albums')
@@ -2284,6 +2326,7 @@ async function loadAlbums() {
         $tempContainer.append($card);
     });
     $('#album-list').html($tempContainer.contents());
+    restoreScroll(scrollPos);
     // initAlbumSorting(); // Blocked reordering from main view
 }
 
@@ -2377,8 +2420,11 @@ async function deleteAlbum(id) {
 }
 
 async function loadAlbumPages(albumId, fetchSlots = true) {
+    const scrollPos = captureScroll();
     if (fetchSlots) {
-        $('#page-list').html('<div class="loading">Cargando páginas y cartas...</div>');
+        if ($('#page-list').children().length === 0) {
+            $('#page-list').html('<div class="loading">Cargando páginas y cartas...</div>');
+        }
     }
 
     const { data: pages, error } = await _supabase
@@ -2409,10 +2455,10 @@ async function loadAlbumPages(albumId, fetchSlots = true) {
         localAlbumSlots = localAlbumSlots.filter(s => pageIds.has(s.page_id));
     }
 
-    renderAlbumPagesLocal(pages);
+    renderAlbumPagesLocal(pages, scrollPos);
 }
 
-function renderAlbumPagesLocal(pages) {
+function renderAlbumPagesLocal(pages, scrollPos) {
     // Toggle bottom add button visibility
     if (pages && pages.length > 0) {
         $('#btn-add-page-bottom-container').show();
@@ -2485,6 +2531,7 @@ function renderAlbumPagesLocal(pages) {
     }
 
     $('#page-list').html($tempContainer.contents());
+    restoreScroll(scrollPos);
 }
 
 async function deletePage(id) {

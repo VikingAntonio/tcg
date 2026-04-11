@@ -4,6 +4,14 @@ let currentSlot = 0;
 let currentEditingId = null;
 let pendingWishlist = [];
 
+function captureScroll() {
+    return window.scrollY;
+}
+
+function restoreScroll(pos) {
+    window.scrollTo(0, pos);
+}
+
 async function getYgoSets() {
     if (ygoSetsCache) return ygoSetsCache;
     try {
@@ -286,7 +294,10 @@ function initTheme() {
 }
 
 async function loadWishlist() {
-    $('#wishlist-list').html('<div class="loading">Cargando lista de deseos...</div>');
+    const scrollPos = captureScroll();
+    if ($('#wishlist-list').children().length === 0) {
+        $('#wishlist-list').html('<div class="loading">Cargando lista de deseos...</div>');
+    }
 
     const { data: wishlist, error } = await _supabase
         .from('wishlist')
@@ -374,6 +385,7 @@ async function loadWishlist() {
 
         $container.append($card);
     });
+    restoreScroll(scrollPos);
 }
 
 function openEditModal(item) {

@@ -1734,7 +1734,8 @@ function loadPublicDecks() {
                                          data-expansion="${card.expansion || ''}"
                                          data-condition="${card.condition || ''}"
                                          data-quantity="${card.quantity || '1'}"
-                                         data-price="${card.price || ''}">
+                                         data-price="${card.price || ''}"
+                                         data-obtained="${card.obtained !== false}">
                                         <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
                                         <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                                     </div>
@@ -2525,6 +2526,7 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
 
     $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
         const $slide = $(this);
+        const obtained = $slide.data('obtained');
         const $card = $(`
             <div class="grid-card-item card-slot"
                  data-name="${$slide.data('name')}"
@@ -2534,15 +2536,37 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
                  data-expansion="${$slide.data('expansion')}"
                  data-condition="${$slide.data('condition')}"
                  data-quantity="${$slide.data('quantity')}"
-                 data-price="${$slide.data('price')}">
+                 data-price="${$slide.data('price')}"
+                 data-obtained="${obtained}">
                 <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
             </div>
         `);
         $container.append($card);
     });
 
+    // Reset filters
+    $('.deck-filter-tab').removeClass('active');
+    $('.deck-filter-tab[data-filter="all"]').addClass('active');
+
     $('#deck-list-overlay').addClass('active');
     $('body').addClass('modal-open');
+});
+
+$(document).on('click', '.deck-filter-tab', function() {
+    const filter = $(this).data('filter');
+    $('.deck-filter-tab').removeClass('active');
+    $(this).addClass('active');
+
+    if (filter === 'all') {
+        $('#deck-grid-container .grid-card-item').show();
+    } else {
+        $('#deck-grid-container .grid-card-item').each(function() {
+            const obtained = $(this).data('obtained');
+            // If it's a string from data-obtained, check against "false"
+            if (obtained === false || obtained === "false") $(this).show();
+            else $(this).hide();
+        });
+    }
 });
 
 $(document).on('click', '#close-deck-list, #deck-list-overlay', function(e) {
