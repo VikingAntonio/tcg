@@ -8,17 +8,19 @@ class CompanionBot {
         this.userId = options.userId;
         this.userType = options.userType || 'public'; // 'public' o 'admin'
         this.elementId = options.elementId || 'companion-bubble';
-        this.intervalRange = options.intervalRange || [23000, 53000]; // 23-53s (reducido 5s más)
+        this.intervalRange = options.intervalRange || [23000, 53000]; // 23-53s
         this.onAction = options.onAction;
 
-        this.messages = [];
+        this.allMessages = []; // Almacena todos los mensajes base y personalizados
+        this.messages = [];    // Mensajes activos para el ciclo actual (filtrados por contexto)
         this.currentIndex = 0;
         this.timer = null;
         this.bubble = document.getElementById(this.elementId);
+        this.currentContext = 'all';
 
         // Cargar mensajes iniciales si se proveen
         if (options.customMessages && Array.isArray(options.customMessages)) {
-            this.messages = options.customMessages;
+            this.allMessages = options.customMessages;
         }
     }
 
@@ -31,13 +33,13 @@ class CompanionBot {
         await this.loadBaseMessages();
 
         // Solo cargar si no se pasaron mensajes en el constructor
-        // loadBaseMessages añade 7 mensajes si es admin
-        const baseLength = (this.userType === 'admin') ? 7 : 0;
-        if (this.messages.length <= baseLength) {
+        const baseLength = (this.userType === 'admin') ? 9 : 1;
+        if (this.allMessages.length <= baseLength) {
             await this.loadCustomMessages();
         }
 
-        // Shuffler inicial
+        // Inicializar pool de mensajes
+        this.messages = [...this.allMessages];
         this.shuffleMessages();
 
         // Iniciar ciclo con un delay inicial aleatorio
@@ -68,20 +70,17 @@ class CompanionBot {
         } catch (err) {
             console.error("Error loading base bot messages:", err);
         }
-        this.messages = [...base, ...this.messages];
+        this.allMessages = [...base, ...this.allMessages];
     }
 
     async loadCustomMessages() {
         try {
-            // Cargar mensajes según el tipo de usuario (public o admin)
             let query = this.supabase
                 .from('bot_messages')
                 .select('*')
                 .eq('user_id', this.userId)
                 .eq('is_active', true);
 
-            // Filtrar solo si es admin para evitar mensajes de clientes en el panel
-            // Para public se mantiene sin filtrar para asegurar compatibilidad con mensajes existentes
             if (this.userType === 'admin') {
                 query = query.or('view_type.eq.admin,view_type.eq.both');
             }
@@ -89,16 +88,102 @@ class CompanionBot {
             const { data, error } = await query;
 
             if (data && data.length > 0) {
-                // Combine with base tips if admin, otherwise use directly
-                if (this.userType === 'admin') {
-                    this.messages = [...this.messages, ...data];
-                } else {
-                    this.messages = data;
-                }
+                this.allMessages = [...this.allMessages, ...data];
             }
         } catch (err) {
             console.error("Error loading custom bot messages:", err);
         }
+    }
+
+    async setContext(view) {
+        this.currentContext = view;
+        // Filtrar mensajes que coincidan con el tipo/view o sean 'custom' (base)
+        this.messages = this.allMessages.filter(m => {
+            if (m.type === 'custom' || !m.type) return true;
+            if (m.type === view) return true;
+            if (view === 'albums' && m.type === 'album_link') return true;
+            if (view === 'preorders' && m.type === 'pre_sales') return true;
+            return false;
+        });
+
+        if (this.messages.length === 0) {
+            this.messages = this.allMessages.filter(m => m.type === 'custom');
+        }
+
+        this.currentIndex = 0;
+        this.shuffleMessages();
+
+        // Cargar info automática de la BD
+        await this.loadAutomaticMessages(view);
+
+        // Si cambiamos de contexto, forzar que el bot diga algo pronto (3-8s)
+        if (this.timer) {
+            clearTimeout(this.timer);
+            const quickInterval = Math.floor(Math.random() * 5000) + 3000;
+            this.timer = setTimeout(() => {
+                this.showBubble();
+                this.startLoop();
+            }, quickInterval);
+        }
+    }
+
+    async loadAutomaticMessages(view) {
+        if (this.userType !== 'public' || !this.userId) return;
+
+        try {
+            let autoMsg = "";
+            if (view === 'albums') {
+                const { count } = await this.supabase.from('albums').select('*', { count: 'exact', head: true }).eq('user_id', this.userId).eq('is_public', true);
+                if (count > 0) autoMsg = `¡Actualmente tenemos ${count} álbumes disponibles para que los explores!`;
+            } else if (view === 'decks') {
+                const { count } = await this.supabase.from('decks').select('*', { count: 'exact', head: true }).eq('user_id', this.userId).eq('is_public', true);
+                if (count > 0) autoMsg = `¡Echa un vistazo a nuestros ${count} decks personalizados! Seguro encuentras algo interesante.`;
+            } else if (view === 'wishlist') {
+                const { count } = await this.supabase.from('wishlist').select('*', { count: 'exact', head: true }).eq('user_id', this.userId).eq('obtained', false);
+                if (count > 0) autoMsg = `Estamos buscando ${count} cartas específicas. ¡Si las tienes, contáctanos!`;
+            } else if (view === 'events') {
+                const { count } = await this.supabase.from('eventos').select('*', { count: 'exact', head: true }).eq('user_id', this.userId);
+                if (count > 0) autoMsg = `Tenemos ${count} eventos programados. ¡No te quedes fuera!`;
+            }
+
+            if (autoMsg) {
+                // Insertar al inicio de la rotación para que sea lo primero que diga
+                this.messages.unshift({ content: autoMsg, type: 'auto', duration: 8 });
+            }
+        } catch (err) {
+            console.warn("Error loading auto messages:", err);
+        }
+    }
+
+    say(content, options = {}) {
+        if (!this.bubble || !content) return;
+
+        // Limpiar timer actual para que no se encime
+        if (this.timer) clearTimeout(this.timer);
+
+        const duration = (options.duration || 6) * 1000;
+        this.bubble.textContent = this.stripEmojis(content);
+
+        if (options.clickable) {
+            this.bubble.classList.add('clickable');
+            this.bubble.onclick = () => {
+                if (options.onAction) options.onAction();
+                else if (options.url) window.open(options.url, '_blank');
+            };
+        } else {
+            this.bubble.classList.remove('clickable');
+            this.bubble.onclick = null;
+        }
+
+        this.bubble.classList.remove('fade-out');
+        this.bubble.classList.add('fade-in');
+
+        setTimeout(() => {
+            this.bubble.classList.remove('fade-in');
+            this.bubble.classList.add('fade-out');
+            // Reanudar ciclo normal después de un breve silencio
+            setTimeout(() => this.startLoop(), 5000);
+        }, duration);
     }
 
     shuffleMessages() {
@@ -131,7 +216,6 @@ class CompanionBot {
 
         this.bubble.textContent = this.stripEmojis(msg.content);
 
-        // Configurar acción al hacer clic
         const hasAction = (msg.redirect_url && msg.redirect_url !== '') || msg.type === 'album_link';
 
         if (hasAction) {
@@ -142,17 +226,14 @@ class CompanionBot {
             this.bubble.onclick = null;
         }
 
-        // Mostrar con animación
         this.bubble.classList.remove('fade-out');
         this.bubble.classList.add('fade-in');
 
-        // Ocultar después de la duración configurada
         setTimeout(() => {
             this.bubble.classList.remove('fade-in');
             this.bubble.classList.add('fade-out');
         }, duration);
 
-        // Avanzar índice
         this.currentIndex++;
         if (this.currentIndex >= this.messages.length) {
             this.currentIndex = 0;
