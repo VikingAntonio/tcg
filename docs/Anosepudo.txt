@@ -1,0 +1,13 @@
+# Registro de limitaciones en la obtención de datos de cartas
+
+A pesar de los esfuerzos para integrar una descripción detallada de los efectos de las cartas mediante el chatbot, se han encontrado las siguientes limitaciones:
+
+1. **Esquema de Base de Datos**: La tabla `viking_data` en Supabase no contiene actualmente una columna `description` o `effect`. Solo se dispone de los campos: `name`, `image_url`, `expansion`, `rarity`, `tcg`, `price` y `type`.
+2. **APIs Externas**: Aunque existen APIs para Yu-Gi-Oh! y Pokémon, integrarlas en tiempo real para cada clic en el visor público sin un sistema de caché robusto podría afectar el rendimiento y causar bloqueos por exceso de peticiones (rate limiting).
+3. **Privacidad y Personalización**: Muchos usuarios suben cartas con nombres personalizados o en idiomas distintos, lo que dificulta la búsqueda exacta en bases de datos externas globales.
+
+### Sugerencias de mejora:
+- Actualizar la tabla `viking_data` para incluir un campo `effect` de tipo TEXT.
+- Implementar un proceso de "scrapping" o enriquecimiento de datos automático durante el registro en 'Modo Rápido' o 'Expansiones' para que el chatbot tenga acceso a esta info de forma local y persistente.
+
+Por el momento, el chatbot mostrará toda la información disponible en el sistema (Precio, Expansión, TCG y Tipo) para dar el mayor protagonismo posible al personaje sin comprometer la estabilidad del sitio.
