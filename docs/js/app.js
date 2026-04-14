@@ -1168,10 +1168,10 @@ async function openCardModal($slot) {
 
     if (window.botInstance && name) {
         (async () => {
-            const sequence = [`¡Mira este ${name}!`];
-            if (expansion && expansion !== '-') sequence.push(`Es de la expansión ${expansion}.`);
-            if (price && price !== '-') sequence.push(`Tiene un costo de ${price}.`);
-            if (condition && condition !== '-') sequence.push(`¡Está en condición ${condition}!`);
+            const sequence = [`¡Mira esta carta: ${name}!`];
+            if (price && price !== '-') sequence.push(`Tiene un precio de ${price}.`);
+            if (expansion && expansion !== '-') sequence.push(`Pertenece a la expansión ${expansion}.`);
+            if (condition && condition !== '-') sequence.push(`Su estado de conservación es ${condition}.`);
 
             // Fetch deeper details from database
             const extra = await window.botInstance.fetchDetailedCardInfo(name);

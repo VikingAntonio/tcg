@@ -7,7 +7,17 @@
     <title>Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.154.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="js/loading3d.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
     <style>
@@ -198,6 +208,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="js/companion-bot.js"></script>
     <script src="js/cart.js"></script>
     <script>
         let storeOwnerLinks = {
@@ -206,8 +217,9 @@
         };
 
         $(document).ready(async function() {
-            renderCart();
+                        renderCart();
             await loadStoreContact();
+            initCompanionBot();
 
             $('#btn-clear-cart').click(function() {
                 Swal.fire({
@@ -219,7 +231,10 @@
                     confirmButtonText: 'Sí, vaciar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        Cart.clear();
+                                                Cart.clear();
+                        if (window.botInstance) {
+                            window.botInstance.say("¡Has vaciado tu carrito! Que pena, ojalá luego te animes a llevarte algo.", { duration: 7 });
+                        }
                         renderCart();
                     }
                 });
@@ -268,7 +283,36 @@
             $('#cart-total-display').text('$' + Cart.getTotal().toFixed(2));
         }
 
+                async function initCompanionBot() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const storeName = urlParams.get('store') || urlParams.get('user');
+
+            // Resolve store ID for bot config
+            let storeId = null;
+            if (storeName) {
+                const { data } = await _supabase.from('usuarios').select('id').or(`store_name.eq."${storeName}",username.eq."${storeName}"`).maybeSingle();
+                if (data) storeId = data.id;
+            }
+
+            const bot = new CompanionBot({
+                supabase: _supabase,
+                userId: storeId,
+                userType: 'public',
+                onAction: (msg) => {
+                    if (msg.redirect_url && msg.redirect_url.startsWith('http')) window.open(msg.redirect_url, '_blank');
+                }
+            });
+            await bot.init();
+            window.botInstance = bot;
+            bot.setContext('cart');
+        }
+
         window.removeItem = function(id) {
+            const items = Cart.getAll();
+            const item = items.find(i => i.cart_id === id);
+            if (item && window.botInstance) {
+                window.botInstance.say(`¡Oh no! Has quitado ${item.name}. Espero que encuentres otra carta que te guste más.`, { duration: 6 });
+            }
             Cart.remove(id);
             renderCart();
         };
@@ -336,5 +380,13 @@
             }
         }
     </script>
+
+    <!-- Floating Companion -->
+    <div id="companion-wrapper">
+        <div class="companion-drag-handle"><i class="fas fa-arrows-alt"></i></div>
+        <div id="floating-companion-container"></div>
+        <div id="companion-bubble" class="companion-bubble"></div>
+    </div>
+
 </body>
 </html>
