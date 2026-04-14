@@ -17,6 +17,7 @@ class CompanionBot {
         this.timer = null;
         this.bubble = document.getElementById(this.elementId);
         this.currentContext = 'all';
+        this.isSpeakingSequence = false;
 
         // Cargar mensajes iniciales si se proveen
         if (options.customMessages && Array.isArray(options.customMessages)) {
@@ -45,8 +46,10 @@ class CompanionBot {
         // Iniciar ciclo con un delay inicial aleatorio
         const initialDelay = Math.floor(Math.random() * 10000) + 5000; // 5-15s
         setTimeout(() => {
-            this.showBubble();
-            this.startLoop();
+            if (!this.isSpeakingSequence) {
+                this.showBubble();
+                this.startLoop();
+            }
         }, initialDelay);
     }
 
@@ -124,12 +127,14 @@ class CompanionBot {
         await this.loadAutomaticMessages(view);
 
         // Si cambiamos de contexto, forzar que el bot diga algo pronto (3-8s)
-        if (this.timer) {
+        if (this.timer && !this.isSpeakingSequence) {
             clearTimeout(this.timer);
             const quickInterval = Math.floor(Math.random() * 5000) + 3000;
             this.timer = setTimeout(() => {
-                this.showBubble();
-                this.startLoop();
+                if (!this.isSpeakingSequence) {
+                    this.showBubble();
+                    this.startLoop();
+                }
             }, quickInterval);
         }
     }
@@ -189,8 +194,35 @@ class CompanionBot {
             this.bubble.classList.remove('fade-in');
             this.bubble.classList.add('fade-out');
             // Reanudar ciclo normal después de un breve silencio
-            setTimeout(() => this.startLoop(), 5000);
+            if (!this.isSpeakingSequence) {
+                setTimeout(() => this.startLoop(), 5000);
+            }
         }, duration);
+    }
+
+    async saySequence(messages) {
+        if (this.timer) clearTimeout(this.timer);
+        this.isSpeakingSequence = true;
+
+        for (const msg of messages) {
+            const text = typeof msg === 'string' ? msg : msg.content;
+            const duration = (typeof msg === 'object' ? msg.duration : 4) || 4;
+
+            this.bubble.textContent = this.stripEmojis(text);
+            this.bubble.classList.remove('fade-out');
+            this.bubble.classList.add('fade-in');
+
+            await new Promise(r => setTimeout(r, duration * 1000));
+
+            this.bubble.classList.remove('fade-in');
+            this.bubble.classList.add('fade-out');
+
+            await new Promise(r => setTimeout(r, 600)); // Breve pausa entre globos
+        }
+
+        this.isSpeakingSequence = false;
+        this.isSpeakingSequence = false;
+        this.startLoop();
     }
 
     shuffleMessages() {
@@ -202,11 +234,14 @@ class CompanionBot {
 
     startLoop() {
         if (this.timer) clearTimeout(this.timer);
+        if (this.isSpeakingSequence) return;
 
         const nextInterval = Math.floor(Math.random() * (this.intervalRange[1] - this.intervalRange[0])) + this.intervalRange[0];
         this.timer = setTimeout(() => {
-            this.showBubble();
-            this.startLoop();
+            if (!this.isSpeakingSequence) {
+                this.showBubble();
+                this.startLoop();
+            }
         }, nextInterval);
     }
 
@@ -216,7 +251,7 @@ class CompanionBot {
     }
 
     showBubble() {
-        if (this.messages.length === 0 || !this.bubble) return;
+        if (this.messages.length === 0 || !this.bubble || this.isSpeakingSequence) return;
 
         const msg = this.messages[this.currentIndex];
         const duration = (msg.duration || msg.display_duration || 5) * 1000;
