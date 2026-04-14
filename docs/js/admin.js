@@ -1581,6 +1581,7 @@ $(document).ready(async function() {
         const isActive = $card.find('.toggle-slot').is(':checked');
         const redirect = $card.find('.slot-redirect').val();
         const duration = parseInt($card.find('.slot-duration').val()) || 5;
+        const viewType = $card.find('.slot-view-type').val() || 'all';
 
         if (!content && isActive) {
             Swal.fire('Atención', 'Si el mensaje está activo, debe tener contenido.', 'warning');
@@ -1597,7 +1598,7 @@ $(document).ready(async function() {
                 is_active: isActive,
                 redirect_url: redirect || null,
                 duration: duration,
-                view_type: 'public'
+                view_type: 'public:' + viewType
             };
 
             const { error } = await _supabase
@@ -2814,6 +2815,9 @@ async function loadBotMessages() {
                 $card.find('.slot-content').val(msg.content);
                 $card.find('.toggle-slot').prop('checked', msg.is_active);
                 $card.find('.slot-duration').val(msg.duration || 5);
+                if (msg.view_type && msg.view_type.startsWith('public:')) {
+                    $card.find('.slot-view-type').val(msg.view_type.split(':')[1]);
+                }
                 if (msg.type === 'album_link') {
                     $card.find('.album-select').val(msg.redirect_url);
                 } else {

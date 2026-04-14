@@ -95,7 +95,6 @@ window.openShareModal = function(title, type, id, extraId) {
     $('#share-link-input').val(shareUrl);
     $('#share-overlay').addClass('active');
 
-
     // Generate QR Code
     $('#share-qr-code').empty();
     window.shareQR = new QRCode(document.getElementById("share-qr-code"), {
@@ -255,7 +254,6 @@ $(document).ready(async function() {
         e.preventDefault();
         if ($(this).attr('id') === 'menu-spirit-btn') {
             $('#spirit-modal').addClass('active');
-
             loadPublicSpirits();
         } else {
             switchView('wishlist');
@@ -351,7 +349,6 @@ $(document).ready(async function() {
 
     $('#spirit-btn').click(function() {
         $('#spirit-modal').addClass('active');
-
         loadPublicSpirits();
     });
 
@@ -364,7 +361,6 @@ $(document).ready(async function() {
     $(document).on('click', '.wishlist-tab', function() {
         $('.wishlist-tab').removeClass('active');
         $(this).addClass('active');
-
         window.currentWishlistTab = parseInt($(this).data('index')) || 0;
         loadPublicWishlist();
     });
@@ -374,7 +370,6 @@ $(document).ready(async function() {
         $('#wishlist-external-search-results').empty();
         $('#wishlist-external-search-input').val('');
         $('#wishlist-search-modal').addClass('active');
-
     });
 
     $('#close-wishlist-search-modal').click(function() {
@@ -432,7 +427,6 @@ $(document).ready(async function() {
             $('#expanded-gltf-viewer').attr('src', gltf);
             $('#expanded-gltf-name').text(name);
             $('#gltf-overlay').addClass('active');
-
             $('body').addClass('modal-open');
         }
     });
@@ -610,7 +604,6 @@ $(document).ready(async function() {
 
     $('#menu-item-chat').click(function() {
         $('#chatbot-container').addClass('active');
-
         $('#companion-menu').removeClass('active');
     });
 
@@ -619,7 +612,6 @@ $(document).ready(async function() {
             $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
             $('#expanded-gltf-name').text(window.currentSpirit.name);
             $('#gltf-overlay').addClass('active');
-
             $('body').addClass('modal-open');
         }
         $('#companion-menu').removeClass('active');
@@ -630,13 +622,12 @@ $(document).ready(async function() {
         e.preventDefault();
         if (window.currentCardData) {
             Cart.add(window.currentCardData);
-            Swal.fire({
-                title: '¡Añadido!',
-                text: `${window.currentCardData.name} se ha agregado al carrito.`,
-
             if (window.botInstance) {
                 window.botInstance.say(`¡Excelente elección! He añadido ${window.currentCardData.name} a tu carrito. Puedes ver tus opciones de compra por WhatsApp o Messenger.`, { duration: 8 });
             }
+            Swal.fire({
+                title: '¡Añadido!',
+                text: `${window.currentCardData.name} se ha agregado al carrito.`,
                 icon: 'success',
                 timer: 1500,
                 showConfirmButton: false,
@@ -1171,6 +1162,13 @@ async function openCardModal($slot) {
         }
     }
 
+    if (window.botInstance && name) {
+        let msg = `¡Mira este ${name}!`;
+        if (expansion && expansion !== '-') msg += ` Es de la expansión ${expansion}.`;
+        if (price && price !== '-') msg += ` Tiene un costo de ${price}.`;
+        window.botInstance.say(msg, { duration: 7 });
+    }
+
     // Store current card data for cart and sharing
     window.currentCardData = {
         id, name, image_url: imgSrc, rarity, expansion, condition, price, quantity,
@@ -1189,12 +1187,6 @@ async function openCardModal($slot) {
     setTimeout(() => {
         applyVisualsToModal(holo, mask, use3d);
         $card3d.addClass("active");
-
-        // Bot comenta sobre la carta
-        if (window.botInstance && typeof name !== 'undefined') {
-            const infoMsg = `Estás viendo ${name}. ${typeof expansion !== 'undefined' && expansion !== '-' ? 'De la expansión ' + expansion + '.' : ''} ${typeof price !== 'undefined' && price !== '-' ? 'Su precio es de ' + price + '.' : ''}`;
-            window.botInstance.say(infoMsg, { duration: 8 });
-        }
     }, 150);
 }
 
@@ -1264,16 +1256,8 @@ async function switchView(view) {
     $('.nav-btn').removeClass('active');
     $(`.nav-btn[data-view="${view}"]`).addClass('active');
 
-
     $('.view-section').removeClass('active');
     $(`#${view}-view`).addClass('active');
-
-    // Actualizar contexto del bot según la pestaña
-    if (window.botInstance) {
-        window.botInstance.setContext(view);
-    }
-
-
 
     if (view === 'albums') {
         $('#public-view-title').text('Colección de Álbumes');
@@ -1304,6 +1288,10 @@ async function switchView(view) {
     const url = new URL(window.location);
     url.searchParams.set('view', view);
     window.history.pushState({}, '', url);
+
+    if (window.botInstance) {
+        window.botInstance.setContext(view);
+    }
 }
 
 // Helper to resolve user by identifier (store_name or username)
@@ -1834,7 +1822,6 @@ function applyTheme(theme) {
     // Update theme icons
     $('.theme-btn, .theme-btn-small').removeClass('active');
     $(`.theme-btn[data-theme="${theme}"], .theme-btn-small[data-theme="${theme}"]`).addClass('active');
-
 }
 
 async function checkSession() {
@@ -2400,7 +2387,6 @@ function loadPublicWishlist() {
                     window.currentWishlistTab = firstSlot;
                     $('.wishlist-tab').removeClass('active');
                     $(`.wishlist-tab[data-index="${firstSlot}"]`).addClass('active');
-
                 }
             }
         } catch(e) { console.warn(e); }
@@ -2576,9 +2562,7 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
     $('.deck-filter-tab').removeClass('active');
     $('.deck-filter-tab[data-filter="all"]').addClass('active');
 
-
     $('#deck-list-overlay').addClass('active');
-
     $('body').addClass('modal-open');
 });
 
@@ -2586,7 +2570,6 @@ $(document).on('click', '.deck-filter-tab', function() {
     const filter = $(this).data('filter');
     $('.deck-filter-tab').removeClass('active');
     $(this).addClass('active');
-
 
     if (filter === 'all') {
         $('#deck-grid-container .grid-card-item').show();
@@ -2623,7 +2606,6 @@ async function showGeneralEventDetails(id) {
         }
 
         $('#event-details-overlay').addClass('active');
-
     } catch (e) {
         console.error(e);
         Swal.fire('Error', 'No se pudieron cargar los detalles del evento.', 'error');

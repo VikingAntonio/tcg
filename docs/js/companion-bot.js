@@ -99,6 +99,13 @@ class CompanionBot {
         this.currentContext = view;
         // Filtrar mensajes que coincidan con el tipo/view o sean 'custom' (base)
         this.messages = this.allMessages.filter(m => {
+            // Check for explicit context in view_type (saved as public:context)
+            if (m.view_type && m.view_type.startsWith('public:')) {
+                const context = m.view_type.split(':')[1];
+                if (context === 'all') return true;
+                if (context === view) return true;
+                return false;
+            }
             if (m.type === 'custom' || !m.type) return true;
             if (m.type === view) return true;
             if (view === 'albums' && m.type === 'album_link') return true;
