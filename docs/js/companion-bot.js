@@ -57,20 +57,20 @@ class CompanionBot {
         const base = [];
         try {
             if (this.userType === 'public') {
-                base.push({ content: "Sugerencia: Puedes colocar a tu compañero en la posición que prefieras usando el icono de movimiento.", type: 'custom', duration: 7 });
-                base.push({ content: "¡No olvides revisar tu carrito! Tengo muchas ganas de ver qué cartas elegiste.", type: 'cart', duration: 6 });
-                base.push({ content: "¿Sabías que puedes jugar partidas de Yu-Gi-Oh! aquí mismo? ¡Es súper divertido!", type: 'all', duration: 6 });
+                base.push({ content: "Sugerencia: Puedes colocar a tu compañero en la posición que prefieras usando el icono de movimiento.", type: 'custom', duration: 8 });
+                base.push({ content: "¡No olvides revisar tu carrito! Tengo muchas ganas de ver qué cartas elegiste.", type: 'cart', duration: 8 });
+                base.push({ content: "¿Sabías que puedes jugar partidas de Yu-Gi-Oh! aquí mismo? ¡Es súper divertido!", type: 'all', duration: 8 });
             } else {
                 // Tips for Admin
-                base.push({ content: "Dato útil: Ahora puedes mover libremente a tu compañero por la pantalla usando su icono de movimiento.", type: 'custom', duration: 7 });
-                base.push({ content: "Tip: Usa el escáner para registrar cartas más rápido.", type: 'custom', duration: 5 });
-                base.push({ content: "¿Necesitas soporte? Contáctanos por Messenger.", type: 'custom', redirect_url: 'https://m.me/vikingdevtj', duration: 5 });
-                base.push({ content: "Dato útil: Para añadir cartas a tu álbum, entra a 'Editar' y haz clic en un espacio vacío.", type: 'custom', duration: 6 });
-                base.push({ content: "Sabías que: Si vinculas tu WhatsApp en 'Mi Perfil', los pedidos de tus clientes te llegarán directamente.", type: 'custom', duration: 7 });
-                base.push({ content: "Efecto especial: Prueba el 'CustomTexture' y el editor de máscaras para resaltar el foil de tus cartas favoritas.", type: 'custom', duration: 7 });
-                base.push({ content: "Sugerencia: Usa la sección de 'Deseos' para listar las cartas que buscas; así tus clientes sabrán qué ofrecerte.", type: 'custom', duration: 6 });
-                base.push({ content: "Consejo: Mantén tus 'Preventas' actualizadas para que tus clientes puedan apartar lo más nuevo de inmediato.", type: 'custom', duration: 6 });
-                base.push({ content: "Tip: ¡Ya puedes poner precio a tus Decks! Puedes usar la suma automática o definir un precio especial.", type: 'custom', duration: 6 });
+                base.push({ content: "Dato útil: Ahora puedes mover libremente a tu compañero por la pantalla usando su icono de movimiento.", type: 'custom', duration: 8 });
+                base.push({ content: "Tip: Usa el escáner para registrar cartas más rápido.", type: 'custom', duration: 6 });
+                base.push({ content: "¿Necesitas soporte? Contáctanos por Messenger.", type: 'custom', redirect_url: 'https://m.me/vikingdevtj', duration: 6 });
+                base.push({ content: "Dato útil: Para añadir cartas a tu álbum, entra a 'Editar' y haz clic en un espacio vacío.", type: 'custom', duration: 7 });
+                base.push({ content: "Sabías que: Si vinculas tu WhatsApp en 'Mi Perfil', los pedidos de tus clientes te llegarán directamente.", type: 'custom', duration: 8 });
+                base.push({ content: "Efecto especial: Prueba el editor de máscaras para resaltar el foil de tus cartas favoritas.", type: 'custom', duration: 8 });
+                base.push({ content: "Sugerencia: Usa la sección de 'Deseos' para listar las cartas que buscas; así tus clientes sabrán qué ofrecerte.", type: 'custom', duration: 7 });
+                base.push({ content: "Consejo: Mantén tus 'Preventas' actualizadas para que tus clientes puedan apartar lo más nuevo de inmediato.", type: 'custom', duration: 7 });
+                base.push({ content: "Tip: ¡Ya puedes poner precio a tus Decks! Puedes usar la suma automática o definir un precio especial.", type: 'custom', duration: 7 });
             }
         } catch (err) {
             console.error("Error loading base bot messages:", err);
@@ -237,13 +237,21 @@ class CompanionBot {
     }
 
     async saySequence(messages) {
+        // Cooldown mechanism to prevent rapid-fire triggers
+        const now = Date.now();
+        if (this.lastSequenceTime && now - this.lastSequenceTime < 3000) {
+            console.log("CompanionBot: Sequence cooldown active");
+            return;
+        }
+        this.lastSequenceTime = now;
+
         if (this.timer) clearTimeout(this.timer);
         this.isSpeakingSequence = true;
 
         for (const msg of messages) {
             const text = typeof msg === 'string' ? msg : msg.content;
-            // Increased duration for better readability (min 6s)
-            const duration = Math.max((typeof msg === 'object' ? msg.duration : 6) || 6, 6);
+            // Increased duration for better readability (min 8s)
+            const duration = Math.max((typeof msg === 'object' ? msg.duration : 8) || 8, 8);
 
             this.bubble.textContent = this.stripEmojis(text);
             this.bubble.classList.remove('fade-out');
@@ -254,7 +262,7 @@ class CompanionBot {
             this.bubble.classList.remove('fade-in');
             this.bubble.classList.add('fade-out');
 
-            await new Promise(r => setTimeout(r, 1200)); // Longer pause between bubbles
+            await new Promise(r => setTimeout(r, 1500)); // Longer pause between bubbles
         }
 
         this.isSpeakingSequence = false;
