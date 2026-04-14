@@ -200,6 +200,24 @@ class CompanionBot {
         }, duration);
     }
 
+    async fetchDetailedCardInfo(name) {
+        if (!name) return null;
+        try {
+            const { data, error } = await this.supabase
+                .from('viking_data')
+                .select('*')
+                .ilike('name', name)
+                .limit(1)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (err) {
+            console.warn("Error fetching detailed card info:", err);
+            return null;
+        }
+    }
+
     async saySequence(messages) {
         if (this.timer) clearTimeout(this.timer);
         this.isSpeakingSequence = true;
