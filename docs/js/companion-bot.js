@@ -102,8 +102,24 @@ class CompanionBot {
 
     async setContext(view) {
         this.currentContext = view;
+
+        // Base contextual messages
+        const contextBase = [];
+        if (view === 'decks') {
+            contextBase.push({ content: "¡Mira estos mazos! Están diseñados para ganar. ¿Cuál es tu favorito?", type: 'decks' });
+            contextBase.push({ content: "Recuerda que puedes ver la lista completa de cartas haciendo clic en 'Modo Lista'.", type: 'decks' });
+        } else if (view === 'albums') {
+            contextBase.push({ content: "Nuestros álbumes están llenos de joyas. ¡Haz clic en las páginas para pasar de hoja!", type: 'albums' });
+            contextBase.push({ content: "Si buscas algo específico, ¡usa el buscador en la parte superior!", type: 'albums' });
+        } else if (view === 'cart') {
+            contextBase.push({ content: "¡Excelente elección! Recuerda que puedes finalizar tu compra por WhatsApp o Messenger.", type: 'cart' });
+            contextBase.push({ content: "¿Sabías que aceptamos diversos métodos de pago? Pregúntanos al contactarnos.", type: 'cart' });
+        } else if (view === 'events') {
+            contextBase.push({ content: "¡No te pierdas nuestros próximos torneos! La comunidad te espera.", type: 'events' });
+        }
+
         // Filtrar mensajes que coincidan con el tipo/view o sean 'custom' (base)
-        this.messages = this.allMessages.filter(m => {
+        this.messages = [...contextBase, ...this.allMessages].filter(m => {
             // Check for explicit context in view_type (saved as public:context)
             if (m.view_type && m.view_type.startsWith('public:')) {
                 const context = m.view_type.split(':')[1];
@@ -226,7 +242,8 @@ class CompanionBot {
 
         for (const msg of messages) {
             const text = typeof msg === 'string' ? msg : msg.content;
-            const duration = (typeof msg === 'object' ? msg.duration : 4) || 4;
+            // Increased duration for better readability (min 6s)
+            const duration = Math.max((typeof msg === 'object' ? msg.duration : 6) || 6, 6);
 
             this.bubble.textContent = this.stripEmojis(text);
             this.bubble.classList.remove('fade-out');
@@ -237,10 +254,9 @@ class CompanionBot {
             this.bubble.classList.remove('fade-in');
             this.bubble.classList.add('fade-out');
 
-            await new Promise(r => setTimeout(r, 600)); // Breve pausa entre globos
+            await new Promise(r => setTimeout(r, 1200)); // Longer pause between bubbles
         }
 
-        this.isSpeakingSequence = false;
         this.isSpeakingSequence = false;
         this.startLoop();
     }
