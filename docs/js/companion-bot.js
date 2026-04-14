@@ -58,6 +58,8 @@ class CompanionBot {
         try {
             if (this.userType === 'public') {
                 base.push({ content: "Sugerencia: Puedes colocar a tu compañero en la posición que prefieras usando el icono de movimiento.", type: 'custom', duration: 7 });
+                base.push({ content: "¡No olvides revisar tu carrito! Tengo muchas ganas de ver qué cartas elegiste.", type: 'cart', duration: 6 });
+                base.push({ content: "¿Sabías que puedes jugar partidas de Yu-Gi-Oh! aquí mismo? ¡Es súper divertido!", type: 'all', duration: 6 });
             } else {
                 // Tips for Admin
                 base.push({ content: "Dato útil: Ahora puedes mover libremente a tu compañero por la pantalla usando su icono de movimiento.", type: 'custom', duration: 7 });
