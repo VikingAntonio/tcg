@@ -617,6 +617,10 @@ $(document).ready(async function() {
         $('#companion-menu').removeClass('active');
     });
 
+    $('#menu-item-play').click(function() {
+        window.location.href = 'play.html';
+    });
+
     // --- Cart Integration ---
     $(document).on('click', '#btn-add-to-cart', function(e) {
         e.preventDefault();
@@ -1163,11 +1167,26 @@ async function openCardModal($slot) {
     }
 
     if (window.botInstance && name) {
-        const sequence = [`¡Mira este ${name}!`];
-        if (expansion && expansion !== '-') sequence.push(`Es de la expansión ${expansion}.`);
-        if (price && price !== '-') sequence.push(`Tiene un costo de ${price}.`);
-        if (condition && condition !== '-') sequence.push(`¡Está en condición ${condition}!`);
-        window.botInstance.saySequence(sequence);
+        (async () => {
+            const sequence = [`¡Mira este ${name}!`];
+            if (expansion && expansion !== '-') sequence.push(`Es de la expansión ${expansion}.`);
+            if (price && price !== '-') sequence.push(`Tiene un costo de ${price}.`);
+            if (condition && condition !== '-') sequence.push(`¡Está en condición ${condition}!`);
+
+            // Fetch deeper details from database
+            const extra = await window.botInstance.fetchDetailedCardInfo(name);
+            if (extra) {
+                if (extra.tcg) sequence.push(`Es una carta de ${extra.tcg}.`);
+                if (extra.type) sequence.push(`Tipo: ${extra.type}.`);
+                if (extra.rarity && extra.rarity !== rarity) sequence.push(`Rareza original: ${extra.rarity}.`);
+                if (extra.description) {
+                    // Split description into short chunks if it's too long
+                    const desc = extra.description.substring(0, 150) + (extra.description.length > 150 ? '...' : '');
+                    sequence.push(`Efecto: ${desc}`);
+                }
+            }
+            window.botInstance.saySequence(sequence);
+        })();
     }
 
     // Store current card data for cart and sharing
