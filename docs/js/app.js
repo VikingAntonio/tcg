@@ -95,6 +95,12 @@ window.openShareModal = function(title, type, id, extraId) {
     $('#share-link-input').val(shareUrl);
     $('#share-overlay').addClass('active');
 
+    // Bot interaction for sharing
+    if (window.botInstance) {
+        const shareMsg = `¡Genial! Comparte este link con quien quieras para mostrarle "${title}". También puedes usar el código QR para que lo escaneen directamente.`;
+        window.botInstance.say(shareMsg, { duration: 10 });
+    }
+
     // Generate QR Code
     $('#share-qr-code').empty();
     window.shareQR = new QRCode(document.getElementById("share-qr-code"), {
