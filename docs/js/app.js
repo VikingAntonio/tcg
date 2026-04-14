@@ -1163,10 +1163,11 @@ async function openCardModal($slot) {
     }
 
     if (window.botInstance && name) {
-        let msg = `¡Mira este ${name}!`;
-        if (expansion && expansion !== '-') msg += ` Es de la expansión ${expansion}.`;
-        if (price && price !== '-') msg += ` Tiene un costo de ${price}.`;
-        window.botInstance.say(msg, { duration: 7 });
+        const sequence = [`¡Mira este ${name}!`];
+        if (expansion && expansion !== '-') sequence.push(`Es de la expansión ${expansion}.`);
+        if (price && price !== '-') sequence.push(`Tiene un costo de ${price}.`);
+        if (condition && condition !== '-') sequence.push(`¡Está en condición ${condition}!`);
+        window.botInstance.saySequence(sequence);
     }
 
     // Store current card data for cart and sharing

@@ -2543,7 +2543,7 @@ input:checked + .slider:before {
     left: 20px;
     width: 120px;
     height: 120px;
-    z-index: 9000;
+    z-index: 12000;
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -3130,7 +3130,7 @@ body.focus-mode-active .event-card {
     padding: 12px 18px;
     border-radius: 20px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-    z-index: 9005;
+    z-index: 12005;
     width: max-content;
     min-width: 160px;
     max-width: 280px;
