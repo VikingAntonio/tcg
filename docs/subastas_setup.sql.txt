@@ -1,0 +1,34 @@
+-- SQL Migration to update subastas and create subastas_pujas
+-- Execute this in the Supabase SQL Editor
+
+-- Update subastas table with new columns
+ALTER TABLE subastas
+ADD COLUMN IF NOT EXISTS starting_bid DECIMAL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS increment_type TEXT DEFAULT 'free', -- 'fixed' or 'free'
+ADD COLUMN IF NOT EXISTS min_increment DECIMAL DEFAULT 1,
+ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS description TEXT,
+ADD COLUMN IF NOT EXISTS rules TEXT,
+ADD COLUMN IF NOT EXISTS image_url TEXT,
+ADD COLUMN IF NOT EXISTS is_live BOOLEAN DEFAULT FALSE;
+
+-- Create subastas_pujas table
+-- Assuming subastas.id is BIGINT based on other tables like decks
+CREATE TABLE IF NOT EXISTS subastas_pujas (
+    id BIGSERIAL PRIMARY KEY,
+    subasta_id BIGINT REFERENCES subastas(id) ON DELETE CASCADE,
+    bidder_id UUID REFERENCES auth.users(id),
+    bidder_name TEXT,
+    amount DECIMAL NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for faster queries on active auctions
+CREATE INDEX IF NOT EXISTS idx_subastas_end_date ON subastas(end_date);
+CREATE INDEX IF NOT EXISTS idx_pujas_subasta_id ON subastas_pujas(subasta_id);
+
+-- Enable Realtime for subastas and subastas_pujas
+-- This is often needed for live bidding updates
+-- ALTER PUBLICATION supabase_realtime ADD TABLE subastas;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE subastas_pujas;

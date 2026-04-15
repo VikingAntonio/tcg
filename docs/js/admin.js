@@ -1920,6 +1920,7 @@ async function showAuthenticatedContent() {
     $('#store-link-container').html(linkHtml);
 
     showView('main-dashboard');
+    loadWonAuctions();
 
     // Load store contact data
     $('#store-whatsapp').val(currentUser.whatsapp_link || '');
@@ -2944,6 +2945,117 @@ function makeCompanionDraggable() {
         setTimeout(() => { window.isCompanionDragging = false; }, 100);
     });
 }
+
+async function loadWonAuctions() {
+    if (!currentUser) return;
+
+    try {
+        // Find auctions where currentUser has the highest bid and are ended
+        const { data: allEndedAuctions, error } = await _supabase
+            .from('subastas')
+            .select(`
+                *,
+                subastas_pujas (
+                    amount,
+                    bidder_id,
+                    bidder_name
+                ),
+                usuarios (
+                    store_name,
+                    username
+                )
+            `)
+            .eq('is_live', true)
+            .lt('end_date', new Date().toISOString());
+
+        if (error) throw error;
+
+        const wonItems = [];
+        allEndedAuctions.forEach(auction => {
+            const bids = auction.subastas_pujas || [];
+            if (bids.length > 0) {
+                // Sort bids to find highest
+                bids.sort((a, b) => b.amount - a.amount);
+                const highestBid = bids[0];
+
+                if (highestBid.bidder_id === currentUser.id) {
+                    wonItems.push({
+                        ...auction,
+                        won_amount: highestBid.amount,
+                        store_name: auction.usuarios ? (auction.usuarios.store_name || auction.usuarios.username) : 'Tienda Desconocida'
+                    });
+                }
+            }
+        });
+
+        if (wonItems.length > 0) {
+            $('#won-auctions-container').show();
+            $('#won-auctions-count').text(wonItems.length);
+            const $items = $('#won-auctions-items');
+            $items.empty();
+
+            // Group by store to show totals if from same store
+            const storeGroups = {};
+            wonItems.forEach(item => {
+                if (!storeGroups[item.store_name]) storeGroups[item.store_name] = { items: [], total: 0 };
+                storeGroups[item.store_name].items.push(item);
+                storeGroups[item.store_name].total += item.won_amount;
+            });
+
+            Object.keys(storeGroups).forEach(store => {
+                const group = storeGroups[store];
+                const $storeBlock = $(`
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 15px; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 10px;">
+                            <span style="font-weight: 800; color: var(--primary-color);"><i class="fas fa-store"></i> ${store}</span>
+                            <span style="font-weight: 800; font-size: 1.1rem;">Total: $${group.total.toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px;">
+                            ${group.items.map(item => `
+                                <div class="won-item">
+                                    <div class="won-item-title">${item.nombre}</div>
+                                    <div class="won-item-price">$${item.won_amount.toFixed(2)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 10px;" onclick="contactStoreForWonAuction('${store}')">
+                            <i class="fab fa-whatsapp"></i> Contactar para Pago
+                        </button>
+                    </div>
+                `);
+                $items.append($storeBlock);
+            });
+
+            $('#tile-auction-badge').text(wonItems.length).show();
+
+            if (window.botInstance) {
+                window.botInstance.say(`¡Felicidades! Has ganado ${wonItems.length} subastas. Revisa tu panel para ver los detalles y contactar a los vendedores.`, { duration: 10 });
+            }
+        } else {
+            $('#won-auctions-container').hide();
+            $('#tile-auction-badge').hide();
+        }
+
+    } catch (err) {
+        console.error("Error loading won auctions:", err);
+    }
+}
+
+window.contactStoreForWonAuction = async (storeName) => {
+    // Find the store's contact info
+    const { data: storeUser } = await _supabase
+        .from('usuarios')
+        .select('whatsapp_link, store_name, username')
+        .or(`store_name.eq."${storeName}",username.eq."${storeName}"`)
+        .maybeSingle();
+
+    if (storeUser && storeUser.whatsapp_link) {
+        const msg = `¡Hola! Gané una subasta en tu tienda "${storeName}" en VikingTCG. ¿Cómo procedemos con el pago?`;
+        window.open(`https://wa.me/${storeUser.whatsapp_link.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+        Swal.fire('Atención', 'No se encontró información de contacto para esta tienda.', 'info');
+    }
+};
 
 async function openOrganizeModal(type) {
     const $grid = $('#organize-grid');

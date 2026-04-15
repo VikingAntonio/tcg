@@ -174,6 +174,9 @@ class CompanionBot {
             } else if (view === 'events') {
                 const { count } = await this.supabase.from('eventos').select('*', { count: 'exact', head: true }).eq('user_id', this.userId);
                 if (count > 0) autoMsg = `Tenemos ${count} eventos programados. ¡No te quedes fuera!`;
+            } else if (view === 'auctions') {
+                const { count } = await this.supabase.from('subastas').select('*', { count: 'exact', head: true }).eq('user_id', this.userId).eq('is_live', true).eq('status', 'Activa');
+                if (count > 0) autoMsg = `¡Hay ${count} subastas en vivo ahora mismo! ¿Qué esperas para pujar?`;
             }
 
             if (autoMsg) {
