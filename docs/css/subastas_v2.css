@@ -235,19 +235,22 @@ body.admin-body {
     color: #333 !important;
     max-width: 850px !important;
     width: 95% !important;
-    padding: 40px !important;
+    padding: 20px 30px !important;
     border-radius: 40px !important;
     box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
     border: none !important;
+    max-height: 98vh;
+    overflow-y: auto;
 }
 
 .auction-modal-content label {
     color: #666 !important;
     font-weight: 800 !important;
-    font-size: 0.75rem !important;
+    font-size: 0.6rem !important;
     letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    margin-bottom: 3px;
     display: block;
+    text-transform: uppercase;
 }
 
 .auction-modal-content input,
@@ -255,12 +258,13 @@ body.admin-body {
 .auction-modal-content textarea {
     background: #fff !important;
     border: 1.5px solid #eee !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     color: #333 !important;
-    padding: 12px 15px !important;
+    padding: 8px 12px !important;
     font-weight: 600 !important;
     transition: all 0.3s !important;
     width: 100%;
+    font-size: 0.85rem !important;
 }
 
 .auction-modal-content input:focus {
@@ -269,7 +273,7 @@ body.admin-body {
 }
 
 #auction-modal-title {
-    font-size: 2.2rem;
+    font-size: 1.6rem;
     font-weight: 900;
     letter-spacing: -1px;
     margin: 0;
@@ -280,14 +284,14 @@ body.admin-body {
 .auction-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 40px;
+    gap: 20px;
     width: 100%;
 }
 
 .form-col {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 8px;
 }
 
 .draft-date-group {
@@ -298,8 +302,8 @@ body.admin-body {
 
 .increments-row {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .check-box-item {
@@ -356,7 +360,7 @@ body.admin-body {
 
 .file-drop-zone-modal {
     width: 100%;
-    height: 200px;
+    height: 160px;
     border: 2.5px dashed #ddd;
     border-radius: 25px;
     display: flex;
@@ -385,14 +389,14 @@ body.admin-body {
 
 .btn-save-large {
     width: 100%;
-    height: 65px;
+    height: 50px;
     background: #e67e22 !important; /* Specific Orange */
     color: #fff !important;
-    font-size: 1.5rem !important;
+    font-size: 1.2rem !important;
     font-weight: 900 !important;
-    border-radius: 20px !important;
-    margin-top: 40px !important;
-    box-shadow: 0 12px 30px rgba(230, 126, 34, 0.3) !important;
+    border-radius: 18px !important;
+    margin-top: 15px !important;
+    box-shadow: 0 10px 25px rgba(230, 126, 34, 0.3) !important;
     text-transform: uppercase;
     border: none !important;
 }

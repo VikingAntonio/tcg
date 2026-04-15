@@ -873,9 +873,14 @@
     <div id="auction-modal" class="overlay">
         <div class="overlay-content auction-modal-content">
             <span id="close-auction-modal" class="close-btn">&times;</span>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;">
                 <h2 id="auction-modal-title" style="margin: 0;">LANZAR SUBASTA</h2>
                 <button id="btn-switch-to-bulk" class="btn-switch-bulk-pill"><i class="fas fa-layer-group"></i> CAMBIAR A MÚLTIPLES</button>
+            </div>
+
+            <div id="bulk-info-msg" class="bulk-info-box" style="display: none; margin-bottom: 20px;">
+                <i class="fas fa-info-circle"></i>
+                <span>Estos ajustes se aplicarán a todos los borradores seleccionados.</span>
             </div>
 
             <div class="auction-form-grid">
@@ -937,10 +942,6 @@
                         </div>
                     </div>
 
-                    <div id="bulk-info-msg" class="bulk-info-box" style="display: none;">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Estos ajustes se aplicarán a todos los borradores seleccionados.</span>
-                    </div>
                 </div>
             </div>
 
