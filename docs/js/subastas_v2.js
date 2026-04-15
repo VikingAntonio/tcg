@@ -1,49 +1,122 @@
 let currentUser = null;
 let auctionDrafts = [];
 let isBulkMode = false;
+let userSpirit = null;
 
 $(document).ready(async function() {
     await checkSession();
-    initializeSpirit();
+    await loadUserSpirit();
 
-    // --- Bulk Drop Zone Events ---
-    const $mainDropZone = $('#main-drop-zone-auction');
-    $mainDropZone.on('dragover dragenter', function(e) {
-        e.preventDefault(); e.stopPropagation();
-        $(this).addClass('dragover');
-    });
-    $mainDropZone.on('dragleave dragend drop', function(e) {
-        e.preventDefault(); e.stopPropagation();
-        $(this).removeClass('dragover');
-    });
-    $mainDropZone.on('drop', function(e) {
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) handleBulkUpload(files);
-    });
-    $mainDropZone.on('click', function() {
-        $('#input-auction-files-bulk').click();
-    });
-    $('#input-auction-files-bulk').on('change', function() {
-        if (this.files.length > 0) handleBulkUpload(this.files);
-    });
-
-    // --- Modal Actions ---
+    // --- Events ---
+    $('#btn-open-create-auction').click(() => openAuctionModal(false));
     $('#btn-open-bulk-settings').click(() => openAuctionModal(true));
     $('#close-auction-modal').click(closeAuctionModal);
     $('#btn-save-auction').click(handleSaveAuction);
     $('#btn-save-all-drafts').click(saveAllDrafts);
 
-    // --- Single Upload in Modal ---
-    $('#drop-zone-single-auction').click(() => $('#input-single-auction-file').click());
-    $('#input-single-auction-file').on('change', function() {
-        if (this.files.length > 0) handleSingleUpload(this.files[0]);
+    // Drop zones
+    const $bulkDropZone = $('#main-drop-zone-auction');
+    $bulkDropZone.on('dragover dragenter', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $bulkDropZone.on('dragleave dragend drop', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $bulkDropZone.on('drop', function(e) {
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) handleBulkUpload(files);
     });
+    $bulkDropZone.on('click', () => $('#input-auction-files-bulk').click());
+    $('#input-auction-files-bulk').on('change', function() { if (this.files.length > 0) handleBulkUpload(this.files); });
+
+    $('#drop-zone-single-auction').click(() => $('#input-single-auction-file').click());
+    $('#input-single-auction-file').on('change', function() { if (this.files.length > 0) handleSingleUpload(this.files[0]); });
 
     $(document).on('click', '.btn-delete-live', function() {
         const id = $(this).data('id');
         deleteLiveAuction(id);
     });
+
+    // Companion interactions
+    $('#floating-companion-container').click(() => {
+        if (window.isCompanionDragging) return;
+        $('#companion-menu').toggleClass('active');
+    });
+
+    initCompanionDraggability();
 });
+
+function initCompanionDraggability() {
+    const wrapper = document.getElementById('companion-wrapper');
+    const handle = document.getElementById('companion-drag-handle');
+    if (!wrapper || !handle) return;
+
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    // Load saved position
+    const savedPos = localStorage.getItem('companionPosition');
+    if (savedPos) {
+        const pos = JSON.parse(savedPos);
+        xOffset = pos.x;
+        yOffset = pos.y;
+        setTranslate(xOffset, yOffset, wrapper);
+    }
+
+    handle.addEventListener("mousedown", dragStart);
+    document.addEventListener("mousemove", drag);
+    document.addEventListener("mouseup", dragEnd);
+
+    handle.addEventListener("touchstart", dragStart, { passive: false });
+    document.addEventListener("touchmove", drag, { passive: false });
+    document.addEventListener("touchend", dragEnd);
+
+    function dragStart(e) {
+        if (e.type === "touchstart") {
+            initialX = e.touches[0].clientX - xOffset;
+            initialY = e.touches[0].clientY - yOffset;
+        } else {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+        }
+        if (e.target === handle || handle.contains(e.target)) {
+            isDragging = true;
+            window.isCompanionDragging = true;
+            wrapper.style.transition = 'none';
+        }
+    }
+
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            if (e.type === "touchmove") {
+                currentX = e.touches[0].clientX - initialX;
+                currentY = e.touches[0].clientY - initialY;
+            } else {
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+            }
+            xOffset = currentX;
+            yOffset = currentY;
+            setTranslate(currentX, currentY, wrapper);
+        }
+    }
+
+    function dragEnd() {
+        if (!isDragging) return;
+        initialX = currentX;
+        initialY = currentY;
+        isDragging = false;
+        setTimeout(() => window.isCompanionDragging = false, 100);
+        wrapper.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        localStorage.setItem('companionPosition', JSON.stringify({ x: xOffset, y: yOffset }));
+    }
+
+    function setTranslate(xPos, yPos, el) {
+        el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
+    }
+}
 
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();
@@ -53,7 +126,6 @@ async function checkSession() {
             .select('*')
             .eq('id', session.user.id)
             .single();
-
         if (user) {
             currentUser = user;
             loadLiveAuctions();
@@ -65,36 +137,67 @@ async function checkSession() {
     }
 }
 
-function initializeSpirit() {
-    if (window.botInstance) {
-        window.botInstance.setContext('subastas');
-        window.botInstance.say("¡Bienvenido al panel de subastas! Aquí puedes lanzar tus artículos al mejor postor.");
+async function loadUserSpirit() {
+    if (!currentUser) return;
+
+    // Fetch user's selected spirit
+    const spiritId = localStorage.getItem(`selectedSpirit_${currentUser.id}`);
+    if (spiritId) {
+        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', spiritId).single();
+        if (spirit) {
+            userSpirit = spirit;
+            initSpiritViewer(spirit);
+        }
+    } else {
+        // Default to first allowed or generic
+        const { data: spirits } = await _supabase.from('spirits').select('*').limit(1);
+        if (spirits && spirits.length > 0) {
+            userSpirit = spirits[0];
+            initSpiritViewer(spirits[0]);
+        }
+    }
+}
+
+function initSpiritViewer(spirit) {
+    const $container = $('#floating-companion-container');
+    $container.empty();
+
+    const viewer = document.createElement('model-viewer');
+    viewer.setAttribute('src', spirit.gltf_url);
+    viewer.setAttribute('auto-rotate', '');
+    viewer.setAttribute('rotation-speed', '200%');
+    viewer.setAttribute('camera-controls', '');
+    viewer.setAttribute('disable-zoom', '');
+    viewer.setAttribute('shadow-intensity', '1');
+    viewer.style.width = '100%';
+    viewer.style.height = '100%';
+    viewer.style.cursor = 'grab';
+
+    if (spirit.animation_type === 'float' || spirit.animation_type === 'float-static') {
+        viewer.setAttribute('autoplay', '');
+    }
+
+    $container.append(viewer);
+
+    // Initialize Bot logic
+    if (typeof CompanionBot === 'function') {
+        window.botInstance = new CompanionBot({
+            supabase: _supabase,
+            userId: currentUser.id,
+            userType: 'admin'
+        });
+        window.botInstance.init();
+        window.botInstance.setContext('auctions');
+        window.botInstance.say("¡Hola! Vamos a lanzar unas subastas increíbles hoy.");
     }
 }
 
 async function handleBulkUpload(files) {
     const fileArray = Array.from(files);
 
-    // Limits Check
-    let currentTotal = auctionDrafts.length;
-    const { count: activeCount } = await _supabase
-        .from('subastas')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', currentUser.id)
-        .eq('is_live', true);
-
-    let maxAllowed = (currentUser.role === 'premium') ? 20 : 10;
-    if (currentUser.role === 'admin' || currentUser.role === 'admin_store') maxAllowed = 999;
-
-    if (activeCount + currentTotal + fileArray.length > maxAllowed) {
-        if (window.botInstance) window.botInstance.say("¡Vaya! Parece que has alcanzado el límite de subastas para tu plan.");
-        Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${maxAllowed} subastas activas.`, 'warning');
-        return;
-    }
-
     Swal.fire({
-        title: 'Procesando imágenes...',
-        text: `Subiendo ${fileArray.length} imágenes al servidor.`,
+        title: 'Cargando imágenes...',
+        text: `Subiendo ${fileArray.length} artículos al servidor.`,
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
     });
@@ -121,7 +224,7 @@ async function handleBulkUpload(files) {
         }
     }
 
-    if (window.botInstance) window.botInstance.say(`¡Listo! He cargado ${fileArray.length} borradores. Configúralos y lánzalos.`);
+    if (window.botInstance) window.botInstance.say(`¡Genial! He preparado ${fileArray.length} borradores. Configúralos a tu gusto.`);
     Swal.close();
     renderDrafts();
 }
@@ -157,10 +260,10 @@ function renderDrafts() {
                 <div class="remove-draft"><i class="fas fa-times"></i></div>
                 <img src="${draft.image_url}" alt="Borrador">
                 <div class="draft-form">
-                    <input type="text" class="input-name" placeholder="Nombre del artículo" value="${draft.nombre}">
+                    <input type="text" class="input-name" placeholder="Nombre" value="${draft.nombre}">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 10px;">PUJA INICIAL ($)</label>
-                        <input type="number" class="input-bid" value="${draft.starting_bid}" min="1" step="0.01">
+                        <label style="font-size: 10px; font-weight: 800;">PUJA BASE ($)</label>
+                        <input type="number" class="input-bid" value="${draft.starting_bid}" step="0.01">
                     </div>
                 </div>
             </div>
@@ -185,13 +288,13 @@ function openAuctionModal(bulk = false) {
 
     if (bulk) {
         $('#auction-modal-title').text('CONFIGURAR TODO');
-        $('#auction-photo-group').hide();
-        $('#bulk-info-message').show();
-        $('#btn-save-auction').text('APLICAR A TODO');
+        $('#modal-photo-group').hide();
+        $('#bulk-info-msg').show();
+        $('#btn-save-auction').text('APLICAR AJUSTES');
     } else {
         $('#auction-modal-title').text('LANZAR SUBASTA');
-        $('#auction-photo-group').show();
-        $('#bulk-info-message').hide();
+        $('#modal-photo-group').show();
+        $('#bulk-info-msg').hide();
         $('#btn-save-auction').text('LANZAR SUBASTA');
         resetModalFields();
     }
@@ -209,7 +312,7 @@ function resetModalFields() {
     $('.inc-check').prop('checked', false);
     $('.inc-check[value="5"], .inc-check[value="10"]').prop('checked', true);
     $('#single-auction-preview').empty();
-    $('#drop-zone-single-auction').data('url', '').removeClass('has-image');
+    $('#drop-zone-single-auction').data('url', '');
 
     const now = new Date();
     const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
@@ -227,7 +330,6 @@ async function handleSaveAuction() {
     const increments = $('.inc-check:checked').map(function() { return parseInt($(this).val()); }).get();
 
     if (isBulkMode) {
-        // Apply to all drafts
         auctionDrafts.forEach(d => {
             if (title) d.nombre = title;
             d.description = desc;
@@ -239,12 +341,11 @@ async function handleSaveAuction() {
         });
         renderDrafts();
         closeAuctionModal();
-        if (window.botInstance) window.botInstance.say("¡Ajustes aplicados a todos tus borradores!");
+        if (window.botInstance) window.botInstance.say("¡Perfecto! He actualizado todos los borradores con estos ajustes.");
     } else {
-        // Create single auction
         const imageUrl = $('#drop-zone-single-auction').data('url');
-        if (!imageUrl) return Swal.fire('Falta imagen', 'Por favor selecciona una imagen.', 'warning');
-        if (!title || isNaN(startBid)) return Swal.fire('Faltan datos', 'Completa el título y la puja inicial.', 'warning');
+        if (!imageUrl) return Swal.fire('Error', 'Debes subir una imagen.', 'warning');
+        if (!title || isNaN(startBid)) return Swal.fire('Error', 'Completa el título y la puja base.', 'warning');
 
         Swal.fire({ title: 'Publicando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
@@ -265,8 +366,8 @@ async function handleSaveAuction() {
         if (error) {
             Swal.fire('Error', error.message, 'error');
         } else {
-            if (window.botInstance) window.botInstance.say("¡Excelente! Tu subasta ya está en vivo.");
-            Swal.fire('¡Éxito!', 'Subasta publicada.', 'success');
+            if (window.botInstance) window.botInstance.say("¡Excelente! La subasta ya está activa para todos tus clientes.");
+            Swal.fire('¡Éxito!', 'Subasta lanzada correctamente.', 'success');
             closeAuctionModal();
             loadLiveAuctions();
         }
@@ -276,12 +377,7 @@ async function handleSaveAuction() {
 async function saveAllDrafts() {
     if (auctionDrafts.length === 0) return;
 
-    Swal.fire({
-        title: 'Publicando todo...',
-        text: `Lanzando ${auctionDrafts.length} subastas.`,
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
+    Swal.fire({ title: 'Lanzando todo...', text: 'Publicando tus subastas masivas.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     const dataToInsert = auctionDrafts.map(d => ({
         user_id: currentUser.id,
@@ -302,8 +398,8 @@ async function saveAllDrafts() {
     if (error) {
         Swal.fire('Error', error.message, 'error');
     } else {
-        if (window.botInstance) window.botInstance.say(`¡Magnífico! Las ${auctionDrafts.length} subastas han sido publicadas.`);
-        Swal.fire('¡Éxito!', 'Todas las subastas han sido publicadas.', 'success');
+        if (window.botInstance) window.botInstance.say("¡Misión cumplida! Todas las subastas han sido lanzadas.");
+        Swal.fire('¡Éxito!', 'Catálogo de subastas publicado.', 'success');
         auctionDrafts = [];
         renderDrafts();
         loadLiveAuctions();
@@ -313,18 +409,18 @@ async function saveAllDrafts() {
 async function loadLiveAuctions() {
     const { data: items, error } = await _supabase
         .from('subastas')
-        .select(`*, subastas_pujas(amount, bidder_name)`)
+        .select(`*, subastas_pujas(amount)`)
         .eq('user_id', currentUser.id)
         .eq('is_live', true)
         .order('created_at', { ascending: false });
 
-    if (error) return console.error(error);
+    if (error) return;
 
     const $container = $('#live-auction-list');
     $container.empty();
 
     if (items.length === 0) {
-        $container.html('<div style="text-align: center; width: 100%; color: #666; padding: 40px;">Aún no tienes subastas activas.</div>');
+        $container.html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">No tienes subastas activas actualmente.</div>');
         return;
     }
 
@@ -334,15 +430,14 @@ async function loadLiveAuctions() {
         const isEnded = new Date(item.end_date) < new Date();
 
         const $card = $(`
-            <div class="manage-card ${isEnded ? 'ended' : ''}">
+            <div class="manage-card">
                 <div class="card-img-wrapper">
                     <img src="${item.image_url}" alt="${item.nombre}">
-                    ${isEnded ? '<div class="ended-overlay">FINALIZADA</div>' : ''}
                 </div>
                 <div class="card-content">
                     <h3>${item.nombre}</h3>
                     <div class="price-info">
-                        <span class="label">Puja Actual:</span>
+                        <span class="label">Pujada:</span>
                         <span class="value">$${highestBid || item.starting_bid}</span>
                     </div>
                     <div class="time-info">
@@ -361,19 +456,17 @@ async function loadLiveAuctions() {
 async function deleteLiveAuction(id) {
     const res = await Swal.fire({
         title: '¿Eliminar subasta?',
-        text: 'Esta acción detendrá la subasta inmediatamente.',
+        text: 'La subasta desaparecerá inmediatamente del catálogo público.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonText: 'Eliminar',
         cancelButtonText: 'Cancelar'
     });
 
     if (res.isConfirmed) {
         const { error } = await _supabase.from('subastas').delete().eq('id', id);
-        if (error) {
-            Swal.fire('Error', error.message, 'error');
-        } else {
-            if (window.botInstance) window.botInstance.say("Subasta eliminada correctamente.");
+        if (!error) {
+            if (window.botInstance) window.botInstance.say("Subasta eliminada.");
             loadLiveAuctions();
         }
     }

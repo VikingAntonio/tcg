@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
-    <title>Gestión de Subastas - Vikingdev TCG</title>
+    <title>Panel de Subastas - Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -14,7 +14,7 @@
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
 </head>
 <body class="admin-body">
-    <!-- Polished Navigation Bar -->
+    <!-- Navbar glassmorphism -->
     <nav class="auction-nav">
         <div class="nav-content">
             <a href="admin.html" class="btn-back-styled">
@@ -24,70 +24,83 @@
             <div class="nav-title-group">
                 <h1>Panel de <span class="highlight">Subastas</span></h1>
             </div>
-            <div style="width: 140px;"></div> <!-- Spacer to center title -->
+            <div style="width: 140px;" class="desktop-only"></div>
         </div>
     </nav>
 
     <div class="management-wrapper">
-        <!-- New Visual Helper for Upload -->
-        <div class="upload-hero">
+        <!-- Dashboard Hero -->
+        <div class="auction-hero-section">
+            <div class="hero-text">
+                <h2>Gestiona tus <span class="highlight">Subastas</span></h2>
+                <p>Crea subastas individuales o masivas de forma rápida y sencilla.</p>
+            </div>
+            <div class="hero-actions">
+                <button id="btn-open-create-auction" class="btn btn-primary btn-large">
+                    <i class="fas fa-plus-circle"></i> LANZAR SUBASTA
+                </button>
+            </div>
+        </div>
+
+        <!-- Bulk Upload Drop Zone -->
+        <div class="bulk-upload-container">
             <div class="main-drop-zone" id="main-drop-zone-auction">
                 <div class="drop-zone-inner">
                     <div class="upload-icon-wrapper">
                         <i class="fas fa-images"></i>
                         <i class="fas fa-plus mini-plus"></i>
                     </div>
-                    <h2>Subida Masiva de Artículos</h2>
-                    <p>Arrastra tus fotos aquí o haz clic para seleccionarlas</p>
-                    <span class="upload-hint">Crea múltiples subastas a partir de tus imágenes</span>
+                    <h2>Subida Masiva</h2>
+                    <p>Arrastra varias fotos para crear borradores automáticos</p>
                 </div>
                 <input type="file" id="input-auction-files-bulk" accept="image/*" multiple style="display: none;">
             </div>
         </div>
 
-        <!-- Bulk Actions / Launch Modal Trigger -->
+        <!-- Bulk Actions Toolbar -->
         <div id="bulk-actions-toolbar" class="bulk-toolbar" style="display: none;">
             <div class="bulk-info">
                 <i class="fas fa-layer-group"></i>
-                <span id="draft-count">0</span> subastas listas para configurar
+                <span id="draft-count">0</span> Borradores
             </div>
             <div class="bulk-buttons">
                 <button id="btn-open-bulk-settings" class="btn btn-bulk-secondary">
                     <i class="fas fa-sliders-h"></i> Configurar Todo
                 </button>
-                <button id="btn-save-all-drafts" class="btn-bulk-primary" style="background: #27ae60; box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);">
+                <button id="btn-save-all-drafts" class="btn btn-bulk-primary">
                     <i class="fas fa-rocket"></i> Lanzar Todo
                 </button>
             </div>
         </div>
 
-        <!-- Drafts List -->
+        <!-- Drafts Grid -->
         <div id="auction-drafts-list" class="drafts-grid">
-            <!-- Draft cards with individual price edit -->
+            <!-- Draft cards dynamically loaded -->
         </div>
 
+        <!-- Section header -->
         <div class="section-header-styled">
             <i class="fas fa-gavel"></i>
             <span>Tus Subastas Activas</span>
             <div class="line"></div>
         </div>
 
+        <!-- Live Auctions list -->
         <div id="live-auction-list" class="my-auctions-grid">
-            <div class="loading-spinner" style="text-align: center; width: 100%; padding: 40px; color: #666;">
-                <i class="fas fa-circle-notch fa-spin fa-2x"></i>
-                <p style="margin-top: 15px;">Cargando tus subastas...</p>
+            <div class="loading-spinner">
+                <i class="fas fa-circle-notch fa-spin"></i> Cargando...
             </div>
         </div>
     </div>
 
-    <!-- LANZAR SUBASTA MODAL (Bulk or Single) -->
+    <!-- CREATE/EDIT MODAL -->
     <div id="auction-modal" class="overlay">
-        <div class="overlay-content auction-modal-content" style="max-width: 900px;">
+        <div class="overlay-content auction-modal-content">
             <span id="close-auction-modal" class="close-btn">&times;</span>
-            <h2 id="auction-modal-title" style="align-self: flex-start; margin-bottom: 25px; font-weight: 900; letter-spacing: -1px;">LANZAR SUBASTA</h2>
+            <h2 id="auction-modal-title">LANZAR SUBASTA</h2>
 
             <div class="auction-form-grid">
-                <!-- Left Column -->
+                <!-- Left side fields -->
                 <div class="form-col">
                     <div class="form-group">
                         <label>PRODUCTO DE STOCK (OPCIONAL)</label>
@@ -118,67 +131,56 @@
                     </div>
                 </div>
 
-                <!-- Right Column -->
+                <!-- Right side fields -->
                 <div class="form-col">
                     <div class="form-group">
                         <label>PUJA INICIAL ($)</label>
-                        <input type="number" id="auction-start-bid" placeholder="0.00" step="0.01">
+                        <input type="number" id="auction-start-bid" placeholder="0.00" step="0.01" style="background: rgba(255,255,255,0.02); height: 80px; font-size: 2rem; font-weight: 800; text-align: center;">
                     </div>
 
                     <div class="form-group">
                         <label>INCREMENTOS PERMITIDOS</label>
                         <div class="increments-grid">
-                            <label class="check-item">
-                                <input type="checkbox" class="inc-check" value="5" checked>
-                                <span>$5</span>
-                            </label>
-                            <label class="check-item">
-                                <input type="checkbox" class="inc-check" value="10" checked>
-                                <span>$10</span>
-                            </label>
-                            <label class="check-item">
-                                <input type="checkbox" class="inc-check" value="20">
-                                <span>$20</span>
-                            </label>
-                            <label class="check-item">
-                                <input type="checkbox" class="inc-check" value="50">
-                                <span>$50</span>
-                            </label>
+                            <label class="check-item"><input type="checkbox" class="inc-check" value="5" checked><span>$5</span></label>
+                            <label class="check-item"><input type="checkbox" class="inc-check" value="10" checked><span>$10</span></label>
+                            <label class="check-item"><input type="checkbox" class="inc-check" value="20"><span>$20</span></label>
+                            <label class="check-item"><input type="checkbox" class="inc-check" value="50"><span>$50</span></label>
                         </div>
-                        <label class="check-item" style="margin-top: 15px;">
-                            <input type="checkbox" id="auction-free-bid" checked>
-                            <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Permitir Puja Libre</span>
+                        <label class="check-item" style="margin-top: 15px; background: none; border: none; padding: 0;">
+                            <input type="checkbox" id="auction-free-bid" checked style="width: 20px; height: 20px;">
+                            <span style="font-size: 0.8rem; font-weight: 800;">PERMITIR PUJA LIBRE</span>
                         </label>
                     </div>
 
-                    <div class="form-group" id="auction-photo-group">
+                    <div class="form-group" id="modal-photo-group">
                         <label>FOTO DEL ARTÍCULO</label>
-                        <div class="file-drop-zone" id="drop-zone-single-auction" style="height: 180px;">
+                        <div class="file-drop-zone-modal" id="drop-zone-single-auction">
                             <i class="fas fa-camera"></i>
-                            <p style="font-size: 0.8rem;">Arrastra o selecciona archivo</p>
+                            <p>Arrastra o selecciona archivo</p>
                             <input type="file" id="input-single-auction-file" accept="image/*" style="display: none;">
                             <div class="preview-img-container" id="single-auction-preview"></div>
                         </div>
                     </div>
-                    <div id="bulk-info-message" style="display: none; padding: 20px; background: rgba(0, 210, 255, 0.1); border-radius: 15px; border: 1px solid var(--viking-blue); color: var(--viking-blue); font-size: 0.85rem; font-weight: 600; text-align: center;">
-                        <i class="fas fa-info-circle"></i> Estos ajustes se aplicarán a todos los borradores actuales. Las imágenes y pujas individuales se mantendrán.
+
+                    <div id="bulk-info-msg" class="bulk-info-box" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Estos ajustes se aplicarán a todos los borradores. La imagen y puja se mantendrán individuales.</span>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-save-auction" class="btn btn-primary" style="width: 100%; height: 60px; font-size: 1.2rem; background: #e67e22; margin-top: 20px;">
-                LANZAR SUBASTA
-            </button>
+            <button id="btn-save-auction" class="btn btn-save-large">LANZAR SUBASTA</button>
         </div>
     </div>
 
-    <!-- Floating Companion -->
+    <!-- Floating Companion Wrapper -->
     <div id="companion-wrapper">
-        <div class="companion-drag-handle" id="companion-drag-handle">
+        <div class="companion-drag-handle" id="companion-drag-handle" title="Mover">
             <i class="fas fa-arrows-alt"></i>
         </div>
         <div id="floating-companion-container"></div>
         <div id="companion-bubble" class="companion-bubble"></div>
+
         <div class="companion-menu-popup" id="companion-menu">
             <div class="companion-menu-item" id="menu-item-chat"><i class="fas fa-comment-dots"></i> Hablar</div>
         </div>
