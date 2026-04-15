@@ -108,6 +108,12 @@ class CompanionBot {
         if (view === 'decks') {
             contextBase.push({ content: "¡Mira estos mazos! Están diseñados para ganar. ¿Cuál es tu favorito?", type: 'decks' });
             contextBase.push({ content: "Recuerda que puedes ver la lista completa de cartas haciendo clic en 'Modo Lista'.", type: 'decks' });
+        } else if (view === 'auctions') {
+            contextBase.push({ content: "¡Bienvenido a las subastas! ¿Buscas alguna ganga?", type: 'auctions' });
+            contextBase.push({ content: "Recuerda que cada puja cuenta. ¡No te dejes ganar!", type: 'auctions' });
+        } else if (view === 'SubastasGanadas') {
+            contextBase.push({ content: "¡Vaya! ¡Mira cuántas victorias!", type: 'SubastasGanadas' });
+            contextBase.push({ content: "Felicidades por tus nuevas adquisiciones. No olvides contactar a las tiendas.", type: 'SubastasGanadas' });
         } else if (view === 'albums') {
             contextBase.push({ content: "Nuestros álbumes están llenos de joyas. ¡Haz clic en las páginas para pasar de hoja!", type: 'albums' });
             contextBase.push({ content: "Si buscas algo específico, ¡usa el buscador en la parte superior!", type: 'albums' });

@@ -1,20 +1,66 @@
 -- SQL Migration to update subastas and create subastas_pujas
 -- Execute this in the Supabase SQL Editor
 
--- Update subastas table with new columns
-ALTER TABLE subastas
-ADD COLUMN IF NOT EXISTS starting_bid DECIMAL DEFAULT 0,
-ADD COLUMN IF NOT EXISTS increment_type TEXT DEFAULT 'free', -- 'fixed' or 'free'
-ADD COLUMN IF NOT EXISTS min_increment DECIMAL DEFAULT 1,
-ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS description TEXT,
-ADD COLUMN IF NOT EXISTS rules TEXT,
-ADD COLUMN IF NOT EXISTS image_url TEXT,
-ADD COLUMN IF NOT EXISTS is_live BOOLEAN DEFAULT FALSE;
+-- Ensure subastas table has all required columns
+DO $$
+BEGIN
+    -- Add starting_bid if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='starting_bid') THEN
+        ALTER TABLE subastas ADD COLUMN starting_bid DECIMAL DEFAULT 0;
+    END IF;
+
+    -- Add increment_type if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='increment_type') THEN
+        ALTER TABLE subastas ADD COLUMN increment_type TEXT DEFAULT 'free';
+    END IF;
+
+    -- Add min_increment if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='min_increment') THEN
+        ALTER TABLE subastas ADD COLUMN min_increment DECIMAL DEFAULT 1;
+    END IF;
+
+    -- Add allowed_increments if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='allowed_increments') THEN
+        ALTER TABLE subastas ADD COLUMN allowed_increments TEXT;
+    END IF;
+
+    -- Add start_date if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='start_date') THEN
+        ALTER TABLE subastas ADD COLUMN start_date TIMESTAMPTZ;
+    END IF;
+
+    -- Add end_date if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='end_date') THEN
+        ALTER TABLE subastas ADD COLUMN end_date TIMESTAMPTZ;
+    END IF;
+
+    -- Add description if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='description') THEN
+        ALTER TABLE subastas ADD COLUMN description TEXT;
+    END IF;
+
+    -- Add rules if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='rules') THEN
+        ALTER TABLE subastas ADD COLUMN rules TEXT;
+    END IF;
+
+    -- Add image_url if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='image_url') THEN
+        ALTER TABLE subastas ADD COLUMN image_url TEXT;
+    END IF;
+
+    -- Add is_live if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='is_live') THEN
+        ALTER TABLE subastas ADD COLUMN is_live BOOLEAN DEFAULT FALSE;
+    END IF;
+
+    -- Add status if not exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='status') THEN
+        ALTER TABLE subastas ADD COLUMN status TEXT DEFAULT 'Activa';
+    END IF;
+END $$;
 
 -- Create subastas_pujas table
--- Updated: subasta_id must be UUID to match subastas.id
 CREATE TABLE IF NOT EXISTS subastas_pujas (
     id BIGSERIAL PRIMARY KEY,
     subasta_id UUID REFERENCES subastas(id) ON DELETE CASCADE,
@@ -24,11 +70,6 @@ CREATE TABLE IF NOT EXISTS subastas_pujas (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for faster queries on active auctions
+-- Index for faster queries
 CREATE INDEX IF NOT EXISTS idx_subastas_end_date ON subastas(end_date);
 CREATE INDEX IF NOT EXISTS idx_pujas_subasta_id ON subastas_pujas(subasta_id);
-
--- Enable Realtime for subastas and subastas_pujas
--- This is often needed for live bidding updates
--- ALTER PUBLICATION supabase_realtime ADD TABLE subastas;
--- ALTER PUBLICATION supabase_realtime ADD TABLE subastas_pujas;

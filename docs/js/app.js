@@ -1314,7 +1314,8 @@ async function switchView(view) {
         $('.public-header p').text('Participa y llévate las mejores cartas al mejor precio.');
         await loadPublicAuctions();
         if (window.botInstance) {
-            window.botInstance.say("¡Bienvenido a la sección de subastas! Elige un artículo para ver los detalles y colocar tu puja. ¡Mucha suerte!", { duration: 8 });
+            window.botInstance.setContext('auctions');
+            window.botInstance.say("¡Bienvenido a las subastas! Elige un artículo para ver los detalles y colocar tu puja. ¡Mucha suerte!", { duration: 8 });
         }
     }
 
@@ -2629,7 +2630,7 @@ function loadPublicAuctions() {
         }
         if (!userId) { resolve(); return; }
 
-        $('#auctions-container').html('<div class="loading">Cargando subastas...</div>');
+        $('#auctions-container').html('<div class="loading">Cargando subastas...</div>').addClass('auction-grid');
 
         try {
             const { data: auctions, error } = await _supabase
@@ -2776,6 +2777,14 @@ async function openAuctionDetail(auction) {
     $modal.addClass('active');
     $('body').addClass('modal-open');
 
+    if (window.botInstance) {
+        const isEnded = new Date(auction.end_date) < new Date();
+        const msg = isEnded ?
+            `Esta subasta ya terminó. ¡Felicidades al ganador!` :
+            `La puja actual por ${auction.nombre} es de $${currentBid.toFixed(2)}. ¡Todavía tienes tiempo de participar!`;
+        window.botInstance.say(msg);
+    }
+
     // Subscribe to bids (Realtime)
     const channel = _supabase
         .channel(`auction-${auction.id}`)
@@ -2858,7 +2867,7 @@ $('#btn-place-bid').click(async function() {
     const activeParticipations = new Set(participated.filter(p => p.subastas && p.subastas.is_live && p.subastas.status === 'Activa').map(p => p.subasta_id)).size;
 
     let partLimit = (window.currentUser.role === 'premium') ? 20 : 10;
-    if (window.currentUser.role === 'admin' || window.currentUser.role === 'admin_store') partLimit = 9999;
+    if (window.currentUser.role === 'admin' || window.currentUser.role === 'admin_store' || window.currentUser.role === 'tienda') partLimit = 9999;
 
     if (activeParticipations >= partLimit) {
         Swal.fire('Límite alcanzado', `Tu plan permite participar en un máximo de ${partLimit} subastas activas simultáneamente.`, 'warning');
@@ -2891,6 +2900,9 @@ $('#btn-place-bid').click(async function() {
     } else {
         Swal.fire({ icon: 'success', title: 'Puja registrada', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         $('#input-bid-amount').val('');
+        if (window.botInstance) {
+            window.botInstance.say(`¡Genial! Tu puja de $${bidAmount.toFixed(2)} ha sido registrada. ¡Ahora vas a la cabeza!`);
+        }
     }
 });
 

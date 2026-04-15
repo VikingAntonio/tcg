@@ -170,6 +170,25 @@ $(document).ready(async function() {
         handleLogout();
     });
 
+    $(document).on('click', '#btn-subastas, #menu-btn-subastas', function(e) {
+        e.preventDefault();
+        showView('manage-auctions');
+        if (typeof loadLiveAuctions === 'function') loadLiveAuctions();
+        if (window.botInstance) window.botInstance.setContext('auctions');
+    });
+
+    $(document).on('click', '#menu-btn-subastas-ganadas', function(e) {
+        e.preventDefault();
+        showView('SubastasGanadas');
+        loadWonAuctionsList();
+        if (window.botInstance) window.botInstance.setContext('SubastasGanadas');
+    });
+
+    $(document).on('click', '#btn-open-bulk-auctions', function() {
+        showView('bulk-auctions');
+        if (window.botInstance) window.botInstance.say("¡Excelente! Aquí puedes cargar muchas imágenes a la vez para crear subastas en masa.");
+    });
+
     // --- Floating Panel Logic ---
     $(document).on('click', '#avatar-btn', function(e) {
         e.stopPropagation();
@@ -1899,10 +1918,10 @@ async function showAuthenticatedContent() {
     if (currentUser.has_clients) $('#btn-clientes').show(); else $('#btn-clientes').hide();
     if (currentUser.has_auctions) {
         $('#btn-subastas').show();
-        $('#btn-admin-create-auction').show();
+        $('#menu-btn-subastas').show();
     } else {
         $('#btn-subastas').hide();
-        $('#btn-admin-create-auction').hide();
+        $('#menu-btn-subastas').hide();
     }
     if (currentUser.has_events !== false) $('#btn-eventos').show(); else $('#btn-eventos').hide();
 
@@ -2969,7 +2988,6 @@ async function loadWonAuctions() {
     if (!currentUser) return;
 
     try {
-        // Find auctions where currentUser has the highest bid and are ended
         const { data: allEndedAuctions, error } = await _supabase
             .from('subastas')
             .select(`
@@ -2993,10 +3011,8 @@ async function loadWonAuctions() {
         allEndedAuctions.forEach(auction => {
             const bids = auction.subastas_pujas || [];
             if (bids.length > 0) {
-                // Sort bids to find highest
                 bids.sort((a, b) => b.amount - a.amount);
                 const highestBid = bids[0];
-
                 if (highestBid.bidder_id === currentUser.id) {
                     wonItems.push({
                         ...auction,
@@ -3007,23 +3023,80 @@ async function loadWonAuctions() {
             }
         });
 
-        if (wonItems.length > 0) {
-            $('#won-auctions-count').text(wonItems.length);
-            $('#tile-auction-badge').text(wonItems.length).show();
-            $('#nav-btn-auctions-won').show().off('click').on('click', () => showWonAuctionsModal(wonItems));
-            $('#nav-auction-badge').text(wonItems.length).show();
+        window.currentUserWonItems = wonItems;
 
-            if (window.botInstance) {
-                window.botInstance.say(`¡Felicidades! Has ganado ${wonItems.length} subastas. Toca el botón de subastas para ver los detalles.`, { duration: 10 });
-            }
+        if (wonItems.length > 0) {
+            $('#tile-auction-badge').text(wonItems.length).show();
+            $('#nav-btn-auctions-won').show().off('click').on('click', () => {
+                showView('SubastasGanadas');
+                loadWonAuctionsList();
+            });
+            $('#nav-auction-badge').text(wonItems.length).show();
         } else {
             $('#tile-auction-badge').hide();
             $('#nav-btn-auctions-won').hide();
         }
-
     } catch (err) {
         console.error("Error loading won auctions:", err);
     }
+}
+
+async function loadWonAuctionsList() {
+    const $container = $('#won-auctions-container');
+    $container.html('<div class="loading">Cargando victorias...</div>');
+
+    if (!window.currentUserWonItems || window.currentUserWonItems.length === 0) {
+        await loadWonAuctions();
+    }
+
+    const wonItems = window.currentUserWonItems || [];
+
+    if (wonItems.length === 0) {
+        $container.html('<div class="empty">Aún no has ganado ninguna subasta. ¡Participa en alguna para empezar!</div>');
+        return;
+    }
+
+    const storeGroups = {};
+    wonItems.forEach(item => {
+        if (!storeGroups[item.store_name]) storeGroups[item.store_name] = { items: [], total: 0 };
+        storeGroups[item.store_name].items.push(item);
+        storeGroups[item.store_name].total += item.won_amount;
+    });
+
+    let html = `<div class="won-auctions-grid-list" style="display: flex; flex-direction: column; gap: 25px;">`;
+    Object.keys(storeGroups).forEach(store => {
+        const group = storeGroups[store];
+        html += `
+            <div class="won-store-card" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 25px; backdrop-filter: blur(10px);" onmouseenter="if(window.botInstance) window.botInstance.say('En ${store} tienes un total de $${group.total.toFixed(2)} por pagar.')">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 45px; height: 45px; background: rgba(0,210,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--viking-blue);">
+                            <i class="fas fa-store fa-lg"></i>
+                        </div>
+                        <h2 style="margin: 0; font-size: 1.4rem;">${store}</h2>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 800;">Total a Pagar</div>
+                        <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${group.total.toFixed(2)}</div>
+                    </div>
+                </div>
+                <div class="won-items-table" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                    ${group.items.map(item => `
+                        <div style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); padding: 10px 15px; border-radius: 12px;">
+                            <img src="${item.image_url}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
+                            <span style="flex: 1; font-weight: 600;">${item.nombre}</span>
+                            <span style="font-weight: 800; color: var(--viking-blue);">$${item.won_amount.toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="btn btn-success" style="width: 100%; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="contactStoreForWonAuction('${store}')">
+                    <i class="fab fa-whatsapp fa-lg"></i> CONTACTAR TIENDA POR WHATSAPP
+                </button>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    $container.html(html);
 }
 
 window.showWonAuctionsModal = (wonItems) => {
