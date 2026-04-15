@@ -1309,6 +1309,10 @@ async function switchView(view) {
         $('#public-view-title').text('Eventos');
         $('.public-header p').text('Participa en nuestros eventos para ganar premios increíbles.');
         await loadPublicEvents();
+    } else if (view === 'auctions') {
+        $('#public-view-title').text('Subastas en Vivo');
+        $('.public-header p').text('Participa y llévate las mejores cartas al mejor precio.');
+        await loadPublicAuctions();
     }
 
     const url = new URL(window.location);
@@ -2606,6 +2610,295 @@ $(document).on('click', '.deck-filter-tab', function() {
             if (obtained === false || obtained === "false") $(this).show();
             else $(this).hide();
         });
+    }
+});
+
+// --- Auction Logic ---
+let auctionTimers = {};
+
+function loadPublicAuctions() {
+    return new Promise(async (resolve) => {
+        let userId = window.currentStoreId;
+        if (!userId) {
+            const identifier = window.currentStoreIdentifier;
+            const user = await resolveUser(identifier);
+            if (user) userId = user.id;
+        }
+        if (!userId) { resolve(); return; }
+
+        $('#auctions-container').html('<div class="loading">Cargando subastas...</div>');
+
+        try {
+            const { data: auctions, error } = await _supabase
+                .from('subastas')
+                .select(`
+                    *,
+                    subastas_pujas (
+                        amount,
+                        bidder_name,
+                        created_at
+                    )
+                `)
+                .eq('user_id', userId)
+                .eq('is_live', true)
+                .eq('status', 'Activa')
+                .order('end_date', { ascending: true });
+
+            if (error) throw error;
+
+            if (!auctions || auctions.length === 0) {
+                $('#auctions-container').html('<div class="empty">No hay subastas activas en este momento.</div>');
+                return;
+            }
+
+            $('#auctions-container').empty();
+            auctions.forEach(auction => {
+                renderAuctionCard(auction);
+            });
+
+        } catch (e) {
+            console.error("Error loading auctions:", e);
+            $('#auctions-container').html('<div class="error">Error al cargar subastas.</div>');
+        } finally {
+            hideLoading();
+            resolve();
+        }
+    });
+}
+
+function renderAuctionCard(auction) {
+    const bids = auction.subastas_pujas || [];
+    const currentBid = bids.length > 0 ? Math.max(...bids.map(b => b.amount)) : auction.starting_bid;
+
+    const $card = $(`
+        <div class="auction-card" id="auction-${auction.id}">
+            <div class="auction-status-badge status-live">En Vivo</div>
+            <div class="auction-image-container">
+                <img src="${auction.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${auction.nombre}">
+            </div>
+            <div class="auction-info">
+                <h3 class="auction-title">${auction.nombre}</h3>
+                <div class="auction-bid-info">
+                    <div>
+                        <div class="current-bid-label">Puja Actual</div>
+                        <div class="current-bid-value">$${currentBid.toFixed(2)}</div>
+                    </div>
+                    <div class="auction-timer" id="timer-${auction.id}">--:--:--</div>
+                </div>
+                <button class="btn btn-sm btn-view-auction" style="width: 100%; margin-top: 10px;">
+                    <i class="fas fa-gavel"></i> Participar
+                </button>
+            </div>
+        </div>
+    `);
+
+    $card.find('.btn-view-auction').click(() => openAuctionDetail(auction));
+    $('#auctions-container').append($card);
+
+    startAuctionTimer(auction);
+}
+
+function startAuctionTimer(auction) {
+    if (auctionTimers[auction.id]) clearInterval(auctionTimers[auction.id]);
+
+    const endDate = new Date(auction.end_date).getTime();
+
+    const update = () => {
+        const now = new Date().getTime();
+        const distance = endDate - now;
+
+        if (distance < 0) {
+            $(`#timer-${auction.id}, #auction-modal-timer`).text("FINALIZADA");
+            $(`#auction-${auction.id}`).find('.auction-status-badge').removeClass('status-live').addClass('status-ended').text('Finalizada');
+            $(`#auction-${auction.id}`).removeClass('auction-ending-soon');
+            clearInterval(auctionTimers[auction.id]);
+            return;
+        }
+
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        $(`#timer-${auction.id}, #auction-modal-timer`).text(timeStr);
+
+        // Alert Effects
+        if (distance < (1000 * 60 * 60)) { // 1 Hour
+            $(`#auction-${auction.id}`).addClass('auction-ending-soon');
+
+            // Bot Interaction (Only if view is auctions and distance is close to thresholds)
+            if (window.botInstance && $('.nav-btn[data-view="auctions"]').hasClass('active')) {
+                const minsLeft = Math.floor(distance / (1000 * 60));
+                if (minsLeft === 59 && seconds === 0) {
+                    window.botInstance.say(`¡Huy! Falta solo una hora para que termine la subasta de "${auction.nombre}". ¡No te quedes fuera!`, { duration: 10 });
+                } else if (minsLeft === 5 && seconds === 0) {
+                    window.botInstance.say(`¡Atención! Solo quedan 5 minutos para el cierre de "${auction.nombre}". ¡Es ahora o nunca!`, { duration: 8 });
+                }
+            }
+        }
+    };
+
+    update();
+    auctionTimers[auction.id] = setInterval(update, 1000);
+}
+
+async function openAuctionDetail(auction) {
+    const $modal = $('#auction-detail-modal');
+    $('#auction-modal-title').text(auction.nombre);
+    $('#auction-modal-desc').text(auction.description || 'Sin descripción.');
+    $('#auction-modal-rules').text(auction.rules || 'Reglas estándar de subasta.');
+    $('#auction-modal-image').attr('src', auction.image_url);
+    $('#auction-modal-start-bid').text(`$${auction.starting_bid.toFixed(2)}`);
+
+    window.currentAuctionId = auction.id;
+    window.currentAuctionData = auction;
+
+    updateAuctionBidsUI(auction.id);
+
+    // Setup Quick Bids
+    const $quickContainer = $('#quick-bid-container');
+    $quickContainer.empty();
+
+    if (auction.increment_type === 'fixed') {
+        const inc = auction.min_increment;
+        [inc, inc * 2, inc * 5].forEach(val => {
+            $quickContainer.append(`<button class="btn-bid-amount" onclick="quickBid(${val})">+$${val}</button>`);
+        });
+    } else {
+        [5, 10, 20].forEach(val => {
+            $quickContainer.append(`<button class="btn-bid-amount" onclick="quickBid(${val})">+$${val}</button>`);
+        });
+    }
+
+    $modal.addClass('active');
+    $('body').addClass('modal-open');
+
+    // Subscribe to bids (Realtime)
+    const channel = _supabase
+        .channel(`auction-${auction.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subastas_pujas', filter: `subasta_id=eq.${auction.id}` }, payload => {
+            updateAuctionBidsUI(auction.id);
+        })
+        .subscribe();
+
+    window.currentAuctionChannel = channel;
+}
+
+async function updateAuctionBidsUI(auctionId) {
+    const { data: bids, error } = await _supabase
+        .from('subastas_pujas')
+        .select('*')
+        .eq('subasta_id', auctionId)
+        .order('amount', { ascending: false });
+
+    if (error) return;
+
+    const currentBid = bids.length > 0 ? bids[0].amount : window.currentAuctionData.starting_bid;
+    $('#auction-modal-current-bid').text(`$${currentBid.toFixed(2)}`);
+    $(`#auction-${auctionId} .current-bid-value`).text(`$${currentBid.toFixed(2)}`);
+
+    // Top 5 Bidders
+    const $topList = $('#auction-top-bidders');
+    $topList.empty();
+
+    const isEnded = new Date(window.currentAuctionData.end_date) < new Date();
+
+    if (isEnded && bids.length > 0) {
+        $('#bid-input-container').hide();
+        $('#auction-winner-display').show();
+        $('#auction-winner-name').text(bids[0].bidder_name);
+        $('#auction-winner-amount').text(`$${bids[0].amount.toFixed(2)}`);
+
+        if (window.botInstance && !window.winnerAnnounced) {
+            window.botInstance.say(`¡Tenemos un ganador para "${window.currentAuctionData.nombre}"! Felicidades a ${bids[0].bidder_name} por llevarse esta joya.`, { duration: 10 });
+            window.winnerAnnounced = true;
+        }
+    } else {
+        $('#bid-input-container').show();
+        $('#auction-winner-display').hide();
+        window.winnerAnnounced = false;
+    }
+
+    bids.slice(0, 5).forEach((bid, idx) => {
+        $topList.append(`
+            <div class="bidder-item ${idx === 0 && isEnded ? 'winner' : ''}">
+                <span class="bidder-name">${idx + 1}. ${bid.bidder_name}</span>
+                <span class="bid-amount">$${bid.amount.toFixed(2)}</span>
+            </div>
+        `);
+    });
+}
+
+window.quickBid = function(amount) {
+    const current = parseFloat($('#auction-modal-current-bid').text().replace('$', '')) || 0;
+    $('#input-bid-amount').val(current + amount);
+};
+
+$('#btn-place-bid').click(async function() {
+    if (!window.currentUser || !window.currentUser.id) {
+        Swal.fire('Atención', 'Debes iniciar sesión para pujar.', 'warning');
+        return;
+    }
+
+    // Role-based limits for participating
+    const { count, error: countErr } = await _supabase
+        .from('subastas_pujas')
+        .select('subasta_id', { count: 'exact', head: true })
+        .eq('bidder_id', window.currentUser.id);
+
+    // This counts total bids, we need total unique ACTIVE auctions participated in
+    const { data: participated } = await _supabase
+        .from('subastas_pujas')
+        .select('subasta_id, subastas(is_live, status)')
+        .eq('bidder_id', window.currentUser.id);
+
+    const activeParticipations = new Set(participated.filter(p => p.subastas && p.subastas.is_live && p.subastas.status === 'Activa').map(p => p.subasta_id)).size;
+
+    let partLimit = (window.currentUser.role === 'premium') ? 20 : 10;
+    if (window.currentUser.role === 'admin' || window.currentUser.role === 'admin_store') partLimit = 9999;
+
+    if (activeParticipations >= partLimit) {
+        Swal.fire('Límite alcanzado', `Tu plan permite participar en un máximo de ${partLimit} subastas activas simultáneamente.`, 'warning');
+        return;
+    }
+
+    const bidAmount = parseFloat($('#input-bid-amount').val());
+    const currentBid = parseFloat($('#auction-modal-current-bid').text().replace('$', '')) || 0;
+    const minInc = window.currentAuctionData.min_increment || 1;
+
+    if (isNaN(bidAmount) || bidAmount <= currentBid) {
+        Swal.fire('Error', 'Tu puja debe ser mayor a la puja actual.', 'error');
+        return;
+    }
+
+    if (window.currentAuctionData.increment_type === 'fixed' && (bidAmount - currentBid) < minInc) {
+        Swal.fire('Error', `El incremento mínimo es de $${minInc}.`, 'error');
+        return;
+    }
+
+    const { error } = await _supabase.from('subastas_pujas').insert([{
+        subasta_id: window.currentAuctionId,
+        bidder_id: window.currentUser.id,
+        bidder_name: window.currentUser.username,
+        amount: bidAmount
+    }]);
+
+    if (error) {
+        Swal.fire('Error', 'No se pudo registrar tu puja.', 'error');
+    } else {
+        Swal.fire({ icon: 'success', title: 'Puja registrada', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        $('#input-bid-amount').val('');
+    }
+});
+
+$('#close-auction-modal, #auction-detail-modal').click(function(e) {
+    if (e.target === this || $(this).hasClass('close-btn')) {
+        $('#auction-detail-modal').removeClass('active');
+        $('body').removeClass('modal-open');
+        if (window.currentAuctionChannel) {
+            _supabase.removeChannel(window.currentAuctionChannel);
+            window.currentAuctionChannel = null;
+        }
     }
 });
 

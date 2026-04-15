@@ -6,6 +6,7 @@
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <title>Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="css/cards.css">
     <link rel="stylesheet" href="css/barajaryg.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"/>
@@ -84,6 +85,7 @@
             <button class="nav-btn" data-view="preorders" id="preorders-nav-btn"><i class="fas fa-fire"></i> Preventas</button>
             <button class="nav-btn" data-view="decks"><i class="fas fa-layer-group"></i> Decks</button>
             <button class="nav-btn" data-view="wishlist" id="wishlist-nav-btn"><i class="fas fa-heart"></i> Buscamos</button>
+            <button class="nav-btn" data-view="auctions" id="auctions-nav-btn"><i class="fas fa-gavel"></i> Subastas</button>
             <button class="nav-btn" data-view="events"><i class="fas fa-calendar-alt"></i> Eventos</button>
         </nav>
 
@@ -144,6 +146,12 @@
             </div>
             <div id="wishlist-container" class="wishlist-grid">
                 <!-- Wishlist items will be loaded here -->
+            </div>
+        </div>
+
+        <div id="auctions-view" class="view-section">
+            <div id="auctions-container" class="auction-grid">
+                <!-- Subastas cargadas aquí -->
             </div>
         </div>
 
@@ -240,6 +248,67 @@
                 <button class="social-share-btn tg" id="share-tg"><i class="fab fa-telegram-plane"></i></button>
                 <button class="social-share-btn fb" id="share-fb"><i class="fab fa-facebook-f"></i></button>
                 <button class="social-share-btn ms" id="share-ms"><i class="fab fa-facebook-messenger"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auction Detail Modal -->
+    <div id="auction-detail-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 900px; width: 95%;">
+            <span id="close-auction-modal" class="close-btn">&times;</span>
+            <div class="bidding-layout">
+                <div class="auction-media">
+                    <img id="auction-modal-image" src="" style="width: 100%; border-radius: 12px; background: #000; height: 350px; object-fit: contain;">
+                    <div id="auction-modal-timer" class="auction-timer" style="justify-content: center; margin-top: 15px; font-size: 1.5rem;">
+                        00:00:00
+                    </div>
+                </div>
+                <div class="auction-bidding-area">
+                    <h2 id="auction-modal-title" style="margin: 0 0 10px 0;">Nombre del Artículo</h2>
+                    <p id="auction-modal-desc" style="font-size: 0.9rem; color: #aaa; margin-bottom: 20px;"></p>
+
+                    <div class="auction-bid-info" style="padding: 20px; margin-bottom: 20px;">
+                        <div>
+                            <div class="current-bid-label">Puja Actual</div>
+                            <div id="auction-modal-current-bid" class="current-bid-value" style="font-size: 2rem;">$0.00</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="current-bid-label">Base</div>
+                            <div id="auction-modal-start-bid" style="font-weight: 700;">$0.00</div>
+                        </div>
+                    </div>
+
+                    <div id="bid-input-container">
+                        <div class="form-group">
+                            <label>Tu Puja ($)</label>
+                            <input type="number" id="input-bid-amount" placeholder="Ingresa tu oferta">
+                        </div>
+                        <div class="quick-bid-grid" id="quick-bid-container">
+                            <!-- Quick bid buttons here -->
+                        </div>
+                        <button id="btn-place-bid" class="btn" style="width: 100%; height: 50px; font-size: 1.1rem;">
+                            <i class="fas fa-gavel"></i> PUJAR AHORA
+                        </button>
+                    </div>
+
+                    <div id="auction-winner-display" style="display: none; text-align: center; padding: 20px; background: rgba(46, 204, 113, 0.1); border-radius: 12px; border: 1px solid #2ecc71;">
+                        <h3 style="color: #2ecc71; margin: 0;"><i class="fas fa-crown"></i> GANADOR</h3>
+                        <div id="auction-winner-name" style="font-size: 1.5rem; font-weight: 800; margin: 10px 0;">-</div>
+                        <div id="auction-winner-amount" style="font-weight: 700; opacity: 0.8;">-</div>
+                    </div>
+
+                    <div class="top-bidders-list">
+                        <h4 style="margin: 0 0 10px 0; font-size: 0.8rem; text-transform: uppercase; color: #666;">Top 5 Pujas</h4>
+                        <div id="auction-top-bidders">
+                            <!-- Bidders list -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="auction-rules-container" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <h4 style="margin: 0 0 10px 0;"><i class="fas fa-info-circle"></i> Reglas de la Subasta</h4>
+                <p id="auction-modal-rules" style="font-size: 0.85rem; color: #aaa; line-height: 1.5;"></p>
             </div>
         </div>
     </div>
