@@ -229,21 +229,52 @@ body.admin-body {
     margin-bottom: 10px;
 }
 
-/* Modal Redesign */
+/* Modal Redesign - White Clean Theme as per Image */
 .auction-modal-content {
+    background: #fff !important;
+    color: #333 !important;
     max-width: 850px !important;
     width: 95% !important;
     padding: 40px !important;
-    border-radius: 30px !important;
+    border-radius: 40px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
+    border: none !important;
+}
+
+.auction-modal-content label {
+    color: #666 !important;
+    font-weight: 800 !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.auction-modal-content input,
+.auction-modal-content select,
+.auction-modal-content textarea {
+    background: #fff !important;
+    border: 1.5px solid #eee !important;
+    border-radius: 12px !important;
+    color: #333 !important;
+    padding: 12px 15px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s !important;
+    width: 100%;
+}
+
+.auction-modal-content input:focus {
+    border-color: #00d2ff !important;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.1) !important;
 }
 
 #auction-modal-title {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 900;
     letter-spacing: -1px;
-    margin-bottom: 30px;
-    text-align: left;
-    width: 100%;
+    margin: 0;
+    color: #222 !important;
+    text-transform: uppercase;
 }
 
 .auction-form-grid {
@@ -272,26 +303,50 @@ body.admin-body {
 }
 
 .check-box-item {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #fff;
+    border: 1.5px solid #eee;
     padding: 10px 15px;
-    border-radius: 12px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
     transition: 0.2s;
+    color: #333 !important;
 }
 
-.check-box-item:hover { background: rgba(255,255,255,0.1); }
+.check-box-item:hover { background: #f9f9f9; }
 
 .check-box-item input {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--auction-orange);
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 20px !important;
+    height: 20px !important;
+    border: 1.5px solid #ddd !important;
+    border-radius: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    background: #fff !important;
 }
 
-.check-box-item span { font-weight: 800; font-size: 0.9rem; }
+.check-box-item input:checked {
+    background: #e67e22 !important;
+    border-color: #e67e22 !important;
+}
+
+.check-box-item input:checked::after {
+    content: "\f00c" !important;
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    color: white !important;
+    font-size: 11px !important;
+    display: block !important;
+}
+
+.check-box-item span { font-weight: 800; font-size: 1rem; color: #333; }
 
 .free-bid-check {
     width: 100%;
@@ -302,15 +357,21 @@ body.admin-body {
 .file-drop-zone-modal {
     width: 100%;
     height: 200px;
-    border: 2px dashed rgba(255,255,255,0.1);
-    border-radius: 20px;
+    border: 2.5px dashed #ddd;
+    border-radius: 25px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     position: relative;
-    background: rgba(255,255,255,0.02);
+    background: #fafafa;
+    transition: all 0.3s;
+}
+
+.file-drop-zone-modal:hover {
+    border-color: #00d2ff;
+    background: #f0faff;
 }
 
 .file-drop-zone-modal i { font-size: 2.5rem; color: #666; margin-bottom: 10px; }
@@ -325,12 +386,20 @@ body.admin-body {
 .btn-save-large {
     width: 100%;
     height: 65px;
-    background: var(--auction-orange) !important;
-    font-size: 1.3rem !important;
+    background: #e67e22 !important; /* Specific Orange */
+    color: #fff !important;
+    font-size: 1.5rem !important;
     font-weight: 900 !important;
-    border-radius: 18px !important;
+    border-radius: 20px !important;
     margin-top: 40px !important;
-    box-shadow: 0 10px 25px rgba(230, 126, 34, 0.4) !important;
+    box-shadow: 0 12px 30px rgba(230, 126, 34, 0.3) !important;
+    text-transform: uppercase;
+    border: none !important;
+}
+
+.btn-save-large:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(230, 126, 34, 0.4) !important;
 }
 
 .bulk-info-box {
@@ -530,4 +599,26 @@ body.admin-body {
 /* Status ended effect */
 .status-ended {
     filter: grayscale(1) opacity(0.7);
+}
+
+.btn-switch-bulk-pill {
+    background: #222 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 50px !important;
+    font-weight: 800 !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
+    transition: all 0.3s !important;
+}
+
+.btn-switch-bulk-pill:hover {
+    background: #000 !important;
+    transform: translateY(-2px);
 }
