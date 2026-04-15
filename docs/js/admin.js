@@ -3008,53 +3008,17 @@ async function loadWonAuctions() {
         });
 
         if (wonItems.length > 0) {
-            $('#won-auctions-container').show();
             $('#won-auctions-count').text(wonItems.length);
-            const $items = $('#won-auctions-items');
-            $items.empty();
-
-            // Group by store to show totals if from same store
-            const storeGroups = {};
-            wonItems.forEach(item => {
-                if (!storeGroups[item.store_name]) storeGroups[item.store_name] = { items: [], total: 0 };
-                storeGroups[item.store_name].items.push(item);
-                storeGroups[item.store_name].total += item.won_amount;
-            });
-
-            Object.keys(storeGroups).forEach(store => {
-                const group = storeGroups[store];
-                const $storeBlock = $(`
-                    <div class="won-store-group">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <span style="font-weight: 800; color: #00d2ff; font-size: 0.9rem;"><i class="fas fa-store"></i> ${store}</span>
-                            <span style="font-weight: 800; color: #fff;">Total: $${group.total.toFixed(2)}</span>
-                        </div>
-                        <div class="won-items-mini-list">
-                            ${group.items.map(item => `
-                                <div class="won-item">
-                                    <span style="font-size: 0.85rem; color: #eee;">${item.nombre}</span>
-                                    <span style="font-weight: 700; color: #00d2ff;">$${item.won_amount.toFixed(2)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 15px; border-radius: 10px;" onclick="contactStoreForWonAuction('${store}')">
-                            <i class="fab fa-whatsapp"></i> Contactar Vendedor
-                        </button>
-                    </div>
-                `);
-                $items.append($storeBlock);
-            });
-
             $('#tile-auction-badge').text(wonItems.length).show();
-            $('#nav-btn-auctions-won').show();
+            $('#nav-btn-auctions-won').show().off('click').on('click', () => showWonAuctionsModal(wonItems));
             $('#nav-auction-badge').text(wonItems.length).show();
 
             if (window.botInstance) {
-                window.botInstance.say(`¡Felicidades! Has ganado ${wonItems.length} subastas. Revisa tu panel para ver los detalles y contactar a los vendedores.`, { duration: 10 });
+                window.botInstance.say(`¡Felicidades! Has ganado ${wonItems.length} subastas. Toca el botón de subastas para ver los detalles.`, { duration: 10 });
             }
         } else {
-            $('#won-auctions-container').hide();
             $('#tile-auction-badge').hide();
+            $('#nav-btn-auctions-won').hide();
         }
 
     } catch (err) {
@@ -3062,8 +3026,59 @@ async function loadWonAuctions() {
     }
 }
 
+window.showWonAuctionsModal = (wonItems) => {
+    if (window.botInstance) {
+        window.botInstance.say("¡Mira todas las subastas que has ganado! Es momento de contactar a los vendedores.");
+    }
+
+    const storeGroups = {};
+    wonItems.forEach(item => {
+        if (!storeGroups[item.store_name]) storeGroups[item.store_name] = { items: [], total: 0 };
+        storeGroups[item.store_name].items.push(item);
+        storeGroups[item.store_name].total += item.won_amount;
+    });
+
+    let html = `<div class="won-auctions-modal-list">`;
+    Object.keys(storeGroups).forEach(store => {
+        const group = storeGroups[store];
+        html += `
+            <div class="won-store-group" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; margin-bottom: 15px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+                    <span style="font-weight: 800; color: #00d2ff;"><i class="fas fa-store"></i> ${store}</span>
+                    <span style="font-weight: 800; color: #fff;">$${group.total.toFixed(2)}</span>
+                </div>
+                <div class="won-items-mini-list">
+                    ${group.items.map(item => `
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px;">
+                            <span style="color: #eee;">${item.nombre}</span>
+                            <span style="font-weight: 700; color: #00d2ff;">$${item.won_amount.toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 10px; border-radius: 8px; background: #27ae60;" onclick="contactStoreForWonAuction('${store}')">
+                    <i class="fab fa-whatsapp"></i> Contactar Vendedor
+                </button>
+            </div>
+        `;
+    });
+    html += `</div>`;
+
+    Swal.fire({
+        title: '¡MIS SUBASTAS GANADAS!',
+        html: html,
+        showCloseButton: true,
+        showConfirmButton: false,
+        background: '#1a1a1a',
+        color: '#fff',
+        width: '500px',
+        customClass: {
+            title: 'swal-viking-title',
+            popup: 'swal-viking-popup'
+        }
+    });
+};
+
 window.contactStoreForWonAuction = async (storeName) => {
-    // Find the store's contact info
     const { data: storeUser } = await _supabase
         .from('usuarios')
         .select('whatsapp_link, store_name, username')

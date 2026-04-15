@@ -11,6 +11,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
 </head>
 <body class="admin-body">
     <!-- Polished Navigation Bar -->
@@ -38,55 +39,31 @@
                     </div>
                     <h2>Subida Masiva de Artículos</h2>
                     <p>Arrastra tus fotos aquí o haz clic para seleccionarlas</p>
-                    <span class="upload-hint">Puedes subir hasta 60 imágenes simultáneas</span>
+                    <span class="upload-hint">Crea múltiples subastas a partir de tus imágenes</span>
                 </div>
                 <input type="file" id="input-auction-files-bulk" accept="image/*" multiple style="display: none;">
             </div>
         </div>
 
-        <!-- Bulk Actions Toolbar -->
+        <!-- Bulk Actions / Launch Modal Trigger -->
         <div id="bulk-actions-toolbar" class="bulk-toolbar" style="display: none;">
             <div class="bulk-info">
                 <i class="fas fa-layer-group"></i>
-                <span id="draft-count">0</span> borradores por configurar
+                <span id="draft-count">0</span> subastas listas para configurar
             </div>
-            <div class="bulk-controls">
-                <div class="bulk-input-row">
-                    <div class="bulk-group">
-                        <label>Puja Base</label>
-                        <input type="number" id="bulk-start-bid" value="1" min="1">
-                    </div>
-                    <div class="bulk-group">
-                        <label>Saltos</label>
-                        <select id="bulk-inc-type">
-                            <option value="free">Libres</option>
-                            <option value="fixed_5">$5</option>
-                            <option value="fixed_10">$10</option>
-                            <option value="fixed_20">$20</option>
-                        </select>
-                    </div>
-                    <div class="bulk-group">
-                        <label>Duración</label>
-                        <select id="bulk-duration">
-                            <option value="24">24 Horas</option>
-                            <option value="48">48 Horas</option>
-                            <option value="72">3 Días</option>
-                            <option value="168">7 Días</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="bulk-buttons">
-                    <button id="btn-apply-bulk" class="btn-bulk-secondary">Aplicar a Todo</button>
-                    <button id="btn-save-all-drafts" class="btn-bulk-primary">
-                        <i class="fas fa-rocket"></i> Publicar Catálogo
-                    </button>
-                </div>
+            <div class="bulk-buttons">
+                <button id="btn-open-bulk-settings" class="btn btn-bulk-secondary">
+                    <i class="fas fa-sliders-h"></i> Configurar Todo
+                </button>
+                <button id="btn-save-all-drafts" class="btn-bulk-primary" style="background: #27ae60; box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);">
+                    <i class="fas fa-rocket"></i> Lanzar Todo
+                </button>
             </div>
         </div>
 
         <!-- Drafts List -->
         <div id="auction-drafts-list" class="drafts-grid">
-            <!-- Draft cards -->
+            <!-- Draft cards with individual price edit -->
         </div>
 
         <div class="section-header-styled">
@@ -96,14 +73,121 @@
         </div>
 
         <div id="live-auction-list" class="my-auctions-grid">
-            <div class="loading-spinner">
-                <i class="fas fa-circle-notch fa-spin"></i> Cargando...
+            <div class="loading-spinner" style="text-align: center; width: 100%; padding: 40px; color: #666;">
+                <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+                <p style="margin-top: 15px;">Cargando tus subastas...</p>
             </div>
+        </div>
+    </div>
+
+    <!-- LANZAR SUBASTA MODAL (Bulk or Single) -->
+    <div id="auction-modal" class="overlay">
+        <div class="overlay-content auction-modal-content" style="max-width: 900px;">
+            <span id="close-auction-modal" class="close-btn">&times;</span>
+            <h2 id="auction-modal-title" style="align-self: flex-start; margin-bottom: 25px; font-weight: 900; letter-spacing: -1px;">LANZAR SUBASTA</h2>
+
+            <div class="auction-form-grid">
+                <!-- Left Column -->
+                <div class="form-col">
+                    <div class="form-group">
+                        <label>PRODUCTO DE STOCK (OPCIONAL)</label>
+                        <select id="auction-stock-product">
+                            <option value="">-- Nuevo Producto / No en Stock --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>TÍTULO DE LA SUBASTA</label>
+                        <input type="text" id="auction-title" placeholder="Ej: Playera Firmada Edición Limitada">
+                    </div>
+
+                    <div class="draft-date-group">
+                        <div class="form-group">
+                            <label>INICIO</label>
+                            <input type="datetime-local" id="auction-start-date">
+                        </div>
+                        <div class="form-group">
+                            <label>FINALIZACIÓN</label>
+                            <input type="datetime-local" id="auction-end-date">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>DESCRIPCIÓN</label>
+                        <textarea id="auction-description" placeholder="Detalles del artículo a subastar..." style="height: 120px;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="form-col">
+                    <div class="form-group">
+                        <label>PUJA INICIAL ($)</label>
+                        <input type="number" id="auction-start-bid" placeholder="0.00" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label>INCREMENTOS PERMITIDOS</label>
+                        <div class="increments-grid">
+                            <label class="check-item">
+                                <input type="checkbox" class="inc-check" value="5" checked>
+                                <span>$5</span>
+                            </label>
+                            <label class="check-item">
+                                <input type="checkbox" class="inc-check" value="10" checked>
+                                <span>$10</span>
+                            </label>
+                            <label class="check-item">
+                                <input type="checkbox" class="inc-check" value="20">
+                                <span>$20</span>
+                            </label>
+                            <label class="check-item">
+                                <input type="checkbox" class="inc-check" value="50">
+                                <span>$50</span>
+                            </label>
+                        </div>
+                        <label class="check-item" style="margin-top: 15px;">
+                            <input type="checkbox" id="auction-free-bid" checked>
+                            <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Permitir Puja Libre</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group" id="auction-photo-group">
+                        <label>FOTO DEL ARTÍCULO</label>
+                        <div class="file-drop-zone" id="drop-zone-single-auction" style="height: 180px;">
+                            <i class="fas fa-camera"></i>
+                            <p style="font-size: 0.8rem;">Arrastra o selecciona archivo</p>
+                            <input type="file" id="input-single-auction-file" accept="image/*" style="display: none;">
+                            <div class="preview-img-container" id="single-auction-preview"></div>
+                        </div>
+                    </div>
+                    <div id="bulk-info-message" style="display: none; padding: 20px; background: rgba(0, 210, 255, 0.1); border-radius: 15px; border: 1px solid var(--viking-blue); color: var(--viking-blue); font-size: 0.85rem; font-weight: 600; text-align: center;">
+                        <i class="fas fa-info-circle"></i> Estos ajustes se aplicarán a todos los borradores actuales. Las imágenes y pujas individuales se mantendrán.
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-save-auction" class="btn btn-primary" style="width: 100%; height: 60px; font-size: 1.2rem; background: #e67e22; margin-top: 20px;">
+                LANZAR SUBASTA
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Companion -->
+    <div id="companion-wrapper">
+        <div class="companion-drag-handle" id="companion-drag-handle">
+            <i class="fas fa-arrows-alt"></i>
+        </div>
+        <div id="floating-companion-container"></div>
+        <div id="companion-bubble" class="companion-bubble"></div>
+        <div class="companion-menu-popup" id="companion-menu">
+            <div class="companion-menu-item" id="menu-item-chat"><i class="fas fa-comment-dots"></i> Hablar</div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/cloudinary-upload.js"></script>
+    <script src="js/viking-data.js"></script>
+    <script src="js/companion-bot.js"></script>
     <script src="js/subastas_v2.js"></script>
 </body>
 </html>

@@ -1,8 +1,10 @@
 let currentUser = null;
 let auctionDrafts = [];
+let isBulkMode = false;
 
 $(document).ready(async function() {
     await checkSession();
+    initializeSpirit();
 
     // --- Bulk Drop Zone Events ---
     const $mainDropZone = $('#main-drop-zone-auction');
@@ -25,9 +27,17 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleBulkUpload(this.files);
     });
 
-    // --- Bulk Toolbar Actions ---
-    $('#btn-apply-bulk').click(applyBulkSettings);
+    // --- Modal Actions ---
+    $('#btn-open-bulk-settings').click(() => openAuctionModal(true));
+    $('#close-auction-modal').click(closeAuctionModal);
+    $('#btn-save-auction').click(handleSaveAuction);
     $('#btn-save-all-drafts').click(saveAllDrafts);
+
+    // --- Single Upload in Modal ---
+    $('#drop-zone-single-auction').click(() => $('#input-single-auction-file').click());
+    $('#input-single-auction-file').on('change', function() {
+        if (this.files.length > 0) handleSingleUpload(this.files[0]);
+    });
 
     $(document).on('click', '.btn-delete-live', function() {
         const id = $(this).data('id');
@@ -40,7 +50,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, role')
+            .select('*')
             .eq('id', session.user.id)
             .single();
 
@@ -52,6 +62,13 @@ async function checkSession() {
         }
     } else {
         window.location.href = 'admin.html';
+    }
+}
+
+function initializeSpirit() {
+    if (window.botInstance) {
+        window.botInstance.setContext('subastas');
+        window.botInstance.say("¡Bienvenido al panel de subastas! Aquí puedes lanzar tus artículos al mejor postor.");
     }
 }
 
@@ -70,7 +87,8 @@ async function handleBulkUpload(files) {
     if (currentUser.role === 'admin' || currentUser.role === 'admin_store') maxAllowed = 999;
 
     if (activeCount + currentTotal + fileArray.length > maxAllowed) {
-        Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${maxAllowed} subastas activas. Ya tienes ${activeCount} publicadas y ${currentTotal} borradores.`, 'warning');
+        if (window.botInstance) window.botInstance.say("¡Vaya! Parece que has alcanzado el límite de subastas para tu plan.");
+        Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${maxAllowed} subastas activas.`, 'warning');
         return;
     }
 
@@ -92,19 +110,32 @@ async function handleBulkUpload(files) {
                 nombre: file.name.split('.')[0],
                 image_url: url,
                 starting_bid: 1,
-                increment_type: 'free',
-                min_increment: 1,
                 start_date: now.toISOString().slice(0, 16),
                 end_date: defaultEnd.toISOString().slice(0, 16),
-                description: ''
+                description: '',
+                increments: [5, 10],
+                allow_free: true
             });
         } catch (err) {
             console.error("Error uploading file:", file.name, err);
         }
     }
 
+    if (window.botInstance) window.botInstance.say(`¡Listo! He cargado ${fileArray.length} borradores. Configúralos y lánzalos.`);
     Swal.close();
     renderDrafts();
+}
+
+async function handleSingleUpload(file) {
+    try {
+        Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const url = await CloudinaryUpload.uploadImage(file);
+        $('#single-auction-preview').html(`<img src="${url}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px;">`);
+        $('#drop-zone-single-auction').data('url', url).addClass('has-image');
+        Swal.close();
+    } catch (err) {
+        Swal.fire('Error', 'No se pudo subir la imagen.', 'error');
+    }
 }
 
 function renderDrafts() {
@@ -127,42 +158,19 @@ function renderDrafts() {
                 <img src="${draft.image_url}" alt="Borrador">
                 <div class="draft-form">
                     <input type="text" class="input-name" placeholder="Nombre del artículo" value="${draft.nombre}">
-                    <div class="draft-date-group">
-                        <div>
-                            <label style="font-size: 9px; color: #666; display: block; margin-bottom: 3px;">Puja Inicial</label>
-                            <input type="number" class="input-bid" value="${draft.starting_bid}" min="1">
-                        </div>
-                        <div>
-                            <label style="font-size: 9px; color: #666; display: block; margin-bottom: 3px;">Incremento</label>
-                            <select class="input-inc">
-                                <option value="free" ${draft.increment_type === 'free' ? 'selected' : ''}>Libre</option>
-                                <option value="fixed_5" ${draft.min_increment === 5 ? 'selected' : ''}>$5</option>
-                                <option value="fixed_10" ${draft.min_increment === 10 ? 'selected' : ''}>$10</option>
-                                <option value="fixed_20" ${draft.min_increment === 20 ? 'selected' : ''}>$20</option>
-                            </select>
-                        </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 10px;">PUJA INICIAL ($)</label>
+                        <input type="number" class="input-bid" value="${draft.starting_bid}" min="1" step="0.01">
                     </div>
-                    <div class="draft-date-group">
-                        <div>
-                            <label style="font-size: 9px; color: #666; display: block; margin-bottom: 3px;">Inicia</label>
-                            <input type="datetime-local" class="input-start" value="${draft.start_date}">
-                        </div>
-                        <div>
-                            <label style="font-size: 9px; color: #666; display: block; margin-bottom: 3px;">Termina</label>
-                            <input type="datetime-local" class="input-end" value="${draft.end_date}">
-                        </div>
-                    </div>
-                    <textarea class="input-desc" placeholder="Descripción y reglas..." style="font-size: 11px; height: 60px; resize: none;">${draft.description || ''}</textarea>
                 </div>
             </div>
         `);
 
-        // Update local data on change
-        $card.find('input, select').on('change', function() {
-            updateDraftData(draft.id, $(this));
-        });
+        $card.find('.input-name').on('change', function() { draft.nombre = $(this).val(); });
+        $card.find('.input-bid').on('change', function() { draft.starting_bid = parseFloat($(this).val()) || 1; });
 
-        $card.find('.remove-draft').click(() => {
+        $card.find('.remove-draft').click((e) => {
+            e.stopPropagation();
             auctionDrafts.splice(index, 1);
             renderDrafts();
         });
@@ -171,49 +179,106 @@ function renderDrafts() {
     });
 }
 
-function updateDraftData(id, $input) {
-    const draft = auctionDrafts.find(d => d.id === id);
-    if (!draft) return;
+function openAuctionModal(bulk = false) {
+    isBulkMode = bulk;
+    $('#auction-modal').addClass('active');
 
-    if ($input.hasClass('input-name')) draft.nombre = $input.val();
-    if ($input.hasClass('input-desc')) draft.description = $input.val();
-    if ($input.hasClass('input-bid')) draft.starting_bid = parseFloat($input.val());
-    if ($input.hasClass('input-start')) draft.start_date = $input.val();
-    if ($input.hasClass('input-end')) draft.end_date = $input.val();
-    if ($input.hasClass('input-inc')) {
-        const val = $input.val();
-        draft.increment_type = val === 'free' ? 'free' : 'fixed';
-        draft.min_increment = val.startsWith('fixed_') ? parseInt(val.split('_')[1]) : 1;
+    if (bulk) {
+        $('#auction-modal-title').text('CONFIGURAR TODO');
+        $('#auction-photo-group').hide();
+        $('#bulk-info-message').show();
+        $('#btn-save-auction').text('APLICAR A TODO');
+    } else {
+        $('#auction-modal-title').text('LANZAR SUBASTA');
+        $('#auction-photo-group').show();
+        $('#bulk-info-message').hide();
+        $('#btn-save-auction').text('LANZAR SUBASTA');
+        resetModalFields();
     }
 }
 
-function applyBulkSettings() {
-    const bid = parseFloat($('#bulk-start-bid').val()) || 1;
-    const incType = $('#bulk-inc-type').val();
-    const durationHrs = parseInt($('#bulk-duration').val()) || 24;
+function closeAuctionModal() {
+    $('#auction-modal').removeClass('active');
+}
+
+function resetModalFields() {
+    $('#auction-title').val('');
+    $('#auction-description').val('');
+    $('#auction-start-bid').val('');
+    $('#auction-free-bid').prop('checked', true);
+    $('.inc-check').prop('checked', false);
+    $('.inc-check[value="5"], .inc-check[value="10"]').prop('checked', true);
+    $('#single-auction-preview').empty();
+    $('#drop-zone-single-auction').data('url', '').removeClass('has-image');
 
     const now = new Date();
-    const startStr = now.toISOString().slice(0, 16);
-    const endStr = new Date(now.getTime() + (durationHrs * 60 * 60 * 1000)).toISOString().slice(0, 16);
+    const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+    $('#auction-start-date').val(now.toISOString().slice(0, 16));
+    $('#auction-end-date').val(end.toISOString().slice(0, 16));
+}
 
-    auctionDrafts.forEach(draft => {
-        draft.starting_bid = bid;
-        draft.increment_type = incType === 'free' ? 'free' : 'fixed';
-        draft.min_increment = incType.startsWith('fixed_') ? parseInt(incType.split('_')[1]) : 1;
-        draft.start_date = startStr;
-        draft.end_date = endStr;
-    });
+async function handleSaveAuction() {
+    const title = $('#auction-title').val();
+    const desc = $('#auction-description').val();
+    const startBid = parseFloat($('#auction-start-bid').val());
+    const startDate = $('#auction-start-date').val();
+    const endDate = $('#auction-end-date').val();
+    const freeBid = $('#auction-free-bid').is(':checked');
+    const increments = $('.inc-check:checked').map(function() { return parseInt($(this).val()); }).get();
 
-    renderDrafts();
-    Swal.fire({ title: '¡Ajustes aplicados!', icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' });
+    if (isBulkMode) {
+        // Apply to all drafts
+        auctionDrafts.forEach(d => {
+            if (title) d.nombre = title;
+            d.description = desc;
+            if (!isNaN(startBid)) d.starting_bid = startBid;
+            d.start_date = startDate;
+            d.end_date = endDate;
+            d.allow_free = freeBid;
+            d.increments = increments;
+        });
+        renderDrafts();
+        closeAuctionModal();
+        if (window.botInstance) window.botInstance.say("¡Ajustes aplicados a todos tus borradores!");
+    } else {
+        // Create single auction
+        const imageUrl = $('#drop-zone-single-auction').data('url');
+        if (!imageUrl) return Swal.fire('Falta imagen', 'Por favor selecciona una imagen.', 'warning');
+        if (!title || isNaN(startBid)) return Swal.fire('Faltan datos', 'Completa el título y la puja inicial.', 'warning');
+
+        Swal.fire({ title: 'Publicando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        const { error } = await _supabase.from('subastas').insert({
+            user_id: currentUser.id,
+            nombre: title,
+            image_url: imageUrl,
+            starting_bid: startBid,
+            description: desc,
+            start_date: startDate,
+            end_date: endDate,
+            increment_type: freeBid ? 'free' : 'fixed',
+            min_increment: increments.length > 0 ? Math.min(...increments) : 1,
+            is_live: true,
+            status: 'Activa'
+        });
+
+        if (error) {
+            Swal.fire('Error', error.message, 'error');
+        } else {
+            if (window.botInstance) window.botInstance.say("¡Excelente! Tu subasta ya está en vivo.");
+            Swal.fire('¡Éxito!', 'Subasta publicada.', 'success');
+            closeAuctionModal();
+            loadLiveAuctions();
+        }
+    }
 }
 
 async function saveAllDrafts() {
     if (auctionDrafts.length === 0) return;
 
     Swal.fire({
-        title: 'Publicando subastas...',
-        text: `Estamos activando tus ${auctionDrafts.length} subastas.`,
+        title: 'Publicando todo...',
+        text: `Lanzando ${auctionDrafts.length} subastas.`,
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
     });
@@ -223,133 +288,93 @@ async function saveAllDrafts() {
         nombre: d.nombre,
         image_url: d.image_url,
         starting_bid: d.starting_bid,
-        increment_type: d.increment_type,
-        min_increment: d.min_increment,
+        description: d.description,
         start_date: d.start_date,
         end_date: d.end_date,
-        description: d.description,
+        increment_type: d.allow_free ? 'free' : 'fixed',
+        min_increment: d.increments.length > 0 ? Math.min(...d.increments) : 1,
         is_live: true,
         status: 'Activa'
     }));
 
-    try {
-        const { error } = await _supabase.from('subastas').insert(dataToInsert);
-        if (error) throw error;
+    const { error } = await _supabase.from('subastas').insert(dataToInsert);
 
-        Swal.fire('¡Éxito!', 'Todas tus subastas han sido publicadas correctamente.', 'success');
+    if (error) {
+        Swal.fire('Error', error.message, 'error');
+    } else {
+        if (window.botInstance) window.botInstance.say(`¡Magnífico! Las ${auctionDrafts.length} subastas han sido publicadas.`);
+        Swal.fire('¡Éxito!', 'Todas las subastas han sido publicadas.', 'success');
         auctionDrafts = [];
         renderDrafts();
         loadLiveAuctions();
-    } catch (err) {
-        console.error(err);
-        Swal.fire('Error', 'No se pudieron publicar todas las subastas: ' + err.message, 'error');
     }
 }
 
 async function loadLiveAuctions() {
-    $('#live-auction-list').html('<div class="loading">Cargando subastas...</div>');
-
     const { data: items, error } = await _supabase
         .from('subastas')
-        .select(`
-            *,
-            subastas_pujas (
-                amount,
-                bidder_name,
-                bidder_id
-            )
-        `)
+        .select(`*, subastas_pujas(amount, bidder_name)`)
         .eq('user_id', currentUser.id)
         .eq('is_live', true)
         .order('created_at', { ascending: false });
 
-    if (error) {
-        $('#live-auction-list').html('<div class="error">Error al cargar datos.</div>');
-        return;
-    }
+    if (error) return console.error(error);
 
     const $container = $('#live-auction-list');
     $container.empty();
 
-    if (!items || items.length === 0) {
-        $container.html('<div class="empty">Aún no hay subastas publicadas.</div>');
+    if (items.length === 0) {
+        $container.html('<div style="text-align: center; width: 100%; color: #666; padding: 40px;">Aún no tienes subastas activas.</div>');
         return;
     }
 
     items.forEach(item => {
         const bids = item.subastas_pujas || [];
-        bids.sort((a, b) => b.amount - a.amount);
-        const highestBid = bids[0];
+        const highestBid = bids.length > 0 ? Math.max(...bids.map(b => b.amount)) : null;
         const isEnded = new Date(item.end_date) < new Date();
 
-        let winnerHtml = "";
-        if (highestBid) {
-            winnerHtml = `<div class="winner-pill">
-                <i class="fas fa-crown"></i> ${highestBid.bidder_name}: $${highestBid.amount}
-            </div>`;
-        } else {
-            winnerHtml = `<div style="font-size: 0.75rem; color: #666; margin-top: 10px;">Sin pujas aún</div>`;
-        }
-
         const $card = $(`
-            <div class="manage-card">
-                <img src="${item.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${item.nombre}">
-                <h3 style="margin: 10px 0 5px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.nombre}</h3>
-                <div style="font-size: 0.8rem; color: #aaa;">
-                    <i class="fas fa-clock"></i> ${isEnded ? 'Finalizada' : 'Cierra: ' + new Date(item.end_date).toLocaleString()}
+            <div class="manage-card ${isEnded ? 'ended' : ''}">
+                <div class="card-img-wrapper">
+                    <img src="${item.image_url}" alt="${item.nombre}">
+                    ${isEnded ? '<div class="ended-overlay">FINALIZADA</div>' : ''}
                 </div>
-                ${winnerHtml}
-
-                <div style="display: flex; gap: 8px; margin-top: 15px;">
-                    ${isEnded && highestBid ? `
-                        <button class="btn btn-sm btn-success btn-contact-winner" style="flex: 2;">
-                            <i class="fab fa-whatsapp"></i> Contactar Ganador
-                        </button>
-                    ` : `
-                        <div style="font-size: 11px; opacity: 0.5;">En curso...</div>
-                    `}
-                    <button class="btn btn-danger btn-sm btn-delete-live" data-id="${item.id}" style="flex: 0 0 40px;"><i class="fas fa-trash"></i></button>
+                <div class="card-content">
+                    <h3>${item.nombre}</h3>
+                    <div class="price-info">
+                        <span class="label">Puja Actual:</span>
+                        <span class="value">$${highestBid || item.starting_bid}</span>
+                    </div>
+                    <div class="time-info">
+                        <i class="fas fa-clock"></i> ${isEnded ? 'Finalizada' : new Date(item.end_date).toLocaleString()}
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-delete-live" data-id="${item.id}"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             </div>
         `);
-
-        if (isEnded && highestBid) {
-            $card.find('.btn-contact-winner').click(() => contactWinner(item, highestBid));
-        }
-
         $container.append($card);
     });
 }
 
-async function contactWinner(auction, bid) {
-    const { data: winner } = await _supabase
-        .from('usuarios')
-        .select('whatsapp_link, username')
-        .eq('id', bid.bidder_id)
-        .single();
-
-    const msg = `¡Hola ${winner ? winner.username : bid.bidder_name}! 🎉 Ganaste la subasta de "${auction.nombre}" por $${bid.amount}. Acordemos el pago y envío.`;
-
-    if (winner && winner.whatsapp_link) {
-        window.open(`https://wa.me/${winner.whatsapp_link.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
-    } else {
-        navigator.clipboard.writeText(msg);
-        Swal.fire({ title: 'Mensaje Copiado', text: 'Pégalo en tu chat con el cliente.', icon: 'success' });
-    }
-}
-
 async function deleteLiveAuction(id) {
-    const result = await Swal.fire({
+    const res = await Swal.fire({
         title: '¿Eliminar subasta?',
-        text: "Esta acción no se puede deshacer.",
+        text: 'Esta acción detendrá la subasta inmediatamente.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#ff4757',
-        confirmButtonText: 'Sí, eliminar'
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
     });
 
-    if (result.isConfirmed) {
-        await _supabase.from('subastas').delete().eq('id', id);
-        loadLiveAuctions();
+    if (res.isConfirmed) {
+        const { error } = await _supabase.from('subastas').delete().eq('id', id);
+        if (error) {
+            Swal.fire('Error', error.message, 'error');
+        } else {
+            if (window.botInstance) window.botInstance.say("Subasta eliminada correctamente.");
+            loadLiveAuctions();
+        }
     }
 }
