@@ -277,6 +277,12 @@ $(document).ready(async function() {
 
     $('#nav-btn-auctions-won').click(function() {
         showView('main-dashboard');
+
+        // Reacción del bot al abrir subastas ganadas
+        if (window.botInstance) {
+            window.botInstance.say("¡Excelente! Aquí tienes el resumen de tus victorias. No olvides contactar a las tiendas para finalizar tus compras.", { duration: 8 });
+        }
+
         $('html, body').animate({
             scrollTop: $("#won-auctions-container").offset().top - 100
         }, 800);
