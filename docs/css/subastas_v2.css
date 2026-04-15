@@ -166,44 +166,6 @@ body.admin-body {
 
 .bulk-info i { color: var(--viking-blue); }
 
-.bulk-controls {
-    display: flex;
-    align-items: center;
-    gap: 30px;
-}
-
-.bulk-input-row {
-    display: flex;
-    gap: 20px;
-}
-
-.bulk-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.bulk-group label {
-    font-size: 0.7rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: #555;
-    letter-spacing: 1px;
-}
-
-.bulk-group input, .bulk-group select {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: white;
-    padding: 10px 15px;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    width: 140px;
-    transition: all 0.3s;
-}
-
-.bulk-group input:focus { border-color: var(--viking-blue); outline: none; }
-
 .bulk-buttons {
     display: flex;
     gap: 12px;
@@ -213,7 +175,7 @@ body.admin-body {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     color: white;
-    padding: 12px 20px;
+    padding: 12px 25px;
     border-radius: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -232,6 +194,9 @@ body.admin-body {
     cursor: pointer;
     transition: all 0.3s;
     box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .btn-bulk-primary:hover {
@@ -242,33 +207,31 @@ body.admin-body {
 /* Polished Draft Cards */
 .drafts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
     margin-bottom: 80px;
 }
 
 .draft-card {
     background: #1a1a1a;
     border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 30px;
-    padding: 25px;
+    border-radius: 25px;
+    padding: 20px;
     position: relative;
     transition: all 0.4s;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 
 .draft-card:hover {
-    transform: translateY(-8px);
-    border-color: rgba(255,255,255,0.15);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    transform: translateY(-5px);
+    border-color: var(--viking-blue);
 }
 
 .remove-draft {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 35px;
-    height: 35px;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     background: rgba(255, 71, 87, 0.1);
     color: #ff4757;
@@ -276,33 +239,40 @@ body.admin-body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
     z-index: 10;
 }
 
-.remove-draft:hover { background: #ff4757; color: white; }
-
 .draft-card img {
     width: 100%;
-    height: 200px;
+    height: 180px;
     object-fit: contain;
-    border-radius: 20px;
+    border-radius: 15px;
     background: #000;
-    margin-bottom: 25px;
-}
-
-.draft-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    margin-bottom: 15px;
 }
 
 .input-name {
-    font-size: 1.1rem !important;
     font-weight: 800;
-    background: rgba(255,255,255,0.03) !important;
-    border-color: rgba(255,255,255,0.1) !important;
-    text-align: center;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    width: 100%;
+    color: white;
+}
+
+/* Modal Enhancements */
+.auction-modal-content {
+    background: #0f0f0f !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.auction-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    width: 100%;
 }
 
 .draft-date-group {
@@ -311,52 +281,121 @@ body.admin-body {
     gap: 15px;
 }
 
-.draft-form textarea {
-    height: 80px;
-    resize: none;
-    font-size: 0.85rem;
-    line-height: 1.5;
+.increments-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
 }
 
-/* Section Styling */
-.section-header-styled {
+.check-item {
     display: flex;
     align-items: center;
-    gap: 15px;
-    margin: 80px 0 40px;
-    color: #888;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.check-item:hover { background: rgba(255,255,255,0.1); }
+
+.check-item input { width: 18px; height: 18px; accent-color: #e67e22; }
+
+.check-item span { font-size: 0.9rem; font-weight: 700; }
+
+.preview-img-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+/* My Auctions Grid */
+.my-auctions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.manage-card {
+    background: #1a1a1a;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.3s;
+}
+
+.card-img-wrapper {
+    width: 100%;
+    height: 180px;
+    background: #000;
+    position: relative;
+}
+
+.card-img-wrapper img { width: 100%; height: 100%; object-fit: contain; }
+
+.ended-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    color: #ff4757;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    font-size: 1rem;
+    font-size: 1.5rem;
 }
 
-.section-header-styled .line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+.card-content { padding: 20px; }
+
+.card-content h3 { margin: 0 0 15px; font-size: 1rem; font-weight: 800; }
+
+.price-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
 }
 
-.section-header-styled i { color: var(--viking-blue); font-size: 1.2rem; }
+.price-info .label { color: #666; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+.price-info .value { color: var(--viking-blue); font-weight: 800; }
 
-/* Won Auctions Header Button - To be used in admin.html */
+.time-info { font-size: 0.8rem; color: #888; display: flex; align-items: center; gap: 8px; }
+
+.card-actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+
+.btn-delete-live {
+    background: rgba(255,71,87,0.1);
+    color: #ff4757;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete-live:hover { background: #ff4757; color: white; }
+
+/* Won Auctions Button Style */
 .btn-nav-auctions-rect {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    padding: 0 20px;
+    border-radius: 50px;
+    padding: 0 25px;
     height: 48px;
     color: white;
     font-weight: 800;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     cursor: pointer;
     transition: all 0.3s;
     position: relative;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .btn-nav-auctions-rect:hover {
@@ -365,7 +404,7 @@ body.admin-body {
     transform: translateY(-2px);
 }
 
-.btn-nav-auctions-rect .nav-badge {
+.nav-badge {
     background: #ff4757;
     color: white;
     font-size: 10px;
@@ -378,32 +417,10 @@ body.admin-body {
     position: absolute;
     top: -5px;
     right: -5px;
-    box-shadow: 0 0 10px rgba(255, 71, 87, 0.6);
     padding: 0 4px;
 }
 
-@media (max-width: 900px) {
-    .bulk-toolbar {
-        flex-direction: column;
-        gap: 20px;
-        position: relative;
-        top: 0;
-        padding: 25px;
-    }
-    .bulk-controls { flex-direction: column; width: 100%; }
-    .bulk-input-row { flex-wrap: wrap; justify-content: center; width: 100%; }
-    .bulk-buttons { width: 100%; }
-    .btn-bulk-primary, .btn-bulk-secondary { flex: 1; text-align: center; }
-}
-
-/* Animations */
-.auction-ending-soon {
-    animation: alert-pulse 2s infinite;
-    border-color: var(--auction-alert) !important;
-}
-
-@keyframes alert-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.2); }
-    70% { box-shadow: 0 0 0 15px rgba(255, 71, 87, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+@media (max-width: 768px) {
+    .auction-form-grid { grid-template-columns: 1fr; }
+    .management-wrapper { padding-top: 90px; }
 }
