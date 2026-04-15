@@ -2836,7 +2836,7 @@ window.quickBid = function(amount) {
 
 $('#btn-place-bid').click(async function() {
     if (!window.currentUser || !window.currentUser.id) {
-        Swal.fire('Atención', 'Debes iniciar sesión para pujar.', 'warning');
+        Swal.fire('Atención', 'Debes iniciar sesión para participar en las subastas.', 'warning');
         return;
     }
 

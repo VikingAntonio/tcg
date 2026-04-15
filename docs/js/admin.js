@@ -3005,21 +3005,21 @@ async function loadWonAuctions() {
             Object.keys(storeGroups).forEach(store => {
                 const group = storeGroups[store];
                 const $storeBlock = $(`
-                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 15px; width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 10px;">
-                            <span style="font-weight: 800; color: var(--primary-color);"><i class="fas fa-store"></i> ${store}</span>
-                            <span style="font-weight: 800; font-size: 1.1rem;">Total: $${group.total.toFixed(2)}</span>
+                    <div class="won-store-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span style="font-weight: 800; color: #00d2ff; font-size: 0.9rem;"><i class="fas fa-store"></i> ${store}</span>
+                            <span style="font-weight: 800; color: #fff;">Total: $${group.total.toFixed(2)}</span>
                         </div>
-                        <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px;">
+                        <div class="won-items-mini-list">
                             ${group.items.map(item => `
                                 <div class="won-item">
-                                    <div class="won-item-title">${item.nombre}</div>
-                                    <div class="won-item-price">$${item.won_amount.toFixed(2)}</div>
+                                    <span style="font-size: 0.85rem; color: #eee;">${item.nombre}</span>
+                                    <span style="font-weight: 700; color: #00d2ff;">$${item.won_amount.toFixed(2)}</span>
                                 </div>
                             `).join('')}
                         </div>
-                        <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 10px;" onclick="contactStoreForWonAuction('${store}')">
-                            <i class="fab fa-whatsapp"></i> Contactar para Pago
+                        <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 15px; border-radius: 10px;" onclick="contactStoreForWonAuction('${store}')">
+                            <i class="fab fa-whatsapp"></i> Contactar Vendedor
                         </button>
                     </div>
                 `);

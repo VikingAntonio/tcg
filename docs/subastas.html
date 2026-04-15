@@ -4,275 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
-    <title>Gestión de Subastas - Vikingdev TCG</title>
+    <title>Configurar Subastas - Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
-    <!-- PDF Generation Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 10px;
-        }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: #aaa;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: 700;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        .tab-btn.active {
-            background: var(--primary-color);
-            color: #000;
-        }
-        .auction-management-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .admin-auction-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 15px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .admin-auction-card img {
-            width: 100%;
-            height: 150px;
-            object-fit: contain;
-            border-radius: 8px;
-            background: #000;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
+        /* Surgical fix for the Giant Logo and layout */
+        body.admin-body { background: #000; color: white; font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; }
+        .back-btn-container { position: fixed; top: 20px; left: 20px; z-index: 1000; }
+        .management-wrapper { max-width: 1100px; margin: 0 auto; padding: 80px 20px 40px; }
+        .form-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 25px; margin-bottom: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .drop-zone-mini { height: 100px; border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; }
+        .drop-zone-mini:hover { border-color: var(--primary-color); background: rgba(255,255,255,0.05); }
+        .auctions-list-title { margin: 40px 0 20px; font-size: 1.5rem; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .status-pill { font-size: 10px; padding: 2px 8px; border-radius: 50px; text-transform: uppercase; font-weight: 800; }
+        .status-pill.active { background: #2ecc71; color: #000; }
+        .status-pill.ended { background: #555; color: #fff; }
     </style>
 </head>
-<body class="public-body">
-    <div class="top-left-panel" id="top-panel" style="display: none;">
-        <div class="user-menu-container">
-            <button class="user-avatar-btn" id="avatar-btn">
-                <i class="fas fa-user"></i>
-            </button>
-            <div class="user-dropdown-menu" id="user-dropdown">
-                <div class="user-dropdown-info">
-                    <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
-                </div>
-                <a href="admin.html" class="menu-item"><i class="fas fa-arrow-left"></i> Volver al Panel</a>
-                <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-            </div>
-        </div>
+<body class="admin-body">
+    <div class="back-btn-container">
+        <a href="admin.html" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Volver al Panel</a>
     </div>
 
-    <div id="authenticated-content" style="display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding: 80px 20px;">
-        <div class="admin-header">
-            <a href="admin.html" class="btn btn-secondary" style="margin-bottom: 20px; text-decoration: none; display: inline-block;">
-                <i class="fas fa-arrow-left"></i> Volver al Panel
-            </a>
-            <h1>Gestión de Subastas</h1>
-            <p>Crea subastas en vivo o registra ganadores de subastas externas.</p>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-                <button id="btn-new-live-auction" class="btn">
-                    <i class="fas fa-gavel"></i> Nueva Subasta en Vivo
-                </button>
-                <button id="btn-open-add-modal" class="btn btn-secondary">
-                    <i class="fas fa-trophy"></i> Registrar Ganador Externo
-                </button>
-            </div>
+    <div class="management-wrapper">
+        <div class="admin-header" style="text-align: center; margin-bottom: 40px;">
+            <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Gestión de <span style="color: var(--primary-color);">Subastas</span></h1>
+            <p style="opacity: 0.7;">Crea artículos y deja que el sistema gestione las pujas y ganadores por ti.</p>
         </div>
 
-        <div class="tabs" style="margin-top: 30px;">
-            <button class="tab-btn active" data-tab="live">Subastas en Vivo</button>
-            <button class="tab-btn" data-tab="finished">Ganadores / Historial</button>
-        </div>
-
-        <!-- Live Auctions View -->
-        <div id="view-live" class="tab-content">
-            <div id="live-auction-list" class="auction-management-grid">
-                <div class="loading">Cargando subastas...</div>
-            </div>
-        </div>
-
-        <!-- Finished Auctions Table (Original Logic) -->
-        <div id="view-finished" class="tab-content" style="display: none;">
-            <table class="auction-table">
-                <thead>
-                    <tr>
-                        <th>Ganador</th>
-                        <th>Detalles</th>
-                        <th>Precio Final</th>
-                        <th>Entrega</th>
-                        <th>Status</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="auction-list">
-                    <tr><td colspan="6" class="loading">Cargando datos...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Live Auction Modal -->
-    <div id="live-auction-modal" class="overlay">
-        <div class="overlay-content" style="max-width: 700px;">
-            <span id="close-live-modal" class="close-btn">&times;</span>
-            <h2 id="live-modal-title">Nueva Subasta en Vivo</h2>
-            <input type="hidden" id="live-edit-id">
-
-            <div class="form-group">
-                <label>Nombre del Artículo</label>
-                <input type="text" id="live-input-nombre" placeholder="Ej: Blue-Eyes White Dragon LOB-001">
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Imagen del Artículo</label>
-                    <div class="file-drop-zone" id="drop-zone-auction" style="height: 120px;">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Arrastra o haz clic para subir</p>
-                        <input type="file" id="input-auction-file" accept="image/*" style="display: none;">
-                        <div class="file-name" style="font-size: 11px; color: var(--primary-color);"></div>
-                    </div>
-                    <input type="hidden" id="live-input-image">
+        <!-- Single Form for Creation -->
+        <div class="form-card">
+            <h2 style="margin-bottom: 20px; font-size: 1.2rem;"><i class="fas fa-magic"></i> Nueva Subasta Automática</h2>
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Nombre del Producto</label>
+                    <input type="text" id="live-input-nombre" placeholder="Ej: Pikachu Illustrator PSA 10">
                 </div>
                 <div class="form-group">
                     <label>Puja Inicial ($)</label>
                     <input type="number" id="live-input-start-bid" value="1" min="1">
-                    <label style="margin-top: 10px;">Incrementos</label>
+                </div>
+                <div class="form-group">
+                    <label>Incrementos</label>
                     <select id="live-input-inc-type">
-                        <option value="free">Libre (Mínimo $1)</option>
+                        <option value="free">Libre (Cualquier monto)</option>
                         <option value="fixed_5">Fijos de $5</option>
                         <option value="fixed_10">Fijos de $10</option>
                         <option value="fixed_20">Fijos de $20</option>
-                        <option value="fixed_50">Fijos de $50</option>
                     </select>
                 </div>
             </div>
 
-            <div class="form-row">
+            <div class="form-grid">
                 <div class="form-group">
-                    <label>Fecha y Hora de Inicio</label>
+                    <label>Imagen</label>
+                    <div class="drop-zone-mini" id="drop-zone-auction">
+                        <i class="fas fa-camera fa-lg"></i>
+                        <span id="file-name-display" style="font-size: 10px; margin-top: 5px;">Arrastra o pulsa aquí</span>
+                        <input type="file" id="input-auction-file" accept="image/*" style="display: none;">
+                    </div>
+                    <input type="hidden" id="live-input-image">
+                </div>
+                <div class="form-group">
+                    <label>Inicia el</label>
                     <input type="datetime-local" id="live-input-start-date">
                 </div>
                 <div class="form-group">
-                    <label>Fecha y Hora de Cierre</label>
+                    <label>Termina el</label>
                     <input type="datetime-local" id="live-input-end-date">
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Descripción / Reglas</label>
-                <textarea id="live-input-description" rows="3" placeholder="Detalles del estado de la carta, reglas de envío, etc."></textarea>
+                <label>Reglas / Descripción corta</label>
+                <textarea id="live-input-description" rows="2" placeholder="Estado de la carta, costo de envío, etc."></textarea>
             </div>
 
-            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-                <label class="switch">
-                    <input type="checkbox" id="live-input-active" checked>
-                    <span class="slider"></span>
-                </label>
-                <span>Subasta Activa (Visible en el link público)</span>
-            </div>
-
-            <button id="btn-save-live" class="btn" style="width: 100%; margin-top: 10px;">
-                <i class="fas fa-save"></i> Guardar Subasta
+            <button id="btn-save-live" class="btn" style="width: 100%; margin-top: 10px; height: 50px; font-size: 1.1rem;">
+                <i class="fas fa-rocket"></i> Publicar en mi Tienda
             </button>
+            <input type="hidden" id="live-edit-id">
         </div>
-    </div>
 
-    <!-- Legacy Auction Modal (Finished) -->
-    <div id="auction-modal" class="overlay">
-        <div class="overlay-content" style="max-width: 600px;">
-            <span id="close-modal" class="close-btn">&times;</span>
-            <h2 id="modal-title">Registrar Ganador</h2>
-            <input type="hidden" id="edit-id">
-
-            <div class="form-group">
-                <label>Nombre del Ganador</label>
-                <input type="text" id="input-nombre" placeholder="Nombre completo">
-            </div>
-
-            <div class="form-group">
-                <label>Detalles de la Subasta</label>
-                <textarea id="input-detalles" style="width: 100%; background: var(--slot-bg); border: 1px solid var(--slot-border); padding: 12px; color: white; border-radius: 8px;" rows="4" placeholder="Artículos ganados, etc."></textarea>
-            </div>
-
-            <div class="info-grid">
-                <div class="form-group">
-                    <label>Precio Final</label>
-                    <input type="text" id="input-total" placeholder="Ej: $850.00">
-                </div>
-                <div class="form-group">
-                    <label>Día de Entrega</label>
-                    <input type="text" id="input-entrega" placeholder="Ej: Próximo Sábado">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Status</label>
-                <select id="input-status">
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="Pagado">Pagado</option>
-                    <option value="Entregado">Entregado</option>
-                </select>
-            </div>
-
-            <button id="btn-save" class="btn" style="width: 100%; margin-top: 20px;">
-                <i class="fas fa-save"></i> Guardar Registro
-            </button>
-        </div>
-    </div>
-
-    <!-- Hidden PDF Template -->
-    <div id="pdf-template">
-        <div class="pdf-header">
-            <div id="tpl-store-info">
-                <div class="pdf-title">COMPROBANTE DE SUBASTA</div>
-                <div id="tpl-store-name" style="font-weight: 700; color: #666;">Nombre de la Tienda</div>
-            </div>
-            <img id="tpl-logo" class="pdf-logo" src="vikingdev.png">
-        </div>
-        <div class="pdf-content">
-            <div class="pdf-row">
-                <div class="pdf-label">GANADOR:</div>
-                <div id="tpl-nombre" class="pdf-value"></div>
-            </div>
-            <div class="pdf-row">
-                <div class="pdf-label">FECHA:</div>
-                <div id="tpl-fecha" class="pdf-value"></div>
-            </div>
-            <div class="pdf-row" style="flex-direction: column;">
-                <div class="pdf-label" style="width: 100%; margin-bottom: 10px;">DETALLES:</div>
-                <div id="tpl-detalles" class="pdf-value" style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; min-height: 100px;"></div>
-            </div>
-            <div class="pdf-row">
-                <div class="pdf-label">ENTREGA:</div>
-                <div id="tpl-entrega" class="pdf-value"></div>
-            </div>
-        </div>
-        <div class="pdf-total">
-            PRECIO FINAL: <span id="tpl-total"></span>
-        </div>
-        <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #aaa; border-top: 1px solid #eee; padding-top: 20px;">
-            Gracias por participar con <span class="tpl-store-name-inline">Vikingdev TCG</span>
+        <h2 class="auctions-list-title"><i class="fas fa-history"></i> Mis Subastas Publicadas</h2>
+        <div id="live-auction-list" class="my-auctions-grid">
+            <!-- Auctions loaded via JS -->
+            <div class="loading">Cargando...</div>
         </div>
     </div>
 
