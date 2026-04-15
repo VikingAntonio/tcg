@@ -1310,9 +1310,12 @@ async function switchView(view) {
         $('.public-header p').text('Participa en nuestros eventos para ganar premios increíbles.');
         await loadPublicEvents();
     } else if (view === 'auctions') {
-        $('#public-view-title').text('Subastas en Vivo');
+        $('#public-view-title').text('Subastas');
         $('.public-header p').text('Participa y llévate las mejores cartas al mejor precio.');
         await loadPublicAuctions();
+        if (window.botInstance) {
+            window.botInstance.say("¡Bienvenido a la sección de subastas! Elige un artículo para ver los detalles y colocar tu puja. ¡Mucha suerte!", { duration: 8 });
+        }
     }
 
     const url = new URL(window.location);

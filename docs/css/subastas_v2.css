@@ -16,36 +16,190 @@ body.admin-body {
     padding: 0;
 }
 
-/* Giant Logo Fix & Layout */
-.admin-container {
-    max-width: 1100px;
+.management-wrapper {
+    max-width: 1200px;
     margin: 0 auto;
     padding: 100px 20px 40px;
 }
 
-/* Glass Form Card */
-.creation-form-card {
+/* Primary Drop Zone */
+.main-drop-zone {
     background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 35px;
+    border: 2px dashed var(--glass-border);
+    border-radius: 30px;
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin-bottom: 40px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
 }
 
-.creation-form-card h2 {
-    font-size: 1.5rem;
-    margin-bottom: 25px;
-    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.main-drop-zone:hover, .main-drop-zone.dragover {
+    border-color: var(--primary-color);
+    background: rgba(0, 210, 255, 0.05);
+    transform: scale(1.01);
+}
+
+.main-drop-zone h2 {
+    margin: 20px 0 10px;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.main-drop-zone p {
+    color: #888;
+    font-size: 1rem;
+}
+
+/* Bulk Toolbar */
+.bulk-toolbar {
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px 30px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.bulk-toolbar-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+}
+
+.bulk-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.bulk-control-group label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #666;
+}
+
+.bulk-control-group input, .bulk-control-group select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+/* Drafts Grid */
+.drafts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 60px;
+}
+
+.draft-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.draft-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.2);
+}
+
+.draft-card .remove-draft {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 71, 87, 0.1);
+    color: #ff4757;
     display: flex;
     align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.draft-card .remove-draft:hover {
+    background: #ff4757;
+    color: white;
+}
+
+.draft-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
+    border-radius: 15px;
+    background: #000;
+    margin-bottom: 20px;
+}
+
+.draft-form {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
 }
 
-/* Manage Auctions Grid */
+.draft-form input, .draft-form select, .draft-form textarea {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    width: 100%;
+}
+
+.draft-form input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.draft-date-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* Section Divider */
+.section-divider {
+    display: flex;
+    align-items: center;
+    margin: 60px 0 30px;
+    color: #888;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.9rem;
+}
+
+.section-divider::before, .section-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--glass-border);
+}
+
+.section-divider span {
+    padding: 0 20px;
+}
+
+/* My Auctions Grid */
 .my-auctions-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -60,12 +214,6 @@ body.admin-body {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-}
-
-.manage-card:hover {
-    transform: translateY(-8px);
-    border-color: var(--primary-color);
-    background: rgba(255,255,255,0.05);
 }
 
 .manage-card img {
@@ -91,92 +239,41 @@ body.admin-body {
     margin-top: 12px;
 }
 
-/* Form Styling */
-.form-group label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #888;
-    margin-bottom: 8px;
-    display: block;
-}
-
-.form-group input, .form-group select, .form-group textarea {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: white;
+/* Won Auctions Notification Slot in Header */
+.btn-nav-auctions {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
-    padding: 12px 15px;
-    width: 100%;
-    font-family: inherit;
-    transition: all 0.2s;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    background: rgba(255,255,255,0.08);
-}
-
-/* Won Auctions Banner (Dashboard) */
-.won-auctions-notification {
-    background: linear-gradient(135deg, rgba(0, 210, 255, 0.1), rgba(58, 123, 213, 0.1));
-    border: 1px solid rgba(0, 210, 255, 0.3);
-    border-radius: 20px;
-    padding: 20px 25px;
-    margin-bottom: 25px;
+    padding: 8px 18px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    backdrop-filter: blur(5px);
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
 }
 
-.notification-badge {
+.btn-nav-auctions:hover {
+    background: rgba(0, 210, 255, 0.1);
+    border-color: var(--primary-color);
+}
+
+.btn-nav-auctions .nav-badge {
     background: #ff4757;
     color: white;
-    font-size: 0.7rem;
-    font-weight: 800;
-    padding: 2px 7px;
+    font-size: 10px;
+    padding: 2px 6px;
     border-radius: 50px;
     position: absolute;
-    top: -5px;
-    right: -5px;
+    top: -8px;
+    right: -8px;
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
 }
 
-.won-auctions-list {
-    display: flex;
-    gap: 15px;
-    overflow-x: auto;
-    padding: 10px 0 20px;
-}
-
-.won-store-group {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 18px;
-    padding: 18px;
-    min-width: 320px;
-    flex: 0 0 auto;
-}
-
-.won-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.won-item:last-child { border-bottom: none; }
-
-/* Public UI Adjustments */
-.auction-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 22px;
-}
-
+/* Animations */
 .auction-ending-soon {
     animation: alert-pulse 2s infinite;
     border-color: var(--auction-alert) !important;
@@ -186,4 +283,18 @@ body.admin-body {
     0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.2); }
     70% { box-shadow: 0 0 0 15px rgba(255, 71, 87, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+}
+
+@media (max-width: 768px) {
+    .bulk-toolbar {
+        flex-direction: column;
+        gap: 15px;
+        position: relative;
+        top: 0;
+    }
+    .bulk-toolbar-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
 }

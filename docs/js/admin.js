@@ -275,6 +275,13 @@ $(document).ready(async function() {
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
 
+    $('#nav-btn-auctions-won').click(function() {
+        showView('main-dashboard');
+        $('html, body').animate({
+            scrollTop: $("#won-auctions-container").offset().top - 100
+        }, 800);
+    });
+
     // --- Upgrade Button Logic ---
     $(document).on('click', '#btn-upgrade-plan', function(e) {
         e.preventDefault();
@@ -1884,7 +1891,13 @@ async function showAuthenticatedContent() {
     // Show/Hide feature tiles based on permissions
     if (currentUser.has_tracking) $('#btn-tracking').show(); else $('#btn-tracking').hide();
     if (currentUser.has_clients) $('#btn-clientes').show(); else $('#btn-clientes').hide();
-    if (currentUser.has_auctions) $('#btn-subastas').show(); else $('#btn-subastas').hide();
+    if (currentUser.has_auctions) {
+        $('#btn-subastas').show();
+        $('#btn-admin-create-auction').show();
+    } else {
+        $('#btn-subastas').hide();
+        $('#btn-admin-create-auction').hide();
+    }
     if (currentUser.has_events !== false) $('#btn-eventos').show(); else $('#btn-eventos').hide();
 
     // Upgrade button for starter users
@@ -3027,6 +3040,8 @@ async function loadWonAuctions() {
             });
 
             $('#tile-auction-badge').text(wonItems.length).show();
+            $('#nav-btn-auctions-won').show();
+            $('#nav-auction-badge').text(wonItems.length).show();
 
             if (window.botInstance) {
                 window.botInstance.say(`¡Felicidades! Has ganado ${wonItems.length} subastas. Revisa tu panel para ver los detalles y contactar a los vendedores.`, { duration: 10 });
