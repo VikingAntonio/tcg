@@ -11,8 +11,13 @@ $(document).ready(async function() {
     $(document).on('click', '#btn-open-create-auction', () => openAuctionModal(false));
     $(document).on('click', '#btn-open-bulk-settings', () => openAuctionModal(true));
     $(document).on('click', '#btn-switch-to-bulk', () => {
-        closeAuctionModal();
-        if (typeof showView === 'function') showView('bulk-auctions');
+        if (isBulkMode) {
+            isBulkMode = false;
+            openAuctionModal(false);
+        } else {
+            isBulkMode = true;
+            openAuctionModal(true);
+        }
     });
     $(document).on('click', '#close-auction-modal', closeAuctionModal);
     $(document).on('click', '#btn-save-auction', handleSaveAuction);
@@ -236,6 +241,8 @@ async function handleBulkUpload(files) {
 
     if (window.botInstance) window.botInstance.say(`¡Genial! He preparado ${fileArray.length} borradores. Configúralos a tu gusto.`);
     Swal.close();
+
+    if (typeof showView === 'function') showView('bulk-auctions');
     renderDrafts();
 }
 
@@ -329,11 +336,13 @@ function openAuctionModal(bulk = false) {
         $('#modal-photo-group').hide();
         $('#bulk-info-msg').show();
         $('#btn-save-auction').text('APLICAR AJUSTES');
+        $('#btn-switch-to-bulk').html('<i class="fas fa-user"></i> CAMBIAR A INDIVIDUAL');
     } else {
         $('#auction-modal-title').text('LANZAR SUBASTA');
         $('#modal-photo-group').show();
         $('#bulk-info-msg').hide();
         $('#btn-save-auction').text('LANZAR SUBASTA');
+        $('#btn-switch-to-bulk').html('<i class="fas fa-layer-group"></i> CAMBIAR A MÚLTIPLES');
         resetModalFields();
         populateStockProducts();
     }
