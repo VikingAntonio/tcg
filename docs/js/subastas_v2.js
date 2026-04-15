@@ -1,21 +1,22 @@
-let currentUser = null;
+let auctionUser = null;
 let auctionDrafts = [];
 let isBulkMode = false;
 let userSpirit = null;
 
 $(document).ready(async function() {
-    await checkSession();
+    await checkAuctionSession();
     await loadUserSpirit();
 
-    // --- Events ---
-    $('#btn-open-create-auction').click(() => openAuctionModal(false));
-    $('#btn-open-bulk-settings').click(() => openAuctionModal(true));
-    $('#btn-open-bulk-auctions').click(() => {
+    // --- Events with Delegation ---
+    $(document).on('click', '#btn-open-create-auction', () => openAuctionModal(false));
+    $(document).on('click', '#btn-open-bulk-settings', () => openAuctionModal(true));
+    $(document).on('click', '#btn-switch-to-bulk', () => {
+        closeAuctionModal();
         if (typeof showView === 'function') showView('bulk-auctions');
     });
-    $('#close-auction-modal').click(closeAuctionModal);
-    $('#btn-save-auction').click(handleSaveAuction);
-    $('#btn-save-all-drafts').click(saveAllDrafts);
+    $(document).on('click', '#close-auction-modal', closeAuctionModal);
+    $(document).on('click', '#btn-save-auction', handleSaveAuction);
+    $(document).on('click', '#btn-save-all-drafts', saveAllDrafts);
 
     // Drop zones
     const $bulkDropZone = $('#main-drop-zone-auction');
@@ -30,6 +31,12 @@ $(document).ready(async function() {
 
     $('#drop-zone-single-auction').click(() => $('#input-single-auction-file').click());
     $('#input-single-auction-file').on('change', function() { if (this.files.length > 0) handleSingleUpload(this.files[0]); });
+
+    $(document).on('click', '.btn-gestionar-live', async function() {
+        const id = $(this).data('id');
+        const { data: auction } = await _supabase.from('subastas').select('*').eq('id', id).single();
+        if (auction) editAuction(auction);
+    });
 
     $(document).on('click', '.btn-delete-live', function() {
         const id = $(this).data('id');
@@ -121,7 +128,7 @@ function initCompanionDraggability() {
     }
 }
 
-async function checkSession() {
+async function checkAuctionSession() {
     const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
         const { data: user } = await _supabase
@@ -130,21 +137,21 @@ async function checkSession() {
             .eq('id', session.user.id)
             .single();
         if (user) {
-            currentUser = user;
+            auctionUser = user;
             loadLiveAuctions();
-        } else {
+        } else if (!window.location.pathname.endsWith('admin.html')) {
             window.location.href = 'admin.html';
         }
-    } else {
+    } else if (!window.location.pathname.endsWith('admin.html')) {
         window.location.href = 'admin.html';
     }
 }
 
 async function loadUserSpirit() {
-    if (!currentUser) return;
+    if (!auctionUser) return;
 
     // Fetch user's selected spirit
-    const spiritId = localStorage.getItem(`selectedSpirit_${currentUser.id}`);
+    const spiritId = localStorage.getItem(`selectedSpirit_${auctionUser.id}`);
     if (spiritId) {
         const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', spiritId).single();
         if (spirit) {
@@ -186,7 +193,7 @@ function initSpiritViewer(spirit) {
     if (typeof CompanionBot === 'function') {
         window.botInstance = new CompanionBot({
             supabase: _supabase,
-            userId: currentUser.id,
+            userId: auctionUser.id,
             userType: 'admin'
         });
         window.botInstance.init();
@@ -342,8 +349,8 @@ async function populateStockProducts() {
 
     try {
         const [{ data: sealed }, { data: preorders }] = await Promise.all([
-            _supabase.from('sealed_products').select('name, image_url, price').eq('user_id', currentUser.id),
-            _supabase.from('preorders').select('name, image_url, price').eq('user_id', currentUser.id)
+            _supabase.from('sealed_products').select('name, image_url, price').eq('user_id', auctionUser.id),
+            _supabase.from('preorders').select('name, image_url, price').eq('user_id', auctionUser.id)
         ]);
 
         if (sealed) {
@@ -428,13 +435,13 @@ async function handleSaveAuction() {
 
         if (!editId) {
             // Enforce role-based limits only for new auctions
-            let auctionLimit = (currentUser.role === 'premium') ? 20 : 10;
-            if (currentUser.role === 'admin' || currentUser.role === 'admin_store' || currentUser.role === 'tienda') auctionLimit = 9999;
+            let auctionLimit = (auctionUser.role === 'premium') ? 20 : 10;
+            if (auctionUser.role === 'admin' || auctionUser.role === 'admin_store' || auctionUser.role === 'tienda') auctionLimit = 9999;
 
             const { count: activeCount } = await _supabase
                 .from('subastas')
                 .select('*', { count: 'exact', head: true })
-                .eq('user_id', currentUser.id)
+                .eq('user_id', auctionUser.id)
                 .eq('status', 'Activa');
 
             if (activeCount >= auctionLimit) {
@@ -446,7 +453,7 @@ async function handleSaveAuction() {
         Swal.fire({ title: editId ? 'Guardando...' : 'Publicando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         const auctionData = {
-            user_id: currentUser.id,
+            user_id: auctionUser.id,
             nombre: title,
             image_url: imageUrl,
             starting_bid: startBid,
@@ -482,13 +489,13 @@ async function saveAllDrafts() {
     if (auctionDrafts.length === 0) return;
 
     // Enforce role-based limits
-    let auctionLimit = (currentUser.role === 'premium') ? 20 : 10;
-    if (currentUser.role === 'admin' || currentUser.role === 'admin_store' || currentUser.role === 'tienda') auctionLimit = 9999;
+    let auctionLimit = (auctionUser.role === 'premium') ? 20 : 10;
+    if (auctionUser.role === 'admin' || auctionUser.role === 'admin_store' || auctionUser.role === 'tienda') auctionLimit = 9999;
 
     const { count: activeCount } = await _supabase
         .from('subastas')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', currentUser.id)
+        .eq('user_id', auctionUser.id)
         .eq('status', 'Activa');
 
     if ((activeCount + auctionDrafts.length) > auctionLimit) {
@@ -499,7 +506,7 @@ async function saveAllDrafts() {
     Swal.fire({ title: 'Lanzando todo...', text: 'Publicando tus subastas masivas.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     const dataToInsert = auctionDrafts.map(d => ({
-        user_id: currentUser.id,
+        user_id: auctionUser.id,
         nombre: d.nombre,
         image_url: d.image_url,
         starting_bid: d.starting_bid,
@@ -528,12 +535,12 @@ async function saveAllDrafts() {
 }
 
 async function loadLiveAuctions() {
-    if (!currentUser) return;
+    if (!auctionUser) return;
 
     const { data: items, error } = await _supabase
         .from('subastas')
         .select(`*, subastas_pujas(amount)`)
-        .eq('user_id', currentUser.id)
+        .eq('user_id', auctionUser.id)
         .order('created_at', { ascending: false });
 
     if (error) return;
@@ -577,7 +584,7 @@ async function loadLiveAuctions() {
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <button class="btn-gestionar" style="background: transparent; border: none; color: var(--viking-blue); font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <button class="btn-gestionar-live" data-id="${item.id}" style="background: transparent; border: none; color: var(--viking-blue); font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             GESTIONAR <i class="fas fa-chevron-right"></i>
                         </button>
                         <button class="btn-delete-live" data-id="${item.id}" style="width: 35px; height: 35px; border-radius: 50%; background: rgba(255,71,87,0.1); border: none; color: #ff4757; cursor: pointer; transition: 0.2s;">

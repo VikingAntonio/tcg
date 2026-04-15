@@ -177,16 +177,11 @@ $(document).ready(async function() {
         if (window.botInstance) window.botInstance.setContext('auctions');
     });
 
-    $(document).on('click', '#menu-btn-subastas-ganadas', function(e) {
+    $('#menu-btn-subastas-ganadas, #btn-subastas-ganadas-tile').click(function(e) {
         e.preventDefault();
         showView('SubastasGanadas');
         loadWonAuctionsList();
         if (window.botInstance) window.botInstance.setContext('SubastasGanadas');
-    });
-
-    $(document).on('click', '#btn-open-bulk-auctions', function() {
-        showView('bulk-auctions');
-        if (window.botInstance) window.botInstance.say("¡Excelente! Aquí puedes cargar muchas imágenes a la vez para crear subastas en masa.");
     });
 
     // --- Floating Panel Logic ---
@@ -1918,9 +1913,11 @@ async function showAuthenticatedContent() {
     if (currentUser.has_clients) $('#btn-clientes').show(); else $('#btn-clientes').hide();
     if (currentUser.has_auctions) {
         $('#btn-subastas').show();
+        $('#btn-subastas-ganadas-tile').show();
         $('#menu-btn-subastas').show();
     } else {
         $('#btn-subastas').hide();
+        $('#btn-subastas-ganadas-tile').hide();
         $('#menu-btn-subastas').hide();
     }
     if (currentUser.has_events !== false) $('#btn-eventos').show(); else $('#btn-eventos').hide();
@@ -3026,7 +3023,7 @@ async function loadWonAuctions() {
         window.currentUserWonItems = wonItems;
 
         if (wonItems.length > 0) {
-            $('#tile-auction-badge').text(wonItems.length).show();
+            $('#tile-won-auction-badge').text(wonItems.length).show();
             $('#nav-btn-auctions-won').show().off('click').on('click', () => {
                 showView('SubastasGanadas');
                 loadWonAuctionsList();

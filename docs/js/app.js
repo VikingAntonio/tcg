@@ -2675,28 +2675,19 @@ function renderAuctionCard(auction) {
     const currentBid = bids.length > 0 ? Math.max(...bids.map(b => b.amount)) : auction.starting_bid;
 
     const $card = $(`
-        <div class="auction-card" id="auction-${auction.id}">
-            <div class="auction-status-badge status-live">En Vivo</div>
-            <div class="auction-image-container">
+        <div class="auction-public-card" id="auction-${auction.id}">
+            <div class="auction-image-wrapper">
                 <img src="${auction.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${auction.nombre}">
+                <div class="auction-bid-badge">$${currentBid.toFixed(2)}</div>
             </div>
-            <div class="auction-info">
+            <div class="auction-info-overlay">
                 <h3 class="auction-title">${auction.nombre}</h3>
-                <div class="auction-bid-info">
-                    <div>
-                        <div class="current-bid-label">Puja Actual</div>
-                        <div class="current-bid-value">$${currentBid.toFixed(2)}</div>
-                    </div>
-                    <div class="auction-timer" id="timer-${auction.id}">--:--:--</div>
-                </div>
-                <button class="btn btn-sm btn-view-auction" style="width: 100%; margin-top: 10px;">
-                    <i class="fas fa-gavel"></i> Participar
-                </button>
+                <div class="auction-timer-mini" id="timer-${auction.id}">--:--:--</div>
             </div>
         </div>
     `);
 
-    $card.find('.btn-view-auction').click(() => openAuctionDetail(auction));
+    $card.on('click', () => openAuctionDetail(auction));
     $('#auctions-container').append($card);
 
     startAuctionTimer(auction);
@@ -2729,6 +2720,7 @@ function startAuctionTimer(auction) {
         // Alert Effects
         if (distance < (1000 * 60 * 60)) { // 1 Hour
             $(`#auction-${auction.id}`).addClass('auction-ending-soon');
+            $(`#auction-${auction.id}`).find('.auction-timer-mini').css('color', '#ff4757');
 
             // Bot Interaction (Only if view is auctions and distance is close to thresholds)
             if (window.botInstance && $('.nav-btn[data-view="auctions"]').hasClass('active')) {
@@ -2807,7 +2799,7 @@ async function updateAuctionBidsUI(auctionId) {
 
     const currentBid = bids.length > 0 ? bids[0].amount : window.currentAuctionData.starting_bid;
     $('#auction-modal-current-bid').text(`$${currentBid.toFixed(2)}`);
-    $(`#auction-${auctionId} .current-bid-value`).text(`$${currentBid.toFixed(2)}`);
+    $(`#auction-${auctionId} .auction-bid-badge`).text(`$${currentBid.toFixed(2)}`);
 
     // Top 5 Bidders
     const $topList = $('#auction-top-bidders');
