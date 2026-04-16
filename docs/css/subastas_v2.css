@@ -513,9 +513,11 @@ body.admin-body {
     margin-bottom: 10px;
 }
 
-.file-drop-zone-modal:hover {
+.file-drop-zone-modal:hover, .file-drop-zone-modal.dragover {
     border-color: #e67e22;
     background: #fff;
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(230, 126, 34, 0.1);
 }
 
 .file-drop-zone-modal i { font-size: 1.5rem; color: #ddd; }
@@ -562,6 +564,23 @@ body.admin-body {
 .btn-save-large:hover {
     transform: translateY(-3px);
     box-shadow: 0 15px 40px rgba(230, 126, 34, 0.4) !important;
+}
+
+/* Flatpickr Confirm Button Styling */
+.flatpickr-confirm {
+    background: #e67e22 !important;
+    color: #fff !important;
+    padding: 10px !important;
+    font-weight: 900 !important;
+    font-size: 0.8rem !important;
+    cursor: pointer;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
 }
 
 .bulk-info-box {
@@ -828,7 +847,7 @@ body.admin-body {
 }
 
 .auction-ending-soon .auction-timer-mini {
-    color: #e74c3c !important;
+    color: #77DD77 !important;
     font-size: 1.3rem !important;
 }
 

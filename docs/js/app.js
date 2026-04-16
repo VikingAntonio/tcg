@@ -2707,6 +2707,7 @@ function renderAuctionCard(auction) {
 function startAuctionTimer(auction) {
     if (auctionTimers[auction.id]) clearInterval(auctionTimers[auction.id]);
 
+    // Ensure we parse the date correctly. ISO strings from Supabase are UTC.
     const endDate = new Date(auction.end_date);
     const endDateTime = endDate.getTime();
 
@@ -2752,18 +2753,22 @@ function startAuctionTimer(auction) {
             $miniTimer.html(`<span class="today-label">¡Termina Hoy!</span> ${timeStr}`);
             if ($modalTimer) $modalTimer.html(`<span class="today-label">¡Termina Hoy!</span><br><span style="font-size: 2rem; display: block; margin-top: 5px;">${timeStr}</span>`);
 
-            if (distance < (1000 * 60)) { // 1 Minute
+            if (distance < 1000) { // 1 Second
                 $card.addClass('auction-critical');
-                $card.addClass('auction-ending-soon');
                 if (window.currentAuctionId === auction.id) {
                     $('#auction-detail-modal').addClass('auction-critical');
                 }
-            } else if (distance < (1000 * 60 * 60)) { // 1 Hour
-                $card.addClass('auction-ending-soon');
+            } else {
                 $card.removeClass('auction-critical');
+                if (window.currentAuctionId === auction.id) {
+                    $('#auction-detail-modal').removeClass('auction-critical');
+                }
+            }
+
+            if (distance < (1000 * 60 * 60)) { // 1 Hour
+                $card.addClass('auction-ending-soon');
             } else {
                 $card.removeClass('auction-ending-soon');
-                $card.removeClass('auction-critical');
             }
 
             // Bot Interaction (Only if view is auctions and distance is close to thresholds)

@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -859,14 +861,12 @@
                     <div class="draft-date-group">
                         <div class="form-group">
                             <label>INICIO</label>
-                            <input type="datetime-local" id="auction-start-date">
+                            <input type="text" id="auction-start-date" placeholder="Seleccionar fecha...">
                         </div>
-                        <button class="btn-date-accept" title="Aceptar"><i class="fas fa-check"></i></button>
                         <div class="form-group">
                             <label>FINALIZACIÓN</label>
-                            <input type="datetime-local" id="auction-end-date">
+                            <input type="text" id="auction-end-date" placeholder="Seleccionar fecha...">
                         </div>
-                        <button class="btn-date-accept" title="Aceptar"><i class="fas fa-check"></i></button>
                     </div>
                 </div>
 
@@ -1155,6 +1155,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.js"></script>
     <script src="js/cart.js"></script>
     <script src="js/cloudinary-upload.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
