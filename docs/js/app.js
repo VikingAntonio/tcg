@@ -2696,35 +2696,47 @@ function renderAuctionCard(auction) {
 function startAuctionTimer(auction) {
     if (auctionTimers[auction.id]) clearInterval(auctionTimers[auction.id]);
 
-    const endDate = new Date(auction.end_date).getTime();
+    const endDate = new Date(auction.end_date);
+    const endDateTime = endDate.getTime();
 
     const update = () => {
         const now = new Date().getTime();
-        const distance = endDate - now;
+        const distance = endDateTime - now;
+
+        const $timer = $(`#timer-${auction.id}, #auction-modal-timer`);
+        const $card = $(`#auction-${auction.id}`);
 
         if (distance < 0) {
-            $(`#timer-${auction.id}, #auction-modal-timer`).text("FINALIZADA");
-            $(`#auction-${auction.id}`).find('.auction-status-badge').removeClass('status-live').addClass('status-ended').text('Finalizada');
-            $(`#auction-${auction.id}`).removeClass('auction-ending-soon');
+            $timer.text("FINALIZADA");
+            $card.find('.auction-status-badge').removeClass('status-live').addClass('status-ended').text('Finalizada');
+            $card.removeClass('auction-ending-soon auction-critical');
             clearInterval(auctionTimers[auction.id]);
             return;
         }
 
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        if (distance > (24 * 60 * 60 * 1000)) {
+            // More than 24 hours
+            const options = { day: 'numeric', month: 'short' };
+            const formattedDate = endDate.toLocaleDateString('es-ES', options);
+            $timer.text(`Termina el ${formattedDate}`);
+            $card.removeClass('auction-ending-soon auction-critical');
+        } else {
+            // Less than 24 hours
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        $(`#timer-${auction.id}, #auction-modal-timer`).text(timeStr);
-
-        // Alert Effects
-        const $card = $(`#auction-${auction.id}`);
-        if (distance < (1000 * 60 * 60)) { // 1 Hour
-            $card.addClass('auction-ending-soon');
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            $timer.html(`<div class="today-label">¡Termina Hoy!</div> ${timeStr}`);
 
             if (distance < (1000 * 60)) { // 1 Minute
                 $card.addClass('auction-critical');
+                $card.addClass('auction-ending-soon');
+            } else if (distance < (1000 * 60 * 60)) { // 1 Hour
+                $card.addClass('auction-ending-soon');
+                $card.removeClass('auction-critical');
             } else {
+                $card.removeClass('auction-ending-soon');
                 $card.removeClass('auction-critical');
             }
 
@@ -2733,12 +2745,8 @@ function startAuctionTimer(auction) {
                 const minsLeft = Math.floor(distance / (1000 * 60));
                 if (minsLeft === 59 && seconds === 0) {
                     window.botInstance.say(`¡Huy! Falta solo una hora para que termine la subasta de "${auction.nombre}". ¡No te quedes fuera!`, { duration: 10 });
-                } else if (minsLeft === 5 && seconds === 0) {
-                    window.botInstance.say(`¡Atención! Solo quedan 5 minutos para el cierre de "${auction.nombre}". ¡Es ahora o nunca!`, { duration: 8 });
                 }
             }
-        } else {
-            $card.removeClass('auction-ending-soon auction-critical');
         }
     };
 

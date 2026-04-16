@@ -1,14 +1,8 @@
 let auctionUser = null;
 let pendingAuctions = [];
-let userSpirit = null;
 
 $(document).ready(async function() {
     await checkAuctionSession();
-
-    // En admin.html, el compañero ya es manejado por admin.js
-    if (!window.location.pathname.includes('admin.html')) {
-        await loadUserSpirit();
-    }
 
     // --- Events with Delegation ---
     $(document).on('click', '#btn-open-create-auction', () => {
@@ -56,90 +50,7 @@ $(document).ready(async function() {
             renderPendingAuctions();
         }
     });
-
-    // Companion interactions
-    $('#floating-companion-container').click(() => {
-        if (window.isCompanionDragging) return;
-        $('#companion-menu').toggleClass('active');
-    });
-
-    initCompanionDraggability();
 });
-
-function initCompanionDraggability() {
-    const wrapper = document.getElementById('companion-wrapper');
-    const handle = document.getElementById('companion-drag-handle');
-    if (!wrapper || !handle) return;
-
-    let isDragging = false;
-    let currentX;
-    let currentY;
-    let initialX;
-    let initialY;
-    let xOffset = 0;
-    let yOffset = 0;
-
-    const savedPos = localStorage.getItem('companionPosition');
-    if (savedPos) {
-        const pos = JSON.parse(savedPos);
-        xOffset = pos.x;
-        yOffset = pos.y;
-        setTranslate(xOffset, yOffset, wrapper);
-    }
-
-    handle.addEventListener("mousedown", dragStart);
-    document.addEventListener("mousemove", drag);
-    document.addEventListener("mouseup", dragEnd);
-
-    handle.addEventListener("touchstart", dragStart, { passive: false });
-    document.addEventListener("touchmove", drag, { passive: false });
-    document.addEventListener("touchend", dragEnd);
-
-    function dragStart(e) {
-        if (e.type === "touchstart") {
-            initialX = e.touches[0].clientX - xOffset;
-            initialY = e.touches[0].clientY - yOffset;
-        } else {
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
-        }
-        if (e.target === handle || handle.contains(e.target)) {
-            isDragging = true;
-            window.isCompanionDragging = true;
-            wrapper.style.transition = 'none';
-        }
-    }
-
-    function drag(e) {
-        if (isDragging) {
-            e.preventDefault();
-            if (e.type === "touchmove") {
-                currentX = e.touches[0].clientX - initialX;
-                currentY = e.touches[0].clientY - initialY;
-            } else {
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-            }
-            xOffset = currentX;
-            yOffset = currentY;
-            setTranslate(currentX, currentY, wrapper);
-        }
-    }
-
-    function dragEnd() {
-        if (!isDragging) return;
-        initialX = currentX;
-        initialY = currentY;
-        isDragging = false;
-        setTimeout(() => window.isCompanionDragging = false, 100);
-        wrapper.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        localStorage.setItem('companionPosition', JSON.stringify({ x: xOffset, y: yOffset }));
-    }
-
-    function setTranslate(xPos, yPos, el) {
-        el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
-    }
-}
 
 async function checkAuctionSession() {
     const { data: { session } } = await _supabase.auth.getSession();
@@ -153,57 +64,6 @@ async function checkAuctionSession() {
         }
     } else if (!window.location.pathname.endsWith('admin.html')) {
         window.location.href = 'admin.html';
-    }
-}
-
-async function loadUserSpirit() {
-    if (!auctionUser) return;
-    const spiritId = localStorage.getItem(`selectedSpirit_${auctionUser.id}`);
-    if (spiritId) {
-        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', spiritId).single();
-        if (spirit) {
-            userSpirit = spirit;
-            initSpiritViewer(spirit);
-        }
-    } else {
-        const { data: spirits } = await _supabase.from('spirits').select('*').limit(1);
-        if (spirits && spirits.length > 0) {
-            userSpirit = spirits[0];
-            initSpiritViewer(spirits[0]);
-        }
-    }
-}
-
-function initSpiritViewer(spirit) {
-    const $container = $('#floating-companion-container');
-
-    // Evitar re-inicializar si ya existe un viewer o instancia de bot activa
-    if ($container.find('model-viewer').length > 0 || window.botInstance) {
-        console.log("Subastas: El compañero ya está inicializado. Saltando...");
-        if (window.botInstance) {
-            window.botInstance.setContext('auctions');
-            window.botInstance.say("¡Hola! Vamos a lanzar unas subastas increíbles hoy.");
-        }
-        return;
-    }
-
-    $container.empty();
-    const viewer = document.createElement('model-viewer');
-    viewer.setAttribute('src', spirit.gltf_url);
-    viewer.setAttribute('auto-rotate', '');
-    viewer.setAttribute('rotation-speed', '200%');
-    viewer.setAttribute('camera-controls', '');
-    viewer.setAttribute('disable-zoom', '');
-    viewer.setAttribute('shadow-intensity', '1');
-    viewer.style.width = '100%'; viewer.style.height = '100%'; viewer.style.cursor = 'grab';
-    if (spirit.animation_type === 'float' || spirit.animation_type === 'float-static') viewer.setAttribute('autoplay', '');
-    $container.append(viewer);
-
-    if (typeof CompanionBot === 'function') {
-        window.botInstance = new CompanionBot({ supabase: _supabase, userId: auctionUser.id, userType: 'admin' });
-        window.botInstance.init();
-        window.botInstance.setContext('auctions');
-        window.botInstance.say("¡Hola! Vamos a lanzar unas subastas increíbles hoy.");
     }
 }
 
