@@ -2726,6 +2726,7 @@ function startAuctionTimer(auction) {
                 $modalTimer.removeClass('date-pulse');
             }
             $miniTimer.removeClass('date-pulse');
+            $card.addClass('status-ended'); // Apply grayscale only when ended
             $card.find('.auction-status-badge').removeClass('status-live').addClass('status-ended').text('Finalizada');
             $card.removeClass('auction-ending-soon auction-critical');
             if (window.currentAuctionId === auction.id) $('#auction-detail-modal').removeClass('auction-critical');
@@ -2750,10 +2751,10 @@ function startAuctionTimer(auction) {
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
             const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            $miniTimer.html(`<span class="today-label">¡Termina Hoy!</span> ${timeStr}`);
+            $miniTimer.html(`<span class="today-label">¡Termina Hoy!</span><br>${timeStr}`);
             if ($modalTimer) $modalTimer.html(`<span class="today-label">¡Termina Hoy!</span><br><span style="font-size: 2rem; display: block; margin-top: 5px;">${timeStr}</span>`);
 
-            if (distance < 1000) { // 1 Second
+            if (distance < 1500 && distance > 0) { // Approximately 1 Second remaining
                 $card.addClass('auction-critical');
                 if (window.currentAuctionId === auction.id) {
                     $('#auction-detail-modal').addClass('auction-critical');

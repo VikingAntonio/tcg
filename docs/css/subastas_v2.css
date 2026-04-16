@@ -119,7 +119,8 @@ body.admin-body {
 .main-drop-zone:hover, .main-drop-zone.dragover {
     border-color: var(--viking-blue);
     background: rgba(0, 210, 255, 0.05);
-    transform: scale(1.01);
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.4);
 }
 
 .upload-icon-wrapper {
@@ -516,8 +517,9 @@ body.admin-body {
 .file-drop-zone-modal:hover, .file-drop-zone-modal.dragover {
     border-color: #e67e22;
     background: #fff;
-    transform: scale(1.02);
-    box-shadow: 0 5px 15px rgba(230, 126, 34, 0.1);
+    transform: scale(1.08);
+    box-shadow: 0 15px 40px rgba(230, 126, 34, 0.3);
+    border-style: solid;
 }
 
 .file-drop-zone-modal i { font-size: 1.5rem; color: #ddd; }
@@ -834,7 +836,7 @@ body.admin-body {
 }
 
 .auction-timer-mini {
-    color: #77DD77; /* Restore Green for cards */
+    color: #fff; /* Neutral white by default as per design */
     font-size: 1.1rem;
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-weight: 800;
@@ -856,12 +858,13 @@ body.admin-body {
 .auction-critical #auction-modal-timer,
 .auction-critical #auction-modal-current-bid,
 .auction-critical #auction-current-bid-value {
-    animation: pulse-auction 0.8s infinite alternate ease-in-out !important;
+    animation: pulse-auction 0.5s infinite alternate ease-in-out !important;
+    color: #ff4757 !important;
 }
 
 @keyframes pulse-auction {
-    from { opacity: 0.8; text-shadow: 0 0 2px rgba(231, 76, 60, 0.2); }
-    to { opacity: 1; text-shadow: 0 0 12px rgba(231, 76, 60, 0.6); }
+    from { transform: scale(1); opacity: 1; }
+    to { transform: scale(1.05); opacity: 0.8; text-shadow: 0 0 15px rgba(255, 71, 87, 0.8); }
 }
 
 .date-pulse {

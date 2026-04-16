@@ -16,11 +16,11 @@ $(document).ready(async function() {
     // Flatpickr initialization
     flatpickr("#auction-start-date, #auction-end-date", {
         enableTime: true,
-        dateFormat: "Y-m-d H:i",
-        time_24hr: true,
+        dateFormat: "Y-m-d h:i K",
+        time_24hr: false,
         plugins: [new confirmDatePlugin({
             confirmIcon: "<i class='fas fa-check'></i>",
-            confirmText: "ACEPTAR",
+            confirmText: "CONFIRMAR",
             showAlways: true,
             theme: "light"
         })]
@@ -28,8 +28,16 @@ $(document).ready(async function() {
 
     // Drop zones
     const $bulkDropZone = $('#main-drop-zone-auction');
-    $bulkDropZone.on('dragover dragenter', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
-    $bulkDropZone.on('dragleave dragend drop', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $bulkDropZone.on('dragover dragenter', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).addClass('dragover');
+    });
+    $bulkDropZone.on('dragleave dragend drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+    });
     $bulkDropZone.on('drop', function(e) {
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) handleBulkUpload(files);
@@ -38,8 +46,16 @@ $(document).ready(async function() {
     $('#input-auction-files-bulk').on('change', function() { if (this.files.length > 0) handleBulkUpload(this.files); });
 
     const $singleDropZone = $('#drop-zone-single-auction');
-    $singleDropZone.on('dragover dragenter', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
-    $singleDropZone.on('dragleave dragend drop', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $singleDropZone.on('dragover dragenter', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).addClass('dragover');
+    });
+    $singleDropZone.on('dragleave dragend drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+    });
     $singleDropZone.on('drop', function(e) {
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) handleSingleUpload(Array.from(files));
@@ -298,16 +314,23 @@ function closeAuctionModal() { $('#auction-modal').removeClass('active'); }
 
 function resetModalFields() {
     $('#auction-modal').removeData('editing-id').removeData('is-live');
-    $('#auction-title').val(''); $('#auction-description').val(''); $('#auction-start-bid').val('');
+    $('#auction-title').val('');
+    $('#auction-description').val('');
+    $('#auction-start-bid').val('');
     $('#auction-custom-increment').val('');
-    const now = new Date(); const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+    $('#input-single-auction-file').val('');
+    $('#input-auction-files-bulk').val('');
+    $('#preview-grid-auction').data('urls', []); // Clear URLs data
+
+    const now = new Date();
+    const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
 
     const startFp = document.querySelector("#auction-start-date")._flatpickr;
     const endFp = document.querySelector("#auction-end-date")._flatpickr;
     if (startFp) startFp.setDate(now);
     if (endFp) endFp.setDate(end);
 
-    renderModalPreviews([]);
+    renderModalPreviews([]); // This will restore the drop zone UI
     $('.inc-check').prop('checked', true);
     $('#auction-free-bid').prop('checked', true);
 }
