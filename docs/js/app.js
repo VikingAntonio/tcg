@@ -2791,12 +2791,24 @@ async function openAuctionDetail(auction) {
     }
 
     // Subscribe to bids (Realtime)
+    if (window.currentAuctionChannel) {
+        _supabase.removeChannel(window.currentAuctionChannel);
+    }
+
     const channel = _supabase
-        .channel(`auction-${auction.id}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subastas_pujas', filter: `subasta_id=eq.${auction.id}` }, payload => {
+        .channel(`public:subastas_pujas:subasta_id=eq.${auction.id}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'subastas_pujas',
+            filter: `subasta_id=eq.${auction.id}`
+        }, payload => {
+            console.log("Nueva puja detectada (Realtime):", payload.new);
             updateAuctionBidsUI(auction.id);
         })
-        .subscribe();
+        .subscribe((status) => {
+            console.log("Estado suscripción subasta:", status);
+        });
 
     window.currentAuctionChannel = channel;
 }
@@ -2825,7 +2837,7 @@ async function updateAuctionBidsUI(auctionId) {
         if (bids.length > 0) {
             $('#auction-winner-display').show().css('opacity', '1').removeClass('status-ended');
             $('#auction-winner-name').text(bids[0].bidder_name);
-            $('#auction-winner-amount').text(`$${bids[0].amount.toFixed(2)}`);
+            $('#auction-winner-amount').text(`Puja Ganadora: $${bids[0].amount.toFixed(2)}`);
 
             if (window.botInstance && !window.winnerAnnounced) {
                 window.botInstance.say(`¡Tenemos un ganador para "${window.currentAuctionData.nombre}"! Felicidades a ${bids[0].bidder_name} por llevarse esta joya.`, { duration: 10 });
@@ -2844,9 +2856,10 @@ async function updateAuctionBidsUI(auctionId) {
 
     bids.slice(0, 5).forEach((bid, idx) => {
         const isWinning = idx === 0;
+        const isSelf = window.currentUser && bid.bidder_id === window.currentUser.id;
         $topList.append(`
-            <div class="bidder-item ${isWinning ? 'winner' : ''}">
-                <span class="bidder-name">${idx + 1}. ${bid.bidder_name} ${isWinning ? '<i class="fas fa-crown"></i>' : ''}</span>
+            <div class="bidder-item ${isWinning ? 'winner' : ''} ${isSelf ? 'self' : ''}">
+                <span class="bidder-name">${idx + 1}. ${bid.bidder_name} ${isWinning ? '<i class="fas fa-crown"></i>' : ''} ${isSelf ? '(Tú)' : ''}</span>
                 <span class="bid-amount">$${bid.amount.toFixed(2)}</span>
             </div>
         `);
@@ -2913,6 +2926,10 @@ async function placeAuctionBid() {
     } else {
         Swal.fire({ icon: 'success', title: 'Puja registrada', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         $('#input-bid-amount').val('');
+
+        // Actualización inmediata local
+        updateAuctionBidsUI(window.currentAuctionId);
+
         if (window.botInstance) {
             window.botInstance.say(`¡Genial! Tu puja de $${bidAmount.toFixed(2)} ha sido registrada. ¡Ahora vas a la cabeza!`);
         }
