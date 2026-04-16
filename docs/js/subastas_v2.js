@@ -4,7 +4,11 @@ let userSpirit = null;
 
 $(document).ready(async function() {
     await checkAuctionSession();
-    await loadUserSpirit();
+
+    // En admin.html, el compañero ya es manejado por admin.js
+    if (!window.location.pathname.includes('admin.html')) {
+        await loadUserSpirit();
+    }
 
     // --- Events with Delegation ---
     $(document).on('click', '#btn-open-create-auction', () => {
