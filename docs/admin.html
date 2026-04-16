@@ -206,44 +206,43 @@
                 </div>
             </div>
 
-            <div id="live-auction-list" class="auction-grid-admin" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; margin-top: 40px;">
-                <!-- Auctions will be loaded here -->
+            <div id="live-auction-list" class="auction-management-grid" style="margin-top: 40px;">
+                <!-- Auctions will be loaded here as pretty cards -->
                 <div class="loading">Cargando subastas...</div>
             </div>
         </div>
 
         <!-- Bulk Auctions View -->
         <div id="view-bulk-auctions" class="admin-section" style="display:none;">
-            <div class="admin-header">
+            <div class="admin-header" style="text-align: center;">
                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
-                <h1>Subastas Múltiples</h1>
-                <p>Carga varias imágenes a la vez para crear múltiples subastas rápidamente.</p>
+                <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 10px;">Subastas Múltiples</h1>
+                <p style="color: #666; font-size: 1.1rem;">Carga varias imágenes a la vez para crear múltiples subastas rápidamente.</p>
             </div>
 
-            <div class="bulk-upload-container" style="max-width: 900px; margin: 0 auto;">
-                <div class="main-drop-zone" id="main-drop-zone-auction">
+            <div class="bulk-upload-container" style="max-width: 1100px; margin: 0 auto;">
+                <div class="main-drop-zone" id="main-drop-zone-auction" style="background: #fff; border: 2px dashed #ddd; border-radius: 40px;">
                     <div class="upload-icon-wrapper">
-                        <i class="fas fa-images"></i>
-                        <div class="mini-plus"><i class="fas fa-plus-circle"></i></div>
+                        <img src="https://cdn-icons-png.flaticon.com/512/3342/3342137.png" style="width: 80px; margin-bottom: 15px;">
                     </div>
-                    <h2>ARRASTRA O SELECCIONA MÚLTIPLES IMÁGENES</h2>
-                    <p>Cada imagen se convertirá en un borrador de subasta individual.</p>
+                    <h2 style="color: #222; font-weight: 900; letter-spacing: -1px;">ARRASTRA O SELECCIONA MÚLTIPLES IMÁGENES</h2>
+                    <p style="color: #666;">Cada imagen se convertirá en una subasta individual.</p>
                     <input type="file" id="input-auction-files-bulk" multiple accept="image/*" style="display: none;">
                 </div>
 
-                <div id="bulk-actions-toolbar" class="bulk-toolbar" style="display: none;">
-                    <div class="bulk-info">
+                <div id="bulk-actions-toolbar" class="bulk-toolbar" style="display: none; background: #222; border-radius: 25px; margin: 30px auto; max-width: 600px; justify-content: space-around;">
+                    <div class="bulk-info" style="color: #00d2ff; font-weight: 800;">
                         <i class="fas fa-list-ul"></i>
-                        <span id="draft-count">0</span> Borradores listos
+                        <span id="pending-auction-count">0</span> Subastas listas
                     </div>
                     <div class="bulk-buttons">
-                        <button id="btn-open-bulk-settings" class="btn-bulk-secondary"><i class="fas fa-cog"></i> Configurar Todo</button>
-                        <button id="btn-save-all-drafts" class="btn-bulk-primary"><i class="fas fa-rocket"></i> LANZAR TODO</button>
+                        <button id="btn-open-bulk-settings" class="btn-bulk-secondary" style="background: #333; border: none;"><i class="fas fa-cog"></i> Configurar Todo</button>
+                        <button id="btn-save-all-drafts" class="btn-bulk-primary" style="background: #00d2ff; color: #fff;"><i class="fas fa-rocket"></i> LANZAR TODO</button>
                     </div>
                 </div>
 
-                <div id="auction-drafts-list" class="drafts-grid" style="margin-top: 30px;">
-                    <!-- Draft cards here -->
+                <div id="auction-pending-list" class="auction-management-grid" style="margin-top: 30px;">
+                    <!-- Pending auctions as pretty cards here -->
                 </div>
             </div>
         </div>
@@ -875,12 +874,11 @@
             <span id="close-auction-modal" class="close-btn">&times;</span>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;">
                 <h2 id="auction-modal-title" style="margin: 0;">LANZAR SUBASTA</h2>
-                <button id="btn-switch-to-bulk" class="btn-switch-bulk-pill"><i class="fas fa-layer-group"></i> CAMBIAR A MÚLTIPLES</button>
             </div>
 
             <div id="bulk-info-msg" class="bulk-info-box" style="display: none; margin-bottom: 20px;">
                 <i class="fas fa-info-circle"></i>
-                <span>Estos ajustes se aplicarán a todos los borradores seleccionados.</span>
+                <span>Estos ajustes se aplicarán a todas las subastas seleccionadas.</span>
             </div>
 
             <div class="auction-form-grid">
