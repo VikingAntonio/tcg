@@ -290,16 +290,13 @@ $(document).ready(async function() {
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
 
     $('#nav-btn-auctions-won').click(function() {
-        showView('main-dashboard');
+        showView('SubastasGanadas');
+        loadWonAuctionsList();
 
         // Reacción del bot al abrir subastas ganadas
         if (window.botInstance) {
             window.botInstance.say("¡Excelente! Aquí tienes el resumen de tus victorias. No olvides contactar a las tiendas para finalizar tus compras.", { duration: 8 });
         }
-
-        $('html, body').animate({
-            scrollTop: $("#won-auctions-container").offset().top - 100
-        }, 800);
     });
 
     // --- Upgrade Button Logic ---
@@ -3011,10 +3008,12 @@ async function loadWonAuctions() {
                 bids.sort((a, b) => b.amount - a.amount);
                 const highestBid = bids[0];
                 if (highestBid.bidder_id === currentUser.id) {
+                    // Safe mapping for store info, handling potential array response from Supabase joins
+                    const storeData = Array.isArray(auction.usuarios) ? auction.usuarios[0] : auction.usuarios;
                     wonItems.push({
                         ...auction,
                         won_amount: highestBid.amount,
-                        store_name: auction.usuarios ? (auction.usuarios.store_name || auction.usuarios.username) : 'Tienda Desconocida'
+                        store_name: storeData ? (storeData.store_name || storeData.username) : 'Tienda Desconocida'
                     });
                 }
             }

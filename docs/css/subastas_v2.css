@@ -182,51 +182,108 @@ body.admin-body {
     box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
 }
 
-/* Drafts Grid */
-.drafts-grid {
+/* Management Pretty Cards Grid */
+.auction-management-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
     margin-bottom: 60px;
 }
 
-.draft-card {
-    background: #111;
-    border: 1px solid var(--glass-border);
-    border-radius: 25px;
-    padding: 15px;
-    position: relative;
-    transition: all 0.3s;
+@media (max-width: 1200px) {
+    .auction-management-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-.draft-card:hover { transform: translateY(-5px); border-color: var(--viking-blue); }
+@media (max-width: 768px) {
+    .auction-management-grid { grid-template-columns: 1fr; }
+}
 
-.remove-draft {
+.pretty-auction-card {
+    background: #0a0a0a;
+    border: 2px solid #222;
+    border-radius: 40px;
+    padding: 25px;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.pretty-auction-card:hover {
+    border-color: #00d2ff;
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 210, 255, 0.1);
+}
+
+.pretty-auction-card .remove-btn {
     position: absolute;
-    top: 10px; right: 10px;
-    width: 28px; height: 28px;
+    top: 20px; right: 20px;
+    width: 32px; height: 32px;
     border-radius: 50%;
     background: rgba(255, 71, 87, 0.1);
     color: #ff4757;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     z-index: 10;
+    border: none;
 }
 
-.draft-card img {
+.pretty-auction-card .card-img-container {
     width: 100%;
-    height: 160px;
-    object-fit: contain;
-    border-radius: 15px;
+    height: 220px;
     background: #000;
-    margin-bottom: 15px;
+    border-radius: 25px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.draft-form .input-name {
+.pretty-auction-card .card-img-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.pretty-auction-card label {
+    color: #666;
+    font-size: 0.65rem;
     font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.pretty-auction-card input,
+.pretty-auction-card textarea {
+    background: #fff !important;
+    color: #000 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 10px 15px !important;
+    font-weight: 700 !important;
+    width: 100% !important;
     font-size: 0.9rem !important;
-    text-align: center;
-    margin-bottom: 10px;
+}
+
+.pretty-auction-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.pretty-auction-card .btn-card-save {
+    background: #00d2ff;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 8px 25px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-transform: uppercase;
 }
 
 /* Modal Redesign - White Clean Theme as per Image */
