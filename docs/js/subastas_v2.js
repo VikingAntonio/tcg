@@ -172,6 +172,17 @@ async function loadUserSpirit() {
 
 function initSpiritViewer(spirit) {
     const $container = $('#floating-companion-container');
+
+    // Evitar re-inicializar si ya existe un viewer o instancia de bot activa
+    if ($container.find('model-viewer').length > 0 || window.botInstance) {
+        console.log("Subastas: El compañero ya está inicializado. Saltando...");
+        if (window.botInstance) {
+            window.botInstance.setContext('auctions');
+            window.botInstance.say("¡Hola! Vamos a lanzar unas subastas increíbles hoy.");
+        }
+        return;
+    }
+
     $container.empty();
     const viewer = document.createElement('model-viewer');
     viewer.setAttribute('src', spirit.gltf_url);
