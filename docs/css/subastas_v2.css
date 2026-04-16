@@ -200,8 +200,8 @@ body.admin-body {
 
 @media (max-width: 768px) {
     .auction-management-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
 }
 
@@ -628,6 +628,25 @@ body.admin-body {
     .desktop-only { display: none; }
     .auction-form-grid { grid-template-columns: 1fr; }
     .auction-hero-section { flex-direction: column; text-align: center; gap: 20px; padding: 30px; }
+
+    .pretty-auction-card {
+        padding: 15px;
+        height: auto;
+        border-radius: 25px;
+    }
+
+    .pretty-auction-card .card-img-container {
+        height: 120px;
+    }
+
+    .pretty-auction-card .card-title {
+        margin: 5px 0 15px;
+        font-size: 1rem;
+    }
+
+    .pretty-auction-card .stat-box {
+        padding: 10px;
+    }
 }
 
 /* Won Auctions Header Button - To be used in admin.html */
@@ -670,21 +689,17 @@ body.admin-body {
     box-shadow: 0 0 10px rgba(255, 71, 87, 0.6);
 }
 
-/* Public Grid 5-per-row PC / 3-per-row Mobile */
+/* Public Grid Responsive */
 .auction-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 15px;
-}
-
-@media (max-width: 1200px) {
-    .auction-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 @media (max-width: 768px) {
     .auction-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
 }
 
@@ -794,15 +809,62 @@ body.admin-body {
 
 /* Hide title on mobile as requested, only image and bid */
 @media (max-width: 480px) {
+    .auction-public-card {
+        aspect-ratio: auto;
+        height: auto;
+        margin-bottom: 10px;
+    }
+
+    .auction-image-wrapper {
+        height: 250px;
+    }
+
     .auction-info-overlay {
-        display: none;
+        display: block; /* Show overlay */
+        padding: 40px 15px 15px;
+    }
+
+    .auction-info-overlay .auction-title {
+        display: none; /* Hide title as requested */
     }
 
     .auction-bid-badge {
-        font-size: 0.9rem;
-        bottom: 10px;
-        right: 10px;
+        font-size: 1.1rem;
+        bottom: 15px;
+        right: 15px;
     }
+
+    .auction-footer-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .auction-bidder-info {
+        font-size: 0.9rem;
+        color: #333;
+        font-weight: 800;
+        text-align: right;
+    }
+
+    .auction-bidder-info .bidder-name {
+        display: block;
+        font-size: 0.75rem;
+        color: #888;
+        text-transform: uppercase;
+    }
+}
+
+.auction-footer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.auction-bidder-info {
+    display: none; /* Hidden by default, shown via mobile media query */
 }
 
 /* Status ended effect */
