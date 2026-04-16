@@ -18,9 +18,10 @@ $(document).ready(async function() {
         enableTime: true,
         dateFormat: "Y-m-d h:i K",
         time_24hr: false,
-        plugins: [new confirmDatePlugin({
+        allowInput: true,
+        plugins: [confirmDate({
             confirmIcon: "<i class='fas fa-check'></i>",
-            confirmText: "CONFIRMAR",
+            confirmText: "ACEPTAR",
             showAlways: true,
             theme: "light"
         })]
@@ -341,12 +342,13 @@ async function handleSaveAuction() {
 
     const title = $('#auction-title').val();
     const bid = parseFloat($('#auction-start-bid').val()) || 0;
-    const startVal = $('#auction-start-date').val();
-    const endVal = $('#auction-end-date').val();
+
+    const startFp = document.querySelector("#auction-start-date")._flatpickr;
+    const endFp = document.querySelector("#auction-end-date")._flatpickr;
 
     // Ensure we save as ISO strings for UTC consistency
-    const start = startVal ? new Date(startVal).toISOString() : null;
-    const end = endVal ? new Date(endVal).toISOString() : null;
+    const start = startFp.selectedDates[0] ? startFp.selectedDates[0].toISOString() : null;
+    const end = endFp.selectedDates[0] ? endFp.selectedDates[0].toISOString() : null;
 
     const desc = $('#auction-description').val();
 
