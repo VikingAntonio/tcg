@@ -2,24 +2,16 @@ let auctionUser = null;
 let pendingAuctions = [];
 let userSpirit = null;
 
-let isBulkMode = false;
-
 $(document).ready(async function() {
     await checkAuctionSession();
     await loadUserSpirit();
 
     // --- Events with Delegation ---
     $(document).on('click', '#btn-open-create-auction', () => {
-        isBulkMode = false;
-        openAuctionModal(false);
-    });
-    $(document).on('click', '#btn-open-bulk-settings', () => {
-        isBulkMode = true;
-        openAuctionModal(true);
+        openAuctionModal();
     });
     $(document).on('click', '#close-auction-modal', closeAuctionModal);
     $(document).on('click', '#btn-save-auction', handleSaveAuction);
-    $(document).on('click', '#btn-save-all-drafts', saveAllPending);
 
     // Accept buttons for dates
     $(document).on('click', '.btn-date-accept', function() {
@@ -214,7 +206,7 @@ async function handleBulkUpload(files) {
 
     Swal.close();
     if (urls.length > 0) {
-        openAuctionModal(false);
+        openAuctionModal();
         renderModalPreviews(urls);
     }
 }
@@ -222,12 +214,14 @@ async function handleBulkUpload(files) {
 async function handleSingleUpload(fileList) {
     try {
         Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        const urls = [];
+        let currentUrls = $('#preview-grid-auction').data('urls') || [];
+        const newUrls = [];
         for (const file of fileList) {
             const url = await CloudinaryUpload.uploadImage(file);
-            urls.push(url);
+            newUrls.push(url);
         }
-        renderModalPreviews(urls);
+        const totalUrls = [...currentUrls, ...newUrls];
+        renderModalPreviews(totalUrls);
         Swal.close();
     } catch (err) { Swal.fire('Error', 'No se pudo subir la imagen.', 'error'); }
 }
@@ -268,18 +262,7 @@ window.removePreviewFromModal = (url) => {
 };
 
 function renderPendingAuctions() {
-    const $container = $('#auction-pending-list');
-    const $toolbar = $('#bulk-actions-toolbar');
-    $container.empty();
-
-    if (pendingAuctions.length === 0) { $toolbar.hide(); return; }
-    $toolbar.show();
-    $('#pending-auction-count').text(pendingAuctions.length);
-
-    pendingAuctions.forEach(auction => {
-        const $card = createPrettyCard(auction, false);
-        $container.append($card);
-    });
+    // Legacy - No longer using intermediate bulk view
 }
 
 function createPrettyCard(item, isLive) {
@@ -326,13 +309,12 @@ window.editAuctionFromCard = async (id, isLive) => {
         const { data } = await _supabase.from('subastas').select('*').eq('id', id).single();
         auctionData = data;
     } else {
-        auctionData = pendingAuctions.find(a => a.id === id);
+        return; // No pending edits anymore
     }
 
     if (!auctionData) return;
 
-    isBulkMode = false;
-    openAuctionModal(false);
+    openAuctionModal();
 
     $('#auction-modal').data('editing-id', id);
     $('#auction-modal').data('is-live', isLive);
@@ -367,38 +349,6 @@ async function checkRoleLimit(tryingToAdd = 1) {
     return true;
 }
 
-async function saveAllPending() {
-    if (pendingAuctions.length === 0) return;
-    const limitRes = await checkRoleLimit(pendingAuctions.length);
-    if (!limitRes) return;
-
-    Swal.fire({ title: 'Lanzando todas...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    const dataToInsert = pendingAuctions.map(a => ({
-        user_id: auctionUser.id,
-        nombre: a.nombre,
-        image_url: a.image_url,
-        starting_bid: a.starting_bid,
-        start_date: a.start_date,
-        end_date: a.end_date,
-        description: a.description,
-        increment_type: a.increment_type || 'free',
-        min_increment: a.min_increment || 1,
-        allowed_increments: a.allowed_increments || '5,10',
-        is_live: true,
-        status: 'Activa'
-    }));
-
-    const { error } = await _supabase.from('subastas').insert(dataToInsert);
-    if (error) Swal.fire('Error', error.message, 'error');
-    else {
-        Swal.fire('¡Éxito!', `${pendingAuctions.length} subastas lanzadas.`, 'success');
-        if (window.botInstance) window.botInstance.say("¡Impresionante! He lanzado todas tus subastas al catálogo.");
-        pendingAuctions = [];
-        renderPendingAuctions();
-        if (typeof showView === 'function') showView('manage-auctions');
-        loadLiveAuctions();
-    }
-}
 
 async function loadLiveAuctions() {
     if (!auctionUser) return;
@@ -423,21 +373,11 @@ async function loadLiveAuctions() {
     });
 }
 
-function openAuctionModal(isConfig = false) {
+function openAuctionModal() {
     $('#auction-modal').addClass('active');
     resetModalFields();
-
-    if (isConfig) {
-        $('#auction-modal-title').text('CONFIGURACIÓN MASIVA');
-        $('#bulk-info-msg').show();
-        $('#btn-save-auction').text('APLICAR A TODO');
-        $('#auction-title').attr('placeholder', '(Opcional) Título base para todas');
-    } else {
-        $('#auction-modal-title').text('LANZAR SUBASTA');
-        $('#bulk-info-msg').hide();
-        $('#btn-save-auction').text('LANZAR SUBASTA');
-        $('#auction-title').attr('placeholder', 'Ej: Playera Firmada Edición Limitada');
-    }
+    $('#auction-modal-title').text('LANZAR SUBASTA');
+    $('#btn-save-auction').text('LANZAR SUBASTA');
 }
 
 function closeAuctionModal() { $('#auction-modal').removeClass('active'); }
@@ -473,71 +413,52 @@ async function handleSaveAuction() {
     const editingId = $('#auction-modal').data('editing-id');
     const isLive = $('#auction-modal').data('is-live');
 
-    if (editingId) {
-        const auctionData = {
-            nombre: title || 'Sin título',
-            starting_bid: bid,
-            start_date: start,
-            end_date: end,
-            description: desc,
-            increment_type: allowFree ? 'free' : 'fixed',
-            min_increment: increments.length > 0 ? Math.min(...increments) : 1,
-            allowed_increments: increments.join(',')
-        };
+    // Prepare common auction data
+    const auctionBaseData = {
+        nombre: title || 'Nueva Subasta',
+        starting_bid: bid,
+        start_date: start,
+        end_date: end,
+        description: desc,
+        increment_type: allowFree ? 'free' : 'fixed',
+        min_increment: increments.length > 0 ? Math.min(...increments) : 1,
+        allowed_increments: increments.join(','),
+        is_live: true,
+        status: 'Activa'
+    };
 
-        if (isLive) {
-            const { error } = await _supabase.from('subastas').update(auctionData).eq('id', editingId);
-            if (error) return Swal.fire('Error', error.message, 'error');
-        } else {
-            const idx = pendingAuctions.findIndex(a => a.id === editingId);
-            if (idx !== -1) pendingAuctions[idx] = { ...pendingAuctions[idx], ...auctionData };
-        }
+    if (editingId && isLive) {
+        const { error } = await _supabase.from('subastas').update(auctionBaseData).eq('id', editingId);
+        if (error) return Swal.fire('Error', error.message, 'error');
 
         Swal.fire('¡Éxito!', 'Subasta actualizada.', 'success');
         closeAuctionModal();
-        renderPendingAuctions();
         loadLiveAuctions();
         return;
     }
 
-    if (isBulkMode) {
-        pendingAuctions.forEach(a => {
-            if (title) a.nombre = title;
-            if (!isNaN(bid)) a.starting_bid = bid;
-            if (start) a.start_date = start;
-            if (end) a.end_date = end;
-            if (desc) a.description = desc;
+    // New auctions creation (Single or Multi)
+    const limitRes = await checkRoleLimit(urls.length);
+    if (!limitRes) return;
 
-            a.increment_type = allowFree ? 'free' : 'fixed';
-            a.min_increment = increments.length > 0 ? Math.min(...increments) : 1;
-            a.allowed_increments = increments.join(',');
-        });
-        renderPendingAuctions();
-        Swal.fire('¡Aplicado!', 'Configuración aplicada a todas las pendientes.', 'success');
+    Swal.fire({ title: 'Lanzando subastas...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const dataToInsert = urls.map(url => ({
+        ...auctionBaseData,
+        user_id: auctionUser.id,
+        image_url: url
+    }));
+
+    const { error } = await _supabase.from('subastas').insert(dataToInsert);
+    if (error) {
+        Swal.fire('Error', error.message, 'error');
+    } else {
+        Swal.fire('¡Éxito!', `${urls.length} subastas lanzadas al catálogo.`, 'success');
+        if (window.botInstance) window.botInstance.say("¡Hecho! Tus subastas ya están disponibles para todos.");
         closeAuctionModal();
-        return;
+        if (typeof showView === 'function') showView('manage-auctions');
+        loadLiveAuctions();
     }
-
-    // New auctions creation
-    urls.forEach(url => {
-        pendingAuctions.push({
-            id: 'pending_' + Date.now() + Math.random(),
-            nombre: title || 'Nueva Subasta',
-            image_url: url,
-            starting_bid: bid,
-            start_date: start,
-            end_date: end,
-            description: desc,
-            increment_type: allowFree ? 'free' : 'fixed',
-            min_increment: increments.length > 0 ? Math.min(...increments) : 1,
-            allowed_increments: increments.join(',')
-        });
-    });
-
-    Swal.fire('¡Listo!', `${urls.length} subastas añadidas.`, 'success');
-    closeAuctionModal();
-    if (typeof showView === 'function') showView('bulk-auctions');
-    renderPendingAuctions();
 }
 
 async function deleteLiveAuction(id) {
