@@ -815,8 +815,8 @@ body.admin-body {
 }
 
 .auction-timer-mini {
+    color: #77DD77; /* Restore Green for cards */
     font-size: 1.1rem;
-    color: #8e44ad; /* Amethyst Purple */
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-weight: 800;
     transition: all 0.3s ease;
@@ -847,9 +847,13 @@ body.admin-body {
 
 .date-pulse {
     animation: soft-pulse 2.5s infinite ease-in-out;
-    color: #8e44ad !important;
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-weight: 800;
+}
+
+#auction-modal-timer.date-pulse,
+#auction-modal-timer {
+    color: #8e44ad !important;
 }
 
 @keyframes soft-pulse {
@@ -862,6 +866,10 @@ body.admin-body {
     font-size: 0.85rem;
     font-weight: 900;
     color: #FF6B6B;
+    display: inline-block;
+}
+
+.auction-timer-mini .today-label {
     display: block;
     margin-bottom: -5px;
 }
