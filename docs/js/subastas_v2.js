@@ -21,6 +21,12 @@ $(document).ready(async function() {
     $(document).on('click', '#btn-save-auction', handleSaveAuction);
     $(document).on('click', '#btn-save-all-drafts', saveAllPending);
 
+    // Accept buttons for dates
+    $(document).on('click', '.btn-date-accept', function() {
+        // Just triggers blur to close calendar on some browsers, or we can just do nothing as it's a visual cue
+        $(this).prev('input').blur();
+    });
+
     // Drop zones
     const $bulkDropZone = $('#main-drop-zone-auction');
     $bulkDropZone.on('dragover dragenter', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
@@ -37,17 +43,11 @@ $(document).ready(async function() {
     $singleDropZone.on('dragleave dragend drop', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
     $singleDropZone.on('drop', function(e) {
         const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) handleSingleUpload(files[0]);
+        if (files.length > 0) handleSingleUpload(Array.from(files));
     });
     $singleDropZone.click(() => $('#input-single-auction-file').click());
     $('#input-single-auction-file').on('change', function() {
-        if (this.files.length > 0) handleSingleUpload(this.files[0]);
-    });
-
-    $(document).on('click', '.btn-card-save', async function() {
-        const id = $(this).data('id');
-        const isLive = $(this).data('live') === true;
-        saveIndividualAuction(id, isLive);
+        if (this.files.length > 0) handleSingleUpload(Array.from(this.files));
     });
 
     $(document).on('click', '.remove-btn', function() {
@@ -204,41 +204,68 @@ async function handleBulkUpload(files) {
     const fileArray = Array.from(files);
     Swal.fire({ title: 'Subiendo imágenes...', text: `Procesando ${fileArray.length} archivos.`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
+    const urls = [];
     for (const file of fileArray) {
         try {
             const url = await CloudinaryUpload.uploadImage(file);
-            const now = new Date();
-            const defaultEnd = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-            pendingAuctions.push({
-                id: 'pending_' + Date.now() + Math.random(),
-                nombre: file.name.split('.')[0],
-                image_url: url,
-                starting_bid: 1,
-                start_date: now.toISOString().slice(0, 16),
-                end_date: defaultEnd.toISOString().slice(0, 16),
-                description: '',
-                increment_type: 'free',
-                min_increment: 1,
-                allowed_increments: '5,10'
-            });
+            urls.push(url);
         } catch (err) { console.error("Error upload:", err); }
     }
 
-    if (window.botInstance) window.botInstance.say(`¡Listo! He cargado ${fileArray.length} subastas nuevas. Edítalas individualmente aquí abajo.`);
     Swal.close();
-    if (typeof showView === 'function') showView('bulk-auctions');
-    renderPendingAuctions();
+    if (urls.length > 0) {
+        openAuctionModal(false);
+        renderModalPreviews(urls);
+    }
 }
 
-async function handleSingleUpload(file) {
+async function handleSingleUpload(fileList) {
     try {
         Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        const url = await CloudinaryUpload.uploadImage(file);
-        $('#single-auction-preview').html(`<img src="${url}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px;">`);
-        $('#drop-zone-single-auction').data('url', url).addClass('has-image');
+        const urls = [];
+        for (const file of fileList) {
+            const url = await CloudinaryUpload.uploadImage(file);
+            urls.push(url);
+        }
+        renderModalPreviews(urls);
         Swal.close();
     } catch (err) { Swal.fire('Error', 'No se pudo subir la imagen.', 'error'); }
 }
+
+function renderModalPreviews(urls) {
+    const $grid = $('#preview-grid-auction');
+    const $dropZone = $('#drop-zone-single-auction');
+
+    $grid.empty().data('urls', urls);
+
+    if (urls && urls.length > 0) {
+        $dropZone.hide();
+        $grid.show();
+        urls.forEach(url => {
+            $grid.append(`
+                <div class="preview-item-mini" title="Click para quitar" onclick="removePreviewFromModal('${url}')">
+                    <img src="${url}">
+                    <div style="position:absolute; top:2px; right:2px; background:rgba(255,0,0,0.7); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;"><i class="fas fa-times"></i></div>
+                </div>
+            `);
+        });
+        // Add a "Add More" box in the grid
+        $grid.append(`
+            <div class="preview-item-mini" style="border: 2px dashed #eee; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="$('#input-single-auction-file').click()">
+                <i class="fas fa-plus" style="color:#ccc;"></i>
+            </div>
+        `);
+    } else {
+        $dropZone.show();
+        $grid.hide();
+    }
+}
+
+window.removePreviewFromModal = (url) => {
+    let urls = $('#preview-grid-auction').data('urls') || [];
+    urls = urls.filter(u => u !== url);
+    renderModalPreviews(urls);
+};
 
 function renderPendingAuctions() {
     const $container = $('#auction-pending-list');
@@ -257,124 +284,76 @@ function renderPendingAuctions() {
 
 function createPrettyCard(item, isLive) {
     const id = item.id;
+    const bidValue = item.starting_bid || 0;
+    const bidCount = 0;
+
     const $card = $(`
         <div class="pretty-auction-card" id="card-${id}">
-            <button class="remove-btn" data-id="${id}" data-live="${isLive}"><i class="fas fa-times"></i></button>
+            ${isLive ? `<div class="status-badge">${item.status || 'ACTIVA'}</div>` : '<div class="status-badge" style="background:#adb5bd;">DRAFT</div>'}
+
             <div class="card-img-container">
                 <img src="${item.image_url}" alt="Auction">
             </div>
-            <div class="card-inputs">
-                <div class="form-group">
-                    <label>Título</label>
-                    <input type="text" class="card-input-title" value="${item.nombre || ''}" placeholder="Ej: Carta Especial">
+
+            <div class="card-title">${item.nombre || 'Sin título'}</div>
+
+            <div class="bid-stats">
+                <div class="stat-box">
+                    <span class="stat-label">PUJA ACTUAL</span>
+                    <span class="stat-value">$${parseFloat(bidValue).toFixed(2)}</span>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div class="form-group">
-                        <label>Puja Base ($)</label>
-                        <input type="number" class="card-input-bid" value="${item.starting_bid || 1}" step="0.01">
-                    </div>
-                    <div class="form-group">
-                        <label>Estado</label>
-                        <div style="padding: 10px; background: #222; border-radius: 12px; font-size: 0.7rem; text-align: center; color: ${isLive ? '#00d2ff' : '#666'}; font-weight: 800;">
-                            ${isLive ? 'ACTIVA' : 'PENDIENTE'}
-                        </div>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div class="form-group">
-                        <label>Inicio</label>
-                        <input type="datetime-local" class="card-input-start" value="${item.start_date ? item.start_date.slice(0, 16) : ''}">
-                    </div>
-                    <div class="form-group">
-                        <label>Fin</label>
-                        <input type="datetime-local" class="card-input-end" value="${item.end_date ? item.end_date.slice(0, 16) : ''}">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea class="card-input-desc" style="height: 60px;">${item.description || ''}</textarea>
+                <div class="stat-box">
+                    <span class="stat-label">PUJAS</span>
+                    <span class="stat-value">${bidCount}</span>
                 </div>
             </div>
-            <div class="card-footer">
-                <button class="btn-card-save" data-id="${id}" data-live="${isLive}">
-                    <i class="fas fa-save"></i> ${isLive ? 'ACTUALIZAR' : 'GUARDAR'}
-                </button>
+
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                <div class="gestionar-link" onclick="editAuctionFromCard('${id}', ${isLive})">
+                    GESTIONAR <i class="fas fa-chevron-right" style="font-size: 0.6rem;"></i>
+                </div>
+                <button class="remove-btn" data-id="${id}" data-live="${isLive}"><i class="fas fa-trash-alt"></i></button>
             </div>
         </div>
     `);
 
-    // Dynamic sync for pending
-    if (!isLive) {
-        $card.find('input, textarea').on('change', function() {
-            const field = $(this).attr('class');
-            if (field.includes('title')) item.nombre = $(this).val();
-            if (field.includes('bid')) item.starting_bid = parseFloat($(this).val()) || 1;
-            if (field.includes('start')) item.start_date = $(this).val();
-            if (field.includes('end')) item.end_date = $(this).val();
-            if (field.includes('desc')) item.description = $(this).val();
-        });
-    }
-
     return $card;
 }
 
-async function saveIndividualAuction(id, isLive) {
-    const $card = $(`#card-${id}`);
-    const title = $card.find('.card-input-title').val();
-    const bid = parseFloat($card.find('.card-input-bid').val());
-    const start = $card.find('.card-input-start').val();
-    const end = $card.find('.card-input-end').val();
-    const desc = $card.find('.card-input-desc').val();
-
-    if (!title || isNaN(bid)) return Swal.fire('Error', 'Título y Puja Base son obligatorios.', 'warning');
-
-    Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    const auctionData = {
-        nombre: title,
-        starting_bid: bid,
-        start_date: start,
-        end_date: end,
-        description: desc,
-        status: 'Activa',
-        is_live: true
-    };
-
+window.editAuctionFromCard = async (id, isLive) => {
+    let auctionData;
     if (isLive) {
-        const { error } = await _supabase.from('subastas').update(auctionData).eq('id', id);
-        if (error) Swal.fire('Error', error.message, 'error');
-        else {
-            Swal.fire('¡Éxito!', 'Subasta actualizada.', 'success');
-            if (window.botInstance) window.botInstance.say("He guardado los cambios en esta subasta.");
-            loadLiveAuctions();
-        }
+        const { data } = await _supabase.from('subastas').select('*').eq('id', id).single();
+        auctionData = data;
     } else {
-        // First persistence for pending items
-        const item = pendingAuctions.find(a => a.id === id);
-        const insertData = {
-            ...auctionData,
-            user_id: auctionUser.id,
-            image_url: item.image_url,
-            increment_type: item.increment_type || 'free',
-            min_increment: item.min_increment || 1,
-            allowed_increments: item.allowed_increments || '5,10'
-        };
-
-        // Role Limit Check
-        const limitRes = await checkRoleLimit(1);
-        if (!limitRes) return;
-
-        const { error } = await _supabase.from('subastas').insert(insertData);
-        if (error) Swal.fire('Error', error.message, 'error');
-        else {
-            Swal.fire('¡Lanzada!', 'La subasta ahora es pública.', 'success');
-            if (window.botInstance) window.botInstance.say("¡Subasta lanzada con éxito!");
-            pendingAuctions = pendingAuctions.filter(a => a.id !== id);
-            renderPendingAuctions();
-            loadLiveAuctions();
-        }
+        auctionData = pendingAuctions.find(a => a.id === id);
     }
-}
+
+    if (!auctionData) return;
+
+    isBulkMode = false;
+    openAuctionModal(false);
+
+    $('#auction-modal').data('editing-id', id);
+    $('#auction-modal').data('is-live', isLive);
+
+    $('#auction-title').val(auctionData.nombre || '');
+    $('#auction-start-bid').val(auctionData.starting_bid || '');
+    $('#auction-start-date').val(auctionData.start_date ? auctionData.start_date.slice(0, 16) : '');
+    $('#auction-end-date').val(auctionData.end_date ? auctionData.end_date.slice(0, 16) : '');
+    $('#auction-description').val(auctionData.description || '');
+
+    if (auctionData.allowed_increments) {
+        const incs = auctionData.allowed_increments.split(',');
+        $('.inc-check').prop('checked', false);
+        incs.forEach(inc => {
+            $(`.inc-check[value="${inc}"]`).prop('checked', true);
+        });
+    }
+    $('#auction-free-bid').prop('checked', auctionData.increment_type === 'free');
+
+    renderModalPreviews([auctionData.image_url]);
+};
 
 async function checkRoleLimit(tryingToAdd = 1) {
     let limit = (auctionUser.role === 'premium') ? 20 : 10;
@@ -435,7 +414,7 @@ async function loadLiveAuctions() {
 
     if (window.botInstance) {
         const activeCount = items.filter(i => i.status === 'Activa').length;
-        window.botInstance.say(`Tienes ${activeCount} subastas activas en este momento. ¡Asegúrate de que todo esté en orden!`, { duration: 6 });
+        window.botInstance.say(`Tienes ${activeCount} subastas activas en este momento.`, { duration: 6 });
     }
 
     items.forEach(item => {
@@ -451,14 +430,11 @@ function openAuctionModal(isConfig = false) {
     if (isConfig) {
         $('#auction-modal-title').text('CONFIGURACIÓN MASIVA');
         $('#bulk-info-msg').show();
-        $('#modal-photo-group').hide();
         $('#btn-save-auction').text('APLICAR A TODO');
-        // Clear title as it might be individual
         $('#auction-title').attr('placeholder', '(Opcional) Título base para todas');
     } else {
         $('#auction-modal-title').text('LANZAR SUBASTA');
         $('#bulk-info-msg').hide();
-        $('#modal-photo-group').show();
         $('#btn-save-auction').text('LANZAR SUBASTA');
         $('#auction-title').attr('placeholder', 'Ej: Playera Firmada Edición Limitada');
     }
@@ -467,26 +443,64 @@ function openAuctionModal(isConfig = false) {
 function closeAuctionModal() { $('#auction-modal').removeClass('active'); }
 
 function resetModalFields() {
+    $('#auction-modal').removeData('editing-id').removeData('is-live');
     $('#auction-title').val(''); $('#auction-description').val(''); $('#auction-start-bid').val('');
+    $('#auction-custom-increment').val('');
     const now = new Date(); const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
     $('#auction-start-date').val(now.toISOString().slice(0, 16)); $('#auction-end-date').val(end.toISOString().slice(0, 16));
-    $('#single-auction-preview').empty(); $('#drop-zone-single-auction').data('url', '');
+    $('#preview-grid-auction').empty().data('urls', []);
+    $('.inc-check').prop('checked', true);
+    $('#auction-free-bid').prop('checked', true);
 }
 
 async function handleSaveAuction() {
+    const urls = $('#preview-grid-auction').data('urls') || [];
+    if (urls.length === 0) return Swal.fire('Atención', 'Debes cargar al menos una imagen.', 'warning');
+
     const title = $('#auction-title').val();
-    const bid = parseFloat($('#auction-start-bid').val());
+    const bid = parseFloat($('#auction-start-bid').val()) || 0;
     const start = $('#auction-start-date').val();
     const end = $('#auction-end-date').val();
     const desc = $('#auction-description').val();
 
-    if (isBulkMode) {
-        // Get increments from checkboxes
-        const increments = [];
-        $('.inc-check:checked').each(function() { increments.push($(this).val()); });
-        const allowFree = $('#auction-free-bid').is(':checked');
+    const increments = [];
+    $('.inc-check:checked').each(function() { increments.push($(this).val()); });
+    const customInc = parseFloat($('#auction-custom-increment').val());
+    if (!isNaN(customInc)) increments.push(customInc);
 
-        // Apply to all pending
+    const allowFree = $('#auction-free-bid').is(':checked');
+
+    const editingId = $('#auction-modal').data('editing-id');
+    const isLive = $('#auction-modal').data('is-live');
+
+    if (editingId) {
+        const auctionData = {
+            nombre: title || 'Sin título',
+            starting_bid: bid,
+            start_date: start,
+            end_date: end,
+            description: desc,
+            increment_type: allowFree ? 'free' : 'fixed',
+            min_increment: increments.length > 0 ? Math.min(...increments) : 1,
+            allowed_increments: increments.join(',')
+        };
+
+        if (isLive) {
+            const { error } = await _supabase.from('subastas').update(auctionData).eq('id', editingId);
+            if (error) return Swal.fire('Error', error.message, 'error');
+        } else {
+            const idx = pendingAuctions.findIndex(a => a.id === editingId);
+            if (idx !== -1) pendingAuctions[idx] = { ...pendingAuctions[idx], ...auctionData };
+        }
+
+        Swal.fire('¡Éxito!', 'Subasta actualizada.', 'success');
+        closeAuctionModal();
+        renderPendingAuctions();
+        loadLiveAuctions();
+        return;
+    }
+
+    if (isBulkMode) {
         pendingAuctions.forEach(a => {
             if (title) a.nombre = title;
             if (!isNaN(bid)) a.starting_bid = bid;
@@ -499,46 +513,31 @@ async function handleSaveAuction() {
             a.allowed_increments = increments.join(',');
         });
         renderPendingAuctions();
-        Swal.fire('¡Aplicado!', 'Se han actualizado los ajustes para todas las subastas de la lista.', 'success');
+        Swal.fire('¡Aplicado!', 'Configuración aplicada a todas las pendientes.', 'success');
         closeAuctionModal();
-        if (window.botInstance) window.botInstance.say("He aplicado estos ajustes a todas las subastas pendientes.");
         return;
     }
 
-    const imageUrl = $('#drop-zone-single-auction').data('url');
-    if (!imageUrl || !title || isNaN(bid)) return Swal.fire('Error', 'Completa todos los campos obligatorios.', 'warning');
-    const limitRes = await checkRoleLimit(1);
-    if (!limitRes) return;
-
-    Swal.fire({ title: 'Lanzando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    // Get increments from checkboxes
-    const increments = [];
-    $('.inc-check:checked').each(function() { increments.push($(this).val()); });
-    const allowFree = $('#auction-free-bid').is(':checked');
-
-    const { error } = await _supabase.from('subastas').insert({
-        user_id: auctionUser.id,
-        nombre: title,
-        image_url: imageUrl,
-        starting_bid: bid,
-        start_date: start,
-        end_date: end,
-        description: desc,
-        increment_type: allowFree ? 'free' : 'fixed',
-        min_increment: increments.length > 0 ? Math.min(...increments) : 1,
-        allowed_increments: increments.join(','),
-        is_live: true,
-        status: 'Activa'
+    // New auctions creation
+    urls.forEach(url => {
+        pendingAuctions.push({
+            id: 'pending_' + Date.now() + Math.random(),
+            nombre: title || 'Nueva Subasta',
+            image_url: url,
+            starting_bid: bid,
+            start_date: start,
+            end_date: end,
+            description: desc,
+            increment_type: allowFree ? 'free' : 'fixed',
+            min_increment: increments.length > 0 ? Math.min(...increments) : 1,
+            allowed_increments: increments.join(',')
+        });
     });
 
-    if (error) Swal.fire('Error', error.message, 'error');
-    else {
-        Swal.fire('¡Éxito!', 'Subasta lanzada.', 'success');
-        if (window.botInstance) window.botInstance.say("¡Subasta lanzada exitosamente!");
-        closeAuctionModal();
-        loadLiveAuctions();
-    }
+    Swal.fire('¡Listo!', `${urls.length} subastas añadidas.`, 'success');
+    closeAuctionModal();
+    if (typeof showView === 'function') showView('bulk-auctions');
+    renderPendingAuctions();
 }
 
 async function deleteLiveAuction(id) {
@@ -546,7 +545,6 @@ async function deleteLiveAuction(id) {
     if (res.isConfirmed) {
         const { error } = await _supabase.from('subastas').delete().eq('id', id);
         if (!error) {
-            if (window.botInstance) window.botInstance.say("Subasta eliminada.");
             loadLiveAuctions();
         }
     }

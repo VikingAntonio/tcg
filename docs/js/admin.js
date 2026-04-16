@@ -2993,7 +2993,8 @@ async function loadWonAuctions() {
                 ),
                 usuarios (
                     store_name,
-                    username
+                    username,
+                    whatsapp_link
                 )
             `)
             .eq('is_live', true)
@@ -3013,7 +3014,8 @@ async function loadWonAuctions() {
                     wonItems.push({
                         ...auction,
                         won_amount: highestBid.amount,
-                        store_name: storeData ? (storeData.store_name || storeData.username) : 'Tienda Desconocida'
+                        store_name: storeData ? (storeData.store_name || storeData.username) : 'Tienda Desconocida',
+                        whatsapp_link: storeData ? storeData.whatsapp_link : null
                     });
                 }
             }
@@ -3062,6 +3064,7 @@ async function loadWonAuctionsList() {
     let html = `<div class="won-auctions-grid-list" style="display: flex; flex-direction: column; gap: 25px;">`;
     Object.keys(storeGroups).forEach(store => {
         const group = storeGroups[store];
+        const whatsapp = group.items[0].whatsapp_link;
         html += `
             <div class="won-store-card" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 25px; backdrop-filter: blur(10px);" onmouseenter="if(window.botInstance) window.botInstance.say('En ${store} tienes un total de $${group.total.toFixed(2)} por pagar.')">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
@@ -3085,7 +3088,7 @@ async function loadWonAuctionsList() {
                         </div>
                     `).join('')}
                 </div>
-                <button class="btn btn-success" style="width: 100%; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="contactStoreForWonAuction('${store}')">
+                <button class="btn btn-success" style="width: 100%; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="contactStoreForWonAuction('${store}', '${whatsapp || ''}')">
                     <i class="fab fa-whatsapp fa-lg"></i> CONTACTAR TIENDA POR WHATSAPP
                 </button>
             </div>
@@ -3110,6 +3113,7 @@ window.showWonAuctionsModal = (wonItems) => {
     let html = `<div class="won-auctions-modal-list">`;
     Object.keys(storeGroups).forEach(store => {
         const group = storeGroups[store];
+        const whatsapp = group.items[0].whatsapp_link;
         html += `
             <div class="won-store-group" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; margin-bottom: 15px; text-align: left;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
@@ -3124,7 +3128,7 @@ window.showWonAuctionsModal = (wonItems) => {
                         </div>
                     `).join('')}
                 </div>
-                <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 10px; border-radius: 8px; background: #27ae60;" onclick="contactStoreForWonAuction('${store}')">
+                <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 10px; border-radius: 8px; background: #27ae60;" onclick="contactStoreForWonAuction('${store}', '${whatsapp || ''}')">
                     <i class="fab fa-whatsapp"></i> Contactar Vendedor
                 </button>
             </div>
@@ -3147,16 +3151,21 @@ window.showWonAuctionsModal = (wonItems) => {
     });
 };
 
-window.contactStoreForWonAuction = async (storeName) => {
-    const { data: storeUser } = await _supabase
-        .from('usuarios')
-        .select('whatsapp_link, store_name, username')
-        .or(`store_name.eq."${storeName}",username.eq."${storeName}"`)
-        .maybeSingle();
+window.contactStoreForWonAuction = async (storeName, whatsapp) => {
+    let finalWhatsApp = whatsapp;
 
-    if (storeUser && storeUser.whatsapp_link) {
+    if (!finalWhatsApp) {
+        const { data: storeUser } = await _supabase
+            .from('usuarios')
+            .select('whatsapp_link')
+            .or(`store_name.eq."${storeName}",username.eq."${storeName}"`)
+            .maybeSingle();
+        finalWhatsApp = storeUser ? storeUser.whatsapp_link : null;
+    }
+
+    if (finalWhatsApp) {
         const msg = `¡Hola! Gané una subasta en tu tienda "${storeName}" en VikingTCG. ¿Cómo procedemos con el pago?`;
-        window.open(`https://wa.me/${storeUser.whatsapp_link.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+        window.open(`https://wa.me/${finalWhatsApp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
     } else {
         Swal.fire('Atención', 'No se encontró información de contacto para esta tienda.', 'info');
     }
