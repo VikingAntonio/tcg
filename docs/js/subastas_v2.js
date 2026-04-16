@@ -34,8 +34,29 @@ $(document).ready(async function() {
     $bulkDropZone.on('click', () => $('#input-auction-files-bulk').click());
     $('#input-auction-files-bulk').on('change', function() { if (this.files.length > 0) handleBulkUpload(this.files); });
 
-    $('#drop-zone-single-auction').click(() => $('#input-single-auction-file').click());
-    $('#input-single-auction-file').on('change', function() { if (this.files.length > 0) handleSingleUpload(this.files[0]); });
+    const $singleDropZone = $('#drop-zone-single-auction');
+    $singleDropZone.on('dragover dragenter', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $singleDropZone.on('dragleave dragend drop', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $singleDropZone.on('drop', function(e) {
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            if (isBulkMode) {
+                handleBulkUpload(files);
+            } else {
+                handleSingleUpload(files[0]);
+            }
+        }
+    });
+    $singleDropZone.click(() => $('#input-single-auction-file').click());
+    $('#input-single-auction-file').on('change', function() {
+        if (this.files.length > 0) {
+            if (isBulkMode) {
+                handleBulkUpload(this.files);
+            } else {
+                handleSingleUpload(this.files[0]);
+            }
+        }
+    });
 
     $(document).on('click', '.btn-gestionar-live', async function() {
         const id = $(this).data('id');
@@ -333,7 +354,7 @@ function openAuctionModal(bulk = false) {
 
     if (bulk) {
         $('#auction-modal-title').text('CONFIGURAR TODO');
-        $('#modal-photo-group').hide();
+        $('#modal-photo-group').show();
         $('#bulk-info-msg').show();
         $('#btn-save-auction').text('APLICAR AJUSTES');
         $('#btn-switch-to-bulk').html('<i class="fas fa-user"></i> CAMBIAR A INDIVIDUAL');
