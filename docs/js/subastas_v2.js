@@ -13,10 +13,17 @@ $(document).ready(async function() {
     $(document).on('click', '#close-auction-modal', closeAuctionModal);
     $(document).on('click', '#btn-save-auction', handleSaveAuction);
 
-    // Accept buttons for dates
-    $(document).on('click', '.btn-date-accept', function() {
-        // Just triggers blur to close calendar on some browsers, or we can just do nothing as it's a visual cue
-        $(this).prev('input').blur();
+    // Flatpickr initialization
+    flatpickr("#auction-start-date, #auction-end-date", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        plugins: [new confirmDatePlugin({
+            confirmIcon: "<i class='fas fa-check'></i>",
+            confirmText: "ACEPTAR",
+            showAlways: true,
+            theme: "light"
+        })]
     });
 
     // Drop zones
@@ -224,8 +231,12 @@ window.editAuctionFromCard = async (id, isLive) => {
 
     $('#auction-title').val(auctionData.nombre || '');
     $('#auction-start-bid').val(auctionData.starting_bid || '');
-    $('#auction-start-date').val(auctionData.start_date ? auctionData.start_date.slice(0, 16) : '');
-    $('#auction-end-date').val(auctionData.end_date ? auctionData.end_date.slice(0, 16) : '');
+
+    const startFp = document.querySelector("#auction-start-date")._flatpickr;
+    const endFp = document.querySelector("#auction-end-date")._flatpickr;
+    if (startFp && auctionData.start_date) startFp.setDate(new Date(auctionData.start_date));
+    if (endFp && auctionData.end_date) endFp.setDate(new Date(auctionData.end_date));
+
     $('#auction-description').val(auctionData.description || '');
 
     if (auctionData.allowed_increments) {
@@ -290,8 +301,13 @@ function resetModalFields() {
     $('#auction-title').val(''); $('#auction-description').val(''); $('#auction-start-bid').val('');
     $('#auction-custom-increment').val('');
     const now = new Date(); const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-    $('#auction-start-date').val(now.toISOString().slice(0, 16)); $('#auction-end-date').val(end.toISOString().slice(0, 16));
-    $('#preview-grid-auction').empty().data('urls', []);
+
+    const startFp = document.querySelector("#auction-start-date")._flatpickr;
+    const endFp = document.querySelector("#auction-end-date")._flatpickr;
+    if (startFp) startFp.setDate(now);
+    if (endFp) endFp.setDate(end);
+
+    renderModalPreviews([]);
     $('.inc-check').prop('checked', true);
     $('#auction-free-bid').prop('checked', true);
 }
@@ -302,8 +318,13 @@ async function handleSaveAuction() {
 
     const title = $('#auction-title').val();
     const bid = parseFloat($('#auction-start-bid').val()) || 0;
-    const start = $('#auction-start-date').val();
-    const end = $('#auction-end-date').val();
+    const startVal = $('#auction-start-date').val();
+    const endVal = $('#auction-end-date').val();
+
+    // Ensure we save as ISO strings for UTC consistency
+    const start = startVal ? new Date(startVal).toISOString() : null;
+    const end = endVal ? new Date(endVal).toISOString() : null;
+
     const desc = $('#auction-description').val();
 
     const increments = [];
