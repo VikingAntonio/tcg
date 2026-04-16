@@ -2729,9 +2729,10 @@ function startAuctionTimer(auction) {
             // More than 24 hours
             const options = { day: 'numeric', month: 'short' };
             const formattedDate = endDate.toLocaleDateString('es-ES', options);
-            $timer.text(`Termina el ${formattedDate}`);
+            $timer.text(`Termina el ${formattedDate}`).addClass('date-pulse');
             $card.removeClass('auction-ending-soon auction-critical');
         } else {
+            $timer.removeClass('date-pulse');
             // Less than 24 hours
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -2743,6 +2744,9 @@ function startAuctionTimer(auction) {
             if (distance < (1000 * 60)) { // 1 Minute
                 $card.addClass('auction-critical');
                 $card.addClass('auction-ending-soon');
+                if (window.currentAuctionId === auction.id) {
+                    $('#auction-detail-modal').addClass('auction-critical');
+                }
             } else if (distance < (1000 * 60 * 60)) { // 1 Hour
                 $card.addClass('auction-ending-soon');
                 $card.removeClass('auction-critical');
@@ -2873,7 +2877,7 @@ async function updateAuctionBidsUI(auctionId) {
         $('.btn-bid-pill, #input-bid-amount').prop('disabled', false).css('opacity', '1');
     }
 
-    bids.slice(0, 5).forEach((bid, idx) => {
+    bids.forEach((bid, idx) => {
         const isWinning = idx === 0;
         const isSelf = window.currentUser && bid.bidder_id === window.currentUser.id;
         $topList.append(`

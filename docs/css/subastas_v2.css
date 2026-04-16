@@ -647,6 +647,29 @@ body.admin-body {
     .pretty-auction-card .stat-box {
         padding: 10px;
     }
+
+    /* Responsive Admin Auction Modal */
+    .auction-modal-content {
+        padding: 25px 15px !important;
+        border-radius: 25px !important;
+        max-height: 98vh;
+        overflow-y: auto;
+    }
+
+    .modal-sections-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .draft-date-group {
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+    }
+
+    .auction-modal-content .close-btn {
+        top: 15px !important;
+        right: 15px !important;
+    }
 }
 
 /* Won Auctions Header Button - To be used in admin.html */
@@ -796,7 +819,17 @@ body.admin-body {
 
 @keyframes pulse-auction {
     from { transform: scale(1); filter: brightness(1); }
-    to { transform: scale(1.15); filter: brightness(1.2); }
+    to { transform: scale(1.05); filter: brightness(1.2); } /* Reduced scale to prevent layout shifts */
+}
+
+.date-pulse {
+    animation: soft-pulse 2s infinite ease-in-out;
+}
+
+@keyframes soft-pulse {
+    0% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.02); }
+    100% { opacity: 0.8; transform: scale(1); }
 }
 
 .today-label {
@@ -1085,6 +1118,27 @@ body.admin-body {
     box-shadow: 0 10px 20px rgba(119, 221, 119, 0.3);
     animation: pulse-soft 2s infinite;
     font-weight: 900;
+}
+
+/* Enhanced Modal Timer/Date Typography */
+#auction-modal-timer {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #e67e22; /* Viking Orange for contrast */
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+    background: #fff8f0;
+    padding: 10px 20px;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid #ffe8d0;
+}
+
+#auction-modal-timer.date-pulse {
+    color: #77DD77; /* Soft Green for date */
+    background: #f0fff0;
+    border-color: #d0ffd0;
 }
 
 @media (max-width: 768px) {
