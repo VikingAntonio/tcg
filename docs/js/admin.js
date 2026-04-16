@@ -1910,11 +1910,9 @@ async function showAuthenticatedContent() {
     if (currentUser.has_clients) $('#btn-clientes').show(); else $('#btn-clientes').hide();
     if (currentUser.has_auctions) {
         $('#btn-subastas').show();
-        $('#btn-subastas-ganadas-tile').show();
         $('#menu-btn-subastas').show();
     } else {
         $('#btn-subastas').hide();
-        $('#btn-subastas-ganadas-tile').hide();
         $('#menu-btn-subastas').hide();
     }
     if (currentUser.has_events !== false) $('#btn-eventos').show(); else $('#btn-eventos').hide();
@@ -2982,7 +2980,21 @@ async function loadWonAuctions() {
     if (!currentUser) return;
 
     try {
-        const { data: allEndedAuctions, error } = await _supabase
+        // Fetch ended auctions where the user participated
+        const { data: participations, error: partError } = await _supabase
+            .from('subastas_pujas')
+            .select('subasta_id')
+            .eq('bidder_id', currentUser.id);
+
+        if (partError) throw partError;
+        if (!participations || participations.length === 0) {
+            $('#nav-btn-auctions-won').hide();
+            return;
+        }
+
+        const auctionIds = [...new Set(participations.map(p => p.subasta_id))];
+
+        const { data: endedAuctions, error } = await _supabase
             .from('subastas')
             .select(`
                 *,
@@ -2997,19 +3009,18 @@ async function loadWonAuctions() {
                     whatsapp_link
                 )
             `)
-            .eq('is_live', true)
+            .in('id', auctionIds)
             .lt('end_date', new Date().toISOString());
 
         if (error) throw error;
 
         const wonItems = [];
-        allEndedAuctions.forEach(auction => {
+        endedAuctions.forEach(auction => {
             const bids = auction.subastas_pujas || [];
             if (bids.length > 0) {
                 bids.sort((a, b) => b.amount - a.amount);
                 const highestBid = bids[0];
                 if (highestBid.bidder_id === currentUser.id) {
-                    // Safe mapping for store info, handling potential array response from Supabase joins
                     const storeData = Array.isArray(auction.usuarios) ? auction.usuarios[0] : auction.usuarios;
                     wonItems.push({
                         ...auction,
@@ -3024,14 +3035,12 @@ async function loadWonAuctions() {
         window.currentUserWonItems = wonItems;
 
         if (wonItems.length > 0) {
-            $('#tile-won-auction-badge').text(wonItems.length).show();
-            $('#nav-btn-auctions-won').show().off('click').on('click', () => {
+            $('#nav-btn-auctions-won').show().css('display', 'flex').off('click').on('click', () => {
                 showView('SubastasGanadas');
                 loadWonAuctionsList();
             });
             $('#nav-auction-badge').text(wonItems.length).show();
         } else {
-            $('#tile-auction-badge').hide();
             $('#nav-btn-auctions-won').hide();
         }
     } catch (err) {

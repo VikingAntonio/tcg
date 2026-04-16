@@ -2754,7 +2754,7 @@ function startAuctionTimer(auction) {
             $miniTimer.html(`<span class="today-label">¡Termina Hoy!</span><br>${timeStr}`);
             if ($modalTimer) $modalTimer.html(`<span class="today-label">¡Termina Hoy!</span><br><span style="font-size: 2rem; display: block; margin-top: 5px;">${timeStr}</span>`);
 
-            if (distance < 1500 && distance > 0) { // Approximately 1 Second remaining
+            if (distance < (1000 * 60)) { // 1 Minute
                 $card.addClass('auction-critical');
                 if (window.currentAuctionId === auction.id) {
                     $('#auction-detail-modal').addClass('auction-critical');
