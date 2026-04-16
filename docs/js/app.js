@@ -2678,7 +2678,7 @@ function renderAuctionCard(auction) {
         <div class="auction-public-card" id="auction-${auction.id}">
             <div class="auction-image-wrapper">
                 <img src="${auction.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${auction.nombre}">
-                <div class="auction-bid-badge">$${currentBid.toFixed(2)}</div>
+                <div class="auction-bid-badge winning-bid-badge">$${currentBid.toFixed(2)}</div>
             </div>
             <div class="auction-info-overlay">
                 <h3 class="auction-title">${auction.nombre}</h3>
@@ -2718,9 +2718,15 @@ function startAuctionTimer(auction) {
         $(`#timer-${auction.id}, #auction-modal-timer`).text(timeStr);
 
         // Alert Effects
+        const $card = $(`#auction-${auction.id}`);
         if (distance < (1000 * 60 * 60)) { // 1 Hour
-            $(`#auction-${auction.id}`).addClass('auction-ending-soon');
-            $(`#auction-${auction.id}`).find('.auction-timer-mini').css('color', '#ff4757');
+            $card.addClass('auction-ending-soon');
+
+            if (distance < (1000 * 60)) { // 1 Minute
+                $card.addClass('auction-critical');
+            } else {
+                $card.removeClass('auction-critical');
+            }
 
             // Bot Interaction (Only if view is auctions and distance is close to thresholds)
             if (window.botInstance && $('.nav-btn[data-view="auctions"]').hasClass('active')) {
@@ -2731,6 +2737,8 @@ function startAuctionTimer(auction) {
                     window.botInstance.say(`¡Atención! Solo quedan 5 minutos para el cierre de "${auction.nombre}". ¡Es ahora o nunca!`, { duration: 8 });
                 }
             }
+        } else {
+            $card.removeClass('auction-ending-soon auction-critical');
         }
     };
 
@@ -2758,13 +2766,18 @@ async function openAuctionDetail(auction) {
     if (auction.increment_type === 'fixed') {
         const inc = auction.min_increment;
         [inc, inc * 2, inc * 5].forEach(val => {
-            $quickContainer.append(`<button class="btn-bid-amount" onclick="quickBid(${val})">+$${val}</button>`);
+            $quickContainer.append(`<button class="btn-bid-pill" onclick="quickBid(${val})">+$${val}</button>`);
         });
     } else {
         [5, 10, 20].forEach(val => {
-            $quickContainer.append(`<button class="btn-bid-amount" onclick="quickBid(${val})">+$${val}</button>`);
+            $quickContainer.append(`<button class="btn-bid-pill" onclick="quickBid(${val})">+$${val}</button>`);
         });
     }
+
+    // Free Bid Enter Listener
+    $('#input-bid-amount').off('keypress').on('keypress', function(e) {
+        if (e.which === 13) placeAuctionBid();
+    });
 
     $modal.addClass('active');
     $('body').addClass('modal-open');
@@ -2807,26 +2820,33 @@ async function updateAuctionBidsUI(auctionId) {
 
     const isEnded = new Date(window.currentAuctionData.end_date) < new Date();
 
-    if (isEnded && bids.length > 0) {
+    if (isEnded) {
         $('#bid-input-container').hide();
-        $('#auction-winner-display').show();
-        $('#auction-winner-name').text(bids[0].bidder_name);
-        $('#auction-winner-amount').text(`$${bids[0].amount.toFixed(2)}`);
+        if (bids.length > 0) {
+            $('#auction-winner-display').show().css('opacity', '1').removeClass('status-ended');
+            $('#auction-winner-name').text(bids[0].bidder_name);
+            $('#auction-winner-amount').text(`$${bids[0].amount.toFixed(2)}`);
 
-        if (window.botInstance && !window.winnerAnnounced) {
-            window.botInstance.say(`¡Tenemos un ganador para "${window.currentAuctionData.nombre}"! Felicidades a ${bids[0].bidder_name} por llevarse esta joya.`, { duration: 10 });
-            window.winnerAnnounced = true;
+            if (window.botInstance && !window.winnerAnnounced) {
+                window.botInstance.say(`¡Tenemos un ganador para "${window.currentAuctionData.nombre}"! Felicidades a ${bids[0].bidder_name} por llevarse esta joya.`, { duration: 10 });
+                window.winnerAnnounced = true;
+            }
+        } else {
+            $('#auction-winner-display').show().html('<h3 style="color: #666;">SUBASTA FINALIZADA</h3><p>No hubo pujas.</p>');
         }
+        $('.btn-bid-pill, #input-bid-amount').prop('disabled', true).css('opacity', '0.5');
     } else {
         $('#bid-input-container').show();
         $('#auction-winner-display').hide();
         window.winnerAnnounced = false;
+        $('.btn-bid-pill, #input-bid-amount').prop('disabled', false).css('opacity', '1');
     }
 
     bids.slice(0, 5).forEach((bid, idx) => {
+        const isWinning = idx === 0;
         $topList.append(`
-            <div class="bidder-item ${idx === 0 && isEnded ? 'winner' : ''}">
-                <span class="bidder-name">${idx + 1}. ${bid.bidder_name}</span>
+            <div class="bidder-item ${isWinning ? 'winner' : ''}">
+                <span class="bidder-name">${idx + 1}. ${bid.bidder_name} ${isWinning ? '<i class="fas fa-crown"></i>' : ''}</span>
                 <span class="bid-amount">$${bid.amount.toFixed(2)}</span>
             </div>
         `);
@@ -2836,9 +2856,10 @@ async function updateAuctionBidsUI(auctionId) {
 window.quickBid = function(amount) {
     const current = parseFloat($('#auction-modal-current-bid').text().replace('$', '')) || 0;
     $('#input-bid-amount').val(current + amount);
+    placeAuctionBid();
 };
 
-$('#btn-place-bid').click(async function() {
+async function placeAuctionBid() {
     if (!window.currentUser || !window.currentUser.id) {
         Swal.fire('Atención', 'Debes iniciar sesión para participar en las subastas.', 'warning');
         return;
@@ -2896,7 +2917,7 @@ $('#btn-place-bid').click(async function() {
             window.botInstance.say(`¡Genial! Tu puja de $${bidAmount.toFixed(2)} ha sido registrada. ¡Ahora vas a la cabeza!`);
         }
     }
-});
+}
 
 $('#close-auction-modal, #auction-detail-modal').click(function(e) {
     if (e.target === this || $(this).hasClass('close-btn')) {
