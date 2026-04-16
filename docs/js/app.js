@@ -2714,13 +2714,18 @@ function startAuctionTimer(auction) {
         const now = new Date().getTime();
         const distance = endDateTime - now;
 
-        const $timer = $(`#timer-${auction.id} .timer-countdown, #auction-modal-timer`);
+        const $miniTimer = $(`#timer-${auction.id} .timer-countdown`);
+        const $modalTimer = (window.currentAuctionId === auction.id) ? $('#auction-modal-timer') : null;
+        const $timer = $modalTimer ? $miniTimer.add($modalTimer) : $miniTimer;
         const $card = $(`#auction-${auction.id}`);
 
         if (distance < 0) {
             $timer.text("FINALIZADA");
+            if ($modalTimer) $modalTimer.removeClass('date-pulse');
+            $miniTimer.removeClass('date-pulse');
             $card.find('.auction-status-badge').removeClass('status-live').addClass('status-ended').text('Finalizada');
             $card.removeClass('auction-ending-soon auction-critical');
+            if (window.currentAuctionId === auction.id) $('#auction-detail-modal').removeClass('auction-critical');
             clearInterval(auctionTimers[auction.id]);
             return;
         }
@@ -2731,6 +2736,7 @@ function startAuctionTimer(auction) {
             const formattedDate = endDate.toLocaleDateString('es-ES', options);
             $timer.text(`Termina el ${formattedDate}`).addClass('date-pulse');
             $card.removeClass('auction-ending-soon auction-critical');
+            if (window.currentAuctionId === auction.id) $('#auction-detail-modal').removeClass('auction-critical');
         } else {
             $timer.removeClass('date-pulse');
             // Less than 24 hours
@@ -2849,7 +2855,7 @@ async function updateAuctionBidsUI(auctionId) {
     $('#auction-modal-current-bid').text(`$${currentBid.toFixed(2)}`);
     $(`#auction-${auctionId} .auction-bid-badge`).text(`$${currentBid.toFixed(2)}`);
 
-    // Top 5 Bidders
+    // Full Bid History
     const $topList = $('#auction-top-bidders');
     $topList.empty();
 
