@@ -460,14 +460,14 @@ $(document).ready(async function() {
     });
 
     // --- Card Interaction Logic (Click Protection) ---
-    $(document).on("touchstart mousedown", ".card-slot", function(e) {
+    $(document).on("touchstart mousedown", ".card-slot, .auction-public-card", function(e) {
         isDragging = false;
         const ev = e.type.startsWith('touch') ? e.originalEvent.touches[0] : e;
         startX = ev.pageX;
         startY = ev.pageY;
     });
 
-    $(document).on("touchmove mousemove", ".card-slot", function(e) {
+    $(document).on("touchmove mousemove", ".card-slot, .auction-public-card", function(e) {
         if (startX === undefined || startY === undefined) return;
         const ev = e.type.startsWith('touch') ? e.originalEvent.touches[0] : e;
         if (Math.abs(ev.pageX - startX) > 5 || Math.abs(ev.pageY - startY) > 5) {
@@ -2672,7 +2672,9 @@ function loadPublicAuctions() {
 
 function renderAuctionCard(auction) {
     const bids = auction.subastas_pujas || [];
-    const currentBid = bids.length > 0 ? Math.max(...bids.map(b => b.amount)) : auction.starting_bid;
+    bids.sort((a, b) => b.amount - a.amount);
+    const topBid = bids.length > 0 ? bids[0] : null;
+    const currentBid = topBid ? topBid.amount : auction.starting_bid;
 
     const $card = $(`
         <div class="auction-public-card" id="auction-${auction.id}">
@@ -2682,12 +2684,21 @@ function renderAuctionCard(auction) {
             </div>
             <div class="auction-info-overlay">
                 <h3 class="auction-title">${auction.nombre}</h3>
-                <div class="auction-timer-mini" id="timer-${auction.id}">--:--:--</div>
+                <div class="auction-footer-info">
+                    <div class="auction-timer-mini" id="timer-${auction.id}"><span class="timer-countdown">--:--:--</span></div>
+                    <div class="auction-bidder-info">
+                        <span class="bidder-name">${topBid ? topBid.bidder_name : 'Sin pujas'}</span>
+                        <span class="bidder-amount">${topBid ? '$' + topBid.amount.toFixed(2) : ''}</span>
+                    </div>
+                </div>
             </div>
         </div>
     `);
 
-    $card.on('click', () => openAuctionDetail(auction));
+    $card.on('click', () => {
+        if (isDragging) return;
+        openAuctionDetail(auction);
+    });
     $('#auctions-container').append($card);
 
     startAuctionTimer(auction);
@@ -2703,7 +2714,7 @@ function startAuctionTimer(auction) {
         const now = new Date().getTime();
         const distance = endDateTime - now;
 
-        const $timer = $(`#timer-${auction.id}, #auction-modal-timer`);
+        const $timer = $(`#timer-${auction.id} .timer-countdown, #auction-modal-timer`);
         const $card = $(`#auction-${auction.id}`);
 
         if (distance < 0) {
@@ -2727,7 +2738,7 @@ function startAuctionTimer(auction) {
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
             const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            $timer.html(`<div class="today-label">¡Termina Hoy!</div> ${timeStr}`);
+            $timer.html(`<span class="today-label">¡Termina Hoy!</span> ${timeStr}`);
 
             if (distance < (1000 * 60)) { // 1 Minute
                 $card.addClass('auction-critical');

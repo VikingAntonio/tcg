@@ -1,5 +1,7 @@
 let auctionUser = null;
 let pendingAuctions = [];
+let isDraggingAdmin = false;
+let startXAdmin, startYAdmin;
 
 $(document).ready(async function() {
     await checkAuctionSession();
@@ -167,13 +169,39 @@ function createPrettyCard(item, isLive) {
             </div>
 
             <div style="display:flex; justify-content: space-between; align-items: center; margin-top: auto;">
-                <div class="gestionar-link" onclick="editAuctionFromCard('${id}', ${isLive})">
+                <div class="gestionar-link btn-gestionar-admin">
                     GESTIONAR <i class="fas fa-chevron-right" style="font-size: 0.6rem;"></i>
                 </div>
                 <button class="remove-btn" data-id="${id}" data-live="${isLive}"><i class="fas fa-trash-alt"></i></button>
             </div>
         </div>
     `);
+
+    $card.on('touchstart mousedown', function(e) {
+        isDraggingAdmin = false;
+        const ev = e.type.startsWith('touch') ? e.originalEvent.touches[0] : e;
+        startXAdmin = ev.pageX;
+        startYAdmin = ev.pageY;
+    });
+
+    $card.on('touchmove mousemove', function(e) {
+        if (startXAdmin === undefined || startYAdmin === undefined) return;
+        const ev = e.type.startsWith('touch') ? e.originalEvent.touches[0] : e;
+        if (Math.abs(ev.pageX - startXAdmin) > 5 || Math.abs(ev.pageY - startYAdmin) > 5) {
+            isDraggingAdmin = true;
+        }
+    });
+
+    $card.on('touchend mouseup', function() {
+        startXAdmin = undefined;
+        startYAdmin = undefined;
+        setTimeout(() => { isDraggingAdmin = false; }, 100);
+    });
+
+    $card.find('.btn-gestionar-admin').on('click', function() {
+        if (isDraggingAdmin) return;
+        editAuctionFromCard(id, isLive);
+    });
 
     return $card;
 }
