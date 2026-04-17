@@ -872,17 +872,19 @@ body.admin-body {
     animation: soft-pulse 2.5s infinite ease-in-out;
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-weight: 800;
+    color: #ADD8E6 !important; /* Pastel Blue */
 }
 
 #auction-modal-timer.date-pulse,
 #auction-modal-timer {
-    color: #8e44ad !important;
+    color: #ADD8E6 !important; /* Pastel Blue */
+    font-size: 1.2rem !important; /* Match size with today-label */
 }
 
 @keyframes soft-pulse {
-    0% { opacity: 0.7; text-shadow: 0 0 2px rgba(142, 68, 173, 0.2); }
-    50% { opacity: 1; text-shadow: 0 0 12px rgba(142, 68, 173, 0.5); }
-    100% { opacity: 0.7; text-shadow: 0 0 2px rgba(142, 68, 173, 0.2); }
+    0% { opacity: 0.7; text-shadow: 0 0 2px rgba(173, 216, 230, 0.2); }
+    50% { opacity: 1; text-shadow: 0 0 12px rgba(173, 216, 230, 0.5); }
+    100% { opacity: 0.7; text-shadow: 0 0 2px rgba(173, 216, 230, 0.2); }
 }
 
 .today-label {
@@ -896,7 +898,11 @@ body.admin-body {
 .auction-timer-mini .today-label {
     display: block;
     margin-bottom: 2px;
-    font-size: 1.1rem; /* Matches mini timer font size */
+    font-size: 1.2rem; /* Matches mini timer font size */
+}
+
+.auction-timer-mini .timer-value {
+    font-size: 1.2rem;
 }
 
 /* Hide title on mobile as requested, only image and bid */
@@ -1237,9 +1243,9 @@ body.admin-body {
 }
 
 #auction-modal-timer.date-pulse {
-    color: #8e44ad !important;
-    background: #fcfaff !important;
-    border-color: #f3f0ff !important;
+    color: #ADD8E6 !important;
+    background: #f0f8ff !important;
+    border-color: #e6f3ff !important;
 }
 
 @media (max-width: 768px) {
