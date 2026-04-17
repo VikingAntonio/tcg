@@ -2676,10 +2676,13 @@ function renderAuctionCard(auction) {
     const topBid = bids.length > 0 ? bids[0] : null;
     const currentBid = topBid ? topBid.amount : auction.starting_bid;
 
+    const isEnded = new Date(auction.end_date.replace(' ', 'T')) < new Date();
+
     const $card = $(`
-        <div class="auction-public-card" id="auction-${auction.id}">
+        <div class="auction-public-card ${isEnded ? 'status-ended' : ''}" id="auction-${auction.id}">
             <div class="auction-image-wrapper">
                 <img src="${auction.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${auction.nombre}">
+                ${isEnded ? '<div class="status-ended-seal"></div>' : ''}
                 <div class="auction-bid-badge winning-bid-badge">$${currentBid.toFixed(2)}</div>
             </div>
             <div class="auction-info-overlay">
@@ -2708,7 +2711,9 @@ function startAuctionTimer(auction) {
     if (auctionTimers[auction.id]) clearInterval(auctionTimers[auction.id]);
 
     // Ensure we parse the date correctly. ISO strings from Supabase are UTC.
-    const endDate = new Date(auction.end_date);
+    // We replace space with T to ensure better browser compatibility for parsing
+    const dateStr = (typeof auction.end_date === 'string') ? auction.end_date.replace(' ', 'T') : auction.end_date;
+    const endDate = new Date(dateStr);
     const endDateTime = endDate.getTime();
 
     const update = () => {
@@ -2727,6 +2732,9 @@ function startAuctionTimer(auction) {
             }
             $miniTimer.removeClass('date-pulse');
             $card.addClass('status-ended'); // Apply grayscale only when ended
+            if ($card.find('.status-ended-seal').length === 0) {
+                $card.find('.auction-image-wrapper').append('<div class="status-ended-seal"></div>');
+            }
             $card.find('.auction-status-badge').removeClass('status-live').addClass('status-ended').text('Finalizada');
             $card.removeClass('auction-ending-soon auction-critical');
             if (window.currentAuctionId === auction.id) $('#auction-detail-modal').removeClass('auction-critical');
@@ -2768,8 +2776,14 @@ function startAuctionTimer(auction) {
 
             if (distance < (1000 * 60 * 60)) { // 1 Hour
                 $card.addClass('auction-ending-soon');
+                if (window.currentAuctionId === auction.id) {
+                    $('#auction-detail-modal').addClass('auction-ending-soon');
+                }
             } else {
                 $card.removeClass('auction-ending-soon');
+                if (window.currentAuctionId === auction.id) {
+                    $('#auction-detail-modal').removeClass('auction-ending-soon');
+                }
             }
 
             // Bot Interaction (Only if view is auctions and distance is close to thresholds)

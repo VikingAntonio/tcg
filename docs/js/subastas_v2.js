@@ -19,6 +19,8 @@ $(document).ready(async function() {
         dateFormat: "Y-m-d h:i K",
         time_24hr: false,
         allowInput: true,
+        clickOpens: true,
+        disableMobile: "true",
         plugins: [confirmDate({
             confirmIcon: "<i class='fas fa-check'></i>",
             confirmText: "ACEPTAR",
