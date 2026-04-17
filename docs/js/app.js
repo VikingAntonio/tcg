@@ -2759,8 +2759,8 @@ function startAuctionTimer(auction) {
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
             const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            $miniTimer.html(`<span class="today-label">¡Termina Hoy!</span><br>${timeStr}`);
-            if ($modalTimer) $modalTimer.html(`<span class="today-label">¡Termina Hoy!</span><br><span style="font-size: 2rem; display: block; margin-top: 5px;">${timeStr}</span>`);
+            $miniTimer.html(`<span class="today-label">¡Termina Hoy!</span>${timeStr}`);
+            if ($modalTimer) $modalTimer.html(`<span class="today-label">¡Termina Hoy!</span><span style="font-size: 1.5rem; display: block;">${timeStr}</span>`);
 
             if (distance < (1000 * 60)) { // 1 Minute
                 $card.addClass('auction-critical');
