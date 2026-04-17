@@ -3027,11 +3027,16 @@ async function loadWonAuctions() {
                 bids.sort((a, b) => b.amount - a.amount);
                 const highestBid = bids[0];
                 if (highestBid.bidder_id === currentUser.id) {
-                    const storeData = Array.isArray(auction.usuarios) ? auction.usuarios[0] : auction.usuarios;
+                    // Extract store info correctly handling Supabase single/array responses
+                    let storeData = auction.usuarios;
+                    if (Array.isArray(storeData)) storeData = storeData[0];
+
+                    const storeDisplayName = storeData ? (storeData.store_name || storeData.username) : 'Tienda';
+
                     wonItems.push({
                         ...auction,
                         won_amount: highestBid.amount,
-                        store_name: storeData ? (storeData.store_name || storeData.username) : 'Tienda Desconocida',
+                        store_name: storeDisplayName,
                         whatsapp_link: storeData ? storeData.whatsapp_link : null
                     });
                 }

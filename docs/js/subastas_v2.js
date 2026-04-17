@@ -22,7 +22,7 @@ $(document).ready(async function() {
         allowInput: true,
         clickOpens: true,
         disableMobile: true,
-        plugins: [confirmDate({
+        plugins: [confirmDatePlugin({
             confirmIcon: "<i class='fas fa-check'></i>",
             confirmText: "ACEPTAR",
             showAlways: true,
