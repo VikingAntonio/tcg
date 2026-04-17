@@ -16,6 +16,7 @@ $(document).ready(async function() {
     // Flatpickr initialization
     flatpickr("#auction-start-date, #auction-end-date", {
         enableTime: true,
+        noCalendar: false,
         dateFormat: "Y-m-d h:i K",
         time_24hr: false,
         allowInput: true,

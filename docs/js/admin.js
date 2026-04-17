@@ -2987,8 +2987,13 @@ async function loadWonAuctions() {
             .eq('bidder_id', currentUser.id);
 
         if (partError) throw partError;
+
+        // Show the button by default if user is logged in
+        $('#nav-btn-auctions-won').show().css('display', 'flex');
+
         if (!participations || participations.length === 0) {
-            $('#nav-btn-auctions-won').hide();
+            $('#nav-auction-badge').hide();
+            window.currentUserWonItems = [];
             return;
         }
 
@@ -3035,13 +3040,9 @@ async function loadWonAuctions() {
         window.currentUserWonItems = wonItems;
 
         if (wonItems.length > 0) {
-            $('#nav-btn-auctions-won').show().css('display', 'flex').off('click').on('click', () => {
-                showView('SubastasGanadas');
-                loadWonAuctionsList();
-            });
             $('#nav-auction-badge').text(wonItems.length).show();
         } else {
-            $('#nav-btn-auctions-won').hide();
+            $('#nav-auction-badge').hide();
         }
     } catch (err) {
         console.error("Error loading won auctions:", err);
