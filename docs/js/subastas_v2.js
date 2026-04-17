@@ -17,11 +17,11 @@ $(document).ready(async function() {
     flatpickr("#auction-start-date, #auction-end-date", {
         enableTime: true,
         noCalendar: false,
-        dateFormat: "Y-m-d h:i K",
+        dateFormat: "Y-m-d h:i A",
         time_24hr: false,
         allowInput: true,
         clickOpens: true,
-        disableMobile: "true",
+        disableMobile: true,
         plugins: [confirmDate({
             confirmIcon: "<i class='fas fa-check'></i>",
             confirmText: "ACEPTAR",

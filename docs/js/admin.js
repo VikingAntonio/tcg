@@ -289,7 +289,7 @@ $(document).ready(async function() {
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
 
-    $('#nav-btn-auctions-won').click(function() {
+    $(document).on('click', '#nav-btn-auctions-won', function() {
         showView('SubastasGanadas');
         loadWonAuctionsList();
 
@@ -1950,6 +1950,7 @@ async function showAuthenticatedContent() {
     $('#store-link-container').html(linkHtml);
 
     showView('main-dashboard');
+    $('#nav-btn-auctions-won').show().css('display', 'flex');
     loadWonAuctions();
 
     // Load store contact data
