@@ -1950,7 +1950,7 @@ async function showAuthenticatedContent() {
     $('#store-link-container').html(linkHtml);
 
     showView('main-dashboard');
-    $('#nav-btn-auctions-won').show().css('display', 'flex');
+    $('#nav-btn-auctions-won').attr('style', 'display: flex !important');
     loadWonAuctions();
 
     // Load store contact data
