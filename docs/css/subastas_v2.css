@@ -1274,3 +1274,66 @@ body.admin-body {
         height: 250px !important;
     }
 }
+
+/* Sticky Tabs Navigation */
+.sticky-tabs-container {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 50px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    justify-content: center;
+}
+
+.tab-pill {
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.tab-pill:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-pill.active {
+    background: var(--viking-gradient);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+}
+
+/* Ended status for management cards */
+.pretty-auction-card.status-ended {
+    opacity: 0.8;
+}
+
+.pretty-auction-card.status-ended .card-img-container img {
+    filter: grayscale(1) opacity(0.6);
+}
+
+.pretty-auction-card.status-ended .status-badge {
+    background: #ff4757 !important;
+}
+
+/* Winners interface */
+.won-store-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.won-store-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+}

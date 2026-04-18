@@ -2,6 +2,7 @@ let auctionUser = null;
 let pendingAuctions = [];
 let isDraggingAdmin = false;
 let startXAdmin, startYAdmin;
+let currentAdminAuctionFilter = 'active';
 
 $(document).ready(async function() {
     await checkAuctionSession();
@@ -70,6 +71,13 @@ $(document).ready(async function() {
             pendingAuctions = pendingAuctions.filter(a => a.id !== id);
             renderPendingAuctions();
         }
+    });
+
+    $(document).on('click', '#admin-auction-tabs .tab-pill', function() {
+        $('#admin-auction-tabs .tab-pill').removeClass('active');
+        $(this).addClass('active');
+        currentAdminAuctionFilter = $(this).data('filter');
+        loadLiveAuctions();
     });
 });
 
@@ -147,12 +155,17 @@ function createPrettyCard(item, isLive) {
     const bidValue = item.starting_bid || 0;
     const bidCount = 0;
 
+    const now = new Date();
+    const endDate = item.end_date ? new Date(item.end_date.replace(' ', 'T')) : null;
+    const isEnded = endDate && now > endDate;
+
     const $card = $(`
-        <div class="pretty-auction-card" id="card-${id}">
-            ${isLive ? `<div class="status-badge">${item.status || 'ACTIVA'}</div>` : '<div class="status-badge" style="background:#adb5bd;">DRAFT</div>'}
+        <div class="pretty-auction-card ${isEnded ? 'status-ended' : ''}" id="card-${id}">
+            ${isLive ? `<div class="status-badge" style="${isEnded ? 'background:#ff4757;' : ''}">${isEnded ? 'FINALIZADA' : (item.status || 'ACTIVA')}</div>` : '<div class="status-badge" style="background:#adb5bd;">DRAFT</div>'}
 
             <div class="card-img-container">
                 <img src="${item.image_url}" alt="Auction">
+                ${isEnded ? '<div class="status-ended-seal" style="font-size: 1.2rem; border-width: 3px; padding: 5px 10px;"></div>' : ''}
             </div>
 
             <div class="card-title">${item.nombre || 'Sin título'}</div>
@@ -264,17 +277,29 @@ async function loadLiveAuctions() {
 
     const $container = $('#live-auction-list');
     $container.empty();
-    if (items.length === 0) {
-        $container.html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">No tienes subastas activas.</div>');
+
+    const now = new Date();
+    const filteredItems = items.filter(item => {
+        const endDate = item.end_date ? new Date(item.end_date.replace(' ', 'T')) : null;
+        if (currentAdminAuctionFilter === 'active') {
+            return !endDate || now <= endDate;
+        } else {
+            return endDate && now > endDate;
+        }
+    });
+
+    if (filteredItems.length === 0) {
+        const msg = currentAdminAuctionFilter === 'active' ? 'No tienes subastas activas.' : 'No tienes subastas finalizadas.';
+        $container.html(`<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">${msg}</div>`);
         return;
     }
 
-    if (window.botInstance) {
-        const activeCount = items.filter(i => i.status === 'Activa').length;
+    if (window.botInstance && currentAdminAuctionFilter === 'active') {
+        const activeCount = filteredItems.length;
         window.botInstance.say(`Tienes ${activeCount} subastas activas en este momento.`, { duration: 6 });
     }
 
-    items.forEach(item => {
+    filteredItems.forEach(item => {
         const $card = createPrettyCard(item, true);
         $container.append($card);
     });
