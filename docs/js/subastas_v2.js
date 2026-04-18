@@ -23,6 +23,17 @@ $(document).ready(async function() {
         clickOpens: true,
         disableMobile: true,
         minuteIncrement: 1,
+        onOpen: function(selectedDates, dateStr, instance) {
+            if (window.innerWidth <= 768) {
+                instance.element.blur();
+            }
+        },
+        onReady: function(selectedDates, dateStr, instance) {
+            const $timeInputs = $(instance.calendarContainer).find('.flatpickr-time input');
+            $timeInputs.on('click', function() {
+                $(this).focus();
+            });
+        },
         plugins: [confirmDatePlugin({
             confirmIcon: "<i class='fas fa-check'></i>",
             confirmText: "ACEPTAR",

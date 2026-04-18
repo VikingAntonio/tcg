@@ -720,6 +720,22 @@ body.admin-body {
         height: 45px;
         border-radius: 12px !important;
     }
+
+    /* Flatpickr Mobile Centering and Styling */
+    .flatpickr-calendar {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        margin: 0 !important;
+    }
+
+    .flatpickr-time input:hover,
+    .flatpickr-time input:focus,
+    .flatpickr-time .flatpickr-am-pm:hover,
+    .flatpickr-time .flatpickr-am-pm:focus {
+        background: transparent !important;
+    }
 }
 
 /* Won Auctions Header Button - To be used in admin.html */
