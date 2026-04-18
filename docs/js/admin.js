@@ -3034,19 +3034,33 @@ async function loadWonAuctions() {
 
         const now = new Date();
         const wonItems = [];
+
+        console.log(`Checking ${endedAuctions?.length || 0} potential auctions for user ${currentUser.id}`);
+
         endedAuctions.forEach(auction => {
-            const endDate = auction.end_date ? new Date(auction.end_date.replace(' ', 'T')) : null;
+            // Robust date parsing
+            let endDate;
+            if (typeof auction.end_date === 'string') {
+                endDate = new Date(auction.end_date.replace(' ', 'T'));
+            } else {
+                endDate = new Date(auction.end_date);
+            }
+
             const isEnded = endDate && now > endDate;
 
-            if (!isEnded) return;
+            if (!isEnded) {
+                console.log(`Auction ${auction.id} (${auction.nombre}) has not ended yet. End: ${endDate}`);
+                return;
+            }
 
             const bids = auction.subastas_pujas || [];
             if (bids.length > 0) {
                 bids.sort((a, b) => b.amount - a.amount);
                 const highestBid = bids[0];
 
-                // Winner is the user
-                if (highestBid.bidder_id === currentUser.id) {
+                // Winner check with type safety
+                if (String(highestBid.bidder_id) === String(currentUser.id)) {
+                    console.log(`User WON auction ${auction.id}: ${auction.nombre}`);
                     let storeData = auction.usuarios;
                     if (Array.isArray(storeData)) storeData = storeData[0];
 
@@ -3063,6 +3077,8 @@ async function loadWonAuctions() {
                         delivery_time_start: auction.delivery_time_start,
                         delivery_time_end: auction.delivery_time_end
                     });
+                } else {
+                    console.log(`Auction ${auction.id} ended but won by ${highestBid.bidder_id} (${highestBid.bidder_name})`);
                 }
             }
         });
@@ -3087,6 +3103,7 @@ async function loadWonAuctionsList() {
     await loadWonAuctions();
 
     const wonItems = window.currentUserWonItems || [];
+    console.log("loadWonAuctionsList: wonItems =", wonItems);
 
     if (wonItems.length === 0) {
         $container.html('<div class="empty">Aún no has ganado ninguna subasta. ¡Participa en alguna para empezar!</div>');
@@ -3226,8 +3243,17 @@ window.showWonAuctionsModal = (wonItems) => {
                 const store = Object.keys(storeGroups)[idx];
                 const group = storeGroups[store];
                 const whatsapp = group.items[0].whatsapp_link;
+
+                const firstItem = group.items[0];
+                const deliveryData = {
+                    place: firstItem.delivery_place,
+                    date: firstItem.delivery_date,
+                    start: firstItem.delivery_time_start,
+                    end: firstItem.delivery_time_end
+                };
+
                 $(this).on('click', () => {
-                    contactStoreForWonAuction(store, whatsapp || '');
+                    contactStoreForWonAuction(store, whatsapp || '', group.items.map(i => i.nombre).join(', '), group.total, deliveryData);
                 });
             });
         }
