@@ -17,7 +17,7 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Update RLS policies for public visibility
+-- 2. Update RLS policies for public visibility and bidding
 -- This ensures anyone (logged in or not) can see the auctions
 ALTER TABLE subastas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subastas_pujas ENABLE ROW LEVEL SECURITY;
@@ -32,8 +32,15 @@ DROP POLICY IF EXISTS "Enable read access for all users" ON subastas_pujas;
 CREATE POLICY "Permitir lectura publica de subastas" ON subastas FOR SELECT USING (true);
 CREATE POLICY "Permitir lectura publica de pujas" ON subastas_pujas FOR SELECT USING (true);
 
+-- Allow authenticated users to place bids
+DROP POLICY IF EXISTS "Permitir a usuarios autenticados pujar" ON subastas_pujas;
+CREATE POLICY "Permitir a usuarios autenticados pujar" ON subastas_pujas FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Allow users to update their own monthly bid count
+DROP POLICY IF EXISTS "Permitir a usuarios actualizar sus contadores" ON usuarios;
+CREATE POLICY "Permitir a usuarios actualizar sus contadores" ON usuarios FOR UPDATE USING (auth.uid() = id);
+
 -- 3. Function to handle monthly reset atomically
--- Renamed variables to avoid any ambiguity (Error: 42P01: relation "user_reset_date" does not exist)
 CREATE OR REPLACE FUNCTION check_and_reset_auction_limits(target_user_id UUID)
 RETURNS TABLE (
     curr_created_count INT,

@@ -2625,15 +2625,16 @@ function loadPublicAuctions() {
         let userId = window.currentStoreId;
         if (!userId) {
             const identifier = window.currentStoreIdentifier;
-            const user = await resolveUser(identifier);
-            if (user) userId = user.id;
+            if (identifier) {
+                const user = await resolveUser(identifier);
+                if (user) userId = user.id;
+            }
         }
-        if (!userId) { resolve(); return; }
 
         $('#auctions-container').html('<div class="loading">Cargando subastas...</div>').addClass('auction-grid');
 
         try {
-            const { data: auctions, error } = await _supabase
+            let query = _supabase
                 .from('subastas')
                 .select(`
                     *,
@@ -2643,9 +2644,14 @@ function loadPublicAuctions() {
                         created_at
                     )
                 `)
-                .eq('user_id', userId)
                 .eq('is_live', true)
                 .order('end_date', { ascending: true });
+
+            if (userId) {
+                query = query.eq('user_id', userId);
+            }
+
+            const { data: auctions, error } = await query;
 
             if (error) throw error;
 
@@ -2806,6 +2812,11 @@ async function openAuctionDetail(auction) {
     $('#auction-modal-rules').text(auction.rules || 'Reglas estándar de subasta.');
     $('#auction-modal-image').attr('src', auction.image_url);
     $('#auction-modal-start-bid').text(`$${auction.starting_bid.toFixed(2)}`);
+
+    const bids = auction.subastas_pujas || [];
+    bids.sort((a, b) => b.amount - a.amount);
+    const topBid = bids.length > 0 ? bids[0] : null;
+    const currentBid = topBid ? topBid.amount : auction.starting_bid;
 
     window.currentAuctionId = auction.id;
     window.currentAuctionData = auction;

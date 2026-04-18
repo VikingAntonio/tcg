@@ -1,0 +1,14 @@
+.grid-2-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+@media (max-width: 600px) {
+    .grid-2-cols {
+        grid-template-columns: 1fr;
+    }
+}
+.readonly-field {
+    background: rgba(255,255,255,0.05) !important;
+    cursor: not-allowed;
+}
