@@ -3019,18 +3019,23 @@ async function loadWonAuctions() {
                     amount,
                     bidder_id,
                     bidder_name
-                ),
-                usuarios:user_id (
-                    store_name,
-                    username,
-                    whatsapp_link,
-                    messenger_link
                 )
             `)
             .in('id', auctionIds);
-            // .lt('end_date', new Date().toISOString()); // Remove for now to catch all, we check date in loop
 
         if (error) throw error;
+
+        // Fetch store info separately to avoid join issues
+        const sellerIds = [...new Set(endedAuctions.map(a => a.user_id))];
+        const { data: sellers } = await _supabase
+            .from('usuarios')
+            .select('id, store_name, username, whatsapp_link, messenger_link')
+            .in('id', sellerIds);
+
+        const sellerMap = {};
+        if (sellers) {
+            sellers.forEach(s => sellerMap[s.id] = s);
+        }
 
         const now = new Date();
         const wonItems = [];
@@ -3061,8 +3066,7 @@ async function loadWonAuctions() {
                 // Winner check with type safety
                 if (String(highestBid.bidder_id) === String(currentUser.id)) {
                     console.log(`User WON auction ${auction.id}: ${auction.nombre}`);
-                    let storeData = auction.usuarios;
-                    if (Array.isArray(storeData)) storeData = storeData[0];
+                    let storeData = sellerMap[auction.user_id];
 
                     const storeDisplayName = storeData ? (storeData.store_name || storeData.username) : 'Tienda';
 
