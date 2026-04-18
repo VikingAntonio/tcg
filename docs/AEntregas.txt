@@ -1,0 +1,25 @@
+-- SQL Migration to add delivery fields to subastas table
+-- Execute this in the Supabase SQL Editor
+
+DO $$
+BEGIN
+    -- Add delivery_place
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='delivery_place') THEN
+        ALTER TABLE subastas ADD COLUMN delivery_place TEXT;
+    END IF;
+
+    -- Add delivery_date
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='delivery_date') THEN
+        ALTER TABLE subastas ADD COLUMN delivery_date TIMESTAMPTZ;
+    END IF;
+
+    -- Add delivery_time_start
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='delivery_time_start') THEN
+        ALTER TABLE subastas ADD COLUMN delivery_time_start TEXT;
+    END IF;
+
+    -- Add delivery_time_end
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subastas' AND column_name='delivery_time_end') THEN
+        ALTER TABLE subastas ADD COLUMN delivery_time_end TEXT;
+    END IF;
+END $$;
