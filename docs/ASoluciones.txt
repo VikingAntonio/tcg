@@ -18,11 +18,11 @@ BEGIN
 END $$;
 
 -- 2. Update RLS policies for public visibility
--- Ensure RLS is enabled
+-- This ensures anyone (logged in or not) can see the auctions
 ALTER TABLE subastas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subastas_pujas ENABLE ROW LEVEL SECURITY;
 
--- Drop existing SELECT policies if they exist (to avoid duplicates/conflicts)
+-- Drop existing SELECT policies to avoid conflicts
 DROP POLICY IF EXISTS "Permitir lectura publica de subastas" ON subastas;
 DROP POLICY IF EXISTS "Permitir lectura publica de pujas" ON subastas_pujas;
 DROP POLICY IF EXISTS "Enable read access for all users" ON subastas;
@@ -33,6 +33,7 @@ CREATE POLICY "Permitir lectura publica de subastas" ON subastas FOR SELECT USIN
 CREATE POLICY "Permitir lectura publica de pujas" ON subastas_pujas FOR SELECT USING (true);
 
 -- 3. Function to handle monthly reset atomically
+-- Renamed variables to avoid any ambiguity (Error: 42P01: relation "user_reset_date" does not exist)
 CREATE OR REPLACE FUNCTION check_and_reset_auction_limits(target_user_id UUID)
 RETURNS TABLE (
     curr_created_count INT,
@@ -40,21 +41,24 @@ RETURNS TABLE (
     reset_date TIMESTAMPTZ
 ) AS $$
 DECLARE
-    user_reset_date TIMESTAMPTZ;
+    v_reset_date TIMESTAMPTZ;
 BEGIN
-    SELECT auction_reset_date INTO user_reset_date FROM usuarios WHERE id = target_user_id;
+    -- Fetch current reset date
+    SELECT auction_reset_date INTO v_reset_date FROM usuarios WHERE id = target_user_id;
 
     -- If reset date is null or has passed, reset counters and move reset date forward
-    IF user_reset_date IS NULL OR user_reset_date <= NOW() THEN
+    IF v_reset_date IS NULL OR v_reset_date <= NOW() THEN
         UPDATE usuarios
         SET monthly_created_count = 0,
             monthly_bid_count = 0,
-            auction_reset_date = COALESCE(user_reset_date, NOW()) + interval '1 month'
+            auction_reset_date = COALESCE(v_reset_date, NOW()) + interval '1 month'
         WHERE id = target_user_id;
 
-        -- If it's still in the past (e.g. first time or multiple months missed),
-        -- set it to next month from now
-        IF (SELECT auction_reset_date FROM usuarios WHERE id = target_user_id) <= NOW() THEN
+        -- Check again to ensure we don't return an old date
+        SELECT auction_reset_date INTO v_reset_date FROM usuarios WHERE id = target_user_id;
+
+        -- If still in the past (e.g. multiple months missed), set to 1 month from now
+        IF v_reset_date <= NOW() THEN
              UPDATE usuarios SET auction_reset_date = NOW() + interval '1 month' WHERE id = target_user_id;
         END IF;
     END IF;

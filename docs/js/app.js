@@ -2936,7 +2936,20 @@ window.quickBid = function(amount) {
 
 async function placeAuctionBid() {
     if (!window.currentUser || !window.currentUser.id) {
-        Swal.fire('Atención', 'Debes iniciar sesión para participar en las subastas.', 'warning');
+        Swal.fire({
+            title: '¿Quieres pujar?',
+            text: 'Para participar en las subastas y llevarte las mejores cartas, primero debes formar parte de VikingTCG.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '¡Crear cuenta / Iniciar sesión!',
+            cancelButtonText: 'Tal vez luego',
+            confirmButtonColor: '#00d2ff',
+            cancelButtonColor: '#333'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'index.html'; // Or 'admin.html' if that's the login page
+            }
+        });
         return;
     }
 
