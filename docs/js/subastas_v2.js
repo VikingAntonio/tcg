@@ -42,42 +42,22 @@ $(document).ready(async function() {
         })]
     });
 
-    // Drop zones
-    const $bulkDropZone = $('#main-drop-zone-auction');
-    $bulkDropZone.on('dragover dragenter', function(e) {
+    // Drop zones (using delegation for better mobile click support)
+    $(document).on('dragover dragenter', '#drop-zone-single-auction', function(e) {
         e.preventDefault();
         e.stopPropagation();
         $(this).addClass('dragover');
     });
-    $bulkDropZone.on('dragleave dragend drop', function(e) {
+    $(document).on('dragleave dragend drop', '#drop-zone-single-auction', function(e) {
         e.preventDefault();
         e.stopPropagation();
         $(this).removeClass('dragover');
     });
-    $bulkDropZone.on('drop', function(e) {
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) handleBulkUpload(files);
-    });
-    $bulkDropZone.on('click', () => $('#input-auction-files-bulk').click());
-    $('#input-auction-files-bulk').on('change', function() { if (this.files.length > 0) handleBulkUpload(this.files); });
-
-    const $singleDropZone = $('#drop-zone-single-auction');
-    $singleDropZone.on('dragover dragenter', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $(this).addClass('dragover');
-    });
-    $singleDropZone.on('dragleave dragend drop', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $(this).removeClass('dragover');
-    });
-    $singleDropZone.on('drop', function(e) {
+    $(document).on('drop', '#drop-zone-single-auction', function(e) {
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0) handleSingleUpload(Array.from(files));
     });
-    $singleDropZone.click(() => $('#input-single-auction-file').click());
-    $('#input-single-auction-file').on('change', function() {
+    $(document).on('change', '#input-single-auction-file', function() {
         if (this.files.length > 0) handleSingleUpload(Array.from(this.files));
     });
 
@@ -105,25 +85,6 @@ async function checkAuctionSession() {
         }
     } else if (!window.location.pathname.endsWith('admin.html')) {
         window.location.href = 'admin.html';
-    }
-}
-
-async function handleBulkUpload(files) {
-    const fileArray = Array.from(files);
-    Swal.fire({ title: 'Subiendo imágenes...', text: `Procesando ${fileArray.length} archivos.`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    const urls = [];
-    for (const file of fileArray) {
-        try {
-            const url = await CloudinaryUpload.uploadImage(file);
-            urls.push(url);
-        } catch (err) { console.error("Error upload:", err); }
-    }
-
-    Swal.close();
-    if (urls.length > 0) {
-        openAuctionModal();
-        renderModalPreviews(urls);
     }
 }
 
@@ -335,7 +296,6 @@ function resetModalFields() {
     $('#auction-start-bid').val('');
     $('#auction-custom-increment').val('');
     $('#input-single-auction-file').val('');
-    $('#input-auction-files-bulk').val('');
     $('#preview-grid-auction').data('urls', []); // Clear URLs data
 
     const now = new Date();
