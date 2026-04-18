@@ -291,12 +291,34 @@ $(document).ready(async function() {
 
     $(document).on('click', '#nav-btn-auctions-won', function() {
         showView('SubastasGanadas');
-        loadWonAuctionsList();
+
+        // Default to Mis Subastas (Winners) if user is a store
+        if (currentUser.is_store) {
+            $('#btn-tab-mis-subastas').click();
+        } else {
+            $('#btn-tab-ganadas').click();
+        }
 
         // Reacción del bot al abrir subastas ganadas
         if (window.botInstance) {
-            window.botInstance.say("¡Excelente! Aquí tienes el resumen de tus victorias. No olvides contactar a las tiendas para finalizar tus compras.", { duration: 8 });
+            window.botInstance.say("Aquí puedes gestionar tus subastas y ver quiénes ganaron, o revisar lo que tú mismo has ganado.", { duration: 8 });
         }
+    });
+
+    $('#btn-tab-mis-subastas').click(function() {
+        $('.tab-pill').removeClass('active');
+        $(this).addClass('active');
+        $('#my-winners-container').show();
+        $('#won-auctions-container').hide();
+        loadMyAuctionsWinners();
+    });
+
+    $('#btn-tab-ganadas').click(function() {
+        $('.tab-pill').removeClass('active');
+        $(this).addClass('active');
+        $('#my-winners-container').hide();
+        $('#won-auctions-container').show();
+        loadWonAuctionsList();
     });
 
     // --- Upgrade Button Logic ---
@@ -3173,6 +3195,147 @@ window.contactStoreForWonAuction = async (storeName, whatsapp) => {
     } else {
         Swal.fire('Atención', 'No se encontró información de contacto para esta tienda.', 'info');
     }
+};
+
+async function loadMyAuctionsWinners() {
+    const $container = $('#my-winners-container');
+    $container.html('<div class="loading">Cargando ganadores...</div>');
+
+    try {
+        // 1. Fetch ended auctions created by current user
+        const now = new Date().toISOString();
+        const { data: myEndedAuctions, error: aucErr } = await _supabase
+            .from('subastas')
+            .select(`
+                *,
+                subastas_pujas (
+                    amount,
+                    bidder_id,
+                    bidder_name
+                )
+            `)
+            .eq('user_id', currentUser.id)
+            .lt('end_date', now);
+
+        if (aucErr) throw aucErr;
+
+        if (!myEndedAuctions || myEndedAuctions.length === 0) {
+            $container.html('<div class="empty" style="text-align:center; padding: 40px; color: #666;">No tienes subastas finalizadas aún.</div>');
+            return;
+        }
+
+        const winnersMap = {}; // Group by bidder_id
+
+        myEndedAuctions.forEach(auction => {
+            const bids = auction.subastas_pujas || [];
+            if (bids.length > 0) {
+                bids.sort((a, b) => b.amount - a.amount);
+                const highestBid = bids[0];
+                const bidderId = highestBid.bidder_id;
+
+                if (!winnersMap[bidderId]) {
+                    winnersMap[bidderId] = {
+                        bidder_name: highestBid.bidder_name,
+                        bidder_id: bidderId,
+                        items: [],
+                        total: 0
+                    };
+                }
+
+                winnersMap[bidderId].items.push({
+                    name: auction.nombre,
+                    amount: highestBid.amount,
+                    image: auction.image_url
+                });
+                winnersMap[bidderId].total += highestBid.amount;
+            }
+        });
+
+        const winnerIds = Object.keys(winnersMap);
+        if (winnerIds.length === 0) {
+            $container.html('<div class="empty" style="text-align:center; padding: 40px; color: #666;">Nadie pujó en tus subastas finalizadas.</div>');
+            return;
+        }
+
+        // 2. Fetch contact info for winners
+        const { data: usersInfo, error: userErr } = await _supabase
+            .from('usuarios')
+            .select('id, whatsapp_link, messenger_link')
+            .in('id', winnerIds);
+
+        if (userErr) throw userErr;
+
+        usersInfo.forEach(u => {
+            if (winnersMap[u.id]) {
+                winnersMap[u.id].whatsapp = u.whatsapp_link;
+                winnersMap[u.id].messenger = u.messenger_link;
+            }
+        });
+
+        // 3. Render
+        let html = `<div class="winners-list" style="display: flex; flex-direction: column; gap: 20px;">`;
+        Object.values(winnersMap).forEach(winner => {
+            html += `
+                <div class="won-store-card" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 25px; backdrop-filter: blur(10px);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 45px; height: 45px; background: rgba(0,210,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--viking-blue);">
+                                <i class="fas fa-user-check fa-lg"></i>
+                            </div>
+                            <div>
+                                <h2 style="margin: 0; font-size: 1.4rem;">${winner.bidder_name}</h2>
+                                <span style="font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: 800;">Ganador</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 800;">Monto Total</div>
+                            <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${winner.total.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                        ${winner.items.map(item => `
+                            <div style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); padding: 10px 15px; border-radius: 12px;">
+                                <img src="${item.image}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
+                                <span style="flex: 1; font-weight: 600;">${item.name}</span>
+                                <span style="font-weight: 800; color: var(--viking-blue);">$${item.amount.toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-success" style="flex: 1; min-width: 200px; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="contactWinner('${winner.bidder_name}', '${winner.whatsapp || ''}', '${winner.items[0].name}', ${winner.total}, '${winner.items[0].image}')">
+                            <i class="fab fa-whatsapp fa-lg"></i> ENVIAR WHATSAPP
+                        </button>
+                        ${winner.messenger ? `
+                            <button class="btn" style="flex: 1; min-width: 200px; background: #0084ff; color: white; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="window.open('${winner.messenger}', '_blank')">
+                                <i class="fab fa-facebook-messenger fa-lg"></i> ENVIAR MESSENGER
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        $container.html(html);
+
+    } catch (err) {
+        console.error("Error loading my auction winners:", err);
+        $container.html('<div class="error">Error al cargar ganadores.</div>');
+    }
+}
+
+window.contactWinner = (name, whatsapp, auctionName, total, image) => {
+    if (!whatsapp) {
+        Swal.fire('Atención', 'El ganador no tiene configurado su WhatsApp.', 'info');
+        return;
+    }
+
+    let msg = `Hola ${name}, ganaste la subasta "${auctionName}"`;
+    if (total > 0) msg += `. El valor total sería $${total.toFixed(2)}`;
+    if (image) msg += `\nImagen: ${image}`;
+    msg += `\n¡Felicidades! ¿Cómo deseas proceder con el pago y envío?`;
+
+    const waUrl = `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
 };
 
 async function openOrganizeModal(type) {

@@ -190,7 +190,7 @@
 
         <!-- Manage Auctions View -->
         <div id="view-manage-auctions" class="admin-section" style="display:none;">
-            <div class="admin-header">
+            <div class="admin-header" style="margin-bottom: 10px;">
                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 20px;">
                     <div style="text-align: left;">
@@ -203,7 +203,12 @@
                 </div>
             </div>
 
-            <div id="live-auction-list" class="auction-management-grid" style="margin-top: 40px;">
+            <div class="sticky-tabs-container" id="admin-auction-tabs">
+                <button class="tab-pill active" data-filter="active">Activas</button>
+                <button class="tab-pill" data-filter="finished">Finalizadas</button>
+            </div>
+
+            <div id="live-auction-list" class="auction-management-grid" style="margin-top: 20px;">
                 <!-- Auctions will be loaded here as pretty cards -->
                 <div class="loading">Cargando subastas...</div>
             </div>
@@ -214,10 +219,20 @@
         <div id="view-SubastasGanadas" class="admin-section" style="display:none;">
             <div class="admin-header">
                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
-                <h1>Mis Subastas Ganadas</h1>
-                <p>Aquí verás los artículos que has ganado en subastas de diferentes tiendas.</p>
+                <h1>Gestión de Ganadores</h1>
+                <p>Aquí puedes ver quiénes ganaron tus subastas o revisar tus propias victorias.</p>
             </div>
-            <div id="won-auctions-container" style="margin-top: 30px;">
+
+            <div class="sticky-tabs-container" style="margin-bottom: 20px;">
+                <button class="tab-pill active" id="btn-tab-mis-subastas">Mis subastas</button>
+                <button class="tab-pill" id="btn-tab-ganadas">Subastas Ganadas</button>
+            </div>
+
+            <div id="my-winners-container">
+                <div class="loading">Cargando ganadores...</div>
+            </div>
+
+            <div id="won-auctions-container" style="display: none; margin-top: 0;">
                 <!-- Won auctions grouped by store here -->
                 <div class="loading">Cargando victorias...</div>
             </div>
