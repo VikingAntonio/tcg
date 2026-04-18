@@ -1864,7 +1864,7 @@ async function checkSession() {
         window.currentUserId = session.user.id;
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
             .eq('id', session.user.id)
             .single();
 
@@ -2645,13 +2645,12 @@ function loadPublicAuctions() {
                 `)
                 .eq('user_id', userId)
                 .eq('is_live', true)
-                .eq('status', 'Activa')
                 .order('end_date', { ascending: true });
 
             if (error) throw error;
 
             if (!auctions || auctions.length === 0) {
-                $('#auctions-container').html('<div class="empty">No hay subastas activas en este momento.</div>');
+                $('#auctions-container').html('<div class="empty">No hay subastas en este momento.</div>');
                 return;
             }
 
@@ -2941,25 +2940,49 @@ async function placeAuctionBid() {
         return;
     }
 
-    // Role-based limits for participating
-    const { count, error: countErr } = await _supabase
-        .from('subastas_pujas')
-        .select('subasta_id', { count: 'exact', head: true })
-        .eq('bidder_id', window.currentUser.id);
+    // Check if user has WhatsApp and Messenger configured
+    if (!window.currentUser.whatsapp_link || !window.currentUser.messenger_link) {
+        Swal.fire({
+            title: 'Perfil Incompleto',
+            text: 'Para participar en subastas, primero debes registrar tu WhatsApp y Messenger en tu perfil.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ir a mi Perfil',
+            cancelButtonText: 'Después'
+        }).then((result) => {
+            if (result.isConfirmed) window.location.href = 'perfil.html';
+        });
+        return;
+    }
 
-    // This counts total bids, we need total unique ACTIVE auctions participated in
-    const { data: participated } = await _supabase
-        .from('subastas_pujas')
-        .select('subasta_id, subastas(is_live, status)')
-        .eq('bidder_id', window.currentUser.id);
+    // Monthly Reset Logic and Limits
+    const { data: limitData, error: rpcErr } = await _supabase.rpc('check_and_reset_auction_limits', { target_user_id: window.currentUser.id });
 
-    const activeParticipations = new Set(participated.filter(p => p.subastas && p.subastas.is_live && p.subastas.status === 'Activa').map(p => p.subasta_id)).size;
+    if (rpcErr) {
+        console.error("RPC Error:", rpcErr);
+    } else if (limitData && limitData.length > 0) {
+        const stats = limitData[0];
+        window.currentUser.monthly_bid_count = stats.curr_bid_count;
+        window.currentUser.monthly_created_count = stats.curr_created_count;
+        window.currentUser.auction_reset_date = stats.reset_date;
+    }
 
-    let partLimit = (window.currentUser.role === 'premium') ? 20 : 10;
-    if (window.currentUser.role === 'admin' || window.currentUser.role === 'admin_store' || window.currentUser.role === 'tienda') partLimit = 9999;
+    let partLimit = (window.currentUser.role === 'premium') ? 150 : 50;
+    if (['admin', 'admin_store', 'tienda'].includes(window.currentUser.role)) partLimit = 9999;
 
-    if (activeParticipations >= partLimit) {
-        Swal.fire('Límite alcanzado', `Tu plan permite participar en un máximo de ${partLimit} subastas activas simultáneamente.`, 'warning');
+    if (window.currentUser.monthly_bid_count >= partLimit) {
+        const resetDate = new Date(window.currentUser.auction_reset_date);
+        const now = new Date();
+        const diff = resetDate - now;
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+        Swal.fire({
+            title: 'Límite Mensual Alcanzado',
+            html: `Has alcanzado tu límite de <b>${partLimit}</b> subastas por mes.<br><br>Faltan <b>${days}d ${hours}h</b> para que se reinicie tu contador.`,
+            icon: 'info'
+        });
         return;
     }
 
@@ -2989,6 +3012,22 @@ async function placeAuctionBid() {
     } else {
         Swal.fire({ icon: 'success', title: 'Puja registrada', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         $('#input-bid-amount').val('');
+
+        // Increment monthly bid count if it's the first bid by this user in this specific auction
+        (async () => {
+            const { data: prevBids } = await _supabase
+                .from('subastas_pujas')
+                .select('id')
+                .eq('subasta_id', window.currentAuctionId)
+                .eq('bidder_id', window.currentUser.id)
+                .neq('amount', bidAmount); // Bids other than the one just inserted
+
+            if (!prevBids || prevBids.length === 0) {
+                const newCount = (window.currentUser.monthly_bid_count || 0) + 1;
+                await _supabase.from('usuarios').update({ monthly_bid_count: newCount }).eq('id', window.currentUser.id);
+                window.currentUser.monthly_bid_count = newCount;
+            }
+        })();
 
         // Actualización inmediata local
         updateAuctionBidsUI(window.currentAuctionId);
