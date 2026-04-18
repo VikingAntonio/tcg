@@ -1,3 +1,0 @@
-127.0.0.1 - - [17/Apr/2026 09:04:40] "HEAD /admin.html HTTP/1.1" 200 -
-127.0.0.1 - - [17/Apr/2026 09:06:31] "GET /test_verification.html HTTP/1.1" 200 -
-127.0.0.1 - - [17/Apr/2026 09:06:31] "GET /css/subastas_v2.css HTTP/1.1" 200 -

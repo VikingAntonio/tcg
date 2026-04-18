@@ -1243,10 +1243,6 @@ $(document).ready(async function() {
         }
     });
 
-    $(document).on('click', '#drop-zone-spirit', function() {
-        $('#input-spirit-files').click();
-    });
-
     // Cloudinary Drag & Drop for Slot
     $(document).on('drop', '#drop-zone-slot', async function(e) {
         e.preventDefault(); e.stopPropagation();
@@ -1258,10 +1254,6 @@ $(document).ready(async function() {
     });
     $(document).on('dragover dragenter', '#drop-zone-slot', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-slot', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-
-    $(document).on('click', '#drop-zone-slot', function() {
-        $('#input-slot-file').click();
-    });
 
     $(document).on('change', '#input-slot-file', function() {
         if (this.files.length > 0) {
@@ -1280,7 +1272,6 @@ $(document).ready(async function() {
     });
     $(document).on('dragover dragenter', '#drop-zone-album-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-album-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-    $(document).on('click', '#drop-zone-album-cover', function() { $('#input-album-cover-file').click(); });
     $(document).on('change', '#input-album-cover-file', function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-cover', '#drop-zone-album-cover .file-name');
     });
@@ -1296,7 +1287,6 @@ $(document).ready(async function() {
     });
     $(document).on('dragover dragenter', '#drop-zone-album-back', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-album-back', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-    $(document).on('click', '#drop-zone-album-back', function() { $('#input-album-back-file').click(); });
     $(document).on('change', '#input-album-back-file', function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-back', '#drop-zone-album-back .file-name');
     });
@@ -1312,7 +1302,6 @@ $(document).ready(async function() {
     });
     $(document).on('dragover dragenter', '#drop-zone-deck', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-deck', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-    $(document).on('click', '#drop-zone-deck', function() { $('#input-deck-file').click(); });
     $(document).on('change', '#input-deck-file', function() {
         if (this.files.length > 0) handleDeckImageUpload(this.files[0]);
     });
@@ -1328,7 +1317,6 @@ $(document).ready(async function() {
     });
     $(document).on('dragover dragenter', '#drop-zone-bdd', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
     $(document).on('dragleave dragend drop', '#drop-zone-bdd', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-    $(document).on('click', '#drop-zone-bdd', function() { $('#input-bdd-file').click(); });
     $(document).on('change', '#input-bdd-file', function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
     });

@@ -203,18 +203,6 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Area -->
-            <div class="bulk-upload-container" style="margin-top: 30px;">
-                <div class="main-drop-zone" id="main-drop-zone-auction">
-                    <div class="upload-icon-wrapper">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <i class="fas fa-plus mini-plus"></i>
-                    </div>
-                    <p>ARRASTRA TUS IMÁGENES AQUÍ O HAZ CLIC PARA LANZAR EN MASA</p>
-                    <input type="file" id="input-auction-files-bulk" accept="image/*" multiple style="display: none;">
-                </div>
-            </div>
-
             <div id="live-auction-list" class="auction-management-grid" style="margin-top: 40px;">
                 <!-- Auctions will be loaded here as pretty cards -->
                 <div class="loading">Cargando subastas...</div>
@@ -308,12 +296,12 @@
 
             <div class="form-group" style="max-width: 600px; margin: 20px auto;">
                 <label>Añadir Imagen Directa (Drag & Drop)</label>
-                <div class="file-drop-zone" id="drop-zone-deck">
+                <label class="file-drop-zone" id="drop-zone-deck" for="input-deck-file" style="display: block;">
                     <i class="fas fa-cloud-upload-alt"></i>
                     <p>Arrastra una imagen aquí para añadirla al deck</p>
                     <input type="file" id="input-deck-file" accept="image/*" style="display: none;">
                     <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                </div>
+                </label>
             </div>
 
             <div class="deck-editor-controls">
@@ -481,12 +469,12 @@
                 </div>
                 <div class="form-group">
                     <label>Imagen (URL o Subida)</label>
-                    <div class="file-drop-zone" id="drop-zone-bdd">
+                    <label class="file-drop-zone" id="drop-zone-bdd" for="input-bdd-file" style="display: block;">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Arrastra una imagen aquí o haz clic para subir</p>
                         <input type="file" id="input-bdd-file" accept="image/*" style="display: none;">
                         <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                    </div>
+                    </label>
                     <input type="text" id="bdd-image-url" placeholder="https://...">
                 </div>
                 <div class="info-grid">
@@ -797,12 +785,12 @@
                 </div>
                 <div class="form-group">
                     <label>Portada (Imagen o Color con Textura)</label>
-                    <div class="file-drop-zone" id="drop-zone-album-cover">
+                    <label class="file-drop-zone" id="drop-zone-album-cover" for="input-album-cover-file" style="display: block;">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Arrastra la portada aquí o haz clic para subir</p>
                         <input type="file" id="input-album-cover-file" accept="image/*" style="display: none;">
                         <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                    </div>
+                    </label>
                     <div class="color-input-wrapper">
                         <input type="text" id="input-album-cover" placeholder="midominio.com/portada.png" style="flex:1;">
                         <input type="color" id="input-album-cover-color" value="#1a1a1a" title="Color de Portada" class="color-picker-custom">
@@ -810,12 +798,12 @@
                 </div>
                 <div class="form-group">
                     <label>Contraportada (Imagen o Color con Textura)</label>
-                    <div class="file-drop-zone" id="drop-zone-album-back">
+                    <label class="file-drop-zone" id="drop-zone-album-back" for="input-album-back-file" style="display: block;">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Arrastra la contraportada aquí o haz clic para subir</p>
                         <input type="file" id="input-album-back-file" accept="image/*" style="display: none;">
                         <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                    </div>
+                    </label>
                     <div class="color-input-wrapper">
                         <input type="text" id="input-album-back" placeholder="midominio.com/contraportada.png" style="flex:1;">
                         <input type="color" id="input-album-back-color" value="#1a1a1a" title="Color de Contraportada" class="color-picker-custom">
@@ -903,11 +891,11 @@
                     </div>
 
                     <div class="modal-block-title" style="margin-top:25px;"><i class="fas fa-camera"></i> IMÁGENES</div>
-                    <div class="file-drop-zone-modal" id="drop-zone-single-auction">
+                    <label class="file-drop-zone-modal" id="drop-zone-single-auction" for="input-single-auction-file" style="display: flex;">
                         <i class="fas fa-plus-circle"></i>
                         <p>ARRASTRA O SUBE IMÁGENES</p>
                         <input type="file" id="input-single-auction-file" accept="image/*" multiple style="display: none;">
-                    </div>
+                    </label>
                     <div id="preview-grid-auction" class="preview-grid-modal"></div>
                 </div>
             </div>
@@ -963,12 +951,12 @@
 
             <div class="form-group">
                 <label>URL de la Imagen</label>
-                <div class="file-drop-zone" id="drop-zone-slot">
+                <label class="file-drop-zone" id="drop-zone-slot" for="input-slot-file" style="display: block;">
                     <i class="fas fa-cloud-upload-alt"></i>
                     <p>Arrastra una imagen aquí o haz clic para subir la imagen</p>
                     <input type="file" id="input-slot-file" accept="image/*" style="display: none;">
                     <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                </div>
+                </label>
                 <input type="text" id="slot-image-url" placeholder="midominio.com/carta.png">
             </div>
 
@@ -1087,12 +1075,12 @@
             </div>
             <div class="form-group">
                 <label>Archivos del Modelo (GLTF, GLB, BIN, Texturas)</label>
-                <div class="drop-zone file-drop-zone" id="drop-zone-spirit">
+                <label class="drop-zone file-drop-zone" id="drop-zone-spirit" for="input-spirit-files" style="display: block;">
                     <i class="fas fa-cloud-upload-alt"></i>
                     <p>Arrastra todos los archivos del modelo (.gltf, .glb, .bin, texturas) aquí o haz clic para seleccionar</p>
                     <input type="file" id="input-spirit-files" multiple accept=".gltf,.glb,.bin,.png,.jpg,.jpeg,.webp" style="display: none;">
                     <div class="file-name"></div>
-                </div>
+                </label>
             </div>
             <div class="form-group">
                 <label>Tipo de Animación del Modelo</label>

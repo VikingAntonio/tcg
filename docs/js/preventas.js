@@ -59,9 +59,6 @@ $(document).ready(async function() {
         $(this).removeClass('dragover');
     });
 
-    $(document).on('click', '#drop-zone-preorder', function() {
-        $('#input-preorder-file').click();
-    });
 
     $(document).on('change', '#input-preorder-file', function() {
         if (this.files.length > 0) {
