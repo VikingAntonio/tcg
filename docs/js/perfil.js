@@ -36,11 +36,13 @@ $(document).ready(async function() {
         $('#profile-username').val(currentUser.username);
         $('#profile-email').val(currentUser.email || '');
 
+        // Always show and load WhatsApp/Messenger for all users
+        $('#profile-whatsapp').val(currentUser.whatsapp_link || '');
+        $('#profile-messenger').val(currentUser.messenger_link || '');
+
         if (currentUser.is_store) {
             $('.store-only-field').show();
             $('#profile-store-name').val(currentUser.store_name || '');
-            $('#profile-whatsapp').val(currentUser.whatsapp_link || '');
-            $('#profile-messenger').val(currentUser.messenger_link || '');
             $('#profile-horario').val(currentUser.horario || '');
             $('#profile-ubicacion').val(currentUser.ubicacion || '');
 

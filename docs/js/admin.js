@@ -1794,7 +1794,7 @@ async function checkSession() {
     if (session) {
         const { data: user } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, auction_reset_date, monthly_created_count, monthly_bid_count')
             .eq('id', session.user.id)
             .single();
 
@@ -1847,7 +1847,7 @@ async function handleLogin() {
     } else {
         const { data: profile } = await _supabase
             .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events')
+            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, auction_reset_date, monthly_created_count, monthly_bid_count')
             .eq('id', data.user.id)
             .single();
 

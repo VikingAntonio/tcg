@@ -1,0 +1,67 @@
+-- SQL to update Supabase tables for VikingTCG Auctions
+-- Copy and run this in the Supabase SQL Editor
+
+-- 1. Update 'usuarios' table with monthly limit tracking
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='auction_reset_date') THEN
+        ALTER TABLE usuarios ADD COLUMN auction_reset_date TIMESTAMPTZ DEFAULT (NOW() + interval '1 month');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='monthly_created_count') THEN
+        ALTER TABLE usuarios ADD COLUMN monthly_created_count INT DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='monthly_bid_count') THEN
+        ALTER TABLE usuarios ADD COLUMN monthly_bid_count INT DEFAULT 0;
+    END IF;
+END $$;
+
+-- 2. Update RLS policies for public visibility
+-- Ensure RLS is enabled
+ALTER TABLE subastas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subastas_pujas ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing SELECT policies if they exist (to avoid duplicates/conflicts)
+DROP POLICY IF EXISTS "Permitir lectura publica de subastas" ON subastas;
+DROP POLICY IF EXISTS "Permitir lectura publica de pujas" ON subastas_pujas;
+DROP POLICY IF EXISTS "Enable read access for all users" ON subastas;
+DROP POLICY IF EXISTS "Enable read access for all users" ON subastas_pujas;
+
+-- Create new SELECT policies
+CREATE POLICY "Permitir lectura publica de subastas" ON subastas FOR SELECT USING (true);
+CREATE POLICY "Permitir lectura publica de pujas" ON subastas_pujas FOR SELECT USING (true);
+
+-- 3. Function to handle monthly reset atomically
+CREATE OR REPLACE FUNCTION check_and_reset_auction_limits(target_user_id UUID)
+RETURNS TABLE (
+    curr_created_count INT,
+    curr_bid_count INT,
+    reset_date TIMESTAMPTZ
+) AS $$
+DECLARE
+    user_reset_date TIMESTAMPTZ;
+BEGIN
+    SELECT auction_reset_date INTO user_reset_date FROM usuarios WHERE id = target_user_id;
+
+    -- If reset date is null or has passed, reset counters and move reset date forward
+    IF user_reset_date IS NULL OR user_reset_date <= NOW() THEN
+        UPDATE usuarios
+        SET monthly_created_count = 0,
+            monthly_bid_count = 0,
+            auction_reset_date = COALESCE(user_reset_date, NOW()) + interval '1 month'
+        WHERE id = target_user_id;
+
+        -- If it's still in the past (e.g. first time or multiple months missed),
+        -- set it to next month from now
+        IF (SELECT auction_reset_date FROM usuarios WHERE id = target_user_id) <= NOW() THEN
+             UPDATE usuarios SET auction_reset_date = NOW() + interval '1 month' WHERE id = target_user_id;
+        END IF;
+    END IF;
+
+    RETURN QUERY
+    SELECT monthly_created_count, monthly_bid_count, auction_reset_date
+    FROM usuarios
+    WHERE id = target_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

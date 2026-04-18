@@ -291,12 +291,34 @@ window.editAuctionFromCard = async (id, isLive) => {
 };
 
 async function checkRoleLimit(tryingToAdd = 1) {
-    let limit = (auctionUser.role === 'premium') ? 20 : 10;
+    // Monthly Reset Logic and Limits
+    const { data: limitData, error: rpcErr } = await _supabase.rpc('check_and_reset_auction_limits', { target_user_id: auctionUser.id });
+
+    if (rpcErr) {
+        console.error("RPC Error:", rpcErr);
+    } else if (limitData && limitData.length > 0) {
+        const stats = limitData[0];
+        auctionUser.monthly_bid_count = stats.curr_bid_count;
+        auctionUser.monthly_created_count = stats.curr_created_count;
+        auctionUser.auction_reset_date = stats.reset_date;
+    }
+
+    let limit = (auctionUser.role === 'premium') ? 150 : 50;
     if (['admin', 'admin_store', 'tienda'].includes(auctionUser.role)) limit = 9999;
 
-    const { count } = await _supabase.from('subastas').select('*', { count: 'exact', head: true }).eq('user_id', auctionUser.id).eq('status', 'Activa');
-    if ((count + tryingToAdd) > limit) {
-        Swal.fire('Límite Alcanzado', `Tu plan permite ${limit} subastas activas. Actualmente tienes ${count}.`, 'warning');
+    if ((auctionUser.monthly_created_count + tryingToAdd) > limit) {
+        const resetDate = new Date(auctionUser.auction_reset_date);
+        const now = new Date();
+        const diff = resetDate - now;
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+        Swal.fire({
+            title: 'Límite Mensual Alcanzado',
+            html: `Has alcanzado tu límite de creación de <b>${limit}</b> subastas por mes.<br><br>Faltan <b>${days}d ${hours}h</b> para que se reinicie tu contador.`,
+            icon: 'info'
+        });
         return false;
     }
     return true;
@@ -452,6 +474,11 @@ async function handleSaveAuction() {
     if (error) {
         Swal.fire('Error', error.message, 'error');
     } else {
+        // Increment monthly created counter
+        const newCount = (auctionUser.monthly_created_count || 0) + dataToInsert.length;
+        await _supabase.from('usuarios').update({ monthly_created_count: newCount }).eq('id', auctionUser.id);
+        auctionUser.monthly_created_count = newCount;
+
         Swal.fire('¡Éxito!', `${urls.length} subastas lanzadas al catálogo.`, 'success');
         if (window.botInstance) window.botInstance.say("¡Hecho! Tus subastas ya están disponibles para todos.");
         closeAuctionModal();
