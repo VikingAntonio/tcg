@@ -124,8 +124,8 @@ $(document).ready(async function() {
 
             let logoUrl = currentUser.store_logo;
 
-            // 1. Upload Logo if changed
-            if (selectedLogoFile) {
+            // 1. Upload Logo if changed (Only for stores)
+            if (currentUser.is_store && selectedLogoFile) {
                 const fileExt = selectedLogoFile.name.split('.').pop();
                 const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
                 const filePath = `${fileName}`;
@@ -144,14 +144,19 @@ $(document).ready(async function() {
             }
 
             // 2. Update DB
+            // Start with fields common to all users
             const updateData = {
-                store_name: storeName,
                 whatsapp_link: whatsapp,
-                messenger_link: messenger,
-                horario: horario,
-                ubicacion: ubicacion,
-                store_logo: logoUrl
+                messenger_link: messenger
             };
+
+            // Only add store-specific fields if the user is a store
+            if (currentUser.is_store) {
+                updateData.store_name = storeName;
+                updateData.horario = horario;
+                updateData.ubicacion = ubicacion;
+                updateData.store_logo = logoUrl;
+            }
 
             const { error: dbError } = await _supabase
                 .from('usuarios')
