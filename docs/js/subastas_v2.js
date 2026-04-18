@@ -43,6 +43,29 @@ $(document).ready(async function() {
         })]
     });
 
+    flatpickr("#auction-delivery-date", {
+        enableTime: false,
+        noCalendar: false,
+        dateFormat: "Y-m-d",
+        allowInput: true,
+        disableMobile: true,
+        onOpen: function(selectedDates, dateStr, instance) {
+            if (window.innerWidth <= 768) instance.element.blur();
+        }
+    });
+
+    flatpickr(".time-picker-simple", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "h:i K",
+        time_24hr: false,
+        allowInput: true,
+        disableMobile: true,
+        onOpen: function(selectedDates, dateStr, instance) {
+            if (window.innerWidth <= 768) instance.element.blur();
+        }
+    });
+
     // Drop zones (using delegation for better mobile click support)
     $(document).on('dragover dragenter', '#drop-zone-single-auction', function(e) {
         e.preventDefault();
@@ -243,6 +266,16 @@ window.editAuctionFromCard = async (id, isLive) => {
     if (startFp && auctionData.start_date) startFp.setDate(new Date(auctionData.start_date));
     if (endFp && auctionData.end_date) endFp.setDate(new Date(auctionData.end_date));
 
+    // Delivery fields
+    $('#auction-delivery-place').val(auctionData.delivery_place || '');
+    const deliveryDateFp = document.querySelector("#auction-delivery-date")._flatpickr;
+    if (deliveryDateFp && auctionData.delivery_date) deliveryDateFp.setDate(new Date(auctionData.delivery_date));
+
+    const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
+    const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
+    if (startTimeFp && auctionData.delivery_time_start) startTimeFp.setDate(auctionData.delivery_time_start, false, "h:i K");
+    if (endTimeFp && auctionData.delivery_time_end) endTimeFp.setDate(auctionData.delivery_time_end, false, "h:i K");
+
     $('#auction-description').val(auctionData.description || '');
 
     if (auctionData.allowed_increments) {
@@ -323,6 +356,14 @@ function resetModalFields() {
     $('#input-single-auction-file').val('');
     $('#preview-grid-auction').data('urls', []); // Clear URLs data
 
+    $('#auction-delivery-place').val('');
+    const deliveryDateFp = document.querySelector("#auction-delivery-date")._flatpickr;
+    if (deliveryDateFp) deliveryDateFp.clear();
+    const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
+    const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
+    if (startTimeFp) startTimeFp.clear();
+    if (endTimeFp) endTimeFp.clear();
+
     const now = new Date();
     const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
 
@@ -359,6 +400,11 @@ async function handleSaveAuction() {
 
     const allowFree = $('#auction-free-bid').is(':checked');
 
+    const deliveryPlace = $('#auction-delivery-place').val();
+    const deliveryDate = document.querySelector("#auction-delivery-date")._flatpickr.selectedDates[0];
+    const deliveryTimeStart = $('#auction-delivery-time-start').val();
+    const deliveryTimeEnd = $('#auction-delivery-time-end').val();
+
     const editingId = $('#auction-modal').data('editing-id');
     const isLive = $('#auction-modal').data('is-live');
 
@@ -373,7 +419,11 @@ async function handleSaveAuction() {
         min_increment: increments.length > 0 ? Math.min(...increments) : 1,
         allowed_increments: increments.join(','),
         is_live: true,
-        status: 'Activa'
+        status: 'Activa',
+        delivery_place: deliveryPlace,
+        delivery_date: deliveryDate ? deliveryDate.toISOString() : null,
+        delivery_time_start: deliveryTimeStart,
+        delivery_time_end: deliveryTimeEnd
     };
 
     if (editingId && isLive) {

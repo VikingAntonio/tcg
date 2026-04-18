@@ -3022,7 +3022,8 @@ async function loadWonAuctions() {
                 usuarios (
                     store_name,
                     username,
-                    whatsapp_link
+                    whatsapp_link,
+                    messenger_link
                 )
             `)
             .in('id', auctionIds)
@@ -3047,7 +3048,12 @@ async function loadWonAuctions() {
                         ...auction,
                         won_amount: highestBid.amount,
                         store_name: storeDisplayName,
-                        whatsapp_link: storeData ? storeData.whatsapp_link : null
+                        whatsapp_link: storeData ? storeData.whatsapp_link : null,
+                        messenger_link: storeData ? storeData.messenger_link : null,
+                        delivery_place: auction.delivery_place,
+                        delivery_date: auction.delivery_date,
+                        delivery_time_start: auction.delivery_time_start,
+                        delivery_time_end: auction.delivery_time_end
                     });
                 }
             }
@@ -3091,8 +3097,9 @@ async function loadWonAuctionsList() {
     Object.keys(storeGroups).forEach(store => {
         const group = storeGroups[store];
         const whatsapp = group.items[0].whatsapp_link;
+        const messenger = group.items[0].messenger_link;
         html += `
-            <div class="won-store-card" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 25px; backdrop-filter: blur(10px);" onmouseenter="if(window.botInstance) window.botInstance.say('En ${store} tienes un total de $${group.total.toFixed(2)} por pagar.')">
+            <div class="won-store-card won-store-item-group" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 25px; backdrop-filter: blur(10px);" onmouseenter="if(window.botInstance) window.botInstance.say('En ${store} tienes un total de $${group.total.toFixed(2)} por pagar.')">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div style="width: 45px; height: 45px; background: rgba(0,210,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--viking-blue);">
@@ -3109,19 +3116,43 @@ async function loadWonAuctionsList() {
                     ${group.items.map(item => `
                         <div style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); padding: 10px 15px; border-radius: 12px;">
                             <img src="${item.image_url}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
-                            <span style="flex: 1; font-weight: 600;">${item.nombre}</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">${item.nombre}</div>
+                                ${item.delivery_place ? `<div style="font-size: 0.7rem; color: #aaa;"><i class="fas fa-map-marker-alt"></i> ${item.delivery_place}</div>` : ''}
+                            </div>
                             <span style="font-weight: 800; color: var(--viking-blue);">$${item.won_amount.toFixed(2)}</span>
                         </div>
                     `).join('')}
                 </div>
-                <button class="btn btn-success" style="width: 100%; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="contactStoreForWonAuction('${store}', '${whatsapp || ''}')">
-                    <i class="fab fa-whatsapp fa-lg"></i> CONTACTAR TIENDA POR WHATSAPP
-                </button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-success btn-contact-store-wa" style="flex: 1; min-width: 200px; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <i class="fab fa-whatsapp fa-lg"></i> WHATSAPP
+                    </button>
+                    ${messenger ? `
+                        <button class="btn btn-contact-store-ms" style="flex: 1; min-width: 200px; background: #0084ff; color: white; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" data-url="${messenger}">
+                            <i class="fab fa-facebook-messenger fa-lg"></i> MESSENGER
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         `;
     });
     html += `</div>`;
     $container.html(html);
+
+    // Attach listeners
+    $container.find('.btn-contact-store-wa').each(function(idx) {
+        const store = Object.keys(storeGroups)[idx];
+        const group = storeGroups[store];
+        const whatsapp = group.items[0].whatsapp_link;
+        $(this).on('click', () => {
+            contactStoreForWonAuction(store, whatsapp || '');
+        });
+    });
+
+    $container.find('.btn-contact-store-ms').on('click', function() {
+        window.open($(this).data('url'), '_blank');
+    });
 }
 
 window.showWonAuctionsModal = (wonItems) => {
@@ -3154,7 +3185,7 @@ window.showWonAuctionsModal = (wonItems) => {
                         </div>
                     `).join('')}
                 </div>
-                <button class="btn btn-sm btn-success" style="width: 100%; margin-top: 10px; border-radius: 8px; background: #27ae60;" onclick="contactStoreForWonAuction('${store}', '${whatsapp || ''}')">
+                <button class="btn btn-sm btn-success btn-contact-vendedor-wa" style="width: 100%; margin-top: 10px; border-radius: 8px; background: #27ae60;">
                     <i class="fab fa-whatsapp"></i> Contactar Vendedor
                 </button>
             </div>
@@ -3173,6 +3204,16 @@ window.showWonAuctionsModal = (wonItems) => {
         customClass: {
             title: 'swal-viking-title',
             popup: 'swal-viking-popup'
+        },
+        didOpen: (el) => {
+            $(el).find('.btn-contact-vendedor-wa').each(function(idx) {
+                const store = Object.keys(storeGroups)[idx];
+                const group = storeGroups[store];
+                const whatsapp = group.items[0].whatsapp_link;
+                $(this).on('click', () => {
+                    contactStoreForWonAuction(store, whatsapp || '');
+                });
+            });
         }
     });
 };
@@ -3245,7 +3286,11 @@ async function loadMyAuctionsWinners() {
                 winnersMap[bidderId].items.push({
                     name: auction.nombre,
                     amount: highestBid.amount,
-                    image: auction.image_url
+                    image: auction.image_url,
+                    delivery_place: auction.delivery_place,
+                    delivery_date: auction.delivery_date,
+                    delivery_time_start: auction.delivery_time_start,
+                    delivery_time_end: auction.delivery_time_end
                 });
                 winnersMap[bidderId].total += highestBid.amount;
             }
@@ -3275,6 +3320,14 @@ async function loadMyAuctionsWinners() {
         // 3. Render
         let html = `<div class="winners-list" style="display: flex; flex-direction: column; gap: 20px;">`;
         Object.values(winnersMap).forEach(winner => {
+            const firstItem = winner.items[0];
+            const deliveryData = {
+                place: firstItem.delivery_place,
+                date: firstItem.delivery_date,
+                start: firstItem.delivery_time_start,
+                end: firstItem.delivery_time_end
+            };
+
             html += `
                 <div class="won-store-card" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 25px; padding: 25px; backdrop-filter: blur(10px);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
@@ -3296,17 +3349,20 @@ async function loadMyAuctionsWinners() {
                         ${winner.items.map(item => `
                             <div style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); padding: 10px 15px; border-radius: 12px;">
                                 <img src="${item.image}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #000;">
-                                <span style="flex: 1; font-weight: 600;">${item.name}</span>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600;">${item.name}</div>
+                                    ${item.delivery_place ? `<div style="font-size: 0.7rem; color: #aaa;"><i class="fas fa-map-marker-alt"></i> ${item.delivery_place}</div>` : ''}
+                                </div>
                                 <span style="font-weight: 800; color: var(--viking-blue);">$${item.amount.toFixed(2)}</span>
                             </div>
                         `).join('')}
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn btn-success" style="flex: 1; min-width: 200px; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="contactWinner('${winner.bidder_name}', '${winner.whatsapp || ''}', '${winner.items[0].name}', ${winner.total}, '${winner.items[0].image}')">
+                        <button class="btn btn-success btn-contact-wa" style="flex: 1; min-width: 200px; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;">
                             <i class="fab fa-whatsapp fa-lg"></i> ENVIAR WHATSAPP
                         </button>
                         ${winner.messenger ? `
-                            <button class="btn" style="flex: 1; min-width: 200px; background: #0084ff; color: white; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="window.open('${winner.messenger}', '_blank')">
+                            <button class="btn btn-contact-ms" style="flex: 1; min-width: 200px; background: #0084ff; color: white; border-radius: 15px; padding: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;" data-url="${winner.messenger}">
                                 <i class="fab fa-facebook-messenger fa-lg"></i> ENVIAR MESSENGER
                             </button>
                         ` : ''}
@@ -3317,22 +3373,58 @@ async function loadMyAuctionsWinners() {
         html += `</div>`;
         $container.html(html);
 
+        // Attach event listeners to buttons
+        $container.find('.btn-contact-wa').each(function(idx) {
+            const winner = Object.values(winnersMap)[idx];
+            const firstItem = winner.items[0];
+            const deliveryData = {
+                place: firstItem.delivery_place,
+                date: firstItem.delivery_date,
+                start: firstItem.delivery_time_start,
+                end: firstItem.delivery_time_end
+            };
+
+            $(this).on('click', () => {
+                contactWinner(winner.bidder_name, winner.whatsapp || '', winner.items.map(i => i.name).join(', '), winner.total, deliveryData);
+            });
+        });
+
+        $container.find('.btn-contact-ms').on('click', function() {
+            window.open($(this).data('url'), '_blank');
+        });
+
     } catch (err) {
         console.error("Error loading my auction winners:", err);
         $container.html('<div class="error">Error al cargar ganadores.</div>');
     }
 }
 
-window.contactWinner = (name, whatsapp, auctionName, total, image) => {
+window.contactWinner = (name, whatsapp, auctionName, total, delivery) => {
     if (!whatsapp) {
         Swal.fire('Atención', 'El ganador no tiene configurado su WhatsApp.', 'info');
         return;
     }
 
-    let msg = `Hola ${name}, ganaste la subasta "${auctionName}"`;
-    if (total > 0) msg += `. El valor total sería $${total.toFixed(2)}`;
-    if (image) msg += `\nImagen: ${image}`;
-    msg += `\n¡Felicidades! ¿Cómo deseas proceder con el pago y envío?`;
+    let msg = `¡Hola ${name}! Ganaste la subasta "${auctionName}" en VikingTCG.`;
+    if (total > 0) msg += ` El valor total a pagar es $${total.toFixed(2)}.`;
+
+    if (delivery && delivery.place) {
+        let deliveryDetail = `\n\nNos vemos`;
+        if (delivery.date) {
+            const d = new Date(delivery.date);
+            const dateStr = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+            deliveryDetail += ` el ${dateStr}`;
+        }
+        deliveryDetail += ` en ${delivery.place}`;
+        if (delivery.start && delivery.end) {
+            deliveryDetail += ` de ${delivery.start} a ${delivery.end}`;
+        }
+        msg += deliveryDetail + `.`;
+    } else {
+        msg += `\n\n¿Cómo deseas proceder con el pago y envío?`;
+    }
+
+    msg += `\n¡Felicidades!`;
 
     const waUrl = `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, '_blank');
