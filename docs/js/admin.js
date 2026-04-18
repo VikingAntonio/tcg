@@ -2991,7 +2991,8 @@ async function loadWonAuctions() {
     if (!currentUser) return;
 
     try {
-        // Fetch ended auctions where the user participated
+        // Fetch ALL ended auctions where the user might be the winner
+        // We look for all auctions where the user has at least one bid
         const { data: participations, error: partError } = await _supabase
             .from('subastas_pujas')
             .select('subasta_id')
@@ -3019,26 +3020,33 @@ async function loadWonAuctions() {
                     bidder_id,
                     bidder_name
                 ),
-                usuarios (
+                usuarios:user_id (
                     store_name,
                     username,
                     whatsapp_link,
                     messenger_link
                 )
             `)
-            .in('id', auctionIds)
-            .lt('end_date', new Date().toISOString());
+            .in('id', auctionIds);
+            // .lt('end_date', new Date().toISOString()); // Remove for now to catch all, we check date in loop
 
         if (error) throw error;
 
+        const now = new Date();
         const wonItems = [];
         endedAuctions.forEach(auction => {
+            const endDate = auction.end_date ? new Date(auction.end_date.replace(' ', 'T')) : null;
+            const isEnded = endDate && now > endDate;
+
+            if (!isEnded) return;
+
             const bids = auction.subastas_pujas || [];
             if (bids.length > 0) {
                 bids.sort((a, b) => b.amount - a.amount);
                 const highestBid = bids[0];
+
+                // Winner is the user
                 if (highestBid.bidder_id === currentUser.id) {
-                    // Extract store info correctly handling Supabase single/array responses
                     let storeData = auction.usuarios;
                     if (Array.isArray(storeData)) storeData = storeData[0];
 
@@ -3075,9 +3083,8 @@ async function loadWonAuctionsList() {
     const $container = $('#won-auctions-container');
     $container.html('<div class="loading">Cargando victorias...</div>');
 
-    if (!window.currentUserWonItems || window.currentUserWonItems.length === 0) {
-        await loadWonAuctions();
-    }
+    // Always refresh data when viewing the list
+    await loadWonAuctions();
 
     const wonItems = window.currentUserWonItems || [];
 
@@ -3145,8 +3152,17 @@ async function loadWonAuctionsList() {
         const store = Object.keys(storeGroups)[idx];
         const group = storeGroups[store];
         const whatsapp = group.items[0].whatsapp_link;
+
+        const firstItem = group.items[0];
+        const deliveryData = {
+            place: firstItem.delivery_place,
+            date: firstItem.delivery_date,
+            start: firstItem.delivery_time_start,
+            end: firstItem.delivery_time_end
+        };
+
         $(this).on('click', () => {
-            contactStoreForWonAuction(store, whatsapp || '');
+            contactStoreForWonAuction(store, whatsapp || '', group.items.map(i => i.nombre).join(', '), group.total, deliveryData);
         });
     });
 
@@ -3218,7 +3234,7 @@ window.showWonAuctionsModal = (wonItems) => {
     });
 };
 
-window.contactStoreForWonAuction = async (storeName, whatsapp) => {
+window.contactStoreForWonAuction = async (storeName, whatsapp, auctionNames, total, delivery) => {
     let finalWhatsApp = whatsapp;
 
     if (!finalWhatsApp) {
@@ -3231,7 +3247,25 @@ window.contactStoreForWonAuction = async (storeName, whatsapp) => {
     }
 
     if (finalWhatsApp) {
-        const msg = `¡Hola! Gané una subasta en tu tienda "${storeName}" en VikingTCG. ¿Cómo procedemos con el pago?`;
+        let msg = `¡Hola! Gané la subasta de "${auctionNames}" en tu tienda "${storeName}" en VikingTCG.`;
+        if (total > 0) msg += ` El total es $${total.toFixed(2)}.`;
+
+        if (delivery && delivery.place) {
+            let deliveryDetail = `\n\nNos vemos`;
+            if (delivery.date) {
+                const d = new Date(delivery.date);
+                const dateStr = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                deliveryDetail += ` el ${dateStr}`;
+            }
+            deliveryDetail += ` en ${delivery.place}`;
+            if (delivery.start && delivery.end) {
+                deliveryDetail += ` de ${delivery.start} a ${delivery.end}`;
+            }
+            msg += deliveryDetail + `.`;
+        } else {
+            msg += `\n\n¿Cómo procedemos con el pago y entrega?`;
+        }
+
         window.open(`https://wa.me/${finalWhatsApp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
     } else {
         Swal.fire('Atención', 'No se encontró información de contacto para esta tienda.', 'info');
