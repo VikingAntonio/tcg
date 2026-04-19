@@ -864,60 +864,68 @@
             <div class="modal-tabs-content">
                 <!-- Tab 1: Info & Images -->
                 <div id="tab-info" class="modal-tab-pane active">
-                    <div class="modal-block">
-                        <div class="modal-block-title"><i class="fas fa-info-circle"></i> INFORMACIÓN GENERAL</div>
-                        <div class="form-group">
-                            <label>TÍTULO DE LA SUBASTA</label>
-                            <input type="text" id="auction-title" placeholder="">
-                        </div>
-                        <div class="form-group">
-                            <label>DESCRIPCIÓN / REGLAS</label>
-                            <textarea id="auction-description" placeholder="Escribe aquí las reglas..." style="height: 120px;"></textarea>
+                    <div class="modal-grid-layout">
+                        <div class="modal-grid-col info-side">
+                            <div class="modal-block-title"><i class="fas fa-info-circle"></i> INFORMACIÓN GENERAL</div>
+                            <div class="form-group">
+                                <label>TÍTULO DE LA SUBASTA</label>
+                                <input type="text" id="auction-title" placeholder="Ej: Dragon Blanco Ojos Azules...">
+                            </div>
+                            <div class="form-group">
+                                <label>DESCRIPCIÓN / REGLAS</label>
+                                <textarea id="auction-description" placeholder="Escribe aquí las reglas..." style="height: 250px;"></textarea>
+                            </div>
                         </div>
 
-                        <div class="modal-block-title" style="margin-top:25px;"><i class="fas fa-camera"></i> IMÁGENES</div>
-                        <label class="file-drop-zone-modal" id="drop-zone-single-auction" for="input-single-auction-file" style="display: flex;">
-                            <i class="fas fa-plus-circle"></i>
-                            <p>ARRASTRA O SUBE IMÁGENES</p>
-                            <input type="file" id="input-single-auction-file" accept="image/*" multiple style="display: none;">
-                        </label>
-                        <div id="preview-grid-auction" class="preview-grid-modal"></div>
+                        <div class="modal-grid-col images-side">
+                            <div class="modal-block-title"><i class="fas fa-camera"></i> IMÁGENES</div>
+                            <label class="file-drop-zone-modal" id="drop-zone-single-auction" for="input-single-auction-file" style="display: flex;">
+                                <i class="fas fa-plus-circle"></i>
+                                <p>ARRASTRA O SUBE IMÁGENES</p>
+                                <input type="file" id="input-single-auction-file" accept="image/*" multiple style="display: none;">
+                            </label>
+                            <div id="preview-grid-auction" class="preview-grid-modal"></div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Tab 2: Bids Configuration -->
                 <div id="tab-bids" class="modal-tab-pane">
-                    <div class="modal-block">
-                        <div class="modal-block-title"><i class="fas fa-gavel"></i> CONFIGURACIÓN DE PUJAS</div>
-                        <div class="form-group">
-                            <label>PUJA INICIAL ($)</label>
-                            <input type="number" id="auction-start-bid" placeholder="0.00" step="0.01">
-                        </div>
+                    <div class="modal-grid-layout single-col-layout">
+                        <div class="modal-block no-bg">
+                            <div class="modal-block-title"><i class="fas fa-gavel"></i> CONFIGURACIÓN DE PUJAS</div>
+                            <div class="bid-fields-grid">
+                                <div class="form-group">
+                                    <label>PUJA INICIAL ($)</label>
+                                    <input type="number" id="auction-start-bid" placeholder="0.00" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label>PROPIA PUJA ($)</label>
+                                    <input type="number" id="auction-custom-increment" placeholder="Ej: 15">
+                                </div>
+                            </div>
 
-                        <div class="form-group">
-                            <label>INCREMENTOS PERMITIDOS</label>
-                            <div class="increments-pills">
-                                <label class="check-box-item"><input type="checkbox" class="inc-check" value="5" checked> <span>$5</span></label>
-                                <label class="check-box-item"><input type="checkbox" class="inc-check" value="10" checked> <span>$10</span></label>
-                                <label class="check-box-item"><input type="checkbox" class="inc-check" value="20" checked> <span>$20</span></label>
-                                <label class="check-box-item"><input type="checkbox" class="inc-check" value="50" checked> <span>$50</span></label>
+                            <div class="form-group">
+                                <label>INCREMENTOS PERMITIDOS</label>
+                                <div class="increments-pills">
+                                    <label class="check-box-item"><input type="checkbox" class="inc-check" value="5" checked> <span>$5</span></label>
+                                    <label class="check-box-item"><input type="checkbox" class="inc-check" value="10" checked> <span>$10</span></label>
+                                    <label class="check-box-item"><input type="checkbox" class="inc-check" value="20" checked> <span>$20</span></label>
+                                    <label class="check-box-item"><input type="checkbox" class="inc-check" value="50" checked> <span>$50</span></label>
+                                </div>
+                                <label class="check-box-item free-bid-pill">
+                                    <input type="checkbox" id="auction-free-bid" checked> <span>PUJA LIBRE (Permitir cualquier monto)</span>
+                                </label>
                             </div>
-                            <div style="margin-top: 15px;">
-                                <label>PROPIA PUJA ($)</label>
-                                <input type="number" id="auction-custom-increment" placeholder="Ej: 15">
-                            </div>
-                            <label class="check-box-item" style="margin-top:15px; border-color: #e67e22; background: #fffcf9; width: 100%; justify-content: center;">
-                                <input type="checkbox" id="auction-free-bid" checked> <span>PUJA LIBRE</span>
-                            </label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tab 3: Programming & Delivery -->
                 <div id="tab-delivery" class="modal-tab-pane">
-                    <div class="modal-block">
-                        <div class="modal-block-title"><i class="fas fa-calendar-alt"></i> PROGRAMACIÓN</div>
-                        <div class="draft-date-group" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="modal-grid-layout">
+                        <div class="modal-grid-col">
+                            <div class="modal-block-title"><i class="fas fa-calendar-alt"></i> PROGRAMACIÓN</div>
                             <div class="form-group">
                                 <label>INICIO</label>
                                 <input type="text" id="auction-start-date" placeholder="Seleccionar fecha...">
@@ -928,25 +936,25 @@
                             </div>
                         </div>
 
-                        <div class="modal-block-title" style="margin-top:25px;"><i class="fas fa-truck"></i> ENTREGA / ENTREGA PERSONAL</div>
-                        <div class="form-group">
-                            <label>LUGAR DE ENTREGA</label>
-                            <input type="text" id="auction-delivery-place" placeholder="Ej: Plaza Central, Local 5...">
-                        </div>
-                        <div class="draft-date-group" style="grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div class="modal-grid-col">
+                            <div class="modal-block-title"><i class="fas fa-truck"></i> ENTREGA / ENTREGA PERSONAL</div>
+                            <div class="form-group">
+                                <label>LUGAR DE ENTREGA</label>
+                                <input type="text" id="auction-delivery-place" placeholder="Ej: Plaza Central, Local 5...">
+                            </div>
                             <div class="form-group">
                                 <label>DÍA DE ENTREGA</label>
                                 <input type="text" id="auction-delivery-date" placeholder="Seleccionar día...">
                             </div>
-                        </div>
-                        <div class="draft-date-group" style="grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div class="form-group">
-                                <label>HORA INICIO</label>
-                                <input type="text" id="auction-delivery-time-start" class="time-picker-simple" placeholder="10:00 AM">
-                            </div>
-                            <div class="form-group">
-                                <label>HORA FIN</label>
-                                <input type="text" id="auction-delivery-time-end" class="time-picker-simple" placeholder="06:00 PM">
+                            <div class="draft-date-group full-width-group">
+                                <div class="form-group">
+                                    <label>HORA INICIO</label>
+                                    <input type="text" id="auction-delivery-time-start" class="time-picker-simple" placeholder="10:00 AM">
+                                </div>
+                                <div class="form-group">
+                                    <label>HORA FIN</label>
+                                    <input type="text" id="auction-delivery-time-end" class="time-picker-simple" placeholder="06:00 PM">
+                                </div>
                             </div>
                         </div>
                     </div>
