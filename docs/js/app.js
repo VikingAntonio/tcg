@@ -3027,12 +3027,13 @@ async function placeAuctionBid() {
     const { error } = await _supabase.from('subastas_pujas').insert([{
         subasta_id: window.currentAuctionId,
         bidder_id: window.currentUser.id,
-        bidder_name: window.currentUser.username,
+        bidder_name: window.currentUser.store_name || window.currentUser.username || 'Usuario',
         amount: bidAmount
     }]);
 
     if (error) {
-        Swal.fire('Error', 'No se pudo registrar tu puja.', 'error');
+        console.error("Error al registrar puja:", error);
+        Swal.fire('Error', 'No se pudo registrar tu puja: ' + (error.message || ''), 'error');
     } else {
         Swal.fire({ icon: 'success', title: 'Puja registrada', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         $('#input-bid-amount').val('');
