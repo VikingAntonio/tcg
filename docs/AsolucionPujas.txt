@@ -1,0 +1,45 @@
+-- SOLUCIÓN PARA PROBLEMAS DE RLS EN SUBASTAS Y PUJAS
+-- Ejecuta este SQL en el Editor de SQL de tu panel de Supabase
+
+-- 1. Habilitar RLS en las tablas (si no lo están)
+ALTER TABLE subastas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subastas_pujas ENABLE ROW LEVEL SECURITY;
+
+-- 2. Eliminar políticas antiguas para evitar conflictos
+DROP POLICY IF EXISTS "Permitir lectura publica de subastas" ON subastas;
+DROP POLICY IF EXISTS "Permitir lectura publica de pujas" ON subastas_pujas;
+DROP POLICY IF EXISTS "Permitir a usuarios autenticados pujar" ON subastas_pujas;
+DROP POLICY IF EXISTS "Lectura pública de subastas" ON subastas;
+DROP POLICY IF EXISTS "Lectura pública de pujas" ON subastas_pujas;
+DROP POLICY IF EXISTS "Usuarios autenticados pueden pujar" ON subastas_pujas;
+DROP POLICY IF EXISTS "Enable read access for all users" ON subastas;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON subastas_pujas;
+
+-- 3. Crear nuevas políticas de SELECCIÓN (Públicas)
+-- Permite que todos vean las subastas y quién va ganando
+CREATE POLICY "Lectura pública de subastas"
+ON subastas FOR SELECT
+USING (true);
+
+CREATE POLICY "Lectura pública de pujas"
+ON subastas_pujas FOR SELECT
+USING (true);
+
+-- 4. Crear nueva política de INSERCIÓN para pujas
+-- Permite que cualquier usuario LOGUEADO pueda insertar una puja.
+-- Usamos (auth.role() = 'authenticated') para máxima compatibilidad.
+CREATE POLICY "Permitir pujas a usuarios autenticados"
+ON subastas_pujas FOR INSERT
+WITH CHECK (auth.role() = 'authenticated');
+
+-- 5. Política para la tabla de usuarios (necesaria para los contadores mensuales)
+DROP POLICY IF EXISTS "Usuarios pueden actualizar sus contadores" ON usuarios;
+CREATE POLICY "Usuarios pueden actualizar sus contadores"
+ON usuarios FOR UPDATE
+USING (auth.uid() = id);
+
+-- 6. Asegurar que los perfiles sean legibles para mostrar nombres de tiendas
+DROP POLICY IF EXISTS "Lectura pública de usuarios" ON usuarios;
+CREATE POLICY "Lectura pública de usuarios"
+ON usuarios FOR SELECT
+USING (true);
