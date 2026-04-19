@@ -3033,7 +3033,11 @@ async function placeAuctionBid() {
 
     if (error) {
         console.error("Error al registrar puja:", error);
-        Swal.fire('Error', 'No se pudo registrar tu puja: ' + (error.message || ''), 'error');
+        let errorMsg = error.message || '';
+        if (error.code === '42501') {
+            errorMsg = "Error de permisos (RLS). Por favor contacta al administrador o intenta re-iniciar sesión.";
+        }
+        Swal.fire('Error', 'No se pudo registrar tu puja: ' + errorMsg, 'error');
     } else {
         Swal.fire({ icon: 'success', title: 'Puja registrada', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         $('#input-bid-amount').val('');
