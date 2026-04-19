@@ -2618,7 +2618,45 @@ $(document).on('click', '.deck-filter-tab', function() {
 });
 
 // --- Auction Logic ---
+function parseDateSafe(dateStr) {
+    if (!dateStr) return null;
+    // Normalize "A" -> "AM", "P" -> "PM"
+    let normalized = dateStr.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+
+    let d = new Date(normalized);
+    if (!isNaN(d.getTime())) return d;
+
+    // Handle "YYYY-MM-DD hh:mm AM/PM"
+    const regex = /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2}) (AM|PM)$/;
+    const match = normalized.match(regex);
+    if (match) {
+        let [_, year, month, day, hours, minutes, meridiem] = match;
+        year = parseInt(year);
+        month = parseInt(month) - 1;
+        day = parseInt(day);
+        hours = parseInt(hours);
+        minutes = parseInt(minutes);
+
+        if (meridiem === 'PM' && hours < 12) hours += 12;
+        if (meridiem === 'AM' && hours === 12) hours = 0;
+
+        return new Date(year, month, day, hours, minutes);
+    }
+
+    // Try replacing space with T as fallback
+    d = new Date(normalized.replace(' ', 'T'));
+    return isNaN(d.getTime()) ? null : d;
+}
+
 let auctionTimers = {};
+let currentPublicAuctionFilter = 'active';
+
+$(document).on('click', '#public-auction-tabs .tab-pill', function() {
+    $('#public-auction-tabs .tab-pill').removeClass('active');
+    $(this).addClass('active');
+    currentPublicAuctionFilter = $(this).data('filter');
+    loadPublicAuctions();
+});
 
 function loadPublicAuctions() {
     return new Promise(async (resolve) => {
@@ -2660,8 +2698,22 @@ function loadPublicAuctions() {
                 return;
             }
 
+            const now = new Date();
+            const filteredAuctions = auctions.filter(auction => {
+                const endDate = parseDateSafe(auction.end_date);
+                const isEnded = endDate && now > endDate;
+                return currentPublicAuctionFilter === 'active' ? !isEnded : isEnded;
+            });
+
             $('#auctions-container').empty();
-            auctions.forEach(auction => {
+
+            if (filteredAuctions.length === 0) {
+                const msg = currentPublicAuctionFilter === 'active' ? 'No hay subastas activas.' : 'No hay subastas finalizadas.';
+                $('#auctions-container').html(`<div class="empty">${msg}</div>`);
+                return;
+            }
+
+            filteredAuctions.forEach(auction => {
                 renderAuctionCard(auction);
             });
 
@@ -2681,7 +2733,7 @@ function renderAuctionCard(auction) {
     const topBid = bids.length > 0 ? bids[0] : null;
     const currentBid = topBid ? topBid.amount : auction.starting_bid;
 
-    const isEnded = new Date(auction.end_date.replace(' ', 'T')) < new Date();
+    const isEnded = parseDateSafe(auction.end_date) < new Date();
 
     const $card = $(`
         <div class="auction-public-card ${isEnded ? 'status-ended' : ''}" id="auction-${auction.id}">
@@ -2715,10 +2767,8 @@ function renderAuctionCard(auction) {
 function startAuctionTimer(auction) {
     if (auctionTimers[auction.id]) clearInterval(auctionTimers[auction.id]);
 
-    // Ensure we parse the date correctly. ISO strings from Supabase are UTC.
-    // We replace space with T to ensure better browser compatibility for parsing
-    const dateStr = (typeof auction.end_date === 'string') ? auction.end_date.replace(' ', 'T') : auction.end_date;
-    const endDate = new Date(dateStr);
+    const endDate = parseDateSafe(auction.end_date);
+    if (!endDate) return;
     const endDateTime = endDate.getTime();
 
     const update = () => {
@@ -2847,7 +2897,7 @@ async function openAuctionDetail(auction) {
     $('body').addClass('modal-open');
 
     if (window.botInstance) {
-        const isEnded = new Date(auction.end_date) < new Date();
+        const isEnded = parseDateSafe(auction.end_date) < new Date();
         const msg = isEnded ?
             `Esta subasta ya terminó. ¡Felicidades al ganador!` :
             `La puja actual por ${auction.nombre} es de $${currentBid.toFixed(2)}. ¡Todavía tienes tiempo de participar!`;
@@ -2903,7 +2953,7 @@ async function updateAuctionBidsUI(auctionId) {
     const $topList = $('#auction-top-bidders');
     $topList.empty();
 
-    const isEnded = new Date(window.currentAuctionData.end_date) < new Date();
+    const isEnded = parseDateSafe(window.currentAuctionData.end_date) < new Date();
 
     if (isEnded) {
         $('#bid-input-container').hide();
