@@ -4,6 +4,36 @@ let isDraggingAdmin = false;
 let startXAdmin, startYAdmin;
 let currentAdminAuctionFilter = 'active';
 
+function parseDateSafe(dateStr) {
+    if (!dateStr) return null;
+    // Normalize "A" -> "AM", "P" -> "PM"
+    let normalized = dateStr.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+
+    let d = new Date(normalized);
+    if (!isNaN(d.getTime())) return d;
+
+    // Handle "YYYY-MM-DD hh:mm AM/PM"
+    const regex = /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2}) (AM|PM)$/;
+    const match = normalized.match(regex);
+    if (match) {
+        let [_, year, month, day, hours, minutes, meridiem] = match;
+        year = parseInt(year);
+        month = parseInt(month) - 1;
+        day = parseInt(day);
+        hours = parseInt(hours);
+        minutes = parseInt(minutes);
+
+        if (meridiem === 'PM' && hours < 12) hours += 12;
+        if (meridiem === 'AM' && hours === 12) hours = 0;
+
+        return new Date(year, month, day, hours, minutes);
+    }
+
+    // Try replacing space with T as fallback
+    d = new Date(normalized.replace(' ', 'T'));
+    return isNaN(d.getTime()) ? null : d;
+}
+
 $(document).ready(async function() {
     await checkAuctionSession();
 
@@ -13,6 +43,15 @@ $(document).ready(async function() {
     });
     $(document).on('click', '#close-auction-modal', closeAuctionModal);
     $(document).on('click', '#btn-save-auction', handleSaveAuction);
+
+    // Tabs switching logic
+    $(document).on('click', '.modal-tab-btn', function() {
+        const tabId = $(this).data('tab');
+        $('.modal-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.modal-tab-pane').removeClass('active');
+        $(`#${tabId}`).addClass('active');
+    });
 
     // Flatpickr initialization
     flatpickr("#auction-start-date, #auction-end-date", {
@@ -28,6 +67,9 @@ $(document).ready(async function() {
             if (window.innerWidth <= 768) {
                 instance.element.blur();
             }
+        },
+        onClose: function(selectedDates, dateStr, instance) {
+            instance.input.value = dateStr.replace('AM', 'A').replace('PM', 'P');
         },
         onReady: function(selectedDates, dateStr, instance) {
             const $timeInputs = $(instance.calendarContainer).find('.flatpickr-time input');
@@ -51,18 +93,24 @@ $(document).ready(async function() {
         disableMobile: true,
         onOpen: function(selectedDates, dateStr, instance) {
             if (window.innerWidth <= 768) instance.element.blur();
+        },
+        onClose: function(selectedDates, dateStr, instance) {
+            instance.input.value = dateStr.replace('AM', 'A').replace('PM', 'P');
         }
     });
 
     flatpickr(".time-picker-simple", {
         enableTime: true,
         noCalendar: true,
-        dateFormat: "h:i K",
+        dateFormat: "h:i A",
         time_24hr: false,
         allowInput: true,
         disableMobile: true,
         onOpen: function(selectedDates, dateStr, instance) {
             if (window.innerWidth <= 768) instance.element.blur();
+        },
+        onClose: function(selectedDates, dateStr, instance) {
+            instance.input.value = dateStr.replace('AM', 'A').replace('PM', 'P');
         }
     });
 
@@ -179,7 +227,7 @@ function createPrettyCard(item, isLive) {
     const bidCount = 0;
 
     const now = new Date();
-    const endDate = item.end_date ? new Date(item.end_date.replace(' ', 'T')) : null;
+    const endDate = parseDateSafe(item.end_date);
     const isEnded = endDate && now > endDate;
 
     const $card = $(`
@@ -263,18 +311,34 @@ window.editAuctionFromCard = async (id, isLive) => {
 
     const startFp = document.querySelector("#auction-start-date")._flatpickr;
     const endFp = document.querySelector("#auction-end-date")._flatpickr;
-    if (startFp && auctionData.start_date) startFp.setDate(new Date(auctionData.start_date));
-    if (endFp && auctionData.end_date) endFp.setDate(new Date(auctionData.end_date));
+    if (startFp && auctionData.start_date) {
+        const d = parseDateSafe(auctionData.start_date);
+        startFp.setDate(d);
+        startFp.input.value = startFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
+    if (endFp && auctionData.end_date) {
+        const d = parseDateSafe(auctionData.end_date);
+        endFp.setDate(d);
+        endFp.input.value = endFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
 
     // Delivery fields
     $('#auction-delivery-place').val(auctionData.delivery_place || '');
     const deliveryDateFp = document.querySelector("#auction-delivery-date")._flatpickr;
-    if (deliveryDateFp && auctionData.delivery_date) deliveryDateFp.setDate(new Date(auctionData.delivery_date));
+    if (deliveryDateFp && auctionData.delivery_date) deliveryDateFp.setDate(parseDateSafe(auctionData.delivery_date));
 
     const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
     const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
-    if (startTimeFp && auctionData.delivery_time_start) startTimeFp.setDate(auctionData.delivery_time_start, false, "h:i K");
-    if (endTimeFp && auctionData.delivery_time_end) endTimeFp.setDate(auctionData.delivery_time_end, false, "h:i K");
+    if (startTimeFp && auctionData.delivery_time_start) {
+        let val = auctionData.delivery_time_start.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+        startTimeFp.setDate(val, false, "h:i A");
+        startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
+    if (endTimeFp && auctionData.delivery_time_end) {
+        let val = auctionData.delivery_time_end.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+        endTimeFp.setDate(val, false, "h:i A");
+        endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
 
     $('#auction-description').val(auctionData.description || '');
 
@@ -335,7 +399,7 @@ async function loadLiveAuctions() {
 
     const now = new Date();
     const filteredItems = items.filter(item => {
-        const endDate = item.end_date ? new Date(item.end_date.replace(' ', 'T')) : null;
+        const endDate = parseDateSafe(item.end_date);
         if (currentAdminAuctionFilter === 'active') {
             return !endDate || now <= endDate;
         } else {
@@ -370,6 +434,12 @@ function openAuctionModal() {
 function closeAuctionModal() { $('#auction-modal').removeClass('active'); }
 
 function resetModalFields() {
+    // Reset to first tab
+    $('.modal-tab-btn').removeClass('active');
+    $('.modal-tab-btn[data-tab="tab-info"]').addClass('active');
+    $('.modal-tab-pane').removeClass('active');
+    $('#tab-info').addClass('active');
+
     $('#auction-modal').removeData('editing-id').removeData('is-live');
     $('#auction-title').val('');
     $('#auction-description').val('');
@@ -391,8 +461,14 @@ function resetModalFields() {
 
     const startFp = document.querySelector("#auction-start-date")._flatpickr;
     const endFp = document.querySelector("#auction-end-date")._flatpickr;
-    if (startFp) startFp.setDate(now);
-    if (endFp) endFp.setDate(end);
+    if (startFp) {
+        startFp.setDate(now);
+        startFp.input.value = startFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
+    if (endFp) {
+        endFp.setDate(end);
+        endFp.input.value = endFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
 
     renderModalPreviews([]); // This will restore the drop zone UI
     $('.inc-check').prop('checked', true);
