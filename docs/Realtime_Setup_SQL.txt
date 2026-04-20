@@ -1,0 +1,29 @@
+-- HABILITAR REALTIME PARA SUBASTAS Y PUJAS
+-- Ejecuta este SQL en el Editor de SQL de tu panel de Supabase
+-- Esto es OBLIGATORIO para que las actualizaciones en tiempo real funcionen.
+
+-- IMPORTANTE: Por defecto, Supabase tiene el tiempo real DESACTIVADO para las tablas.
+-- Debes ejecutar estos comandos para que los usuarios vean las pujas sin refrescar.
+
+-- 1. Agregar las tablas a la publicación de Supabase Realtime
+-- Si la publicación no existe, usa el comando CREATE. Si ya existe, usa ALTER.
+
+-- OPCIÓN A (Si nunca has configurado Realtime):
+-- CREATE PUBLICATION supabase_realtime FOR TABLE subastas, subastas_pujas;
+
+-- OPCIÓN B (Si ya tienes otras tablas en Realtime):
+BEGIN;
+  ALTER PUBLICATION supabase_realtime ADD TABLE subastas;
+  ALTER PUBLICATION supabase_realtime ADD TABLE subastas_pujas;
+COMMIT;
+
+-- 2. Configurar REPLICA IDENTITY FULL
+-- Esto permite que Supabase envíe todos los cambios de las filas (nombres, montos, etc.)
+-- a los navegadores de los usuarios instantáneamente.
+
+ALTER TABLE subastas REPLICA IDENTITY FULL;
+ALTER TABLE subastas_pujas REPLICA IDENTITY FULL;
+
+-- 3. Verificar en el Panel de Supabase:
+-- Ve a Database -> Replication -> 'supabase_realtime' publication -> Tables
+-- Asegúrate de que 'subastas' y 'subastas_pujas' estén en la lista y con el interruptor encendido.

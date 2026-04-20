@@ -1417,6 +1417,23 @@ body.admin-body {
     box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
 }
 
+/* Realtime status indicator */
+#auctions-container[data-realtime="active"]::before {
+    content: "● LIVE";
+    position: absolute;
+    top: -25px;
+    right: 10px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: #77DD77;
+    letter-spacing: 1px;
+    animation: blinker 2s linear infinite;
+}
+
+@keyframes blinker {
+    50% { opacity: 0.3; }
+}
+
 /* Ended status for management cards */
 .pretty-auction-card.status-ended {
     opacity: 0.8;
