@@ -2621,6 +2621,7 @@ $(document).on('click', '.deck-filter-tab', function() {
 
 let auctionTimers = {};
 let currentPublicAuctionFilter = 'active';
+window.activeAuctionsMap = {};
 
 $(document).on('click', '#public-auction-tabs .tab-pill', function() {
     $('#public-auction-tabs .tab-pill').removeClass('active');
@@ -2669,6 +2670,11 @@ function loadPublicAuctions() {
                 return;
             }
 
+            // Populate global map for realtime updates
+            auctions.forEach(a => {
+                window.activeAuctionsMap[a.id] = a;
+            });
+
             const now = new Date();
             const filteredAuctions = auctions.filter(auction => {
                 const endDate = parseDateSafe(auction.end_date);
@@ -2687,6 +2693,33 @@ function loadPublicAuctions() {
             filteredAuctions.forEach(auction => {
                 renderAuctionCard(auction);
             });
+
+            // --- Global Realtime Subscription ---
+            if (window.globalAuctionChannel) {
+                _supabase.removeChannel(window.globalAuctionChannel);
+            }
+
+            window.globalAuctionChannel = _supabase
+                .channel('global-auctions-realtime')
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'subastas_pujas'
+                }, payload => {
+                    console.log("Nueva puja detectada globalmente:", payload.new);
+                    updateAuctionBidsUI(payload.new.subasta_id);
+                })
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'subastas'
+                }, payload => {
+                    console.log("Subasta actualizada globalmente:", payload.new);
+                    window.activeAuctionsMap[payload.new.id] = payload.new;
+                    updateAuctionBidsUI(payload.new.id);
+                    startAuctionTimer(payload.new);
+                })
+                .subscribe();
 
         } catch (e) {
             console.error("Error loading auctions:", e);
@@ -2874,28 +2907,6 @@ async function openAuctionDetail(auction) {
             `La puja actual por ${auction.nombre} es de $${currentBid.toFixed(2)}. ¡Todavía tienes tiempo de participar!`;
         window.botInstance.say(msg);
     }
-
-    // Subscribe to bids (Realtime)
-    if (window.currentAuctionChannel) {
-        _supabase.removeChannel(window.currentAuctionChannel);
-    }
-
-    const channel = _supabase
-        .channel(`public:subastas_pujas:subasta_id=eq.${auction.id}`)
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'subastas_pujas',
-            filter: `subasta_id=eq.${auction.id}`
-        }, payload => {
-            console.log("Nueva puja detectada (Realtime):", payload.new);
-            updateAuctionBidsUI(auction.id);
-        })
-        .subscribe((status) => {
-            console.log("Estado suscripción subasta:", status);
-        });
-
-    window.currentAuctionChannel = channel;
 }
 
 async function updateAuctionBidsUI(auctionId) {
@@ -2907,57 +2918,75 @@ async function updateAuctionBidsUI(auctionId) {
 
     if (error) return;
 
+    const auctionData = window.activeAuctionsMap[auctionId] || (window.currentAuctionId === auctionId ? window.currentAuctionData : null);
+    if (!auctionData) return;
+
     const topBid = bids.length > 0 ? bids[0] : null;
-    const currentBid = topBid ? topBid.amount : window.currentAuctionData.starting_bid;
+    const currentBid = topBid ? topBid.amount : auctionData.starting_bid;
 
-    $('#auction-modal-current-bid').text(`$${currentBid.toFixed(2)}`);
+    // Update modal if it's open for THIS auction
+    if (window.currentAuctionId === auctionId) {
+        $('#auction-modal-current-bid').text(`$${currentBid.toFixed(2)}`);
+
+        // Full Bid History
+        const $topList = $('#auction-top-bidders');
+        $topList.empty();
+
+        const isEnded = parseDateSafe(auctionData.end_date) < new Date();
+
+        if (isEnded) {
+            $('#bid-input-container').hide();
+            if (bids.length > 0) {
+                $('#auction-winner-display').show().css('opacity', '1').removeClass('status-ended');
+                $('#auction-winner-name').text(bids[0].bidder_name);
+                $('#auction-winner-amount').text(`Puja Ganadora: $${bids[0].amount.toFixed(2)}`);
+
+                if (window.botInstance && window.lastAnnouncedWinnerAuctionId !== auctionId) {
+                    window.botInstance.say(`¡Tenemos un ganador para "${auctionData.nombre}"! Felicidades a ${bids[0].bidder_name} por llevarse esta joya.`, { duration: 10 });
+                    window.lastAnnouncedWinnerAuctionId = auctionId;
+                }
+            } else {
+                $('#auction-winner-display').show().html('<h3 style="color: #666;">SUBASTA FINALIZADA</h3><p>No hubo pujas.</p>');
+            }
+            $('.btn-bid-pill, #input-bid-amount').prop('disabled', true).css('opacity', '0.5');
+        } else {
+            $('#bid-input-container').show();
+            $('#auction-winner-display').hide();
+            window.lastAnnouncedWinnerAuctionId = null;
+            $('.btn-bid-pill, #input-bid-amount').prop('disabled', false).css('opacity', '1');
+        }
+
+        bids.forEach((bid, idx) => {
+            const isWinning = idx === 0;
+            const isSelf = window.currentUser && bid.bidder_id === window.currentUser.id;
+            $topList.append(`
+                <div class="bidder-item ${isWinning ? 'winner' : ''} ${isSelf ? 'self' : ''}">
+                    <span class="bidder-name">${idx + 1}. ${bid.bidder_name} ${isWinning ? '<i class="fas fa-crown"></i>' : ''} ${isSelf ? '(Tú)' : ''}</span>
+                    <span class="bid-amount">$${bid.amount.toFixed(2)}</span>
+                </div>
+            `);
+        });
+    }
+
+    // ALWAYS Update the card on the grid
     $(`#auction-${auctionId} .auction-bid-badge`).text(`$${currentBid.toFixed(2)}`);
-
-    // Update bidder info on card
     const $card = $(`#auction-${auctionId}`);
     if ($card.length) {
         $card.find('.bidder-name').text(topBid ? topBid.bidder_name : 'Sin pujas');
         $card.find('.bidder-amount').text(topBid ? '$' + topBid.amount.toFixed(2) : '');
-    }
 
-    // Full Bid History
-    const $topList = $('#auction-top-bidders');
-    $topList.empty();
-
-    const isEnded = parseDateSafe(window.currentAuctionData.end_date) < new Date();
-
-    if (isEnded) {
-        $('#bid-input-container').hide();
-        if (bids.length > 0) {
-            $('#auction-winner-display').show().css('opacity', '1').removeClass('status-ended');
-            $('#auction-winner-name').text(bids[0].bidder_name);
-            $('#auction-winner-amount').text(`Puja Ganadora: $${bids[0].amount.toFixed(2)}`);
-
-            if (window.botInstance && !window.winnerAnnounced) {
-                window.botInstance.say(`¡Tenemos un ganador para "${window.currentAuctionData.nombre}"! Felicidades a ${bids[0].bidder_name} por llevarse esta joya.`, { duration: 10 });
-                window.winnerAnnounced = true;
+        // Handle visual state if ended
+        const isEnded = parseDateSafe(auctionData.end_date) < new Date();
+        if (isEnded) {
+            $card.addClass('status-ended');
+            if ($card.find('.status-ended-seal').length === 0) {
+                $card.find('.auction-image-wrapper').append('<div class="status-ended-seal"></div>');
             }
         } else {
-            $('#auction-winner-display').show().html('<h3 style="color: #666;">SUBASTA FINALIZADA</h3><p>No hubo pujas.</p>');
+            $card.removeClass('status-ended');
+            $card.find('.status-ended-seal').remove();
         }
-        $('.btn-bid-pill, #input-bid-amount').prop('disabled', true).css('opacity', '0.5');
-    } else {
-        $('#bid-input-container').show();
-        $('#auction-winner-display').hide();
-        window.winnerAnnounced = false;
-        $('.btn-bid-pill, #input-bid-amount').prop('disabled', false).css('opacity', '1');
     }
-
-    bids.forEach((bid, idx) => {
-        const isWinning = idx === 0;
-        const isSelf = window.currentUser && bid.bidder_id === window.currentUser.id;
-        $topList.append(`
-            <div class="bidder-item ${isWinning ? 'winner' : ''} ${isSelf ? 'self' : ''}">
-                <span class="bidder-name">${idx + 1}. ${bid.bidder_name} ${isWinning ? '<i class="fas fa-crown"></i>' : ''} ${isSelf ? '(Tú)' : ''}</span>
-                <span class="bid-amount">$${bid.amount.toFixed(2)}</span>
-            </div>
-        `);
-    });
 }
 
 window.quickBid = function(amount) {
@@ -3032,16 +3061,43 @@ async function placeAuctionBid() {
     }
 
     const bidAmount = parseFloat($('#input-bid-amount').val());
-    const currentBid = parseFloat($('#auction-modal-current-bid').text().replace('$', '')) || 0;
-    const minInc = window.currentAuctionData.min_increment || 1;
-
-    if (isNaN(bidAmount) || bidAmount <= currentBid) {
-        Swal.fire('Error', 'Tu puja debe ser mayor a la puja actual.', 'error');
+    if (isNaN(bidAmount)) {
+        Swal.fire('Error', 'Por favor ingresa un monto válido.', 'error');
         return;
     }
 
-    if (window.currentAuctionData.increment_type === 'fixed' && (bidAmount - currentBid) < minInc) {
-        Swal.fire('Error', `El incremento mínimo es de $${minInc}.`, 'error');
+    // --- Pre-check Concurrency: Fetch absolute latest bid ---
+    Swal.fire({ title: 'Procesando puja...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const { data: latestBids } = await _supabase
+        .from('subastas_pujas')
+        .select('amount')
+        .eq('subasta_id', window.currentAuctionId)
+        .order('amount', { ascending: false })
+        .limit(1);
+
+    const latestBid = latestBids && latestBids.length > 0 ? latestBids[0].amount : window.currentAuctionData.starting_bid;
+
+    if (bidAmount <= latestBid) {
+        Swal.close();
+        Swal.fire('Puja Superada', `Alguien más acaba de pujar $${latestBid.toFixed(2)}. Tu puja debe ser mayor.`, 'warning');
+        updateAuctionBidsUI(window.currentAuctionId);
+        return;
+    }
+
+    const minInc = window.currentAuctionData.min_increment || 1;
+    if (window.currentAuctionData.increment_type === 'fixed' && (bidAmount - latestBid) < minInc) {
+        Swal.close();
+        Swal.fire('Error', `El incremento mínimo es de $${minInc}. La puja actual es $${latestBid.toFixed(2)}.`, 'error');
+        updateAuctionBidsUI(window.currentAuctionId);
+        return;
+    }
+
+    // Check if ended
+    if (parseDateSafe(window.currentAuctionData.end_date) < new Date()) {
+        Swal.close();
+        Swal.fire('Subasta Finalizada', 'Lo sentimos, esta subasta ya ha terminado.', 'error');
+        updateAuctionBidsUI(window.currentAuctionId);
         return;
     }
 
@@ -3052,6 +3108,7 @@ async function placeAuctionBid() {
         amount: bidAmount
     }]);
 
+    Swal.close();
     if (error) {
         console.error("Error al registrar puja:", error);
         let errorMsg = error.message || '';
@@ -3092,10 +3149,7 @@ $('#close-auction-modal, #auction-detail-modal').click(function(e) {
     if (e.target === this || $(this).hasClass('close-btn')) {
         $('#auction-detail-modal').removeClass('active');
         $('body').removeClass('modal-open');
-        if (window.currentAuctionChannel) {
-            _supabase.removeChannel(window.currentAuctionChannel);
-            window.currentAuctionChannel = null;
-        }
+        window.currentAuctionId = null;
     }
 });
 
