@@ -2706,7 +2706,7 @@ function loadPublicAuctions() {
                     schema: 'public',
                     table: 'subastas_pujas'
                 }, payload => {
-                    console.log("Nueva puja detectada globalmente:", payload.new);
+                    console.log("Nueva puja detectada globalmente (Realtime):", payload.new);
                     updateAuctionBidsUI(payload.new.subasta_id);
                 })
                 .on('postgres_changes', {
@@ -2714,12 +2714,25 @@ function loadPublicAuctions() {
                     schema: 'public',
                     table: 'subastas'
                 }, payload => {
-                    console.log("Subasta actualizada globalmente:", payload.new);
+                    console.log("Subasta actualizada globalmente (Realtime):", payload.new);
                     window.activeAuctionsMap[payload.new.id] = payload.new;
+                    if (window.currentAuctionId === payload.new.id) {
+                        window.currentAuctionData = payload.new;
+                    }
                     updateAuctionBidsUI(payload.new.id);
                     startAuctionTimer(payload.new);
                 })
-                .subscribe();
+                .subscribe((status) => {
+                    console.log("Estado de la conexión Realtime de Subastas:", status);
+                    if (status === 'SUBSCRIBED') {
+                        console.log("Realtime: Conectado y escuchando cambios.");
+                        // Optional visual cue for developers/advanced users
+                        $('#auctions-container').attr('data-realtime', 'active');
+                    }
+                    if (status === 'CHANNEL_ERROR') {
+                        console.error("Error en el canal de Realtime. Verifica que Realtime esté habilitado en Supabase para las tablas subastas y subastas_pujas.");
+                    }
+                });
 
         } catch (e) {
             console.error("Error loading auctions:", e);
@@ -2910,6 +2923,7 @@ async function openAuctionDetail(auction) {
 }
 
 async function updateAuctionBidsUI(auctionId) {
+    // 1. Fetch latest bids
     const { data: bids, error } = await _supabase
         .from('subastas_pujas')
         .select('*')
@@ -2918,21 +2932,38 @@ async function updateAuctionBidsUI(auctionId) {
 
     if (error) return;
 
-    const auctionData = window.activeAuctionsMap[auctionId] || (window.currentAuctionId === auctionId ? window.currentAuctionData : null);
-    if (!auctionData) return;
+    // 2. Resolve metadata (fallback to fetch if not in map)
+    let auctionData = window.activeAuctionsMap[auctionId] || (window.currentAuctionId === auctionId ? window.currentAuctionData : null);
+
+    if (!auctionData) {
+        console.log(`Metadata faltante para subasta ${auctionId}, re-intentando fetch...`);
+        const { data: freshMetadata } = await _supabase
+            .from('subastas')
+            .select('*')
+            .eq('id', auctionId)
+            .single();
+        if (freshMetadata) {
+            window.activeAuctionsMap[auctionId] = freshMetadata;
+            auctionData = freshMetadata;
+        }
+    }
+
+    if (!auctionData) {
+        console.error(`No se pudo resolver la metadata para la subasta ${auctionId}`);
+        return;
+    }
 
     const topBid = bids.length > 0 ? bids[0] : null;
     const currentBid = topBid ? topBid.amount : auctionData.starting_bid;
+    const isEnded = parseDateSafe(auctionData.end_date) < new Date();
 
-    // Update modal if it's open for THIS auction
+    // 3. Update modal UI (Independent of grid presence)
     if (window.currentAuctionId === auctionId) {
         $('#auction-modal-current-bid').text(`$${currentBid.toFixed(2)}`);
 
         // Full Bid History
         const $topList = $('#auction-top-bidders');
         $topList.empty();
-
-        const isEnded = parseDateSafe(auctionData.end_date) < new Date();
 
         if (isEnded) {
             $('#bid-input-container').hide();
@@ -2968,15 +2999,13 @@ async function updateAuctionBidsUI(auctionId) {
         });
     }
 
-    // ALWAYS Update the card on the grid
-    $(`#auction-${auctionId} .auction-bid-badge`).text(`$${currentBid.toFixed(2)}`);
+    // 4. Update Grid Card UI (if visible)
     const $card = $(`#auction-${auctionId}`);
     if ($card.length) {
+        $card.find('.auction-bid-badge').text(`$${currentBid.toFixed(2)}`);
         $card.find('.bidder-name').text(topBid ? topBid.bidder_name : 'Sin pujas');
         $card.find('.bidder-amount').text(topBid ? '$' + topBid.amount.toFixed(2) : '');
 
-        // Handle visual state if ended
-        const isEnded = parseDateSafe(auctionData.end_date) < new Date();
         if (isEnded) {
             $card.addClass('status-ended');
             if ($card.find('.status-ended-seal').length === 0) {
@@ -3074,6 +3103,7 @@ async function placeAuctionBid() {
         .select('amount')
         .eq('subasta_id', window.currentAuctionId)
         .order('amount', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1);
 
     const latestBid = latestBids && latestBids.length > 0 ? latestBids[0].amount : window.currentAuctionData.starting_bid;
