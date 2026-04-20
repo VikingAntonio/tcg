@@ -326,7 +326,7 @@ body.admin-body {
 .auction-modal-content {
     background: #fff !important;
     color: #333 !important;
-    max-width: 950px !important;
+    max-width: 1100px !important; /* Increased for better distribution */
     width: 98% !important;
     padding: 40px !important;
     border-radius: 40px !important;
@@ -389,11 +389,15 @@ body.admin-body {
     color: #222 !important;
 }
 
-.modal-sections-container {
+.modal-grid-layout {
     display: grid;
     grid-template-columns: 1.2fr 1fr;
-    gap: 20px;
+    gap: 30px;
     margin-bottom: 15px;
+}
+
+.modal-grid-layout.single-col-layout {
+    grid-template-columns: 1fr;
 }
 
 .modal-block {
@@ -401,6 +405,30 @@ body.admin-body {
     border: 1px solid #f1f3f5;
     border-radius: 20px;
     padding: 15px;
+}
+
+.modal-block.no-bg {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.bid-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.full-width-group {
+    grid-template-columns: 1fr 1fr !important;
+}
+
+.free-bid-pill {
+    margin-top: 15px !important;
+    border-color: #e67e22 !important;
+    background: #fffcf9 !important;
+    width: 100% !important;
+    justify-content: center !important;
 }
 
 .modal-block-title {
@@ -500,7 +528,7 @@ body.admin-body {
 
 .file-drop-zone-modal {
     width: 100%;
-    height: 180px;
+    height: 250px; /* Increased to fill space better on PC */
     border: 2px dashed #eee;
     border-radius: 30px;
     display: flex;
@@ -687,9 +715,23 @@ body.admin-body {
         font-size: 1.2rem !important;
     }
 
-    .modal-sections-container {
+    .modal-grid-layout {
         grid-template-columns: 1fr !important;
         gap: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .images-side {
+        order: -1; /* Display images first on mobile */
+    }
+
+    .file-drop-zone-modal {
+        height: 180px;
+    }
+
+    .bid-fields-grid, .full-width-group {
+        grid-template-columns: 1fr !important;
     }
 
     .modal-block {
