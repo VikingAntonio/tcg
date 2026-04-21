@@ -1866,6 +1866,22 @@ input:checked + .slider:before {
     animation: none !important;
 }
 
+/* Shading for missing cards */
+.card-slot[data-obtained="false"],
+.grid-card-item[data-obtained="false"],
+.swiper-slide[data-obtained="false"] {
+    opacity: 0.4 !important;
+    filter: grayscale(1) brightness(0.7) !important;
+    transition: all 0.3s ease;
+}
+
+.card-slot[data-obtained="false"]:hover,
+.grid-card-item[data-obtained="false"]:hover,
+.swiper-slide[data-obtained="false"]:hover {
+    opacity: 0.7 !important;
+    filter: grayscale(0.5) brightness(0.9) !important;
+}
+
 /* Search Highlight Effect */
 .public-main-container .search-highlight {
     border-color: #00d2ff;
@@ -4018,6 +4034,10 @@ body.focus-mode-active .event-card {
     margin-bottom: 25px;
     padding-bottom: 15px;
     border-bottom: 1px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
 }
 
 .deck-list-header h2 {
@@ -4025,6 +4045,40 @@ body.focus-mode-active .event-card {
     color: var(--primary-color);
     font-size: 1.8rem;
     font-weight: 800;
+}
+
+.deck-filter-tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 5px;
+}
+
+.deck-filter-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    padding: 8px 25px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.6;
+}
+
+.deck-filter-tab:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.deck-filter-tab.active {
+    background: var(--primary-color);
+    color: #000;
+    opacity: 1;
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
 }
 
 .deck-grid-popup {

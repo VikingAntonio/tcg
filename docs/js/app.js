@@ -66,6 +66,7 @@ window.clearShareFilters = function() {
     $('body').removeClass('focus-mode-active');
     $('body').removeClass('modal-open');
     $('#shared-item-modal').removeClass('active');
+    $('#shared-content-container').empty();
 
     // Refresh current view to show all items
     const view = url.searchParams.get('view') || 'albums';
@@ -167,22 +168,55 @@ window.handleDeepLinking = function(retries = 10) {
     }
 
     if (targetEl && isDeepLink) {
-        // --- Isolation Mode (Focus on original element) ---
-        $('.shared-highlight').removeClass('shared-highlight');
-        $(targetEl).addClass('shared-highlight');
-        $('body').addClass('focus-mode-active');
+        // --- isolation Mode via Modal ---
+        const $clone = $(targetEl).clone();
 
-        // Scroll to item
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Remove individual share buttons from clone to avoid recursion
+        $clone.find('.btn-share-item, .btn-share-floating').remove();
 
-        // Automations
-        if (shareType === 'wishlist-item' && $(targetEl).hasClass('card-slot')) {
+        // Setup shared modal
+        $('#shared-content-container').empty().append($clone);
+        $('#shared-item-modal').addClass('active');
+        $('body').addClass('modal-open');
+
+        // Setup Integrated Sharing buttons in the modal
+        const title = $clone.find('h3').first().text() || "Item compartido";
+        const shareUrl = window.location.href;
+
+        $('#btn-shared-copy-link').off('click').on('click', function() {
+            navigator.clipboard.writeText(shareUrl);
+            Swal.fire({ icon: 'success', title: 'Enlace copiado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        });
+
+        $('#btn-shared-show-qr').off('click').on('click', function() {
+            // Reuse openShareModal to show QR properly
+            window.openShareModal(title, shareType, null);
+        });
+
+        $('.shared-social-btn').off('click').on('click', function() {
+            const platform = $(this).data('platform');
+            const encodedUrl = encodeURIComponent(shareUrl);
+            const encodedText = encodeURIComponent(`¡Mira esto en VikingTCG: ${title}!`);
+
+            let url = '';
+            if (platform === 'wa') url = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+            else if (platform === 'tg') url = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+            else if (platform === 'fb') url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+            else if (platform === 'ms') url = `fb-messenger://share/?link=${encodedUrl}`;
+
+            if (url) window.open(url, '_blank');
+        });
+
+        // Automations inside the clone
+        if (shareType === 'wishlist-item' && $clone.hasClass('card-slot')) {
+            // Re-bind click to open modal even inside the clone
+            $clone.on('click', () => openCardModal($(targetEl)));
             openCardModal($(targetEl));
         } else if (shareType === 'event') {
             showGeneralEventDetails(params.get('eventId'));
         }
 
-        console.log(`Deep-link focused: ${shareType} #${targetEl.id}`);
+        console.log(`Deep-link isolated in modal: ${shareType} #${targetEl.id}`);
     }
 };
 
@@ -1113,7 +1147,6 @@ async function openCardModal($slot) {
                 $slot.data('mask', updMask).attr('data-mask', updMask);
                 $slot.data('3d', upd3d).attr('data-3d', upd3d);
                 $slot.find('h3').text(updName);
-                $slot.css('opacity', updObtained ? '0.5' : '1');
 
                 // Re-render the "CONSEGUIDA" badge if needed
                 $slot.find('.event-type-badge').remove();
@@ -1204,8 +1237,7 @@ async function openCardModal($slot) {
         messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
     };
 
-    if (isWishlist) $('#btn-share-card-modal').show();
-    else $('#btn-share-card-modal').hide();
+    $('#btn-share-card-modal').hide();
 
     $("#image-overlay").addClass("active");
     $("body").addClass("modal-open");
@@ -1783,7 +1815,7 @@ function loadPublicDecks() {
                                          data-condition="${card.condition || ''}"
                                          data-quantity="${card.quantity || '1'}"
                                          data-price="${card.price || ''}"
-                                         data-obtained="${card.obtained !== false}">
+                                         data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}">
                                         <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
                                         <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                                     </div>
@@ -2476,11 +2508,7 @@ function loadPublicWishlist() {
                      data-obtained="${item.obtained}"
                      data-holo="${item.holo_effect || ''}"
                      data-mask="${item.custom_mask_url || ''}"
-                     data-3d="${item.use_3d !== false}"
-                     style="${item.obtained ? 'opacity: 0.5;' : ''}">
-                    <button class="btn-share-item btn-share-floating" onclick="event.stopPropagation(); window.openShareModal('${item.name.replace(/'/g, "\\'")}', 'wishlist', '${item.list_index}', '${item.id}')" title="Compartir Carta">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
+                     data-3d="${item.use_3d !== false}">
                     <h3>${item.name}</h3>
                     <img src="${item.image_url}" alt="${item.name}">
                     ${item.obtained ? '<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>' : ''}
@@ -2574,9 +2602,10 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
 
     $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
         const $slide = $(this);
-        const obtained = $slide.data('obtained');
+        const obtained = $slide.attr('data-obtained');
         const $card = $(`
             <div class="grid-card-item card-slot"
+                 data-obtained="${obtained}"
                  data-name="${$slide.data('name')}"
                  data-rarity="${$slide.data('rarity')}"
                  data-holo="${$slide.data('holo')}"
