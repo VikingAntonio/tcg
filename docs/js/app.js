@@ -1817,6 +1817,7 @@ function loadPublicDecks() {
                                          data-price="${card.price || ''}"
                                          data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}">
                                         <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
+                                        ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
                                         <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                                     </div>
                                 `).join('')}
@@ -2616,6 +2617,7 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
                  data-price="${$slide.data('price')}"
                  data-obtained="${obtained}">
                 <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
+                ${(obtained === 'false' || obtained === false) ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
             </div>
         `);
         $container.append($card);
