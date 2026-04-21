@@ -210,6 +210,15 @@ $(document).ready(async function() {
         }
     });
 
+    // Slot Modal Tabs switching logic
+    $(document).on('click', '.slot-tab-btn', function() {
+        const tabId = $(this).data('tab');
+        $('.slot-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.slot-tab-content').removeClass('active');
+        $(`#${tabId}`).addClass('active');
+    });
+
     // --- Chatbot Logic ---
     const faqResponses = {
         'album': 'Para crear un álbum, haz clic en "Crear Nuevo Álbum" en esta misma pantalla. Luego puedes entrar a "Editar" para añadir páginas y cartas.',
@@ -521,7 +530,8 @@ $(document).ready(async function() {
             if (localAlbumSlots.length > 0) {
                 // Remove ID from objects to allow upsert by unique constraint (page_id, slot_index)
                 const slotsToUpsert = localAlbumSlots.map(s => {
-                    const { id, ...rest } = s;
+                    // Safety: strip 'obtained' field for card_slots as it might not exist in that table
+                    const { id, obtained, ...rest } = s;
                     return rest;
                 });
                 const { error: upsertErr } = await _supabase
@@ -606,7 +616,8 @@ $(document).ready(async function() {
     });
 
     // Slot Management
-    $(document).on('click', '.card-slot', function() {
+    $(document).on('click', '.card-slot', function(e) {
+        if ($(e.target).closest('.btn-delete-card-top, .switch-searching').length) return;
         currentPageId = $(this).closest('.admin-page-item').data('id');
         currentSlotIndex = $(this).data('index');
         loadSlotData(currentPageId, currentSlotIndex);
@@ -637,7 +648,7 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
-            obtained: $('#slot-obtained').is(':checked')
+            obtained: $('#slot-modal').data('current-obtained') !== false
         };
 
         // Queue to VikingData (Shared Database)
@@ -650,7 +661,6 @@ $(document).ready(async function() {
 
         if (editingType === 'slot') {
             const slotData = { ...cardData, page_id: currentPageId, slot_index: currentSlotIndex };
-            delete slotData.obtained; // obtained only for decks
             // Update local state
             const existingIdx = localAlbumSlots.findIndex(s => s.page_id === currentPageId && s.slot_index === currentSlotIndex);
             if (existingIdx !== -1) {
@@ -2195,16 +2205,35 @@ function renderDeckCardsLocal(scrollPos = null) {
         const isObtained = card.obtained !== false;
         const $cardItem = $(`
             <div class="album-card deck-card-item" data-id="${card.id || card.localId}" style="cursor:pointer; position:relative;">
+                <div class="switch-searching">
+                    <label class="switch switch-mini">
+                        <input type="checkbox" class="toggle-card-obtained" ${!isObtained ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <div class="btn-delete-card-top btn-delete-deck-card"><i class="fas fa-times"></i></div>
                 <img src="${card.image_url}" style="width:100%; height:150px; object-fit:contain;">
                 <div style="font-size: 12px; margin-top: 5px; color: #aaa; text-align: center;">${card.name || 'Sin nombre'}</div>
-                ${!isObtained ? '<div style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>' : ''}
+                ${!isObtained ? '<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>' : ''}
             </div>
         `);
 
+        $cardItem.find('.toggle-card-obtained').change(function(e) {
+            e.stopPropagation();
+            const searching = $(this).is(':checked');
+            card.obtained = !searching;
+            if (searching) {
+                if ($cardItem.find('.label-buscando').length === 0) {
+                    $cardItem.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
+                }
+            } else {
+                $cardItem.find('.label-buscando').remove();
+            }
+        });
+
         $cardItem.click((e) => {
             e.preventDefault();
-            if ($(e.target).closest('.btn-delete-deck-card').length) return;
+            if ($(e.target).closest('.btn-delete-deck-card, .switch-searching').length) return;
             editDeckCard(card);
         });
 
@@ -2278,6 +2307,13 @@ function editDeckCard(card) {
     editingType = 'deck-card';
     currentDeckCardId = card.id || card.localId;
 
+    // Reset Tabs
+    $('.slot-tab-btn').removeClass('active');
+    $('.slot-tab-btn[data-tab="slot-tab-info"]').addClass('active');
+    $('.slot-tab-content').removeClass('active');
+    $('#slot-tab-info').addClass('active');
+
+    $('#slot-modal').data('current-obtained', card.obtained !== false);
     $('#slot-image-url').val(card.image_url || '');
     $('#slot-name').val(card.name || '');
 
@@ -2305,13 +2341,6 @@ function editDeckCard(card) {
     $('#slot-condition').val(card.condition || '');
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
-
-    if (editingType === 'deck-card') {
-        $('#slot-obtained-container').show();
-        $('#slot-obtained').prop('checked', card.obtained !== false);
-    } else {
-        $('#slot-obtained-container').hide();
-    }
 
     $('#slot-modal').addClass('active');
 }
@@ -2542,7 +2571,38 @@ function renderAlbumPagesLocal(pages, scrollPos) {
             const slotData = pageSlots.find(s => s.slot_index === i);
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
             if (slotData && slotData.image_url) {
+                const isObtained = slotData.obtained !== false;
                 $slot.append(`<img src="${slotData.image_url}" class="tcg-card">`);
+
+                if (!isObtained) {
+                    $slot.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
+                }
+
+                // Add mini switch for obtained status
+                const $switchSearching = $(`
+                    <div class="switch-searching">
+                        <label class="switch switch-mini">
+                            <input type="checkbox" class="toggle-slot-obtained" ${!isObtained ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `);
+
+                $switchSearching.find('.toggle-slot-obtained').change(function(e) {
+                    e.stopPropagation();
+                    const searching = $(this).is(':checked');
+                    slotData.obtained = !searching;
+
+                    if (searching) {
+                        if ($slot.find('.label-buscando').length === 0) {
+                            $slot.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
+                        }
+                    } else {
+                        $slot.find('.label-buscando').remove();
+                    }
+                });
+
+                $slot.append($switchSearching);
 
                 // Add Delete Button (Jules)
                 const $btnDelete = $('<div class="btn-delete-card-top"><i class="fas fa-times"></i></div>');
@@ -2878,12 +2938,25 @@ async function loadBotMessages() {
 
 async function loadSlotData(pageId, slotIndex) {
     editingType = 'slot';
-    const { data, error } = await _supabase
-        .from('card_slots')
-        .select('*')
-        .eq('page_id', pageId)
-        .eq('slot_index', slotIndex)
-        .single();
+
+    // Prioritize local state
+    let data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
+
+    if (!data) {
+        const { data: dbData } = await _supabase
+            .from('card_slots')
+            .select('*')
+            .eq('page_id', pageId)
+            .eq('slot_index', slotIndex)
+            .single();
+        data = dbData;
+    }
+
+    // Reset Tabs
+    $('.slot-tab-btn').removeClass('active');
+    $('.slot-tab-btn[data-tab="slot-tab-info"]').addClass('active');
+    $('.slot-tab-content').removeClass('active');
+    $('#slot-tab-info').addClass('active');
 
     $('#slot-image-url').val('');
     $('#drop-zone-slot .file-name').text('');
@@ -2902,6 +2975,7 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-price').val('');
 
     if (data) {
+        $('#slot-modal').data('current-obtained', data.obtained !== false);
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
 
