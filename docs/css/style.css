@@ -1866,20 +1866,18 @@ input:checked + .slider:before {
     animation: none !important;
 }
 
-/* Shading for missing cards */
-.card-slot[data-obtained="false"],
+/* Shading for missing/obtained cards */
+.wishlist-card-item[data-obtained="true"],
 .grid-card-item[data-obtained="false"],
 .swiper-slide[data-obtained="false"] {
-    opacity: 0.4 !important;
-    filter: grayscale(1) brightness(0.7) !important;
+    opacity: 0.5 !important;
     transition: all 0.3s ease;
 }
 
-.card-slot[data-obtained="false"]:hover,
+.wishlist-card-item[data-obtained="true"]:hover,
 .grid-card-item[data-obtained="false"]:hover,
 .swiper-slide[data-obtained="false"]:hover {
-    opacity: 0.7 !important;
-    filter: grayscale(0.5) brightness(0.9) !important;
+    opacity: 0.8 !important;
 }
 
 /* Search Highlight Effect */
