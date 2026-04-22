@@ -1815,6 +1815,7 @@ function loadPublicDecks() {
                                          data-condition="${card.condition || ''}"
                                          data-quantity="${card.quantity || '1'}"
                                          data-price="${card.price || ''}"
+                                 data-section="${card.section || 'main'}"
                                          data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}">
                                         <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
                                         ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
@@ -2601,26 +2602,44 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
     $container.empty();
     $('#deck-list-title').text(deckName);
 
+    const groupedCards = { 'main': [], 'extra': [], 'side': [] };
+
     $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
         const $slide = $(this);
-        const obtained = $slide.attr('data-obtained');
-        const $card = $(`
-            <div class="grid-card-item card-slot"
-                 data-obtained="${obtained}"
-                 data-name="${$slide.data('name')}"
-                 data-rarity="${$slide.data('rarity')}"
-                 data-holo="${$slide.data('holo')}"
-                 data-mask="${$slide.data('mask')}"
-                 data-expansion="${$slide.data('expansion')}"
-                 data-condition="${$slide.data('condition')}"
-                 data-quantity="${$slide.data('quantity')}"
-                 data-price="${$slide.data('price')}"
-                 data-obtained="${obtained}">
-                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
-                ${(obtained === 'false' || obtained === false) ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-            </div>
-        `);
-        $container.append($card);
+        const section = $slide.data('section') || 'main';
+        if (groupedCards[section]) groupedCards[section].push($slide);
+    });
+
+    ['main', 'extra', 'side'].forEach((key, index) => {
+        const cards = groupedCards[key];
+        if (cards.length > 0) {
+            // Add Spacer if not the first section
+            if ($container.children().length > 0) {
+                $container.append('<div class="deck-section-divider"></div>');
+            }
+
+            // Add Cards
+            cards.forEach($slide => {
+                const obtained = $slide.attr('data-obtained');
+                const $card = $(`
+                    <div class="grid-card-item card-slot"
+                         data-obtained="${obtained}"
+                         data-name="${$slide.data('name')}"
+                         data-rarity="${$slide.data('rarity')}"
+                         data-holo="${$slide.data('holo')}"
+                         data-mask="${$slide.data('mask')}"
+                         data-expansion="${$slide.data('expansion')}"
+                         data-condition="${$slide.data('condition')}"
+                         data-quantity="${$slide.data('quantity')}"
+                         data-price="${$slide.data('price')}"
+                         data-section="${key}">
+                        <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
+                        ${(obtained === 'false' || obtained === false) ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+                    </div>
+                `);
+                $container.append($card);
+            });
+        }
     });
 
     // Reset filters
