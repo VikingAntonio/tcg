@@ -4234,6 +4234,17 @@ body.focus-mode-active .event-card {
     .swiper, .swiperyg {
         margin: 0 auto !important;
     }
+
+    .deck-public-item {
+        -webkit-tap-highlight-color: transparent !important;
+        pointer-events: none;
+    }
+
+    .deck-public-item .btn-share-item,
+    .deck-public-item .deck-carousel-container,
+    .deck-public-item .deck-toggle-container {
+        pointer-events: auto;
+    }
 }
 
 /* --- Sharing System Styles --- */

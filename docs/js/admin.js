@@ -2604,7 +2604,7 @@ function renderAlbumPagesLocal(pages, scrollPos) {
 
                 $slot.append($switchSearching);
 
-                // Add Delete Button (Jules)
+                // Add Delete Button
                 const $btnDelete = $('<div class="btn-delete-card-top"><i class="fas fa-times"></i></div>');
                 $btnDelete.click(async (e) => {
                     e.preventDefault();
@@ -3114,9 +3114,17 @@ async function loadWonAuctions() {
         const now = new Date();
         const wonItems = [];
 
+        // Load hidden auctions from localStorage
+        let hiddenIds = [];
+        try {
+            hiddenIds = JSON.parse(localStorage.getItem('hidden_won_auctions') || '[]');
+        } catch (e) { hiddenIds = []; }
+
         console.log(`Checking ${endedAuctions?.length || 0} potential auctions for user ${currentUser.id}`);
 
         endedAuctions.forEach(auction => {
+            // Filter out hidden auctions
+            if (hiddenIds.includes(auction.id)) return;
             // Robust date parsing
             let endDate;
             if (typeof auction.end_date === 'string') {
@@ -3222,7 +3230,8 @@ async function loadWonAuctionsList() {
                                 <div style="font-weight: 600;">${item.nombre}</div>
                                 ${item.delivery_place ? `<div style="font-size: 0.7rem; color: #aaa;"><i class="fas fa-map-marker-alt"></i> ${item.delivery_place}</div>` : ''}
                             </div>
-                            <span style="font-weight: 800; color: var(--viking-blue);">$${item.won_amount.toFixed(2)}</span>
+                            <span style="font-weight: 800; color: var(--viking-blue); margin-right: 15px;">$${item.won_amount.toFixed(2)}</span>
+                            ${isAuctionDeliveryPassed(item) ? `<button class="btn-delete-auction-action" onclick="hideWonAuction('${item.id}')" title="Limpiar de mi lista"><i class="fas fa-trash-alt"></i></button>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -3422,6 +3431,7 @@ async function loadMyAuctionsWinners() {
                 }
 
                 winnersMap[bidderId].items.push({
+                    id: auction.id,
                     name: auction.nombre,
                     amount: highestBid.amount,
                     image: auction.image_url,
@@ -3491,7 +3501,8 @@ async function loadMyAuctionsWinners() {
                                     <div style="font-weight: 600;">${item.name}</div>
                                     ${item.delivery_place ? `<div style="font-size: 0.7rem; color: #aaa;"><i class="fas fa-map-marker-alt"></i> ${item.delivery_place}</div>` : ''}
                                 </div>
-                                <span style="font-weight: 800; color: var(--viking-blue);">$${item.amount.toFixed(2)}</span>
+                                <span style="font-weight: 800; color: var(--viking-blue); margin-right: 15px;">$${item.amount.toFixed(2)}</span>
+                                <button class="btn-delete-auction-action" onclick="deleteAuctionPerm('${item.id}')" title="Eliminar de mi lista"><i class="fas fa-trash-alt"></i></button>
                             </div>
                         `).join('')}
                     </div>
@@ -3631,4 +3642,68 @@ async function openOrganizeModal(type) {
             }
         });
     }
+}
+
+// --- Auction Cleanup & Hiding Logic ---
+
+function isAuctionDeliveryPassed(auction) {
+    if (!auction.delivery_date) return false;
+
+    // Normalize delivery date
+    let endDateTime;
+    try {
+        const dStr = auction.delivery_date.split('T')[0];
+        let timeStr = auction.delivery_time_end || '11:59 P';
+
+        // Convert 'A/P' to 'AM/PM' for parsing
+        timeStr = timeStr.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+
+        const combinedStr = `${dStr} ${timeStr}`;
+        endDateTime = window.parseDateSafe(combinedStr);
+    } catch (e) {
+        console.warn("Error parsing delivery end time:", e);
+        return false;
+    }
+
+    if (!endDateTime) return false;
+    return new Date() > endDateTime;
+}
+
+window.deleteAuctionPerm = async function(id) {
+    const res = await Swal.fire({
+        title: '¿Eliminar de tu lista?',
+        text: "Se borrará permanentemente de la base de datos.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757',
+        confirmButtonText: 'Sí, eliminar'
+    });
+
+    if (res.isConfirmed) {
+        Swal.fire({ title: 'Eliminando...', didOpen: () => Swal.showLoading() });
+        const { error } = await _supabase.from('subastas').delete().eq('id', id);
+        Swal.close();
+
+        if (error) {
+            Swal.fire('Error', 'No se pudo eliminar: ' + error.message, 'error');
+        } else {
+            Swal.fire({ icon: 'success', title: 'Eliminado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+            loadMyAuctionsWinners();
+        }
+    }
+}
+
+window.hideWonAuction = function(id) {
+    let hidden = [];
+    try {
+        hidden = JSON.parse(localStorage.getItem('hidden_won_auctions') || '[]');
+    } catch (e) { hidden = []; }
+
+    if (!hidden.includes(id)) {
+        hidden.push(id);
+        localStorage.setItem('hidden_won_auctions', JSON.stringify(hidden));
+    }
+
+    Swal.fire({ icon: 'success', title: 'Lista Limpia', text: 'La subasta ha sido ocultada de tu interfaz.', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+    loadWonAuctionsList();
 }
