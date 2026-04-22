@@ -3183,9 +3183,10 @@ async function loadWonAuctions() {
 
 async function loadWonAuctionsList() {
     const $container = $('#won-auctions-container');
-    $container.html('<div class="loading">Cargando victorias...</div>');
+    if ($container.children().length === 0) {
+        $container.html('<div class="loading">Cargando victorias...</div>');
+    }
 
-    // Always refresh data when viewing the list
     await loadWonAuctions();
 
     const wonItems = window.currentUserWonItems || [];
@@ -3217,9 +3218,12 @@ async function loadWonAuctionsList() {
                         </div>
                         <h2 style="margin: 0; font-size: 1.4rem;">${store}</h2>
                     </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 800;">Total a Pagar</div>
-                        <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${group.total.toFixed(2)}</div>
+                    <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 800;">Total a Pagar</div>
+                            <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${group.total.toFixed(2)}</div>
+                        </div>
+                        ${group.items.some(i => isAuctionDeliveryPassed(i)) ? `<button class="btn-delete-auction-action group-btn" onclick="hideWonAuctionGroup(['${group.items.map(i => i.id).join("','")}'])" title="Limpiar todo el grupo"><i class="fas fa-broom"></i></button>` : ''}
                     </div>
                 </div>
                 <div class="won-items-table" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
@@ -3387,7 +3391,9 @@ window.contactStoreForWonAuction = async (storeName, whatsapp, auctionNames, tot
 
 async function loadMyAuctionsWinners() {
     const $container = $('#my-winners-container');
-    $container.html('<div class="loading">Cargando ganadores...</div>');
+    if ($container.children().length === 0) {
+        $container.html('<div class="loading">Cargando ganadores...</div>');
+    }
 
     try {
         // 1. Fetch ended auctions created by current user
@@ -3488,9 +3494,12 @@ async function loadMyAuctionsWinners() {
                                 <span style="font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: 800;">Ganador</span>
                             </div>
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 800;">Monto Total</div>
-                            <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${winner.total.toFixed(2)}</div>
+                        <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 800;">Monto Total</div>
+                                <div style="font-size: 1.5rem; font-weight: 900; color: #00ff88;">$${winner.total.toFixed(2)}</div>
+                            </div>
+                            <button class="btn-delete-auction-action group-btn" onclick="deleteAuctionGroupPerm(['${winner.items.map(i => i.id).join("','")}'])" title="Eliminar todo el grupo"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
@@ -3646,7 +3655,7 @@ async function openOrganizeModal(type) {
 
 // --- Auction Cleanup & Hiding Logic ---
 
-function isAuctionDeliveryPassed(auction) {
+window.isAuctionDeliveryPassed = function(auction) {
     if (!auction.delivery_date) return false;
 
     // Normalize delivery date
@@ -3705,5 +3714,55 @@ window.hideWonAuction = function(id) {
     }
 
     Swal.fire({ icon: 'success', title: 'Lista Limpia', text: 'La subasta ha sido ocultada de tu interfaz.', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+    loadWonAuctionsList();
+}
+
+window.deleteAuctionGroupPerm = async function(ids) {
+    if (!ids || ids.length === 0) return;
+
+    const res = await Swal.fire({
+        title: '¿Eliminar todas las subastas de este ganador?',
+        text: "Se borrarán permanentemente " + ids.length + " subastas de la base de datos.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757',
+        confirmButtonText: 'Sí, eliminar todo'
+    });
+
+    if (res.isConfirmed) {
+        Swal.fire({ title: 'Eliminando...', didOpen: () => Swal.showLoading() });
+        const { error } = await _supabase.from('subastas').delete().in('id', ids);
+        Swal.close();
+
+        if (error) {
+            Swal.fire('Error', 'No se pudo eliminar el grupo: ' + error.message, 'error');
+        } else {
+            Swal.fire({ icon: 'success', title: 'Grupo Eliminado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+            loadMyAuctionsWinners();
+        }
+    }
+}
+
+window.hideWonAuctionGroup = function(ids) {
+    if (!ids || ids.length === 0) return;
+
+    let hidden = [];
+    try {
+        hidden = JSON.parse(localStorage.getItem('hidden_won_auctions') || '[]');
+    } catch (e) { hidden = []; }
+
+    let added = 0;
+    ids.forEach(id => {
+        if (!hidden.includes(id)) {
+            hidden.push(id);
+            added++;
+        }
+    });
+
+    if (added > 0) {
+        localStorage.setItem('hidden_won_auctions', JSON.stringify(hidden));
+    }
+
+    Swal.fire({ icon: 'success', title: 'Grupo Oculto', text: added + ' subastas han sido ocultadas.', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
     loadWonAuctionsList();
 }
