@@ -805,23 +805,13 @@
 
     </style>
 </head>
-<body class="play-body" style="flex-direction: column;">
-    <!-- Redesigned Neumorphic Top Panel -->
-    <!-- Integrated Header -->
-    <header class="integrated-header">
-        <a href="public.html" class="logo-integrated" id="logo-link">
-            <img id="public-store-logo" src="https://vikingtcg.xyz/favi.png" alt="Logo">
-            <h1 id="public-store-name">Yu-Gi-Oh! Play!</h1>
-        </a>
-
-        <div class="pill-panel">
-            <button id="reset-game" class="pill-icon" onclick="showResetModal()" title="Reset Partida" style="color: #ff4757;">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
-    </header>
-
+<body class="play-body">
     <div class="calculator-container">
+        <header class="play-header">
+            <a href="index.html" class="back-btn" onclick="if(window.history.length > 1){ window.history.back(); return false; }"><i class="fas fa-arrow-left"></i> <span>Volver</span></a>
+            <h1>Yu-Gi-Oh! Play!</h1>
+            <button id="reset-game" class="btn-reset-top" onclick="showResetModal()"><i class="fas fa-redo"></i> <span>Reset</span></button>
+        </header>
 
         <div class="main-layout">
             <!-- Player 1 -->
@@ -965,23 +955,7 @@
         </div>
     </div>
 
-    <!-- Floating Bottom App Navigation -->
-    <!-- Floating Bottom App Navigation -->
-    <div class="bottom-nav">
-        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
-            <i class="fas fa-home"></i>
-        </div>
-        <div class="nav-item" id="btn-nav-return" title="Volver">
-            <i class="fas fa-chevron-left"></i>
-        </div>
-    </div>
-
     <script>
-        // Setup bottom nav links with store context
-        document.getElementById('btn-nav-home').onclick = () => window.location.href = 'public.html' + window.location.search;
-        document.getElementById('btn-nav-return').onclick = () => window.history.back();
-        document.getElementById('logo-link').href = 'public.html' + window.location.search;
-
         let lp = [8000, 8000];
         let animationRefs = [null, null];
 
