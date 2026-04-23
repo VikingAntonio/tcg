@@ -2603,14 +2603,10 @@ function renderSingleDeck(deck) {
     const initSwiper = () => {
         $deckItem.css('opacity', '1');
         new Swiper(`.${deckId}`, {
-            effect: "cards",
+            slidesPerView: 'auto',
+            centeredSlides: true,
+            spaceBetween: 30,
             grabCursor: true,
-            cardsEffect: {
-                perSlideOffset: 8,
-                perSlideRotate: 2,
-                rotate: true,
-                slideShadows: true,
-            },
             preventClicksPropagation: false,
             on: {
                 click: function(s, e) {
