@@ -4459,19 +4459,36 @@ body.focus-mode-active .event-card {
     gap: 12px;
     text-decoration: none;
     color: var(--text-color);
-    box-shadow: 12px 12px 24px rgba(0,0,0,0.6),
-                -8px -8px 20px rgba(255,255,255,0.03);
+    box-shadow: 10px 10px 20px rgba(0,0,0,0.4),
+                -10px -10px 20px rgba(255,255,255,0.02);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.03);
     cursor: pointer;
 }
 
 .neu-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 18px 18px 36px rgba(0,0,0,0.7),
-                -8px -8px 20px rgba(255,255,255,0.05);
+    transform: translateY(-5px);
+    box-shadow: 15px 15px 30px rgba(0,0,0,0.5),
+                -10px -10px 20px rgba(255,255,255,0.04);
     border-color: var(--primary-color);
     color: var(--primary-color);
+}
+
+.neu-card-soft {
+    background: var(--bg-color);
+    border-radius: 20px;
+    box-shadow: inset 5px 5px 10px rgba(0,0,0,0.3),
+                inset -5px -5px 10px rgba(255,255,255,0.01);
+    border: 1px solid rgba(255,255,255,0.02);
+}
+
+body.theme-light .neu-card {
+    box-shadow: 8px 8px 16px rgba(0,0,0,0.1),
+                -8px -8px 16px rgba(255,255,255,0.8);
+}
+body.theme-light .neu-card-soft {
+    box-shadow: inset 4px 4px 8px rgba(0,0,0,0.05),
+                inset -4px -4px 8px rgba(255,255,255,0.9);
 }
 
 .neu-card i {
@@ -4497,19 +4514,26 @@ body.focus-mode-active .event-card {
 
 .deck-menu-card {
     background: var(--card-bg);
-    border-radius: 25px;
+    border-radius: 30px;
     overflow: hidden;
     border: 1px solid var(--card-border);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    box-shadow: 12px 12px 24px rgba(0,0,0,0.5),
+                -10px -10px 20px rgba(255,255,255,0.02);
     display: flex;
     flex-direction: column;
 }
 
 .deck-menu-card:hover {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
     border-color: var(--primary-color);
-    box-shadow: 0 20px 45px rgba(0, 210, 255, 0.2);
+    box-shadow: 15px 15px 35px rgba(0, 210, 255, 0.15),
+                -10px -10px 20px rgba(255,255,255,0.03);
+}
+
+body.theme-light .deck-menu-card {
+    box-shadow: 10px 10px 20px rgba(0,0,0,0.05),
+                -10px -10px 20px rgba(255,255,255,0.8);
 }
 
 .deck-menu-cover {
@@ -4549,34 +4573,43 @@ body.focus-mode-active .event-card {
 }
 
 .stat-pill {
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 50px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 800;
     text-transform: uppercase;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3);
+    white-space: nowrap;
 }
 
-.stat-pill.main { color: #00d2ff; border-color: rgba(0, 210, 255, 0.3); }
-.stat-pill.extra { color: #a55eea; border-color: rgba(165, 94, 234, 0.3); }
-.stat-pill.side { color: #fed330; border-color: rgba(254, 211, 48, 0.3); }
+.stat-pill.main { color: #00d2ff; border-left: 3px solid #00d2ff; }
+.stat-pill.extra { color: #a55eea; border-left: 3px solid #a55eea; }
+.stat-pill.side { color: #fed330; border-left: 3px solid #fed330; }
 
 /* List Mode Separators */
 .deck-section-header {
     grid-column: 1 / -1;
     width: 100%;
     text-align: left;
-    padding: 15px 20px;
-    background: rgba(0, 210, 255, 0.1);
-    border-left: 4px solid var(--primary-color);
-    border-radius: 4px;
-    margin: 25px 0 10px 0;
+    padding: 12px 20px;
+    background: var(--bg-color);
+    border-left: 5px solid var(--primary-color);
+    border-radius: 12px;
+    margin: 30px 0 15px 0;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
     color: var(--primary-color);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.3),
+                -5px -5px 15px rgba(255,255,255,0.01);
+}
+
+body.theme-light .deck-section-header {
+    box-shadow: 4px 4px 8px rgba(0,0,0,0.05),
+                -4px -4px 8px rgba(255,255,255,0.8);
 }
 
 .deck-section-divider {
@@ -4632,4 +4665,33 @@ body.focus-mode-active .event-card {
 .admin-deck-tab.active {
     background: var(--primary-color);
     color: #000;
+}
+
+@media (max-width: 768px) {
+    .main-menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        padding: 0 10px;
+    }
+    .neu-card {
+        padding: 15px;
+        border-radius: 20px;
+    }
+    .neu-card i {
+        font-size: 1.8rem;
+    }
+    .neu-card span {
+        font-size: 0.8rem;
+    }
+    .deck-selection-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 0 10px;
+    }
+    .deck-menu-card {
+        border-radius: 20px;
+    }
+    .deck-menu-cover {
+        height: 140px;
+    }
 }

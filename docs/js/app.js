@@ -2552,7 +2552,7 @@ function renderSingleDeck(deck) {
            </div>`;
 
     const $deckItem = $(`
-        <div class="deck-public-item" id="deck-item-${deck.id}" style="margin-top: 0; width: 100%; max-width: 800px;">
+        <div class="deck-public-item" id="deck-item-${deck.id}" style="margin-top: 0; width: 100%; max-width: 800px; opacity: 0; transition: opacity 0.5s ease;">
             <div class="deck-header-info">
                 <h3 style="margin-bottom: 5px;">${deck.name}</h3>
                 ${priceDisplay}
@@ -2561,7 +2561,7 @@ function renderSingleDeck(deck) {
                 <i class="fas fa-share-alt"></i>
             </button>
 
-            <div class="container deck-carousel-container">
+            <div class="deck-carousel-container">
                 <div class="swiper swiperyg ${deckId}">
                     <div class="swiper-wrapper">
                         ${deck.deck_cards.map(card => `
@@ -2593,32 +2593,53 @@ function renderSingleDeck(deck) {
         </div>
     `);
 
-    $('#decks-container').append($deckItem);
+    $('#decks-container').empty().append($deckItem);
+
+    // Initial check for images to avoid swiper calc issues
+    const $images = $deckItem.find('img');
+    let loaded = 0;
+    const total = $images.length;
+
+    const initSwiper = () => {
+        $deckItem.css('opacity', '1');
+        new Swiper(`.${deckId}`, {
+            effect: "cards",
+            grabCursor: true,
+            cardsEffect: {
+                perSlideOffset: 8,
+                perSlideRotate: 2,
+                rotate: true,
+                slideShadows: true,
+            },
+            preventClicksPropagation: false,
+            on: {
+                click: function(s, e) {
+                    if (!isDragging) {
+                        const $slot = $(e.target).closest('.card-slot');
+                        if ($slot.length) {
+                            if (s.clickedIndex !== s.activeIndex) return;
+                            openCardModal($slot);
+                        }
+                    }
+                }
+            }
+        });
+    };
+
+    if (total === 0) {
+        initSwiper();
+    } else {
+        $images.on('load error', function() {
+            loaded++;
+            if (loaded >= total) initSwiper();
+        });
+        // Fallback for cached images or slow loads
+        setTimeout(initSwiper, 1500);
+    }
 
     $deckItem.find('.zoom-btn').on('click', function(e) {
         e.stopPropagation();
         openCardModal($(this).closest('.card-slot'));
-    });
-
-    new Swiper(`.${deckId}`, {
-        effect: "cards",
-        grabCursor: true,
-        perSlideOffset: 8,
-        perSlideRotate: 2,
-        rotate: true,
-        slideShadows: true,
-        preventClicksPropagation: false,
-        on: {
-            click: function(s, e) {
-                if (!isDragging) {
-                    const $slot = $(e.target).closest('.card-slot');
-                    if ($slot.length) {
-                        if (s.clickedIndex !== s.activeIndex) return;
-                        openCardModal($slot);
-                    }
-                }
-            }
-        }
     });
 
     const url = new URL(window.location);
