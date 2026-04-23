@@ -17,28 +17,42 @@
         <div class="blob blob-2"></div>
     </div>
 
-    <!-- Floating User Panel -->
-    <div class="floating-control-panel" id="top-panel">
-        <div class="cart-container-panel">
-            <a href="carrito.html" class="user-avatar-btn" id="cart-btn" title="Ver Carrito">
-                <i class="fas fa-shopping-cart"></i>
-                <span id="cart-count">0</span>
-            </a>
-        </div>
-        <div class="user-menu-container">
-            <button class="user-avatar-btn" id="avatar-btn">
-                <i class="fas fa-user"></i>
-            </button>
-            <div class="user-dropdown-menu" id="user-dropdown">
-                <div class="user-dropdown-info">
-                    <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
-                    <div class="user-dropdown-name" id="dropdown-user-name">Invitado</div>
-                    <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Invitado</div>
+    <!-- Redesigned Neumorphic Top Panel -->
+    <div class="top-left-panel">
+        <div class="pill-panel">
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Invitado</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Invitado</div>
+                    </div>
+                    <div id="auth-menu-items">
+                        <!-- Dynamic login/logout items -->
+                    </div>
                 </div>
-                <div id="auth-menu-items">
-                    <!-- Dynamic login/logout items -->
-                </div>
-                <!-- Theme switcher removed for index2.html -->
+            </div>
+
+            <div class="pill-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado">
+                    <i class="fas fa-tint"></i>
+                </button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+
+            <div class="cart-container-panel">
+                <a href="carrito.html" class="pill-icon" id="cart-btn" title="Ver Carrito">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">0</span>
+                </a>
             </div>
         </div>
     </div>
@@ -141,6 +155,16 @@
             <div class="swiper-pagination"></div>
         </div>
     </section>
+
+    <!-- Floating Bottom App Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='index.html'" title="Ir al Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" onclick="window.history.back()" title="Volver">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+    </div>
 
     <main id="features" class="landing-container">
         <h2 class="section-title">Visualización <span>Optimizada</span></h2>

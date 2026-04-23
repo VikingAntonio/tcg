@@ -69,7 +69,7 @@ window.clearShareFilters = function() {
     $('#shared-content-container').empty();
 
     // Refresh current view to show all items
-    const view = url.searchParams.get('view') || 'albums';
+    const view = url.searchParams.get('view') || 'home';
     switchView(view);
 };
 
@@ -273,7 +273,30 @@ $(document).ready(async function() {
     // Theme Switcher
     $(document).on('click', '.theme-btn, .theme-btn-small', function() {
         const theme = $(this).data('theme');
-        applyTheme(theme);
+        if (theme) applyTheme(theme);
+    });
+
+    // Home Menu Grid Navigation
+    $(document).on('click', '.home-menu-item', function() {
+        const view = $(this).data('view');
+        if (view) switchView(view);
+    });
+
+    // Bottom App Navigation
+    $('#btn-nav-home').on('click', function() {
+        switchView('home');
+    });
+
+    $('#btn-nav-return').on('click', function() {
+        // Simple return logic: if not in home, go to home.
+        // Could be enhanced to use a navigation stack.
+        const currentView = new URLSearchParams(window.location.search).get('view');
+        if (currentView && currentView !== 'home') {
+            switchView('home');
+        } else {
+            // If already at home or no view param, maybe go back in history
+            window.history.back();
+        }
     });
 
     // --- Floating Panel Logic ---
@@ -349,7 +372,7 @@ $(document).ready(async function() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    let initialView = urlParams.get('view') || 'albums';
+    let initialView = urlParams.get('view') || 'home';
 
     // Auto-detect view from deep-links if 'view' is missing
     if (!urlParams.has('view')) {
@@ -361,9 +384,9 @@ $(document).ready(async function() {
         else if (urlParams.has('wishlistId') || urlParams.has('slot')) initialView = 'wishlist';
     }
 
-    // Solo mostramos pantalla de carga inicial si la vista es álbumes
-    if (initialView === 'albums') {
-        showLoading('Cargando Tienda...');
+    // Solo mostramos pantalla de carga inicial si la vista no es home
+    if (initialView !== 'home') {
+        showLoading('Cargando...');
     }
 
     await loadStoreData();
@@ -374,18 +397,9 @@ $(document).ready(async function() {
     });
 
     // Explicitly call the initial loader
-    if (initialView === 'albums') {
-        if (window.currentStoreId) {
-            loadPublicAlbums(window.currentStoreId).then(() => {
-                setTimeout(() => window.handleDeepLinking(), 800);
-            });
-        }
-        else hideLoading();
-    } else {
-        switchView(initialView).then(() => {
-            setTimeout(() => window.handleDeepLinking(), 800);
-        });
-    }
+    switchView(initialView).then(() => {
+        setTimeout(() => window.handleDeepLinking(), 800);
+    });
 
     $('#spirit-btn').click(function() {
         $('#spirit-modal').addClass('active');
@@ -1317,33 +1331,28 @@ async function switchView(view) {
     $('.view-section').removeClass('active');
     $(`#${view}-view`).addClass('active');
 
+    // Show/Hide search bar based on view
+    if (view === 'home') {
+        $('.search-container').hide();
+        $('.bottom-nav').hide(); // Hide bottom nav on home
+    } else {
+        $('.search-container').show();
+        $('.bottom-nav').css('display', 'flex'); // Show on other views
+    }
+
     if (view === 'albums') {
-        $('#public-view-title').text('Colección de Álbumes');
-        $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
         if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
     } else if (view === 'sealed') {
-        $('#public-view-title').text('Productos Sellados');
-        $('.public-header p').text('Encuentra cajas, sobres y productos especiales de tus TCG favoritos.');
         await loadPublicSealed();
     } else if (view === 'preorders') {
-        $('#public-view-title').text('Preventas');
-        $('.public-header p').text('Asegura tus productos antes que nadie con nuestras preventas exclusivas.');
         await loadPublicPreorders();
     } else if (view === 'decks') {
-        $('#public-view-title').text('Decks de Cartas');
-        $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
         await loadPublicDecks();
     } else if (view === 'wishlist') {
-        $('#public-view-title').text('Buscamos lo siguiente');
-        $('.public-header p').text('Si tienes alguno de estos productos ponte en coontacto con nosotros');
         await loadPublicWishlist();
     } else if (view === 'events') {
-        $('#public-view-title').text('Eventos');
-        $('.public-header p').text('Participa en nuestros eventos para ganar premios increíbles.');
         await loadPublicEvents();
     } else if (view === 'auctions') {
-        $('#public-view-title').text('Subastas');
-        $('.public-header p').text('Participa y llévate las mejores cartas al mejor precio.');
         await loadPublicAuctions();
         if (window.botInstance) {
             window.botInstance.setContext('auctions');
@@ -1358,6 +1367,9 @@ async function switchView(view) {
     if (window.botInstance) {
         window.botInstance.setContext(view);
     }
+
+    // Scroll to top when switching views
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Helper to resolve user by identifier (store_name or username)
@@ -1883,7 +1895,7 @@ function initTheme() {
 }
 
 function applyTheme(theme) {
-    $('body').removeClass('theme-light theme-medium theme-dark').addClass(theme);
+    $('body').removeClass('theme-light theme-dark theme-purple').addClass(theme);
     localStorage.setItem('tcg_theme', theme);
 
     // Update theme icons
