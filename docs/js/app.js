@@ -1341,6 +1341,7 @@ async function switchView(view) {
     }
 
     if (view === 'albums') {
+        showLoading('Cargando Álbumes...');
         if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
     } else if (view === 'sealed') {
         await loadPublicSealed();

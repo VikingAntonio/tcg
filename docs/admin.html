@@ -83,45 +83,55 @@
 <body>    
     <!-- Floating User Panel -->
     <div class="top-left-panel" id="top-panel" style="display: none;">
-        <div class="user-menu-container">
-            <button class="user-avatar-btn" id="avatar-btn">
-                <i class="fas fa-user"></i>
-            </button>
-            <div class="user-dropdown-menu" id="user-dropdown">
-                <div class="user-dropdown-info">
-                    <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
-                    <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
-                    <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Admin</div>
-                </div>
-                <a href="#" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
-                <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
-                <a href="#" class="menu-item" id="menu-btn-albums"><i class="fas fa-book"></i> Mis Álbumes</a>
-                <a href="#" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
-                <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
-                <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
-                <a href="deseos.html" class="menu-item"><i class="fas fa-heart"></i> Deseos</a>
-                <a href="eventos.html" class="menu-item" id="menu-btn-eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
-                <div class="menu-item theme-menu-container">
-                    <i class="fas fa-palette"></i>
-                    <div class="theme-switcher-inline">
-                        <button class="theme-btn-small" data-theme="theme-light" title="Modo Claro"></button>
-                        <button class="theme-btn-small" data-theme="theme-medium" title="Modo Medio"></button>
-                        <button class="theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"></button>
-                    </div>
-                </div>
-                <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
             </div>
-        </div>
-        <div class="cart-container-panel" style="display: flex; gap: 12px; align-items: center;">
-            <div class="btn-nav-auctions-pill" id="nav-btn-auctions-won" style="display: none;">
+
+            <div class="btn-nav-auctions-pill" id="nav-btn-auctions-won" style="display: none; cursor: pointer;">
                 <i class="fas fa-gavel" style="color: var(--primary-color);"></i>
-                <span>Tus Subastas</span>
                 <span id="nav-auction-badge" class="nav-badge" style="display: none;">0</span>
             </div>
-            <a href="carrito.html" class="user-avatar-btn" id="cart-btn" title="Ver Carrito">
+
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
                 <i class="fas fa-shopping-cart"></i>
                 <span id="cart-count">0</span>
             </a>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Admin</div>
+                    </div>
+                    <a href="#" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="#" class="menu-item" id="menu-btn-albums"><i class="fas fa-book"></i> Mis Álbumes</a>
+                    <a href="#" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
+                    <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
+                    <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
+                    <a href="deseos.html" class="menu-item"><i class="fas fa-heart"></i> Deseos</a>
+                    <a href="eventos.html" class="menu-item" id="menu-btn-eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
+
+                    <!-- Mobile Theme Switcher (Injected here via CSS/JS later) -->
+                    <div class="theme-menu-container-mobile" style="display: none;">
+                        <div class="menu-item"><i class="fas fa-palette"></i> Temas</div>
+                        <div class="theme-switcher-inline" style="padding: 0 20px 10px;">
+                            <button class="theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+                        </div>
+                    </div>
+
+                    <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
         </div>
     </div>
 
