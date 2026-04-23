@@ -173,14 +173,13 @@
     </style>
 </head>
 <body class="public-body">
-    <!-- Floating User Panel -->
-    <div class="top-left-panel" id="top-panel">
-        <div class="user-menu-container">
-            <button class="user-avatar-btn" onclick="window.history.back()">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-        </div>
-    </div>
+    <!-- Integrated Header -->
+    <header class="integrated-header">
+        <a href="public.html" class="logo-integrated" id="logo-link">
+            <img id="public-store-logo" src="https://vikingtcg.xyz/favi.png" alt="Logo">
+            <h1 id="public-store-name">Finalizar Pedido</h1>
+        </a>
+    </header>
 
     <div class="cart-page-container">
         <div class="cart-header">
@@ -223,7 +222,12 @@
         };
 
         $(document).ready(async function() {
-                        renderCart();
+            // Setup context links
+            document.getElementById('logo-link').href = 'public.html' + window.location.search;
+            const homeBtn = document.querySelector('.nav-item[onclick*="public.html"]');
+            if (homeBtn) homeBtn.setAttribute('onclick', "window.location.href='public.html' + window.location.search");
+
+            renderCart();
             await loadStoreContact();
             initCompanionBot();
             initFloatingCompanion();
@@ -518,6 +522,16 @@
         <div class="companion-drag-handle"><i class="fas fa-arrows-alt"></i></div>
         <div id="floating-companion-container"></div>
         <div id="companion-bubble" class="companion-bubble"></div>
+    </div>
+
+    <!-- Floating Bottom App Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='public.html' + window.location.search" title="Ir al Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" onclick="window.history.back()" title="Volver">
+            <i class="fas fa-chevron-left"></i>
+        </div>
     </div>
 
 </body>
