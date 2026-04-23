@@ -819,7 +819,7 @@
                 <button class="btn-change-spirit" onclick="openSpiritSelection(1)" title="Cambiar Personaje"><i class="fas fa-user-astronaut"></i></button>
                 <div class="spirit-container" id="spirit-container-1">
                     <div class="spirit-speech-bubble" id="bubble-1">¡Hola!</div>
-                    <model-viewer class="spirit-viewer" id="viewer-1" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1"></model-viewer>
+                    <model-viewer class="spirit-viewer" id="viewer-1" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
                 </div>
                 <div class="player-name-container">
                     <input type="text" class="player-name" placeholder="Jugador 1" value="Mi LP">
@@ -867,7 +867,7 @@
                 <button class="btn-change-spirit" onclick="openSpiritSelection(2)" title="Cambiar Personaje"><i class="fas fa-user-astronaut"></i></button>
                 <div class="spirit-container" id="spirit-container-2">
                     <div class="spirit-speech-bubble" id="bubble-2">¡Suerte!</div>
-                    <model-viewer class="spirit-viewer" id="viewer-2" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1"></model-viewer>
+                    <model-viewer class="spirit-viewer" id="viewer-2" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
                 </div>
                 <div class="player-name-container">
                     <input type="text" class="player-name" placeholder="Jugador 2" value="Oponente">
@@ -1071,7 +1071,11 @@
 
             const viewer = document.getElementById(`viewer-${playerIdx}`);
             viewer.src = spirit.gltf_url;
-            viewer.scale = `${spirit.scale || 1} ${spirit.scale || 1} ${spirit.scale || 1}`;
+
+            // Increase scale by 1.5x as requested by user
+            const baseScale = spirit.scale || 1;
+            const finalScale = baseScale * 1.5;
+            viewer.scale = `${finalScale} ${finalScale} ${finalScale}`;
 
             triggerReaction(playerIdx, 'greet');
         }

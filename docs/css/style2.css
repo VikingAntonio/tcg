@@ -362,48 +362,63 @@ h1, h2, h3, h4, .logo {
     color: var(--text-muted);
 }
 
-/* User Panel */
-.floating-control-panel {
+/* User Floating Panel */
+.top-left-panel {
     position: fixed;
-    top: 24px;
-    right: 24px;
-    z-index: 10001;
+    top: 25px;
+    left: 25px;
+    z-index: 10000;
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
 }
 
-.user-avatar-btn {
-    width: 48px;
-    height: 48px;
+@media (min-width: 1024px) {
+    .top-left-panel {
+        left: auto;
+        right: 25px;
+        flex-direction: row-reverse;
+    }
+}
+
+/* Redesigned Floating Panel (Pill Style) */
+.pill-panel {
+    display: flex;
+    align-items: center;
+    background: #fdfcfb;
+    padding: 5px 20px;
+    border-radius: 50px;
+    box-shadow: 10px 10px 20px #e6e4d5, -10px -10px 20px #ffffff;
+    border: 1px solid rgba(0,0,0,0.05);
+    gap: 15px;
+}
+
+.pill-icon {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: var(--white);
-    border: 1px solid rgba(0,0,0,0.1);
-    color: var(--text-main);
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #fdfcfb;
+    box-shadow: 5px 5px 10px #e6e4d5, -5px -5px 10px #ffffff;
     cursor: pointer;
-    box-shadow: var(--card-shadow);
     transition: all 0.3s;
-    font-size: 1.2rem;
-}
-
-.user-avatar-btn:hover {
-    transform: scale(1.05);
-    background: var(--bg-soft);
-}
-
-#cart-btn {
-    background: #ffcbd1; /* More vibrant pink from image-like palette */
+    color: var(--primary);
     border: none;
-    color: #e91e63;
+    font-size: 1.1rem;
+}
+
+.pill-icon:hover {
+    transform: scale(1.1);
+}
+
+#cart-btn i { color: #ff7675; }
+#avatar-btn i { color: #55efc4; }
+
+.user-menu-container {
     position: relative;
-}
-
-#avatar-btn {
-    background: #00bcd4; /* Vibrant blue/cyan from image */
-    border: none;
-    color: white;
 }
 
 #cart-count {
