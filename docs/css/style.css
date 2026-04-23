@@ -27,15 +27,15 @@ html, body {
 }
 
 body.theme-light {
-    --bg-color: #f7f9fc;
-    --bg-gradient: linear-gradient(135deg, #f7f9fc 0%, #eef2f7 100%);
+    --bg-color: #fffdf0; /* Warm light yellow */
+    --bg-gradient: linear-gradient(135deg, #fffdf0 0%, #fff9e6 100%);
     --text-color: #2d3436;
     --text-muted: #636e72;
-    --card-bg: #f7f9fc;
+    --card-bg: #fffdf0;
     --card-border: rgba(255,255,255,0.9);
-    --slot-bg: #f7f9fc;
+    --slot-bg: #fffdf0;
     --slot-border: rgba(255,255,255,0.7);
-    --overlay-bg: rgba(247, 249, 252, 0.96);
+    --overlay-bg: rgba(255, 253, 240, 0.96);
     --header-gradient: transparent;
     --header-text: #2d3436;
     --header-shadow: none;
@@ -43,9 +43,9 @@ body.theme-light {
     --badge-border: rgba(0, 0, 0, 0.05);
     --tile-text: #2d3436;
     --primary-color: #a29bfe; /* Pastel Purple/Blue */
-    --nm-shadow: 10px 10px 20px #d1d9e6, -10px -10px 20px #ffffff;
-    --nm-inset: inset 4px 4px 10px #d1d9e6, inset -4px -4px 10px #ffffff;
-    --icon-bg: #f7f9fc;
+    --nm-shadow: 10px 10px 20px #e6e4d5, -10px -10px 20px #ffffff;
+    --nm-inset: inset 4px 4px 10px #e6e4d5, inset -4px -4px 10px #ffffff;
+    --icon-bg: #fffdf0;
     --accent-pastel: #fab1a0;
 }
 
@@ -482,11 +482,12 @@ body {
     font-size: 1.1rem;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    box-shadow: var(--nm-shadow);
     padding: 20px;
     text-align: center;
     position: relative;
     overflow: hidden;
+    border: 1px solid var(--card-border);
 }
 
 .tile::after {
@@ -507,14 +508,24 @@ body {
     box-shadow: 0 15px 30px rgba(0,0,0,0.3);
 }
 
-.tile-blue { background-color: #d1eefc; }
-.tile-purple { background-color: #e8d5ff; }
-.tile-pink { background-color: #ffdce0; }
-.tile-yellow { background-color: #fff5be; }
-.tile-orange { background-color: #ffe4cc; }
-.tile-green { background-color: #e2ffd5; }
-.tile-red { background-color: #ff4757; color: white !important; }
+.tile-blue { background-color: var(--card-bg); border-color: #38bdf8; }
+.tile-purple { background-color: var(--card-bg); border-color: #a855f7; }
+.tile-pink { background-color: var(--card-bg); border-color: #ec4899; }
+.tile-yellow { background-color: var(--card-bg); border-color: #eab308; }
+.tile-orange { background-color: var(--card-bg); border-color: #f97316; }
+.tile-green { background-color: var(--card-bg); border-color: #22c55e; }
+.tile-cyan { background-color: var(--card-bg); border-color: #06b6d4; }
+.tile-red { background-color: #ff4757; color: white !important; border-color: #ff4757; }
 .tile-red i { color: white !important; }
+
+/* In light themes, keep the pastel color backgrounds but subtle */
+body.theme-light .tile-blue { background-color: #d1eefc; border-color: #38bdf8; }
+body.theme-light .tile-purple { background-color: #e8d5ff; border-color: #a855f7; }
+body.theme-light .tile-pink { background-color: #ffdce0; border-color: #ec4899; }
+body.theme-light .tile-yellow { background-color: #fff5be; border-color: #eab308; }
+body.theme-light .tile-orange { background-color: #ffe4cc; border-color: #f97316; }
+body.theme-light .tile-green { background-color: #e2ffd5; border-color: #22c55e; }
+body.theme-light .tile-cyan { background-color: #d1fcf0; border-color: #06b6d4; }
 
 /* Bento Classes */
 .tile-wide { grid-column: span 2; }
@@ -1163,11 +1174,11 @@ input:checked + .slider:before {
 .login-container {
     width: 100%;
     max-width: 400px;
-    background: #1a1a1a;
+    background: var(--card-bg);
     padding: 40px;
     border-radius: 24px;
-    border: 1px solid #333;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-neu);
 }
 
 .login-container h1 {
@@ -1991,8 +2002,8 @@ input:checked + .slider:before {
     content: '';
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    z-index: -1;
+    background: rgba(255, 240, 245, 0.98); /* Light pinkish background */
+    z-index: 1; /* Above any potential background elements */
 }
 
 #loading-screen.active {
@@ -2003,10 +2014,11 @@ input:checked + .slider:before {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
     pointer-events: none;
+    z-index: 100; /* Ensure GLTF is on top of the overlay */
 }
 
 .loading-message {
-    color: white;
+    color: #ff6b81; /* Pinkish text to contrast with light background */
     font-size: 1.5rem;
     font-weight: bold;
     letter-spacing: 2px;
@@ -4566,6 +4578,7 @@ body.focus-mode-active .event-card {
     box-shadow: var(--nm-shadow);
     border: 1px solid var(--card-border);
     gap: 15px;
+    order: 3;
 }
 
 .pill-icon {
@@ -4611,6 +4624,7 @@ body.focus-mode-active .event-card {
     gap: 20px;
     position: relative;
     z-index: 100;
+    flex-wrap: wrap; /* Added for mobile wrapping */
 }
 
 .logo-integrated {
@@ -4618,6 +4632,7 @@ body.focus-mode-active .event-card {
     align-items: center;
     gap: 15px;
     text-decoration: none;
+    order: 1;
 }
 
 .logo-integrated img {
@@ -4637,6 +4652,64 @@ body.focus-mode-active .event-card {
 .search-integrated {
     flex: 1;
     max-width: 600px;
+    order: 2;
+}
+
+@media (max-width: 768px) {
+    .integrated-header {
+        padding: 15px;
+        gap: 10px;
+        justify-content: space-between;
+    }
+
+    .logo-integrated {
+        flex: 1;
+    }
+
+    .logo-integrated h1 {
+        font-size: 1.1rem;
+    }
+
+    .logo-integrated img {
+        height: 35px;
+    }
+
+    .search-integrated {
+        order: 3; /* Move search to bottom row on mobile */
+        min-width: 100%;
+        max-width: 100%;
+        margin-top: 5px;
+    }
+
+    .pill-panel {
+        order: 2;
+        padding: 5px 12px;
+        gap: 8px;
+    }
+
+    .pill-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* Hide theme icons from the main pill on mobile */
+    #header-theme-group, .pill-group {
+        display: none !important;
+    }
+
+    /* Ensure user menu themes are visible */
+    .theme-menu-container-mobile {
+        display: block !important;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        margin-top: 10px;
+    }
+
+    .theme-switcher-inline {
+        display: flex !important;
+        justify-content: center;
+        gap: 10px;
+        padding: 10px 0;
+    }
 }
 
 .pill-icon:hover {
