@@ -2211,19 +2211,17 @@ input:checked + .slider:before {
 .top-left-panel {
     position: fixed;
     top: 25px;
-    left: 25px;
+    right: 25px;
     z-index: 10000;
     display: flex;
     align-items: center;
+    flex-direction: row-reverse;
     gap: 15px;
     transition: all 0.3s ease;
 }
 
 @media (min-width: 1024px) {
     .top-left-panel {
-        left: auto;
-        right: 25px;
-        flex-direction: row-reverse;
     }
 }
 
@@ -2302,8 +2300,8 @@ input:checked + .slider:before {
 .user-dropdown-menu {
     position: absolute;
     top: 60px;
-    left: 0;
-    right: auto;
+    right: 0;
+    left: auto;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 18px;
@@ -2413,7 +2411,8 @@ input:checked + .slider:before {
 @media (max-width: 640px) {
     .top-left-panel {
         top: 15px;
-        left: 15px;
+        right: 15px;
+        left: auto;
         gap: 10px;
     }
     .user-avatar-btn {
@@ -4725,6 +4724,11 @@ body.focus-mode-active .event-card {
         justify-content: center;
         gap: 10px;
         padding: 10px 0;
+    }
+
+    .user-dropdown-menu {
+        right: 0 !important;
+        left: auto !important;
     }
 }
 

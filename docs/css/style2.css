@@ -366,19 +366,17 @@ h1, h2, h3, h4, .logo {
 .top-left-panel {
     position: fixed;
     top: 25px;
-    left: 25px;
+    right: 25px;
     z-index: 10000;
     display: flex;
     align-items: center;
+    flex-direction: row-reverse;
     gap: 15px;
     transition: all 0.3s ease;
 }
 
 @media (min-width: 1024px) {
     .top-left-panel {
-        left: auto;
-        right: 25px;
-        flex-direction: row-reverse;
     }
 }
 
