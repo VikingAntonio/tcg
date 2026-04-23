@@ -332,6 +332,16 @@
                     <label>Nombre del Deck</label>
                     <input type="text" id="input-deck-name" placeholder="Nuevo Deck">
                 </div>
+                <div class="form-group">
+                    <label>Imagen de Portada (URL o Subida)</label>
+                    <label class="file-drop-zone" id="drop-zone-deck-cover" for="input-deck-cover-file" style="display: block;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Arrastra la portada aquí o haz clic para subir</p>
+                        <input type="file" id="input-deck-cover-file" accept="image/*" style="display: none;">
+                        <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                    </label>
+                    <input type="text" id="input-deck-cover" placeholder="https://...">
+                </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                     <label class="switch">
                         <input type="checkbox" id="input-deck-public" checked>
@@ -356,7 +366,14 @@
             </div>
 
             <div class="admin-header">
-                <h2><i class="fas fa-images"></i> Imágenes del Deck</h2>
+                <h2><i class="fas fa-images"></i> Cartas del Deck</h2>
+            </div>
+
+            <!-- Deck Section Tabs -->
+            <div class="sticky-tabs-container" id="deck-section-tabs" style="margin-bottom: 25px;">
+                <button class="tab-pill active" data-section="Main">Main Deck</button>
+                <button class="tab-pill" data-section="Extra">Extra Deck</button>
+                <button class="tab-pill" data-section="Side">Side Deck</button>
             </div>
 
             <!-- External Card Search for Decks -->
@@ -1170,6 +1187,14 @@
             <!-- Tab 2: Details -->
             <div id="slot-tab-details" class="slot-tab-content">
                 <div class="info-grid">
+                    <div class="form-group" id="slot-section-container" style="display: none;">
+                        <label>Sección (Deck)</label>
+                        <select id="slot-section" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                            <option value="Main">Main Deck</option>
+                            <option value="Extra">Extra Deck</option>
+                            <option value="Side">Side Deck</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>Rareza</label>
                         <input type="text" id="slot-rarity">
