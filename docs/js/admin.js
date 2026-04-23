@@ -648,7 +648,6 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
-            section: $('#slot-section').val() || 'Main',
             obtained: $('#slot-modal').data('current-obtained') !== false
         };
 
@@ -864,14 +863,12 @@ $(document).ready(async function() {
             }
 
             // Local add to deck
-            const currentSection = $('#deck-section-tabs .tab-pill.active').data('section') || 'Main';
             const newCard = {
                 localId: 'new_' + Date.now(),
                 deck_id: currentDeckId,
                 image_url: card.high_res,
                 name: card.name,
                 quantity: 1,
-                section: currentSection,
                 position: localDeckCards.length
             };
             localDeckCards.push(newCard);
@@ -897,8 +894,8 @@ $(document).ready(async function() {
     async function searchExternalCard(inputSelector, resultsSelector, onSelectCallback) {
         const query = $(inputSelector).val().trim();
 
-        if (query.length < 2) {
-            Swal.fire('Atención', 'Por favor, escribe al menos 2 caracteres para buscar.', 'info');
+        if (query.length < 3) {
+            Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
             return;
         }
 
@@ -1164,12 +1161,11 @@ $(document).ready(async function() {
         });
 
         const name = $('#input-deck-name').val();
-        const cover = $('#input-deck-cover').val();
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
 
-        let updateData = { name, cover_image_url: cover, is_public, use_special_price, special_price };
+        let updateData = { name, is_public, use_special_price, special_price };
 
         try {
             // 1. Save Deck Metadata
@@ -1342,28 +1338,6 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleDeckImageUpload(this.files[0]);
     });
 
-    // Deck Cover Drop Zone
-    $(document).on('drop', '#drop-zone-deck-cover', async function(e) {
-        e.preventDefault(); e.stopPropagation();
-        $(this).removeClass('dragover');
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) {
-            handleCloudinaryUpload(files[0], '#input-deck-cover', '#drop-zone-deck-cover .file-name');
-        }
-    });
-    $(document).on('dragover dragenter', '#drop-zone-deck-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
-    $(document).on('dragleave dragend drop', '#drop-zone-deck-cover', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-    $(document).on('change', '#input-deck-cover-file', function() {
-        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-deck-cover', '#drop-zone-deck-cover .file-name');
-    });
-
-    // Deck Section Tabs switching logic
-    $(document).on('click', '#deck-section-tabs .tab-pill', function() {
-        $('#deck-section-tabs .tab-pill').removeClass('active');
-        $(this).addClass('active');
-        renderDeckCardsLocal();
-    });
-
     // BDD Drop Zone
     $(document).on('drop', '#drop-zone-bdd', async function(e) {
         e.preventDefault(); e.stopPropagation();
@@ -1481,14 +1455,12 @@ $(document).ready(async function() {
             }
 
             const url = await CloudinaryUpload.uploadImage(file);
-            const currentSection = $('#deck-section-tabs .tab-pill.active').data('section') || 'Main';
             const newCard = {
                 localId: 'new_' + Date.now(),
                 deck_id: currentDeckId,
                 image_url: url,
                 name: file.name.split('.')[0],
                 quantity: 1,
-                section: currentSection,
                 position: localDeckCards.length
             };
             localDeckCards.push(newCard);
@@ -2162,13 +2134,7 @@ async function editDeck(deck) {
     currentDeckId = target.id;
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
-    $('#input-deck-cover').val(target.cover_image_url || '');
-    $('#drop-zone-deck-cover .file-name').text('');
     $('#input-deck-public').prop('checked', target.is_public !== false);
-
-    // Default to Main tab
-    $('#deck-section-tabs .tab-pill').removeClass('active');
-    $('#deck-section-tabs .tab-pill[data-section="Main"]').addClass('active');
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -2226,7 +2192,7 @@ async function loadDeckCards(deckId, fetchCards = true) {
 }
 
 function renderDeckCardsLocal(scrollPos = null) {
-    // Calculate total sum (of ALL cards in deck)
+    // Calculate total sum
     const totalSum = localDeckCards.reduce((sum, card) => {
         const price = parseFloat((card.price || '0').replace(/[^0-9.]/g, '')) || 0;
         const qty = parseInt(card.quantity) || 1;
@@ -2234,11 +2200,8 @@ function renderDeckCardsLocal(scrollPos = null) {
     }, 0);
     $('#deck-total-sum').text('$' + totalSum.toFixed(2));
 
-    const currentSection = $('#deck-section-tabs .tab-pill.active').data('section') || 'Main';
-    const filteredCards = localDeckCards.filter(c => (c.section || 'Main') === currentSection);
-
     const $tempContainer = $('<div></div>');
-    filteredCards.forEach(card => {
+    localDeckCards.forEach(card => {
         const isObtained = card.obtained !== false;
         const $cardItem = $(`
             <div class="album-card deck-card-item" data-id="${card.id || card.localId}" style="cursor:pointer; position:relative;">
@@ -2343,7 +2306,6 @@ async function updateCardOrder(cardIds) {
 function editDeckCard(card) {
     editingType = 'deck-card';
     currentDeckCardId = card.id || card.localId;
-    $('#slot-section-container').show();
 
     // Reset Tabs
     $('.slot-tab-btn').removeClass('active');
@@ -2379,7 +2341,6 @@ function editDeckCard(card) {
     $('#slot-condition').val(card.condition || '');
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
-    $('#slot-section').val(card.section || 'Main');
 
     $('#slot-modal').addClass('active');
 }
@@ -2977,7 +2938,6 @@ async function loadBotMessages() {
 
 async function loadSlotData(pageId, slotIndex) {
     editingType = 'slot';
-    $('#slot-section-container').hide();
 
     // Prioritize local state
     let data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);

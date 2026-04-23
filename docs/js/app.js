@@ -349,7 +349,7 @@ $(document).ready(async function() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    let initialView = urlParams.get('view') || 'home';
+    let initialView = urlParams.get('view') || 'albums';
 
     // Auto-detect view from deep-links if 'view' is missing
     if (!urlParams.has('view')) {
@@ -361,14 +361,14 @@ $(document).ready(async function() {
         else if (urlParams.has('wishlistId') || urlParams.has('slot')) initialView = 'wishlist';
     }
 
-    // Solo mostramos pantalla de carga inicial si la vista es álbumes o decks
-    if (initialView === 'albums' || initialView === 'decks') {
+    // Solo mostramos pantalla de carga inicial si la vista es álbumes
+    if (initialView === 'albums') {
         showLoading('Cargando Tienda...');
     }
 
     await loadStoreData();
 
-    $('.nav-btn, .neu-card').click(function() {
+    $('.nav-btn').click(function() {
         const view = $(this).data('view');
         if (view) switchView(view);
     });
@@ -1317,10 +1317,7 @@ async function switchView(view) {
     $('.view-section').removeClass('active');
     $(`#${view}-view`).addClass('active');
 
-    if (view === 'home') {
-        $('#public-view-title').text('Menu Principal');
-        $('.public-header p').text('Explora todas nuestras secciones disponibles.');
-    } else if (view === 'albums') {
+    if (view === 'albums') {
         $('#public-view-title').text('Colección de Álbumes');
         $('.public-header p').text('Explora nuestra selección de cartas y colecciones exclusivas.');
         if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
@@ -1700,8 +1697,7 @@ function loadPublicDecks() {
     const identifier = window.currentStoreIdentifier;
     if (!identifier) { resolve(); return; }
 
-    $('#deck-selection-menu').html('<div class="loading">Cargando decks...</div>').show();
-    $('#decks-container').hide();
+    $('#decks-container').html('<div class="loading">Cargando decks...</div>');
 
     const params = new URLSearchParams(window.location.search);
     const filterId = params.get('deckId');
@@ -1736,60 +1732,138 @@ function loadPublicDecks() {
 
         let { data: decks, error } = await deckQuery;
 
+        // Fallback if query failed
+        if (error) {
+            console.warn("Error al cargar decks, intentando consulta básica.");
+            const retry = await _supabase
+                .from('decks')
+                .select(`
+                    *,
+                    deck_cards (*)
+                `)
+                .eq('user_id', user.id)
+                .order('position', { ascending: true })
+                .order('position', { foreignTable: 'deck_cards', ascending: true });
+            decks = retry.data;
+            error = retry.error;
+        }
+
         if (decks) {
+            // Filtrar en JS para tratar null como público (true)
             decks = decks.filter(d => d.is_public !== false);
         }
 
         if (error || !decks) {
-            $('#deck-selection-menu').html('<div class="error">No se pudieron cargar los decks.</div>');
+            $('#decks-container').html('<div class="error">No se pudieron cargar los decks.</div>');
             return;
         }
 
+        $('#decks-container').empty();
+        if (filterId && decks && decks.length > 0) {
+            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Decks</button></div>').appendTo('#decks-container');
+        }
         if (decks.length === 0) {
-            $('#deck-selection-menu').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
+            $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
             return;
         }
 
-        // If we have a filterId (deep link), go straight to that deck
-        if (filterId && decks.length === 1) {
-            renderSingleDeck(decks[0]);
-            $('#deck-selection-menu').hide();
-            $('#decks-container').show();
-            resolve();
-            return;
-        }
-
-        $('#deck-selection-menu').empty();
         decks.forEach(deck => {
-            const cards = deck.deck_cards || [];
-            const mainCount = cards.filter(c => !c.section || c.section.toLowerCase() === 'main').length;
-            const extraCount = cards.filter(c => c.section && c.section.toLowerCase() === 'extra').length;
-            const sideCount = cards.filter(c => c.section && c.section.toLowerCase() === 'side').length;
-            const cover = deck.cover_image_url || (cards.length > 0 ? cards[0].image_url : 'https://via.placeholder.com/300x150?text=No+Cover');
+            // Ensure cards are sorted by position locally as a fallback
+            if (deck.deck_cards) {
+                deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
+            }
+            const deckId = `deck-swiper-${deck.id}`;
 
-            const $card = $(`
-                <div class="deck-menu-card neu-card-soft" style="cursor: pointer;">
-                    <div class="deck-menu-cover">
-                        <img src="${cover}" alt="${deck.name}">
+            // Calculate Total Sum
+            const totalSum = (deck.deck_cards || []).reduce((sum, card) => {
+                const priceStr = card.price || '0';
+                const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                const qty = parseInt(card.quantity) || 1;
+                return sum + (price * qty);
+            }, 0);
+
+            const hasSpecialPrice = deck.use_special_price && deck.special_price;
+            const priceDisplay = hasSpecialPrice
+                ? `<div class="deck-price-container">
+                    <span class="price-total price-strikethrough">$${totalSum.toFixed(2)}</span>
+                    <span class="price-special">${deck.special_price}</span>
+                   </div>`
+                : `<div class="deck-price-container">
+                    <span class="price-total">$${totalSum.toFixed(2)}</span>
+                   </div>`;
+
+            const $deckItem = $(`
+                <div class="deck-public-item" id="deck-item-${deck.id}">
+                    <div class="deck-header-info">
+                        <h3 style="margin-bottom: 5px;">${deck.name}</h3>
+                        ${priceDisplay}
                     </div>
-                    <div class="deck-menu-info">
-                        <h3>${deck.name}</h3>
-                        <div class="deck-stats-pills">
-                            <span class="stat-pill main">Main: ${mainCount}</span>
-                            <span class="stat-pill extra">Extra: ${extraCount}</span>
-                            <span class="stat-pill side">Side: ${sideCount}</span>
+                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" title="Compartir Deck">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+
+                    <div class="container deck-carousel-container">
+                        <div class="swiper swiperyg ${deckId}">
+                            <div class="swiper-wrapper">
+                                ${deck.deck_cards.map(card => `
+                                    <div class="swiper-slide card-slot"
+                                         data-name="${card.name || ''}"
+                                         data-rarity="${card.rarity || ''}"
+                                         data-holo="${card.holo_effect || ''}"
+                                         data-mask="${card.custom_mask_url || ''}"
+                                         data-expansion="${card.expansion || ''}"
+                                         data-condition="${card.condition || ''}"
+                                         data-quantity="${card.quantity || '1'}"
+                                         data-price="${card.price || ''}"
+                                         data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}">
+                                        <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
+                                        ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+                                        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="deck-toggle-container">
+                        <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Ver Lista">
+                            <i class="fas fa-th"></i> Modo Lista
+                        </button>
                     </div>
                 </div>
             `);
 
-            $card.click(() => {
-                renderSingleDeck(deck);
-                $('#deck-selection-menu').hide();
-                $('#decks-container').show();
+            $('#decks-container').append($deckItem);
+
+            // El manejo de clics se mantiene normal, la prioridad táctil
+            // ya se maneja con el listener global en fase de captura.
+            $deckItem.find('.zoom-btn').on('click', function(e) {
+                e.stopPropagation();
+                openCardModal($(this).closest('.card-slot'));
             });
 
-            $('#deck-selection-menu').append($card);
+            new Swiper(`.${deckId}`, {
+                effect: "cards",
+                grabCursor: true,
+                perSlideOffset: 8,
+                perSlideRotate: 2,
+                rotate: true,
+                slideShadows: true,
+                preventClicksPropagation: false,
+                on: {
+                    click: function(s, e) {
+                        if (!isDragging) {
+                            const $slot = $(e.target).closest('.card-slot');
+                            if ($slot.length) {
+                                // Popup fix: Only open if it's the active slide
+                                if (s.clickedIndex !== s.activeIndex) return;
+
+                                openCardModal($slot);
+                            }
+                        }
+                    }
+                }
+            });
         });
     } catch (e) {
         console.error("Error in loadPublicDecks:", e);
@@ -2517,182 +2591,39 @@ function makeCompanionDraggable() {
     });
 }
 
-window.backToDeckMenu = function() {
-    $('#decks-container').hide();
-    $('#deck-selection-menu').fadeIn();
-    const url = new URL(window.location);
-    url.searchParams.delete('deckId');
-    window.history.replaceState({}, '', url);
-};
-
-function renderSingleDeck(deck) {
-    $('#decks-container').find('.deck-public-item').remove();
-
-    if (deck.deck_cards) {
-        deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
-    }
-    const deckId = `deck-swiper-${deck.id}`;
-
-    // Calculate Total Sum
-    const totalSum = (deck.deck_cards || []).reduce((sum, card) => {
-        const priceStr = card.price || '0';
-        const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
-        const qty = parseInt(card.quantity) || 1;
-        return sum + (price * qty);
-    }, 0);
-
-    const hasSpecialPrice = deck.use_special_price && deck.special_price;
-    const priceDisplay = hasSpecialPrice
-        ? `<div class="deck-price-container">
-            <span class="price-total price-strikethrough">$${totalSum.toFixed(2)}</span>
-            <span class="price-special">${deck.special_price}</span>
-           </div>`
-        : `<div class="deck-price-container">
-            <span class="price-total">$${totalSum.toFixed(2)}</span>
-           </div>`;
-
-    const $deckItem = $(`
-        <div class="deck-public-item" id="deck-item-${deck.id}" style="margin-top: 0; width: 100%; max-width: 800px; opacity: 0; transition: opacity 0.5s ease;">
-            <div class="deck-header-info">
-                <h3 style="margin-bottom: 5px;">${deck.name}</h3>
-                ${priceDisplay}
-            </div>
-            <button class="btn-share-item btn-share-floating" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" title="Compartir Deck">
-                <i class="fas fa-share-alt"></i>
-            </button>
-
-            <div class="deck-carousel-container">
-                <div class="swiper swiperyg ${deckId}">
-                    <div class="swiper-wrapper">
-                        ${deck.deck_cards.map(card => `
-                            <div class="swiper-slide card-slot"
-                                 data-name="${card.name || ''}"
-                                 data-rarity="${card.rarity || ''}"
-                                 data-holo="${card.holo_effect || ''}"
-                                 data-mask="${card.custom_mask_url || ''}"
-                                 data-expansion="${card.expansion || ''}"
-                                 data-condition="${card.condition || ''}"
-                                 data-quantity="${card.quantity || '1'}"
-                                 data-price="${card.price || ''}"
-                                 data-section="${card.section || 'Main'}"
-                                 data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}">
-                                <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
-                                ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-                                <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-
-            <div class="deck-toggle-container">
-                <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Ver Lista">
-                    <i class="fas fa-th"></i> Modo Lista
-                </button>
-            </div>
-        </div>
-    `);
-
-    $('#decks-container').empty().append($deckItem);
-
-    // Initial check for images to avoid swiper calc issues
-    const $images = $deckItem.find('img');
-    let loaded = 0;
-    const total = $images.length;
-
-    const initSwiper = () => {
-        $deckItem.css('opacity', '1');
-        new Swiper(`.${deckId}`, {
-            slidesPerView: 'auto',
-            centeredSlides: true,
-            spaceBetween: 30,
-            grabCursor: true,
-            preventClicksPropagation: false,
-            on: {
-                click: function(s, e) {
-                    if (!isDragging) {
-                        const $slot = $(e.target).closest('.card-slot');
-                        if ($slot.length) {
-                            if (s.clickedIndex !== s.activeIndex) return;
-                            openCardModal($slot);
-                        }
-                    }
-                }
-            }
-        });
-    };
-
-    if (total === 0) {
-        initSwiper();
-    } else {
-        $images.on('load error', function() {
-            loaded++;
-            if (loaded >= total) initSwiper();
-        });
-        // Fallback for cached images or slow loads
-        setTimeout(initSwiper, 1500);
-    }
-
-    $deckItem.find('.zoom-btn').on('click', function(e) {
-        e.stopPropagation();
-        openCardModal($(this).closest('.card-slot'));
-    });
-
-    const url = new URL(window.location);
-    url.searchParams.set('deckId', deck.id);
-    window.history.replaceState({}, '', url);
-}
-
 $(document).on('click', '.btn-toggle-deck-view', function() {
     const deckId = $(this).data('deck-id');
     const $deckItem = $(`#deck-item-${deckId}`);
     const deckName = $deckItem.find('h3').text();
 
+    // Fill modal with cards from Swiper slides
     const $container = $('#deck-grid-container');
     $container.empty();
     $('#deck-list-title').text(deckName);
 
-    const groupedCards = { 'Main': [], 'Extra': [], 'Side': [] };
-
     $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
         const $slide = $(this);
-        let section = $slide.data('section') || 'Main';
-        // Normalize section name
-        if (section.toLowerCase() === 'main') section = 'Main';
-        if (section.toLowerCase() === 'extra') section = 'Extra';
-        if (section.toLowerCase() === 'side') section = 'Side';
-
-        if (groupedCards[section]) groupedCards[section].push($slide);
+        const obtained = $slide.attr('data-obtained');
+        const $card = $(`
+            <div class="grid-card-item card-slot"
+                 data-obtained="${obtained}"
+                 data-name="${$slide.data('name')}"
+                 data-rarity="${$slide.data('rarity')}"
+                 data-holo="${$slide.data('holo')}"
+                 data-mask="${$slide.data('mask')}"
+                 data-expansion="${$slide.data('expansion')}"
+                 data-condition="${$slide.data('condition')}"
+                 data-quantity="${$slide.data('quantity')}"
+                 data-price="${$slide.data('price')}"
+                 data-obtained="${obtained}">
+                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
+                ${(obtained === 'false' || obtained === false) ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+            </div>
+        `);
+        $container.append($card);
     });
 
-    ['Main', 'Extra', 'Side'].forEach((key) => {
-        const cards = groupedCards[key];
-        if (cards.length > 0) {
-            $container.append(`<div class="deck-section-header">${key} Deck (${cards.length})</div>`);
-
-            cards.forEach($slide => {
-                const obtained = $slide.attr('data-obtained');
-                const $card = $(`
-                    <div class="grid-card-item card-slot"
-                         data-obtained="${obtained}"
-                         data-name="${$slide.data('name')}"
-                         data-rarity="${$slide.data('rarity')}"
-                         data-holo="${$slide.data('holo')}"
-                         data-mask="${$slide.data('mask')}"
-                         data-expansion="${$slide.data('expansion')}"
-                         data-condition="${$slide.data('condition')}"
-                         data-quantity="${$slide.data('quantity')}"
-                         data-price="${$slide.data('price')}"
-                         data-section="${key}">
-                        <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
-                        ${(obtained === 'false' || obtained === false) ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-                    </div>
-                `);
-                $container.append($card);
-            });
-        }
-    });
-
+    // Reset filters
     $('.deck-filter-tab').removeClass('active');
     $('.deck-filter-tab[data-filter="all"]').addClass('active');
 
