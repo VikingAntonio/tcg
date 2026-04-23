@@ -1868,15 +1868,13 @@ input:checked + .slider:before {
 
 /* Shading for missing/obtained cards */
 .wishlist-card-item[data-obtained="true"],
-.grid-card-item[data-obtained="false"],
-.swiper-slide[data-obtained="false"] {
+.grid-card-item[data-obtained="false"] {
     opacity: 0.5 !important;
     transition: all 0.3s ease;
 }
 
 .wishlist-card-item[data-obtained="true"]:hover,
-.grid-card-item[data-obtained="false"]:hover,
-.swiper-slide[data-obtained="false"]:hover {
+.grid-card-item[data-obtained="false"]:hover {
     opacity: 0.8 !important;
 }
 
