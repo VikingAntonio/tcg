@@ -280,8 +280,13 @@
             </div>
 
             <div class="form-group" id="modal-mask-container" style="display: none;">
-                <label>URL de la Máscara</label>
-                <input type="text" id="modal-custom-mask" class="wishlist-field" placeholder="https://...">
+                <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="modal-custom-mask" class="wishlist-field" placeholder="midominio.com/mascara.png" style="flex: 1;">
+                    <button id="btn-open-mask-editor" class="btn btn-secondary" style="white-space: nowrap;">
+                        <i class="fas fa-paint-brush"></i> Editar
+                    </button>
+                </div>
             </div>
 
             <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; margin-top: 10px;">
@@ -297,7 +302,7 @@
                     <input type="checkbox" id="modal-show-foil-list">
                     <span class="slider"></span>
                 </label>
-                <label style="margin-bottom: 0; cursor: pointer;" for="modal-show-foil-list">Mostrar Foil en Vista Lista</label>
+                <label style="margin-bottom: 0; cursor: pointer;" for="modal-show-foil-list">Aplicar Foil</label>
             </div>
 
             <div class="form-group" style="margin-top: 20px;">
@@ -310,7 +315,16 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/utils.js"></script>
     <script src="js/viking-data.js"></script>
     <script src="js/deseos.js"></script>
+    <div class="bottom-nav">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" id="btn-nav-return" title="Volver">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+    </div>
 </body>
 </html>

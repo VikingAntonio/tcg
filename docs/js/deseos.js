@@ -158,9 +158,75 @@ $(document).ready(async function() {
         }
     });
 
+    $('#btn-open-mask-editor').click(function(e) {
+        e.preventDefault();
+        const cardImgUrl = $('#modal-card-img').attr('src');
+        if (!cardImgUrl) {
+            Swal.fire('Atención', 'No hay imagen de referencia.', 'warning');
+            return;
+        }
+
+        // Set card as background
+        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
+
+        // Initialize canvas
+        window.initMaskCanvas();
+
+        $('#mask-editor-overlay').addClass('active');
+    });
+
+    $('#close-mask-editor').click(function() {
+        $('#mask-editor-overlay').removeClass('active');
+    });
+
     $('#btn-wishlist-save-batch').click(function() {
         saveWishlistBatch();
     });
+
+    // Global helper for foil in lists (matching app.js)
+    window.applyFoilToElement = function($el, holo, mask) {
+        if (!holo) return;
+
+        const POKEMON_FOILS = {
+            'pk-rare-holo': 'rare holo', 'pk-rare-holo-cosmos': 'rare holo cosmos', 'pk-rare-holo-v': 'rare holo v',
+            'pk-rare-holo-vmax': 'rare holo vmax', 'pk-rare-holo-vstar': 'rare holo vstar', 'pk-rare-rainbow': 'rare rainbow',
+            'pk-rare-rainbow-alt': 'rare rainbow alt', 'pk-rare-secret': 'rare secret', 'pk-rare-shiny': 'rare shiny',
+            'pk-rare-shiny-v': 'rare shiny v', 'pk-rare-shiny-vmax': 'rare shiny vmax', 'pk-amazing-rare': 'amazing rare',
+            'pk-radiant-rare': 'radiant rare', 'pk-rare-ultra': 'rare ultra pokemon', 'pk-trainer-gallery': 'trainer gallery rare holo',
+            'pk-trainer-gallery-secret-rare': 'trainer gallery rare secret', 'pk-trainer-gallery-v-max': 'trainer gallery rare holo vmax',
+            'pk-trainer-gallery-v-regular': 'trainer gallery rare holo v', 'pk-trainer-full-art': 'rare ultra supporter',
+            'pk-rare-holo-v-full-art': 'rare holo v full art', 'pk-reverse-holo': 'reverse holo'
+        };
+
+        let baseHolo = holo;
+        let isCustomFoil = false;
+        if (holo.startsWith('custom-foil|')) {
+            isCustomFoil = true;
+            baseHolo = holo.split('|')[1] || 'foil';
+        }
+
+        if (POKEMON_FOILS[baseHolo]) {
+            let rarityVal = POKEMON_FOILS[baseHolo];
+            $el.addClass("card");
+            if (rarityVal.includes('trainer gallery')) { $el.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+            if (rarityVal.includes('supporter')) { $el.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+            if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+            $el.attr("data-rarity", rarityVal.trim());
+
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            $el.css({'--mx': 0.5, '--my': 0.5});
+        } else {
+            $el.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+        }
+
+        if ($el.find('.holo-layer').length === 0) $el.append('<div class="holo-layer"></div>');
+        $el.addClass('active foil-loop');
+    };
 
     $('#btn-save-wishlist-modal').click(async function() {
         if (!currentEditingId) return;
@@ -344,7 +410,9 @@ async function loadWishlist() {
                             <span class="wishlist-status-text">${item.obtained ? '¡CONSEGUIDA!' : 'BUSCANDO'}</span>
                         </label>
                     </div>
-                    <img src="${item.image_url}" style="width: 100%; height: 160px; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
+                    <div class="wishlist-img-container" style="width: 100%; height: 160px; position: relative;">
+                        <img src="${item.image_url}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: rgba(0,0,0,0.2);">
+                    </div>
                 </div>
 
                 <div style="font-weight: bold; font-size: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.name}">${item.name}</div>
@@ -390,6 +458,11 @@ async function loadWishlist() {
             e.stopPropagation();
             openEditModal(item);
         });
+
+        if (item.show_foil_in_list && item.holo_effect) {
+            const $foilTarget = $card.find('.wishlist-img-container');
+            window.applyFoilToElement($foilTarget, item.holo_effect, item.custom_mask_url);
+        }
 
         $container.append($card);
     });

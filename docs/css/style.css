@@ -100,6 +100,8 @@ body.theme-medium .info-value,
 body.theme-medium .album-card h3,
 body.theme-medium .admin-page-item h3,
 body.theme-medium .user-dropdown-name,
+body.theme-medium .tile span,
+body.theme-medium .tile i,
 body.theme-light h1,
 body.theme-light h2,
 body.theme-light h3,
@@ -115,7 +117,9 @@ body.theme-light .form-group label,
 body.theme-light .info-label,
 body.theme-light .user-dropdown-role,
 body.theme-light .hero-subtitle,
-body.theme-light .bento-content p {
+body.theme-light .bento-content p,
+body.theme-light .tile span,
+body.theme-light .tile i {
     color: #2d3436 !important;
 }
 
@@ -1654,6 +1658,39 @@ input:checked + .slider:before {
 
 /* --- HOLOGRAPHIC EFFECTS --- */
 
+@property --mx {
+  syntax: '<number>';
+  initial-value: 0.5;
+  inherits: true;
+}
+@property --my {
+  syntax: '<number>';
+  initial-value: 0.5;
+  inherits: true;
+}
+
+@keyframes foil-loop-shimmer {
+    0% { --mx: 0.42; --my: 0.48; }
+    50% { --mx: 0.58; --my: 0.52; }
+    100% { --mx: 0.42; --my: 0.48; }
+}
+
+.foil-loop {
+    animation: foil-loop-shimmer 5s ease-in-out infinite !important;
+}
+
+/* Force show holo-layer for foil loop even if not hovered */
+.foil-loop .holo-layer,
+.foil-loop.card .card__shine,
+.foil-loop.card .card__glare {
+    opacity: 1 !important;
+}
+
+/* Hide zoom button when foil loop is active as per user request */
+.foil-loop .zoom-btn {
+    display: none !important;
+}
+
 .card-3d-container {
     perspective: 1000px;
     width: 220px;
@@ -3048,7 +3085,6 @@ body.focus-mode-active .event-card {
     to { opacity: 1; transform: scale(1); }
 }
 
-.tile-cyan { background-color: #d1fcf0; }
 
 .deck-editor-controls {
     display: flex;
@@ -4559,7 +4595,7 @@ body.focus-mode-active .event-card {
     display: flex;
     gap: 40px;
     box-shadow: var(--nm-shadow);
-    z-index: 10000;
+    z-index: 110000;
     border: 1px solid var(--card-border);
     backdrop-filter: blur(10px);
 }
