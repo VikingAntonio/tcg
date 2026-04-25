@@ -291,7 +291,14 @@ function showLoginView() {
 
 function initTheme() {
     const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
-    $('body').addClass(savedTheme);
+    applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+    $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+    localStorage.setItem('tcg_theme', theme);
+    $('.theme-btn-small').removeClass('active');
+    $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
 }
 
 async function loadWishlist() {

@@ -1977,7 +1977,7 @@ function initTheme() {
 }
 
 function applyTheme(theme) {
-    $('body').removeClass('theme-light theme-dark theme-purple').addClass(theme);
+    $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
     localStorage.setItem('tcg_theme', theme);
 
     // Update theme icons
