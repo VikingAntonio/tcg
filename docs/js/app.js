@@ -3,77 +3,7 @@ let isMoving = false;
 let isManualPageTurn = false;
 let startX, startY;
 
-const POKEMON_FOILS = {
-    'pk-rare-holo': 'rare holo',
-    'pk-rare-holo-cosmos': 'rare holo cosmos',
-    'pk-rare-holo-v': 'rare holo v',
-    'pk-rare-holo-vmax': 'rare holo vmax',
-    'pk-rare-holo-vstar': 'rare holo vstar',
-    'pk-rare-rainbow': 'rare rainbow',
-    'pk-rare-rainbow-alt': 'rare rainbow alt',
-    'pk-rare-secret': 'rare secret',
-    'pk-rare-shiny': 'rare shiny',
-    'pk-rare-shiny-v': 'rare shiny v',
-    'pk-rare-shiny-vmax': 'rare shiny vmax',
-    'pk-amazing-rare': 'amazing rare',
-    'pk-radiant-rare': 'radiant rare',
-    'pk-rare-ultra': 'rare ultra pokemon',
-    'pk-trainer-gallery': 'trainer gallery rare holo',
-    'pk-trainer-gallery-secret-rare': 'trainer gallery rare secret',
-    'pk-trainer-gallery-v-max': 'trainer gallery rare holo vmax',
-    'pk-trainer-gallery-v-regular': 'trainer gallery rare holo v',
-    'pk-trainer-full-art': 'rare ultra supporter',
-    'pk-rare-holo-v-full-art': 'rare holo v full art',
-    'pk-reverse-holo': 'reverse holo'
-};
-
-function applyFoilToElement($el, holo, mask) {
-    if (!holo) return;
-
-    let baseHolo = holo;
-    let isCustomFoil = false;
-    if (holo.startsWith('custom-foil|')) {
-        isCustomFoil = true;
-        baseHolo = holo.split('|')[1] || 'foil';
-    }
-
-    if (POKEMON_FOILS[baseHolo]) {
-        let rarityVal = POKEMON_FOILS[baseHolo];
-        $el.addClass("card");
-        if (rarityVal.includes('trainer gallery')) { $el.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-        if (rarityVal.includes('supporter')) { $el.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-        if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-        $el.attr("data-rarity", rarityVal.trim());
-
-        if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-            $el.addClass("masked");
-            $el.css("--mask", `url(${mask})`);
-            $el.css("--mask-url", `url(${mask})`);
-        }
-        const rx = 0.5, ry = 0.5;
-        $el.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
-    } else {
-        $el.addClass(baseHolo);
-        if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-            $el.addClass("masked");
-            $el.css("--mask", `url(${mask})`);
-            $el.css("--mask-url", `url(${mask})`);
-        }
-    }
-
-    if ($el.find('.holo-layer').length === 0) {
-        $el.append('<div class="holo-layer"></div>');
-    }
-
-    $el.addClass('active');
-
-    $el.css({
-        '--mx': 0.5,
-        '--my': 0.5,
-        '--angle': '135deg',
-        '--card-opacity': 1
-    });
-}
+// applyFoilToElement is now globally defined in utils.js
 
 // --- Loading Screen Functions ---
 window.isLoading = false;
@@ -568,6 +498,31 @@ $(document).ready(async function() {
     });
 
     // Spirit Navigation
+    // --- Mask Editor Integration for Owner Wishlist ---
+    $('#btn-open-mask-editor').click(function(e) {
+        e.preventDefault();
+        const cardImgUrl = $('#expanded-image').attr('src');
+        if (!cardImgUrl) {
+            Swal.fire('Atención', 'No hay imagen de referencia.', 'warning');
+            return;
+        }
+
+        // Set card as background
+        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
+
+        // Use standard input ID as target (defined in utils.js save logic)
+        // Actually utils.js logic handles #slot-custom-mask or #modal-custom-mask
+        // Let's make sure it also handles #owner-card-mask
+
+        window.initMaskCanvas();
+
+        $('#mask-editor-overlay').addClass('active');
+    });
+
+    $('#close-mask-editor').click(function() {
+        $('#mask-editor-overlay').removeClass('active');
+    });
+
     $('#btn-prev-spirit-public').click(function() {
         if (!window.allSpirits || window.allSpirits.length <= 1) return;
         window.currentSpiritIndex = (window.currentSpiritIndex - 1 + window.allSpirits.length) % window.allSpirits.length;

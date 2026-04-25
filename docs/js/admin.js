@@ -102,13 +102,7 @@ let deckCardsToDelete = [];
 let localVikingData = [];
 let bddQueue = [];
 
-// Mask Editor State
-let maskCanvas, maskCtx;
-let isPainting = false;
-let currentBrushSize = 10;
-let currentTool = 'brush'; // 'brush' or 'eraser'
-let maskHistory = [];
-const MAX_HISTORY = 20;
+// Mask editor state is now global in utils.js
 
 let droppedGltfFile = null;
 let droppedExtraFiles = [];
@@ -757,10 +751,6 @@ $(document).ready(async function() {
         }
     });
 
-    // --- Mask Editor Logic ---
-    maskCanvas = document.getElementById('mask-canvas');
-    if (maskCanvas) maskCtx = maskCanvas.getContext('2d');
-
     $('#btn-open-mask-editor').click(function(e) {
         e.preventDefault();
         const cardImgUrl = $('#slot-image-url').val();
@@ -773,68 +763,13 @@ $(document).ready(async function() {
         $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
 
         // Initialize canvas
-        initMaskCanvas();
+        window.initMaskCanvas();
 
         $('#mask-editor-overlay').addClass('active');
     });
 
     $('#close-mask-editor').click(function() {
         $('#mask-editor-overlay').removeClass('active');
-    });
-
-    $('#brush-size').on('input', function() {
-        currentBrushSize = $(this).val();
-        $('#brush-size-val').text(currentBrushSize);
-    });
-
-    $('#tool-brush').click(function() {
-        currentTool = 'brush';
-        $('.editor-controls .btn-secondary').removeClass('active');
-        $(this).addClass('active');
-    });
-
-    $('#tool-eraser').click(function() {
-        currentTool = 'eraser';
-        $('.editor-controls .btn-secondary').removeClass('active');
-        $(this).addClass('active');
-    });
-
-    $('#btn-clear-mask').click(function() {
-        Swal.fire({
-            title: '¿Limpiar todo?',
-            text: "Se borrará todo el dibujo de la máscara.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, limpiar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                saveMaskHistory();
-                maskCtx.fillStyle = 'black';
-                maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
-                // Also clear the input field as requested
-                $('#slot-custom-mask').val('');
-            }
-        });
-    });
-
-    $('#btn-undo-mask').click(function() {
-        if (maskHistory.length > 0) {
-            const lastState = maskHistory.pop();
-            const img = new Image();
-            img.onload = function() {
-                maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-                maskCtx.drawImage(img, 0, 0);
-            };
-            img.src = lastState;
-        }
-    });
-
-    $('#btn-save-mask').click(function() {
-        // Save canvas as base64
-        const dataUrl = maskCanvas.toDataURL('image/png');
-        $('#slot-custom-mask').val(dataUrl);
-        $('#mask-editor-overlay').removeClass('active');
-        Swal.fire('Guardado', 'La máscara se ha generado correctamente. No olvides guardar la carta para aplicar los cambios.', 'success');
     });
 
     // --- External Search Logic ---
@@ -1054,79 +989,6 @@ $(document).ready(async function() {
         });
     }
 
-    // Canvas Events
-    $(maskCanvas).on('mousedown touchstart', function(e) {
-        isPainting = true;
-        saveMaskHistory();
-        draw(e);
-    });
-
-    $(window).on('mousemove touchmove', function(e) {
-        if (isPainting) draw(e);
-    });
-
-    $(window).on('mouseup touchend', function() {
-        isPainting = false;
-        maskCtx.beginPath();
-    });
-
-    function initMaskCanvas() {
-        const currentMask = $('#slot-custom-mask').val();
-
-        // Fill black background first
-        maskCtx.fillStyle = 'black';
-        maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
-
-        if (currentMask) {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = function() {
-                maskCtx.drawImage(img, 0, 0, maskCanvas.width, maskCanvas.height);
-            };
-            img.onerror = function() {
-                console.warn("No se pudo cargar la máscara previa en el lienzo (puede ser por CORS).");
-            };
-            img.src = currentMask;
-        }
-
-        maskHistory = [];
-    }
-
-    function saveMaskHistory() {
-        if (maskHistory.length >= MAX_HISTORY) maskHistory.shift();
-        maskHistory.push(maskCanvas.toDataURL());
-    }
-
-    function draw(e) {
-        if (!isPainting) return;
-
-        const rect = maskCanvas.getBoundingClientRect();
-        let x, y;
-
-        if (e.type.includes('touch')) {
-            const touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-            x = touch.clientX - rect.left;
-            y = touch.clientY - rect.top;
-            e.preventDefault();
-        } else {
-            x = e.clientX - rect.left;
-            y = e.clientY - rect.top;
-        }
-
-        // Scale coordinates if canvas display size is different from actual size
-        x = x * (maskCanvas.width / rect.width);
-        y = y * (maskCanvas.height / rect.height);
-
-        maskCtx.lineWidth = currentBrushSize;
-        maskCtx.lineCap = 'round';
-        maskCtx.lineJoin = 'round';
-        maskCtx.strokeStyle = currentTool === 'brush' ? 'white' : 'black';
-
-        maskCtx.lineTo(x, y);
-        maskCtx.stroke();
-        maskCtx.beginPath();
-        maskCtx.moveTo(x, y);
-    }
 
     // Deck Management Actions
     $('#btn-create-deck').click(async function(e) {
@@ -2293,6 +2155,25 @@ function renderDeckCardsLocal(scrollPos = null) {
         $tempContainer.append($cardItem);
     });
     $('#deck-card-list').html($tempContainer.contents());
+
+    // Apply foil loop if enabled
+    $('#deck-card-list .deck-card-item').each(function(idx) {
+        const card = localDeckCards[idx];
+        if (card && card.show_foil_in_list && card.holo_effect) {
+            const $img = $(this).find('img');
+            // We need a wrapper for foil to work correctly with existing logic
+            if (!$img.parent().hasClass('foil-wrapper')) {
+                $img.wrap('<div class="foil-wrapper" style="width:100%; height:150px; position:relative;"></div>');
+            }
+            const $wrapper = $(this).find('.foil-wrapper');
+            // Mock applyFoilToElement for admin list if needed or use public one if available
+            // For now, let's just use a simple version or ensure it's global
+            if (typeof applyFoilToElement === 'function') {
+                applyFoilToElement($wrapper, card.holo_effect, card.custom_mask_url);
+            }
+        }
+    });
+
     if (scrollPos !== null) restoreScroll(scrollPos);
     // initDeckCardsSorting(); // Blocked reordering from main view
 }
