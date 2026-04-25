@@ -547,10 +547,11 @@ $(document).ready(async function() {
     $(document).on('click', '.spirit-card', function() {
         const gltf = $(this).data('gltf');
         const name = $(this).data('name');
-        const spiritId = $(this).data('id');
+        const poster = $(this).find('model-viewer').attr('poster');
 
         if (gltf) {
             $('#expanded-gltf-viewer').attr('src', gltf);
+            $('#expanded-gltf-viewer').attr('poster', poster || '');
             $('#expanded-gltf-name').text(name);
             $('#gltf-overlay').addClass('active');
             $('body').addClass('modal-open');
@@ -736,6 +737,7 @@ $(document).ready(async function() {
     $('#menu-item-details').click(function() {
         if (window.currentSpirit) {
             $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
+            $('#expanded-gltf-viewer').attr('poster', window.currentSpirit.poster_url || '');
             $('#expanded-gltf-name').text(window.currentSpirit.name);
             $('#gltf-overlay').addClass('active');
             $('body').addClass('modal-open');
@@ -2059,6 +2061,7 @@ async function loadPublicSpirits() {
                 <div class="badge-selected">Actual</div>
                 <model-viewer
                     src="${spirit.gltf_url}"
+                    poster="${spirit.poster_url || ''}"
                     loading="lazy"
                     camera-controls
                     shadow-intensity="1"

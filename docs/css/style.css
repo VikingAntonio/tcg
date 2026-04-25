@@ -4238,6 +4238,17 @@ body.focus-mode-active .event-card {
     .deck-list-header h2 {
         font-size: 1.4rem;
     }
+
+    .deck-public-item {
+        -webkit-tap-highlight-color: transparent !important;
+        pointer-events: none;
+    }
+
+    .deck-public-item .btn-share-item,
+    .deck-public-item .deck-carousel-container,
+    .deck-public-item .deck-toggle-container {
+        pointer-events: auto;
+    }
 }
 
 @media (max-width: 480px) {
@@ -4292,16 +4303,6 @@ body.focus-mode-active .event-card {
         margin: 0 auto !important;
     }
 
-    .deck-public-item {
-        -webkit-tap-highlight-color: transparent !important;
-        pointer-events: none;
-    }
-
-    .deck-public-item .btn-share-item,
-    .deck-public-item .deck-carousel-container,
-    .deck-public-item .deck-toggle-container {
-        pointer-events: auto;
-    }
 }
 
 /* --- Sharing System Styles --- */
