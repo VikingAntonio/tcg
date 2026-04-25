@@ -210,7 +210,7 @@ $(document).ready(async function() {
     }
 
     function applyTheme(theme) {
-        $('body').removeClass('theme-light theme-medium theme-dark').addClass(theme);
+        $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
         localStorage.setItem('tcg_theme', theme);
         $('.theme-btn-small').removeClass('active');
         $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
