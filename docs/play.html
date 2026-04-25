@@ -667,12 +667,14 @@
             height: 120px;
             z-index: 5;
             pointer-events: auto;
+            contain: layout paint;
         }
 
         .spirit-viewer {
             width: 100%;
             height: 100%;
             transition: filter 0.3s;
+            will-change: transform, filter;
         }
 
         .spirit-speech-bubble {
@@ -695,6 +697,7 @@
             pointer-events: none;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             z-index: 10;
+            will-change: transform, opacity;
         }
 
         .spirit-speech-bubble.active {
@@ -740,12 +743,12 @@
 
         /* Reaction Animations */
         .reaction-damage {
-            filter: drop-shadow(0 0 10px #ff4757) brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5);
+            filter: brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5);
             animation: shake 0.5s ease-in-out;
         }
 
         .reaction-heal {
-            filter: drop-shadow(0 0 10px #2ed573) brightness(1.5) sepia(1) hue-rotate(80deg) saturate(5);
+            filter: brightness(1.5) sepia(1) hue-rotate(80deg) saturate(5);
         }
 
         @keyframes shake {
@@ -819,7 +822,7 @@
                 <button class="btn-change-spirit" onclick="openSpiritSelection(1)" title="Cambiar Personaje"><i class="fas fa-user-astronaut"></i></button>
                 <div class="spirit-container" id="spirit-container-1">
                     <div class="spirit-speech-bubble" id="bubble-1">¡Hola!</div>
-                    <model-viewer class="spirit-viewer" id="viewer-1" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
+                    <model-viewer class="spirit-viewer" id="viewer-1" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
                 </div>
                 <div class="player-name-container">
                     <input type="text" class="player-name" placeholder="Jugador 1" value="Mi LP">
@@ -867,7 +870,7 @@
                 <button class="btn-change-spirit" onclick="openSpiritSelection(2)" title="Cambiar Personaje"><i class="fas fa-user-astronaut"></i></button>
                 <div class="spirit-container" id="spirit-container-2">
                     <div class="spirit-speech-bubble" id="bubble-2">¡Suerte!</div>
-                    <model-viewer class="spirit-viewer" id="viewer-2" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
+                    <model-viewer class="spirit-viewer" id="viewer-2" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
                 </div>
                 <div class="player-name-container">
                     <input type="text" class="player-name" placeholder="Jugador 2" value="Oponente">
@@ -1002,6 +1005,28 @@
             } else if (availableSpirits.length > 0) {
                 setPlayerSpirit(2, availableSpirits[0]);
             }
+
+            renderSpiritSelectionGrid();
+        }
+
+        function renderSpiritSelectionGrid() {
+            const grid = document.getElementById('spirit-options-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            availableSpirits.forEach(spirit => {
+                const opt = document.createElement('div');
+                opt.className = 'spirit-option';
+                opt.innerHTML = `
+                    <model-viewer src="${spirit.gltf_url}" style="width: 80px; height: 80px;" loading="lazy" shadow-intensity="0" auto-rotate interaction-prompt="none"></model-viewer>
+                    <span>${spirit.name}</span>
+                `;
+                opt.onclick = () => {
+                    setPlayerSpirit(selectingForPlayer, spirit);
+                    closeSpiritSelection();
+                };
+                grid.appendChild(opt);
+            });
         }
 
         async function loadAvailableSpirits(user) {
@@ -1041,23 +1066,6 @@
         function openSpiritSelection(playerIdx) {
             selectingForPlayer = playerIdx;
             document.getElementById('selecting-player-idx').innerText = playerIdx;
-            const grid = document.getElementById('spirit-options-grid');
-            grid.innerHTML = '';
-
-            availableSpirits.forEach(spirit => {
-                const opt = document.createElement('div');
-                opt.className = 'spirit-option';
-                opt.innerHTML = `
-                    <model-viewer src="${spirit.gltf_url}" style="width: 80px; height: 80px;" auto-rotate interaction-prompt="none"></model-viewer>
-                    <span>${spirit.name}</span>
-                `;
-                opt.onclick = () => {
-                    setPlayerSpirit(playerIdx, spirit);
-                    closeSpiritSelection();
-                };
-                grid.appendChild(opt);
-            });
-
             document.getElementById('spirit-selection-modal').classList.add('active');
         }
 
