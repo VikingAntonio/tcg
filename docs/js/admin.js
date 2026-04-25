@@ -1224,6 +1224,44 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-spirit-poster-url', '#drop-zone-spirit-poster .file-name');
     });
 
+    // Spirit Particle Asset Drop Zone
+    $(document).on('drop', '#drop-zone-spirit-particle', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#input-spirit-particle-asset', '#drop-zone-spirit-particle .file-name');
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-spirit-particle', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-spirit-particle', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('change', '#input-spirit-particle-file', function() {
+        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-spirit-particle-asset', '#drop-zone-spirit-particle .file-name');
+    });
+
+    // Spirit Poster Search Logic
+    $(document).on('click', '#btn-spirit-poster-search', function(e) {
+        e.preventDefault();
+        searchExternalCard('#spirit-poster-search-input', '#spirit-poster-search-results', function(card) {
+            $('#input-spirit-poster-url').val(card.high_res);
+            $('#drop-zone-spirit-poster .file-name').text('¡Seleccionada!').css('color', '#00ff88');
+            Swal.fire({
+                title: 'Poster Seleccionado',
+                text: card.name,
+                icon: 'success',
+                timer: 1000,
+                showConfirmButton: false
+            });
+        });
+    });
+
+    $(document).on('keypress', '#spirit-poster-search-input', function(e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            $('#btn-spirit-poster-search').click();
+        }
+    });
+
     // BDD Drop Zone
     $(document).on('drop', '#drop-zone-bdd', async function(e) {
         e.preventDefault(); e.stopPropagation();
@@ -1395,11 +1433,14 @@ $(document).ready(async function() {
         $('#edit-spirit-id').val('');
         $('#input-spirit-name').val('');
         $('#input-spirit-animation').val('orbit');
-        $('#input-spirit-particle-asset').val('cerezo.png');
         $('#input-spirit-particle-movement').val('falling');
         $('#input-spirit-scale').val(1.8);
         $('#input-spirit-poster-url').val('');
+        $('#input-spirit-particle-asset').val(''); // Clear hidden input
         $('#drop-zone-spirit-poster .file-name').text('');
+        $('#drop-zone-spirit-particle .file-name').text('');
+        $('#spirit-poster-search-input').val('');
+        $('#spirit-poster-search-results').empty();
         droppedGltfFile = null;
         droppedExtraFiles = [];
         updateSpiritDropZoneUI(null);
@@ -1675,12 +1716,17 @@ function editSpirit(spirit) {
     $('#edit-spirit-id').val(spirit.id);
     $('#input-spirit-name').val(spirit.name);
     $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
-    $('#input-spirit-particle-asset').val(spirit.particle_asset || 'cerezo.png');
+    $('#input-spirit-particle-asset').val(spirit.particle_asset || '');
     $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
     $('#input-spirit-scale').val(spirit.scale || 1.8);
     $('#input-spirit-public').prop('checked', spirit.is_public !== false);
     $('#input-spirit-poster-url').val(spirit.poster_url || '');
-    $('#drop-zone-spirit-poster .file-name').text('');
+
+    // UI Status
+    $('#drop-zone-spirit-poster .file-name').text(spirit.poster_url ? '¡Cargado!' : '').css('color', '#00ff88');
+    $('#drop-zone-spirit-particle .file-name').text(spirit.particle_asset ? '¡Cargado!' : '').css('color', '#00ff88');
+    $('#spirit-poster-search-input').val('');
+    $('#spirit-poster-search-results').empty();
 
     // Reset file selection for edit (optional)
     droppedGltfFile = null;
