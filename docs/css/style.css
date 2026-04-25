@@ -1732,7 +1732,8 @@ input:checked + .slider:before {
     transform-style: preserve-3d;
 }
 
-.card-3d-container.active .holo-layer {
+.card-3d-container.active .holo-layer,
+.card-slot.active .holo-layer {
     opacity: 1;
 }
 
@@ -1793,7 +1794,8 @@ input:checked + .slider:before {
 .card-3d-container .card-3d.masked .holo-layer,
 .card-3d-container .card-3d.masked .card__shine,
 .card-3d-container .card-3d.masked .card__shine:before,
-.card-3d-container .card-3d.masked .card__shine:after {
+.card-3d-container .card-3d.masked .card__shine:after,
+.card-slot.masked .holo-layer {
     -webkit-mask-image: var(--mask-url);
     mask-image: var(--mask-url);
     -webkit-mask-size: 100% 100%;
