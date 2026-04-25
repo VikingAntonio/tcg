@@ -1243,6 +1243,16 @@
                 </label>
             </div>
             <div class="form-group">
+                <label>Poster del Compañero (Imagen que sale mientras carga)</label>
+                <label class="drop-zone file-drop-zone" id="drop-zone-spirit-poster" for="input-spirit-poster" style="display: block;">
+                    <i class="fas fa-image"></i>
+                    <p>Arrastra un poster aquí o haz clic para subir</p>
+                    <input type="file" id="input-spirit-poster" accept="image/*" style="display: none;">
+                    <div class="file-name"></div>
+                </label>
+                <input type="text" id="input-spirit-poster-url" placeholder="https://...">
+            </div>
+            <div class="form-group">
                 <label>Tipo de Animación del Modelo</label>
                 <select id="input-spirit-animation">
                     <option value="orbit">Giro en Eje Z (Órbita)</option>

@@ -1347,6 +1347,21 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleDeckImageUpload(this.files[0]);
     });
 
+    // Spirit Poster Drop Zone
+    $(document).on('drop', '#drop-zone-spirit-poster', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleCloudinaryUpload(files[0], '#input-spirit-poster-url', '#drop-zone-spirit-poster .file-name');
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-spirit-poster', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-spirit-poster', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('change', '#input-spirit-poster', function() {
+        if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-spirit-poster-url', '#drop-zone-spirit-poster .file-name');
+    });
+
     // BDD Drop Zone
     $(document).on('drop', '#drop-zone-bdd', async function(e) {
         e.preventDefault(); e.stopPropagation();
@@ -1521,6 +1536,8 @@ $(document).ready(async function() {
         $('#input-spirit-particle-asset').val('cerezo.png');
         $('#input-spirit-particle-movement').val('falling');
         $('#input-spirit-scale').val(1.8);
+        $('#input-spirit-poster-url').val('');
+        $('#drop-zone-spirit-poster .file-name').text('');
         droppedGltfFile = null;
         droppedExtraFiles = [];
         updateSpiritDropZoneUI(null);
@@ -1541,6 +1558,7 @@ $(document).ready(async function() {
         const particleMovement = $('#input-spirit-particle-movement').val();
         const scale = parseFloat($('#input-spirit-scale').val()) || 1.8;
         const isPublic = $('#input-spirit-public').is(':checked');
+        const posterUrl = $('#input-spirit-poster-url').val();
 
         if (!name) {
             Swal.fire('Atención', 'El nombre es obligatorio', 'warning');
@@ -1598,6 +1616,7 @@ $(document).ready(async function() {
                 particle_movement_type: particleMovement,
                 scale: scale,
                 is_public: isPublic,
+                poster_url: posterUrl,
                 user_id: currentUser.id
             };
 
@@ -1798,6 +1817,8 @@ function editSpirit(spirit) {
     $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
     $('#input-spirit-scale').val(spirit.scale || 1.8);
     $('#input-spirit-public').prop('checked', spirit.is_public !== false);
+    $('#input-spirit-poster-url').val(spirit.poster_url || '');
+    $('#drop-zone-spirit-poster .file-name').text('');
 
     // Reset file selection for edit (optional)
     droppedGltfFile = null;
@@ -2738,6 +2759,7 @@ async function loadSpirits() {
                 <div class="badge-selected">Seleccionado</div>
                 <model-viewer
                     src="${spirit.gltf_url}"
+                    poster="${spirit.poster_url || ''}"
                     loading="lazy"
                     camera-controls
                     shadow-intensity="1"
