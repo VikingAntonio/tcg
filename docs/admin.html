@@ -363,6 +363,13 @@
                     <label>Precio Especial</label>
                     <input type="text" id="input-deck-special-price" placeholder="Ej: $100.00">
                 </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <label class="switch">
+                        <input type="checkbox" id="input-deck-show-foil">
+                        <span class="slider"></span>
+                    </label>
+                    <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-show-foil">Habilitar Efecto Foil en Vista Lista</label>
+                </div>
             </div>
 
             <div class="admin-header">
@@ -1199,6 +1206,15 @@
                     <div class="form-group price-item">
                         <label>Precio</label>
                         <input type="text" id="slot-price">
+                    </div>
+                    <div class="form-group" id="slot-foil-list-container" style="display: none; grid-column: span 2;">
+                        <label class="switch-searching" style="position: relative; top: 0; left: 0;">
+                            <label class="switch switch-mini">
+                                <input type="checkbox" id="slot-show-foil-list">
+                                <span class="slider"></span>
+                            </label>
+                            <span style="margin-left: 10px; font-size: 0.85rem; color: #aaa;">Mostrar Foil en Vista Lista</span>
+                        </label>
                     </div>
                 </div>
             </div>

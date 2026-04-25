@@ -677,13 +677,24 @@
             will-change: transform, filter;
         }
 
+        .spirit-static-icon {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            color: var(--primary-color);
+            opacity: 0.7;
+            text-shadow: 0 0 15px var(--primary-color);
+        }
+
         .spirit-speech-bubble {
             position: absolute;
             top: -40px;
             right: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 210, 255, 0.3);
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(0, 210, 255, 0.4);
             color: white;
             padding: 8px 12px;
             border-radius: 15px;
@@ -693,9 +704,8 @@
             width: max-content;
             opacity: 0;
             transform: translateY(10px);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.2s ease-out;
             pointer-events: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             z-index: 10;
             will-change: transform, opacity;
         }
@@ -1077,13 +1087,27 @@
             playerSpirits[playerIdx - 1] = spirit;
             localStorage.setItem(`viking_play_spirit_${playerIdx}`, JSON.stringify(spirit));
 
-            const viewer = document.getElementById(`viewer-${playerIdx}`);
-            viewer.src = spirit.gltf_url;
+            const isMobile = window.innerWidth < 768;
+            const viewerContainer = document.getElementById(`spirit-container-${playerIdx}`);
 
-            // Increase scale by 1.5x as requested by user
-            const baseScale = spirit.scale || 1;
-            const finalScale = baseScale * 1.5;
-            viewer.scale = `${finalScale} ${finalScale} ${finalScale}`;
+            if (isMobile) {
+                // Remove viewer and add static icon for performance
+                viewerContainer.innerHTML = `
+                    <div class="spirit-speech-bubble" id="bubble-${playerIdx}"></div>
+                    <div class="spirit-static-icon"><i class="fas fa-user-astronaut"></i></div>
+                `;
+            } else {
+                viewerContainer.innerHTML = `
+                    <div class="spirit-speech-bubble" id="bubble-${playerIdx}"></div>
+                    <model-viewer class="spirit-viewer" id="viewer-${playerIdx}" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
+                `;
+                const viewer = document.getElementById(`viewer-${playerIdx}`);
+                viewer.src = spirit.gltf_url;
+
+                const baseScale = spirit.scale || 1;
+                const finalScale = baseScale * 1.5;
+                viewer.scale = `${finalScale} ${finalScale} ${finalScale}`;
+            }
 
             triggerReaction(playerIdx, 'greet');
         }

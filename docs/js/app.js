@@ -27,6 +27,54 @@ const POKEMON_FOILS = {
     'pk-reverse-holo': 'reverse holo'
 };
 
+function applyFoilToElement($el, holo, mask) {
+    if (!holo) return;
+
+    let baseHolo = holo;
+    let isCustomFoil = false;
+    if (holo.startsWith('custom-foil|')) {
+        isCustomFoil = true;
+        baseHolo = holo.split('|')[1] || 'foil';
+    }
+
+    if (POKEMON_FOILS[baseHolo]) {
+        let rarityVal = POKEMON_FOILS[baseHolo];
+        $el.addClass("card");
+        if (rarityVal.includes('trainer gallery')) { $el.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+        if (rarityVal.includes('supporter')) { $el.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+        if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+        $el.attr("data-rarity", rarityVal.trim());
+
+        if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+            $el.addClass("masked");
+            $el.css("--mask", `url(${mask})`);
+            $el.css("--mask-url", `url(${mask})`);
+        }
+        const rx = 0.5, ry = 0.5;
+        $el.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+    } else {
+        $el.addClass(baseHolo);
+        if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+            $el.addClass("masked");
+            $el.css("--mask", `url(${mask})`);
+            $el.css("--mask-url", `url(${mask})`);
+        }
+    }
+
+    if ($el.find('.holo-layer').length === 0) {
+        $el.append('<div class="holo-layer"></div>');
+    }
+
+    $el.addClass('active');
+
+    $el.css({
+        '--mx': 0.5,
+        '--my': 0.5,
+        '--angle': '135deg',
+        '--card-opacity': 1
+    });
+}
+
 // --- Loading Screen Functions ---
 window.isLoading = false;
 window.loadingMessage = '';
@@ -280,6 +328,30 @@ $(document).ready(async function() {
     $(document).on('click', '.home-menu-item', function() {
         const view = $(this).data('view');
         if (view) switchView(view);
+    });
+
+    // --- Foil Shimmer Interaction in Lists ---
+    $(document).on('mousemove', '.card-slot[data-show-foil="true"]', function(e) {
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const mx = x / rect.width;
+        const my = y / rect.height;
+        const angle = (Math.atan2(my - 0.5, mx - 0.5) * 180 / Math.PI) + 135;
+
+        $(this).css({
+            '--mx': mx,
+            '--my': my,
+            '--angle': `${angle}deg`
+        });
+    });
+
+    $(document).on('mouseleave', '.card-slot[data-show-foil="true"]', function() {
+        $(this).css({
+            '--mx': 0.5,
+            '--my': 0.5,
+            '--angle': '135deg'
+        });
     });
 
     // Bottom App Navigation
@@ -1828,7 +1900,8 @@ function loadPublicDecks() {
                                          data-condition="${card.condition || ''}"
                                          data-quantity="${card.quantity || '1'}"
                                          data-price="${card.price || ''}"
-                                         data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}">
+                                         data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
+                                         data-show-foil="${card.show_foil_in_list || false}">
                                         <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
                                         ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
                                         <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
@@ -1847,6 +1920,14 @@ function loadPublicDecks() {
             `);
 
             $('#decks-container').append($deckItem);
+
+            // Apply Foil to swiper slides if enabled
+            $deckItem.find('.swiper-slide').each(function(idx) {
+                const card = deck.deck_cards[idx];
+                if (card && card.show_foil_in_list && card.holo_effect) {
+                    applyFoilToElement($(this), card.holo_effect, card.custom_mask_url);
+                }
+            });
 
             // El manejo de clics se mantiene normal, la prioridad táctil
             // ya se maneja con el listener global en fase de captura.
@@ -2522,13 +2603,18 @@ function loadPublicWishlist() {
                      data-obtained="${item.obtained}"
                      data-holo="${item.holo_effect || ''}"
                      data-mask="${item.custom_mask_url || ''}"
-                     data-3d="${item.use_3d !== false}">
+                     data-3d="${item.use_3d !== false}"
+                     data-show-foil="${item.show_foil_in_list || false}">
                     <h3>${item.name}</h3>
                     <img src="${item.image_url}" alt="${item.name}">
                     ${item.obtained ? '<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>' : ''}
                     <div class="zoom-btn" style="display: flex; bottom: 5px; right: 5px; left: auto;"><i class="fas fa-search-plus"></i></div>
                 </div>
             `);
+
+            if (item.show_foil_in_list && item.holo_effect) {
+                applyFoilToElement($el, item.holo_effect, item.custom_mask_url);
+            }
 
             $el.click(function(e) {
                 if (isDragging) return;
@@ -2617,6 +2703,10 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
     $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
         const $slide = $(this);
         const obtained = $slide.attr('data-obtained');
+        const showFoil = $slide.data('show-foil');
+        const holo = $slide.data('holo');
+        const mask = $slide.data('mask');
+
         const $card = $(`
             <div class="grid-card-item card-slot"
                  data-obtained="${obtained}"
@@ -2628,11 +2718,17 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
                  data-condition="${$slide.data('condition')}"
                  data-quantity="${$slide.data('quantity')}"
                  data-price="${$slide.data('price')}"
-                 data-obtained="${obtained}">
+                 data-obtained="${obtained}"
+                 data-show-foil="${showFoil}">
                 <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
                 ${(obtained === 'false' || obtained === false) ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
             </div>
         `);
+
+        if (showFoil && holo) {
+            applyFoilToElement($card, holo, mask);
+        }
+
         $container.append($card);
     });
 

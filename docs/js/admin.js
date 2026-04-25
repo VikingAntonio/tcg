@@ -648,7 +648,8 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
-            obtained: $('#slot-modal').data('current-obtained') !== false
+            obtained: $('#slot-modal').data('current-obtained') !== false,
+            show_foil_in_list: $('#slot-show-foil-list').is(':checked')
         };
 
         // Queue to VikingData (Shared Database)
@@ -746,6 +747,13 @@ $(document).ready(async function() {
             $('#custom-foil-type-container').show();
         } else {
             $('#custom-foil-type-container').hide();
+        }
+
+        if (val) {
+            $('#slot-foil-list-container').show();
+        } else {
+            $('#slot-foil-list-container').hide();
+            $('#slot-show-foil-list').prop('checked', false);
         }
     });
 
@@ -1164,8 +1172,9 @@ $(document).ready(async function() {
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
+        const show_foil_in_list = $('#input-deck-show-foil').is(':checked');
 
-        let updateData = { name, is_public, use_special_price, special_price };
+        let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list };
 
         try {
             // 1. Save Deck Metadata
@@ -2135,6 +2144,7 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
+    $('#input-deck-show-foil').prop('checked', target.show_foil_in_list === true);
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -2968,6 +2978,8 @@ async function loadSlotData(pageId, slotIndex) {
     $('#custom-foil-type-container').hide();
     $('#slot-custom-mask').val('');
     $('#custom-mask-container').hide();
+    $('#slot-show-foil-list').prop('checked', false);
+    $('#slot-foil-list-container').hide();
     $('#slot-rarity').val('');
     $('#slot-expansion').val('');
     $('#slot-condition').val('');
@@ -2978,6 +2990,7 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
+        $('#slot-show-foil-list').prop('checked', data.show_foil_in_list === true);
 
         let holo = data.holo_effect || '';
         if (holo.startsWith('custom-foil|')) {
@@ -2994,6 +3007,12 @@ async function loadSlotData(pageId, slotIndex) {
             } else {
                 $('#custom-mask-container').hide();
             }
+        }
+
+        if (holo) {
+            $('#slot-foil-list-container').show();
+        } else {
+            $('#slot-foil-list-container').hide();
         }
 
         $('#slot-custom-mask').val(data.custom_mask_url || '');
