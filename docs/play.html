@@ -661,13 +661,12 @@
         /* Spirit Styles */
         .spirit-container {
             position: absolute;
-            top: -60px;
+            top: -85px;
             right: 10px;
             width: 120px;
             height: 120px;
-            z-index: 5;
+            z-index: 100;
             pointer-events: auto;
-            contain: layout paint;
         }
 
         .spirit-viewer {
@@ -696,7 +695,7 @@
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 10;
+            z-index: 101;
             will-change: transform, opacity;
         }
 
@@ -821,8 +820,8 @@
             <div class="player-section" id="player1">
                 <button class="btn-change-spirit" onclick="openSpiritSelection(1)" title="Cambiar Personaje"><i class="fas fa-user-astronaut"></i></button>
                 <div class="spirit-container" id="spirit-container-1">
-                    <div class="spirit-speech-bubble" id="bubble-1">¡Hola!</div>
                     <model-viewer class="spirit-viewer" id="viewer-1" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
+                    <div class="spirit-speech-bubble" id="bubble-1">¡Hola!</div>
                 </div>
                 <div class="player-name-container">
                     <input type="text" class="player-name" placeholder="Jugador 1" value="Mi LP">
@@ -869,8 +868,8 @@
             <div class="player-section" id="player2">
                 <button class="btn-change-spirit" onclick="openSpiritSelection(2)" title="Cambiar Personaje"><i class="fas fa-user-astronaut"></i></button>
                 <div class="spirit-container" id="spirit-container-2">
-                    <div class="spirit-speech-bubble" id="bubble-2">¡Suerte!</div>
                     <model-viewer class="spirit-viewer" id="viewer-2" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="1" exposure="1" camera-controls touch-action="pan-y"></model-viewer>
+                    <div class="spirit-speech-bubble" id="bubble-2">¡Suerte!</div>
                 </div>
                 <div class="player-name-container">
                     <input type="text" class="player-name" placeholder="Jugador 2" value="Oponente">
@@ -1391,7 +1390,8 @@
 
             resultText.innerText = 'Girando...';
 
-            const isHeads = getRandomInt(2) === 0;
+            // Explicit 50/50 probability logic
+            const isHeads = Math.random() < 0.5;
             const result = isHeads ? 'Cara' : 'Cruz';
 
             // Add at least 5 full rotations (1800 deg)
@@ -1404,8 +1404,9 @@
             setTimeout(() => {
                 resultText.innerText = result;
                 isFlipping = false;
-                triggerReaction(1, 'coin', result);
-                triggerReaction(2, 'coin', result);
+                // Only one random spirit reacts
+                const reactingPlayer = getRandomInt(2) + 1;
+                triggerReaction(reactingPlayer, 'coin', result);
             }, 1000);
         }
 
@@ -1432,8 +1433,9 @@
                     dice.classList.remove('animate-dice');
                     resultText.innerText = `Resultado: ${result}`;
                     isRolling = false;
-                    triggerReaction(1, 'dice', result);
-                    triggerReaction(2, 'dice', result);
+                    // Only one random spirit reacts
+                    const reactingPlayer = getRandomInt(2) + 1;
+                    triggerReaction(reactingPlayer, 'dice', result);
                 }
             }, 60);
         }
