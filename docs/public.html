@@ -490,6 +490,23 @@
         </div>
     </div>
 
+    <!-- Deck List Modal -->
+    <div id="deck-list-overlay" class="overlay">
+        <div class="deck-list-modal">
+            <span id="close-deck-list" class="close-btn">&times;</span>
+            <div class="deck-list-header">
+                <h2 id="deck-list-title">Nombre del Deck</h2>
+                <div class="deck-filter-tabs">
+                    <button class="deck-filter-tab active" data-filter="all">Todas</button>
+                    <button class="deck-filter-tab" data-filter="missing">Faltantes</button>
+                </div>
+            </div>
+            <div id="deck-grid-container" class="deck-grid-popup">
+                <!-- Cards will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
