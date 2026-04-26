@@ -1,0 +1,34 @@
+/* isolated foil loop animation for list views */
+
+@property --mx {
+  syntax: '<number>';
+  initial-value: 0.5;
+  inherits: true;
+}
+@property --my {
+  syntax: '<number>';
+  initial-value: 0.5;
+  inherits: true;
+}
+
+@keyframes foil-loop-shimmer {
+    0% { --mx: 0.42; --my: 0.48; }
+    50% { --mx: 0.58; --my: 0.52; }
+    100% { --mx: 0.42; --my: 0.48; }
+}
+
+.foil-loop {
+    animation: foil-loop-shimmer 5s ease-in-out infinite !important;
+}
+
+/* Force show holo-layer for foil loop even if not hovered */
+.foil-loop .holo-layer,
+.foil-loop.card .card__shine,
+.foil-loop.card .card__glare {
+    opacity: 1 !important;
+}
+
+/* Ensure the zoom button (lupa) remains visible */
+.foil-loop .zoom-btn {
+    display: flex !important;
+}

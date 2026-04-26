@@ -119,8 +119,21 @@ body.theme-light .user-dropdown-role,
 body.theme-light .hero-subtitle,
 body.theme-light .bento-content p,
 body.theme-light .tile span,
-body.theme-light .tile i {
+body.theme-light .tile i,
+body.theme-light .tile {
     color: #2d3436 !important;
+}
+
+body.theme-medium .tile span,
+body.theme-medium .tile i,
+body.theme-medium .tile {
+    color: #ffffff !important;
+}
+
+body.theme-purple .tile span,
+body.theme-purple .tile i,
+body.theme-purple .tile {
+    color: #ffffff !important;
 }
 
 body {
@@ -520,7 +533,8 @@ body {
 
 .tile i {
     font-size: 2.5rem;
-    color: rgba(0, 0, 0, 0.6);
+    color: inherit;
+    opacity: 0.7;
 }
 
 .tile:hover {
@@ -539,13 +553,33 @@ body {
 .tile-red i { color: white !important; }
 
 /* In light themes, keep the pastel color backgrounds but subtle */
-body.theme-light .tile-blue { background-color: #d1eefc; border-color: #38bdf8; }
-body.theme-light .tile-purple { background-color: #e8d5ff; border-color: #a855f7; }
-body.theme-light .tile-pink { background-color: #ffdce0; border-color: #ec4899; }
-body.theme-light .tile-yellow { background-color: #fff5be; border-color: #eab308; }
-body.theme-light .tile-orange { background-color: #ffe4cc; border-color: #f97316; }
-body.theme-light .tile-green { background-color: #e2ffd5; border-color: #22c55e; }
-body.theme-light .tile-cyan { background-color: #d1fcf0; border-color: #06b6d4; }
+body.theme-light .tile-blue { background-color: #d1eefc !important; border-color: #38bdf8 !important; }
+body.theme-light .tile-purple { background-color: #e8d5ff !important; border-color: #a855f7 !important; }
+body.theme-light .tile-pink { background-color: #ffdce0 !important; border-color: #ec4899 !important; }
+body.theme-light .tile-yellow { background-color: #fff5be !important; border-color: #eab308 !important; }
+body.theme-light .tile-orange { background-color: #ffe4cc !important; border-color: #f97316 !important; }
+body.theme-light .tile-green { background-color: #e2ffd5 !important; border-color: #22c55e !important; }
+body.theme-light .tile-cyan { background-color: #d1fcf0 !important; border-color: #06b6d4 !important; }
+
+/* Medium theme tiles */
+body.theme-medium .tile-blue { background-color: #2d3436 !important; border-color: #38bdf8 !important; }
+body.theme-medium .tile-purple { background-color: #2d3436 !important; border-color: #a855f7 !important; }
+body.theme-medium .tile-pink { background-color: #2d3436 !important; border-color: #ec4899 !important; }
+body.theme-medium .tile-yellow { background-color: #2d3436 !important; border-color: #eab308 !important; }
+body.theme-medium .tile-orange { background-color: #2d3436 !important; border-color: #f97316 !important; }
+body.theme-medium .tile-green { background-color: #2d3436 !important; border-color: #22c55e !important; }
+body.theme-medium .tile-cyan { background-color: #2d3436 !important; border-color: #06b6d4 !important; }
+body.theme-medium .tile span, body.theme-medium .tile i { color: #fff !important; }
+
+/* Purple theme tiles */
+body.theme-purple .tile-blue { background-color: #4b0082 !important; border-color: #38bdf8 !important; }
+body.theme-purple .tile-purple { background-color: #4b0082 !important; border-color: #a855f7 !important; }
+body.theme-purple .tile-pink { background-color: #4b0082 !important; border-color: #ec4899 !important; }
+body.theme-purple .tile-yellow { background-color: #4b0082 !important; border-color: #eab308 !important; }
+body.theme-purple .tile-orange { background-color: #4b0082 !important; border-color: #f97316 !important; }
+body.theme-purple .tile-green { background-color: #4b0082 !important; border-color: #22c55e !important; }
+body.theme-purple .tile-cyan { background-color: #4b0082 !important; border-color: #06b6d4 !important; }
+body.theme-purple .tile span, body.theme-purple .tile i { color: #fff !important; }
 
 /* Bento Classes */
 .tile-wide { grid-column: span 2; }
@@ -1656,40 +1690,6 @@ input:checked + .slider:before {
 }
 
 
-/* --- HOLOGRAPHIC EFFECTS --- */
-
-@property --mx {
-  syntax: '<number>';
-  initial-value: 0.5;
-  inherits: true;
-}
-@property --my {
-  syntax: '<number>';
-  initial-value: 0.5;
-  inherits: true;
-}
-
-@keyframes foil-loop-shimmer {
-    0% { --mx: 0.42; --my: 0.48; }
-    50% { --mx: 0.58; --my: 0.52; }
-    100% { --mx: 0.42; --my: 0.48; }
-}
-
-.foil-loop {
-    animation: foil-loop-shimmer 5s ease-in-out infinite !important;
-}
-
-/* Force show holo-layer for foil loop even if not hovered */
-.foil-loop .holo-layer,
-.foil-loop.card .card__shine,
-.foil-loop.card .card__glare {
-    opacity: 1 !important;
-}
-
-/* Hide zoom button when foil loop is active as per user request */
-.foil-loop .zoom-btn {
-    display: none !important;
-}
 
 .card-3d-container {
     perspective: 1000px;
@@ -4595,7 +4595,7 @@ body.focus-mode-active .event-card {
     display: flex;
     gap: 40px;
     box-shadow: var(--nm-shadow);
-    z-index: 110000;
+    z-index: 999999;
     border: 1px solid var(--card-border);
     backdrop-filter: blur(10px);
 }

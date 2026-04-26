@@ -759,6 +759,37 @@ $(document).ready(async function() {
             return;
         }
 
+        // Set target input for the global save logic in utils.js
+        window.maskTargetInput = '#slot-custom-mask';
+        // Set card as background
+        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
+
+        // Initialize canvas
+        window.initMaskCanvas();
+
+        $('#mask-editor-overlay').addClass('active');
+    });
+
+    $('#bdd-holo-effect').change(function() {
+        const val = $(this).val();
+        if (val === 'custom-texture' || val === 'custom-foil') {
+            $('#bdd-mask-container').show();
+        } else {
+            $('#bdd-mask-container').hide();
+        }
+    });
+
+    $('#btn-open-mask-editor-bdd').click(function(e) {
+        e.preventDefault();
+        const cardImgUrl = $('#bdd-image-url').val();
+        if (!cardImgUrl) {
+            Swal.fire('Atención', 'Primero debes poner la URL de la imagen de la carta para usar de referencia.', 'warning');
+            return;
+        }
+
+        // Set target input for the global save logic in utils.js
+        window.maskTargetInput = '#bdd-custom-mask';
+
         // Set card as background
         $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
 
@@ -1299,7 +1330,9 @@ $(document).ready(async function() {
             tcg,
             price,
             type,
-            user_id: currentUser.id
+            user_id: currentUser.id,
+            holo_effect: $('#bdd-holo-effect').val(),
+            custom_mask_url: $('#bdd-custom-mask').val()
         });
 
         renderPendingBdd();
@@ -1365,6 +1398,8 @@ $(document).ready(async function() {
         $('#bdd-rarity').val('');
         $('#bdd-price').val('');
         $('#drop-zone-bdd .file-name').text('');
+        $('#bdd-holo-effect').val('').trigger('change');
+        $('#bdd-custom-mask').val('');
     }
 
     async function handleDeckImageUpload(file) {

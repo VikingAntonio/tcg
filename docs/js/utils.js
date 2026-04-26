@@ -162,8 +162,14 @@ window.initMaskEditor = function() {
 
     $('#btn-save-mask').off('click').on('click', function() {
         const dataUrl = window.maskCanvas.toDataURL('image/png');
-        // Supports all integrated form input IDs
-        $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask').val(dataUrl).trigger('change');
+
+        // Use explicit target if set, otherwise fallback to standard IDs
+        if (window.maskTargetInput) {
+            $(window.maskTargetInput).val(dataUrl).trigger('change');
+        } else {
+            $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #bdd-custom-mask').val(dataUrl).trigger('change');
+        }
+
         $('#mask-editor-overlay').removeClass('active');
         Swal.fire('Guardado', 'La máscara se ha generado correctamente.', 'success');
     });
@@ -225,13 +231,19 @@ window.drawMask = function(e) {
 $(document).ready(function() {
     window.initMaskEditor();
 
+    // Isolated navigation for public.html if it's there
+    if (window.location.pathname.includes('public.html')) {
+         // handle deep links etc if needed
+    }
+
     $(document).on('click', '#btn-nav-home', function() {
         window.location.href = 'index.html';
     });
 
     $(document).on('click', '#btn-nav-return', function() {
         // 1. Check for active overlays/popups
-        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active');
+        // Added more selectors to ensure all popups are covered
+        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active, .modal.active, .popup.active, #login-modal.active, #spirit-modal.active, #gltf-overlay.active, #event-details-overlay.active, #wishlist-search-modal.active, #auction-detail-modal.active, #wishlist-modal.active, #spirit-upload-modal.active, #fast-draw-modal.active');
 
         if ($activeOverlay.length > 0) {
             $activeOverlay.removeClass('active');
@@ -248,5 +260,51 @@ $(document).ready(function() {
         } else {
             window.location.href = 'index.html';
         }
+    });
+});
+
+// Dynamic Mask Editor Injection
+$(document).ready(function() {
+    if ($('#mask-editor-overlay').length === 0) {
+        const maskEditorHTML = `
+        <div id="mask-editor-overlay" class="overlay">
+            <div class="overlay-content" style="max-width: 600px;">
+                <span id="close-mask-editor" class="close-btn">&times;</span>
+                <h2>Editor de Máscara</h2>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
+
+                <div id="mask-canvas-wrapper" style="position: relative; margin-bottom: 20px; border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 168px; height: 244px;">
+                    <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
+                </div>
+
+                <div class="editor-controls" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <label style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño:</label>
+                        <input type="range" id="brush-size" min="1" max="50" value="10" style="flex: 1;">
+                        <span id="brush-size-val" style="font-size: 14px; width: 30px;">10</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <button id="tool-brush" class="btn btn-secondary active"><i class="fas fa-paint-brush"></i> Pincel</button>
+                        <button id="tool-eraser" class="btn btn-secondary"><i class="fas fa-eraser"></i> Borrador</button>
+                        <button id="btn-undo-mask" class="btn btn-secondary"><i class="fas fa-undo"></i> Deshacer</button>
+                        <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar Todo</button>
+                    </div>
+
+                    <button id="btn-save-mask" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Máscara</button>
+                </div>
+            </div>
+        </div>`;
+        $('body').append(maskEditorHTML);
+        window.initMaskEditor(); // Re-init after injection
+    }
+
+    $(document).on('click', '#close-mask-editor', function() {
+        $('#mask-editor-overlay').removeClass('active');
+    });
+
+    $(document).on('click', '#btn-open-mask-editor', function() {
+        $('#mask-editor-overlay').addClass('active');
+        window.initMaskCanvas();
     });
 });
