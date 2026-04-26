@@ -345,7 +345,7 @@ body {
     z-index: 10;
     cursor: pointer;
     transition: opacity 0.2s ease, background 0.2s ease;
-    pointer-events: auto;
+    pointer-events: auto !important;
 }
 
 .zoom-btn:hover {

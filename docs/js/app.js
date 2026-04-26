@@ -1105,6 +1105,8 @@ async function openCardModal($slot) {
         baseHolo = holo.split('|')[1] || 'foil';
     }
 
+    const POKEMON_FOILS = window.POKEMON_FOILS || {};
+
     if (baseHolo) {
         if (POKEMON_FOILS[baseHolo]) {
             let rarityVal = POKEMON_FOILS[baseHolo];
@@ -1307,6 +1309,8 @@ function applyVisualsToModal(holo, mask, use3d) {
         isCustomFoil = true;
         baseHolo = holo.split('|')[1] || 'foil';
     }
+
+    const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
     if (baseHolo) {
         if (POKEMON_FOILS[baseHolo]) {
