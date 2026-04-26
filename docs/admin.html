@@ -6,6 +6,7 @@
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <title>Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animacionesdeseos.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="css/cards.css">
     <style>
@@ -593,6 +594,45 @@
                     <div class="form-group">
                         <label>Precio Estimado (Opcional)</label>
                         <input type="text" id="bdd-price" placeholder="Ej: $25.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Efecto Holo</label>
+                        <select id="bdd-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                            <option value="">Ninguno</option>
+                            <option value="foil">Foil</option>
+                            <option value="custom-texture">CustomTexture</option>
+                            <option value="custom-foil">CustomFoil</option>
+                            <option value="pk-rare-holo">PK: Rare Holo</option>
+                            <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
+                            <option value="pk-rare-holo-v">PK: Rare Holo V</option>
+                            <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
+                            <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
+                            <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
+                            <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
+                            <option value="pk-rare-secret">PK: Rare Secret</option>
+                            <option value="pk-rare-shiny">PK: Rare Shiny</option>
+                            <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
+                            <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
+                            <option value="pk-amazing-rare">PK: Amazing Rare</option>
+                            <option value="pk-radiant-rare">PK: Radiant Rare</option>
+                            <option value="pk-rare-ultra">PK: Rare Ultra</option>
+                            <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
+                            <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
+                            <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
+                            <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
+                            <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
+                            <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
+                            <option value="pk-reverse-holo">PK: Reverse Holo</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="bdd-mask-container" style="display: none; grid-column: span 2;">
+                        <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="bdd-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
+                            <button id="btn-open-mask-editor-bdd" class="btn btn-secondary" style="white-space: nowrap;">
+                                <i class="fas fa-paint-brush"></i> Editar
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <button id="btn-queue-bdd" class="btn" style="width: 100%; margin-top: 20px;">
@@ -1287,34 +1327,13 @@
         </div>
     </div>
 
-    <!-- Mask Editor Modal -->
-    <div id="mask-editor-overlay" class="overlay">
-        <div class="overlay-content" style="max-width: 600px;">
-            <span id="close-mask-editor" class="close-btn">&times;</span>
-            <h2>Editor de Máscara</h2>
-            <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
 
-            <div id="mask-canvas-wrapper" style="position: relative; margin-bottom: 20px; border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 168px; height: 244px;">
-                <!-- Card background will be set via CSS -->
-                <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
-            </div>
-
-            <div class="editor-controls" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <label style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño:</label>
-                    <input type="range" id="brush-size" min="1" max="50" value="10" style="flex: 1;">
-                    <span id="brush-size-val" style="font-size: 14px; width: 30px;">10</span>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                    <button id="tool-brush" class="btn btn-secondary active"><i class="fas fa-paint-brush"></i> Pincel</button>
-                    <button id="tool-eraser" class="btn btn-secondary"><i class="fas fa-eraser"></i> Borrador</button>
-                    <button id="btn-undo-mask" class="btn btn-secondary"><i class="fas fa-undo"></i> Deshacer</button>
-                    <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar Todo</button>
-                </div>
-
-                <button id="btn-save-mask" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Máscara</button>
-            </div>
+    <div class="bottom-nav">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" id="btn-nav-return" title="Volver">
+            <i class="fas fa-chevron-left"></i>
         </div>
     </div>
 
@@ -1326,75 +1345,9 @@
     <script src="js/cloudinary-upload.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="js/viking-data.js"></script>
-    <script src="js/companion-bot.js"></script>
-    <script src="js/utils.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/utils.js" id="utils-js"></script>
     <script src="js/admin.js"></script>
     <script src="js/subastas_v2.js"></script>
-    <script src="js/fast-mode.js"></script>
-    <script src="js/expansiones.js"></script>
-
-    <!-- Floating Companion (Jules: Draggable wrapper) -->
-    <div id="companion-wrapper">
-        <div class="companion-drag-handle" id="companion-drag-handle" title="Arrastra para mover al compañero">
-            <i class="fas fa-arrows-alt"></i>
-        </div>
-        <div id="floating-companion-container"></div>
-        <div id="companion-bubble" class="companion-bubble"></div>
-
-        <!-- Companion Menu -->
-        <div class="companion-menu-popup" id="companion-menu">
-            <div class="companion-menu-item" id="menu-item-chat"><i class="fas fa-comment-dots"></i> Hablar</div>
-            <div class="companion-menu-item" id="menu-item-details"><i class="fas fa-search-plus"></i> Ver Detalles</div>
-        </div>
-    </div>
-
-    <!-- Chatbot Window -->
-    <div id="chatbot-container">
-        <div class="chatbot-header">
-            <h3>Asistente Vikingdev</h3>
-            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
-        </div>
-        <div class="chatbot-messages" id="chat-messages">
-            <div class="chat-msg msg-bot">¡Hola! Soy tu asistente. ¿En qué puedo ayudarte hoy?</div>
-        </div>
-        <div class="chatbot-input-area">
-            <div class="faq-buttons">
-                <button class="faq-btn" data-faq="album">¿Cómo crear álbum?</button>
-                <button class="faq-btn" data-faq="add_card">¿Cómo agregar cartas?</button>
-                <button class="faq-btn" data-faq="scanner">¿Cómo usar el scanner?</button>
-                <button class="faq-btn" data-faq="notifications">Configurar pedidos</button>
-                <button class="faq-btn" data-faq="foil">Efecto Foil Custom</button>
-                <button class="faq-btn" data-faq="wishlist_faq">Lista de Deseos</button>
-                <button class="faq-btn" data-faq="deck_prices">Precios en Decks</button>
-                <button class="faq-btn" data-faq="theme">Cambiar tema</button>
-                <button class="faq-btn" data-faq="spirit">¿Qué es un compañero?</button>
-            </div>
-            <div class="chat-input-wrapper">
-                <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
-                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Organize Modal -->
-    <div id="organize-modal" class="overlay">
-        <div class="overlay-content" style="max-width: 800px; width: 95%;">
-            <span id="close-organize-modal" class="close-btn">&times;</span>
-            <h2>Organizar</h2>
-            <p style="font-size: 14px; color: #aaa; margin-bottom: 20px;">Arrastra los elementos para cambiar su posición.</p>
-            <div id="organize-grid" class="organize-grid">
-                <!-- Items will be loaded here -->
-            </div>
-            <button id="btn-finish-organize" class="btn" style="width: 100%; margin-top: 25px;"><i class="fas fa-check-circle"></i> Finalizar</button>
-        </div>
-    </div>
-    <div class="bottom-nav">
-        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
-            <i class="fas fa-home"></i>
-        </div>
-        <div class="nav-item" id="btn-nav-return" title="Volver">
-            <i class="fas fa-chevron-left"></i>
-        </div>
-    </div>
-</body>    
+</body>
 </html>

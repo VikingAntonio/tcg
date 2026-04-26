@@ -507,12 +507,11 @@ $(document).ready(async function() {
             return;
         }
 
+        // Set target for global save logic
+        window.maskTargetInput = '#owner-card-mask';
+
         // Set card as background
         $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-
-        // Use standard input ID as target (defined in utils.js save logic)
-        // Actually utils.js logic handles #slot-custom-mask or #modal-custom-mask
-        // Let's make sure it also handles #owner-card-mask
 
         window.initMaskCanvas();
 
