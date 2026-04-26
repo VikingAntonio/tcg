@@ -1,7 +1,6 @@
 /*
-   Foil Animation and Layout Fix for Wishlist
-   Restores original design while applying the requested holographic effect.
-   This file overrides conflicting styles from cards.css specifically for wishlist items.
+   Restored Wishlist Design with Isolated Card Foil
+   The foil effect now only affects the card image area.
 */
 
 @property --mx {
@@ -23,91 +22,57 @@
   100% { --mx: 0.45; --my: 0.45; }
 }
 
-/* 1. Restore original layout and pointer events for wishlist items when foil is active */
-.wishlist-card-item.card.foil-loop {
-    animation: foil-loop-float 5s ease-in-out infinite !important;
-    pointer-events: auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    aspect-ratio: 2.5 / 3.8 !important;
+/* 1. Image Wrapper for isolated foil */
+.card-image-foil-wrapper {
+    position: relative !important;
     width: 100% !important;
     height: auto !important;
-    position: relative !important;
+    aspect-ratio: 2.5 / 3.5 !important;
+    border-radius: 8px !important;
     overflow: hidden !important;
-    margin: 0 !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 12px !important;
-    padding: 5px !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-    /* Reset cards.css transform layer but keep hardware acceleration */
+    order: 2 !important;
+    display: block !important;
     transform: translateZ(0) !important;
     -webkit-transform: translateZ(0) !important;
 }
 
-/* 2. Undo the grid centering from cards.css for ALL direct children */
-.wishlist-card-item.card.foil-loop > * {
-    grid-area: auto !important;
-    max-width: 100% !important;
+/* 2. Style the foil loop on the wrapper */
+.card-image-foil-wrapper.foil-loop {
+    animation: foil-loop-float 5s ease-in-out infinite !important;
+    --pointer-x: calc(var(--mx) * 100%);
+    --pointer-y: calc(var(--my) * 100%);
+    --background-x: calc(var(--mx) * 100%);
+    --background-y: calc(var(--my) * 100%);
+    --angle: 135deg;
+    --card-opacity: 1;
 }
 
-/* 3. Ensure content elements follow original order and style */
-.wishlist-card-item.card.foil-loop h3 {
-    width: 100% !important;
-    height: auto !important;
-    font-size: 0.75rem !important;
-    margin: 5px 0 2px !important;
-    color: #ffffff !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    text-align: center !important;
-    order: 1 !important;
-    position: relative !important;
-    z-index: 5 !important;
-    display: block !important;
+/* 3. Handle card engine inside the wrapper */
+.card-image-foil-wrapper.card {
+    display: grid !important;
+    justify-items: center;
+    align-items: center;
 }
 
-.wishlist-card-item.card.foil-loop img:not(.card__back):not(.card__front):not(.card__shine):not(.card__glare) {
+.card-image-foil-wrapper.card > * {
+    grid-area: 1/1 !important;
+}
+
+/* 4. Restore original image look inside the wrapper */
+.card-image-foil-wrapper img {
     width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 2.5 / 3.5 !important;
+    height: 100% !important;
     object-fit: cover !important;
-    border-radius: 8px !important;
-    order: 2 !important;
+    border-radius: inherit !important;
     display: block !important;
     position: relative !important;
-    z-index: 4 !important;
-    background: rgba(0,0,0,0.1) !important;
+    z-index: 1 !important;
 }
 
-/* 4. Restore positioning for UI elements like badges and zoom button */
-.wishlist-card-item.card.foil-loop .event-type-badge {
-    position: absolute !important;
-    top: 10px !important;
-    left: 10px !important;
-    z-index: 20 !important;
-    width: auto !important;
-    height: auto !important;
-}
-
-.wishlist-card-item.card.foil-loop .zoom-btn {
-    position: absolute !important;
-    bottom: 5px !important;
-    right: 5px !important;
-    left: auto !important;
-    width: 26px !important;
-    height: 26px !important;
-    display: flex !important;
-    z-index: 20 !important;
-}
-
-/* 5. Holographic layers (Pokemon engine and standard) */
-.wishlist-card-item.card.foil-loop .holo-layer,
-.wishlist-card-item.card.foil-loop .card__shine,
-.wishlist-card-item.card.foil-loop .card__glare {
+/* 5. Holographic layers inside the wrapper */
+.card-image-foil-wrapper .holo-layer,
+.card-image-foil-wrapper .card__shine,
+.card-image-foil-wrapper .card__glare {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -120,12 +85,26 @@
     margin: 0 !important;
 }
 
-/* 6. Syncing variables for all holographic engines */
-.wishlist-card-item.card.foil-loop {
-    --pointer-x: calc(var(--mx) * 100%);
-    --pointer-y: calc(var(--my) * 100%);
-    --background-x: calc(var(--mx) * 100%);
-    --background-y: calc(var(--my) * 100%);
-    --angle: 135deg;
-    --card-opacity: 1;
+/* 6. Ensure wishlist card stays clean and interactive */
+.wishlist-card-item {
+    pointer-events: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+.wishlist-card-item h3 {
+    order: 1 !important;
+    z-index: 5 !important;
+    position: relative !important;
+}
+
+.wishlist-card-item .zoom-btn {
+    z-index: 20 !important;
+}
+
+/* 7. Hover effects fix (No pause on hover) */
+.card-image-foil-wrapper.foil-loop:hover {
+    /* Prevent pausing or changing the animation on hover */
+    animation-play-state: running !important;
 }
