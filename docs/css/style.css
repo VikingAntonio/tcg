@@ -1516,6 +1516,56 @@ input:checked + .slider:before {
 
 /* Responsividad */
 @media (max-width: 768px) {
+    /* Disable hover/active interaction animations on mobile to prevent flickering and "jumping" on touch */
+    .deck-public-item,
+    .home-menu-item,
+    .spirit-card,
+    .album-card,
+    .sealed-product-item,
+    .public-event-card,
+    .store-slide,
+    .card-slot,
+    .grid-card-item,
+    .public-album-item,
+    .nav-item,
+    .pill-icon,
+    .btn {
+        transition: none !important;
+        /* Do NOT set animation: none or transform: none globally to preserve foil and layout */
+    }
+
+    /* Specifically disable visual feedback that triggers on touch and causes flickering */
+    .deck-public-item:hover,
+    .home-menu-item:hover,
+    .spirit-card:hover,
+    .album-card:hover,
+    .sealed-product-item:hover,
+    .public-event-card:hover,
+    .store-slide:hover,
+    .card-slot:hover,
+    .grid-card-item:hover,
+    .public-album-item:hover,
+    .nav-item:hover,
+    .pill-icon:hover,
+    .btn:hover,
+    .deck-public-item:active,
+    .home-menu-item:active,
+    .spirit-card:active,
+    .album-card:active,
+    .sealed-product-item:active,
+    .public-event-card:active,
+    .store-slide:active,
+    .card-slot:active,
+    .grid-card-item:active,
+    .public-album-item:active,
+    .nav-item:active,
+    .pill-icon:active,
+    .btn:active {
+        transform: none !important;
+        box-shadow: none !important;
+        filter: none !important;
+    }
+
     .public-header {
         padding: 40px 20px;
     }
