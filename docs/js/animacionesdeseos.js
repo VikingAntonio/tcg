@@ -38,26 +38,39 @@
     }
 
     function applyFoilLayers($el) {
-        // Ensure classes are applied correctly for the holographic engine
-        if (!$el.hasClass('foil-loop')) {
-            $el.addClass('foil-loop');
+        // Handle both the case where $el is the wishlist item or the container itself
+        let $container = $el.hasClass('wishlist-image-container') ? $el : $el.find('.wishlist-image-container');
+
+        if ($container.length === 0) {
+            const $img = $el.find('img').first();
+            if ($img.length) {
+                $img.wrap('<div class="wishlist-image-container"></div>');
+                $container = $el.find('.wishlist-image-container');
+            } else {
+                $container = $el; // Fallback
+            }
+        }
+
+        // Ensure classes are applied correctly for the holographic engine on the container
+        if (!$container.hasClass('foil-loop')) {
+            $container.addClass('foil-loop');
         }
 
         // If it doesn't have the .card class (needed for Pokemon engine styles), add it
-        if (!$el.hasClass('card')) {
-            $el.addClass('card');
+        if (!$container.hasClass('card')) {
+            $container.addClass('card');
         }
 
-        // Ensure holographic layer exists
-        if ($el.find('.holo-layer').length === 0) {
-            $el.append('<div class="holo-layer"></div>');
+        // Ensure holographic layer exists in the container
+        if ($container.find('.holo-layer').length === 0) {
+            $container.append('<div class="holo-layer"></div>');
         }
 
         // If pokemon-style foils are used, ensure shine/glare exist
         const holo = $el.attr('data-holo');
         if (holo && holo.startsWith('pk-')) {
-            if ($el.find('.card__shine').length === 0) {
-                $el.append('<div class="card__shine"></div><div class="card__glare"></div>');
+            if ($container.find('.card__shine').length === 0) {
+                $container.append('<div class="card__shine"></div><div class="card__glare"></div>');
             }
         }
     }

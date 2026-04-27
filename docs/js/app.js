@@ -284,10 +284,6 @@ $(document).ready(async function() {
         });
     });
 
-    // Bottom App Navigation
-    $('#btn-nav-home').on('click', function() {
-        switchView('home');
-    });
 
     $('#btn-nav-return').on('click', function() {
         // Simple return logic: if not in home, go to home.
@@ -2567,14 +2563,16 @@ function loadPublicWishlist() {
                      data-3d="${item.use_3d !== false}"
                      data-show-foil="${item.show_foil_in_list || false}">
                     <h3>${item.name}</h3>
-                    <img src="${item.image_url}" alt="${item.name}">
+                    <div class="wishlist-image-container">
+                        <img src="${item.image_url}" alt="${item.name}">
+                    </div>
                     ${item.obtained ? '<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>' : ''}
                     <div class="zoom-btn" style="display: flex; bottom: 5px; right: 5px; left: auto;"><i class="fas fa-search-plus"></i></div>
                 </div>
             `);
 
             if (item.show_foil_in_list && item.holo_effect) {
-                applyFoilToElement($el, item.holo_effect, item.custom_mask_url);
+                applyFoilToElement($el.find('.wishlist-image-container'), item.holo_effect, item.custom_mask_url);
             }
 
             $el.click(function(e) {
