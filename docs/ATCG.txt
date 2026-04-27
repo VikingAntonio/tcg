@@ -1,0 +1,54 @@
+-- SQL for Investments (Inversiones) Module
+
+-- 1. Create investment_categories table
+CREATE TABLE IF NOT EXISTS investment_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    is_public BOOLEAN DEFAULT false,
+    position INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Create investment_cards table
+CREATE TABLE IF NOT EXISTS investment_cards (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    category_id UUID REFERENCES investment_categories(id) ON DELETE CASCADE,
+    card_name TEXT NOT NULL,
+    external_id TEXT, -- TCGAPI.dev ID
+    tcg_game TEXT, -- e.g., pokemon, yugioh, magic
+    image_url TEXT,
+    rarity TEXT,
+    set_name TEXT,
+    set_number TEXT,
+    purchase_price DECIMAL(10,2),
+    current_price DECIMAL(10,2),
+    quantity INTEGER DEFAULT 1,
+    is_public BOOLEAN DEFAULT false,
+    position INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Habilitar RLS para ambas tablas
+ALTER TABLE investment_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE investment_cards ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para investment_categories
+CREATE POLICY "Users can manage their own investment categories" ON investment_categories
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Anyone can view public investment categories" ON investment_categories
+    FOR SELECT USING (is_public = true);
+
+-- Políticas para investment_cards
+CREATE POLICY "Users can manage their own investment cards" ON investment_cards
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Anyone can view public investment cards" ON investment_cards
+    FOR SELECT USING (is_public = true);
+
+
+-- INSTRUCTIONS FOR TCGAPI.dev:
+-- The API key should be placed in docs/js/inversiones.js.
+-- Look for the constant on LINE 8: const TCG_API_KEY = 'YOUR_API_KEY_HERE';
