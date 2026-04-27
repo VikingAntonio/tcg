@@ -1062,12 +1062,16 @@ async function openCardModal($slot) {
     const rarity = $slot.data("rarity") || "-";
     const holo = $slot.data("holo") || "";
     const mask = $slot.data("mask") || "";
-    const use3d = $slot.data("3d") !== false && $slot.data("3d") !== "false";
+    let use3d = $slot.data("3d") !== false && $slot.data("3d") !== "false";
     const expansion = $slot.data("expansion") || "-";
     const condition = $slot.data("condition") || "-";
     const quantity = $slot.data("quantity") || "1";
     const price = $slot.data("price") || "-";
     const isWishlist = $slot.hasClass('wishlist-card-item');
+
+    // Force 3D for wishlist items to ensure gyroscope works in the modal
+    if (isWishlist) use3d = true;
+
     const notes = $slot.data("notes") || "";
     const obtained = $slot.data("obtained") === true || $slot.data("obtained") === "true";
 
@@ -1293,10 +1297,10 @@ function applyVisualsToModal(holo, mask, use3d) {
     const $card = $("#card-3d");
 
     // Cleanup all possible holo classes and styles
-    $card.removeClass("card masked interacting");
+    $card.removeClass("card masked interacting foil-loop");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     let baseHolo = holo;
