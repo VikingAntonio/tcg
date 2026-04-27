@@ -23,9 +23,9 @@
   100% { --mx: 0.45; --my: 0.45; }
 }
 
-/* 1. Restore original layout and pointer events for wishlist items when foil is active */
+/* 1. Reset foil animations from parent and apply only to container */
 .wishlist-card-item.card.foil-loop {
-    animation: foil-loop-float 5s ease-in-out infinite !important;
+    animation: none !important;
     pointer-events: auto !important;
     display: flex !important;
     flex-direction: column !important;
@@ -42,18 +42,38 @@
     border-radius: 12px !important;
     padding: 5px !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-    /* Reset cards.css transform layer but keep hardware acceleration */
     transform: translateZ(0) !important;
     -webkit-transform: translateZ(0) !important;
 }
 
-/* 2. Undo the grid centering from cards.css for ALL direct children */
-.wishlist-card-item.card.foil-loop > * {
-    grid-area: auto !important;
-    max-width: 100% !important;
+.wishlist-image-container.card.foil-loop {
+    animation: foil-loop-float 5s ease-in-out infinite !important;
+    width: 100% !important;
+    aspect-ratio: 2.5 / 3.5 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border-radius: 8px !important;
+    order: 2 !important;
+    display: grid !important;
+    place-items: center !important;
+    z-index: 4 !important;
 }
 
-/* 3. Ensure content elements follow original order and style */
+/* 2. Style children of image container to handle Pokemon grid rules */
+.wishlist-image-container.card.foil-loop > * {
+    grid-area: 1/1 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* 3. Image specific rules */
+.wishlist-image-container.card.foil-loop img {
+    object-fit: cover !important;
+    background: rgba(0,0,0,0.1) !important;
+    z-index: 1 !important;
+}
+
+/* 4. Restore positioning for UI elements like badges and zoom button */
 .wishlist-card-item.card.foil-loop h3 {
     width: 100% !important;
     height: auto !important;
@@ -70,20 +90,6 @@
     display: block !important;
 }
 
-.wishlist-card-item.card.foil-loop img:not(.card__back):not(.card__front):not(.card__shine):not(.card__glare) {
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 2.5 / 3.5 !important;
-    object-fit: cover !important;
-    border-radius: 8px !important;
-    order: 2 !important;
-    display: block !important;
-    position: relative !important;
-    z-index: 4 !important;
-    background: rgba(0,0,0,0.1) !important;
-}
-
-/* 4. Restore positioning for UI elements like badges and zoom button */
 .wishlist-card-item.card.foil-loop .event-type-badge {
     position: absolute !important;
     top: 10px !important;
@@ -104,10 +110,10 @@
     z-index: 20 !important;
 }
 
-/* 5. Holographic layers (Pokemon engine and standard) */
-.wishlist-card-item.card.foil-loop .holo-layer,
-.wishlist-card-item.card.foil-loop .card__shine,
-.wishlist-card-item.card.foil-loop .card__glare {
+/* 5. Holographic layers (Pokemon engine and standard) constrained to image */
+.wishlist-image-container.card.foil-loop .holo-layer,
+.wishlist-image-container.card.foil-loop .card__shine,
+.wishlist-image-container.card.foil-loop .card__glare {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -120,8 +126,8 @@
     margin: 0 !important;
 }
 
-/* 6. Syncing variables for all holographic engines */
-.wishlist-card-item.card.foil-loop {
+/* 6. Syncing variables for all holographic engines on container */
+.wishlist-image-container.card.foil-loop {
     --pointer-x: calc(var(--mx) * 100%);
     --pointer-y: calc(var(--my) * 100%);
     --background-x: calc(var(--mx) * 100%);

@@ -238,8 +238,29 @@ $(document).ready(function() {
          // handle deep links etc if needed
     }
 
-    $(document).on('click', '#btn-nav-home', function() {
-        window.location.href = 'index.html';
+    $(document).on('click', '#btn-nav-home', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const path = window.location.pathname;
+        const isPublic = path.includes('public.html') || ($('#home-view').length > 0 && $('.public-body').length > 0);
+
+        if (isPublic) {
+            if (typeof switchView === 'function') {
+                switchView('home');
+            } else {
+                const url = new URL(window.location.href);
+                url.searchParams.set('view', 'home');
+                window.location.href = url.toString();
+            }
+        } else if (path.includes('admin.html')) {
+            if (typeof showView === 'function') {
+                showView('main-dashboard');
+            } else {
+                window.location.href = 'admin.html';
+            }
+        } else {
+            window.location.href = 'index.html';
+        }
     });
 
     $(document).on('click', '#btn-nav-return', function() {
