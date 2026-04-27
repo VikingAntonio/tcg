@@ -930,7 +930,7 @@ window.updateRotation = function() {
     const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
 
     const s = card3d.style;
-    s.transform = `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`;
+    s.transform = `translate3d(0,0,0) rotateX(${currentRX}deg) rotateY(${currentRY}deg)`;
     s.setProperty('--mx', mx);
     s.setProperty('--my', my);
     s.setProperty('--angle', `${angle}deg`);
@@ -2578,16 +2578,6 @@ function loadPublicWishlist() {
             if (item.show_foil_in_list && item.holo_effect) {
                 applyFoilToElement($el.find('.wishlist-image-container'), item.holo_effect, item.custom_mask_url);
             }
-
-            $el.click(function(e) {
-                if (isDragging) return;
-                openCardModal($el);
-            });
-
-            $el.find('.zoom-btn').click(function(e) {
-                e.stopPropagation();
-                openCardModal($el);
-            });
 
             $('#wishlist-container').append($el);
         });
