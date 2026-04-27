@@ -1046,12 +1046,14 @@ function init3DCard() {
             if (!window.card3dActive) return;
             if (e.gamma !== null && e.beta !== null) {
                 // Apply a gentle threshold and scaling for smoother gyro motion
-                let rawRY = Math.max(-20, Math.min(20, e.gamma)) * 1.5;
-                let rawRX = Math.max(-20, Math.min(20, e.beta - 45)) * 1.5;
+                // Gamma is left-to-right (RY), Beta is front-to-back (RX)
+                let rawRY = Math.max(-25, Math.min(25, e.gamma)) * 1.2;
+                let rawRX = Math.max(-25, Math.min(25, e.beta - 45)) * 1.2;
 
-                // Simple low-pass filter to reduce sensor noise
-                targetRY = targetRY * 0.8 + rawRY * 0.2;
-                targetRX = targetRX * 0.8 + rawRX * 0.2;
+                // Stronger low-pass filter to eliminate sensor jitter (Exponential Moving Average)
+                // Using 0.9 / 0.1 for maximum stability on noisy mobile sensors
+                targetRY = (targetRY * 0.9) + (rawRY * 0.1);
+                targetRX = (targetRX * 0.9) + (rawRX * 0.1);
             }
         };
 
