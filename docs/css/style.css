@@ -1807,6 +1807,10 @@ input:checked + .slider:before {
     border-radius: 8px;
     left: 0 !important;
     top: 0 !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    transform-style: preserve-3d !important;
+    will-change: transform;
 }
 
 .holo-layer {
@@ -1822,8 +1826,8 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
-    transform: translate3d(0,0,0) translateZ(1.5px) !important; /* Slightly increased for stability */
-    will-change: transform, opacity !important;
+    transform: translate3d(0,0,0) translateZ(2px) !important; /* Increased for stability and to prevent Z-fighting */
+    will-change: transform;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
 }
