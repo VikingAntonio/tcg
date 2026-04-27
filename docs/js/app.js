@@ -904,19 +904,39 @@ let currentRY = 0;
 window.card3dActive = false;
 let card3dOrientationHandler = null;
 let card3dTouchHandler = null;
+let card3dCachedEl = null;
 
 window.updateRotation = function() {
     if (!window.card3dActive) return;
 
-    const card3d = document.getElementById('card-3d');
-    if (!card3d || !$(card3d).is(':visible')) {
+    const card3d = card3dCachedEl || document.getElementById('card-3d');
+    if (!card3d) {
+        window.card3dActive = false;
+        return;
+    }
+    card3dCachedEl = card3d;
+
+    // Optimization: check if modal is actually active to avoid invisible work
+    if (!document.getElementById('image-overlay').classList.contains('active')) {
         window.card3dActive = false;
         return;
     }
 
     // LERP for smooth motion
-    currentRX += (targetRX - currentRX) * 0.1;
-    currentRY += (targetRY - currentRY) * 0.1;
+    const lerpFactor = window.innerWidth <= 768 ? 0.15 : 0.1; // Faster on mobile for responsiveness
+    const diffX = targetRX - currentRX;
+    const diffY = targetRY - currentRY;
+
+    // Stop loop if motion is negligible
+    if (Math.abs(diffX) < 0.01 && Math.abs(diffY) < 0.01 && targetRX === 0 && targetRY === 0) {
+        currentRX = 0;
+        currentRY = 0;
+        // We don't stop the loop here to keep reacting to sensor changes quickly,
+        // but we skip the expensive style updates
+    } else {
+        currentRX += diffX * lerpFactor;
+        currentRY += diffY * lerpFactor;
+    }
 
     const mx = (currentRY + 20) / 40;
     const my = (currentRX + 20) / 40;
@@ -930,17 +950,18 @@ window.updateRotation = function() {
     const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
 
     const s = card3d.style;
-    s.transform = `translate3d(0,0,0) rotateX(${currentRX}deg) rotateY(${currentRY}deg)`;
-    s.setProperty('--mx', mx);
-    s.setProperty('--my', my);
-    s.setProperty('--angle', `${angle}deg`);
-    s.setProperty('--pointer-x', `${px}%`);
-    s.setProperty('--pointer-y', `${py}%`);
-    s.setProperty('--background-x', `${px}%`);
-    s.setProperty('--background-y', `${py}%`);
-    s.setProperty('--pointer-from-center', pointerFromCenter);
-    s.setProperty('--pointer-from-top', my);
-    s.setProperty('--pointer-from-left', mx);
+    // Using translate3d for hardware acceleration
+    s.transform = `translate3d(0,0,0) rotateX(${currentRX.toFixed(2)}deg) rotateY(${currentRY.toFixed(2)}deg)`;
+    s.setProperty('--mx', mx.toFixed(3));
+    s.setProperty('--my', my.toFixed(3));
+    s.setProperty('--angle', `${angle.toFixed(2)}deg`);
+    s.setProperty('--pointer-x', `${px.toFixed(2)}%`);
+    s.setProperty('--pointer-y', `${py.toFixed(2)}%`);
+    s.setProperty('--background-x', `${px.toFixed(2)}%`);
+    s.setProperty('--background-y', `${py.toFixed(2)}%`);
+    s.setProperty('--pointer-from-center', pointerFromCenter.toFixed(3));
+    s.setProperty('--pointer-from-top', my.toFixed(3));
+    s.setProperty('--pointer-from-left', mx.toFixed(3));
     s.setProperty('--card-opacity', '1');
 
     requestAnimationFrame(window.updateRotation);
@@ -959,12 +980,14 @@ function init3DCard() {
     currentRY = 0;
     targetRX = 0;
     targetRY = 0;
+    card3dCachedEl = $card[0];
 
-    // Initialize ztext
+    // Initialize ztext with fewer layers on mobile
+    const isMobile = window.innerWidth <= 768;
     try {
         card3dZtext = new Ztextify('#z-text-container', {
             depth: "10px",
-            layers: 10,
+            layers: isMobile ? 6 : 10,
             fade: true,
             direction: "backwards",
             event: "none",
@@ -1013,16 +1036,22 @@ function init3DCard() {
         targetRY = 0;
     });
 
-    // Device Orientation support
+    // Device Orientation support with smoothing
     if (window.DeviceOrientationEvent) {
         if (card3dOrientationHandler) {
             window.removeEventListener('deviceorientation', card3dOrientationHandler);
         }
+
         card3dOrientationHandler = (e) => {
             if (!window.card3dActive) return;
             if (e.gamma !== null && e.beta !== null) {
-                targetRY = Math.max(-20, Math.min(20, e.gamma)) * 1.5;
-                targetRX = Math.max(-20, Math.min(20, e.beta - 45)) * 1.5;
+                // Apply a gentle threshold and scaling for smoother gyro motion
+                let rawRY = Math.max(-20, Math.min(20, e.gamma)) * 1.5;
+                let rawRX = Math.max(-20, Math.min(20, e.beta - 45)) * 1.5;
+
+                // Simple low-pass filter to reduce sensor noise
+                targetRY = targetRY * 0.8 + rawRY * 0.2;
+                targetRX = targetRX * 0.8 + rawRX * 0.2;
             }
         };
 
