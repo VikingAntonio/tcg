@@ -661,6 +661,9 @@ $(document).ready(async function() {
         $('#chatbot-container').removeClass('active');
     });
 
+    // Also initialize the avatar inside the chatbot header
+    initChatbotAvatar();
+
     $(document).on('click', '#events-container .deck-public-item', function(e) {
         if ($(e.target).closest('button').length) return;
         const id = $(this).attr('id');
@@ -1646,7 +1649,15 @@ function loadPublicPreorders() {
     });
 }
 
-function initFloatingCompanion() {
+async function initFloatingCompanion() {
+    // Fallback if no spirit selected
+    if (!window.currentSpirit) {
+        try {
+            const { data: firstSpirit } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
+            if (firstSpirit) window.currentSpirit = firstSpirit;
+        } catch (e) { console.warn("Error loading fallback spirit:", e); }
+    }
+
     if (!window.currentSpirit) return;
 
     const $container = $('#floating-companion-container');
@@ -1660,11 +1671,15 @@ function initFloatingCompanion() {
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none">
+            interaction-prompt="none"
+            style="width: 100%; height: 100%;">
         </model-viewer>
     `);
 
-    $container.on('click', function(e) {
+    // Also initialize the avatar inside the chatbot header
+    initChatbotAvatar();
+
+    $container.off('click').on('click', function(e) {
         if (window.isCompanionDragging) return;
         e.stopPropagation();
         $('#companion-menu').toggleClass('active');
@@ -3315,6 +3330,25 @@ $(document).on('click', '#close-deck-list, #deck-list-overlay', function(e) {
         }
     }
 });
+
+function initChatbotAvatar() {
+    const $avatarContainer = $('#chatbot-avatar-container');
+    if (!$avatarContainer.length || !window.currentSpirit) return;
+
+    $avatarContainer.html(`
+        <model-viewer
+            src="${window.currentSpirit.gltf_url}"
+            auto-rotate
+            camera-controls
+            rotation="0deg 0deg 0deg"
+            shadow-intensity="1"
+            environment-image="neutral"
+            exposure="1.2"
+            interaction-prompt="none"
+            style="width: 100%; height: 100%;">
+        </model-viewer>
+    `);
+}
 
 async function showGeneralEventDetails(id) {
     try {
