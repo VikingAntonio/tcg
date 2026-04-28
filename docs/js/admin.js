@@ -22,18 +22,6 @@ function restoreScroll(pos) {
     }
 }
 
-let ygoSetsCache = null;
-async function getYgoSets() {
-    if (ygoSetsCache) return ygoSetsCache;
-    try {
-        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
-        ygoSetsCache = await response.json();
-    } catch (e) {
-        console.warn("Error fetching YGO sets:", e);
-        ygoSetsCache = [];
-    }
-    return ygoSetsCache;
-}
 
 let currentDeckCardId = null; // New for deck card editing
 let currentSlotIndex = null;
@@ -261,9 +249,6 @@ $(document).ready(async function() {
     $('#close-chatbot').click(function() {
         $('#chatbot-container').removeClass('active');
     });
-
-    // Also initialize the avatar inside the chatbot header
-    initChatbotAvatar();
 
     // --- Companion Menu Logic ---
     $(document).on('click', function(e) {
@@ -810,7 +795,7 @@ $(document).ready(async function() {
     // --- External Search Logic ---
     $('#btn-external-search').click(function(e) {
         e.preventDefault();
-        searchExternalCard('#external-search-input', '#external-search-results', function(card) {
+        window.searchExternalCard('#external-search-input', '#external-search-results', function(card) {
             $('#slot-name').val(card.name);
             $('#slot-image-url').val(card.high_res);
             Swal.fire({
@@ -833,7 +818,7 @@ $(document).ready(async function() {
     // Deck Search Listeners
     $(document).on('click', '#btn-deck-external-search', function(e) {
         e.preventDefault();
-        searchExternalCard('#deck-external-search-input', '#deck-external-search-results', async function(card) {
+        window.searchExternalCard('#deck-external-search-input', '#deck-external-search-results', async function(card) {
             // Limite de cartas por deck
             if (localDeckCards.length >= (currentUser.max_cards_per_deck || 60)) {
                 Swal.fire('Límite alcanzado', `Este deck ya tiene el máximo de ${currentUser.max_cards_per_deck || 60} cartas permitidas.`, 'warning');
@@ -868,161 +853,6 @@ $(document).ready(async function() {
             $('#btn-deck-external-search').click();
         }
     });
-
-    async function searchExternalCard(inputSelector, resultsSelector, onSelectCallback) {
-        const query = $(inputSelector).val().trim();
-
-        if (query.length < 3) {
-            Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
-            return;
-        }
-
-        $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando en todas las bases de datos...</div>');
-
-        try {
-            // Special YGO search logic for passcodes and set codes
-            const ygoSpecialSearch = async () => {
-                const q = query.toUpperCase();
-                // Passcode (Numeric 5-10 digits)
-                if (/^\d{5,10}$/.test(q)) {
-                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
-                    return r.data || [];
-                }
-                // Set Code (Format XXX-123 or XXX-EN123)
-                const setMatch = q.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
-                if (setMatch) {
-                    const prefix = setMatch[1];
-                    const sets = await getYgoSets();
-                    const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
-                    if (setObj) {
-                        const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
-                        if (r.data) {
-                            // Filter for the exact set code
-                            return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
-                        }
-                    }
-                }
-                return [];
-            };
-
-            // Concurrent search across all databases (Yu-Gi-Oh and Pokémon in 3 languages)
-            const searchPromises = [
-                // Yu-Gi-Oh! Name Search
-                fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
-                // Yu-Gi-Oh! Code/Set Search
-                fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
-                // Special YGO Search
-                ygoSpecialSearch(),
-                // Pokémon TCGdex - English
-                fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-                // Pokémon TCGdex - Spanish
-                fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-                // Pokémon TCGdex - Japanese
-                fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-                // Lorcana Search
-                fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
-                // Viking Search
-                VikingData.search(query)
-            ];
-
-            const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults] = await Promise.all(searchPromises);
-
-            let combinedResults = [];
-
-            // Process VikingData
-            if (Array.isArray(vikResults)) {
-                combinedResults.push(...vikResults);
-            }
-
-            // Process Lorcana Results
-            const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
-            lorResultsSafe.forEach(c => {
-                if (c.Image) {
-                    combinedResults.push({
-                        name: c.Name,
-                        image: c.Image,
-                        high_res: c.Image
-                    });
-                }
-            });
-
-            // Process Yu-Gi-Oh Results
-            const ygoResults = [...(ygName.data || []), ...(ygCode.data || []), ...ygSpecial];
-            ygoResults.forEach(c => {
-                if (c.card_images && c.card_images.length > 0) {
-                    // Iterate through all alternate arts
-                    c.card_images.forEach(img => {
-                        combinedResults.push({
-                            name: c.name,
-                            image: img.image_url_small,
-                            high_res: img.image_url
-                        });
-                    });
-                }
-            });
-
-            // Process Pokémon Results
-            const pkResults = [...(pkEn || []), ...(pkEs || []), ...(pkJa || [])];
-            pkResults.forEach(c => {
-                if (c.image) {
-                    combinedResults.push({
-                        name: c.name,
-                        image: `${c.image}/low.webp`,
-                        high_res: `${c.image}/high.webp`
-                    });
-                }
-            });
-
-            // Deduplicate by Image URL
-            const uniqueResults = [];
-            const seenImages = new Set();
-            combinedResults.forEach(card => {
-                if (!seenImages.has(card.image)) {
-                    seenImages.add(card.image);
-                    uniqueResults.push(card);
-                }
-            });
-
-            if (uniqueResults.length === 0) {
-                $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en ninguna base de datos.</div>');
-            } else {
-                displayExternalResults(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
-            }
-
-        } catch (err) {
-            console.error(err);
-            $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
-        }
-    }
-
-    function displayExternalResults(results, resultsSelector, onSelectCallback) {
-        const $container = $(resultsSelector);
-        $container.empty();
-
-        if (results.length === 0) {
-            $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No se encontraron resultados.</div>');
-            return;
-        }
-
-        results.forEach(card => {
-            const $item = $(`
-                <div class="external-card-result" title="${card.name}" style="cursor: pointer; transition: transform 0.2s;">
-                    <img src="${card.image}" style="width: 100%; border-radius: 4px; border: 1px solid #333;">
-                </div>
-            `);
-
-            $item.hover(
-                function() { $(this).css('transform', 'scale(1.1)'); },
-                function() { $(this).css('transform', 'scale(1)'); }
-            );
-
-            $item.click(function() {
-                onSelectCallback(card);
-            });
-
-            $container.append($item);
-        });
-    }
 
 
     // Deck Management Actions
@@ -1277,7 +1107,7 @@ $(document).ready(async function() {
     // Spirit Poster Search Logic
     $(document).on('click', '#btn-spirit-poster-search', function(e) {
         e.preventDefault();
-        searchExternalCard('#spirit-poster-search-input', '#spirit-poster-search-results', function(card) {
+        window.searchExternalCard('#spirit-poster-search-input', '#spirit-poster-search-results', function(card) {
             $('#input-spirit-poster-url').val(card.high_res);
             $('#drop-zone-spirit-poster .file-name').text('¡Seleccionada!').css('color', '#00ff88');
             Swal.fire({
@@ -2791,15 +2621,7 @@ async function loadSpirits() {
     });
 }
 
-async function initFloatingCompanion() {
-    // Fallback if no spirit selected
-    if (!window.currentSpirit) {
-        try {
-            const { data: firstSpirit } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
-            if (firstSpirit) window.currentSpirit = firstSpirit;
-        } catch (e) { console.warn("Error loading fallback spirit:", e); }
-    }
-
+function initFloatingCompanion() {
     if (!window.currentSpirit) return;
 
     const $container = $('#floating-companion-container');
@@ -2813,13 +2635,9 @@ async function initFloatingCompanion() {
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none"
-            style="width: 100%; height: 100%;">
+            interaction-prompt="none">
         </model-viewer>
     `);
-
-    // Also initialize the avatar inside the chatbot header
-    initChatbotAvatar();
 
     $container.off('click').on('click', function(e) {
         if (window.isCompanionDragging) return;
@@ -3760,25 +3578,6 @@ window.deleteAuctionGroupPerm = async function(ids) {
             loadMyAuctionsWinners();
         }
     }
-}
-
-function initChatbotAvatar() {
-    const $avatarContainer = $('#chatbot-avatar-container');
-    if (!$avatarContainer.length || !window.currentSpirit) return;
-
-    $avatarContainer.html(`
-        <model-viewer
-            src="${window.currentSpirit.gltf_url}"
-            auto-rotate
-            camera-controls
-            rotation="0deg 0deg 0deg"
-            shadow-intensity="1"
-            environment-image="neutral"
-            exposure="1.2"
-            interaction-prompt="none"
-            style="width: 100%; height: 100%;">
-        </model-viewer>
-    `);
 }
 
 window.hideWonAuctionGroup = function(ids) {

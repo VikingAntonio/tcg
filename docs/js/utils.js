@@ -1,3 +1,7 @@
+// --- TCGAPI.dev CONFIGURATION ---
+window.TCG_API_KEY = 'tcg_live_830032ddb812433fc16a783454caaa5353708266';
+window.TCG_API_BASE = 'https://api.tcgapi.dev/v1';
+
 // parseDateSafe.js - Shared date parsing utility
 function parseDateSafe(dateStr) {
     if (!dateStr) return null;
@@ -228,6 +232,208 @@ window.drawMask = function(e) {
     window.maskCtx.stroke();
     window.maskCtx.beginPath();
     window.maskCtx.moveTo(x, y);
+};
+
+// --- GLOBAL SEARCH FUNCTIONS ---
+let ygoSetsCache = null;
+window.getYgoSets = async function() {
+    if (ygoSetsCache) return ygoSetsCache;
+    try {
+        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
+        ygoSetsCache = await response.json();
+    } catch (e) {
+        console.warn("Error fetching YGO sets:", e);
+        ygoSetsCache = [];
+    }
+    return ygoSetsCache;
+};
+
+window.searchExternalCard = async function(inputSelector, resultsSelector, onSelectCallback) {
+    const query = $(inputSelector).val().trim();
+
+    if (query.length < 3) {
+        Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
+        return;
+    }
+
+    $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando...</div>');
+
+    try {
+        // Special YGO search logic for passcodes and set codes
+        const ygoSpecialSearch = async () => {
+            const q = query.toUpperCase();
+            // Passcode (Numeric 5-10 digits)
+            if (/^\d{5,10}$/.test(q)) {
+                const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
+                return r.data || [];
+            }
+            // Set Code (Format XXX-123 or XXX-EN123)
+            const setMatch = q.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
+            if (setMatch) {
+                const prefix = setMatch[1];
+                const sets = await window.getYgoSets();
+                const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
+                if (setObj) {
+                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
+                    if (r.data) {
+                        // Filter for the exact set code
+                        return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
+                    }
+                }
+            }
+            return [];
+        };
+
+        // TCGAPI.dev Search (Multi-game)
+        const searchTCGAPI = async (q, game) => {
+            if (!window.TCG_API_KEY) return [];
+            try {
+                const response = await fetch(`${window.TCG_API_BASE}/search?q=${encodeURIComponent(q)}&game=${game}`, {
+                    headers: { 'X-API-Key': window.TCG_API_KEY }
+                });
+                if (!response.ok) return [];
+                const data = await response.json();
+                return (data.data || []).map(c => ({
+                    name: c.name,
+                    image: c.image_url || `https://images.tcgplayer.com/product/${c.id}_200w.jpg`,
+                    high_res: c.image_url || `https://images.tcgplayer.com/product/${c.id}_400w.jpg`,
+                    set: c.set,
+                    number: c.number,
+                    rarity: c.rarity,
+                    price: c.price || c.market_price || 0,
+                    game: game,
+                    external_id: c.id
+                }));
+            } catch(e) { return []; }
+        };
+
+        // Concurrent search across all databases
+        const searchPromises = [
+            // Yu-Gi-Oh! Name Search
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Yu-Gi-Oh! Code/Set Search
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Special YGO Search
+            ygoSpecialSearch(),
+            // Pokémon TCGdex - English
+            fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Pokémon TCGdex - Spanish
+            fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Pokémon TCGdex - Japanese
+            fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Lorcana Search
+            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Viking Search
+            (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])),
+            // TCGAPI.dev (Top games)
+            searchTCGAPI(query, 'pokemon'),
+            searchTCGAPI(query, 'yugioh'),
+            searchTCGAPI(query, 'magic'),
+            searchTCGAPI(query, 'onepiece'),
+            searchTCGAPI(query, 'lorcana')
+        ];
+
+        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults, tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor] = await Promise.all(searchPromises);
+
+        let combinedResults = [];
+
+        // Process VikingData
+        if (Array.isArray(vikResults)) {
+            combinedResults.push(...vikResults);
+        }
+
+        // Process TCGAPI Results
+        [tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor].forEach(list => {
+            combinedResults.push(...list);
+        });
+
+        // Process Lorcana Results
+        const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
+        lorResultsSafe.forEach(c => {
+            if (c.Image) {
+                combinedResults.push({
+                    name: c.Name,
+                    image: c.Image,
+                    high_res: c.Image
+                });
+            }
+        });
+
+        // Process Yu-Gi-Oh Results
+        const ygoResults = [...(ygName.data || []), ...(ygCode.data || []), ...ygSpecial];
+        ygoResults.forEach(c => {
+            if (c.card_images && c.card_images.length > 0) {
+                c.card_images.forEach(img => {
+                    combinedResults.push({
+                        name: c.name,
+                        image: img.image_url_small,
+                        high_res: img.image_url
+                    });
+                } );
+            }
+        });
+
+        // Process Pokémon Results
+        const pkResults = [...(pkEn || []), ...(pkEs || []), ...(pkJa || [])];
+        pkResults.forEach(c => {
+            if (c.image) {
+                combinedResults.push({
+                    name: c.name,
+                    image: `${c.image}/low.webp`,
+                    high_res: `${c.image}/high.webp`
+                });
+            }
+        });
+
+        // Deduplicate by Image URL
+        const uniqueResults = [];
+        const seenImages = new Set();
+        combinedResults.forEach(card => {
+            if (!seenImages.has(card.image)) {
+                seenImages.add(card.image);
+                uniqueResults.push(card);
+            }
+        });
+
+        if (uniqueResults.length === 0) {
+            $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en ninguna base de datos.</div>');
+        } else {
+            window.displayExternalResults(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
+        }
+
+    } catch (err) {
+        console.error(err);
+        $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
+    }
+};
+
+window.displayExternalResults = function(results, resultsSelector, onSelectCallback) {
+    const $container = $(resultsSelector);
+    $container.empty();
+
+    if (results.length === 0) {
+        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No se encontraron resultados.</div>');
+        return;
+    }
+
+    results.forEach(card => {
+        const $item = $(`
+            <div class="external-card-result" title="${card.name}" style="cursor: pointer; transition: transform 0.2s;">
+                <img src="${card.image}" style="width: 100%; border-radius: 4px; border: 1px solid #333;">
+            </div>
+        `);
+
+        $item.hover(
+            function() { $(this).css('transform', 'scale(1.1)'); },
+            function() { $(this).css('transform', 'scale(1)'); }
+        );
+
+        $item.click(function() {
+            onSelectCallback(card);
+        });
+
+        $container.append($item);
+    });
 };
 
 $(document).ready(function() {
