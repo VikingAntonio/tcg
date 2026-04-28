@@ -3,11 +3,6 @@
  * Logic for managing card investments with TCGAPI.dev integration.
  */
 
-// --- CONFIGURATION ---
-// PLACE YOUR TCGAPI.dev API KEY HERE
-const TCG_API_KEY = 'tcg_live_830032ddb812433fc16a783454caaa5353708266';
-const TCG_API_BASE = 'https://api.tcgapi.dev/v1';
-
 // --- STATE ---
 let currentInvestmentCategoryId = null;
 
@@ -437,61 +432,55 @@ function openInvestmentCardModal(card = null) {
 $('#close-investment-card-modal').click(() => $('#investment-card-modal').removeClass('active'));
 
 $('#btn-inv-card-search').click(async function() {
-    const query = $('#inv-card-search-input').val().trim();
+    window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
+        // When a card is selected from combined search
+        $('#inv-card-name').val(card.name);
+        $('#inv-card-image-url').val(card.high_res || card.image);
+        $('#inv-card-set-name').val(card.set || card.set_name || '');
+        $('#inv-card-set-number').val(card.number || '');
+        $('#inv-card-rarity').val(card.rarity || '');
 
-    if (query.length < 2) {
-        Swal.fire('Atención', 'Escribe al menos 2 caracteres.', 'info');
-        return;
-    }
-
-    $('#inv-card-search-results').html('<div style="grid-column: 1/-1; text-align: center; color: #666;">Buscando en todas las bases de datos...</div>');
-
-    // Search in major games automatically
-    const games = ['pokemon', 'yugioh', 'magic', 'lorcana', 'onepiece'];
-    let allResults = [];
-
-    for (const game of games) {
-        const results = await searchTCGAPI(query, game);
-        allResults = allResults.concat(results.map(r => ({ ...r, game })));
-    }
-
-    renderInvSearchResults(allResults);
-});
-
-function renderInvSearchResults(results) {
-    const $container = $('#inv-card-search-results');
-    $container.empty();
-
-    if (results.length === 0) {
-        $container.html('<div style="grid-column: 1/-1; text-align: center; color: #ff4757;">No se encontraron resultados.</div>');
-        return;
-    }
-
-    results.forEach(card => {
-        const $card = $(`
-            <div class="inv-search-card" title="${escapeHtml(card.name)}">
-                <img src="${card.image_url || card.image}" alt="${escapeHtml(card.name)}">
-                <div style="font-size: 10px; margin-top: 5px; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(card.name)}</div>
-            </div>
-        `);
-
-        $card.click(function() {
-            $('.inv-search-card').removeClass('selected');
-            $(this).addClass('selected');
-
-            $('#inv-card-name').val(card.name);
-            $('#inv-card-external-id').val(card.id);
-            $('#inv-card-image-url').val(card.image_url || card.high_res || card.image);
-            $('#inv-card-set-name').val(card.set || card.set_name || '');
-            $('#inv-card-set-number').val(card.number || '');
-            $('#inv-card-rarity').val(card.rarity || '');
-            $('#inv-card-current-price').val(card.price || 0);
+        // If it already has price/game info from TCGAPI (via searchExternalCard)
+        if (card.price !== undefined) {
+            $('#inv-card-current-price').val(card.price);
             $('#inv-card-game').val(card.game);
-        });
+            $('#inv-card-external-id').val(card.external_id || card.id);
+        } else {
+            // It came from another source (Viking, TCGDex, etc.)
+            // Attempt to find price on TCGAPI.dev
+            $('#inv-card-current-price').val('Buscando precio...');
 
-        $container.append($card);
+            const games = ['pokemon', 'yugioh', 'magic', 'lorcana', 'onepiece'];
+            let foundPrice = 0;
+            let foundGame = '';
+            let foundId = '';
+
+            for (const g of games) {
+                const results = await window.searchTCGAPI_internal(card.name, g);
+                if (results.length > 0) {
+                    // Try to match set if possible
+                    const match = results.find(r => r.set === card.set) || results[0];
+                    foundPrice = match.price;
+                    foundGame = g;
+                    foundId = match.external_id;
+                    break;
+                }
+            }
+
+            $('#inv-card-current-price').val(foundPrice || 0);
+            $('#inv-card-game').val(foundGame);
+            $('#inv-card-external-id').val(foundId);
+        }
+
+        Swal.fire({
+            title: 'Carta Seleccionada',
+            text: card.name,
+            icon: 'success',
+            timer: 1000,
+            showConfirmButton: false
+        });
     });
-}
+});
 
 $('#btn-save-investment-card').click(async function() {
     const cardData = {
@@ -563,23 +552,21 @@ async function deleteInvestmentCard(id) {
     }
 }
 
-async function searchTCGAPI(query, game = 'pokemon') {
-    if (!TCG_API_KEY || TCG_API_KEY === 'tcg_live_830032ddb812433fc16a783454caaa5353708266') {
-        console.warn("TCGAPI.dev API Key is not configured. Falling back to simple search.");
-        return [];
-    }
+// Helper used internally for price lookup
+window.searchTCGAPI_internal = async function(query, game = 'pokemon') {
+    if (!window.TCG_API_KEY) return [];
 
     try {
-        const response = await fetch(`${TCG_API_BASE}/search?q=${encodeURIComponent(query)}&game=${game}`, {
-            headers: { 'X-API-Key': TCG_API_KEY }
+        const response = await fetch(`${window.TCG_API_BASE}/search?q=${encodeURIComponent(query)}&game=${game}`, {
+            headers: { 'X-API-Key': window.TCG_API_KEY }
         });
 
-        if (!response.ok) return []; // Silent fail for multi-search
+        if (!response.ok) return [];
 
         const data = await response.json();
 
         return (data.data || []).map(c => ({
-            id: c.id,
+            external_id: c.id,
             name: c.name,
             image: c.image_url || `https://images.tcgplayer.com/product/${c.id}_200w.jpg`,
             set: c.set,
@@ -588,13 +575,12 @@ async function searchTCGAPI(query, game = 'pokemon') {
             price: c.price || c.market_price || 0
         }));
     } catch (e) {
-        console.error("Error fetching from TCGAPI.dev:", e);
         return [];
     }
-}
+};
 
 async function updateCategoryPrices(categoryId) {
-    if (!TCG_API_KEY || TCG_API_KEY === 'tcg_live_830032ddb812433fc16a783454caaa5353708266') return;
+    if (!window.TCG_API_KEY) return;
 
     const { data: cards } = await _supabase
         .from('investment_cards')
@@ -607,12 +593,13 @@ async function updateCategoryPrices(categoryId) {
         if (!card.external_id) continue;
 
         try {
-            const response = await fetch(`${TCG_API_BASE}/card/${card.external_id}`, {
-                headers: { 'X-API-Key': TCG_API_KEY }
+            const response = await fetch(`${window.TCG_API_BASE}/card/${card.external_id}`, {
+                headers: { 'X-API-Key': window.TCG_API_KEY }
             });
             if (response.ok) {
                 const result = await response.json();
-                const newPrice = result.data.price || result.data.market_price || 0;
+                const data = result.data || result;
+                const newPrice = data.price || data.market_price || 0;
 
                 await _supabase
                     .from('investment_cards')
