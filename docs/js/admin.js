@@ -262,6 +262,9 @@ $(document).ready(async function() {
         $('#chatbot-container').removeClass('active');
     });
 
+    // Also initialize the avatar inside the chatbot header
+    initChatbotAvatar();
+
     // --- Companion Menu Logic ---
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#floating-companion-container, #companion-menu').length) {
@@ -2788,7 +2791,15 @@ async function loadSpirits() {
     });
 }
 
-function initFloatingCompanion() {
+async function initFloatingCompanion() {
+    // Fallback if no spirit selected
+    if (!window.currentSpirit) {
+        try {
+            const { data: firstSpirit } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
+            if (firstSpirit) window.currentSpirit = firstSpirit;
+        } catch (e) { console.warn("Error loading fallback spirit:", e); }
+    }
+
     if (!window.currentSpirit) return;
 
     const $container = $('#floating-companion-container');
@@ -2802,9 +2813,13 @@ function initFloatingCompanion() {
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none">
+            interaction-prompt="none"
+            style="width: 100%; height: 100%;">
         </model-viewer>
     `);
+
+    // Also initialize the avatar inside the chatbot header
+    initChatbotAvatar();
 
     $container.off('click').on('click', function(e) {
         if (window.isCompanionDragging) return;
@@ -3745,6 +3760,25 @@ window.deleteAuctionGroupPerm = async function(ids) {
             loadMyAuctionsWinners();
         }
     }
+}
+
+function initChatbotAvatar() {
+    const $avatarContainer = $('#chatbot-avatar-container');
+    if (!$avatarContainer.length || !window.currentSpirit) return;
+
+    $avatarContainer.html(`
+        <model-viewer
+            src="${window.currentSpirit.gltf_url}"
+            auto-rotate
+            camera-controls
+            rotation="0deg 0deg 0deg"
+            shadow-intensity="1"
+            environment-image="neutral"
+            exposure="1.2"
+            interaction-prompt="none"
+            style="width: 100%; height: 100%;">
+        </model-viewer>
+    `);
 }
 
 window.hideWonAuctionGroup = function(ids) {
