@@ -5,7 +5,7 @@
 
 // --- CONFIGURATION ---
 // PLACE YOUR TCGAPI.dev API KEY HERE
-const TCG_API_KEY = 'YOUR_API_KEY_HERE';
+const TCG_API_KEY = 'tcg_live_830032ddb812433fc16a783454caaa5353708266';
 const TCG_API_BASE = 'https://api.tcgapi.dev/v1';
 
 // --- STATE ---
@@ -557,7 +557,7 @@ async function deleteInvestmentCard(id) {
 }
 
 async function searchTCGAPI(query, game = 'pokemon') {
-    if (!TCG_API_KEY || TCG_API_KEY === 'YOUR_API_KEY_HERE') {
+    if (!TCG_API_KEY || TCG_API_KEY === 'tcg_live_830032ddb812433fc16a783454caaa5353708266') {
         console.warn("TCGAPI.dev API Key is not configured. Falling back to simple search.");
         return [];
     }
@@ -587,7 +587,7 @@ async function searchTCGAPI(query, game = 'pokemon') {
 }
 
 async function updateCategoryPrices(categoryId) {
-    if (!TCG_API_KEY || TCG_API_KEY === 'YOUR_API_KEY_HERE') return;
+    if (!TCG_API_KEY || TCG_API_KEY === 'tcg_live_830032ddb812433fc16a783454caaa5353708266') return;
 
     const { data: cards } = await _supabase
         .from('investment_cards')
