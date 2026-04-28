@@ -438,20 +438,27 @@ $('#close-investment-card-modal').click(() => $('#investment-card-modal').remove
 
 $('#btn-inv-card-search').click(async function() {
     const query = $('#inv-card-search-input').val().trim();
-    const game = $('#inv-search-game').val();
 
-    if (query.length < 3) {
-        Swal.fire('Atención', 'Escribe al menos 3 caracteres.', 'info');
+    if (query.length < 2) {
+        Swal.fire('Atención', 'Escribe al menos 2 caracteres.', 'info');
         return;
     }
 
-    $('#inv-card-search-results').html('<div style="grid-column: 1/-1; text-align: center; color: #666;">Buscando...</div>');
+    $('#inv-card-search-results').html('<div style="grid-column: 1/-1; text-align: center; color: #666;">Buscando en todas las bases de datos...</div>');
 
-    const results = await searchTCGAPI(query, game);
-    renderInvSearchResults(results, game);
+    // Search in major games automatically
+    const games = ['pokemon', 'yugioh', 'magic', 'lorcana', 'onepiece'];
+    let allResults = [];
+
+    for (const game of games) {
+        const results = await searchTCGAPI(query, game);
+        allResults = allResults.concat(results.map(r => ({ ...r, game })));
+    }
+
+    renderInvSearchResults(allResults);
 });
 
-function renderInvSearchResults(results, game) {
+function renderInvSearchResults(results) {
     const $container = $('#inv-card-search-results');
     $container.empty();
 
@@ -479,7 +486,7 @@ function renderInvSearchResults(results, game) {
             $('#inv-card-set-number').val(card.number || '');
             $('#inv-card-rarity').val(card.rarity || '');
             $('#inv-card-current-price').val(card.price || 0);
-            $('#inv-card-game').val(game);
+            $('#inv-card-game').val(card.game);
         });
 
         $container.append($card);
@@ -567,7 +574,7 @@ async function searchTCGAPI(query, game = 'pokemon') {
             headers: { 'X-API-Key': TCG_API_KEY }
         });
 
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        if (!response.ok) return []; // Silent fail for multi-search
 
         const data = await response.json();
 

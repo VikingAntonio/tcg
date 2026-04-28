@@ -1000,6 +1000,7 @@
 
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                     <button id="btn-add-investment-card" class="btn"><i class="fas fa-plus-circle"></i> Añadir Carta</button>
+                    <button id="btn-refresh-inv-prices" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Actualizar Precios</button>
                 </div>
             </div>
 
@@ -1016,17 +1017,10 @@
             <h2 id="inv-card-modal-title">Añadir Carta a Inversión</h2>
 
             <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
-                <label><i class="fas fa-search"></i> Buscar en TCGAPI.dev (Actualiza precios auto)</label>
+                <label><i class="fas fa-search"></i> Buscar en TCGAPI.dev (Búsqueda Universal)</label>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <select id="inv-search-game" style="width: 120px;">
-                        <option value="pokemon">Pokémon</option>
-                        <option value="yugioh">Yu-Gi-Oh!</option>
-                        <option value="magic">Magic</option>
-                        <option value="lorcana">Lorcana</option>
-                        <option value="onepiece">One Piece</option>
-                    </select>
-                    <input type="text" id="inv-card-search-input" placeholder="Nombre de la carta..." style="flex: 1;">
-                    <button id="btn-inv-card-search" class="btn"><i class="fas fa-search"></i></button>
+                    <input type="text" id="inv-card-search-input" placeholder="Nombre de la carta (ej: Charizard, Dark Magician...)" style="flex: 1;">
+                    <button id="btn-inv-card-search" class="btn"><i class="fas fa-search"></i> Buscar</button>
                 </div>
                 <div id="inv-card-search-results" class="inv-search-results">
                     <!-- Results -->
