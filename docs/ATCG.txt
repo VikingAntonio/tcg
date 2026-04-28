@@ -50,5 +50,6 @@ CREATE POLICY "Anyone can view public investment cards" ON investment_cards
 
 
 -- INSTRUCTIONS FOR TCGAPI.dev:
--- The API key should be placed in docs/js/inversiones.js.
--- Look for the constant on LINE 8: const TCG_API_KEY = 'YOUR_API_KEY_HERE';
+-- The API key has been integrated in docs/js/inversiones.js.
+-- Búsqueda universal activada: Busca automáticamente en Pokemon, YGO, Magic, Lorcana y One Piece.
+-- Los precios se actualizan automáticamente al seleccionar una carta.
