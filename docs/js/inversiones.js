@@ -51,23 +51,38 @@ function initInvestmentListeners() {
     // Create Category
     $('#btn-create-investment-category').click(async function() {
         const { value: name } = await Swal.fire({
-            title: 'Nueva Categoría de Inversión',
+            title: 'NUEVO VAULT',
             input: 'text',
-            inputLabel: 'Nombre de la categoría',
-            inputPlaceholder: 'Ej: Pokémon Moderno, YGO Vintage...',
-            showCancelButton: true
+            inputLabel: 'NOMBRE DE LA COLECCIÓN',
+            inputPlaceholder: 'Ej: POKÉMON VINTAGE HOLOS',
+            showCancelButton: true,
+            confirmButtonText: 'CREAR',
+            cancelButtonText: 'CANCELAR',
+            customClass: {
+                popup: 'inv-swal-popup',
+                confirmButton: 'btn-inv-main',
+                cancelButton: 'btn-inv-outline'
+            }
         });
 
         if (name) {
-            saveInvestmentCategory({ name });
+            saveInvestmentCategory({ name: name.toUpperCase() });
         }
     });
 
     // View Mode Switches
     $(document).on('click', '.btn-inv-mode', function() {
         const mode = $(this).data('mode');
-        $('.btn-inv-mode').removeClass('active');
-        $(this).addClass('active');
+        $('.btn-inv-mode').removeClass('active').css({
+            'background': 'transparent',
+            'color': '#666',
+            'border-radius': '0px'
+        });
+        $(this).addClass('active').css({
+            'background': '#000',
+            'color': '#fff',
+            'border-radius': '2px'
+        });
         currentInvestmentViewMode = mode;
         renderInvestmentCards(mode);
     });
@@ -78,9 +93,9 @@ function initInvestmentListeners() {
     });
 
     // Modal Tabs logic
-    $(document).on('click', '#investment-card-modal .slot-tab-btn', function() {
+    $(document).on('click', '#investment-card-modal .inv-tab-link', function() {
         const tabId = $(this).data('tab');
-        $('#investment-card-modal .slot-tab-btn').removeClass('active');
+        $('#investment-card-modal .inv-tab-link').removeClass('active');
         $(this).addClass('active');
         $('#investment-card-modal .slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
@@ -175,24 +190,27 @@ async function loadInvestmentCategories() {
         const $card = $(`
             <div class="inv-category-item" data-id="${cat.id}">
                 <div class="inv-category-preview">
-                    <i class="fas fa-chart-pie fa-3x"></i>
+                    <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=800&auto=format&fit=crop" alt="preview">
                 </div>
                 <div class="inv-category-info">
-                    <h3>${escapeHtml(cat.name)}</h3>
+                    <div>
+                        <h3>${escapeHtml(cat.name)}</h3>
+                        <div class="inv-category-meta">Colección de Activos TCG</div>
+                    </div>
 
                     <div class="inv-category-public-toggle">
                         <label class="switch">
                             <input type="checkbox" class="toggle-inv-cat-public" data-id="${cat.id}" ${isPublic ? 'checked' : ''}>
                             <span class="slider"></span>
                         </label>
-                        <span>${isPublic ? 'Público' : 'Privado'}</span>
+                        <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">${isPublic ? 'Público' : 'Privado'}</span>
                     </div>
-                </div>
 
-                <div class="inv-category-actions">
-                    <button class="btn-primary-modern btn-view-inv-cat" style="flex: 1;">VER</button>
-                    <button class="btn-secondary-modern btn-edit-inv-cat"><i class="fas fa-edit"></i></button>
-                    <button class="btn-danger-modern btn-delete-inv-cat"><i class="fas fa-trash"></i></button>
+                    <div style="display: flex; gap: 8px; margin-top: 15px;">
+                        <button class="btn-inv-main btn-view-inv-cat" style="flex: 1;">GESTIONAR</button>
+                        <button class="btn-inv-outline btn-edit-inv-cat"><i class="fas fa-pen"></i></button>
+                        <button class="btn-inv-danger btn-delete-inv-cat"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             </div>
         `);
@@ -209,7 +227,11 @@ async function loadInvestmentCategories() {
 }
 
 async function saveInvestmentCategory(data) {
-    Swal.fire({ title: 'Guardando...', didOpen: () => Swal.showLoading() });
+    Swal.fire({
+        title: 'CREATING VAULT...',
+        didOpen: () => Swal.showLoading(),
+        customClass: { popup: 'inv-swal-popup' }
+    });
 
     const { error } = await _supabase
         .from('investment_categories')
@@ -230,7 +252,12 @@ async function updateInvestmentCategory(id, data, refresh = false) {
         .eq('id', id);
 
     if (error) {
-        Swal.fire('Error', 'No se pudo actualizar la categoría', 'error');
+        Swal.fire({
+            title: 'ERROR',
+            text: 'Could not update vault.',
+            icon: 'error',
+            customClass: { popup: 'inv-swal-popup' }
+        });
     } else if (refresh) {
         loadInvestmentCategories();
     }
@@ -238,31 +265,51 @@ async function updateInvestmentCategory(id, data, refresh = false) {
 
 async function editInvestmentCategory(cat) {
     const { value: name } = await Swal.fire({
-        title: 'Editar Categoría',
+        title: 'RENAME VAULT',
         input: 'text',
         inputValue: cat.name,
-        showCancelButton: true
+        showCancelButton: true,
+        confirmButtonText: 'UPDATE',
+        cancelButtonText: 'CANCEL',
+        customClass: {
+            popup: 'inv-swal-popup',
+            confirmButton: 'btn-inv-main',
+            cancelButton: 'btn-inv-outline'
+        }
     });
 
     if (name && name !== cat.name) {
-        updateInvestmentCategory(cat.id, { name }, true);
+        updateInvestmentCategory(cat.id, { name: name.toUpperCase() }, true);
     }
 }
 
 async function deleteInvestmentCategory(id) {
     const { isConfirmed } = await Swal.fire({
-        title: '¿Eliminar categoría?',
-        text: 'Se eliminarán todas las cartas dentro de esta categoría.',
+        title: 'DESTROY VAULT?',
+        text: 'All assets inside this collection will be permanently removed.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#ff4757',
-        confirmButtonText: 'Sí, eliminar'
+        confirmButtonText: 'CONFIRM DESTRUCTION',
+        cancelButtonText: 'CANCEL',
+        customClass: {
+            popup: 'inv-swal-popup',
+            confirmButton: 'btn-inv-danger',
+            cancelButton: 'btn-inv-outline'
+        }
     });
 
     if (isConfirmed) {
         const { error } = await _supabase.from('investment_categories').delete().eq('id', id);
-        if (error) Swal.fire('Error', 'No se pudo eliminar', 'error');
-        else loadInvestmentCategories();
+        if (error) {
+            Swal.fire({
+                title: 'ERROR',
+                text: 'Could not delete vault.',
+                icon: 'error',
+                customClass: { popup: 'inv-swal-popup' }
+            });
+        } else {
+            loadInvestmentCategories();
+        }
     }
 }
 
@@ -270,7 +317,7 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    $('#inv-category-title').text(cat.name);
+    $('#inv-category-title').text(cat.name.toUpperCase());
     showView('investment-details');
     loadInvestmentCards();
 }
@@ -314,7 +361,9 @@ function renderInvestmentCards(mode) {
 function getTrendIcon(current, previous) {
     if (previous === undefined || previous === null || current === previous) return '';
     const isUp = current > previous;
-    return `<i class="fas fa-chart-line" style="color: ${isUp ? '#00ff88' : '#ff4757'}; margin-left: 5px;"></i>`;
+    const iconClass = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
+    const color = isUp ? '#00ff00' : '#ff0000';
+    return `<i class="fas ${iconClass}" style="color: ${color}; margin-left: 5px; font-size: 0.8rem;"></i>`;
 }
 
 function renderAlbumMode($container) {
@@ -326,9 +375,9 @@ function renderAlbumMode($container) {
     // Cover
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: var(--viking-blue)">
-                <h2 style="color:white; text-align:center; padding: 20% 10%;">${escapeHtml($('#inv-category-title').text())}</h2>
-                <div style="text-align:center; color:rgba(255,255,255,0.5); font-size: 0.8rem;">INVERSIONES</div>
+            <div class="textured-cover" style="background-color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
+                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml($('#inv-category-title').text()).toUpperCase()}</h2>
+                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
         </div>
     `);
@@ -345,9 +394,9 @@ function renderAlbumMode($container) {
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card">
-                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="zoom-btn"><i class="fas fa-expand"></i></div>
                 `);
                 $slot.find('.zoom-btn').click(() => openInvestmentCardModal(card));
             }
@@ -366,7 +415,7 @@ function renderAlbumMode($container) {
     // Back Cover
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: #1a1a1a"></div>
+            <div class="textured-cover" style="background-color: #000000"></div>
         </div>
     `);
 
@@ -392,15 +441,15 @@ function renderSlideMode($container) {
                 ${localInvestmentCards.map(card => {
                     const trend = getTrendIcon(card.current_price, card.previous_price);
                     return `
-                    <div class="swiper-slide card-slot inv-card-item" data-id="${card.id}">
-                        <img src="${card.image_url}" style="width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                        <div class="inv-card-info-overlay">
-                            <h4>${escapeHtml(card.card_name)}</h4>
-                            <p>${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
-                            <div class="inv-price-tag">Actual: $${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-                                <button class="btn btn-sm btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
+                    <div class="swiper-slide card-slot inv-card-item" data-id="${card.id}" style="background: transparent;">
+                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
+                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name)}</h4>
+                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
+                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                                <button class="btn-inv-outline btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-pen"></i></button>
+                                <button class="btn-inv-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     </div>
@@ -440,19 +489,19 @@ function renderListMode($container) {
         const diffClass = diff >= 0 ? 'price-up' : 'price-down';
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const $item = $(`
-            <div class="inv-list-item">
-                <img src="${card.image_url}" class="inv-list-thumb">
-                <div class="inv-list-details">
-                    <div class="inv-list-name">${escapeHtml(card.card_name)}</div>
-                    <div class="inv-list-set">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
+            <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px;">
+                <img src="${card.image_url}" class="inv-list-thumb" style="width: 60px; height: 84px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
+                <div class="inv-list-details" style="flex: 1;">
+                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000;">${escapeHtml(card.card_name)}</div>
+                    <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
                 </div>
-                <div class="inv-list-prices">
-                    <div class="inv-price-row"><span>Compra:</span> <b>$${parseFloat(card.purchase_price || 0).toFixed(2)}</b></div>
-                    <div class="inv-price-row"><span>Actual:</span> <b class="${diffClass}">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                <div class="inv-list-prices" style="display: flex; gap: 30px; text-align: right;">
+                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Purchase</span> <b style="color: #000;">$${parseFloat(card.purchase_price || 0).toFixed(2)}</b></div>
+                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Market</span> <b class="${diffClass}" style="color: #000;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
                 </div>
-                <div style="display: flex; gap: 5px;">
-                    <button class="btn btn-sm btn-edit-inv-card" data-id="${card.id}"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger btn-delete-inv-card" data-id="${card.id}"><i class="fas fa-trash"></i></button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-inv-outline btn-edit-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-pen"></i></button>
+                    <button class="btn-inv-danger btn-delete-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `);
@@ -472,14 +521,14 @@ function openInvestmentCardModal(card = null) {
     currentInvExtraImages = card ? (card.extra_images || []) : [];
 
     // Reset Tabs
-    $('#investment-card-modal .slot-tab-btn').removeClass('active');
-    $('#investment-card-modal .slot-tab-btn[data-tab="inv-tab-datos"]').addClass('active');
+    $('#investment-card-modal .inv-tab-link').removeClass('active');
+    $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]').addClass('active');
     $('#investment-card-modal .slot-tab-content').removeClass('active');
     $('#inv-tab-datos').addClass('active');
 
     // Populate Fields
-    $('#inv-card-modal-title').text(card ? 'Editar Inversión' : 'Añadir Carta a Inversión');
-    $('#inv-card-name').val(card ? card.card_name : '');
+    $('#inv-card-modal-title').text(card ? 'EDIT ASSET' : 'ADD NEW ASSET');
+    $('#inv-card-name').val(card ? card.card_name.toUpperCase() : '');
     $('#inv-card-purchase-price').val(card ? card.purchase_price : '');
     $('#inv-card-current-price').val(card ? card.current_price : '');
     $('#inv-card-quantity').val(card ? card.quantity : 1);
@@ -506,7 +555,7 @@ $('#close-investment-card-modal').click(() => $('#investment-card-modal').remove
 $('#btn-inv-card-search').click(async function() {
     window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
         // When a card is selected from combined search
-        $('#inv-card-name').val(card.name);
+        $('#inv-card-name').val(card.name.toUpperCase());
         $('#inv-card-image-url').val(card.high_res || card.image);
         $('#inv-card-set-name').val(card.set || card.set_name || '');
         $('#inv-card-set-number').val(card.number || '');
@@ -517,11 +566,12 @@ $('#btn-inv-card-search').click(async function() {
         $('#inv-card-external-id').val(card.external_id || card.id || '');
 
         Swal.fire({
-            title: 'Carta Seleccionada',
+            title: 'ASSET SELECTED',
             text: card.name,
             icon: 'success',
             timer: 1000,
-            showConfirmButton: false
+            showConfirmButton: false,
+            customClass: { popup: 'inv-swal-popup' }
         });
     });
 });
@@ -532,7 +582,7 @@ $('#btn-save-investment-card').click(async function() {
     const cardData = {
         category_id: currentInvestmentCategoryId,
         user_id: currentUser.id,
-        card_name: $('#inv-card-name').val(),
+        card_name: $('#inv-card-name').val().toUpperCase(),
         external_id: $('#inv-card-external-id').val(),
         tcg_game: $('#inv-card-game').val(),
         image_url: $('#inv-card-image-url').val(),
@@ -547,11 +597,20 @@ $('#btn-save-investment-card').click(async function() {
     };
 
     if (!cardData.card_name || !cardData.image_url) {
-        Swal.fire('Atención', 'Selecciona una carta de los resultados de búsqueda o ingresa los datos mínimos.', 'warning');
+        Swal.fire({
+            title: 'ATTENTION',
+            text: 'Select a card or enter required data.',
+            icon: 'warning',
+            customClass: { popup: 'inv-swal-popup' }
+        });
         return;
     }
 
-    Swal.fire({ title: 'Guardando...', didOpen: () => Swal.showLoading() });
+    Swal.fire({
+        title: 'SAVING ASSET...',
+        didOpen: () => Swal.showLoading(),
+        customClass: { popup: 'inv-swal-popup' }
+    });
 
     try {
         let error;
@@ -593,30 +652,54 @@ $('#btn-save-investment-card').click(async function() {
 
         if (error) throw error;
 
-        Swal.fire({ icon: 'success', title: 'Guardado', timer: 1500, showConfirmButton: false });
+        Swal.fire({
+            icon: 'success',
+            title: 'ASSET SAVED',
+            timer: 1500,
+            showConfirmButton: false,
+            customClass: { popup: 'inv-swal-popup' }
+        });
         $('#investment-card-modal').removeClass('active');
         loadInvestmentCards();
 
     } catch (e) {
         console.error(e);
-        Swal.fire('Error', 'No se pudo guardar la carta.', 'error');
+        Swal.fire({
+            title: 'ERROR',
+            text: 'Could not save asset.',
+            icon: 'error',
+            customClass: { popup: 'inv-swal-popup' }
+        });
     }
 });
 
 async function deleteInvestmentCard(id) {
     const { isConfirmed } = await Swal.fire({
-        title: '¿Eliminar carta?',
-        text: 'Se quitará esta carta de tus inversiones.',
+        title: 'LIQUIDATE ASSET?',
+        text: 'This action will remove the card from your vault.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#ff4757',
-        confirmButtonText: 'Sí, eliminar'
+        confirmButtonText: 'CONFIRM DELETE',
+        cancelButtonText: 'CANCEL',
+        customClass: {
+            popup: 'inv-swal-popup',
+            confirmButton: 'btn-inv-danger',
+            cancelButton: 'btn-inv-outline'
+        }
     });
 
     if (isConfirmed) {
         const { error } = await _supabase.from('investment_cards').delete().eq('id', id);
-        if (error) Swal.fire('Error', 'No se pudo eliminar', 'error');
-        else loadInvestmentCards();
+        if (error) {
+            Swal.fire({
+                title: 'ERROR',
+                text: 'Could not remove asset.',
+                icon: 'error',
+                customClass: { popup: 'inv-swal-popup' }
+            });
+        } else {
+            loadInvestmentCards();
+        }
     }
 }
 
@@ -638,20 +721,29 @@ async function renderPriceHistoryChart(cardId) {
         data: {
             labels: history.map(h => new Date(h.recorded_at).toLocaleDateString()),
             datasets: [{
-                label: 'Precio Mercado',
+                label: 'Market Price',
                 data: history.map(h => h.price),
-                borderColor: '#00d2ff',
-                backgroundColor: 'rgba(0, 210, 255, 0.1)',
+                borderColor: '#000000',
+                backgroundColor: 'rgba(0, 0, 0, 0.05)',
                 fill: true,
-                tension: 0.3
+                tension: 0.1,
+                pointRadius: 4,
+                pointBackgroundColor: '#000000'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: false, grid: { color: '#f1f2f6' }, ticks: { color: '#2d3436' } },
-                x: { grid: { color: '#f1f2f6' }, ticks: { color: '#2d3436' } }
+                y: {
+                    beginAtZero: false,
+                    grid: { color: '#eee' },
+                    ticks: { color: '#000', font: { weight: 'bold' } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#666', font: { size: 10 } }
+                }
             },
             plugins: {
                 legend: { display: false }

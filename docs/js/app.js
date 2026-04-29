@@ -3370,10 +3370,15 @@ async function loadPublicInvestmentCategories() {
 
     categories.forEach(cat => {
         const $card = $(`
-            <div class="album-card inv-category-item" data-id="${cat.id}">
-                <div class="deck-preview-icon"><i class="fas fa-chart-line fa-3x"></i></div>
-                <h3 style="margin-top: 15px; text-align: center;">${escapeHtml(cat.name)}</h3>
-                <button class="btn btn-view-public-inv" style="width: 100%; margin-top: 15px;">Explorar</button>
+            <div class="inv-category-item" data-id="${cat.id}" style="border: 1px solid #000; border-radius: 4px; overflow: hidden; background: #fff;">
+                <div class="inv-category-preview" style="height: 120px; background: #eee;">
+                    <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=800&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%);">
+                </div>
+                <div class="inv-category-info" style="padding: 20px; text-align: center;">
+                    <h3 style="margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; font-size: 1rem; color: #000;">${escapeHtml(cat.name).toUpperCase()}</h3>
+                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; margin-top: 5px; font-weight: 800; text-transform: uppercase;">Private Asset Vault</div>
+                    <button class="btn-inv-main btn-view-public-inv" style="width: 100%; margin-top: 20px;">ACCESS VAULT</button>
+                </div>
             </div>
         `);
         $card.find('.btn-view-public-inv').click(() => openPublicInvestmentCategory(cat));
@@ -3391,7 +3396,7 @@ let publicInvCards = [];
 
 async function openPublicInvestmentCategory(cat) {
     currentPublicInvCategory = cat;
-    $('#public-inv-title').text(cat.name);
+    $('#public-inv-title').text(cat.name.toUpperCase());
     $('#public-inv-header, #public-investment-tabs').show();
     $('#public-investment-categories').hide();
     $('#public-investment-cards').show().html('<div class="loading">Cargando cartas...</div>');
@@ -3446,9 +3451,9 @@ function renderPublicInvAlbumMode($container) {
 
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: var(--viking-blue)">
-                <h2 style="color:white; text-align:center; padding: 20% 10%;">${escapeHtml(currentPublicInvCategory.name)}</h2>
-                <div style="text-align:center; color:rgba(255,255,255,0.5); font-size: 0.8rem;">INVERSIONES</div>
+            <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
+                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(currentPublicInvCategory.name).toUpperCase()}</h2>
+                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
         </div>
     `);
@@ -3462,11 +3467,13 @@ function renderPublicInvAlbumMode($container) {
             const card = pageCards[j];
             const $slot = $('<div class="card-slot"></div>');
             if (card) {
-                const trend = (card.current_price > card.previous_price) ? '<i class="fas fa-chart-line" style="color: #00ff88; margin-left: 5px;"></i>' :
-                            (card.current_price < card.previous_price) ? '<i class="fas fa-chart-line" style="color: #ff4757; margin-left: 5px;"></i>' : '';
+                const isUp = card.current_price > card.previous_price;
+                const isDown = card.current_price < card.previous_price;
+                const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                            isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card">
-                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                 `);
             }
             $grid.append($slot);
@@ -3479,7 +3486,7 @@ function renderPublicInvAlbumMode($container) {
         $album.append('<div class="page album-page"></div>');
     }
 
-    $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #1a1a1a"></div></div>');
+    $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
 
     setTimeout(() => {
         $album.turn({
@@ -3498,18 +3505,20 @@ function renderPublicInvSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const swiperId = `pub-inv-swiper-${Date.now()}`;
     const $swiper = $(`
-        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: 500px; padding: 20px 0;">
+        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; min-height: 550px; padding: 20px 0;">
             <div class="swiper-wrapper">
                 ${publicInvCards.map(card => {
-                    const trend = (card.current_price > card.previous_price) ? '<i class="fas fa-chart-line" style="color: #00ff88; margin-left: 5px;"></i>' :
-                                (card.current_price < card.previous_price) ? '<i class="fas fa-chart-line" style="color: #ff4757; margin-left: 5px;"></i>' : '';
+                    const isUp = card.current_price > card.previous_price;
+                    const isDown = card.current_price < card.previous_price;
+                    const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                                isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                     return `
-                    <div class="swiper-slide card-slot inv-card-item">
-                        <img src="${card.image_url}" style="width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                        <div class="inv-card-info-overlay">
-                            <h4>${escapeHtml(card.card_name)}</h4>
-                            <p>${escapeHtml(card.rarity || '')}</p>
-                            <div class="inv-price-tag">Actual: $${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;">
+                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
+                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
+                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
+                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                         </div>
                     </div>
                 `}).join('')}
@@ -3531,17 +3540,19 @@ function renderPublicInvListMode($container) {
     const $list = $('<div class="inv-list-container"></div>');
 
     publicInvCards.forEach(card => {
-        const trend = (card.current_price > card.previous_price) ? '<i class="fas fa-chart-line" style="color: #00ff88; margin-left: 5px;"></i>' :
-                    (card.current_price < card.previous_price) ? '<i class="fas fa-chart-line" style="color: #ff4757; margin-left: 5px;"></i>' : '';
+        const isUp = card.current_price > card.previous_price;
+        const isDown = card.current_price < card.previous_price;
+        const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.8rem;"></i>' :
+                    isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.8rem;"></i>' : '';
         const $item = $(`
-            <div class="inv-list-item">
-                <img src="${card.image_url}" class="inv-list-thumb">
-                <div class="inv-list-details">
-                    <div class="inv-list-name">${escapeHtml(card.card_name)}</div>
-                    <div class="inv-list-set">${escapeHtml(card.rarity || '')}</div>
+            <div class="inv-list-item" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px;">
+                <img src="${card.image_url}" class="inv-list-thumb" style="width: 50px; height: 70px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
+                <div class="inv-list-details" style="flex: 1;">
+                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.85rem; color: #000;">${escapeHtml(card.card_name).toUpperCase()}</div>
+                    <div class="inv-list-set" style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
                 </div>
-                <div class="inv-list-prices">
-                    <div class="inv-price-row"><span>Mercado:</span> <b>$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                <div class="inv-list-prices" style="text-align: right;">
+                    <div class="inv-price-row"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999; display: block;">Market Price</span> <b style="color: #000; font-size: 1.1rem;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
                 </div>
             </div>
         `);
