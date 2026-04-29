@@ -9,6 +9,7 @@ let pendingWishlistAdmin = [];
 
 $(document).ready(function() {
     initAdminWishlistListeners();
+    loadWishlistSlotNames();
 });
 
 function initAdminWishlistListeners() {
@@ -26,6 +27,28 @@ function initAdminWishlistListeners() {
         $(this).addClass('active');
         currentWishlistSlot = parseInt($(this).data('index'));
         loadWishlistAdmin();
+    });
+
+    // Slot renaming
+    $(document).on('dblclick', '#view-wishlist .wishlist-tab-btn', async function() {
+        const index = $(this).data('index');
+        const currentName = $(this).text();
+
+        const { value: newName } = await Swal.fire({
+            title: 'Renombrar Slot',
+            input: 'text',
+            inputLabel: 'Nuevo nombre para este slot',
+            inputValue: currentName,
+            showCancelButton: true,
+            inputValidator: (value) => {
+                if (!value) return '¡Debes ingresar un nombre!';
+            }
+        });
+
+        if (newName && newName !== currentName) {
+            $(this).text(newName);
+            saveWishlistSlotName(index, newName);
+        }
     });
 
     // Share current slot button
@@ -336,6 +359,53 @@ async function updateWishlistItemAdmin(id, data) {
 
     if (error) {
         console.error("Error updating wishlist item:", error);
+    }
+}
+
+async function loadWishlistSlotNames() {
+    if (!currentUser) return;
+    try {
+        const { data, error } = await _supabase
+            .from('wishlist_slot_names')
+            .select('*')
+            .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            data.forEach(slot => {
+                $(`#view-wishlist .wishlist-tab-btn[data-index="${slot.slot_index}"]`).text(slot.name);
+            });
+        }
+    } catch (err) {
+        console.error("Error loading slot names:", err);
+    }
+}
+
+async function saveWishlistSlotName(index, name) {
+    if (!currentUser) return;
+    try {
+        const { error } = await _supabase
+            .from('wishlist_slot_names')
+            .upsert({
+                user_id: currentUser.id,
+                slot_index: index,
+                name: name
+            }, { onConflict: 'user_id,slot_index' });
+
+        if (error) throw error;
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Nombre guardado',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    } catch (err) {
+        console.error("Error saving slot name:", err);
+        Swal.fire('Error', 'No se pudo guardar el nombre', 'error');
     }
 }
 
