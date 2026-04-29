@@ -138,6 +138,13 @@ $(document).ready(async function() {
         if (typeof renderPendingBdd === 'function') renderPendingBdd();
     });
 
+    $(document).on('click', '#btn-deseos, #menu-btn-deseos', function(e) {
+        e.preventDefault();
+        showView('deseos');
+        if (typeof loadWishlistAdmin === 'function') loadWishlistAdmin();
+        if (window.botInstance) window.botInstance.setContext('wishlist');
+    });
+
     $(document).on('click', '#btn-show-expansiones', function(e) {
         e.preventDefault();
         if (typeof showExpansionView === 'function') {
