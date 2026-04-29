@@ -1,292 +1,223 @@
 /* Inversiones (Investments) Styles */
 
-/* Modern Category Cards */
+/* Modern Category Cards - Professional Redesign */
 .inv-category-item {
-    background: var(--card-bg);
-    border-radius: 24px;
-    padding: 20px;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    border: 1px solid var(--card-border);
-    box-shadow: var(--nm-shadow);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    border: 1px solid #e1e8ed;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .inv-category-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    border-color: var(--primary-color);
 }
 
 .inv-category-preview {
     width: 100%;
-    height: 140px;
-    background: #1e272e;
-    border-radius: 16px;
+    height: 120px;
+    background: #f1f3f5;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary-color);
+    color: #4b6584;
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.inv-category-info {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .inv-category-item h3 {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 800;
     margin: 0;
+    color: #2d3436;
 }
 
 .inv-category-public-toggle {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.8rem;
-    color: var(--text-muted);
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #636e72;
 }
 
 .inv-category-actions {
     display: flex;
     gap: 10px;
-    margin-top: auto;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e1e8ed;
 }
 
-.btn-view-inv-cat {
-    flex: 1;
-    background: var(--viking-gradient) !important;
-    color: #000 !important;
+/* Modern Professional Buttons - NO GRADIENTS */
+.btn-primary-modern {
+    background: #2d3436;
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-transform: uppercase;
 }
 
-/* Modal Styling: White Background & Black Text */
+.btn-primary-modern:hover {
+    background: #000000;
+    transform: scale(1.02);
+}
+
+.btn-secondary-modern {
+    background: #f1f2f6;
+    color: #2d3436;
+    border: 1px solid #dfe6e9;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary-modern:hover {
+    background: #e1e2e6;
+}
+
+.btn-danger-modern {
+    background: #ff7675;
+    color: #ffffff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger-modern:hover {
+    background: #ff4757;
+}
+
+/* Modal Styling: Fixed Header/Footer and Scrollable Middle */
 #investment-card-modal .overlay-content {
     background: #ffffff !important;
     color: #2d3436 !important;
-    height: 650px; /* Fixed height to prevent jumps */
-    overflow-y: auto;
-    scrollbar-width: none; /* Firefox */
-    border: none;
-}
-
-#investment-card-modal .overlay-content::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-}
-
-#investment-card-modal h2,
-#investment-card-modal label,
-#investment-card-modal .info-label {
-    color: #2d3436 !important;
-}
-
-#investment-card-modal .form-group input,
-#investment-card-modal .form-group textarea,
-#investment-card-modal .form-group select {
-    background: #f1f2f6 !important;
-    border: 1px solid #dfe6e9 !important;
-    color: #2d3436 !important;
-}
-
-#investment-card-modal .slot-tab-btn {
-    background: #f1f2f6;
-    color: #636e72;
-}
-
-#investment-card-modal .slot-tab-btn.active {
-    background: var(--primary-color);
-    color: #ffffff !important;
+    max-height: 90vh;
+    height: 700px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 24px;
 }
 
 #investment-card-modal .close-btn {
+    top: 20px;
+    right: 20px;
     color: #2d3436;
 }
 
-#investment-card-modal .inv-search-results {
-    background: #f1f2f6;
-    border-radius: 12px;
-}
-
-/* Album & Layout Styles */
-.investment-album-layout .grid-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 20px;
-    box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5), inset -5px -5px 15px rgba(255,255,255,0.05);
-}
-
-.inv-card-info-badge {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: var(--viking-blue);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    z-index: 10;
-}
-
-.investment-slide-layout {
-    padding: 40px 0;
-}
-
-.inv-card-info-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.9));
-    padding: 20px 15px 15px;
-    border-radius: 0 0 12px 12px;
-    text-align: center;
-}
-
-.inv-card-info-overlay h4 {
+#investment-card-modal h2 {
+    padding: 30px 30px 20px;
     margin: 0;
-    color: #fff;
-    font-size: 1rem;
+    text-align: center;
+    font-weight: 900;
+    color: #2d3436 !important;
 }
 
-.inv-card-info-overlay p {
-    margin: 5px 0;
-    color: #aaa;
+.slot-modal-tabs {
+    padding: 0 30px 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.inv-modal-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 30px 20px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.inv-modal-scroll-area::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.inv-modal-footer {
+    padding: 20px 30px;
+    background: #ffffff;
+    border-top: 1px solid #f1f2f6;
+}
+
+/* Tab Content Styles */
+.slot-tab-content {
+    display: none;
+}
+.slot-tab-content.active {
+    display: block;
+}
+
+.slot-tab-btn {
+    background: #f1f2f6;
+    color: #636e72;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: 700;
     font-size: 0.8rem;
-}
-
-.inv-price-tag {
-    color: var(--primary-color);
-    font-weight: 800;
-    font-size: 1.1rem;
-}
-
-.inv-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.inv-list-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background: rgba(255,255,255,0.03);
-    padding: 12px 20px;
-    border-radius: 15px;
-    border: 1px solid rgba(255,255,255,0.05);
-    transition: transform 0.2s;
-}
-
-.inv-list-item:hover {
-    transform: translateX(10px);
-    background: rgba(255,255,255,0.05);
-}
-
-.inv-list-thumb {
-    width: 50px;
-    height: 70px;
-    object-fit: contain;
-    border-radius: 4px;
-}
-
-.inv-list-details {
+    cursor: pointer;
+    transition: all 0.3s;
     flex: 1;
 }
 
-.inv-list-name {
-    font-weight: bold;
-    font-size: 1rem;
+.slot-tab-btn.active {
+    background: #2d3436;
+    color: #ffffff !important;
 }
 
-.inv-list-set {
-    font-size: 0.8rem;
-    color: #888;
+/* Form refinement */
+#investment-card-modal .form-group label {
+    color: #2d3436 !important;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
 }
 
-.inv-list-prices {
-    text-align: right;
-    min-width: 120px;
+#investment-card-modal .form-group input,
+#investment-card-modal .form-group textarea {
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 0.95rem;
 }
 
-.inv-price-row {
-    font-size: 0.8rem;
-    margin-bottom: 3px;
-}
-
-.inv-price-row span {
-    color: #666;
-}
-
-.price-up { color: #00ff88; }
-.price-down { color: #ff4757; }
-
-.inv-mode-selector {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 30px;
-}
-
-.btn-inv-mode {
-    background: rgba(255,255,255,0.05);
-    border: none;
-    color: #888;
-    padding: 10px 20px;
-    border-radius: 50px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s;
+/* Album & List Layouts */
+.inv-card-info-badge {
+    background: #2d3436;
 }
 
 .btn-inv-mode.active {
-    background: var(--viking-gradient);
-    color: #000;
-    box-shadow: 0 4px 15px rgba(0,210,255,0.3);
+    background: #2d3436;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.investment-render-area .album-wrapper {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.investment-album {
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-}
-
-/* Modal search results */
-.inv-search-results {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
-    max-height: 300px;
-    overflow-y: auto;
-    padding: 10px;
-}
-
-.inv-search-card {
-    cursor: pointer;
-    transition: transform 0.2s;
-    text-align: center;
-}
-
-.inv-search-card:hover {
-    transform: scale(1.05);
-}
-
-.inv-search-card img {
-    width: 100%;
-    border-radius: 8px;
-    border: 2px solid transparent;
-}
-
-.inv-search-card.selected img {
-    border-color: var(--primary-color);
+.inv-price-tag {
+    color: #2d3436;
 }

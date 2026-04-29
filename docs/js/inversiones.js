@@ -85,7 +85,7 @@ function initInvestmentListeners() {
         $('#investment-card-modal .slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
 
-        if (tabId === 'inv-tab-history' && currentEditingInvCardId) {
+        if (tabId === 'inv-tab-movimientos' && currentEditingInvCardId) {
             renderPriceHistoryChart(currentEditingInvCardId);
         }
     });
@@ -175,22 +175,24 @@ async function loadInvestmentCategories() {
         const $card = $(`
             <div class="inv-category-item" data-id="${cat.id}">
                 <div class="inv-category-preview">
-                    <i class="fas fa-chart-line fa-3x"></i>
+                    <i class="fas fa-chart-pie fa-3x"></i>
                 </div>
-                <h3>${escapeHtml(cat.name)}</h3>
+                <div class="inv-category-info">
+                    <h3>${escapeHtml(cat.name)}</h3>
 
-                <div class="inv-category-public-toggle">
-                    <label class="switch">
-                        <input type="checkbox" class="toggle-inv-cat-public" data-id="${cat.id}" ${isPublic ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                    <span>${isPublic ? 'Público' : 'Privado'}</span>
+                    <div class="inv-category-public-toggle">
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-inv-cat-public" data-id="${cat.id}" ${isPublic ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                        <span>${isPublic ? 'Público' : 'Privado'}</span>
+                    </div>
                 </div>
 
                 <div class="inv-category-actions">
-                    <button class="btn btn-view-inv-cat">Ver Inversiones</button>
-                    <button class="btn btn-secondary btn-edit-inv-cat" style="width: 45px; padding: 0;"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger btn-delete-inv-cat" style="width: 45px; padding: 0;"><i class="fas fa-trash"></i></button>
+                    <button class="btn-primary-modern btn-view-inv-cat" style="flex: 1;">VER</button>
+                    <button class="btn-secondary-modern btn-edit-inv-cat"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger-modern btn-delete-inv-cat"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `);
@@ -471,9 +473,9 @@ function openInvestmentCardModal(card = null) {
 
     // Reset Tabs
     $('#investment-card-modal .slot-tab-btn').removeClass('active');
-    $('#investment-card-modal .slot-tab-btn[data-tab="inv-tab-basic"]').addClass('active');
+    $('#investment-card-modal .slot-tab-btn[data-tab="inv-tab-datos"]').addClass('active');
     $('#investment-card-modal .slot-tab-content').removeClass('active');
-    $('#inv-tab-basic').addClass('active');
+    $('#inv-tab-datos').addClass('active');
 
     // Populate Fields
     $('#inv-card-modal-title').text(card ? 'Editar Inversión' : 'Añadir Carta a Inversión');
