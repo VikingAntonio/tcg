@@ -1422,6 +1422,8 @@ async function switchView(view) {
             window.botInstance.setContext('auctions');
             window.botInstance.say("¡Bienvenido a las subastas! Elige un artículo para ver los detalles y colocar tu puja. ¡Mucha suerte!", { duration: 8 });
         }
+    } else if (view === 'investments') {
+        await loadPublicInvestmentCategories();
     }
 
     const url = new URL(window.location);
@@ -3334,4 +3336,216 @@ async function showGeneralEventDetails(id) {
         console.error(e);
         Swal.fire('Error', 'No se pudieron cargar los detalles del evento.', 'error');
     }
+}
+
+// --- PUBLIC INVESTMENTS ---
+
+async function loadPublicInvestmentCategories() {
+    const userId = window.currentStoreId;
+    if (!userId) return;
+
+    $('#public-investment-categories').show().html('<div class="loading">Cargando colecciones...</div>');
+    $('#public-investment-cards').hide();
+    $('#public-inv-header, #public-investment-tabs').hide();
+
+    const { data: categories, error } = await _supabase
+        .from('investment_categories')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_public', true)
+        .order('position', { ascending: true });
+
+    if (error || !categories) {
+        $('#public-investment-categories').html('<div class="error">Error al cargar inversiones.</div>');
+        return;
+    }
+
+    if (categories.length === 0) {
+        $('#public-investment-categories').html('<div class="empty">No hay colecciones de inversión públicas.</div>');
+        return;
+    }
+
+    const $container = $('#public-investment-categories');
+    $container.empty();
+
+    categories.forEach(cat => {
+        const $card = $(`
+            <div class="album-card inv-category-item" data-id="${cat.id}">
+                <div class="deck-preview-icon"><i class="fas fa-chart-line fa-3x"></i></div>
+                <h3 style="margin-top: 15px; text-align: center;">${escapeHtml(cat.name)}</h3>
+                <button class="btn btn-view-public-inv" style="width: 100%; margin-top: 15px;">Explorar</button>
+            </div>
+        `);
+        $card.find('.btn-view-public-inv').click(() => openPublicInvestmentCategory(cat));
+        $container.append($card);
+    });
+}
+
+window.showPublicInvestmentCategories = function() {
+    loadPublicInvestmentCategories();
+};
+
+let currentPublicInvCategory = null;
+let currentPublicInvMode = 'album';
+let publicInvCards = [];
+
+async function openPublicInvestmentCategory(cat) {
+    currentPublicInvCategory = cat;
+    $('#public-inv-title').text(cat.name);
+    $('#public-inv-header, #public-investment-tabs').show();
+    $('#public-investment-categories').hide();
+    $('#public-investment-cards').show().html('<div class="loading">Cargando cartas...</div>');
+
+    const { data: cards, error } = await _supabase
+        .from('investment_cards')
+        .select('*')
+        .eq('category_id', cat.id)
+        .order('position', { ascending: true });
+
+    if (error) {
+        $('#public-investment-cards').html('<div class="error">Error al cargar cartas.</div>');
+        return;
+    }
+
+    publicInvCards = cards || [];
+    renderPublicInvestmentCards();
+}
+
+$(document).on('click', '#public-investment-tabs .tab-pill', function() {
+    $('#public-investment-tabs .tab-pill').removeClass('active');
+    $(this).addClass('active');
+    currentPublicInvMode = $(this).data('mode');
+    renderPublicInvestmentCards();
+});
+
+function renderPublicInvestmentCards() {
+    const $container = $('#public-investment-cards');
+    $container.empty();
+
+    if (publicInvCards.length === 0) {
+        $container.html('<div class="empty">No hay cartas en esta colección.</div>');
+        return;
+    }
+
+    // Reuse rendering functions if they are global, otherwise replicate logic
+    // For simplicity in app.js, we'll replicate the core rendering logic
+    if (currentPublicInvMode === 'album') {
+        renderPublicInvAlbumMode($container);
+    } else if (currentPublicInvMode === 'slide') {
+        renderPublicInvSlideMode($container);
+    } else {
+        renderPublicInvListMode($container);
+    }
+}
+
+function renderPublicInvAlbumMode($container) {
+    $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
+    const $albumWrapper = $('<div class="album-wrapper"><div class="album public-inv-album"></div></div>');
+    const $album = $albumWrapper.find('.album');
+    $container.append($albumWrapper);
+
+    $album.append(`
+        <div class="page cover-page">
+            <div class="textured-cover" style="background-color: var(--viking-blue)">
+                <h2 style="color:white; text-align:center; padding: 20% 10%;">${escapeHtml(currentPublicInvCategory.name)}</h2>
+                <div style="text-align:center; color:rgba(255,255,255,0.5); font-size: 0.8rem;">INVERSIONES</div>
+            </div>
+        </div>
+    `);
+
+    for (let i = 0; i < publicInvCards.length; i += 9) {
+        const pageCards = publicInvCards.slice(i, i + 9);
+        const $page = $('<div class="page album-page"></div>');
+        const $grid = $('<div class="grid-container"></div>');
+
+        for (let j = 0; j < 9; j++) {
+            const card = pageCards[j];
+            const $slot = $('<div class="card-slot"></div>');
+            if (card) {
+                const trend = (card.current_price > card.previous_price) ? '<i class="fas fa-chart-line" style="color: #00ff88; margin-left: 5px;"></i>' :
+                            (card.current_price < card.previous_price) ? '<i class="fas fa-chart-line" style="color: #ff4757; margin-left: 5px;"></i>' : '';
+                $slot.append(`
+                    <img src="${card.image_url}" class="tcg-card">
+                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                `);
+            }
+            $grid.append($slot);
+        }
+        $page.append($grid);
+        $album.append($page);
+    }
+
+    if ($album.find('.page').length % 2 !== 0) {
+        $album.append('<div class="page album-page"></div>');
+    }
+
+    $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #1a1a1a"></div></div>');
+
+    setTimeout(() => {
+        $album.turn({
+            width: 600,
+            height: 420,
+            autoCenter: true,
+            display: 'double',
+            acceleration: true,
+            elevation: 50,
+            duration: 800
+        });
+    }, 100);
+}
+
+function renderPublicInvSlideMode($container) {
+    $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
+    const swiperId = `pub-inv-swiper-${Date.now()}`;
+    const $swiper = $(`
+        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: 500px; padding: 20px 0;">
+            <div class="swiper-wrapper">
+                ${publicInvCards.map(card => {
+                    const trend = (card.current_price > card.previous_price) ? '<i class="fas fa-chart-line" style="color: #00ff88; margin-left: 5px;"></i>' :
+                                (card.current_price < card.previous_price) ? '<i class="fas fa-chart-line" style="color: #ff4757; margin-left: 5px;"></i>' : '';
+                    return `
+                    <div class="swiper-slide card-slot inv-card-item">
+                        <img src="${card.image_url}" style="width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <div class="inv-card-info-overlay">
+                            <h4>${escapeHtml(card.card_name)}</h4>
+                            <p>${escapeHtml(card.rarity || '')}</p>
+                            <div class="inv-price-tag">Actual: $${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                        </div>
+                    </div>
+                `}).join('')}
+            </div>
+        </div>
+    `);
+    $container.append($swiper);
+
+    new Swiper(`.${swiperId}`, {
+        effect: "cards",
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: 'auto'
+    });
+}
+
+function renderPublicInvListMode($container) {
+    $container.addClass('investment-list-layout').removeClass('investment-slide-layout investment-album-layout');
+    const $list = $('<div class="inv-list-container"></div>');
+
+    publicInvCards.forEach(card => {
+        const trend = (card.current_price > card.previous_price) ? '<i class="fas fa-chart-line" style="color: #00ff88; margin-left: 5px;"></i>' :
+                    (card.current_price < card.previous_price) ? '<i class="fas fa-chart-line" style="color: #ff4757; margin-left: 5px;"></i>' : '';
+        const $item = $(`
+            <div class="inv-list-item">
+                <img src="${card.image_url}" class="inv-list-thumb">
+                <div class="inv-list-details">
+                    <div class="inv-list-name">${escapeHtml(card.card_name)}</div>
+                    <div class="inv-list-set">${escapeHtml(card.rarity || '')}</div>
+                </div>
+                <div class="inv-list-prices">
+                    <div class="inv-price-row"><span>Mercado:</span> <b>$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                </div>
+            </div>
+        `);
+        $list.append($item);
+    });
+    $container.append($list);
 }

@@ -82,6 +82,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tcgdex/sdk@2/dist/tcgdex.browser.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>    
 <body>    
     <!-- Floating User Panel -->
@@ -1000,7 +1001,6 @@
 
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                     <button id="btn-add-investment-card" class="btn"><i class="fas fa-plus-circle"></i> Añadir Carta</button>
-                    <button id="btn-refresh-inv-prices" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Actualizar Precios</button>
                 </div>
             </div>
 
@@ -1012,44 +1012,80 @@
 
     <!-- Investment Card Modal -->
     <div id="investment-card-modal" class="overlay">
-        <div class="overlay-content" style="max-width: 600px;">
+        <div class="overlay-content" style="max-width: 650px; width: 95%;">
             <span id="close-investment-card-modal" class="close-btn">&times;</span>
             <h2 id="inv-card-modal-title">Añadir Carta a Inversión</h2>
 
-            <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
-                <label><i class="fas fa-search"></i> Buscar</label>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <input type="text" id="inv-card-search-input" placeholder="Nombre de la carta (ej: Charizard, Dark Magician...)" style="flex: 1;">
-                    <button id="btn-inv-card-search" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            <!-- Tabs Navigation -->
+            <div class="slot-modal-tabs">
+                <button class="slot-tab-btn active" data-tab="inv-tab-basic">Básicos</button>
+                <button class="slot-tab-btn" data-tab="inv-tab-extra">Notas e Imágenes</button>
+                <button class="slot-tab-btn" data-tab="inv-tab-history">Historial</button>
+            </div>
+
+            <!-- Tab: Basics -->
+            <div id="inv-tab-basic" class="slot-tab-content active">
+                <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
+                    <label><i class="fas fa-search"></i> Buscar</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="inv-card-search-input" placeholder="Nombre de la carta (ej: Charizard, Dark Magician...)" style="flex: 1;">
+                        <button id="btn-inv-card-search" class="btn"><i class="fas fa-search"></i> Buscar</button>
+                    </div>
+                    <div id="inv-card-search-results" class="inv-search-results">
+                        <!-- Results -->
+                    </div>
                 </div>
-                <div id="inv-card-search-results" class="inv-search-results">
-                    <!-- Results -->
+
+                <div class="info-grid">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Nombre de la Carta</label>
+                        <input type="text" id="inv-card-name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Rareza</label>
+                        <input type="text" id="inv-card-rarity-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad</label>
+                        <input type="number" id="inv-card-quantity" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio de Compra ($)</label>
+                        <input type="number" id="inv-card-purchase-price" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Mercado ($)</label>
+                        <input type="number" id="inv-card-current-price" step="0.01" placeholder="0.00">
+                    </div>
                 </div>
             </div>
 
-            <div class="info-grid">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Nombre de la Carta</label>
-                    <input type="text" id="inv-card-name" readonly>
+            <!-- Tab: Notes & Extra Images -->
+            <div id="inv-tab-extra" class="slot-tab-content">
+                <div class="form-group">
+                    <label>Notas</label>
+                    <textarea id="inv-card-notes" placeholder="Escribe aquí notas adicionales sobre esta inversión..." style="height: 100px;"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Precio de Compra ($)</label>
-                    <input type="number" id="inv-card-purchase-price" step="0.01" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label>Precio Actual (API) ($)</label>
-                    <input type="number" id="inv-card-current-price" step="0.01" readonly>
-                </div>
-                <div class="form-group">
-                    <label>Cantidad</label>
-                    <input type="number" id="inv-card-quantity" value="1">
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding-top: 25px;">
-                    <label class="switch">
-                        <input type="checkbox" id="inv-card-public">
-                        <span class="slider"></span>
+                    <label>Imágenes Adicionales (Drag & Drop)</label>
+                    <label class="file-drop-zone" id="drop-zone-inv-extra" style="display: block; min-height: 100px; padding: 20px;">
+                        <i class="fas fa-images fa-2x"></i>
+                        <p>Arrastra imágenes aquí o haz clic para subir</p>
+                        <input type="file" id="input-inv-extra-files" accept="image/*" multiple style="display: none;">
                     </label>
-                    <span style="font-size: 12px;">Hacer Pública</span>
+                    <div id="inv-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px;">
+                        <!-- Extra images preview -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: History -->
+            <div id="inv-tab-history" class="slot-tab-content">
+                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; min-height: 250px;">
+                    <canvas id="inv-price-chart"></canvas>
+                </div>
+                <div id="inv-history-list" style="margin-top: 15px; max-height: 150px; overflow-y: auto;">
+                    <!-- Historical list if needed -->
                 </div>
             </div>
 
