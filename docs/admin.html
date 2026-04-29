@@ -1018,18 +1018,19 @@
 
             <!-- Tabs Navigation -->
             <div class="slot-modal-tabs">
-                <button class="slot-tab-btn active" data-tab="inv-tab-basic">Básicos</button>
-                <button class="slot-tab-btn" data-tab="inv-tab-extra">Notas e Imágenes</button>
-                <button class="slot-tab-btn" data-tab="inv-tab-history">Historial</button>
+                <button class="slot-tab-btn active" data-tab="inv-tab-datos">DATOS</button>
+                <button class="slot-tab-btn" data-tab="inv-tab-images">IMAGES</button>
+                <button class="slot-tab-btn" data-tab="inv-tab-movimientos">MOVIMIENTOS</button>
             </div>
 
-            <!-- Tab: Basics -->
-            <div id="inv-tab-basic" class="slot-tab-content active">
-                <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
-                    <label><i class="fas fa-search"></i> Buscar</label>
+            <div class="inv-modal-scroll-area">
+                <!-- Tab: Basics -->
+                <div id="inv-tab-datos" class="slot-tab-content active">
+                    <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 20px;">
+                        <label style="font-weight: 800;"><i class="fas fa-search"></i> BUSCAR</label>
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <input type="text" id="inv-card-search-input" placeholder="Nombre de la carta (ej: Charizard, Dark Magician...)" style="flex: 1;">
-                        <button id="btn-inv-card-search" class="btn"><i class="fas fa-search"></i> Buscar</button>
+                        <input type="text" id="inv-card-search-input" placeholder="Nombre de la carta..." style="flex: 1;">
+                        <button id="btn-inv-card-search" class="btn-primary-modern" style="padding: 10px 15px;"><i class="fas fa-search"></i></button>
                     </div>
                     <div id="inv-card-search-results" class="inv-search-results">
                         <!-- Results -->
@@ -1060,32 +1061,33 @@
                 </div>
             </div>
 
-            <!-- Tab: Notes & Extra Images -->
-            <div id="inv-tab-extra" class="slot-tab-content">
-                <div class="form-group">
-                    <label>Notas</label>
-                    <textarea id="inv-card-notes" placeholder="Escribe aquí notas adicionales sobre esta inversión..." style="height: 100px;"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Imágenes Adicionales (Drag & Drop)</label>
-                    <label class="file-drop-zone" id="drop-zone-inv-extra" style="display: block; min-height: 100px; padding: 20px;">
-                        <i class="fas fa-images fa-2x"></i>
-                        <p>Arrastra imágenes aquí o haz clic para subir</p>
-                        <input type="file" id="input-inv-extra-files" accept="image/*" multiple style="display: none;">
-                    </label>
-                    <div id="inv-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px;">
-                        <!-- Extra images preview -->
+                <!-- Tab: Notes & Extra Images -->
+                <div id="inv-tab-images" class="slot-tab-content">
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea id="inv-card-notes" placeholder="Escribe aquí notas adicionales sobre esta inversión..." style="height: 100px;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Imágenes Adicionales (Drag & Drop)</label>
+                        <label class="file-drop-zone" id="drop-zone-inv-extra" style="display: block; min-height: 100px; padding: 20px;">
+                            <i class="fas fa-images fa-2x"></i>
+                            <p>Arrastra imágenes aquí o haz clic para subir</p>
+                            <input type="file" id="input-inv-extra-files" accept="image/*" multiple style="display: none;">
+                        </label>
+                        <div id="inv-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px;">
+                            <!-- Extra images preview -->
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Tab: History -->
-            <div id="inv-tab-history" class="slot-tab-content">
-                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; min-height: 250px;">
-                    <canvas id="inv-price-chart"></canvas>
-                </div>
-                <div id="inv-history-list" style="margin-top: 15px; max-height: 150px; overflow-y: auto;">
-                    <!-- Historical list if needed -->
+                <!-- Tab: History -->
+                <div id="inv-tab-movimientos" class="slot-tab-content">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; min-height: 250px; border: 1px solid #dee2e6;">
+                        <canvas id="inv-price-chart"></canvas>
+                    </div>
+                    <div id="inv-history-list" style="margin-top: 15px; max-height: 150px; overflow-y: auto;">
+                        <!-- Historical list if needed -->
+                    </div>
                 </div>
             </div>
 
@@ -1096,7 +1098,9 @@
             <input type="hidden" id="inv-card-rarity">
             <input type="hidden" id="inv-card-game">
 
-            <button id="btn-save-investment-card" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-save"></i> Guardar Inversión</button>
+            <div class="inv-modal-footer">
+                <button id="btn-save-investment-card" class="btn-primary-modern" style="width: 100%;"><i class="fas fa-save"></i> GUARDAR INVERSIÓN</button>
+            </div>
         </div>
     </div>
 
