@@ -1,223 +1,324 @@
-/* Inversiones (Investments) Styles */
+/*
+   INVESTMENTS MODULE - PROFESSIONAL REDESIGN
+   Minimalist Monochrome System (No Gradients, No Silly Colors)
+*/
 
-/* Modern Category Cards - Professional Redesign */
+:root {
+    --inv-black: #000000;
+    --inv-white: #ffffff;
+    --inv-gray-100: #f8f9fa;
+    --inv-gray-200: #e9ecef;
+    --inv-gray-300: #dee2e6;
+    --inv-gray-700: #495057;
+    --inv-gray-800: #343a40;
+    --inv-gray-900: #212529;
+    --inv-accent: #000000;
+    --inv-border-radius: 0px; /* Sharp professional edges or very subtle */
+    --inv-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Category Grid */
 .inv-category-item {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 0;
+    background: var(--inv-white);
+    border: 1px solid var(--inv-gray-300);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: var(--inv-transition);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    border: 1px solid #e1e8ed;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
+    height: 100%;
     position: relative;
 }
 
 .inv-category-item:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-    border-color: var(--primary-color);
+    border-color: var(--inv-black);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
 .inv-category-preview {
     width: 100%;
-    height: 120px;
-    background: #f1f3f5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #4b6584;
-    border-bottom: 1px solid #e1e8ed;
+    height: 160px;
+    background: var(--inv-gray-100);
+    position: relative;
+    overflow: hidden;
+}
+
+.inv-category-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%);
+    transition: var(--inv-transition);
+}
+
+.inv-category-item:hover .inv-category-preview img {
+    filter: grayscale(0%);
+    transform: scale(1.05);
 }
 
 .inv-category-info {
-    padding: 20px;
+    padding: 24px;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    justify-content: space-between;
 }
 
-.inv-category-item h3 {
-    font-size: 1.25rem;
-    font-weight: 800;
-    margin: 0;
-    color: #2d3436;
-}
-
-.inv-category-public-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #636e72;
-}
-
-.inv-category-actions {
-    display: flex;
-    gap: 10px;
-    padding: 15px 20px;
-    background: #f8f9fa;
-    border-top: 1px solid #e1e8ed;
-}
-
-/* Modern Professional Buttons - NO GRADIENTS */
-.btn-primary-modern {
-    background: #2d3436;
-    color: #ffffff;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 12px;
+.inv-category-info h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.1rem;
     font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+    letter-spacing: -0.02em;
+    margin: 0 0 10px 0;
+    color: var(--inv-black);
     text-transform: uppercase;
 }
 
-.btn-primary-modern:hover {
-    background: #000000;
-    transform: scale(1.02);
+.inv-category-meta {
+    font-size: 0.8rem;
+    color: var(--inv-gray-700);
+    margin-bottom: 20px;
 }
 
-.btn-secondary-modern {
-    background: #f1f2f6;
-    color: #2d3436;
-    border: 1px solid #dfe6e9;
-    padding: 10px 15px;
-    border-radius: 10px;
+/* Professional Controls */
+.inv-category-public-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 15px;
+    border-top: 1px solid var(--inv-gray-200);
+}
+
+/* Buttons Overhaul - SOLID MONOCHROME */
+.btn-inv-main {
+    background: var(--inv-black);
+    color: var(--inv-white);
+    border: 1px solid var(--inv-black);
+    padding: 12px 24px;
     font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--inv-transition);
+    border-radius: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-.btn-secondary-modern:hover {
-    background: #e1e2e6;
+.btn-inv-main:hover {
+    background: transparent;
+    color: var(--inv-black);
 }
 
-.btn-danger-modern {
-    background: #ff7675;
-    color: #ffffff;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 10px;
+.btn-inv-outline {
+    background: transparent;
+    color: var(--inv-black);
+    border: 1px solid var(--inv-gray-300);
+    padding: 10px 20px;
     font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
     cursor: pointer;
+    transition: var(--inv-transition);
+    border-radius: 2px;
 }
 
-.btn-danger-modern:hover {
+.btn-inv-outline:hover {
+    border-color: var(--inv-black);
+    background: var(--inv-gray-100);
+}
+
+.btn-inv-danger {
+    background: transparent;
+    color: #ff4757;
+    border: 1px solid #ff4757;
+    padding: 10px 15px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--inv-transition);
+}
+
+.btn-inv-danger:hover {
     background: #ff4757;
+    color: #ffffff;
 }
 
-/* Modal Styling: Fixed Header/Footer and Scrollable Middle */
+/* Modal Overhaul */
 #investment-card-modal .overlay-content {
-    background: #ffffff !important;
-    color: #2d3436 !important;
-    max-height: 90vh;
-    height: 700px;
+    background: var(--inv-white) !important;
+    border: 1px solid var(--inv-black);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.2) !important;
+    width: 95% !important;
+    max-width: 800px !important;
+    height: 80vh !important;
+    max-height: 850px !important;
     display: flex;
     flex-direction: column;
     padding: 0 !important;
-    overflow: hidden !important;
-    border-radius: 24px;
+    border-radius: 4px;
 }
 
-#investment-card-modal .close-btn {
-    top: 20px;
-    right: 20px;
-    color: #2d3436;
+.inv-modal-header {
+    padding: 30px 40px;
+    border-bottom: 1px solid var(--inv-gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-#investment-card-modal h2 {
-    padding: 30px 30px 20px;
+.inv-modal-header h2 {
     margin: 0;
-    text-align: center;
-    font-weight: 900;
-    color: #2d3436 !important;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--inv-black) !important;
 }
 
-.slot-modal-tabs {
-    padding: 0 30px 20px;
+.inv-modal-tabs {
+    display: flex;
+    padding: 0 40px;
+    background: var(--inv-gray-100);
+    border-bottom: 1px solid var(--inv-gray-200);
+}
+
+.inv-tab-link {
+    padding: 15px 25px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--inv-gray-700);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: var(--inv-transition);
+}
+
+.inv-tab-link.active {
+    color: var(--inv-black);
+    border-bottom-color: var(--inv-black);
+}
+
+.inv-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px;
+    scrollbar-width: none;
+}
+
+.inv-modal-body::-webkit-scrollbar { display: none; }
+
+.inv-modal-footer {
+    padding: 25px 40px;
+    border-top: 1px solid var(--inv-gray-200);
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    background: var(--inv-white);
+}
+
+/* Form Styling */
+.inv-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 20px;
+}
+
+.inv-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inv-form-group label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--inv-gray-700);
+    letter-spacing: 0.05em;
+}
+
+.inv-form-group input,
+.inv-form-group textarea,
+.inv-form-group select {
+    background: var(--inv-white);
+    border: 1px solid var(--inv-gray-300);
+    padding: 14px;
+    font-size: 0.9rem;
+    color: var(--inv-black);
+    border-radius: 2px;
+    transition: var(--inv-transition);
+}
+
+.inv-form-group input:focus {
+    border-color: var(--inv-black);
+    outline: none;
+    background: var(--inv-gray-100);
+}
+
+/* Search Bar in Modal */
+.inv-search-container {
+    background: var(--inv-gray-100);
+    padding: 20px;
+    border: 1px solid var(--inv-gray-200);
+    margin-bottom: 30px;
     display: flex;
     gap: 10px;
 }
 
-.inv-modal-scroll-area {
+.inv-search-input {
     flex: 1;
-    overflow-y: auto;
-    padding: 0 30px 20px;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* IE and Edge */
-}
-
-.inv-modal-scroll-area::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-}
-
-.inv-modal-footer {
-    padding: 20px 30px;
-    background: #ffffff;
-    border-top: 1px solid #f1f2f6;
-}
-
-/* Tab Content Styles */
-.slot-tab-content {
-    display: none;
-}
-.slot-tab-content.active {
-    display: block;
-}
-
-.slot-tab-btn {
-    background: #f1f2f6;
-    color: #636e72;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    flex: 1;
-}
-
-.slot-tab-btn.active {
-    background: #2d3436;
-    color: #ffffff !important;
-}
-
-/* Form refinement */
-#investment-card-modal .form-group label {
-    color: #2d3436 !important;
-    font-weight: 700;
-    margin-bottom: 8px;
+    border: 1px solid var(--inv-gray-300);
+    padding: 12px 15px;
     font-size: 0.85rem;
 }
 
-#investment-card-modal .form-group input,
-#investment-card-modal .form-group textarea {
-    border-radius: 12px;
-    padding: 12px;
-    font-size: 0.95rem;
+/* Search Results */
+#inv-card-search-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
-/* Album & List Layouts */
-.inv-card-info-badge {
-    background: #2d3436;
+.external-card-result {
+    border: 1px solid transparent;
+    padding: 2px;
 }
 
-.btn-inv-mode.active {
-    background: #2d3436;
-    color: #ffffff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+.external-card-result:hover {
+    border-color: var(--inv-black);
 }
 
-.inv-price-tag {
-    color: #2d3436;
+/* History Chart Area */
+.inv-chart-container {
+    height: 250px;
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+/* Utility classes to avoid bleed from global styles */
+.inv-text-dark { color: var(--inv-black) !important; }
+.inv-bg-light { background: var(--inv-gray-100) !important; }
+
+.inv-swal-popup {
+    border-radius: 4px !important;
+    border: 1px solid #000 !important;
+}
+
+.inv-swal-popup .swal2-title {
+    font-weight: 900 !important;
+    letter-spacing: -0.02em !important;
+    text-transform: uppercase !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .inv-form-row { grid-template-columns: 1fr; }
+    #investment-card-modal .overlay-content { height: 95vh !important; }
 }
