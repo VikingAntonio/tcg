@@ -138,9 +138,9 @@ $(document).ready(async function() {
         if (typeof renderPendingBdd === 'function') renderPendingBdd();
     });
 
-    $(document).on('click', '#btn-deseos, #menu-btn-deseos', function(e) {
+    $(document).on('click', '#btn-wishlist, #menu-btn-wishlist', function(e) {
         e.preventDefault();
-        showView('deseos');
+        showView('wishlist');
         if (typeof loadWishlistAdmin === 'function') loadWishlistAdmin();
         if (window.botInstance) window.botInstance.setContext('wishlist');
     });
@@ -215,7 +215,7 @@ $(document).ready(async function() {
         'scanner': 'El scanner te permite añadir cartas rápidamente usando la cámara de tu móvil. Escanea el código de la carta y se añadirá automáticamente a tu álbum o deck.',
         'notifications': 'En la sección "Mi Perfil", puedes configurar tus enlaces de WhatsApp y Messenger. Esto permitirá que los pedidos de tus clientes lleguen directamente a tu chat.',
         'foil': 'Al editar una carta, selecciona el efecto "CustomTexture". Luego haz clic en "Editar Máscara" para dibujar exactamente qué partes de la carta tendrán el brillo foil.',
-        'wishlist_faq': 'La sección "Deseos" te permite listar cartas que estás buscando. Tus clientes podrán ver esta lista y contactarte si tienen alguna de ellas.',
+        'wishlist_faq': 'La sección "Wishlist" te permite listar cartas que estás buscando. Tus clientes podrán ver esta lista y contactarte si tienen alguna de ellas.',
         'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
         'spirit': 'El compañero es tu asistente virtual que acompaña a tus clientes mientras navegan. Sirve para mostrar mensajes automáticos sobre próximas preventas, horarios, noticias de la tienda y ubicación, además de funcionar como una guía interactiva para navegar por tu web.',
         'deck_prices': 'Ahora puedes gestionar los precios de tus Decks. El sistema suma automáticamente el precio de cada carta para mostrar un "Precio Total". Si lo deseas, puedes habilitar un "Precio Especial" (por ejemplo, un descuento por el deck completo) que se mostrará como el precio principal, tachando el total automático.'
@@ -332,7 +332,7 @@ $(document).ready(async function() {
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 álbumes</strong> activos.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>10 páginas</strong> por álbum.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 decks</strong> personalizados.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>50 cartas</strong> en Deseos.</li>
+                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>50 cartas</strong> en Wishlist.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>20 productos</strong> sellados.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 preventas</strong> activas.</li>
                         <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>10 clientes</strong>.</li>
