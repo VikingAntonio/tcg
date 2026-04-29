@@ -1267,7 +1267,7 @@ $(document).ready(async function() {
         }
     }
 
-    async function handleCloudinaryUpload(file, inputSelector, nameSelector) {
+    window.handleCloudinaryUpload = async function(file, inputSelector, nameSelector) {
         $(nameSelector).text("Subiendo...").css('color', '#aaa');
         try {
             const url = await CloudinaryUpload.uploadImage(file);

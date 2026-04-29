@@ -1,10 +1,14 @@
 /**
  * Inversiones (Investments) Module
- * Logic for managing card investments with TCGAPI.dev integration.
+ * Logic for managing card investments with manual price tracking and history.
  */
 
 // --- STATE ---
 let currentInvestmentCategoryId = null;
+let currentInvestmentViewMode = 'album'; // 'album', 'slide', 'list'
+let localInvestmentCards = [];
+let invPriceChart = null;
+let currentInvExtraImages = [];
 
 // --- UTILS ---
 function escapeHtml(text) {
@@ -18,8 +22,6 @@ function escapeHtml(text) {
     };
     return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
-let currentInvestmentViewMode = 'album'; // 'album', 'slide', 'list'
-let localInvestmentCards = [];
 
 // --- INITIALIZATION ---
 $(document).ready(function() {
@@ -75,26 +77,72 @@ function initInvestmentListeners() {
         openInvestmentCardModal();
     });
 
-    // Refresh Prices Button
-    $(document).on('click', '#btn-refresh-inv-prices', async function() {
-        if (!currentInvestmentCategoryId) return;
+    // Modal Tabs logic
+    $(document).on('click', '#investment-card-modal .slot-tab-btn', function() {
+        const tabId = $(this).data('tab');
+        $('#investment-card-modal .slot-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('#investment-card-modal .slot-tab-content').removeClass('active');
+        $(`#${tabId}`).addClass('active');
 
-        const res = await Swal.fire({
-            title: '¿Actualizar precios?',
-            text: 'Se consultará la API para obtener los precios más recientes de todas las cartas en esta categoría.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, actualizar'
-        });
-
-        if (res.isConfirmed) {
-            Swal.fire({ title: 'Actualizando precios...', didOpen: () => Swal.showLoading() });
-            await updateCategoryPrices(currentInvestmentCategoryId);
-            Swal.close();
-            loadInvestmentCards();
+        if (tabId === 'inv-tab-history' && currentEditingInvCardId) {
+            renderPriceHistoryChart(currentEditingInvCardId);
         }
     });
+
+    // Drag & Drop for extra images
+    const $dropZone = $('#drop-zone-inv-extra');
+    $dropZone.on('dragover', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
+    $dropZone.on('dragleave', function() { $(this).removeClass('dragover'); });
+    $dropZone.on('drop', async function(e) {
+        e.preventDefault();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        handleInvExtraImages(files);
+    });
+
+    $('#input-inv-extra-files').on('change', function() {
+        handleInvExtraImages(this.files);
+    });
 }
+
+async function handleInvExtraImages(files) {
+    if (!files.length) return;
+    Swal.fire({ title: 'Subiendo imágenes...', didOpen: () => Swal.showLoading() });
+
+    for (const file of files) {
+        try {
+            // Reusing cloudinary logic from js/cloudinary-upload.js
+            const url = await CloudinaryUpload.uploadImage(file);
+            if (url) {
+                currentInvExtraImages.push(url);
+            }
+        } catch (e) {
+            console.error("Error uploading extra image:", e);
+        }
+    }
+    renderInvExtraImagesPreview();
+    Swal.close();
+}
+
+function renderInvExtraImagesPreview() {
+    const $container = $('#inv-extra-images-preview');
+    $container.empty();
+    currentInvExtraImages.forEach((url, idx) => {
+        const $item = $(`
+            <div style="position: relative; width: 80px; height: 80px;">
+                <img src="${url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                <button class="btn-danger" style="position: absolute; top: -5px; right: -5px; padding: 2px 5px; font-size: 10px; border-radius: 50%;" onclick="removeInvExtraImage(${idx})">&times;</button>
+            </div>
+        `);
+        $container.append($item);
+    });
+}
+
+window.removeInvExtraImage = function(idx) {
+    currentInvExtraImages.splice(idx, 1);
+    renderInvExtraImagesPreview();
+};
 
 // --- CATEGORY FUNCTIONS ---
 
@@ -259,6 +307,12 @@ function renderInvestmentCards(mode) {
     }
 }
 
+function getTrendIcon(current, previous) {
+    if (previous === undefined || previous === null || current === previous) return '';
+    const isUp = current > previous;
+    return `<i class="fas fa-chart-line" style="color: ${isUp ? '#00ff88' : '#ff4757'}; margin-left: 5px;"></i>`;
+}
+
 function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
     const $albumWrapper = $('<div class="album-wrapper"><div class="album investment-album"></div></div>');
@@ -285,9 +339,10 @@ function renderAlbumMode($container) {
             const card = pageCards[j];
             const $slot = $('<div class="card-slot"></div>');
             if (card) {
+                const trend = getTrendIcon(card.current_price, card.previous_price);
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card">
-                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)}</div>
+                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                 `);
                 $slot.find('.zoom-btn').click(() => openInvestmentCardModal(card));
@@ -330,20 +385,22 @@ function renderSlideMode($container) {
     const $swiper = $(`
         <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: 500px; padding: 20px 0;">
             <div class="swiper-wrapper">
-                ${localInvestmentCards.map(card => `
+                ${localInvestmentCards.map(card => {
+                    const trend = getTrendIcon(card.current_price, card.previous_price);
+                    return `
                     <div class="swiper-slide card-slot inv-card-item" data-id="${card.id}">
                         <img src="${card.image_url}" style="width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                         <div class="inv-card-info-overlay">
                             <h4>${escapeHtml(card.card_name)}</h4>
                             <p>${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
-                            <div class="inv-price-tag">Actual: $${parseFloat(card.current_price || 0).toFixed(2)}</div>
+                            <div class="inv-price-tag">Actual: $${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                             <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
                                 <button class="btn btn-sm btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-sm btn-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
         </div>
     `);
@@ -377,6 +434,7 @@ function renderListMode($container) {
     localInvestmentCards.forEach(card => {
         const diff = (card.current_price || 0) - (card.purchase_price || 0);
         const diffClass = diff >= 0 ? 'price-up' : 'price-down';
+        const trend = getTrendIcon(card.current_price, card.previous_price);
         const $item = $(`
             <div class="inv-list-item">
                 <img src="${card.image_url}" class="inv-list-thumb">
@@ -386,7 +444,7 @@ function renderListMode($container) {
                 </div>
                 <div class="inv-list-prices">
                     <div class="inv-price-row"><span>Compra:</span> <b>$${parseFloat(card.purchase_price || 0).toFixed(2)}</b></div>
-                    <div class="inv-price-row"><span>Actual:</span> <b class="${diffClass}">$${parseFloat(card.current_price || 0).toFixed(2)}</b></div>
+                    <div class="inv-price-row"><span>Actual:</span> <b class="${diffClass}">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
                 </div>
                 <div style="display: flex; gap: 5px;">
                     <button class="btn btn-sm btn-edit-inv-card" data-id="${card.id}"><i class="fas fa-edit"></i></button>
@@ -407,14 +465,22 @@ let currentEditingInvCardId = null;
 
 function openInvestmentCardModal(card = null) {
     currentEditingInvCardId = card ? card.id : null;
+    currentInvExtraImages = card ? (card.extra_images || []) : [];
 
-    // Reset Modal
+    // Reset Tabs
+    $('#investment-card-modal .slot-tab-btn').removeClass('active');
+    $('#investment-card-modal .slot-tab-btn[data-tab="inv-tab-basic"]').addClass('active');
+    $('#investment-card-modal .slot-tab-content').removeClass('active');
+    $('#inv-tab-basic').addClass('active');
+
+    // Populate Fields
     $('#inv-card-modal-title').text(card ? 'Editar Inversión' : 'Añadir Carta a Inversión');
     $('#inv-card-name').val(card ? card.card_name : '');
     $('#inv-card-purchase-price').val(card ? card.purchase_price : '');
     $('#inv-card-current-price').val(card ? card.current_price : '');
     $('#inv-card-quantity').val(card ? card.quantity : 1);
-    $('#inv-card-public').prop('checked', card ? card.is_public : false);
+    $('#inv-card-rarity-input').val(card ? card.rarity : '');
+    $('#inv-card-notes').val(card ? card.notes : '');
 
     $('#inv-card-external-id').val(card ? card.external_id : '');
     $('#inv-card-image-url').val(card ? card.image_url : '');
@@ -425,6 +491,8 @@ function openInvestmentCardModal(card = null) {
 
     $('#inv-card-search-results').empty();
     $('#inv-card-search-input').val('');
+
+    renderInvExtraImagesPreview();
 
     $('#investment-card-modal').addClass('active');
 }
@@ -439,38 +507,10 @@ $('#btn-inv-card-search').click(async function() {
         $('#inv-card-set-name').val(card.set || card.set_name || '');
         $('#inv-card-set-number').val(card.number || '');
         $('#inv-card-rarity').val(card.rarity || '');
-
-        // If it already has price/game info from TCGAPI (via searchExternalCard)
-        if (card.price !== undefined) {
-            $('#inv-card-current-price').val(card.price);
-            $('#inv-card-game').val(card.game);
-            $('#inv-card-external-id').val(card.external_id || card.id);
-        } else {
-            // It came from another source (Viking, TCGDex, etc.)
-            // Attempt to find price on TCGAPI.dev
-            $('#inv-card-current-price').val('Buscando precio...');
-
-            const games = ['pokemon', 'yugioh', 'magic', 'lorcana', 'onepiece'];
-            let foundPrice = 0;
-            let foundGame = '';
-            let foundId = '';
-
-            for (const g of games) {
-                const results = await window.searchTCGAPI_internal(card.name, g);
-                if (results.length > 0) {
-                    // Try to match set if possible
-                    const match = results.find(r => r.set === card.set) || results[0];
-                    foundPrice = match.price;
-                    foundGame = g;
-                    foundId = match.external_id;
-                    break;
-                }
-            }
-
-            $('#inv-card-current-price').val(foundPrice || 0);
-            $('#inv-card-game').val(foundGame);
-            $('#inv-card-external-id').val(foundId);
-        }
+        $('#inv-card-rarity-input').val(card.rarity || '');
+        $('#inv-card-current-price').val(card.price || 0);
+        $('#inv-card-game').val(card.game || 'pokemon');
+        $('#inv-card-external-id').val(card.external_id || card.id || '');
 
         Swal.fire({
             title: 'Carta Seleccionada',
@@ -483,6 +523,8 @@ $('#btn-inv-card-search').click(async function() {
 });
 
 $('#btn-save-investment-card').click(async function() {
+    const newPrice = parseFloat($('#inv-card-current-price').val()) || 0;
+
     const cardData = {
         category_id: currentInvestmentCategoryId,
         user_id: currentUser.id,
@@ -490,17 +532,18 @@ $('#btn-save-investment-card').click(async function() {
         external_id: $('#inv-card-external-id').val(),
         tcg_game: $('#inv-card-game').val(),
         image_url: $('#inv-card-image-url').val(),
-        rarity: $('#inv-card-rarity').val(),
+        rarity: $('#inv-card-rarity-input').val(),
         set_name: $('#inv-card-set-name').val(),
         set_number: $('#inv-card-set-number').val(),
         purchase_price: parseFloat($('#inv-card-purchase-price').val()) || 0,
-        current_price: parseFloat($('#inv-card-current-price').val()) || 0,
+        current_price: newPrice,
         quantity: parseInt($('#inv-card-quantity').val()) || 1,
-        is_public: $('#inv-card-public').is(':checked')
+        notes: $('#inv-card-notes').val(),
+        extra_images: currentInvExtraImages
     };
 
     if (!cardData.card_name || !cardData.image_url) {
-        Swal.fire('Atención', 'Selecciona una carta de los resultados de búsqueda.', 'warning');
+        Swal.fire('Atención', 'Selecciona una carta de los resultados de búsqueda o ingresa los datos mínimos.', 'warning');
         return;
     }
 
@@ -508,19 +551,40 @@ $('#btn-save-investment-card').click(async function() {
 
     try {
         let error;
+        let finalCardId = currentEditingInvCardId;
+
         if (currentEditingInvCardId) {
+            // Check if price changed to update previous_price and history
+            const oldCard = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
+            if (oldCard && oldCard.current_price !== newPrice) {
+                cardData.previous_price = oldCard.current_price;
+                // Log history
+                await _supabase.from('investment_price_history').insert([{
+                    card_id: currentEditingInvCardId,
+                    price: newPrice
+                }]);
+            }
+
             const { error: err } = await _supabase
                 .from('investment_cards')
                 .update(cardData)
                 .eq('id', currentEditingInvCardId);
             error = err;
         } else {
-            // Get next position
             cardData.position = localInvestmentCards.length;
-            const { error: err } = await _supabase
+            const { data: newCards, error: err } = await _supabase
                 .from('investment_cards')
-                .insert([cardData]);
+                .insert([cardData])
+                .select();
             error = err;
+            if (!error && newCards.length > 0) {
+                finalCardId = newCards[0].id;
+                // Log initial history
+                await _supabase.from('investment_price_history').insert([{
+                    card_id: finalCardId,
+                    price: newPrice
+                }]);
+            }
         }
 
         if (error) throw error;
@@ -552,62 +616,54 @@ async function deleteInvestmentCard(id) {
     }
 }
 
-// Helper used internally for price lookup
-window.searchTCGAPI_internal = async function(query, game = 'pokemon') {
-    if (!window.TCG_API_KEY) return [];
+async function renderPriceHistoryChart(cardId) {
+    const { data: history, error } = await _supabase
+        .from('investment_price_history')
+        .select('*')
+        .eq('card_id', cardId)
+        .order('recorded_at', { ascending: true });
 
-    try {
-        const response = await fetch(`${window.TCG_API_BASE}/search?q=${encodeURIComponent(query)}&game=${game}`, {
-            headers: { 'X-API-Key': window.TCG_API_KEY }
-        });
+    if (error || !history) return;
 
-        if (!response.ok) return [];
+    const ctx = document.getElementById('inv-price-chart').getContext('2d');
 
-        const data = await response.json();
+    if (invPriceChart) invPriceChart.destroy();
 
-        return (data.data || []).map(c => ({
-            external_id: c.id,
-            name: c.name,
-            image: c.image_url || `https://images.tcgplayer.com/product/${c.id}_200w.jpg`,
-            set: c.set,
-            number: c.number,
-            rarity: c.rarity,
-            price: c.price || c.market_price || 0
-        }));
-    } catch (e) {
-        return [];
-    }
-};
-
-async function updateCategoryPrices(categoryId) {
-    if (!window.TCG_API_KEY) return;
-
-    const { data: cards } = await _supabase
-        .from('investment_cards')
-        .select('id, external_id, tcg_game')
-        .eq('category_id', categoryId);
-
-    if (!cards || cards.length === 0) return;
-
-    for (const card of cards) {
-        if (!card.external_id) continue;
-
-        try {
-            const response = await fetch(`${window.TCG_API_BASE}/card/${card.external_id}`, {
-                headers: { 'X-API-Key': window.TCG_API_KEY }
-            });
-            if (response.ok) {
-                const result = await response.json();
-                const data = result.data || result;
-                const newPrice = data.price || data.market_price || 0;
-
-                await _supabase
-                    .from('investment_cards')
-                    .update({ current_price: newPrice })
-                    .eq('id', card.id);
+    invPriceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: history.map(h => new Date(h.recorded_at).toLocaleDateString()),
+            datasets: [{
+                label: 'Precio Mercado',
+                data: history.map(h => h.price),
+                borderColor: '#00d2ff',
+                backgroundColor: 'rgba(0, 210, 255, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: false, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }
+            },
+            plugins: {
+                legend: { display: false }
             }
-        } catch (e) {
-            console.warn(`Could not update price for card ${card.id}:`, e);
         }
-    }
+    });
+
+    // Render list history
+    const $list = $('#inv-history-list');
+    $list.empty();
+    history.reverse().forEach(h => {
+        $list.append(`
+            <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <span>${new Date(h.recorded_at).toLocaleString()}</span>
+                <b>$${parseFloat(h.price).toFixed(2)}</b>
+            </div>
+        `);
+    });
 }

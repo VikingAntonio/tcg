@@ -27,6 +27,7 @@
     </script>
     <script type="module" src="js/loading3d.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="public-body">
     <button id="btn-close-focus-mode" class="btn-close-focus" onclick="window.clearShareFilters()">
@@ -127,7 +128,11 @@
                     <i class="fas fa-heart"></i>
                     <span>Buscamos</span>
                 </div>
-                <div class="home-menu-item" data-view="events" style="grid-column: span 2;">
+                <div class="home-menu-item" data-view="investments">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Inversiones</span>
+                </div>
+                <div class="home-menu-item" data-view="events">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Eventos y Noticias</span>
                 </div>
@@ -191,6 +196,28 @@
         <div id="events-view" class="view-section">
             <div id="events-container" class="decks-grid">
                 <!-- Eventos cargados aquí -->
+            </div>
+        </div>
+
+        <div id="investments-view" class="view-section">
+            <div class="admin-header" id="public-inv-header" style="display: none; margin-bottom: 20px;">
+                <button class="btn btn-secondary" onclick="showPublicInvestmentCategories()"><i class="fas fa-arrow-left"></i> Volver a Colecciones</button>
+                <h2 id="public-inv-title" style="margin-top: 15px;">Inversiones</h2>
+            </div>
+
+            <div class="sticky-tabs-container" id="public-investment-tabs" style="display: none; margin-bottom: 20px;">
+                <button class="tab-pill active" data-mode="album">Binders</button>
+                <button class="tab-pill" data-mode="slide">VikingSlide</button>
+                <button class="tab-pill" data-mode="list">Lista</button>
+            </div>
+
+            <div id="public-investment-categories" class="album-list">
+                <!-- Public investment categories here -->
+                <div class="loading">Cargando colecciones...</div>
+            </div>
+
+            <div id="public-investment-cards" class="investment-render-area" style="display: none;">
+                <!-- Cards will be rendered here -->
             </div>
         </div>
     </div>
