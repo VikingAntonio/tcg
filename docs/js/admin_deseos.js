@@ -215,24 +215,26 @@ function openEditWishlistModalAdmin(item) {
 async function addCardToWishlistAdmin(card) {
     if (!currentUser) return;
 
-    // Check limit (Including pending)
-    const { count, error: countError } = await _supabase
-        .from('wishlist')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', currentUser.id);
+    // Check limit (Including pending) - Admin bypass
+    if (currentUser.role !== 'admin') {
+        const { count, error: countError } = await _supabase
+            .from('wishlist')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id);
 
-    if (countError) {
-        console.error("Error checking wishlist limit:", countError);
-    } else {
-        const limit = currentUser.max_wishlist || 10;
-        const total = count + pendingWishlistAdmin.length;
-        if (total >= limit) {
-            Swal.fire({
-                title: 'Límite alcanzado',
-                text: `Has alcanzado el límite de ${limit} cartas en tu lista de deseos.`,
-                icon: 'warning'
-            });
-            return;
+        if (countError) {
+            console.error("Error checking wishlist limit:", countError);
+        } else {
+            const limit = currentUser.max_wishlist || 10;
+            const total = count + (pendingWishlistAdmin ? pendingWishlistAdmin.length : 0);
+            if (total >= limit) {
+                Swal.fire({
+                    title: 'Límite alcanzado',
+                    text: `Has alcanzado el límite de ${limit} cartas en tu lista de deseos.`,
+                    icon: 'warning'
+                });
+                return;
+            }
         }
     }
 
