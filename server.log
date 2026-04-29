@@ -1,45 +1,56 @@
-127.0.0.1 - - [29/Apr/2026 00:23:53] "GET /public.html HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/turn.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/barajaryg.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/subastas_v2.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/style.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/animacionesdeseos.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/loading3d.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/base.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/amazing-rare.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/basic.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/radiant-holo.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/cosmos-holo.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/rainbow-alt.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/rainbow-holo.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/secret-rare.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/shiny-v.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/reverse-holo.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/shiny-rare.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/regular-holo.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/shiny-vmax.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/swsh-pikachu.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/trainer-gallery-secret-rare.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/trainer-full-art.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/trainer-gallery-holo.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/trainer-gallery-v-max.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/trainer-gallery-v-regular.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/v-full-art.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/v-max.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/v-regular.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /css/cards/v-star.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/companion-bot.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/cart.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/ztext.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/app.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:54] "GET /js/animacionesdeseos.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:59] "GET /admin.html HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:59] "GET /css/inversiones.css HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:59] "GET /js/viking-data.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:59] "GET /js/cloudinary-upload.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:59] "GET /js/admin.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:59] "GET /js/subastas_v2.js HTTP/1.1" 200 -
-127.0.0.1 - - [29/Apr/2026 00:23:59] "GET /js/inversiones.js HTTP/1.1" 200 -
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/server.py", line 1329, in <module>
+    test(
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/server.py", line 1276, in test
+    with ServerClass(addr, HandlerClass) as httpd:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/socketserver.py", line 457, in __init__
+    self.server_bind()
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/server.py", line 1323, in server_bind
+    return super().server_bind()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/http/server.py", line 140, in server_bind
+    socketserver.TCPServer.server_bind(self)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/socketserver.py", line 478, in server_bind
+    self.socket.bind(self.server_address)
+OSError: [Errno 98] Address already in use
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/inversiones.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/animacionesdeseos.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/subastas_v2.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/cart.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/cloudinary-upload.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/viking-data.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/amazing-rare.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/cosmos-holo.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/basic.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/radiant-holo.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/rainbow-holo.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/rainbow-alt.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/regular-holo.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/shiny-rare.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/reverse-holo.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/secret-rare.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/shiny-vmax.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/shiny-v.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/swsh-pikachu.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/trainer-full-art.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/trainer-gallery-holo.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/trainer-gallery-secret-rare.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/trainer-gallery-v-max.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/trainer-gallery-v-regular.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/v-max.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/v-full-art.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/v-regular.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /css/cards/v-star.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/admin.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/subastas_v2.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/inversiones.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Apr/2026 03:59:26] "GET /js/turn.js HTTP/1.1" 200 -

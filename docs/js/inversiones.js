@@ -173,22 +173,24 @@ async function loadInvestmentCategories() {
     categories.forEach(cat => {
         const isPublic = cat.is_public !== false;
         const $card = $(`
-            <div class="album-card inv-category-item" data-id="${cat.id}">
-                <div class="deck-preview-icon"><i class="fas fa-chart-line fa-3x"></i></div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                    <h3 style="margin:0;">${escapeHtml(cat.name)}</h3>
+            <div class="inv-category-item" data-id="${cat.id}">
+                <div class="inv-category-preview">
+                    <i class="fas fa-chart-line fa-3x"></i>
                 </div>
-                <div style="margin-top: 5px; display: flex; align-items: center; gap: 8px;">
+                <h3>${escapeHtml(cat.name)}</h3>
+
+                <div class="inv-category-public-toggle">
                     <label class="switch">
                         <input type="checkbox" class="toggle-inv-cat-public" data-id="${cat.id}" ${isPublic ? 'checked' : ''}>
                         <span class="slider"></span>
                     </label>
-                    <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
+                    <span>${isPublic ? 'Público' : 'Privado'}</span>
                 </div>
-                <div style="display:flex; gap:10px; margin-top:auto; flex-wrap: wrap;">
-                    <button class="btn btn-view-inv-cat" style="flex: 1;">Ver Inversiones</button>
-                    <button class="btn btn-secondary btn-edit-inv-cat" style="width: 45px;"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger btn-delete-inv-cat" style="width: 45px;"><i class="fas fa-trash"></i></button>
+
+                <div class="inv-category-actions">
+                    <button class="btn btn-view-inv-cat">Ver Inversiones</button>
+                    <button class="btn btn-secondary btn-edit-inv-cat" style="width: 45px; padding: 0;"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-danger btn-delete-inv-cat" style="width: 45px; padding: 0;"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `);
@@ -646,8 +648,8 @@ async function renderPriceHistoryChart(cardId) {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: false, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
-                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }
+                y: { beginAtZero: false, grid: { color: '#f1f2f6' }, ticks: { color: '#2d3436' } },
+                x: { grid: { color: '#f1f2f6' }, ticks: { color: '#2d3436' } }
             },
             plugins: {
                 legend: { display: false }
@@ -660,7 +662,7 @@ async function renderPriceHistoryChart(cardId) {
     $list.empty();
     history.reverse().forEach(h => {
         $list.append(`
-            <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 10px 0; border-bottom: 1px solid #f1f2f6; color: #2d3436;">
                 <span>${new Date(h.recorded_at).toLocaleString()}</span>
                 <b>$${parseFloat(h.price).toFixed(2)}</b>
             </div>
