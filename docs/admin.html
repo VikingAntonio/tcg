@@ -221,7 +221,7 @@
                     <a href="#" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
                     <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
                     <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
-                    <a href="#" class="menu-item" id="menu-btn-deseos"><i class="fas fa-heart"></i> Deseos</a>
+                    <a href="#" class="menu-item" id="menu-btn-wishlist"><i class="fas fa-heart"></i> Wishlist</a>
                     <a href="eventos.html" class="menu-item" id="menu-btn-eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
                     <a href="#" class="menu-item" id="menu-btn-investments"><i class="fas fa-chart-line"></i> Mis Inversiones</a>
 
@@ -310,9 +310,9 @@
                     <i class="fas fa-database"></i>
                     <span>BDD</span>
                 </a>
-                <a href="#" class="tile tile-blue" id="btn-deseos">
+                <a href="#" class="tile tile-blue" id="btn-wishlist">
                     <i class="fas fa-heart"></i>
-                    <span>Deseos</span>
+                    <span>Wishlist</span>
                 </a>
                 <a href="productoSellado.html" class="tile tile-cyan tile-wide" id="btn-sealed">
                     <i class="fas fa-box"></i>
@@ -814,7 +814,7 @@
                                 <option value="decks">Decks</option>
                                 <option value="sealed">Sellado</option>
                                 <option value="events">Eventos</option>
-                                <option value="wishlist">Deseos</option>
+                                <option value="wishlist">Wishlist</option>
                                 <option value="preorders">Preventas</option>
                                 <option value="cart">Carrito</option>
                                 <option value="cart">Carrito</option>
@@ -849,7 +849,7 @@
                                 <option value="decks">Decks</option>
                                 <option value="sealed">Sellado</option>
                                 <option value="events">Eventos</option>
-                                <option value="wishlist">Deseos</option>
+                                <option value="wishlist">Wishlist</option>
                                 <option value="preorders">Preventas</option>
                                 <option value="cart">Carrito</option>
                             </select>
@@ -889,7 +889,7 @@
                                 <option value="decks">Decks</option>
                                 <option value="sealed">Sellado</option>
                                 <option value="events">Eventos</option>
-                                <option value="wishlist">Deseos</option>
+                                <option value="wishlist">Wishlist</option>
                                 <option value="preorders">Preventas</option>
                                 <option value="cart">Carrito</option>
                             </select>
@@ -927,7 +927,7 @@
                                 <option value="decks">Decks</option>
                                 <option value="sealed">Sellado</option>
                                 <option value="events">Eventos</option>
-                                <option value="wishlist">Deseos</option>
+                                <option value="wishlist">Wishlist</option>
                                 <option value="preorders">Preventas</option>
                                 <option value="cart">Carrito</option>
                             </select>
@@ -961,7 +961,7 @@
                                 <option value="decks">Decks</option>
                                 <option value="sealed">Sellado</option>
                                 <option value="events">Eventos</option>
-                                <option value="wishlist">Deseos</option>
+                                <option value="wishlist">Wishlist</option>
                                 <option value="preorders">Preventas</option>
                                 <option value="cart">Carrito</option>
                             </select>
@@ -999,7 +999,7 @@
                                 <option value="decks">Decks</option>
                                 <option value="sealed">Sellado</option>
                                 <option value="events">Eventos</option>
-                                <option value="wishlist">Deseos</option>
+                                <option value="wishlist">Wishlist</option>
                                 <option value="preorders">Preventas</option>
                                 <option value="cart">Carrito</option>
                             </select>
@@ -1013,8 +1013,8 @@
             </div>
         </div>
 
-        <!-- Wishlist (Deseos) View -->
-        <div id="view-deseos" class="admin-section" style="display:none;">
+        <!-- Wishlist View -->
+        <div id="view-wishlist" class="admin-section" style="display:none;">
             <div class="admin-header">
                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
                 <h1>Productos Deseados</h1>
@@ -1026,10 +1026,10 @@
                 <div class="form-group">
                     <label><i class="fas fa-search"></i> Buscar Cartas (Pokémon / Yu-Gi-Oh)</label>
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <input type="text" id="deseos-external-search-input" placeholder="Nombre o código de la carta...">
-                        <button id="btn-deseos-external-search-admin" class="btn"><i class="fas fa-search"></i></button>
+                        <input type="text" id="wishlist-external-search-input" placeholder="Nombre o código de la carta...">
+                        <button id="btn-wishlist-external-search-admin" class="btn"><i class="fas fa-search"></i></button>
                     </div>
-                    <div id="deseos-external-search-results-admin" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; max-height: 250px; overflow-y: auto; padding: 10px; border-top: 1px solid #333;">
+                    <div id="wishlist-external-search-results-admin" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; max-height: 250px; overflow-y: auto; padding: 10px; border-top: 1px solid #333;">
                         <!-- Results will appear here -->
                     </div>
 
@@ -1047,7 +1047,7 @@
             </div>
 
             <div class="admin-header">
-                <h2><i class="fas fa-list-ul"></i> Mis Deseos</h2>
+                <h2><i class="fas fa-list-ul"></i> Mi Wishlist</h2>
             </div>
 
             <!-- Slot Tabs -->
@@ -1061,7 +1061,7 @@
 
             <div id="wishlist-list-admin" class="album-list">
                 <!-- Wishlist items will be loaded here -->
-                <div class="loading">Cargando lista de deseos...</div>
+                <div class="loading">Cargando Wishlist...</div>
             </div>
         </div>
 
@@ -1574,7 +1574,7 @@
     <div id="wishlist-modal-admin" class="overlay">
         <div class="overlay-content">
             <span id="close-wishlist-modal-admin" class="close-btn">&times;</span>
-            <h2>Editar Carta de Deseos</h2>
+            <h2>Editar Carta de Wishlist</h2>
 
             <div class="form-group" style="text-align: center;">
                 <img id="modal-wishlist-card-img" src="" style="width: 150px; height: 210px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.2);">

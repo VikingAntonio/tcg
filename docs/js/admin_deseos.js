@@ -1,5 +1,5 @@
 /**
- * Admin Wishlist (Deseos) Module
+ * Admin Wishlist (Wishlist) Module
  * Ported from js/deseos.js to work within the admin.js context.
  */
 
@@ -13,16 +13,16 @@ $(document).ready(function() {
 
 function initAdminWishlistListeners() {
     // Search event
-    $('#btn-deseos-external-search-admin').click(function(e) {
+    $('#btn-wishlist-external-search-admin').click(function(e) {
         e.preventDefault();
-        window.searchExternalCard('#deseos-external-search-input', '#deseos-external-search-results-admin', function(card) {
+        window.searchExternalCard('#wishlist-external-search-input', '#wishlist-external-search-results-admin', function(card) {
             addCardToWishlistAdmin(card);
         });
     });
 
     // Slot switching
-    $(document).on('click', '#view-deseos .wishlist-tab-btn', function() {
-        $('#view-deseos .wishlist-tab-btn').removeClass('active');
+    $(document).on('click', '#view-wishlist .wishlist-tab-btn', function() {
+        $('#view-wishlist .wishlist-tab-btn').removeClass('active');
         $(this).addClass('active');
         currentWishlistSlot = parseInt($(this).data('index'));
         loadWishlistAdmin();
@@ -31,7 +31,7 @@ function initAdminWishlistListeners() {
     // Share current slot button
     if ($('#btn-share-slot-admin').length === 0) {
         $('<button id="btn-share-slot-admin" class="btn btn-sm" style="margin-left: 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-share-alt"></i> Compartir Slot</button>')
-            .appendTo('#view-deseos .wishlist-tabs-container')
+            .appendTo('#view-wishlist .wishlist-tabs-container')
             .on('click', () => {
                 window.openShareModal(`Buscamos - Slot ${currentWishlistSlot+1}`, 'wishlist', currentWishlistSlot);
             });
@@ -93,7 +93,7 @@ async function loadWishlistAdmin() {
     if (!currentUser) return;
 
     const $container = $('#wishlist-list-admin');
-    $container.html('<div class="loading">Cargando lista de deseos...</div>');
+    $container.html('<div class="loading">Cargando Wishlist...</div>');
 
     const { data: wishlist, error } = await _supabase
         .from('wishlist')
@@ -109,7 +109,7 @@ async function loadWishlistAdmin() {
     }
 
     if (wishlist.length === 0) {
-        $container.html('<div class="empty">No tienes cartas en tu lista de deseos. ¡Busca una arriba para empezar!</div>');
+        $container.html('<div class="empty">No tienes cartas en tu Wishlist. ¡Busca una arriba para empezar!</div>');
         return;
     }
 
@@ -230,7 +230,7 @@ async function addCardToWishlistAdmin(card) {
             if (total >= limit) {
                 Swal.fire({
                     title: 'Límite alcanzado',
-                    text: `Has alcanzado el límite de ${limit} cartas en tu lista de deseos.`,
+                    text: `Has alcanzado el límite de ${limit} cartas en tu Wishlist.`,
                     icon: 'warning'
                 });
                 return;
