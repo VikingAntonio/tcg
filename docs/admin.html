@@ -1286,6 +1286,36 @@
         </div>
     </div>
 
+    <!-- Investment Detail Modal (Read-Only) -->
+    <div id="investment-detail-modal" class="overlay">
+        <div class="overlay-content inv-detail-modal-content">
+            <div class="inv-modal-header">
+                <h2 id="inv-detail-name">ASSET DETAILS</h2>
+                <span id="close-investment-detail-modal" class="inv-close-btn" style="cursor:pointer; font-size: 24px;">&times;</span>
+            </div>
+            <div class="inv-detail-container">
+                <div class="inv-detail-image-side">
+                    <img id="inv-detail-image" src="" alt="Card Image">
+                </div>
+                <div class="inv-detail-info-side">
+                    <div class="inv-detail-header-info">
+                        <div id="inv-detail-set" class="inv-detail-set">EXPANSION NAME</div>
+                        <div class="inv-detail-price-row">
+                            <span id="inv-detail-price" class="inv-detail-price">$0.00</span>
+                            <span id="inv-detail-trend"></span>
+                        </div>
+                    </div>
+                    <div class="inv-detail-chart-container">
+                        <canvas id="inv-detail-chart"></canvas>
+                    </div>
+                    <div id="inv-detail-history-list" class="inv-detail-history-list">
+                        <!-- History list -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Auction Creation Modal -->
     <div id="auction-modal" class="overlay">
         <div class="overlay-content auction-modal-content">
