@@ -202,9 +202,11 @@ $(document).ready(async function() {
     // Slot Modal Tabs switching logic
     $(document).on('click', '.slot-tab-btn', function() {
         const tabId = $(this).data('tab');
-        $('.slot-tab-btn').removeClass('active');
+        const $parent = $(this).closest('.album-card, .overlay-content, .bot-config-layout');
+
+        $parent.find('.slot-tab-btn').removeClass('active');
         $(this).addClass('active');
-        $('.slot-tab-content').removeClass('active');
+        $parent.find('.slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
     });
 
@@ -1241,6 +1243,12 @@ $(document).ready(async function() {
         $('#drop-zone-bdd .file-name').text('');
         $('#bdd-holo-effect').val('').trigger('change');
         $('#bdd-custom-mask').val('');
+
+        // Reset tabs
+        $('.admin-section#view-bdd .slot-tab-btn').removeClass('active');
+        $('.admin-section#view-bdd .slot-tab-btn[data-tab="bdd-tab-identidad"]').addClass('active');
+        $('.admin-section#view-bdd .slot-tab-content').removeClass('active');
+        $('#bdd-tab-identidad').addClass('active');
     }
 
     async function handleDeckImageUpload(file) {
