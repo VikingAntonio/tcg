@@ -659,91 +659,105 @@
             </div>
 
             <div class="album-card" style="max-width: 600px; width: 100%; margin: 0 auto 30px;">
-                <div class="form-group">
-                    <label>Tipo de Entrada</label>
-                    <select id="bdd-type">
-                        <option value="card">Carta Suelta</option>
-                        <option value="product">Producto Sellado</option>
-                        <option value="preorder">Preventa</option>
-                    </select>
+                <!-- BDD Tabs Header -->
+                <div class="slot-modal-tabs">
+                    <button class="slot-tab-btn active" data-tab="bdd-tab-identidad">Identidad</button>
+                    <button class="slot-tab-btn" data-tab="bdd-tab-detalles">Detalles</button>
                 </div>
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" id="bdd-name" placeholder="Ej: Blue-Eyes White Dragon">
-                </div>
-                <div class="form-group">
-                    <label>Imagen (URL o Subida)</label>
-                    <label class="file-drop-zone" id="drop-zone-bdd" for="input-bdd-file" style="display: block;">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Arrastra una imagen aquí o haz clic para subir</p>
-                        <input type="file" id="input-bdd-file" accept="image/*" style="display: none;">
-                        <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                    </label>
-                    <input type="text" id="bdd-image-url" placeholder="https://...">
-                </div>
-                <div class="info-grid">
+
+                <!-- Tab: Identidad -->
+                <div id="bdd-tab-identidad" class="slot-tab-content active">
                     <div class="form-group">
-                        <label>TCG</label>
-                        <select id="bdd-tcg">
-                            <option value="yugioh">Yu-Gi-Oh!</option>
-                            <option value="pokemon">Pokémon</option>
-                            <option value="onepiece">One Piece</option>
-                            <option value="lorcana">Lorcana</option>
-                            <option value="custom">Otro</option>
+                        <label>Tipo de Entrada</label>
+                        <select id="bdd-type">
+                            <option value="card">Carta Suelta</option>
+                            <option value="product">Producto Sellado</option>
+                            <option value="preorder">Preventa</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Expansión</label>
-                        <input type="text" id="bdd-expansion" placeholder="Ej: LOB-001">
+                        <label>Nombre</label>
+                        <input type="text" id="bdd-name" placeholder="Ej: Blue-Eyes White Dragon">
                     </div>
                     <div class="form-group">
-                        <label>Rareza</label>
-                        <input type="text" id="bdd-rarity" placeholder="Ej: Ultra Rare">
+                        <label>Imagen (URL o Subida)</label>
+                        <label class="file-drop-zone" id="drop-zone-bdd" for="input-bdd-file" style="display: block;">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Arrastra una imagen aquí o haz clic para subir</p>
+                            <input type="file" id="input-bdd-file" accept="image/*" style="display: none;">
+                            <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                        </label>
+                        <input type="text" id="bdd-image-url" placeholder="https://...">
                     </div>
-                    <div class="form-group">
-                        <label>Precio Estimado (Opcional)</label>
-                        <input type="text" id="bdd-price" placeholder="Ej: $25.00">
-                    </div>
-                    <div class="form-group">
-                        <label>Efecto Holo</label>
-                        <select id="bdd-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
-                            <option value="">Ninguno</option>
-                            <option value="foil">Foil</option>
-                            <option value="custom-texture">CustomTexture</option>
-                            <option value="custom-foil">CustomFoil</option>
-                            <option value="pk-rare-holo">PK: Rare Holo</option>
-                            <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
-                            <option value="pk-rare-holo-v">PK: Rare Holo V</option>
-                            <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
-                            <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
-                            <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
-                            <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
-                            <option value="pk-rare-secret">PK: Rare Secret</option>
-                            <option value="pk-rare-shiny">PK: Rare Shiny</option>
-                            <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
-                            <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
-                            <option value="pk-amazing-rare">PK: Amazing Rare</option>
-                            <option value="pk-radiant-rare">PK: Radiant Rare</option>
-                            <option value="pk-rare-ultra">PK: Rare Ultra</option>
-                            <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
-                            <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
-                            <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
-                            <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
-                            <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
-                            <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
-                            <option value="pk-reverse-holo">PK: Reverse Holo</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="bdd-mask-container" style="display: none; grid-column: span 2;">
-                        <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="bdd-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
-                            <button id="btn-open-mask-editor-bdd" class="btn btn-secondary" style="white-space: nowrap;">
-                                <i class="fas fa-paint-brush"></i> Editar
-                            </button>
+                </div>
+
+                <!-- Tab: Detalles -->
+                <div id="bdd-tab-detalles" class="slot-tab-content">
+                    <div class="info-grid">
+                        <div class="form-group">
+                            <label>TCG</label>
+                            <select id="bdd-tcg">
+                                <option value="yugioh">Yu-Gi-Oh!</option>
+                                <option value="pokemon">Pokémon</option>
+                                <option value="onepiece">One Piece</option>
+                                <option value="lorcana">Lorcana</option>
+                                <option value="custom">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Expansión</label>
+                            <input type="text" id="bdd-expansion" placeholder="Ej: LOB-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Rareza</label>
+                            <input type="text" id="bdd-rarity" placeholder="Ej: Ultra Rare">
+                        </div>
+                        <div class="form-group">
+                            <label>Precio Estimado (Opcional)</label>
+                            <input type="text" id="bdd-price" placeholder="Ej: $25.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Efecto Holo</label>
+                            <select id="bdd-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                <option value="">Ninguno</option>
+                                <option value="foil">Foil</option>
+                                <option value="custom-texture">CustomTexture</option>
+                                <option value="custom-foil">CustomFoil</option>
+                                <option value="pk-rare-holo">PK: Rare Holo</option>
+                                <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
+                                <option value="pk-rare-holo-v">PK: Rare Holo V</option>
+                                <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
+                                <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
+                                <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
+                                <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
+                                <option value="pk-rare-secret">PK: Rare Secret</option>
+                                <option value="pk-rare-shiny">PK: Rare Shiny</option>
+                                <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
+                                <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
+                                <option value="pk-amazing-rare">PK: Amazing Rare</option>
+                                <option value="pk-radiant-rare">PK: Radiant Rare</option>
+                                <option value="pk-rare-ultra">PK: Rare Ultra</option>
+                                <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
+                                <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
+                                <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
+                                <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
+                                <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
+                                <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
+                                <option value="pk-reverse-holo">PK: Reverse Holo</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="bdd-mask-container" style="display: none; grid-column: span 2;">
+                            <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="bdd-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
+                                <button id="btn-open-mask-editor-bdd" class="btn btn-secondary" style="white-space: nowrap;">
+                                    <i class="fas fa-paint-brush"></i> Editar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
                 <button id="btn-queue-bdd" class="btn" style="width: 100%; margin-top: 20px;">
                     <i class="fas fa-plus-circle"></i> Añadir a la Cola
                 </button>
