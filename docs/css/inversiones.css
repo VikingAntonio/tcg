@@ -202,6 +202,23 @@
     color: var(--inv-black) !important;
 }
 
+.inv-close-btn {
+    color: var(--inv-gray-700);
+    transition: var(--inv-transition);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 28px !important;
+}
+
+.inv-close-btn:hover {
+    background: var(--inv-gray-100);
+    color: var(--inv-black);
+}
+
 .inv-modal-tabs {
     display: flex;
     padding: 0 40px;
@@ -428,9 +445,6 @@
     line-height: 1;
 }
 
-.inv-detail-price::before {
-    content: '$';
-}
 
 .inv-detail-chart-area {
     margin-bottom: 25px;

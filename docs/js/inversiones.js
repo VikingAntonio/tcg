@@ -595,6 +595,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         // New Card Mode
         $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').hide();
+        $('#inv-card-search-container').show(); // Show search when adding new
         // If it was the default, switch to datos
         if (defaultTab === 'inv-tab-resumen') {
             $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]').addClass('active');
@@ -603,6 +604,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         }
     } else {
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').show();
+        $('#inv-card-search-container').hide(); // Hide search when editing
         updateSummaryTab(card);
     }
 
@@ -722,6 +724,7 @@ $('#btn-save-investment-card').click(async function() {
             error = err;
             if (!error && newCards.length > 0) {
                 finalCardId = newCards[0].id;
+                currentEditingInvCardId = finalCardId; // Update state to "editing"
                 // Log initial history
                 await _supabase.from('investment_price_history').insert([{
                     card_id: finalCardId,
@@ -751,6 +754,9 @@ $('#btn-save-investment-card').click(async function() {
 
         updateSummaryTab(updatedCard);
         renderInvestmentCards(currentInvestmentViewMode);
+
+        // Hide search bar now that asset is loaded/saved
+        $('#inv-card-search-container').hide();
 
         // Show summary tab after saving
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').show().click();
