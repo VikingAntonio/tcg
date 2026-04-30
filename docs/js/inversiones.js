@@ -365,8 +365,8 @@ function getTrendIcon(current, previous) {
     if (previous === undefined || previous === null || current === previous) return '';
     const isUp = current > previous;
     const iconClass = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
-    const color = isUp ? '#00ff00' : '#ff0000';
-    return `<i class="fas ${iconClass}" style="color: ${color}; margin-left: 5px; font-size: 0.8rem;"></i>`;
+    const color = isUp ? '#00ff88' : '#ff4757';
+    return `<i class="fas ${iconClass}" style="color: ${color}; margin-left: 10px; font-size: 1.2rem;"></i>`;
 }
 
 function renderAlbumMode($container) {
@@ -376,6 +376,7 @@ function renderAlbumMode($container) {
 
     // Delegate click to .inv-card-slot to prevent it from bubbling up to .card-slot listeners in admin.js
     $album.on('click', '.inv-card-slot', (e) => {
+        e.preventDefault();
         e.stopPropagation();
     });
 
@@ -410,6 +411,7 @@ function renderAlbumMode($container) {
                 `);
 
                 $slot.find('.zoom-btn').click((e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     openInvestmentDetail(card);
                 });
@@ -473,7 +475,10 @@ function renderSlideMode($container) {
     `);
     $container.append($swiper);
 
-    $swiper.find('.inv-card-item').click(function() {
+    $swiper.find('.inv-card-item').click(function(e) {
+        if ($(e.target).closest('button').length) return;
+        e.preventDefault();
+        e.stopPropagation();
         const id = $(this).data('id');
         const card = localInvestmentCards.find(c => c.id === id);
         openInvestmentDetail(card);
@@ -527,6 +532,8 @@ function renderListMode($container) {
         `);
         $item.click((e) => {
             if ($(e.target).closest('button').length) return;
+            e.preventDefault();
+            e.stopPropagation();
             openInvestmentDetail(card);
         });
         $item.find('.btn-edit-inv-card').click(() => openInvestmentCardModal(card));
@@ -735,7 +742,7 @@ async function openInvestmentDetail(card) {
     const rarityInfo = (card.rarity || 'UNKNOWN RARITY').toUpperCase();
     $('#inv-detail-set').text(`${setInfo} - ${rarityInfo}`);
 
-    $('#inv-detail-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
+    $('#inv-detail-price').text(`${parseFloat(card.current_price || 0).toFixed(2)}`);
 
     const trendIcon = getTrendIcon(card.current_price, card.previous_price);
     $('#inv-detail-trend').html(trendIcon);
@@ -756,7 +763,9 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
     if (error || !history) return;
 
     const canvasId = isDetail ? 'inv-detail-chart' : 'inv-price-chart';
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
     if (isDetail) {
         if (invDetailChart) invDetailChart.destroy();
@@ -772,29 +781,45 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
                 label: 'Market Price',
                 data: history.map(h => h.price),
                 borderColor: '#000000',
-                backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                borderWidth: 3,
+                backgroundColor: 'rgba(0, 0, 0, 0.03)',
                 fill: true,
-                tension: 0.1,
+                tension: 0.2,
                 pointRadius: 4,
-                pointBackgroundColor: '#000000'
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#000000',
+                pointBorderWidth: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
             scales: {
                 y: {
                     beginAtZero: false,
-                    grid: { color: '#eee' },
-                    ticks: { color: '#000', font: { weight: 'bold' } }
+                    grid: { color: '#f5f5f5' },
+                    ticks: { color: '#000', font: { weight: '800', size: 11 } }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#666', font: { size: 10 } }
+                    ticks: { color: '#999', font: { size: 10, weight: '600' } }
                 }
             },
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#000',
+                    titleFont: { size: 12, weight: 'bold' },
+                    bodyFont: { size: 12 },
+                    padding: 10,
+                    cornerRadius: 2,
+                    displayColors: false
+                }
             }
         }
     });
