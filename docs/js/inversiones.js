@@ -373,6 +373,12 @@ function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
     const $albumWrapper = $('<div class="album-wrapper"><div class="album investment-album"></div></div>');
     const $album = $albumWrapper.find('.album');
+
+    // Delegate click to .inv-card-slot to prevent it from bubbling up to .card-slot listeners in admin.js
+    $album.on('click', '.inv-card-slot', (e) => {
+        e.stopPropagation();
+    });
+
     $container.append($albumWrapper);
 
     // Cover
@@ -393,14 +399,16 @@ function renderAlbumMode($container) {
 
         for (let j = 0; j < 9; j++) {
             const card = pageCards[j];
-            const $slot = $('<div class="card-slot"></div>');
+            // Rename to .inv-card-slot to avoid global admin.js click listeners
+            const $slot = $('<div class="inv-card-slot" style="position: relative;"></div>');
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 10px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn"><i class="fas fa-search"></i></div>
                 `);
+
                 $slot.find('.zoom-btn').click((e) => {
                     e.stopPropagation();
                     openInvestmentDetail(card);
@@ -447,7 +455,7 @@ function renderSlideMode($container) {
                 ${localInvestmentCards.map(card => {
                     const trend = getTrendIcon(card.current_price, card.previous_price);
                     return `
-                    <div class="swiper-slide card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer;">
+                    <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer;">
                         <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
                         <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
                             <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name)}</h4>
@@ -722,7 +730,11 @@ async function deleteInvestmentCard(id) {
 async function openInvestmentDetail(card) {
     $('#inv-detail-name').text(card.card_name.toUpperCase());
     $('#inv-detail-image').attr('src', card.image_url);
-    $('#inv-detail-set').text(`${card.set_name.toUpperCase()} - ${card.rarity.toUpperCase()}`);
+
+    const setInfo = (card.set_name || 'UNKNOWN EXPANSION').toUpperCase();
+    const rarityInfo = (card.rarity || 'UNKNOWN RARITY').toUpperCase();
+    $('#inv-detail-set').text(`${setInfo} - ${rarityInfo}`);
+
     $('#inv-detail-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
 
     const trendIcon = getTrendIcon(card.current_price, card.previous_price);
@@ -793,11 +805,11 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
         invPriceChart = chart;
     }
 
-    // Render list history
+    // Render list history (cloning to avoid in-place reversal issues)
     const listId = isDetail ? '#inv-detail-history-list' : '#inv-history-list';
     const $list = $(listId);
     $list.empty();
-    history.reverse().forEach(h => {
+    [...history].reverse().forEach(h => {
         $list.append(`
             <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 10px 0; border-bottom: 1px solid #f1f2f6; color: #2d3436;">
                 <span>${new Date(h.recorded_at).toLocaleString()}</span>

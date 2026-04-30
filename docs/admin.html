@@ -1290,22 +1290,29 @@
     <div id="investment-detail-modal" class="overlay">
         <div class="overlay-content inv-detail-modal-content">
             <div class="inv-modal-header">
-                <h2 id="inv-detail-name">ASSET DETAILS</h2>
+                <div style="display: flex; flex-direction: column;">
+                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; font-weight: 800; text-transform: uppercase;">Asset Identification</div>
+                    <h2 id="inv-detail-name" style="margin: 0; line-height: 1.1;">ASSET NAME</h2>
+                </div>
                 <span id="close-investment-detail-modal" class="inv-close-btn" style="cursor:pointer; font-size: 24px;">&times;</span>
             </div>
             <div class="inv-detail-container">
                 <div class="inv-detail-image-side">
-                    <img id="inv-detail-image" src="" alt="Card Image">
+                    <div class="inv-detail-image-wrapper">
+                        <img id="inv-detail-image" src="" alt="Card Image">
+                    </div>
                 </div>
                 <div class="inv-detail-info-side">
                     <div class="inv-detail-header-info">
-                        <div id="inv-detail-set" class="inv-detail-set">EXPANSION NAME</div>
+                        <div id="inv-detail-set" class="inv-detail-set">EXPANSION NAME - RARITY</div>
                         <div class="inv-detail-price-row">
                             <span id="inv-detail-price" class="inv-detail-price">$0.00</span>
                             <span id="inv-detail-trend"></span>
                         </div>
+                        <div style="font-size: 0.6rem; color: #666; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Current Market Valuation</div>
                     </div>
                     <div class="inv-detail-chart-container">
+                        <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: #000;">Performance History</div>
                         <canvas id="inv-detail-chart"></canvas>
                     </div>
                     <div id="inv-detail-history-list" class="inv-detail-history-list">
