@@ -322,3 +322,90 @@
     .inv-form-row { grid-template-columns: 1fr; }
     #investment-card-modal .overlay-content { height: 95vh !important; }
 }
+
+/* Detail Modal Styles */
+.inv-detail-modal-content {
+    max-width: 900px !important;
+    height: auto !important;
+    max-height: 90vh !important;
+}
+
+.inv-detail-container {
+    display: flex;
+    padding: 40px;
+    gap: 40px;
+    background: var(--inv-white);
+}
+
+.inv-detail-image-side {
+    flex: 0 0 300px;
+}
+
+.inv-detail-image-side img {
+    width: 100%;
+    border-radius: 8px;
+    border: 2px solid var(--inv-black);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.inv-detail-info-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.inv-detail-header-info {
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--inv-gray-200);
+    padding-bottom: 20px;
+}
+
+.inv-detail-set {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--inv-gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+}
+
+.inv-detail-price-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.inv-detail-price {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--inv-black);
+    letter-spacing: -0.02em;
+}
+
+.inv-detail-chart-container {
+    height: 250px;
+    margin-bottom: 20px;
+}
+
+.inv-detail-history-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 200px;
+    border-top: 1px solid var(--inv-gray-200);
+    padding-top: 15px;
+}
+
+@media (max-width: 768px) {
+    .inv-detail-container {
+        flex-direction: column;
+        padding: 20px;
+    }
+    .inv-detail-image-side {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: center;
+    }
+    .inv-detail-image-side img {
+        max-width: 200px;
+    }
+}

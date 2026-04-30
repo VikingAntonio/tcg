@@ -8,6 +8,7 @@ let currentInvestmentCategoryId = null;
 let currentInvestmentViewMode = 'album'; // 'album', 'slide', 'list'
 let localInvestmentCards = [];
 let invPriceChart = null;
+let invDetailChart = null;
 let currentInvExtraImages = [];
 
 // --- UTILS ---
@@ -91,6 +92,8 @@ function initInvestmentListeners() {
     $('#btn-add-investment-card').click(function() {
         openInvestmentCardModal();
     });
+
+    $('#close-investment-detail-modal').click(() => $('#investment-detail-modal').removeClass('active'));
 
     // Modal Tabs logic
     $(document).on('click', '#investment-card-modal .inv-tab-link', function() {
@@ -396,9 +399,12 @@ function renderAlbumMode($container) {
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
                     <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn"><i class="fas fa-expand"></i></div>
+                    <div class="zoom-btn"><i class="fas fa-search"></i></div>
                 `);
-                $slot.find('.zoom-btn').click(() => openInvestmentCardModal(card));
+                $slot.find('.zoom-btn').click((e) => {
+                    e.stopPropagation();
+                    openInvestmentDetail(card);
+                });
             }
             $grid.append($slot);
         }
@@ -441,7 +447,7 @@ function renderSlideMode($container) {
                 ${localInvestmentCards.map(card => {
                     const trend = getTrendIcon(card.current_price, card.previous_price);
                     return `
-                    <div class="swiper-slide card-slot inv-card-item" data-id="${card.id}" style="background: transparent;">
+                    <div class="swiper-slide card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer;">
                         <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
                         <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
                             <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name)}</h4>
@@ -458,6 +464,12 @@ function renderSlideMode($container) {
         </div>
     `);
     $container.append($swiper);
+
+    $swiper.find('.inv-card-item').click(function() {
+        const id = $(this).data('id');
+        const card = localInvestmentCards.find(c => c.id === id);
+        openInvestmentDetail(card);
+    });
 
     $swiper.find('.btn-edit-inv-card-slide').click(function(e) {
         e.stopPropagation();
@@ -489,7 +501,7 @@ function renderListMode($container) {
         const diffClass = diff >= 0 ? 'price-up' : 'price-down';
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const $item = $(`
-            <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px;">
+            <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
                 <img src="${card.image_url}" class="inv-list-thumb" style="width: 60px; height: 84px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
                 <div class="inv-list-details" style="flex: 1;">
                     <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000;">${escapeHtml(card.card_name)}</div>
@@ -505,6 +517,10 @@ function renderListMode($container) {
                 </div>
             </div>
         `);
+        $item.click((e) => {
+            if ($(e.target).closest('button').length) return;
+            openInvestmentDetail(card);
+        });
         $item.find('.btn-edit-inv-card').click(() => openInvestmentCardModal(card));
         $item.find('.btn-delete-inv-card').click(() => deleteInvestmentCard(card.id));
         $list.append($item);
@@ -703,7 +719,22 @@ async function deleteInvestmentCard(id) {
     }
 }
 
-async function renderPriceHistoryChart(cardId) {
+async function openInvestmentDetail(card) {
+    $('#inv-detail-name').text(card.card_name.toUpperCase());
+    $('#inv-detail-image').attr('src', card.image_url);
+    $('#inv-detail-set').text(`${card.set_name.toUpperCase()} - ${card.rarity.toUpperCase()}`);
+    $('#inv-detail-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
+
+    const trendIcon = getTrendIcon(card.current_price, card.previous_price);
+    $('#inv-detail-trend').html(trendIcon);
+
+    $('#investment-detail-modal').addClass('active');
+
+    // Load History Chart
+    renderPriceHistoryChart(card.id, true);
+}
+
+async function renderPriceHistoryChart(cardId, isDetail = false) {
     const { data: history, error } = await _supabase
         .from('investment_price_history')
         .select('*')
@@ -712,11 +743,16 @@ async function renderPriceHistoryChart(cardId) {
 
     if (error || !history) return;
 
-    const ctx = document.getElementById('inv-price-chart').getContext('2d');
+    const canvasId = isDetail ? 'inv-detail-chart' : 'inv-price-chart';
+    const ctx = document.getElementById(canvasId).getContext('2d');
 
-    if (invPriceChart) invPriceChart.destroy();
+    if (isDetail) {
+        if (invDetailChart) invDetailChart.destroy();
+    } else {
+        if (invPriceChart) invPriceChart.destroy();
+    }
 
-    invPriceChart = new Chart(ctx, {
+    const chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: history.map(h => new Date(h.recorded_at).toLocaleDateString()),
@@ -751,8 +787,15 @@ async function renderPriceHistoryChart(cardId) {
         }
     });
 
+    if (isDetail) {
+        invDetailChart = chart;
+    } else {
+        invPriceChart = chart;
+    }
+
     // Render list history
-    const $list = $('#inv-history-list');
+    const listId = isDetail ? '#inv-detail-history-list' : '#inv-history-list';
+    const $list = $(listId);
     $list.empty();
     history.reverse().forEach(h => {
         $list.append(`
