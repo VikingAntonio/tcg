@@ -1182,24 +1182,61 @@
         </div>
     </div>
 
-    <!-- Investment Card Modal -->
+    <!-- Investment Asset Manager Modal -->
     <div id="investment-card-modal" class="overlay">
-        <div class="overlay-content">
+        <div class="overlay-content inv-detail-modal-content">
             <div class="inv-modal-header">
-                <h2 id="inv-card-modal-title">Añadir Carta a Inversión</h2>
+                <div style="display: flex; flex-direction: column;">
+                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; font-weight: 800; text-transform: uppercase;">Asset Portfolio Management</div>
+                    <h2 id="inv-card-modal-title" style="margin: 0; line-height: 1.1;">ASSET MANAGER</h2>
+                </div>
                 <span id="close-investment-card-modal" class="inv-close-btn" style="cursor:pointer; font-size: 24px;">&times;</span>
             </div>
 
             <!-- Tabs Navigation -->
             <div class="inv-modal-tabs">
-                <div class="inv-tab-link active" data-tab="inv-tab-datos">DATOS</div>
+                <div class="inv-tab-link active" data-tab="inv-tab-resumen">RESUMEN</div>
+                <div class="inv-tab-link" data-tab="inv-tab-datos">DATOS</div>
                 <div class="inv-tab-link" data-tab="inv-tab-images">IMAGES</div>
                 <div class="inv-tab-link" data-tab="inv-tab-movimientos">MOVIMIENTOS</div>
             </div>
 
-            <div class="inv-modal-body">
-                <!-- Tab: Basics -->
-                <div id="inv-tab-datos" class="slot-tab-content active">
+            <div class="inv-modal-body" style="padding: 0;">
+                <!-- Tab: Resumen (Merged from Detail Modal) -->
+                <div id="inv-tab-resumen" class="slot-tab-content active">
+                    <div class="inv-detail-container">
+                        <div class="inv-detail-image-side">
+                            <div class="inv-detail-image-wrapper">
+                                <img id="inv-detail-image" src="" alt="Card Image">
+                            </div>
+                        </div>
+                        <div class="inv-detail-info-side">
+                            <div class="inv-detail-data-section">
+                                <h2 id="inv-detail-name" style="margin: 0 0 5px 0; font-size: 1.5rem; font-weight: 900; text-transform: uppercase; color: #000;">CARD NAME</h2>
+                                <div id="inv-detail-set" class="inv-detail-set">EXPANSION NAME - RARITY</div>
+                                <div class="inv-detail-price-row">
+                                    <span id="inv-detail-price" class="inv-detail-price"></span>
+                                    <span id="inv-detail-trend"></span>
+                                </div>
+                                <div style="font-size: 0.6rem; color: #666; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Current Market Valuation</div>
+                            </div>
+
+                            <div class="inv-detail-chart-area">
+                                <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 5px;">Performance History</div>
+                                <div class="inv-detail-chart-container">
+                                    <canvas id="inv-detail-chart"></canvas>
+                                </div>
+                            </div>
+
+                            <div id="inv-detail-history-list" class="inv-detail-history-list">
+                                <!-- History list -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Datos (Edit Mode) -->
+                <div id="inv-tab-datos" class="slot-tab-content" style="padding: 40px;">
                     <div class="inv-search-container">
                         <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
                             <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-search"></i> BUSCAR</label>
@@ -1243,8 +1280,8 @@
                     </div>
                 </div>
 
-                <!-- Tab: Notes & Extra Images -->
-                <div id="inv-tab-images" class="slot-tab-content">
+                <!-- Tab: Images -->
+                <div id="inv-tab-images" class="slot-tab-content" style="padding: 40px;">
                     <div class="inv-form-group" style="margin-bottom: 30px;">
                         <label>Notas</label>
                         <textarea id="inv-card-notes" placeholder="Escribe aquí notas adicionales..." style="height: 120px;"></textarea>
@@ -1262,12 +1299,16 @@
                     </div>
                 </div>
 
-                <!-- Tab: History -->
-                <div id="inv-tab-movimientos" class="slot-tab-content">
+                <!-- Tab: History / Movements -->
+                <div id="inv-tab-movimientos" class="slot-tab-content" style="padding: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #000;">Market Performance</div>
+                        <button id="btn-inv-add-price" class="btn-inv-main" style="padding: 5px 12px; font-size: 0.7rem;"><i class="fas fa-plus"></i> ADD PRICE</button>
+                    </div>
                     <div class="inv-chart-container">
                         <canvas id="inv-price-chart"></canvas>
                     </div>
-                    <div id="inv-history-list">
+                    <div id="inv-history-list" class="inv-detail-history-list" style="max-height: 250px;">
                         <!-- Historical list -->
                     </div>
                 </div>
@@ -1281,48 +1322,7 @@
             <input type="hidden" id="inv-card-game">
 
             <div class="inv-modal-footer">
-                <button id="btn-save-investment-card" class="btn-inv-main" style="width: 100%; height: 50px;">GUARDAR INVERSIÓN</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Investment Detail Modal (Read-Only) -->
-    <div id="investment-detail-modal" class="overlay">
-        <div class="overlay-content inv-detail-modal-content">
-            <div class="inv-modal-header">
-                <div style="display: flex; flex-direction: column;">
-                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; font-weight: 800; text-transform: uppercase;">Asset Identification</div>
-                    <h2 id="inv-detail-name" style="margin: 0; line-height: 1.1;">ASSET NAME</h2>
-                </div>
-                <span id="close-investment-detail-modal" class="inv-close-btn" style="cursor:pointer; font-size: 24px;">&times;</span>
-            </div>
-            <div class="inv-detail-container">
-                <div class="inv-detail-image-side">
-                    <div class="inv-detail-image-wrapper">
-                        <img id="inv-detail-image" src="" alt="Card Image">
-                    </div>
-                </div>
-                <div class="inv-detail-info-side">
-                    <div class="inv-detail-data-section">
-                        <div id="inv-detail-set" class="inv-detail-set">EXPANSION NAME - RARITY</div>
-                        <div class="inv-detail-price-row">
-                            <span id="inv-detail-price" class="inv-detail-price">$0.00</span>
-                            <span id="inv-detail-trend"></span>
-                        </div>
-                        <div style="font-size: 0.6rem; color: #666; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Current Market Valuation</div>
-                    </div>
-
-                    <div class="inv-detail-chart-area">
-                        <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 5px;">Performance History</div>
-                        <div class="inv-detail-chart-container">
-                            <canvas id="inv-detail-chart"></canvas>
-                        </div>
-                    </div>
-
-                    <div id="inv-detail-history-list" class="inv-detail-history-list">
-                        <!-- History list -->
-                    </div>
-                </div>
+                <button id="btn-save-investment-card" class="btn-inv-main" style="width: 100%; height: 50px;">GUARDAR CAMBIOS</button>
             </div>
         </div>
     </div>

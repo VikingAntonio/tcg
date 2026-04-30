@@ -17,6 +17,30 @@
     --inv-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Investment Album Stability Fixes */
+.investment-album-layout {
+    overflow: hidden !important;
+    height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.02);
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.album-wrapper {
+    width: 600px;
+    height: 420px;
+    position: relative;
+    margin: 0 auto;
+}
+
+.investment-album {
+    margin: 0 auto;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+}
+
 /* Category Grid */
 .inv-category-item {
     background: var(--inv-white);
@@ -152,7 +176,7 @@
     border: 1px solid var(--inv-black);
     box-shadow: 0 40px 100px rgba(0,0,0,0.2) !important;
     width: 95% !important;
-    max-width: 800px !important;
+    max-width: 1000px !important;
     height: 80vh !important;
     max-height: 850px !important;
     display: flex;
