@@ -53,6 +53,72 @@
     box-shadow: 0 30px 60px rgba(0,0,0,0.2);
 }
 
+/* Mobile Collapsible Panel */
+.inv-mobile-side-panel {
+    display: none; /* Hidden by default, shown in media query */
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10005;
+}
+
+.inv-panel-trigger {
+    background: #000;
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px 0 0 4px;
+    cursor: pointer;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+}
+
+.inv-panel-content {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 85%;
+    max-width: 320px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    z-index: 10006;
+}
+
+.inv-mobile-side-panel.active .inv-panel-content {
+    right: 0;
+}
+
+.inv-panel-header {
+    padding: 25px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 900;
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    color: #000;
+}
+
+.inv-panel-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.panel-action-btn {
+    width: 100%;
+    justify-content: flex-start;
+}
+
 /* Category Grid */
 .inv-category-item {
     background: var(--inv-white);
@@ -390,6 +456,31 @@
 /* Responsive */
 @media (max-width: 768px) {
     .inv-form-row { grid-template-columns: 1fr; }
+
+    .inv-mobile-side-panel {
+        display: block;
+    }
+
+    .inv-main-actions, .inv-detail-actions {
+        display: none !important;
+    }
+
+    .inv-list-container {
+        padding: 0 10px;
+    }
+
+    .inv-list-item {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    .inv-list-prices {
+        width: 100%;
+        justify-content: space-between;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+    }
     #investment-card-modal .overlay-content {
         height: 95vh !important;
         width: 100% !important;
@@ -402,9 +493,11 @@
     }
 
     .album-wrapper {
-        width: 100%;
+        width: 95%; /* More space for the album */
         height: auto;
         transform: none !important;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .inv-modal-header {
@@ -484,10 +577,11 @@
 }
 
 /* Centering and Margins */
-.view-section.active {
+.view-section.active, .admin-section.active {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
 }
 
 .inv-list-container, .investment-album-layout, .investment-slide-layout {
