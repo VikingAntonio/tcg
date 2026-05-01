@@ -3447,20 +3447,29 @@ function renderPublicInvAlbumMode($container) {
     for (let i = 0; i < publicInvCards.length; i += 9) {
         const pageCards = publicInvCards.slice(i, i + 9);
         const $page = $('<div class="page album-page"></div>');
-        const $grid = $('<div class="grid-container"></div>');
+        const $grid = $('<div class="grid-container" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; padding: 10px; height: 100%; box-sizing: border-box;"></div>');
 
         for (let j = 0; j < 9; j++) {
             const card = pageCards[j];
-            const $slot = $('<div class="card-slot"></div>');
+            const $slot = $('<div class="card-slot" style="position: relative; background: rgba(0,0,0,0.05); border: 1px solid #333; aspect-ratio: 2.5/3.5; overflow: hidden; border-radius: 3px;"></div>');
             if (card) {
                 const isUp = card.current_price > card.previous_price;
                 const isDown = card.current_price < card.previous_price;
                 const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                             isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; object-fit: cover; width: 100%; height: 100%;">
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 10px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <img src="${card.image_url}" class="tcg-card" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 9px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="zoom-btn" style="display: flex; position: absolute; bottom: 5px; right: 5px; width: 28px; height: 28px; background: #000; color: #fff; border-radius: 50%; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #fff; cursor: pointer;"><i class="fas fa-search"></i></div>
                 `);
+
+                $slot.find('.zoom-btn').click((e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Public doesn't have openInvestmentCardModal, but we should show something or just use the badge
+                    // User asked for "same design", let's use the public card modal
+                    openCardModal($slot.attr('data-name', card.card_name).attr('data-price', '$'+card.current_price));
+                });
             }
             $grid.append($slot);
         }
@@ -3475,7 +3484,7 @@ function renderPublicInvAlbumMode($container) {
     $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
 
     setTimeout(() => {
-        const { width, height } = getAlbumSize($albumWrapper);
+        const { width, height } = window.getAlbumSize($albumWrapper);
         $album.turn({
             width: width,
             height: height,
@@ -3492,7 +3501,7 @@ function renderPublicInvSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const swiperId = `pub-inv-swiper-${Date.now()}`;
     const isMobile = window.innerWidth <= 768;
-    const swiperHeight = isMobile ? '500px' : '600px';
+    const swiperHeight = isMobile ? '550px' : '650px';
     const $swiper = $(`
         <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
             <div class="swiper-wrapper">
