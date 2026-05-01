@@ -3437,7 +3437,7 @@ function renderPublicInvAlbumMode($container) {
 
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
+            <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(currentPublicInvCategory.name).toUpperCase()}</h2>
                 <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
@@ -3447,27 +3447,25 @@ function renderPublicInvAlbumMode($container) {
     for (let i = 0; i < publicInvCards.length; i += 9) {
         const pageCards = publicInvCards.slice(i, i + 9);
         const $page = $('<div class="page album-page"></div>');
-        const $grid = $('<div class="grid-container" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; padding: 10px; height: 100%; box-sizing: border-box;"></div>');
+        const $grid = $('<div class="grid-container"></div>');
 
         for (let j = 0; j < 9; j++) {
             const card = pageCards[j];
-            const $slot = $('<div class="card-slot" style="position: relative; background: rgba(0,0,0,0.05); border: 1px solid #333; aspect-ratio: 2.5/3.5; overflow: hidden; border-radius: 3px;"></div>');
+            const $slot = $('<div class="card-slot"></div>');
             if (card) {
                 const isUp = card.current_price > card.previous_price;
                 const isDown = card.current_price < card.previous_price;
                 const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                             isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
+
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <img src="${card.image_url}" class="tcg-card">
                     <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 9px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn" style="display: flex; position: absolute; bottom: 5px; right: 5px; width: 28px; height: 28px; background: #000; color: #fff; border-radius: 50%; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #fff; cursor: pointer;"><i class="fas fa-search"></i></div>
+                    <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                 `);
 
                 $slot.find('.zoom-btn').click((e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Public doesn't have openInvestmentCardModal, but we should show something or just use the badge
-                    // User asked for "same design", let's use the public card modal
+                    e.preventDefault(); e.stopPropagation();
                     openCardModal($slot.attr('data-name', card.card_name).attr('data-price', '$'+card.current_price));
                 });
             }
@@ -3492,7 +3490,12 @@ function renderPublicInvAlbumMode($container) {
             display: 'double',
             acceleration: true,
             elevation: 50,
-            duration: 800
+            duration: 800,
+            when: {
+                turned: function() {
+                    $(this).turn('stop').turn('resize').turn('center');
+                }
+            }
         });
     }, 100);
 }
@@ -3500,36 +3503,52 @@ function renderPublicInvAlbumMode($container) {
 function renderPublicInvSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const swiperId = `pub-inv-swiper-${Date.now()}`;
-    const isMobile = window.innerWidth <= 768;
-    const swiperHeight = isMobile ? '550px' : '650px';
-    const $swiper = $(`
-        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
-            <div class="swiper-wrapper">
-                ${publicInvCards.map(card => {
-                    const isUp = card.current_price > card.previous_price;
-                    const isDown = card.current_price < card.previous_price;
-                    const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
-                                isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
-                    return `
-                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;">
-                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
-                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
-                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
-                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
-                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                        </div>
+
+    const $deckItem = $(`
+        <div class="deck-public-item" style="pointer-events: auto;">
+            <div class="container deck-carousel-container">
+                <div class="swiper swiperyg ${swiperId}">
+                    <div class="swiper-wrapper">
+                        ${publicInvCards.map(card => {
+                            const isUp = card.current_price > card.previous_price;
+                            const isDown = card.current_price < card.previous_price;
+                            const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                                        isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
+                            return `
+                            <div class="swiper-slide card-slot inv-card-item" data-name="${escapeHtml(card.card_name)}" data-price="$${parseFloat(card.current_price || 0).toFixed(2)}">
+                                <img src="${card.image_url}" alt="${card.card_name}" />
+                                <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 10px; left: 10px; padding: 4px 8px; color: white; font-size: 12px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                                <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+                            </div>
+                        `}).join('')}
                     </div>
-                `}).join('')}
+                </div>
             </div>
         </div>
     `);
-    $container.append($swiper);
+    $container.append($deckItem);
+
+    $deckItem.find('.zoom-btn').click(function(e) {
+        e.preventDefault(); e.stopPropagation();
+        const $slot = $(this).closest('.card-slot');
+        openCardModal($slot);
+    });
 
     new Swiper(`.${swiperId}`, {
         effect: "cards",
         grabCursor: true,
-        centeredSlides: true,
-        slidesPerView: 'auto'
+        perSlideOffset: 8,
+        perSlideRotate: 2,
+        rotate: true,
+        slideShadows: true,
+        on: {
+            click: function(s, e) {
+                const $slot = $(e.target).closest('.card-slot');
+                if ($slot.length && s.clickedIndex === s.activeIndex) {
+                    openCardModal($slot);
+                }
+            }
+        }
     });
 }
 
