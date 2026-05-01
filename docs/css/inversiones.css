@@ -31,13 +31,21 @@
 }
 
 .album-wrapper {
-    width: 600px;
+    width: 100%;
+    max-width: 600px;
     height: 420px;
     position: relative;
     margin: 0 auto;
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+@media (max-width: 768px) {
+    .album-wrapper {
+        height: auto;
+        min-height: 250px;
+    }
 }
 
 .investment-album {
@@ -451,10 +459,45 @@
     .inv-category-info h3 {
         font-size: 0.95rem;
     }
+
+    /* Fixed top panel obstruction */
+    .inv-modal-header {
+        position: relative;
+        z-index: 100;
+        background: #fff;
+    }
+
+    /* Adjust album scaling on very small screens */
+    .investment-album {
+        transform-origin: center center;
+    }
 }
 
 #investment-card-modal {
     z-index: 12000;
+}
+
+/* Ensure no overflow in mobile tabs */
+.inv-modal-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Centering and Margins */
+.view-section.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.inv-list-container, .investment-album-layout, .investment-slide-layout {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.bottom-nav {
+    z-index: 10000;
 }
 
 /* Detail Modal Styles */

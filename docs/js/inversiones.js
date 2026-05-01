@@ -424,18 +424,17 @@ function renderAlbumMode($container) {
     for (let i = 0; i < localInvestmentCards.length; i += 9) {
         const pageCards = localInvestmentCards.slice(i, i + 9);
         const $page = $('<div class="page album-page"></div>');
-        const $grid = $('<div class="grid-container"></div>');
+        const $grid = $('<div class="grid-container" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; padding: 10px; height: 100%; box-sizing: border-box;"></div>');
 
         for (let j = 0; j < 9; j++) {
             const card = pageCards[j];
-            // Added .card-slot to use the grid styling from style.css
-            const $slot = $('<div class="card-slot inv-card-slot" style="position: relative;"></div>');
+            const $slot = $('<div class="card-slot inv-card-slot" style="position: relative; background: rgba(0,0,0,0.05); border: 1px solid #ddd; aspect-ratio: 2.5/3.5; overflow: hidden; border-radius: 3px;"></div>');
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: cover;">
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 10px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn" style="display: flex;"><i class="fas fa-search"></i></div>
+                    <img src="${card.image_url}" class="tcg-card" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 9px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="zoom-btn" style="display: flex; position: absolute; bottom: 5px; right: 5px; width: 28px; height: 28px; background: #000; color: #fff; border-radius: 50%; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #fff; cursor: pointer;"><i class="fas fa-search"></i></div>
                 `);
 
                 $slot.find('.zoom-btn').click((e) => {
@@ -467,7 +466,7 @@ function renderAlbumMode($container) {
         if ($album.turn('is')) {
             $album.turn('destroy');
         }
-        const { width, height } = getAlbumSize($albumWrapper);
+        const { width, height } = window.getAlbumSize($albumWrapper);
         $album.turn({
             width: width,
             height: height,
@@ -478,13 +477,11 @@ function renderAlbumMode($container) {
             duration: 800,
             when: {
                 turning: function(e, page, view) {
-                    // Prevent page jumps by forcing fixed position
                     $(this).css('position', 'relative');
                 }
             }
         });
 
-        // Manual centering fix
         $album.css({
             'margin-left': 'auto',
             'margin-right': 'auto'
@@ -496,7 +493,7 @@ function renderSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const swiperId = `inv-swiper-${Date.now()}`;
     const isMobile = window.innerWidth <= 768;
-    const swiperHeight = isMobile ? '500px' : '600px';
+    const swiperHeight = isMobile ? '550px' : '650px';
     const $swiper = $(`
         <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
             <div class="swiper-wrapper">
