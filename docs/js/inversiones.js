@@ -526,7 +526,7 @@ function renderSlideMode($container) {
                             const trend = getTrendIcon(card.current_price, card.previous_price);
                             return `
                             <div class="swiper-slide card-slot inv-card-item" data-id="${card.id}">
-                                <img src="${card.image_url}" alt="${card.card_name}" />
+                                <img src="${card.image_url}" class="tcg-card" alt="${card.card_name}" />
                                 <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 10px; left: 10px; padding: 4px 8px; color: white; font-size: 12px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                                 <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                             </div>
