@@ -402,6 +402,7 @@ function getTrendIcon(current, previous, showPercentage = false) {
     return html;
 }
 
+
 function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
     const $albumWrapper = $('<div class="album-wrapper"><div class="album investment-album"></div></div>');
@@ -427,14 +428,14 @@ function renderAlbumMode($container) {
 
         for (let j = 0; j < 9; j++) {
             const card = pageCards[j];
-            // Rename to .inv-card-slot to avoid global admin.js click listeners
-            const $slot = $('<div class="inv-card-slot" style="position: relative;"></div>');
+            // Added .card-slot to use the grid styling from style.css
+            const $slot = $('<div class="card-slot inv-card-slot" style="position: relative;"></div>');
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: cover;">
                     <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 10px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn"><i class="fas fa-search"></i></div>
+                    <div class="zoom-btn" style="display: flex;"><i class="fas fa-search"></i></div>
                 `);
 
                 $slot.find('.zoom-btn').click((e) => {
@@ -466,9 +467,10 @@ function renderAlbumMode($container) {
         if ($album.turn('is')) {
             $album.turn('destroy');
         }
+        const { width, height } = getAlbumSize($albumWrapper);
         $album.turn({
-            width: 600,
-            height: 420,
+            width: width,
+            height: height,
             autoCenter: true,
             display: 'double',
             acceleration: true,
@@ -493,8 +495,10 @@ function renderAlbumMode($container) {
 function renderSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const swiperId = `inv-swiper-${Date.now()}`;
+    const isMobile = window.innerWidth <= 768;
+    const swiperHeight = isMobile ? '500px' : '600px';
     const $swiper = $(`
-        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: 500px; padding: 20px 0;">
+        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
             <div class="swiper-wrapper">
                 ${localInvestmentCards.map(card => {
                     const trend = getTrendIcon(card.current_price, card.previous_price);

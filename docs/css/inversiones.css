@@ -20,7 +20,8 @@
 /* Investment Album Stability Fixes */
 .investment-album-layout {
     overflow: hidden !important;
-    height: 600px;
+    min-height: 500px;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -34,6 +35,9 @@
     height: 420px;
     position: relative;
     margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .investment-album {
@@ -216,7 +220,19 @@
     top: 15px;
     right: 15px;
     cursor: pointer;
-    z-index: 100;
+    z-index: 101; /* Higher than header content */
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .inv-close-btn {
+        top: 10px;
+        right: 10px;
+        width: 35px;
+        height: 35px;
+        font-size: 28px !important;
+    }
 }
 
 .inv-close-btn:hover {
@@ -366,7 +382,79 @@
 /* Responsive */
 @media (max-width: 768px) {
     .inv-form-row { grid-template-columns: 1fr; }
-    #investment-card-modal .overlay-content { height: 95vh !important; }
+    #investment-card-modal .overlay-content {
+        height: 95vh !important;
+        width: 100% !important;
+        border-radius: 0;
+    }
+
+    .investment-album-layout {
+        padding: 10px;
+        min-height: 400px;
+    }
+
+    .album-wrapper {
+        width: 100%;
+        height: auto;
+        transform: none !important;
+    }
+
+    .inv-modal-header {
+        padding: 20px;
+    }
+
+    .inv-modal-tabs {
+        padding: 0 10px;
+        overflow-x: auto;
+    }
+
+    .inv-tab-link {
+        padding: 12px 15px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+
+    .inv-modal-body {
+        padding: 20px;
+    }
+
+    .inv-modal-footer {
+        padding: 15px 20px;
+    }
+
+    #view-investments,
+    #view-investment-details,
+    #investments-view {
+        padding-bottom: 100px !important;
+    }
+
+    .admin-header#public-inv-header,
+    #view-investments .admin-header,
+    #view-investment-details .admin-header {
+        padding: 30px 15px !important;
+    }
+
+    #view-investments h1,
+    #view-investment-details h1,
+    #public-inv-title {
+        font-size: 1.8rem !important;
+    }
+
+    .inv-category-preview {
+        height: 120px;
+    }
+
+    .inv-category-info {
+        padding: 15px;
+    }
+
+    .inv-category-info h3 {
+        font-size: 0.95rem;
+    }
+}
+
+#investment-card-modal {
+    z-index: 12000;
 }
 
 /* Detail Modal Styles */
