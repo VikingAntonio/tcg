@@ -19,7 +19,7 @@
 
 /* Investment Album Stability Fixes */
 .investment-album-layout {
-    overflow: hidden !important;
+    overflow: visible !important;
     min-height: 500px;
     height: auto;
     display: flex;
@@ -27,7 +27,7 @@
     justify-content: center;
     background: rgba(0,0,0,0.02);
     border-radius: 4px;
-    padding: 20px;
+    padding: 40px 20px;
 }
 
 .album-wrapper {
@@ -39,10 +39,16 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    perspective: 2000px;
 }
 
 @media (max-width: 768px) {
+    .investment-album-layout {
+        padding: 40px 10px 120px 10px !important;
+        min-height: 400px;
+    }
     .album-wrapper {
+        width: 100%;
         height: auto;
         min-height: 250px;
     }
@@ -50,49 +56,48 @@
 
 .investment-album {
     margin: 0 auto;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
 }
 
 /* Mobile Collapsible Panel */
 .inv-mobile-side-panel {
     display: none; /* Hidden by default, shown in media query */
     position: fixed;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    left: 0;
+    top: 140px; /* Below header */
     z-index: 10005;
 }
 
 .inv-panel-trigger {
     background: #000;
     color: #fff;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px 0 0 4px;
+    border-radius: 0 8px 8px 0;
     cursor: pointer;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+    box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .inv-panel-content {
     position: fixed;
     top: 0;
-    right: -100%;
-    width: 85%;
-    max-width: 320px;
+    left: -100%;
+    width: 280px;
     height: 100%;
     background: #fff;
-    box-shadow: -10px 0 30px rgba(0,0,0,0.2);
-    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 15px 0 50px rgba(0,0,0,0.4);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    z-index: 10006;
+    z-index: 12010;
 }
 
 .inv-mobile-side-panel.active .inv-panel-content {
-    right: 0;
+    left: 0;
 }
 
 .inv-panel-header {
@@ -294,7 +299,7 @@
     top: 15px;
     right: 15px;
     cursor: pointer;
-    z-index: 101; /* Higher than header content */
+    z-index: 12005; /* Must be higher than top panel and anything else */
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
@@ -303,9 +308,11 @@
     .inv-close-btn {
         top: 10px;
         right: 10px;
-        width: 35px;
-        height: 35px;
-        font-size: 28px !important;
+        width: 40px;
+        height: 40px;
+        font-size: 32px !important;
+        background: #fff !important;
+        border: 1px solid #ff4757 !important;
     }
 }
 
@@ -532,13 +539,25 @@
     .admin-header#public-inv-header,
     #view-investments .admin-header,
     #view-investment-details .admin-header {
-        padding: 30px 15px !important;
+        padding: 20px 15px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        overflow-x: hidden !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center !important;
     }
 
     #view-investments h1,
     #view-investment-details h1,
     #public-inv-title {
-        font-size: 1.8rem !important;
+        font-size: 1.6rem !important;
+        word-wrap: break-word !important;
+        max-width: 100%;
+        line-height: 1.2;
     }
 
     .inv-category-preview {
@@ -558,6 +577,7 @@
         position: relative;
         z-index: 100;
         background: #fff;
+        padding-right: 50px !important; /* Make room for close button */
     }
 
     /* Adjust album scaling on very small screens */
@@ -584,10 +604,66 @@
     width: 100%;
 }
 
+.sticky-tabs-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+}
+
+.sticky-tabs-container::-webkit-scrollbar {
+    display: none;
+}
+
 .inv-list-container, .investment-album-layout, .investment-slide-layout {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+}
+
+.investment-slide-layout {
+    width: 100%;
+    min-height: 550px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.investment-slide-layout .deck-carousel-container {
+    width: 100%;
+    max-width: 400px;
+    height: 500px;
+    margin: 0 auto;
+}
+
+.investment-slide-layout .swiperyg {
+    height: 100%;
+}
+
+.investment-slide-layout .card-slot {
+    height: 420px !important;
+    width: 300px !important;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .investment-slide-layout {
+        min-height: 480px;
+        padding: 20px 10px 120px 10px !important;
+    }
+    .investment-slide-layout .deck-carousel-container {
+        max-width: 280px;
+        height: 420px;
+    }
+    .investment-slide-layout .card-slot {
+        height: 350px !important;
+        width: 250px !important;
+    }
 }
 
 .bottom-nav {
@@ -697,21 +773,25 @@
 /* Album Zoom Button Enhancement */
 .investment-album .zoom-btn {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 35px;
-    height: 35px;
-    background: #000;
+    bottom: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.6);
     color: #fff;
-    border-radius: 50%;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 10;
-    opacity: 0.8;
+    opacity: 0.9;
     transition: all 0.2s ease;
-    border: 1px solid #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.investment-album .zoom-btn i {
+    font-size: 11px;
 }
 
 .investment-album .zoom-btn:hover {
