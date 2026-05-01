@@ -3467,7 +3467,9 @@ function renderPublicInvAlbumMode($container) {
                 `);
 
                 $slot.find('.zoom-btn').click((e) => {
-                    e.preventDefault(); e.stopPropagation();
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     openCardModal($slot.attr('data-name', card.card_name).attr('data-price', '$'+card.current_price));
                 });
             }

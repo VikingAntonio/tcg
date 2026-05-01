@@ -470,7 +470,9 @@ function renderAlbumMode($container) {
                 `);
 
                 $slot.find('.zoom-btn').click((e) => {
-                    e.preventDefault(); e.stopPropagation();
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     openInvestmentCardModal(card);
                 });
             }
@@ -542,6 +544,7 @@ function renderSlideMode($container) {
     $deckItem.find('.zoom-btn').click(function(e) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         const id = $(this).closest('.inv-card-item').data('id');
         const card = localInvestmentCards.find(c => c.id === id);
         openInvestmentCardModal(card);
