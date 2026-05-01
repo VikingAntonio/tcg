@@ -1146,25 +1146,10 @@
                 <div style="font-size: 0.7rem; letter-spacing: 0.4em; font-weight: 800; color: rgba(255,255,255,0.5); margin-bottom: 15px; text-transform: uppercase;">Portfolio Management</div>
                 <h1 style="font-size: 3rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: 10px; text-transform: uppercase; color: #fff;">Asset Vault</h1>
                 <p style="color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto 30px; font-weight: 500;">Monitor physical TCG assets with professional market analytics and manual valuation tracking.</p>
-                <div class="inv-main-actions">
+                <div style="display: flex; gap: 15px; justify-content: center;">
                     <button id="btn-create-investment-category" class="btn-inv-main" style="background: #fff; color: #000; border-color: #fff;"><i class="fas fa-plus"></i> Create Vault</button>
                 </div>
             </div>
-
-            <!-- Mobile Collapsible Panel for View 1 -->
-            <div id="inv-mobile-panel-v1" class="inv-mobile-side-panel">
-                <div class="inv-panel-trigger"><i class="fas fa-cog"></i></div>
-                <div class="inv-panel-content">
-                    <div class="inv-panel-header">
-                        <span>OPCIONES</span>
-                        <i class="fas fa-times close-inv-panel"></i>
-                    </div>
-                    <div class="inv-panel-body">
-                        <button class="btn-inv-main panel-action-btn" id="btn-create-vault-mobile"><i class="fas fa-plus"></i> CREATE VAULT</button>
-                    </div>
-                </div>
-            </div>
-
             <div id="investment-category-list" class="album-list">
                 <!-- Categories will be loaded here -->
             </div>
@@ -1180,36 +1165,13 @@
                         <h1 id="inv-category-title" style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.03em; color: #000; margin: 0; text-transform: uppercase;">Vault</h1>
                     </div>
 
-                    <div class="inv-detail-actions" style="display: flex; gap: 10px;">
+                    <div style="display: flex; gap: 10px;">
                         <div class="inv-mode-selector" style="background: #f8f9fa; padding: 5px; border-radius: 4px; display: flex; gap: 5px;">
                             <button class="btn-inv-mode active" data-mode="album" style="border: none; background: #000; color: #fff; border-radius: 2px; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">binders</button>
                             <button class="btn-inv-mode" data-mode="slide" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">vikingSlide</button>
                             <button class="btn-inv-mode" data-mode="list" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">lista</button>
                         </div>
                         <button id="btn-add-investment-card" class="btn-inv-main"><i class="fas fa-plus"></i> ADD ASSET</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile Collapsible Panel for View 2 -->
-            <div id="inv-mobile-panel-v2" class="inv-mobile-side-panel">
-                <div class="inv-panel-trigger"><i class="fas fa-cog"></i></div>
-                <div class="inv-panel-content">
-                    <div class="inv-panel-header">
-                        <span>OPCIONES</span>
-                        <i class="fas fa-times close-inv-panel"></i>
-                    </div>
-                    <div class="inv-panel-body">
-                        <button class="btn-inv-main panel-action-btn" id="btn-add-asset-mobile"><i class="fas fa-plus"></i> ADD ASSET</button>
-
-                        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-                            <div style="font-size: 10px; font-weight: 800; color: #999; margin-bottom: 10px;">CAMBIAR VISTA</div>
-                            <div style="display: flex; flex-direction: column; gap: 10px;">
-                                <button class="btn-inv-outline panel-action-btn btn-inv-mode" data-mode="album">BINDERS</button>
-                                <button class="btn-inv-outline panel-action-btn btn-inv-mode" data-mode="slide">VIKINGSLIDE</button>
-                                <button class="btn-inv-outline panel-action-btn btn-inv-mode" data-mode="list">LISTA</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1228,7 +1190,7 @@
                     <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; font-weight: 800; text-transform: uppercase;">Asset Portfolio Management</div>
                     <h2 id="inv-card-modal-title" style="margin: 0; line-height: 1.1;">ASSET MANAGER</h2>
                 </div>
-                <span id="close-investment-card-modal" class="inv-close-btn">&times;</span>
+                <span id="close-investment-card-modal" class="inv-close-btn" style="cursor:pointer; font-size: 24px;">&times;</span>
             </div>
 
             <!-- Tabs Navigation -->
