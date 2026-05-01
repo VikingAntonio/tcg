@@ -3435,10 +3435,12 @@ function renderPublicInvAlbumMode($container) {
     const $album = $albumWrapper.find('.album');
     $container.append($albumWrapper);
 
+    const title = currentPublicInvCategory.name.toUpperCase();
+
     $album.append(`
-        <div class="page cover-page">
+        <div class="page album-page cover-page">
             <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(currentPublicInvCategory.name).toUpperCase()}</h2>
+                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(title)}</h2>
                 <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
         </div>
@@ -3475,13 +3477,15 @@ function renderPublicInvAlbumMode($container) {
         $album.append($page);
     }
 
-    if ($album.find('.page').length % 2 !== 0) {
+    const totalPagesWithCover = 1 + Math.ceil(publicInvCards.length / 9);
+    if (totalPagesWithCover % 2 !== 0) {
         $album.append('<div class="page album-page"></div>');
     }
 
-    $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
+    $album.append('<div class="page album-page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
 
     setTimeout(() => {
+        if ($album.turn('is')) $album.turn('destroy');
         const { width, height } = window.getAlbumSize($albumWrapper);
         $album.turn({
             width: width,
@@ -3497,7 +3501,7 @@ function renderPublicInvAlbumMode($container) {
                 }
             }
         });
-    }, 100);
+    }, 250);
 }
 
 function renderPublicInvSlideMode($container) {
