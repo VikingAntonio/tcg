@@ -386,12 +386,20 @@ function renderInvestmentCards(mode) {
     }
 }
 
-function getTrendIcon(current, previous) {
-    if (previous === undefined || previous === null || current === previous) return '';
+function getTrendIcon(current, previous, showPercentage = false) {
+    if (previous === undefined || previous === null || current === previous || previous === 0) return '';
     const isUp = current > previous;
     const iconClass = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
     const color = isUp ? '#00ff88' : '#ff4757';
-    return `<i class="fas ${iconClass}" style="color: ${color}; margin-left: 10px; font-size: 1.2rem;"></i>`;
+    let html = `<i class="fas ${iconClass}" style="color: ${color}; margin-left: 10px; font-size: 1.2rem;"></i>`;
+
+    if (showPercentage) {
+        const percent = ((current - previous) / previous) * 100;
+        const sign = percent > 0 ? '+' : '';
+        html += `<span style="color: ${color}; font-weight: 800; font-size: 1rem; margin-left: 5px;">${sign}${percent.toFixed(2)}%</span>`;
+    }
+
+    return html;
 }
 
 function renderAlbumMode($container) {
@@ -813,7 +821,7 @@ function updateSummaryTab(card) {
 
     $('#inv-detail-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
 
-    const trendIcon = getTrendIcon(card.current_price, card.previous_price);
+    const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
 
     // Load History Chart for summary
