@@ -20,13 +20,7 @@ body{
 .swiperyg {
   position: relative;
   width: 240px;
-  height: 380px;
-}
-
-@media (max-width: 768px) {
-  .swiperyg {
-    height: 350px;
-  }
+  height: 360px;
 }
 
 .swiper-slide {

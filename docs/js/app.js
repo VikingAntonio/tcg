@@ -2068,6 +2068,20 @@ async function loadPublicSpirits() {
     });
 }
 
+function getAlbumSize($albumContainer) {
+    const isMobile = window.innerWidth <= 640;
+    let width = 600;
+    let height = 420;
+
+    if (isMobile) {
+        // En móvil usamos el ancho del contenedor con un pequeño margen
+        const containerWidth = $albumContainer.width() || $(window).width();
+        const availableWidth = Math.min(600, containerWidth - 20);
+        width = availableWidth;
+        height = Math.floor(width * (420 / 600));
+    }
+    return { width, height };
+}
 
 function loadPageImages($album, page) {
     // turn.js standard class is .p[number], and we also use data-page-num
@@ -3435,12 +3449,10 @@ function renderPublicInvAlbumMode($container) {
     const $album = $albumWrapper.find('.album');
     $container.append($albumWrapper);
 
-    const title = currentPublicInvCategory.name.toUpperCase();
-
     $album.append(`
-        <div class="page album-page cover-page">
-            <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(title)}</h2>
+        <div class="page cover-page">
+            <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
+                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(currentPublicInvCategory.name).toUpperCase()}</h2>
                 <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
         </div>
@@ -3459,19 +3471,10 @@ function renderPublicInvAlbumMode($container) {
                 const isDown = card.current_price < card.previous_price;
                 const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                             isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
-
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card">
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 9px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                 `);
-
-                $slot.find('.zoom-btn').click((e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    openCardModal($slot.attr('data-name', card.card_name).attr('data-price', '$'+card.current_price));
-                });
             }
             $grid.append($slot);
         }
@@ -3479,82 +3482,56 @@ function renderPublicInvAlbumMode($container) {
         $album.append($page);
     }
 
-    const totalPagesWithCover = 1 + Math.ceil(publicInvCards.length / 9);
-    if (totalPagesWithCover % 2 !== 0) {
+    if ($album.find('.page').length % 2 !== 0) {
         $album.append('<div class="page album-page"></div>');
     }
 
-    $album.append('<div class="page album-page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
+    $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
 
     setTimeout(() => {
-        if ($album.turn('is')) $album.turn('destroy');
-        const { width, height } = window.getAlbumSize($albumWrapper);
         $album.turn({
-            width: width,
-            height: height,
+            width: 600,
+            height: 420,
             autoCenter: true,
             display: 'double',
             acceleration: true,
             elevation: 50,
-            duration: 800,
-            when: {
-                turned: function() {
-                    $(this).turn('stop').turn('resize').turn('center');
-                }
-            }
+            duration: 800
         });
-    }, 250);
+    }, 100);
 }
 
 function renderPublicInvSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const swiperId = `pub-inv-swiper-${Date.now()}`;
-
-    const $deckItem = $(`
-        <div class="deck-public-item" style="pointer-events: auto;">
-            <div class="container deck-carousel-container">
-                <div class="swiper swiperyg ${swiperId}">
-                    <div class="swiper-wrapper">
-                        ${publicInvCards.map(card => {
-                            const isUp = card.current_price > card.previous_price;
-                            const isDown = card.current_price < card.previous_price;
-                            const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
-                                        isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
-                            return `
-                            <div class="swiper-slide card-slot inv-card-item" data-name="${escapeHtml(card.card_name)}" data-price="$${parseFloat(card.current_price || 0).toFixed(2)}">
-                                <img src="${card.image_url}" alt="${card.card_name}" />
-                                <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 10px; left: 10px; padding: 4px 8px; color: white; font-size: 12px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                                <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
-                            </div>
-                        `}).join('')}
+    const $swiper = $(`
+        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; min-height: 550px; padding: 20px 0;">
+            <div class="swiper-wrapper">
+                ${publicInvCards.map(card => {
+                    const isUp = card.current_price > card.previous_price;
+                    const isDown = card.current_price < card.previous_price;
+                    const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                                isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
+                    return `
+                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;">
+                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
+                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
+                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
+                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                        </div>
                     </div>
-                </div>
+                `}).join('')}
             </div>
         </div>
     `);
-    $container.append($deckItem);
-
-    $deckItem.find('.zoom-btn').click(function(e) {
-        e.preventDefault(); e.stopPropagation();
-        const $slot = $(this).closest('.card-slot');
-        openCardModal($slot);
-    });
+    $container.append($swiper);
 
     new Swiper(`.${swiperId}`, {
         effect: "cards",
         grabCursor: true,
-        perSlideOffset: 8,
-        perSlideRotate: 2,
-        rotate: true,
-        slideShadows: true,
-        on: {
-            click: function(s, e) {
-                const $slot = $(e.target).closest('.card-slot');
-                if ($slot.length && s.clickedIndex === s.activeIndex) {
-                    openCardModal($slot);
-                }
-            }
-        }
+        centeredSlides: true,
+        slidesPerView: 'auto'
     });
 }
 
