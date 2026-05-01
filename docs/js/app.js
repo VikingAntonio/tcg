@@ -2068,20 +2068,6 @@ async function loadPublicSpirits() {
     });
 }
 
-function getAlbumSize($albumContainer) {
-    const isMobile = window.innerWidth <= 640;
-    let width = 600;
-    let height = 420;
-
-    if (isMobile) {
-        // En móvil usamos el ancho del contenedor con un pequeño margen
-        const containerWidth = $albumContainer.width() || $(window).width();
-        const availableWidth = Math.min(600, containerWidth - 20);
-        width = availableWidth;
-        height = Math.floor(width * (420 / 600));
-    }
-    return { width, height };
-}
 
 function loadPageImages($album, page) {
     // turn.js standard class is .p[number], and we also use data-page-num
@@ -3472,8 +3458,8 @@ function renderPublicInvAlbumMode($container) {
                 const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                             isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; object-fit: cover; width: 100%; height: 100%;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 10px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                 `);
             }
             $grid.append($slot);
@@ -3489,9 +3475,10 @@ function renderPublicInvAlbumMode($container) {
     $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
 
     setTimeout(() => {
+        const { width, height } = getAlbumSize($albumWrapper);
         $album.turn({
-            width: 600,
-            height: 420,
+            width: width,
+            height: height,
             autoCenter: true,
             display: 'double',
             acceleration: true,
@@ -3504,8 +3491,10 @@ function renderPublicInvAlbumMode($container) {
 function renderPublicInvSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const swiperId = `pub-inv-swiper-${Date.now()}`;
+    const isMobile = window.innerWidth <= 768;
+    const swiperHeight = isMobile ? '500px' : '600px';
     const $swiper = $(`
-        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; min-height: 550px; padding: 20px 0;">
+        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
             <div class="swiper-wrapper">
                 ${publicInvCards.map(card => {
                     const isUp = card.current_price > card.previous_price;

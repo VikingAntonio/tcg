@@ -47,6 +47,20 @@ window.POKEMON_FOILS = {
     'pk-rare-holo-v-full-art': 'rare holo v full art', 'pk-reverse-holo': 'reverse holo'
 };
 
+window.getAlbumSize = function($albumContainer) {
+    const isMobile = window.innerWidth <= 768;
+    let width = 600;
+    let height = 420;
+
+    if (isMobile) {
+        const containerWidth = $albumContainer.width() || $(window).width();
+        const availableWidth = Math.min(600, containerWidth - 20);
+        width = availableWidth;
+        height = Math.floor(width * (420 / 600));
+    }
+    return { width, height };
+};
+
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
 
