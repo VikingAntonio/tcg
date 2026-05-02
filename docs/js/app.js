@@ -950,8 +950,8 @@ window.updateRotation = function() {
     const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
 
     const s = card3d.style;
-    // Using translate3d for hardware acceleration
-    s.transform = `translate3d(0,0,0) rotateX(${currentRX.toFixed(2)}deg) rotateY(${currentRY.toFixed(2)}deg)`;
+    // Using translate3d for hardware acceleration and anchoring
+    s.transform = `translate3d(0,0,1px) rotateX(${currentRX.toFixed(2)}deg) rotateY(${currentRY.toFixed(2)}deg)`;
     s.setProperty('--mx', mx.toFixed(3));
     s.setProperty('--my', my.toFixed(3));
     s.setProperty('--angle', `${angle.toFixed(2)}deg`);
@@ -1051,9 +1051,9 @@ function init3DCard() {
                 let rawRX = Math.max(-25, Math.min(25, e.beta - 45)) * 1.2;
 
                 // Stronger low-pass filter to eliminate sensor jitter (Exponential Moving Average)
-                // Using 0.9 / 0.1 for maximum stability on noisy mobile sensors
-                targetRY = (targetRY * 0.9) + (rawRY * 0.1);
-                targetRX = (targetRX * 0.9) + (rawRX * 0.1);
+                // Using 0.95 / 0.05 for maximum stability on noisy mobile sensors
+                targetRY = (targetRY * 0.95) + (rawRY * 0.05);
+                targetRX = (targetRX * 0.95) + (rawRX * 0.05);
             }
         };
 
