@@ -183,6 +183,10 @@
 }
 
 /* Modal Overhaul */
+#investment-card-modal {
+    z-index: 2000000 !important; /* Extremely high to beat all other navs */
+}
+
 #investment-card-modal .overlay-content {
     background: var(--inv-white) !important;
     border: 1px solid var(--inv-black);
@@ -195,6 +199,7 @@
     flex-direction: column;
     padding: 0 !important;
     border-radius: 4px;
+    z-index: 2000001 !important;
 }
 
 .inv-modal-header {
@@ -203,6 +208,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .inv-modal-header h2 {
@@ -228,7 +234,7 @@
     top: 15px;
     right: 15px;
     cursor: pointer;
-    z-index: 100;
+    z-index: 2000005 !important;
 }
 
 .inv-close-btn:hover {
@@ -377,28 +383,90 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    #investment-card-modal {
+        z-index: 2000000 !important;
+    }
+
+    #investment-card-modal .overlay-content {
+        height: 85vh !important;
+        width: 96% !important;
+        margin: 70px auto 10px auto !important;
+        border-radius: 12px !important;
+        max-width: 100vw !important;
+        overflow-x: hidden;
+    }
+
+    .inv-modal-header {
+        padding: 10px;
+        flex-direction: row !important; /* Standard row, but we ensure close is visible */
+        justify-content: space-between;
+    }
+
+    .inv-modal-header h2 {
+        font-size: 1rem !important;
+        text-align: left;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .inv-close-btn {
+        position: static !important;
+        width: 36px;
+        height: 36px;
+        font-size: 28px !important;
+        background: rgba(255, 71, 87, 0.1);
+        border: 1px solid rgba(255, 71, 87, 0.3);
+        margin-left: 10px;
+    }
+
+    .inv-modal-tabs {
+        padding: 0 10px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+    }
+
+    .inv-modal-tabs::-webkit-scrollbar { display: none; }
+
+    .inv-tab-link {
+        padding: 8px 12px;
+        font-size: 0.6rem;
+        flex: 1;
+        text-align: center;
+    }
+
+    .inv-modal-body {
+        padding: 15px;
+    }
+
     #view-investments, #view-investment-details {
-        padding-top: 80px !important;
-        padding-bottom: 200px !important;
+        padding-top: 10px !important;
+        padding-bottom: 60px !important;
         display: flex;
         flex-direction: column;
         align-items: center;
+        width: 100%;
+        overflow-x: hidden;
     }
 
     #view-investments .admin-header,
     #view-investment-details .admin-header {
-        margin-bottom: 10px !important;
+        margin-bottom: 5px !important;
+        margin-top: 5px !important;
         padding: 10px !important;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        width: 90% !important;
+        width: 98% !important;
+        border-radius: 8px !important;
     }
 
     .admin-header .view-title {
-        font-size: 1.5rem !important;
-        margin: 5px 0 !important;
+        font-size: 1.2rem !important;
+        margin: 2px 0 !important;
     }
 
     .admin-header .view-subtitle {
@@ -418,10 +486,10 @@
     }
 
     .add-asset-btn {
-        padding: 10px 15px !important;
-        font-size: 0.8rem !important;
-        bottom: 110px !important;
-        right: 20px !important;
+        padding: 8px 12px !important;
+        font-size: 0.75rem !important;
+        bottom: 100px !important;
+        right: 15px !important;
     }
 
     .investment-album-layout {
@@ -438,7 +506,6 @@
     }
 
     .inv-form-row { grid-template-columns: 1fr; }
-    #investment-card-modal .overlay-content { height: 95vh !important; }
 }
 
 /* Detail Modal Styles */
@@ -589,7 +656,7 @@
     }
 
     .inv-detail-price {
-        font-size: 2.2rem;
+        font-size: 1.8rem;
     }
 
     /* Deck (Slide) Mode Mobile Adjustments */

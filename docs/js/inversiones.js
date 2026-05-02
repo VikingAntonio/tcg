@@ -404,6 +404,7 @@ function getTrendIcon(current, previous, showPercentage = false) {
 
 function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
+    const isMobile = window.innerWidth <= 768;
     const { width, height } = window.getAlbumSize($container);
     const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album investment-album"></div></div>`);
     const $album = $albumWrapper.find('.album');
@@ -413,9 +414,9 @@ function renderAlbumMode($container) {
     // Cover
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
-                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml($('#inv-category-title').text()).toUpperCase()}</h2>
-                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
+            <div class="textured-cover" style="background-color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: ${isMobile ? '5px' : '10px'} solid #111;">
+                <h2 style="color:white; text-align:center; padding: 10%; font-size: ${isMobile ? '1rem' : '1.5rem'}; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml($('#inv-category-title').text()).toUpperCase()}</h2>
+                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.5rem; letter-spacing: 0.3em; margin-top: 10px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
         </div>
     `);
@@ -438,10 +439,13 @@ function renderAlbumMode($container) {
                     <div class="zoom-btn"><i class="fas fa-search"></i></div>
                 `);
 
-                $slot.find('.zoom-btn').click((e) => {
+                $slot.find('.zoom-btn').on('click mousedown touchstart', (e) => {
                     e.preventDefault();
-                    e.stopPropagation(); // Impedir que el album haga flip
-                    openInvestmentCardModal(card);
+                    e.stopPropagation();
+                    e.stopImmediatePropagation(); // Force stop Turn.js from seeing this
+                    if (e.type === 'click') {
+                        openInvestmentCardModal(card);
+                    }
                 });
 
                 $slot.click(function(e) {
@@ -489,7 +493,7 @@ function renderAlbumMode($container) {
             width: width,
             height: height,
             autoCenter: true,
-            display: 'double',
+            display: isMobile ? 'single' : 'double',
             acceleration: true,
             elevation: 50,
             duration: 800,
