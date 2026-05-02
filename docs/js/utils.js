@@ -49,14 +49,19 @@ window.POKEMON_FOILS = {
 
 window.getAlbumSize = function($albumContainer) {
     const isMobile = window.innerWidth <= 768;
-    let width = 600;
-    let height = 420;
+    let width = 922; // Physical binder width
+    let height = 700;
 
     if (isMobile) {
         const containerWidth = $albumContainer.width() || $(window).width();
-        const availableWidth = Math.min(600, containerWidth - 20);
+        // For single page mode, width is roughly half of the double layout
+        const availableWidth = Math.min(350, containerWidth - 10);
         width = availableWidth;
-        height = Math.floor(width * (420 / 600));
+        height = Math.floor(width * (500 / 350)); // More vertical for single page mobile cards
+    } else {
+        // Desktop Standard
+        width = 600;
+        height = 420;
     }
     return { width, height };
 };
