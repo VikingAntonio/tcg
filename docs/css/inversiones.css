@@ -203,7 +203,7 @@
 }
 
 .inv-close-btn {
-    color: var(--inv-gray-700);
+    color: #ff4757 !important;
     transition: var(--inv-transition);
     width: 40px;
     height: 40px;
@@ -211,12 +211,17 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    font-size: 28px !important;
+    font-size: 32px !important;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    z-index: 100;
 }
 
 .inv-close-btn:hover {
-    background: var(--inv-gray-100);
-    color: var(--inv-black);
+    background: rgba(255, 71, 87, 0.1);
+    transform: scale(1.1);
 }
 
 .inv-modal-tabs {
