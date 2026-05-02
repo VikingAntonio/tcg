@@ -391,7 +391,7 @@ function getTrendIcon(current, previous, showPercentage = false) {
     const isUp = current > previous;
     const iconClass = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
     const color = isUp ? '#00ff88' : '#ff4757';
-    let html = `<i class="fas ${iconClass}" style="color: ${color}; margin-left: 10px; font-size: 1.2rem;"></i>`;
+    let html = `<i class="fas ${iconClass} inv-trend-icon" style="color: ${color};"></i>`;
 
     if (showPercentage) {
         const percent = ((current - previous) / previous) * 100;
@@ -404,7 +404,6 @@ function getTrendIcon(current, previous, showPercentage = false) {
 
 function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
-    const isMobile = window.innerWidth <= 768;
     const { width, height } = window.getAlbumSize($container);
     const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album investment-album"></div></div>`);
     const $album = $albumWrapper.find('.album');
@@ -433,9 +432,10 @@ function renderAlbumMode($container) {
             const $slot = $('<div class="inv-card-slot" style="position: relative;"></div>');
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
+
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; position: absolute; top: 5px; left: 5px; padding: 2px 5px; color: white; font-size: 10px; font-weight: 800; z-index: 5;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn"><i class="fas fa-search"></i></div>
                 `);
 
