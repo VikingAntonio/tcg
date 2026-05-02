@@ -17,6 +17,15 @@
     --inv-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* View Container Responsiveness */
+#view-investments, #view-investment-details {
+    padding-bottom: 140px !important;
+    padding-top: 20px;
+    min-height: 100vh;
+    box-sizing: border-box;
+    position: relative;
+}
+
 /* Investment Album Stability Fixes */
 .investment-album-layout {
     overflow: hidden !important;
@@ -27,6 +36,8 @@
     background: rgba(0,0,0,0.02);
     border-radius: 4px;
     padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .album-wrapper {
@@ -34,6 +45,7 @@
     height: 420px;
     position: relative;
     margin: 0 auto;
+    max-width: 100%;
 }
 
 .investment-album {
@@ -365,6 +377,66 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    #view-investments, #view-investment-details {
+        padding-top: 80px !important;
+        padding-bottom: 200px !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #view-investments .admin-header,
+    #view-investment-details .admin-header {
+        margin-bottom: 10px !important;
+        padding: 10px !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 90% !important;
+    }
+
+    .admin-header .view-title {
+        font-size: 1.5rem !important;
+        margin: 5px 0 !important;
+    }
+
+    .admin-header .view-subtitle {
+        font-size: 0.7rem !important;
+    }
+
+    .view-mode-selector {
+        gap: 5px !important;
+        margin-top: 10px !important;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .mode-btn {
+        padding: 6px 10px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .add-asset-btn {
+        padding: 10px 15px !important;
+        font-size: 0.8rem !important;
+        bottom: 110px !important;
+        right: 20px !important;
+    }
+
+    .investment-album-layout {
+        height: auto;
+        min-height: 350px;
+        padding: 10px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .album-wrapper {
+        /* Remove !important to allow JS dynamic sizing */
+        max-width: 100%;
+    }
+
     .inv-form-row { grid-template-columns: 1fr; }
     #investment-card-modal .overlay-content { height: 95vh !important; }
 }
@@ -472,10 +544,10 @@
 /* Album Zoom Button Enhancement */
 .investment-album .zoom-btn {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 35px;
-    height: 35px;
+    bottom: 5px;
+    right: 5px;
+    width: 30px;
+    height: 30px;
     background: #000;
     color: #fff;
     border-radius: 50%;
@@ -484,9 +556,10 @@
     justify-content: center;
     cursor: pointer;
     z-index: 10;
-    opacity: 0.8;
+    opacity: 0.9;
     transition: all 0.2s ease;
     border: 1px solid #fff;
+    font-size: 14px;
 }
 
 .investment-album .zoom-btn:hover {
@@ -517,5 +590,51 @@
 
     .inv-detail-price {
         font-size: 2.2rem;
+    }
+
+    /* Deck (Slide) Mode Mobile Adjustments */
+    .investment-slide-layout .swiper {
+        max-width: 200px !important;
+        height: 350px !important;
+    }
+
+    .investment-slide-layout .swiper-slide img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .investment-slide-layout .inv-card-info-overlay {
+        padding: 10px !important;
+        margin-top: 10px !important;
+    }
+
+    .investment-slide-layout .inv-card-info-overlay h4 {
+        font-size: 0.8rem !important;
+    }
+
+    /* List Mode Mobile Adjustments */
+    .inv-list-item {
+        margin-bottom: 15px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    .inv-list-prices {
+        width: 100%;
+        justify-content: space-between;
+        text-align: left !important;
+    }
+
+    .inv-list-prices .inv-price-row {
+        text-align: left !important;
+    }
+
+    .investment-album .zoom-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+        bottom: 3px;
+        right: 3px;
     }
 }

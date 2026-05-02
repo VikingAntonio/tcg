@@ -404,7 +404,8 @@ function getTrendIcon(current, previous, showPercentage = false) {
 
 function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
-    const $albumWrapper = $('<div class="album-wrapper"><div class="album investment-album"></div></div>');
+    const { width, height } = window.getAlbumSize($container);
+    const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album investment-album"></div></div>`);
     const $album = $albumWrapper.find('.album');
 
     $container.append($albumWrapper);
@@ -439,8 +440,26 @@ function renderAlbumMode($container) {
 
                 $slot.find('.zoom-btn').click((e) => {
                     e.preventDefault();
-                    e.stopPropagation();
+                    e.stopPropagation(); // Impedir que el album haga flip
                     openInvestmentCardModal(card);
+                });
+
+                $slot.click(function(e) {
+                    const isMobile = window.innerWidth <= 768;
+                    const isZoomBtn = $(e.target).closest('.zoom-btn').length > 0;
+
+                    if (isMobile) {
+                        // En móvil, si no es la lupa, no hacemos nada (permitimos que el evento suba para el flip)
+                        if (isZoomBtn) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    } else {
+                        // En desktop, permitimos abrir el modal al clickear cualquier parte de la carta
+                        if (!isZoomBtn) {
+                            openInvestmentCardModal(card);
+                        }
+                    }
                 });
             }
             $grid.append($slot);
@@ -467,8 +486,8 @@ function renderAlbumMode($container) {
             $album.turn('destroy');
         }
         $album.turn({
-            width: 600,
-            height: 420,
+            width: width,
+            height: height,
             autoCenter: true,
             display: 'double',
             acceleration: true,
@@ -492,17 +511,21 @@ function renderAlbumMode($container) {
 
 function renderSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
+    const isMobile = window.innerWidth <= 768;
     const swiperId = `inv-swiper-${Date.now()}`;
+    const swiperWidth = isMobile ? '260px' : '350px';
+    const swiperHeight = isMobile ? '420px' : '500px';
+
     const $swiper = $(`
-        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; height: 500px; padding: 20px 0;">
+        <div class="swiper ${swiperId}" style="width: 100%; max-width: ${swiperWidth}; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
             <div class="swiper-wrapper">
                 ${localInvestmentCards.map(card => {
                     const trend = getTrendIcon(card.current_price, card.previous_price);
                     return `
                     <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer;">
                         <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
-                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
-                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name)}</h4>
+                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '10px' : '20px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '10px' : '15px'}; text-align: center;">
+                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
                             <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
                             <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                             <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
@@ -549,7 +572,7 @@ function renderSlideMode($container) {
 
 function renderListMode($container) {
     $container.addClass('investment-list-layout').removeClass('investment-slide-layout investment-album-layout');
-    const $list = $('<div class="inv-list-container"></div>');
+    const $list = $('<div class="inv-list-container" style="margin: 20px 0;"></div>');
 
     localInvestmentCards.forEach(card => {
         const diff = (card.current_price || 0) - (card.purchase_price || 0);
