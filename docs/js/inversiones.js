@@ -27,6 +27,7 @@ function escapeHtml(text) {
 // --- INITIALIZATION ---
 $(document).ready(function() {
     initInvestmentListeners();
+    setupMobileSidePanel();
 });
 
 function initInvestmentListeners() {
@@ -345,7 +346,9 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    $('#inv-category-title').text(cat.name.toUpperCase());
+    const catName = cat.name.toUpperCase();
+    $('#inv-category-title').text(catName);
+    $('#mobile-inv-category-title').text(catName);
     showView('investment-details');
     loadInvestmentCards();
 }
@@ -985,5 +988,77 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
                 <b>$${parseFloat(h.price).toFixed(2)}</b>
             </div>
         `);
+    });
+}
+
+function setupMobileSidePanel() {
+    if ($('#inv-mobile-side-panel').length) return;
+
+    const panelHtml = `
+        <div id="inv-side-panel-overlay"></div>
+        <div id="inv-side-panel-tab">ALL MODES</div>
+
+        <div id="inv-mobile-side-panel">
+            <div class="inv-side-content">
+                <div class="inv-side-nav">
+                    <button class="btn-inv-outline" id="btn-back-to-investments-mobile" style="width: 100%; justify-content: flex-start;">
+                        <i class="fas fa-chevron-left"></i> ALL VAULTS
+                    </button>
+                    <button class="btn-inv-outline" id="btn-back-to-dashboard-mobile" style="width: 100%; justify-content: flex-start;">
+                        <i class="fas fa-home"></i> DASHBOARD
+                    </button>
+                </div>
+
+                <div class="inv-side-title-area">
+                    <div class="inv-side-label">Active Portfolio</div>
+                    <h1 id="mobile-inv-category-title">VAULT</h1>
+                </div>
+
+                <div class="inv-side-modes">
+                    <div class="inv-side-label" style="margin-bottom: 10px;">View Modes</div>
+                    <button class="btn-inv-mode active" data-mode="album" style="width: 100%; text-align: left; padding: 12px; border: none; background: #000; color: #fff;">BINDERS</button>
+                    <button class="btn-inv-mode" data-mode="slide" style="width: 100%; text-align: left; padding: 12px; border: none; background: transparent; color: #666;">VIKINGSLIDE</button>
+                    <button class="btn-inv-mode" data-mode="list" style="width: 100%; text-align: left; padding: 12px; border: none; background: transparent; color: #666;">LISTA</button>
+                </div>
+
+                <div style="margin-top: auto;">
+                    <button id="btn-add-investment-card-mobile" class="btn-inv-main" style="width: 100%;">
+                        <i class="fas fa-plus"></i> ADD ASSET
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    $('#view-investment-details').append(panelHtml);
+
+    // Toggle Panel
+    const togglePanel = () => {
+        $('#inv-mobile-side-panel, #inv-side-panel-overlay').toggleClass('active');
+    };
+
+    $(document).on('click', '#inv-side-panel-tab, #inv-side-panel-overlay', togglePanel);
+
+    // Handle Mobile-Specific Buttons
+    $(document).on('click', '#btn-back-to-investments-mobile', function() {
+        togglePanel();
+        showView('investments');
+    });
+
+    $(document).on('click', '#btn-back-to-dashboard-mobile', function() {
+        togglePanel();
+        showView('main-dashboard');
+    });
+
+    $(document).on('click', '#btn-add-investment-card-mobile', function() {
+        togglePanel();
+        openInvestmentCardModal(null, 'inv-tab-datos');
+    });
+
+    // Sync Mode Selector with Existing Logic
+    $(document).on('click', '#inv-mobile-side-panel .btn-inv-mode', function() {
+        if (window.innerWidth <= 768) {
+            togglePanel();
+        }
     });
 }
