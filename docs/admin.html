@@ -1141,14 +1141,14 @@
 
         <!-- Inversiones View (Categories) -->
         <div id="view-investments" class="admin-section" style="display:none;">
-            <div id="investment-category-list" class="album-list" style="padding-top: 40px;">
+            <div id="investment-category-list" class="album-list">
                 <!-- Categories will be loaded here -->
             </div>
         </div>
 
         <!-- Investment Details View (Cards within Category) -->
         <div id="view-investment-details" class="admin-section" style="display:none;">
-            <div id="investment-card-container" class="investment-render-area" style="padding-top: 40px;">
+            <div id="investment-card-container" class="investment-render-area">
                 <!-- Cards will be rendered here based on mode -->
             </div>
         </div>
@@ -1160,29 +1160,10 @@
             </div>
 
             <div class="inv-panel-content">
-                <div class="inv-panel-header">
-                    <div class="inv-panel-brand">FIND VAULT</div>
-                </div>
-
                 <div class="inv-panel-section">
-                    <div class="inv-panel-search-wrapper">
-                        <input type="text" id="inv-side-search-vaults" placeholder="Vault name...">
-                    </div>
-                </div>
-
-                <div class="inv-panel-section" id="inv-side-vault-list">
-                    <!-- Vaults will be listed here like "Mi Biblioteca" -->
-                </div>
-
-                <div class="inv-panel-section" style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
-                    <label>NAVIGATION</label>
-                    <button id="btn-side-back-main" class="inv-panel-item-btn">
-                        <i class="fas fa-home"></i>
-                        <span>DASHBOARD</span>
-                    </button>
                     <button id="btn-side-back-vaults" class="inv-panel-item-btn">
-                        <i class="fas fa-th-large"></i>
-                        <span>ALL VAULTS</span>
+                        <i class="fas fa-chevron-left"></i>
+                        <span>VOLVER</span>
                     </button>
                 </div>
 
@@ -1201,25 +1182,7 @@
                     </div>
                 </div>
 
-                <div class="inv-panel-section">
-                    <label>ACTIONS</label>
-                    <button id="btn-side-create-vault" class="inv-panel-item-btn">
-                        <i class="fas fa-folder-plus"></i>
-                        <span>CREATE VAULT</span>
-                    </button>
-                    <button id="btn-side-add-asset" class="inv-panel-item-btn primary">
-                        <i class="fas fa-plus-circle"></i>
-                        <span>ADD ASSET</span>
-                    </button>
-                </div>
-
-                <div class="inv-panel-footer">
-                    <label>ACTIVE VAULT</label>
-                    <div class="inv-active-vault-card">
-                        <div id="inv-category-title-display" class="inv-active-vault-name">NONE SELECTED</div>
-                    </div>
-                    <h1 id="inv-category-title" style="display: none;"></h1>
-                </div>
+                <h1 id="inv-category-title" style="display: none;"></h1>
             </div>
         </div>
     </div>
