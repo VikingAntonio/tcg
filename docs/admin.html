@@ -1157,23 +1157,52 @@
 
         <!-- Investment Details View (Cards within Category) -->
         <div id="view-investment-details" class="admin-section" style="display:none;">
-            <!-- Side Panel Menu -->
-            <div id="inv-side-panel" class="inv-side-panel">
-                <div class="inv-panel-trigger" id="btn-toggle-inv-panel">
-                    <span>ALL MODES</span>
+            <!-- Mobile Side Panel -->
+            <div id="inv-side-panel-overlay" class="inv-side-panel-overlay"></div>
+            <div id="inv-mobile-side-panel" class="inv-mobile-side-panel">
+                <div class="inv-side-panel-header">
+                    <div class="inv-side-title-group">
+                        <div class="inv-side-subtitle">Vault Menu</div>
+                        <h2 id="inv-mobile-category-title">VAULT</h2>
+                    </div>
+                    <span id="btn-close-inv-side-panel" class="inv-side-close">&times;</span>
                 </div>
+                <div class="inv-side-panel-content">
+                    <div class="inv-side-section">
+                        <button id="btn-add-investment-card-mobile" class="btn-inv-side-item inv-side-primary-btn"><i class="fas fa-plus"></i> ADD ASSET</button>
+                    </div>
 
-                <div class="inv-panel-content">
-                    <button id="btn-back-to-investments" class="inv-panel-btn back-btn">
-                        <i class="fas fa-chevron-left"></i> ALL VAULTS
-                    </button>
+                    <div class="inv-side-section">
+                        <button id="btn-back-to-investments-mobile" class="btn-inv-side-item"><i class="fas fa-chevron-left"></i> ALL VAULTS</button>
+                    </div>
 
-                    <div class="inv-panel-section">
-                        <label>VIEW MODES</label>
-                        <div class="inv-panel-modes">
-                            <button class="btn-inv-mode active" data-mode="album">BINDERS</button>
-                            <button class="btn-inv-mode" data-mode="slide">VIKING SLIDE</button>
-                            <button class="btn-inv-mode" data-mode="list">LISTA</button>
+                    <div class="inv-side-section">
+                        <div class="inv-side-label">VIEW MODE</div>
+                        <div class="inv-mode-list-mobile">
+                            <button class="btn-inv-mode btn-inv-side-item active" data-mode="album"><i class="fas fa-book"></i> BINDERS</button>
+                            <button class="btn-inv-mode btn-inv-side-item" data-mode="slide"><i class="fas fa-layer-group"></i> VIKINGSLIDE</button>
+                            <button class="btn-inv-mode btn-inv-side-item" data-mode="list"><i class="fas fa-list"></i> LISTA</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-header inv-details-header">
+                <div class="inv-header-top-row">
+                    <button id="btn-back-to-investments" class="btn-inv-outline"><i class="fas fa-chevron-left"></i> All Vaults</button>
+                    <button id="btn-open-inv-side-panel" class="btn-inv-outline inv-mobile-only"><i class="fas fa-bars"></i></button>
+                </div>
+                <div class="inv-header-main-row">
+                    <div class="inv-header-info">
+                        <div class="inv-header-subtitle">Active Portfolio</div>
+                        <h1 id="inv-category-title">Vault</h1>
+                    </div>
+
+                    <div id="inv-desktop-nav" class="inv-nav-controls">
+                        <div class="inv-mode-selector">
+                            <button class="btn-inv-mode active" data-mode="album">binders</button>
+                            <button class="btn-inv-mode" data-mode="slide">vikingSlide</button>
+                            <button class="btn-inv-mode" data-mode="list">lista</button>
                         </div>
                     </div>
 
