@@ -381,8 +381,79 @@
     text-transform: uppercase !important;
 }
 
+/* Side Panel Base Styles (Desktop Hidden) */
+.inv-side-panel, .inv-side-panel-tab, .inv-side-panel-overlay {
+    display: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+    /* Side Panel Mobile Styles */
+    .inv-side-panel-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .inv-side-panel-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .inv-side-panel-tab {
+        display: flex;
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #000;
+        color: #fff;
+        padding: 15px 5px;
+        border-radius: 0 8px 8px 0;
+        z-index: 9998;
+        cursor: pointer;
+        writing-mode: vertical-lr;
+        text-orientation: mixed;
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.2em;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    }
+
+    .inv-side-panel {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        height: 100vh;
+        background: #fff;
+        z-index: 10000;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 5px 0 25px rgba(0,0,0,0.1);
+        overflow-y: auto;
+    }
+
+    .inv-side-panel.active {
+        left: 0;
+    }
+
+    .inv-side-panel-content {
+        padding: 30px 20px;
+    }
+
+    .inv-pc-header {
+        display: none !important;
+    }
+
     #investment-card-modal {
         z-index: 2000000 !important;
     }
@@ -454,8 +525,7 @@
         overflow-x: hidden;
     }
 
-    #view-investments .admin-header,
-    #view-investment-details .admin-header {
+    #view-investments .admin-header {
         margin-bottom: 5px !important;
         margin-top: 5px !important;
         padding: 10px !important;
