@@ -446,8 +446,8 @@
     }
 
     #view-investments, #view-investment-details {
-        padding-top: 10px !important;
-        padding-bottom: 60px !important;
+        padding-top: 40px !important;
+        padding-bottom: 100px !important;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -550,11 +550,11 @@
     }
 }
 
-/* Side Panel Styles */
+/* Side Panel Styles - MOBILE ONLY */
 .inv-side-panel {
     position: fixed;
     top: 50%;
-    left: -280px; /* Hidden by default */
+    left: -280px;
     transform: translateY(-50%);
     width: 280px;
     background: #ffffff;
@@ -564,7 +564,7 @@
     z-index: 1000100;
     transition: left 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
     border-radius: 0 20px 20px 0;
-    display: none;
+    display: none !important; /* Force hide on desktop */
 }
 
 .inv-side-panel.active {
@@ -580,7 +580,7 @@
     color: #fff;
     width: 45px;
     height: 140px;
-    display: flex;
+    display: none !important; /* Force hide on desktop */
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -787,6 +787,17 @@
 }
 
 @media (max-width: 768px) {
+    /* Restore Mobile Side Panel */
+    .inv-side-panel {
+        display: block !important;
+    }
+    .inv-panel-trigger {
+        display: flex !important;
+    }
+    .inv-pc-header {
+        display: none !important;
+    }
+
     .inv-side-panel {
         width: 240px;
         left: -240px;

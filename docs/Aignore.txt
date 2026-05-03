@@ -1,0 +1,9 @@
+Hola, el error anterior donde se habia perdido la estetica de la version PC (el banner negro y los encabezados) se debio a que al intentar simplificar la navegacion para moviles, se eliminaron por error las clases que controlaban el diseño original de escritorio.
+
+En esta nueva version he corregido esto haciendo lo siguiente:
+1. He envuelto todo el contenido original de PC en una clase llamada '.inv-pc-header'.
+2. He usado media queries para que en PC se vea exactamente como antes (con su fondo negro y diseño elegante) y que el panel lateral de movil este totalmente oculto.
+3. En la version movil, los encabezados de PC se ocultan y aparece el panel lateral "ALL MODES" para una navegacion mas comoda.
+4. He corregido los estilos de los precios en modo Album (ahora tienen contorno y estan en una sola linea) y el modo Lista (vuelve a ser rectangular como en PC).
+
+Con esto ambas versiones conviven perfectamente sin interferir la una con la otra. Perdona las molestias anteriores.
