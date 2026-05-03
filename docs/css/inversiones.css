@@ -774,3 +774,146 @@
         font-size: 0.9rem !important;
     }
 }
+
+/* MOBILE SIDE PANEL - INVESTMENTS */
+#inv-mobile-side-panel {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 280px;
+    height: 100%;
+    background: #ffffff;
+    z-index: 2000100;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    padding: 40px 25px;
+    box-sizing: border-box;
+    border-right: 1px solid #000;
+}
+
+#inv-mobile-side-panel.active {
+    left: 0;
+}
+
+#inv-side-panel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    z-index: 2000090;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#inv-side-panel-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+#inv-side-panel-tab {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg) translateY(-32px);
+    transform-origin: center left;
+    background: #000;
+    color: #fff;
+    padding: 12px 25px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    cursor: pointer;
+    z-index: 1000000;
+    border-radius: 0 0 8px 8px;
+    white-space: nowrap;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+    #inv-side-panel-tab {
+        display: block;
+    }
+
+    #view-investment-details .admin-header {
+        display: none !important;
+    }
+
+    #view-investment-details {
+        padding: 0 !important;
+        height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        overflow: hidden !important;
+    }
+
+    #investment-card-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex: 1;
+    }
+
+    /* Override list mode to allow scroll if needed, but centering the container */
+    .investment-list-layout {
+        overflow-y: auto !important;
+        max-height: 90vh;
+        width: 100%;
+    }
+}
+
+/* Side Panel Content */
+.inv-side-content {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    height: 100%;
+}
+
+.inv-side-title-area {
+    border-bottom: 2px solid #000;
+    padding-bottom: 15px;
+}
+
+.inv-side-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    font-weight: 800;
+    color: #999;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+#mobile-inv-category-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #000;
+    margin: 0;
+    text-transform: uppercase;
+    line-height: 1.1;
+}
+
+.inv-side-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.inv-side-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+}
