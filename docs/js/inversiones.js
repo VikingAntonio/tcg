@@ -27,7 +27,6 @@ function escapeHtml(text) {
 // --- INITIALIZATION ---
 $(document).ready(function() {
     initInvestmentListeners();
-    initInvMobileMenu();
 });
 
 function initInvestmentListeners() {
@@ -346,9 +345,7 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    const name = cat.name.toUpperCase();
-    $('#inv-category-title').text(name);
-    $('#mobile-inv-title').text(name);
+    $('#inv-category-title').text(cat.name.toUpperCase());
     showView('investment-details');
     loadInvestmentCards();
 }
@@ -988,69 +985,5 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
                 <b>$${parseFloat(h.price).toFixed(2)}</b>
             </div>
         `);
-    });
-}
-
-/**
- * INYECTAR MENU LATERAL MOVIL (INVERSIONES)
- */
-/**
- * IMPLEMENTACION MENU LATERAL MOVIL - SOLO INVERSIONES
- */
-function initInvMobileMenu() {
-    if ($('#inv-mobile-side-panel').length) return;
-
-    const menuHtml = `
-        <div id="inv-side-panel-overlay"></div>
-        <div id="inv-side-panel-tab">ALL MODES</div>
-        <div id="inv-mobile-side-panel">
-            <button class="btn-inv-outline" id="btn-back-inv-mob" style="width:100%; text-align:left; justify-content: flex-start; gap: 10px; display: flex; align-items: center;">
-                <i class="fas fa-chevron-left"></i> ALL VAULTS
-            </button>
-
-            <div style="margin-top:20px; border-bottom:3px solid #000; padding-bottom:15px;">
-                <div style="font-size:0.6rem; color:#999; font-weight:800; text-transform:uppercase; letter-spacing:0.3em; margin-bottom: 5px;">Active Portfolio</div>
-                <h1 id="mobile-inv-title" style="margin:0; font-size:2rem; font-weight:900; color:#000; text-transform:uppercase; line-height: 1.1;">VAULT</h1>
-            </div>
-
-            <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
-                <button class="btn-inv-mode active" data-mode="album" style="width:100%; text-align:left; padding:15px; border:none; background:#000; color:#fff; font-weight:900; text-transform:uppercase; cursor: pointer; letter-spacing: 0.1em;">binders</button>
-                <button class="btn-inv-mode" data-mode="slide" style="width:100%; text-align:left; padding:15px; border:none; background:transparent; color:#666; font-weight:900; text-transform:uppercase; cursor: pointer; letter-spacing: 0.1em;">vikingSlide</button>
-                <button class="btn-inv-mode" data-mode="list" style="width:100%; text-align:left; padding:15px; border:none; background:transparent; color:#666; font-weight:900; text-transform:uppercase; cursor: pointer; letter-spacing: 0.1em;">lista</button>
-            </div>
-
-            <button id="btn-add-asset-mob" class="btn-inv-main" style="width:100%; margin-top:auto; padding: 15px;">
-                <i class="fas fa-plus"></i> ADD ASSET
-            </button>
-        </div>
-    `;
-
-    $('#view-investment-details').append(menuHtml);
-
-    const toggleMenu = () => {
-        $('#inv-mobile-side-panel, #inv-side-panel-overlay').toggleClass('active');
-    };
-
-    $(document).on('click', '#inv-side-panel-tab, #inv-side-panel-overlay', function(e) {
-        e.preventDefault();
-        toggleMenu();
-    });
-
-    $(document).on('click', '#btn-back-inv-mob', function(e) {
-        e.preventDefault();
-        toggleMenu();
-        showView('investments');
-    });
-
-    $(document).on('click', '#btn-add-asset-mob', function(e) {
-        e.preventDefault();
-        toggleMenu();
-        openInvestmentCardModal(null, 'inv-tab-datos');
-    });
-
-    $(document).on('click', '#inv-mobile-side-panel .btn-inv-mode', function() {
-        if (window.innerWidth <= 768) {
-            toggleMenu();
-        }
     });
 }
