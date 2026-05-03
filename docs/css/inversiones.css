@@ -381,16 +381,8 @@
     text-transform: uppercase !important;
 }
 
-/* Responsive & Isolation */
-.inv-pc-header {
-    display: flex !important;
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-    .inv-pc-header {
-        display: none !important;
-    }
-
     #investment-card-modal {
         z-index: 2000000 !important;
     }
@@ -462,144 +454,61 @@
         overflow-x: hidden;
     }
 
+    #view-investments .admin-header,
+    #view-investment-details .admin-header {
+        margin-bottom: 5px !important;
+        margin-top: 5px !important;
+        padding: 10px !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 98% !important;
+        border-radius: 8px !important;
+    }
+
+    .admin-header .view-title {
+        font-size: 1.2rem !important;
+        margin: 2px 0 !important;
+    }
+
+    .admin-header .view-subtitle {
+        font-size: 0.7rem !important;
+    }
+
+    .view-mode-selector {
+        gap: 5px !important;
+        margin-top: 10px !important;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .mode-btn {
+        padding: 6px 10px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .add-asset-btn {
+        padding: 8px 12px !important;
+        font-size: 0.75rem !important;
+        bottom: 100px !important;
+        right: 15px !important;
+    }
+
     .investment-album-layout {
         height: auto;
         min-height: 350px;
         padding: 10px;
-        margin-top: 10px;
+        margin-top: 20px;
         margin-bottom: 20px;
     }
 
     .album-wrapper {
+        /* Remove !important to allow JS dynamic sizing */
         max-width: 100%;
     }
 
     .inv-form-row { grid-template-columns: 1fr; }
-
-    /* Side Panel Styles - MOBILE ONLY */
-    .inv-side-panel {
-        position: fixed;
-        top: 50%;
-        left: -240px;
-        transform: translateY(-50%);
-        width: 240px;
-        background: #ffffff;
-        border: 1px solid #000;
-        border-left: none;
-        box-shadow: 10px 0 40px rgba(0,0,0,0.1);
-        z-index: 1000100;
-        transition: left 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        border-radius: 0 12px 12px 0;
-        display: block !important;
-    }
-
-    .inv-side-panel.active {
-        left: 0;
-    }
-
-    .inv-panel-trigger {
-        position: absolute;
-        right: -40px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: #000;
-        color: #fff;
-        width: 40px;
-        height: 120px;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        border-radius: 0 8px 8px 0;
-        transition: var(--inv-transition);
-        border: 1px solid #000;
-    }
-
-    .inv-panel-trigger span {
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        transform: rotate(180deg);
-        font-size: 0.75rem;
-        font-weight: 800;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-    }
-
-    .inv-panel-content {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        height: 100%;
-    }
-
-    .inv-panel-brand {
-        font-size: 0.8rem;
-        font-weight: 900;
-        color: #000;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-    }
-
-    .inv-panel-section {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .inv-panel-section label {
-        font-size: 0.6rem;
-        font-weight: 800;
-        color: #999;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .inv-panel-item-btn {
-        width: 100%;
-        background: #f8f9fa;
-        border: 1px solid #eee;
-        border-radius: 4px;
-        padding: 12px 15px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: left;
-    }
-
-    .inv-panel-item-btn i { color: #000; }
-    .inv-panel-item-btn span { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #000; }
-
-    .inv-panel-modes {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 6px;
-    }
-
-    .btn-inv-mode {
-        background: #fff;
-        border: 1px solid #eee;
-        border-radius: 4px;
-        padding: 10px;
-        font-size: 0.65rem;
-        font-weight: 800;
-        color: #666;
-        text-transform: uppercase;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .btn-inv-mode.active {
-        background: #000;
-        color: #fff;
-        border-color: #000;
-    }
 }
 
 /* Detail Modal Styles */
@@ -725,24 +634,6 @@
     font-size: 1.2rem;
 }
 
-@media (max-width: 768px) {
-    .inv-card-info-badge {
-        background: transparent !important;
-        top: 3px;
-        left: 3px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 0 3px #000 !important;
-        z-index: 10 !important;
-    }
-
-    .inv-trend-icon {
-        margin-left: 4px;
-        font-size: 0.8rem;
-    }
-}
-
 /* Album Zoom Button Enhancement */
 .investment-album .zoom-btn {
     position: absolute;
@@ -814,58 +705,39 @@
         font-size: 0.8rem !important;
     }
 
-    /* List Mode Mobile Adjustments - RESTORE RECTANGULAR LOOK */
+    /* List Mode Mobile Adjustments */
     .inv-list-container {
         width: 100% !important;
-        padding: 0 10px !important;
+        padding: 0 5px !important;
         box-sizing: border-box !important;
-        display: block !important;
     }
 
     .inv-list-item {
-        width: 100% !important;
-        margin-bottom: 10px !important;
+        margin-bottom: 8px !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 10px !important;
-        padding: 10px !important;
-        box-sizing: border-box !important;
-        display: flex !important;
-        overflow: hidden !important;
+        gap: 8px !important;
+        padding: 8px !important;
     }
 
     .inv-list-thumb {
-        width: 35px !important;
-        height: 49px !important;
-        flex-shrink: 0 !important;
-    }
-
-    .inv-list-details {
-        flex: 1;
-        min-width: 0;
+        width: 40px !important;
+        height: 56px !important;
     }
 
     .inv-list-name {
-        font-size: 0.7rem !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        font-size: 0.75rem !important;
     }
 
     .inv-list-set {
-        font-size: 0.55rem !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        font-size: 0.6rem !important;
     }
 
     .inv-list-prices {
         width: auto !important;
-        gap: 10px !important;
+        gap: 12px !important;
         flex-direction: row !important;
         text-align: right !important;
-        flex-shrink: 0 !important;
     }
 
     .inv-list-prices .inv-price-row {
@@ -876,8 +748,9 @@
         font-size: 0.7rem !important;
     }
 
-    .inv-list-prices .inv-price-row span {
-        display: none !important;
+    .inv-list-item button {
+        padding: 4px 8px !important;
+        font-size: 0.6rem !important;
     }
 
     .investment-album .zoom-btn {
@@ -886,5 +759,18 @@
         font-size: 10px;
         bottom: 3px;
         right: 3px;
+    }
+
+    .inv-card-info-badge {
+        background: transparent !important;
+        top: 2px !important;
+        left: 2px !important;
+        padding: 0 !important;
+        text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000 !important;
+    }
+
+    .inv-trend-icon {
+        margin-left: 5px !important;
+        font-size: 0.9rem !important;
     }
 }
