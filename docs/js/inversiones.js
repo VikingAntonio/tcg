@@ -30,23 +30,62 @@ $(document).ready(function() {
 });
 
 function initInvestmentListeners() {
-    // Navigation to Investments
-    $(document).on('click', '#btn-show-investments', function(e) {
+    // Navigation to Investments (Tile and Menu)
+    $(document).on('click', '#btn-show-investments, #menu-btn-investments', function(e) {
         e.preventDefault();
         showView('investments');
         loadInvestmentCategories();
+
+        // Ensure side panel is available but details section hidden
+        $('#inv-side-panel').show();
+        $('.inv-only-details').hide();
+        $('#inv-category-title-display').text('NONE SELECTED');
     });
 
     // Back to Dashboard
-    $(document).on('click', '#btn-back-to-main-from-investments', function(e) {
+    $(document).on('click', '#btn-back-to-main-from-investments, #btn-back-to-main-from-investments-mobile, #btn-side-back-main', function(e) {
         e.preventDefault();
         showView('main-dashboard');
+        $('#inv-side-panel').hide().removeClass('active');
     });
 
-    // Back to Categories from Details
-    $(document).on('click', '#btn-back-to-investments', function(e) {
+    // Back to Categories from Details (New side button and mobile top bar)
+    $(document).on('click', '#btn-side-back-vaults, #btn-side-back-vaults-mobile', function(e) {
         e.preventDefault();
         showView('investments');
+        $('.inv-only-details').hide();
+        $('#inv-side-panel').removeClass('active');
+        $('#inv-category-title-display').text('NONE SELECTED');
+    });
+
+    // Side Create Vault
+    $(document).on('click', '#btn-side-create-vault', function() {
+        $('#btn-create-investment-category').click();
+        $('#inv-side-panel').removeClass('active');
+    });
+
+    // Global Add Asset from side panel
+    $(document).on('click', '#btn-side-add-asset', function() {
+        if (!currentInvestmentCategoryId) {
+            Swal.fire({
+                title: 'SELECT A VAULT',
+                text: 'Please open a vault first to add an asset.',
+                icon: 'info',
+                customClass: { popup: 'inv-swal-popup' }
+            });
+            return;
+        }
+        openInvestmentCardModal(null, 'inv-tab-datos');
+        $('#inv-side-panel').removeClass('active');
+    });
+
+// Side Search filtering (Vaults)
+    $(document).on('input', '#inv-side-search-vaults', function() {
+        const term = $(this).val().toLowerCase();
+        $('.inv-side-vault-item').each(function() {
+            const name = $(this).text().toLowerCase();
+            $(this).toggle(name.includes(term));
+        });
     });
 
     // Create Category
@@ -214,6 +253,17 @@ async function loadInvestmentCategories() {
         return;
     }
 
+    // Populate side list
+    const $sideList = $('#inv-side-vault-list');
+    $sideList.empty();
+    categories.forEach(cat => {
+        const $item = $(`<div class="inv-side-vault-item">${cat.name.toLowerCase()}</div>`);
+        $item.click(() => {
+            openInvestmentCategory(cat);
+        });
+        $sideList.append($item);
+    });
+
     if (categories.length === 0) {
         $('#investment-category-list').html('<div class="empty">No tienes categorías de inversión. Crea una para empezar.</div>');
         return;
@@ -356,7 +406,11 @@ async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
     const name = cat.name.toUpperCase();
     $('#inv-category-title').text(name);
-    $('#inv-category-title-display').text(name);
+    $('#inv-category-title-display').text(name).show();
+    $('#inv-category-title-mobile').text(name);
+
+    // Show specific detail controls in side panel
+    $('.inv-only-details').show();
 
     // Reset panel state
     $('#inv-side-panel').removeClass('active');
