@@ -71,21 +71,30 @@ function initInvestmentListeners() {
         }
     });
 
+    // Side Panel Toggle
+    $(document).on('click', '#btn-toggle-inv-panel', function() {
+        $('#inv-side-panel').toggleClass('active');
+    });
+
+    // Close panel when clicking outside on mobile or when switching mode
+    $(document).click(function(e) {
+        if (!$(e.target).closest('#inv-side-panel').length && $('#inv-side-panel').hasClass('active')) {
+            $('#inv-side-panel').removeClass('active');
+        }
+    });
+
     // View Mode Switches
     $(document).on('click', '.btn-inv-mode', function() {
         const mode = $(this).data('mode');
-        $('.btn-inv-mode').removeClass('active').css({
-            'background': 'transparent',
-            'color': '#666',
-            'border-radius': '0px'
-        });
-        $(this).addClass('active').css({
-            'background': '#000',
-            'color': '#fff',
-            'border-radius': '2px'
-        });
+        $('.btn-inv-mode').removeClass('active');
+        $(this).addClass('active');
         currentInvestmentViewMode = mode;
         renderInvestmentCards(mode);
+
+        // Close panel after selection on mobile
+        if (window.innerWidth <= 768) {
+            $('#inv-side-panel').removeClass('active');
+        }
     });
 
     // Add Card to Investment
@@ -345,7 +354,13 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    $('#inv-category-title').text(cat.name.toUpperCase());
+    const name = cat.name.toUpperCase();
+    $('#inv-category-title').text(name);
+    $('#inv-category-title-display').text(name);
+
+    // Reset panel state
+    $('#inv-side-panel').removeClass('active');
+
     showView('investment-details');
     loadInvestmentCards();
 }

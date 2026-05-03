@@ -1157,21 +1157,35 @@
 
         <!-- Investment Details View (Cards within Category) -->
         <div id="view-investment-details" class="admin-section" style="display:none;">
-            <div class="admin-header" style="text-align: left; background: #fff; padding: 40px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 40px;">
-                <button id="btn-back-to-investments" class="btn-inv-outline" style="margin-bottom: 30px;"><i class="fas fa-chevron-left"></i> All Vaults</button>
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
-                    <div>
-                        <div style="font-size: 0.6rem; letter-spacing: 0.3em; font-weight: 800; color: #999; margin-bottom: 5px; text-transform: uppercase;">Active Portfolio</div>
-                        <h1 id="inv-category-title" style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.03em; color: #000; margin: 0; text-transform: uppercase;">Vault</h1>
+            <!-- Side Panel Menu -->
+            <div id="inv-side-panel" class="inv-side-panel">
+                <div class="inv-panel-trigger" id="btn-toggle-inv-panel">
+                    <span>ALL MODES</span>
+                </div>
+
+                <div class="inv-panel-content">
+                    <button id="btn-back-to-investments" class="inv-panel-btn back-btn">
+                        <i class="fas fa-chevron-left"></i> ALL VAULTS
+                    </button>
+
+                    <div class="inv-panel-section">
+                        <label>VIEW MODES</label>
+                        <div class="inv-panel-modes">
+                            <button class="btn-inv-mode active" data-mode="album">BINDERS</button>
+                            <button class="btn-inv-mode" data-mode="slide">VIKING SLIDE</button>
+                            <button class="btn-inv-mode" data-mode="list">LISTA</button>
+                        </div>
                     </div>
 
-                    <div style="display: flex; gap: 10px;">
-                        <div class="inv-mode-selector" style="background: #f8f9fa; padding: 5px; border-radius: 4px; display: flex; gap: 5px;">
-                            <button class="btn-inv-mode active" data-mode="album" style="border: none; background: #000; color: #fff; border-radius: 2px; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">binders</button>
-                            <button class="btn-inv-mode" data-mode="slide" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">vikingSlide</button>
-                            <button class="btn-inv-mode" data-mode="list" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">lista</button>
-                        </div>
-                        <button id="btn-add-investment-card" class="btn-inv-main"><i class="fas fa-plus"></i> ADD ASSET</button>
+                    <div class="inv-panel-section" style="margin-top: 30px;">
+                        <button id="btn-add-investment-card" class="inv-panel-btn add-btn">
+                            <i class="fas fa-plus"></i> ADD ASSET
+                        </button>
+                    </div>
+
+                    <div class="inv-panel-footer">
+                        <h1 id="inv-category-title" style="display: none;"></h1>
+                        <div id="inv-category-title-display" style="font-size: 0.9rem; font-weight: 900; color: #000; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;"></div>
                     </div>
                 </div>
             </div>
