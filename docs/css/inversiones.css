@@ -28,7 +28,7 @@
 
 /* Investment Album Stability Fixes */
 .investment-album-layout {
-
+    overflow: hidden !important;
     height: 600px;
     display: flex;
     align-items: center;
@@ -547,6 +547,42 @@
 .inv-detail-image-side img {
     width: 100%;
     border-radius: 6px;
+/* Detail Modal Styles */
+.inv-detail-modal-content {
+    max-width: 1000px !important;
+    width: 95% !important;
+    height: auto !important;
+    max-height: 95vh !important;
+    border: 1px solid #000;
+}
+
+.inv-detail-container {
+    display: flex;
+    flex-wrap: wrap;
+    background: var(--inv-white);
+    min-height: 500px;
+}
+
+.inv-detail-image-side {
+    background: #f8f9fa;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #eee;
+    flex: 1 1 350px;
+}
+
+.inv-detail-image-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    perspective: 1000px;
+}
+
+.inv-detail-image-side img {
+    width: 100%;
+    border-radius: 6px;
     border: 3px solid var(--inv-black);
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
@@ -775,79 +811,65 @@
     }
 }
 
-/* MOBILE SIDE PANEL - INVESTMENTS ONLY */
-#inv-mobile-side-panel {
-    position: fixed;
-    top: 0;
-    left: -280px;
-    width: 260px;
-    height: 100%;
-    background: #ffffff;
-    z-index: 2000100;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 5px 0 25px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    padding: 30px 20px;
-    box-sizing: border-box;
-    border-right: 1px solid #000;
-}
-
-#inv-mobile-side-panel.active {
-    left: 0;
-}
-
-#inv-side-panel-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.5);
-    z-index: 2000090;
-    display: none;
-}
-
-#inv-side-panel-overlay.active {
-    display: block;
-}
-
-#inv-side-panel-tab {
-    position: fixed;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%) rotate(-90deg) translateY(-25px);
-    transform-origin: center left;
-    background: #000;
-    color: #fff;
-    padding: 10px 20px;
-    font-size: 0.7rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    cursor: pointer;
-    z-index: 1000000;
-    border-radius: 0 0 5px 5px;
-    white-space: nowrap;
-    display: none;
-}
-
+/* --- MOVIL: MENU LATERAL INVERSIONES --- */
 @media (max-width: 768px) {
-    #inv-side-panel-tab {
+    #inv-mobile-side-panel {
+        position: fixed;
+        top: 0;
+        left: -300px;
+        width: 280px;
+        height: 100%;
+        background: #fff;
+        z-index: 10000000;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 40px 25px;
+        box-sizing: border-box;
+        border-right: 3px solid #000;
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+    }
+
+    #inv-mobile-side-panel.active {
+        left: 0;
+    }
+
+    #inv-side-panel-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.6);
+        z-index: 9999999;
+        display: none;
+        backdrop-filter: blur(2px);
+    }
+
+    #inv-side-panel-overlay.active {
         display: block;
     }
 
-    #view-investment-details .admin-header {
-        display: none !important;
-    }
-    #view-investment-details {
-        padding: 0 !important;
-        min-
-        display: flex !important;
-        flex-direction: column !important;
-@media (max-width: 768px) {
     #inv-side-panel-tab {
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%) rotate(-90deg) translateY(-30px);
+        transform-origin: left center;
+        background: #000;
+        color: #fff;
+        padding: 15px 30px;
+        font-size: 0.8rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        z-index: 9999998;
+        cursor: pointer;
+        border-radius: 0 0 12px 12px;
+        white-space: nowrap;
         display: block;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
 
     #view-investment-details .admin-header {
@@ -856,12 +878,11 @@
 
     #view-investment-details {
         padding: 0 !important;
-        min-height: 100vh !important;
+        min-height: 100vh;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: flex-start !important;
+        justify-content: center !important;
         align-items: center !important;
-        overflow-y: auto !important;
     }
 
     #investment-card-container {
@@ -869,7 +890,13 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        flex: 1;
         margin: 0 !important;
+    }
+}
+
+/* Ocultar en PC */
+@media (min-width: 769px) {
+    #inv-mobile-side-panel, #inv-side-panel-overlay, #inv-side-panel-tab {
+        display: none !important;
     }
 }
