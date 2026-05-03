@@ -44,9 +44,20 @@ function initInvestmentListeners() {
     });
 
     // Back to Categories from Details
-    $(document).on('click', '#btn-back-to-investments', function(e) {
+    $(document).on('click', '#btn-back-to-investments, #btn-back-to-investments-mobile', function(e) {
         e.preventDefault();
         showView('investments');
+        // Ensure side panel is closed
+        $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
+    });
+
+    // Mobile Side Panel Toggle
+    $(document).on('click', '#inv-side-panel-tab', function() {
+        $('#inv-mobile-side-panel, #inv-side-panel-overlay').toggleClass('active');
+    });
+
+    $(document).on('click', '#inv-side-panel-overlay', function() {
+        $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
     });
 
     // Create Category
@@ -79,18 +90,28 @@ function initInvestmentListeners() {
             'color': '#666',
             'border-radius': '0px'
         });
-        $(this).addClass('active').css({
+
+        // Sync desktop and mobile buttons
+        $(`.btn-inv-mode[data-mode="${mode}"]`).addClass('active').css({
             'background': '#000',
             'color': '#fff',
             'border-radius': '2px'
         });
+
         currentInvestmentViewMode = mode;
         renderInvestmentCards(mode);
+
+        // Close side panel on mobile after selection
+        if (window.innerWidth <= 768) {
+            $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
+        }
     });
 
     // Add Card to Investment
-    $('#btn-add-investment-card').click(function() {
+    $(document).on('click', '#btn-add-investment-card, #btn-add-investment-card-mobile', function() {
         openInvestmentCardModal(null, 'inv-tab-datos');
+        // Close side panel on mobile
+        $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
     });
 
     // Modal Tabs logic
@@ -345,7 +366,9 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    $('#inv-category-title').text(cat.name.toUpperCase());
+    const upperName = cat.name.toUpperCase();
+    $('#inv-category-title').text(upperName);
+    $('#inv-category-title-mobile').text(upperName);
     showView('investment-details');
     loadInvestmentCards();
 }
