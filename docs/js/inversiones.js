@@ -348,7 +348,7 @@ async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
     const catName = cat.name.toUpperCase();
     $('#inv-category-title').text(catName);
-    $('#mobile-inv-category-title').text(catName);
+    $('#mobile-inv-title').text(catName);
     showView('investment-details');
     loadInvestmentCards();
 }
@@ -991,6 +991,9 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
     });
 }
 
+/**
+ * SETUP MOBILE SIDE PANEL (INVESTMENTS)
+ */
 function setupMobileSidePanel() {
     if ($('#inv-mobile-side-panel').length) return;
 
@@ -999,30 +1002,24 @@ function setupMobileSidePanel() {
         <div id="inv-side-panel-tab">ALL MODES</div>
 
         <div id="inv-mobile-side-panel">
-            <div class="inv-side-content">
-                <div class="inv-side-nav">
-                    <button class="btn-inv-outline" id="btn-back-to-investments-mobile" style="width: 100%; justify-content: flex-start;">
-                        <i class="fas fa-chevron-left"></i> ALL VAULTS
-                    </button>
-                    <button class="btn-inv-outline" id="btn-back-to-dashboard-mobile" style="width: 100%; justify-content: flex-start;">
-                        <i class="fas fa-home"></i> DASHBOARD
-                    </button>
+            <div style="display:flex; flex-direction:column; gap:20px; height:100%;">
+                <button class="btn-inv-outline" id="btn-back-inv-mobile" style="width: 100%; text-align: left;">
+                    <i class="fas fa-chevron-left"></i> ALL VAULTS
+                </button>
+
+                <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-top: 10px;">
+                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; font-weight: 800; color: #999; text-transform: uppercase;">Active Portfolio</div>
+                    <h1 id="mobile-inv-title" style="font-size: 1.5rem; font-weight: 900; color: #000; margin: 0; text-transform: uppercase;">VAULT</h1>
                 </div>
 
-                <div class="inv-side-title-area">
-                    <div class="inv-side-label">Active Portfolio</div>
-                    <h1 id="mobile-inv-category-title">VAULT</h1>
-                </div>
-
-                <div class="inv-side-modes">
-                    <div class="inv-side-label" style="margin-bottom: 10px;">View Modes</div>
-                    <button class="btn-inv-mode active" data-mode="album" style="width: 100%; text-align: left; padding: 12px; border: none; background: #000; color: #fff;">BINDERS</button>
-                    <button class="btn-inv-mode" data-mode="slide" style="width: 100%; text-align: left; padding: 12px; border: none; background: transparent; color: #666;">VIKINGSLIDE</button>
-                    <button class="btn-inv-mode" data-mode="list" style="width: 100%; text-align: left; padding: 12px; border: none; background: transparent; color: #666;">LISTA</button>
+                <div class="inv-side-modes-container" style="display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 4px;">
+                    <button class="btn-inv-mode active" data-mode="album" style="width:100%; text-align:left; border:none; background:#000; color:#fff; padding:10px; font-weight:800; text-transform:uppercase; cursor:pointer; border-radius:2px;">binders</button>
+                    <button class="btn-inv-mode" data-mode="slide" style="width:100%; text-align:left; border:none; background:transparent; color:#666; padding:10px; font-weight:800; text-transform:uppercase; cursor:pointer;">vikingSlide</button>
+                    <button class="btn-inv-mode" data-mode="list" style="width:100%; text-align:left; border:none; background:transparent; color:#666; padding:10px; font-weight:800; text-transform:uppercase; cursor:pointer;">lista</button>
                 </div>
 
                 <div style="margin-top: auto;">
-                    <button id="btn-add-investment-card-mobile" class="btn-inv-main" style="width: 100%;">
+                    <button id="btn-add-asset-mobile" class="btn-inv-main" style="width: 100%;">
                         <i class="fas fa-plus"></i> ADD ASSET
                     </button>
                 </div>
@@ -1032,30 +1029,22 @@ function setupMobileSidePanel() {
 
     $('#view-investment-details').append(panelHtml);
 
-    // Toggle Panel
     const togglePanel = () => {
         $('#inv-mobile-side-panel, #inv-side-panel-overlay').toggleClass('active');
     };
 
     $(document).on('click', '#inv-side-panel-tab, #inv-side-panel-overlay', togglePanel);
 
-    // Handle Mobile-Specific Buttons
-    $(document).on('click', '#btn-back-to-investments-mobile', function() {
+    $(document).on('click', '#btn-back-inv-mobile', function() {
         togglePanel();
         showView('investments');
     });
 
-    $(document).on('click', '#btn-back-to-dashboard-mobile', function() {
-        togglePanel();
-        showView('main-dashboard');
-    });
-
-    $(document).on('click', '#btn-add-investment-card-mobile', function() {
+    $(document).on('click', '#btn-add-asset-mobile', function() {
         togglePanel();
         openInvestmentCardModal(null, 'inv-tab-datos');
     });
 
-    // Sync Mode Selector with Existing Logic
     $(document).on('click', '#inv-mobile-side-panel .btn-inv-mode', function() {
         if (window.innerWidth <= 768) {
             togglePanel();
