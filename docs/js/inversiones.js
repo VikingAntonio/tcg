@@ -27,51 +27,7 @@ function escapeHtml(text) {
 // --- INITIALIZATION ---
 $(document).ready(function() {
     initInvestmentListeners();
-    initInvestmentMobilePanel();
 });
-
-function initInvestmentMobilePanel() {
-    const $panel = $('#inv-mobile-side-panel');
-    const $overlay = $('#inv-side-panel-overlay');
-
-    const openPanel = () => {
-        $panel.addClass('active');
-        $overlay.addClass('active');
-        // Update title in mobile panel
-        $('#inv-mobile-category-title').text($('#inv-category-title').text());
-    };
-
-    const closePanel = () => {
-        $panel.removeClass('active');
-        $overlay.removeClass('active');
-    };
-
-    $('#btn-open-inv-side-panel').on('click', openPanel);
-    $('#btn-close-inv-side-panel, #inv-side-panel-overlay').on('click', closePanel);
-
-    // Sync active mode and handle view rendering
-    $(document).on('click', '.btn-inv-mode', function() {
-        const mode = $(this).data('mode');
-
-        // Update active class for all mode buttons (desktop and mobile)
-        $('.btn-inv-mode').removeClass('active');
-        $(`.btn-inv-mode[data-mode="${mode}"]`).addClass('active');
-
-        currentInvestmentViewMode = mode;
-        renderInvestmentCards(mode);
-        closePanel();
-    });
-
-    $('#btn-back-to-investments-mobile').on('click', function() {
-        closePanel();
-        $('#btn-back-to-investments').click();
-    });
-
-    $('#btn-add-investment-card-mobile').on('click', function() {
-        closePanel();
-        $('#btn-add-investment-card').click();
-    });
-}
 
 function initInvestmentListeners() {
     // Navigation to Investments
@@ -115,6 +71,31 @@ function initInvestmentListeners() {
         }
     });
 
+    // Side Panel Toggle
+    $(document).on('click', '#btn-toggle-inv-panel', function() {
+        $('#inv-side-panel').toggleClass('active');
+    });
+
+    // Close panel when clicking outside on mobile or when switching mode
+    $(document).click(function(e) {
+        if (!$(e.target).closest('#inv-side-panel').length && $('#inv-side-panel').hasClass('active')) {
+            $('#inv-side-panel').removeClass('active');
+        }
+    });
+
+    // View Mode Switches
+    $(document).on('click', '.btn-inv-mode', function() {
+        const mode = $(this).data('mode');
+        $('.btn-inv-mode').removeClass('active');
+        $(this).addClass('active');
+        currentInvestmentViewMode = mode;
+        renderInvestmentCards(mode);
+
+        // Close panel after selection on mobile
+        if (window.innerWidth <= 768) {
+            $('#inv-side-panel').removeClass('active');
+        }
+    });
 
     // Add Card to Investment
     $('#btn-add-investment-card').click(function() {
