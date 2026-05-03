@@ -38,6 +38,7 @@
     padding: 20px;
     width: 100%;
     box-sizing: border-box;
+    margin-top: 20px;
 }
 
 .album-wrapper {
@@ -573,8 +574,9 @@
 .inv-panel-trigger {
     position: absolute;
     right: -45px;
-    top: 30px; /* Positioned at the top like in the image */
-    background: #3b82f6; /* Blue as seen in images */
+    top: 50%;
+    transform: translateY(-50%);
+    background: #3b82f6;
     color: #fff;
     width: 45px;
     height: 140px;
@@ -665,7 +667,7 @@
 /* Item Buttons */
 .inv-panel-item-btn {
     width: 100%;
-    background: #fff;
+    background: #f1f5f9;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 14px 18px;
@@ -679,30 +681,22 @@
 
 .inv-panel-item-btn i {
     font-size: 1rem;
-    color: #64748b;
+    color: #3b82f6;
 }
 
 .inv-panel-item-btn span {
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 800;
     color: #1e293b;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
 }
 
 .inv-panel-item-btn:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    background: #fff;
+    border-color: #3b82f6;
     transform: translateY(-1px);
-}
-
-.inv-panel-item-btn.primary {
-    background: #f1f5f9;
-    border-color: #e2e8f0;
-}
-
-.inv-panel-item-btn.primary i {
-    color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
 /* Mode Switchers */

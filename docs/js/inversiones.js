@@ -416,6 +416,10 @@ async function openInvestmentCategory(cat) {
     $('#inv-side-panel').removeClass('active');
 
     showView('investment-details');
+
+    // Ensure we start at the top of the page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     loadInvestmentCards();
 }
 
