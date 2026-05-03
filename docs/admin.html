@@ -1141,57 +1141,85 @@
 
         <!-- Inversiones View (Categories) -->
         <div id="view-investments" class="admin-section" style="display:none;">
-            <div class="admin-header" style="background: #000; padding: 60px 20px; color: #fff; border-radius: 4px; margin-bottom: 40px; border: 1px solid #111;">
-                <button id="btn-back-to-main-from-investments" class="btn-inv-outline" style="color: #fff; border-color: rgba(255,255,255,0.3); margin-bottom: 30px;"><i class="fas fa-chevron-left"></i> Dashboard</button>
-                <div style="font-size: 0.7rem; letter-spacing: 0.4em; font-weight: 800; color: rgba(255,255,255,0.5); margin-bottom: 15px; text-transform: uppercase;">Portfolio Management</div>
-                <h1 style="font-size: 3rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: 10px; text-transform: uppercase; color: #fff;">Asset Vault</h1>
-                <p style="color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto 30px; font-weight: 500;">Monitor physical TCG assets with professional market analytics and manual valuation tracking.</p>
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button id="btn-create-investment-category" class="btn-inv-main" style="background: #fff; color: #000; border-color: #fff;"><i class="fas fa-plus"></i> Create Vault</button>
-                </div>
-            </div>
-            <div id="investment-category-list" class="album-list">
+            <div id="investment-category-list" class="album-list" style="padding-top: 40px;">
                 <!-- Categories will be loaded here -->
             </div>
         </div>
 
         <!-- Investment Details View (Cards within Category) -->
         <div id="view-investment-details" class="admin-section" style="display:none;">
-            <!-- Side Panel Menu -->
-            <div id="inv-side-panel" class="inv-side-panel">
-                <div class="inv-panel-trigger" id="btn-toggle-inv-panel">
-                    <span>ALL MODES</span>
-                </div>
+            <div id="investment-card-container" class="investment-render-area" style="padding-top: 40px;">
+                <!-- Cards will be rendered here based on mode -->
+            </div>
+        </div>
 
-                <div class="inv-panel-content">
-                    <button id="btn-back-to-investments" class="inv-panel-btn back-btn">
-                        <i class="fas fa-chevron-left"></i> ALL VAULTS
-                    </button>
-
-                    <div class="inv-panel-section">
-                        <label>VIEW MODES</label>
-                        <div class="inv-panel-modes">
-                            <button class="btn-inv-mode active" data-mode="album">BINDERS</button>
-                            <button class="btn-inv-mode" data-mode="slide">VIKING SLIDE</button>
-                            <button class="btn-inv-mode" data-mode="list">LISTA</button>
-                        </div>
-                    </div>
-
-                    <div class="inv-panel-section" style="margin-top: 30px;">
-                        <button id="btn-add-investment-card" class="inv-panel-btn add-btn">
-                            <i class="fas fa-plus"></i> ADD ASSET
-                        </button>
-                    </div>
-
-                    <div class="inv-panel-footer">
-                        <h1 id="inv-category-title" style="display: none;"></h1>
-                        <div id="inv-category-title-display" style="font-size: 0.9rem; font-weight: 900; color: #000; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;"></div>
-                    </div>
-                </div>
+        <!-- Global Investment Side Panel -->
+        <div id="inv-side-panel" class="inv-side-panel">
+            <div class="inv-panel-trigger" id="btn-toggle-inv-panel">
+                <span>ALL MODES</span>
             </div>
 
-            <div id="investment-card-container" class="investment-render-area">
-                <!-- Cards will be rendered here based on mode -->
+            <div class="inv-panel-content">
+                <div class="inv-panel-header">
+                    <div class="inv-panel-brand">FIND VAULT</div>
+                </div>
+
+                <div class="inv-panel-section">
+                    <div class="inv-panel-search-wrapper">
+                        <input type="text" id="inv-side-search-vaults" placeholder="Vault name...">
+                    </div>
+                </div>
+
+                <div class="inv-panel-section" id="inv-side-vault-list">
+                    <!-- Vaults will be listed here like "Mi Biblioteca" -->
+                </div>
+
+                <div class="inv-panel-section" style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                    <label>NAVIGATION</label>
+                    <button id="btn-side-back-main" class="inv-panel-item-btn">
+                        <i class="fas fa-home"></i>
+                        <span>DASHBOARD</span>
+                    </button>
+                    <button id="btn-side-back-vaults" class="inv-panel-item-btn">
+                        <i class="fas fa-th-large"></i>
+                        <span>ALL VAULTS</span>
+                    </button>
+                </div>
+
+                <div class="inv-panel-section inv-only-details" style="display: none; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                    <label>VIEW MODES</label>
+                    <div class="inv-panel-modes">
+                        <button class="btn-inv-mode active" data-mode="album">
+                            <i class="fas fa-book-open"></i> BINDERS
+                        </button>
+                        <button class="btn-inv-mode" data-mode="slide">
+                            <i class="fas fa-clone"></i> VIKING SLIDE
+                        </button>
+                        <button class="btn-inv-mode" data-mode="list">
+                            <i class="fas fa-list-ul"></i> LISTA
+                        </button>
+                    </div>
+                </div>
+
+                <div class="inv-panel-section">
+                    <label>ACTIONS</label>
+                    <button id="btn-side-create-vault" class="inv-panel-item-btn">
+                        <i class="fas fa-folder-plus"></i>
+                        <span>CREATE VAULT</span>
+                    </button>
+                    <button id="btn-side-add-asset" class="inv-panel-item-btn primary">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>ADD ASSET</span>
+                    </button>
+                </div>
+
+                <div class="inv-panel-footer">
+                    <label>ACTIVE VAULT</label>
+                    <div class="inv-active-vault-card">
+                        <div id="inv-category-title-display" class="inv-active-vault-name">NONE SELECTED</div>
+                    </div>
+                    <h1 id="inv-category-title" style="display: none;"></h1>
+                </div>
             </div>
         </div>
     </div>
