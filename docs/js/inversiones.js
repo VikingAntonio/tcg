@@ -373,7 +373,13 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    $('#inv-category-title').text(cat.name.toUpperCase());
+    const name = cat.name.toUpperCase();
+    $('#inv-category-title').text(name);
+    $('#inv-category-title-display').text(name);
+
+    // Reset panel state
+    $('#inv-side-panel').removeClass('active');
+
     showView('investment-details');
     loadInvestmentCards();
 }

@@ -746,6 +746,147 @@
     border-color: #000;
 }
 
+/* Side Panel Styles */
+.inv-side-panel {
+    position: fixed;
+    top: 50%;
+    left: -280px; /* Hidden by default */
+    transform: translateY(-50%);
+    width: 280px;
+    background: #ffffff;
+    border: 1px solid #000;
+    border-left: none;
+    box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+    z-index: 1000100; /* Higher than top-panel's 999999 */
+    transition: left 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    border-radius: 0 12px 12px 0;
+    display: none; /* Hide when view is not active */
+}
+
+#view-investment-details[style*="display: block"] .inv-side-panel,
+#view-investment-details[style*="display:block"] .inv-side-panel {
+    display: block;
+}
+
+.inv-side-panel.active {
+    left: 0;
+}
+
+.inv-panel-trigger {
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #000;
+    color: #fff;
+    width: 40px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 0 12px 12px 0;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+}
+
+.inv-panel-trigger span {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.inv-panel-content {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.inv-panel-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.inv-panel-section label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.inv-panel-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inv-panel-modes .btn-inv-mode {
+    background: transparent;
+    border: 1px solid #eee;
+    color: #666;
+    padding: 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    border-radius: 4px;
+}
+
+.inv-panel-modes .btn-inv-mode.active {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+}
+
+.inv-panel-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    border: 1px solid #000;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+}
+
+.inv-panel-btn.back-btn {
+    background: transparent;
+    color: #000;
+}
+
+.inv-panel-btn.add-btn {
+    background: #000;
+    color: #fff;
+}
+
+.inv-panel-btn:hover {
+    transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+    .inv-side-panel {
+        width: 240px;
+        left: -240px;
+    }
+
+    .inv-panel-content {
+        padding: 20px;
+    }
+}
+
 /* Detail Modal Styles */
 .inv-detail-modal-content {
     max-width: 1000px !important;
