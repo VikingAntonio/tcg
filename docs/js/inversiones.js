@@ -31,11 +31,10 @@ $(document).ready(function() {
 
 function initInvestmentListeners() {
     // Navigation to Investments
-    $(document).on('click', '#btn-show-investments, #menu-btn-investments', function(e) {
+    $(document).on('click', '#btn-show-investments', function(e) {
         e.preventDefault();
         showView('investments');
         loadInvestmentCategories();
-        $('#inv-side-panel').removeClass('active');
     });
 
     // Back to Dashboard
@@ -44,22 +43,10 @@ function initInvestmentListeners() {
         showView('main-dashboard');
     });
 
-    // Back to Categories from Details (PC + Mobile)
-    $(document).on('click', '#btn-back-to-investments, #btn-side-back-to-vaults', function(e) {
+    // Back to Categories from Details
+    $(document).on('click', '#btn-back-to-investments', function(e) {
         e.preventDefault();
         showView('investments');
-        $('#inv-side-panel').removeClass('active');
-    });
-
-    // Side Panel Toggle
-    $(document).on('click', '#btn-toggle-inv-panel', function() {
-        $('#inv-side-panel').toggleClass('active');
-    });
-
-    // Side Panel Add Asset
-    $(document).on('click', '#btn-side-add-asset', function() {
-        openInvestmentCardModal(null, 'inv-tab-datos');
-        $('#inv-side-panel').removeClass('active');
     });
 
     // Create Category
@@ -87,18 +74,18 @@ function initInvestmentListeners() {
     // View Mode Switches
     $(document).on('click', '.btn-inv-mode', function() {
         const mode = $(this).data('mode');
-        $('.btn-inv-mode').removeClass('active');
-        $(this).addClass('active');
-
-        // Sync desktop/mobile buttons
-        $(`.btn-inv-mode[data-mode="${mode}"]`).addClass('active');
-
+        $('.btn-inv-mode').removeClass('active').css({
+            'background': 'transparent',
+            'color': '#666',
+            'border-radius': '0px'
+        });
+        $(this).addClass('active').css({
+            'background': '#000',
+            'color': '#fff',
+            'border-radius': '2px'
+        });
         currentInvestmentViewMode = mode;
         renderInvestmentCards(mode);
-
-        if (window.innerWidth <= 768) {
-            $('#inv-side-panel').removeClass('active');
-        }
     });
 
     // Add Card to Investment
@@ -358,10 +345,7 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    const name = cat.name.toUpperCase();
-    $('#inv-category-title-pc').text(name);
-    $('#inv-category-title-mobile').text(name);
-
+    $('#inv-category-title').text(cat.name.toUpperCase());
     showView('investment-details');
     loadInvestmentCards();
 }
@@ -420,7 +404,6 @@ function getTrendIcon(current, previous, showPercentage = false) {
 
 function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
-    const isMobile = window.innerWidth <= 768;
     const { width, height } = window.getAlbumSize($container);
     const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album investment-album"></div></div>`);
     const $album = $albumWrapper.find('.album');
@@ -428,11 +411,10 @@ function renderAlbumMode($container) {
     $container.append($albumWrapper);
 
     // Cover
-    const titleText = $('#inv-category-title-pc').text() || 'VAULT';
     $album.append(`
         <div class="page cover-page">
             <div class="textured-cover" style="background-color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
-                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(titleText).toUpperCase()}</h2>
+                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml($('#inv-category-title').text()).toUpperCase()}</h2>
                 <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
         </div>
@@ -450,6 +432,7 @@ function renderAlbumMode($container) {
             const $slot = $('<div class="inv-card-slot" style="position: relative;"></div>');
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
+
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
                     <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
@@ -867,7 +850,7 @@ function updateSummaryTab(card) {
     $('#inv-detail-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
 
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
-    $('#inv-detail-trend').empty().append(trendIcon);
+    $('#inv-detail-trend').html(trendIcon);
 
     // Load History Chart for summary
     renderPriceHistoryChart(card.id, true);
