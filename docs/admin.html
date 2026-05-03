@@ -1157,19 +1157,52 @@
 
         <!-- Investment Details View (Cards within Category) -->
         <div id="view-investment-details" class="admin-section" style="display:none;">
-            <div class="admin-header" style="text-align: left; background: #fff; padding: 40px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 40px;">
-                <button id="btn-back-to-investments" class="btn-inv-outline" style="margin-bottom: 30px;"><i class="fas fa-chevron-left"></i> All Vaults</button>
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
-                    <div>
-                        <div style="font-size: 0.6rem; letter-spacing: 0.3em; font-weight: 800; color: #999; margin-bottom: 5px; text-transform: uppercase;">Active Portfolio</div>
-                        <h1 id="inv-category-title" style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.03em; color: #000; margin: 0; text-transform: uppercase;">Vault</h1>
+            <!-- Mobile Side Panel -->
+            <div id="inv-side-panel-overlay" class="inv-side-panel-overlay"></div>
+            <div id="inv-mobile-side-panel" class="inv-mobile-side-panel">
+                <div class="inv-side-panel-header">
+                    <div class="inv-side-title-group">
+                        <div class="inv-side-subtitle">Vault Menu</div>
+                        <h2 id="inv-mobile-category-title">VAULT</h2>
+                    </div>
+                    <span id="btn-close-inv-side-panel" class="inv-side-close">&times;</span>
+                </div>
+                <div class="inv-side-panel-content">
+                    <div class="inv-side-section">
+                        <button id="btn-add-investment-card-mobile" class="btn-inv-side-item inv-side-primary-btn"><i class="fas fa-plus"></i> ADD ASSET</button>
                     </div>
 
-                    <div style="display: flex; gap: 10px;">
-                        <div class="inv-mode-selector" style="background: #f8f9fa; padding: 5px; border-radius: 4px; display: flex; gap: 5px;">
-                            <button class="btn-inv-mode active" data-mode="album" style="border: none; background: #000; color: #fff; border-radius: 2px; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">binders</button>
-                            <button class="btn-inv-mode" data-mode="slide" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">vikingSlide</button>
-                            <button class="btn-inv-mode" data-mode="list" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">lista</button>
+                    <div class="inv-side-section">
+                        <button id="btn-back-to-investments-mobile" class="btn-inv-side-item"><i class="fas fa-chevron-left"></i> ALL VAULTS</button>
+                    </div>
+
+                    <div class="inv-side-section">
+                        <div class="inv-side-label">VIEW MODE</div>
+                        <div class="inv-mode-list-mobile">
+                            <button class="btn-inv-mode btn-inv-side-item active" data-mode="album"><i class="fas fa-book"></i> BINDERS</button>
+                            <button class="btn-inv-mode btn-inv-side-item" data-mode="slide"><i class="fas fa-layer-group"></i> VIKINGSLIDE</button>
+                            <button class="btn-inv-mode btn-inv-side-item" data-mode="list"><i class="fas fa-list"></i> LISTA</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-header inv-details-header">
+                <div class="inv-header-top-row">
+                    <button id="btn-back-to-investments" class="btn-inv-outline"><i class="fas fa-chevron-left"></i> All Vaults</button>
+                    <button id="btn-open-inv-side-panel" class="btn-inv-outline inv-mobile-only"><i class="fas fa-bars"></i></button>
+                </div>
+                <div class="inv-header-main-row">
+                    <div class="inv-header-info">
+                        <div class="inv-header-subtitle">Active Portfolio</div>
+                        <h1 id="inv-category-title">Vault</h1>
+                    </div>
+
+                    <div id="inv-desktop-nav" class="inv-nav-controls">
+                        <div class="inv-mode-selector">
+                            <button class="btn-inv-mode active" data-mode="album">binders</button>
+                            <button class="btn-inv-mode" data-mode="slide">vikingSlide</button>
+                            <button class="btn-inv-mode" data-mode="list">lista</button>
                         </div>
                         <button id="btn-add-investment-card" class="btn-inv-main"><i class="fas fa-plus"></i> ADD ASSET</button>
                     </div>
