@@ -131,6 +131,24 @@ function initInvestmentListeners() {
         }
     });
 
+    // Holo effect selector change listener
+    $(document).on('change', '#inv-card-holo-effect', function() {
+        const val = $(this).val();
+        if (val === 'custom-texture' || val === 'custom-foil') {
+            $('#inv-card-mask-container').show();
+        } else {
+            $('#inv-card-mask-container').hide();
+        }
+    });
+
+    // Open mask editor for investment modal
+    $(document).on('click', '#btn-open-mask-editor-inv', function(e) {
+        e.preventDefault();
+        window.maskTargetInput = '#inv-card-custom-mask';
+        $('#mask-editor-overlay').addClass('active');
+        window.initMaskCanvas();
+    });
+
     $('#btn-inv-add-price').click(async function() {
         if (!currentEditingInvCardId) return;
 
@@ -457,10 +475,14 @@ function renderAlbumMode($container) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
 
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
-                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn"><i class="fas fa-search"></i></div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
+                    <div class="inv-card-info-badge" style="z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
                 `);
+
+                if (card.holo_effect && typeof window.applyFoilToElement === 'function') {
+                    window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
+                }
 
                 $slot.find('.zoom-btn').on('click', (e) => {
                     e.preventDefault();
@@ -546,26 +568,34 @@ function renderSlideMode($container) {
 
     const $swiper = $(`
         <div class="swiper ${swiperId}" style="width: 100%; max-width: ${swiperWidth}; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
-            <div class="swiper-wrapper">
-                ${localInvestmentCards.map(card => {
-                    const trend = getTrendIcon(card.current_price, card.previous_price);
-                    return `
-                    <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer;">
-                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
-                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '10px' : '20px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '10px' : '15px'}; text-align: center;">
-                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
-                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
-                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-                                <button class="btn-inv-outline btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-pen"></i></button>
-                                <button class="btn-inv-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `}).join('')}
-            </div>
+            <div class="swiper-wrapper"></div>
         </div>
     `);
+
+    localInvestmentCards.forEach(card => {
+        const trend = getTrendIcon(card.current_price, card.previous_price);
+        const $slide = $(`
+            <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative;">
+                <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1;">
+                <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '10px' : '20px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '10px' : '15px'}; text-align: center; position: relative; z-index: 110;">
+                    <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
+                    <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
+                    <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                        <button class="btn-inv-outline btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-pen"></i></button>
+                        <button class="btn-inv-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        if (card.holo_effect && typeof window.applyFoilToElement === 'function') {
+            window.applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
+        }
+
+        $swiper.find('.swiper-wrapper').append($slide);
+    });
+
     $container.append($swiper);
 
     $swiper.find('.inv-card-item').click(function(e) {
@@ -608,7 +638,9 @@ function renderListMode($container) {
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const $item = $(`
             <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
-                <img src="${card.image_url}" class="inv-list-thumb" style="width: 60px; height: 84px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
+                <div class="inv-list-img-wrapper" style="position: relative; width: 60px; height: 84px; flex-shrink: 0;">
+                    <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
+                </div>
                 <div class="inv-list-details" style="flex: 1;">
                     <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000;">${escapeHtml(card.card_name)}</div>
                     <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
@@ -623,6 +655,10 @@ function renderListMode($container) {
                 </div>
             </div>
         `);
+        if (card.holo_effect && typeof window.applyFoilToElement === 'function') {
+            window.applyFoilToElement($item.find('.inv-list-img-wrapper'), card.holo_effect, card.custom_mask_url);
+        }
+
         $item.click((e) => {
             if ($(e.target).closest('button').length) return;
             e.preventDefault();
@@ -683,6 +719,16 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#inv-card-rarity').val(card ? card.rarity : '');
     $('#inv-card-game').val(card ? card.tcg_game : 'pokemon');
 
+    // Holo fields
+    const holoEffect = card ? (card.holo_effect || '') : '';
+    $('#inv-card-holo-effect').val(holoEffect);
+    $('#inv-card-custom-mask').val(card ? (card.custom_mask_url || '') : '');
+    if (holoEffect === 'custom-texture' || holoEffect === 'custom-foil') {
+        $('#inv-card-mask-container').show();
+    } else {
+        $('#inv-card-mask-container').hide();
+    }
+
     $('#inv-card-search-results').empty();
     $('#inv-card-search-input').val('');
 
@@ -734,7 +780,9 @@ $('#btn-save-investment-card').click(async function() {
         current_price: newPrice,
         quantity: parseInt($('#inv-card-quantity').val()) || 1,
         notes: $('#inv-card-notes').val(),
-        extra_images: currentInvExtraImages
+        extra_images: currentInvExtraImages,
+        holo_effect: $('#inv-card-holo-effect').val(),
+        custom_mask_url: $('#inv-card-custom-mask').val()
     };
 
     if (!cardData.card_name || !cardData.image_url) {
