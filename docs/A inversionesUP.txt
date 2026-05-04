@@ -14,6 +14,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='previous_price') THEN
         ALTER TABLE investment_cards ADD COLUMN previous_price DECIMAL(10,2);
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='holo_effect') THEN
+        ALTER TABLE investment_cards ADD COLUMN holo_effect TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='custom_mask_url') THEN
+        ALTER TABLE investment_cards ADD COLUMN custom_mask_url TEXT;
+    END IF;
 END $$;
 
 -- 2. Crear tabla de historial de precios si no existe
