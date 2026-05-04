@@ -561,23 +561,31 @@ window.sharedCard3D = {
     currentRX: 0,
     currentRY: 0,
     active: false,
+    loopRunning: false,
     orientationHandler: null,
     touchHandler: null,
     cachedEl: null,
+    currentCardId: 'card-3d',
+    currentOverlayId: 'image-overlay',
+    currentContainerId: 'card-3d-container',
 
-    updateRotation: function(cardId = 'card-3d', overlayId = 'image-overlay') {
-        if (!window.sharedCard3D.active) return;
-
-        const card3d = window.sharedCard3D.cachedEl || document.getElementById(cardId);
-        if (!card3d) {
-            window.sharedCard3D.active = false;
+    updateRotation: function() {
+        if (!window.sharedCard3D.active) {
+            window.sharedCard3D.loopRunning = false;
             return;
         }
-        window.sharedCard3D.cachedEl = card3d;
 
-        const overlay = document.getElementById(overlayId);
+        const card3d = document.getElementById(window.sharedCard3D.currentCardId);
+        if (!card3d) {
+            window.sharedCard3D.active = false;
+            window.sharedCard3D.loopRunning = false;
+            return;
+        }
+
+        const overlay = document.getElementById(window.sharedCard3D.currentOverlayId);
         if (overlay && !overlay.classList.contains('active')) {
             window.sharedCard3D.active = false;
+            window.sharedCard3D.loopRunning = false;
             return;
         }
 
@@ -617,10 +625,14 @@ window.sharedCard3D = {
         s.setProperty('--pointer-from-left', mx.toFixed(3));
         s.setProperty('--card-opacity', '1');
 
-        requestAnimationFrame(() => window.sharedCard3D.updateRotation(cardId, overlayId));
+        requestAnimationFrame(() => window.sharedCard3D.updateRotation());
     },
 
-    init: function(containerId = 'card-3d-container', cardId = 'card-3d', zTextId = '#z-text-container') {
+    init: function(containerId = 'card-3d-container', cardId = 'card-3d', zTextId = '#z-text-container', overlayId = 'image-overlay') {
+        window.sharedCard3D.currentContainerId = containerId;
+        window.sharedCard3D.currentCardId = cardId;
+        window.sharedCard3D.currentOverlayId = overlayId;
+
         const $container = $(`#${containerId}`);
         const $card = $(`#${cardId}`);
         const $zContainer = $(zTextId);
@@ -713,14 +725,16 @@ window.sharedCard3D = {
             }
         }
 
-        if (!window.sharedCard3D.active) {
-            window.sharedCard3D.active = true;
-            requestAnimationFrame(() => window.sharedCard3D.updateRotation(cardId, containerId === 'inv-card-3d-container' ? 'investment-card-modal' : 'image-overlay'));
+        window.sharedCard3D.active = true;
+        if (!window.sharedCard3D.loopRunning) {
+            window.sharedCard3D.loopRunning = true;
+            requestAnimationFrame(() => window.sharedCard3D.updateRotation());
         }
     },
 
     stop: function() {
         window.sharedCard3D.active = false;
+        window.sharedCard3D.loopRunning = false;
         window.sharedCard3D.cachedEl = null;
         if (window.sharedCard3D.orientationHandler) {
             window.removeEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
