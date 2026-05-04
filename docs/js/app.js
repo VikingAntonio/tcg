@@ -965,7 +965,10 @@ async function openCardModal($slot) {
 
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
-    if (baseHolo) {
+    const isInvestment = $slot.data('is-investment');
+    const showFoil = isInvestment ? $slot.data('show-foil') : true;
+
+    if (baseHolo && showFoil) {
         if (POKEMON_FOILS[baseHolo]) {
             let rarityVal = POKEMON_FOILS[baseHolo];
             $card.addClass("card");
@@ -1145,12 +1148,12 @@ async function openCardModal($slot) {
     $("body").addClass("modal-open");
 
     setTimeout(() => {
-        applyVisualsToModal(holo, mask, use3d);
+        applyVisualsToModal(holo, mask, use3d, showFoil);
         $card3d.addClass("active");
     }, 150);
 }
 
-function applyVisualsToModal(holo, mask, use3d) {
+function applyVisualsToModal(holo, mask, use3d, showFoil = true) {
     const $card3d = $("#card-3d-container");
     const $card = $("#card-3d");
 
@@ -1170,7 +1173,7 @@ function applyVisualsToModal(holo, mask, use3d) {
 
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
-    if (baseHolo) {
+    if (baseHolo && showFoil) {
         if (POKEMON_FOILS[baseHolo]) {
             let rarityVal = POKEMON_FOILS[baseHolo];
             $card.addClass("card");
@@ -1199,7 +1202,9 @@ function applyVisualsToModal(holo, mask, use3d) {
     }
 
     if (use3d) {
-        init3DCard();
+        if (window.sharedCard3D) {
+            window.sharedCard3D.init('card-3d-container', 'card-3d', '#z-text-container', 'image-overlay');
+        }
     } else {
         $card.css('transform', 'none');
         if (window.sharedCard3D) {
@@ -3299,7 +3304,20 @@ function renderPublicInvAlbumMode($container) {
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
                     <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
                 `);
+
+                $slot.find('.zoom-btn').on('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openInvestmentPublicModal(card);
+                });
+
+                $slot.on('click', function(e) {
+                    if (window.innerWidth > 768 && !$(e.target).closest('.zoom-btn').length) {
+                        openInvestmentPublicModal(card);
+                    }
+                });
                 if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
                     window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
                 }
@@ -3341,7 +3359,7 @@ function renderPublicInvSlideMode($container) {
                     const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                                 isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                     return `
-                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;"
+                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent; cursor: pointer;"
                          data-show-foil="${card.show_foil}" data-holo="${card.holo_effect || ''}" data-mask="${card.custom_mask_url || ''}">
                         <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1;">
                         <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center; position: relative; z-index: 110;">
@@ -3360,7 +3378,17 @@ function renderPublicInvSlideMode($container) {
         effect: "cards",
         grabCursor: true,
         centeredSlides: true,
-        slidesPerView: 'auto'
+        slidesPerView: 'auto',
+        on: {
+            click: function(s, e) {
+                const $slide = $(e.target).closest('.swiper-slide');
+                if ($slide.length && s.clickedIndex === s.activeIndex) {
+                    const idx = $slide.index();
+                    const card = publicInvCards[idx];
+                    if (card) openInvestmentPublicModal(card);
+                }
+            }
+        }
     });
 
     // Apply foil to slides
@@ -3382,7 +3410,7 @@ function renderPublicInvListMode($container) {
         const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.8rem;"></i>' :
                     isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.8rem;"></i>' : '';
         const $item = $(`
-            <div class="inv-list-item" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px;">
+            <div class="inv-list-item" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px; cursor: pointer;">
                 <div class="inv-list-img-wrapper" style="position: relative; width: 50px; height: 70px; flex-shrink: 0;">
                     <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
                 </div>
@@ -3398,7 +3426,35 @@ function renderPublicInvListMode($container) {
         if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
             window.applyFoilToElement($item.find('.inv-list-img-wrapper'), card.holo_effect, card.custom_mask_url);
         }
+        $item.on('click', () => openInvestmentPublicModal(card));
         $list.append($item);
     });
     $container.append($list);
+}
+
+function openInvestmentPublicModal(card) {
+    // We use openCardModal but we need to set the attributes on a temporary element
+    // because openCardModal expects a jQuery element with data attributes.
+    const $tmp = $('<div></div>').attr({
+        'data-id': card.id,
+        'data-name': card.card_name,
+        'data-rarity': card.rarity || '-',
+        'data-holo': card.holo_effect || '',
+        'data-mask': card.custom_mask_url || '',
+        'data-3d': 'true',
+        'data-expansion': card.set_name || '-',
+        'data-condition': '-',
+        'data-quantity': card.quantity || '1',
+        'data-price': `$${parseFloat(card.current_price || 0).toFixed(2)}`,
+        'data-notes': card.notes || '',
+        'data-obtained': 'true'
+    });
+
+    $tmp.append(`<img src="${card.image_url}">`);
+
+    // Set a flag to indicate this is an investment card for foil check
+    $tmp.data('is-investment', true);
+    $tmp.data('show-foil', card.show_foil);
+
+    openCardModal($tmp);
 }
