@@ -1236,8 +1236,15 @@
                 <div id="inv-tab-resumen" class="slot-tab-content active">
                     <div class="inv-detail-container">
                         <div class="inv-detail-image-side">
-                            <div class="inv-detail-image-wrapper">
-                                <img id="inv-detail-image" src="" alt="Card Image">
+                            <div id="inv-card-3d-container" class="card-3d-container inv-detail-image-wrapper">
+                                <div id="inv-card-3d" class="card-3d">
+                                    <div id="inv-z-text-container">
+                                        <img id="inv-detail-image" src="" alt="Card Image" class="card__front">
+                                    </div>
+                                    <div class="holo-layer"></div>
+                                    <div class="card__shine"></div>
+                                    <div class="card__glare"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="inv-detail-info-side">
@@ -1894,6 +1901,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="js/viking-data.js"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/ztext.js"></script>
     <script src="js/utils.js" id="utils-js"></script>
     <script src="js/admin.js"></script>
     <script src="js/admin_deseos.js"></script>

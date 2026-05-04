@@ -480,7 +480,7 @@ function renderAlbumMode($container) {
                     <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
                 `);
 
-                if (card.holo_effect && typeof window.applyFoilToElement === 'function') {
+                if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
                     window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
                 }
 
@@ -589,7 +589,7 @@ function renderSlideMode($container) {
             </div>
         `);
 
-        if (card.holo_effect && typeof window.applyFoilToElement === 'function') {
+        if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
             window.applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
         }
 
@@ -655,7 +655,7 @@ function renderListMode($container) {
                 </div>
             </div>
         `);
-        if (card.holo_effect && typeof window.applyFoilToElement === 'function') {
+        if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
             window.applyFoilToElement($item.find('.inv-list-img-wrapper'), card.holo_effect, card.custom_mask_url);
         }
 
@@ -738,7 +738,10 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#investment-card-modal').addClass('active');
 }
 
-$('#close-investment-card-modal').click(() => $('#investment-card-modal').removeClass('active'));
+$('#close-investment-card-modal').click(() => {
+    $('#investment-card-modal').removeClass('active');
+    if (window.sharedCard3D) window.sharedCard3D.stop();
+});
 
 $('#btn-inv-card-search').click(async function() {
     window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
@@ -924,6 +927,55 @@ function updateSummaryTab(card) {
 
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
+
+    // --- 3D Preview and Foil in Summary ---
+    const $card3d = $("#inv-card-3d");
+    const $container = $("#inv-card-3d-container");
+
+    // Cleanup
+    $card3d.removeClass("card masked interacting foil-loop");
+    $card3d.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
+    $card3d.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
+    $container.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
+
+    let holo = card.holo_effect || "";
+    let mask = card.custom_mask_url || "";
+    let baseHolo = holo;
+    let isCustomFoil = false;
+
+    if (holo.startsWith('custom-foil|')) {
+        isCustomFoil = true;
+        baseHolo = holo.split('|')[1] || 'foil';
+    }
+
+    if (card.show_foil && baseHolo) {
+        if (window.POKEMON_FOILS && window.POKEMON_FOILS[baseHolo]) {
+            let rarityVal = window.POKEMON_FOILS[baseHolo];
+            $card3d.addClass("card");
+            if (rarityVal.includes('trainer gallery')) { $card3d.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+            if (rarityVal.includes('supporter')) { $card3d.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+            if (rarityVal.includes('pokemon')) { $card3d.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+            $card3d.attr("data-rarity", rarityVal.trim());
+
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                $card3d.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            const rx = Math.random(), ry = Math.random();
+            $card3d.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+        } else {
+            $container.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                $card3d.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+        }
+    }
+
+    // Always init 3D if in summary tab of investments
+    if (window.sharedCard3D) {
+        setTimeout(() => {
+            window.sharedCard3D.init('inv-card-3d-container', 'inv-card-3d', '#inv-z-text-container');
+        }, 100);
+    }
 
     // Load History Chart for summary
     renderPriceHistoryChart(card.id, true);
