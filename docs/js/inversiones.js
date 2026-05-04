@@ -826,7 +826,7 @@ $('#btn-save-investment-card').click(async function() {
         console.error(e);
         Swal.fire({
             title: 'ERROR',
-            text: 'Could not save asset.',
+            text: 'Could not save asset: ' + (e.message || e),
             icon: 'error',
             customClass: { popup: 'inv-swal-popup' }
         });
@@ -918,7 +918,7 @@ async function saveNewPrice(cardId, newPrice) {
 
     } catch (e) {
         console.error(e);
-        Swal.fire({ title: 'Error', text: 'No se pudo actualizar el precio', icon: 'error', customClass: { popup: 'inv-swal-popup' } });
+        Swal.fire({ title: 'Error', text: 'No se pudo actualizar el precio: ' + (e.message || e), icon: 'error', customClass: { popup: 'inv-swal-popup' } });
     }
 }
 
