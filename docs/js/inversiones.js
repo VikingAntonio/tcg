@@ -673,6 +673,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#inv-card-purchase-price').val(card ? card.purchase_price : '');
     $('#inv-card-current-price').val(card ? card.current_price : '');
     $('#inv-card-quantity').val(card ? card.quantity : 1);
+    $('#inv-card-show-foil').prop('checked', card ? !!card.show_foil : false);
     $('#inv-card-rarity-input').val(card ? card.rarity : '');
     $('#inv-card-notes').val(card ? card.notes : '');
 
@@ -733,6 +734,7 @@ $('#btn-save-investment-card').click(async function() {
         purchase_price: parseFloat($('#inv-card-purchase-price').val()) || 0,
         current_price: newPrice,
         quantity: parseInt($('#inv-card-quantity').val()) || 1,
+        show_foil: $('#inv-card-show-foil').is(':checked'),
         notes: $('#inv-card-notes').val(),
         extra_images: currentInvExtraImages
     };

@@ -373,6 +373,7 @@
 .inv-swal-popup {
     border-radius: 4px !important;
     border: 1px solid #000 !important;
+    z-index: 3000000 !important;
 }
 
 .inv-swal-popup .swal2-title {
