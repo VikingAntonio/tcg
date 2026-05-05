@@ -83,14 +83,14 @@ window.applyFoilToElement = function($el, holo, mask) {
         $el.attr("data-rarity", rarityVal.trim());
 
         if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            $el.addClass("masked").css({"--mask": `url("${mask}")`, "--mask-url": `url("${mask}")`});
         }
         const rx = 0.5, ry = 0.5;
         $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
     } else {
         $el.addClass(baseHolo);
         if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            $el.addClass("masked").css({"--mask": `url("${mask}")`, "--mask-url": `url("${mask}")`});
         }
         $el.css({'--mx': 0.5, '--my': 0.5});
     }
@@ -487,13 +487,14 @@ $(document).ready(function() {
     $(document).on('click', '#btn-nav-return', function() {
         // 1. Check for active overlays/popups
         // Added more selectors to ensure all popups are covered
-        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active, .modal.active, .popup.active, #login-modal.active, #spirit-modal.active, #gltf-overlay.active, #event-details-overlay.active, #wishlist-search-modal.active, #auction-detail-modal.active, #wishlist-modal.active, #spirit-upload-modal.active, #fast-draw-modal.active');
+        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active, .modal.active, .popup.active, #login-modal.active, #spirit-modal.active, #gltf-overlay.active, #event-details-overlay.active, #wishlist-search-modal.active, #auction-detail-modal.active, #wishlist-modal.active, #spirit-upload-modal.active, #fast-draw-modal.active, #investment-card-modal.active');
 
         if ($activeOverlay.length > 0) {
             $activeOverlay.removeClass('active');
             $('body').removeClass('modal-open');
 
             // Specific cleanup for some modals
+            if (window.sharedCard3D) window.sharedCard3D.stop();
             if (window.card3dActive !== undefined) window.card3dActive = false;
             return;
         }

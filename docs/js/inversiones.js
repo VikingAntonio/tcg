@@ -972,9 +972,13 @@ function updateSummaryTab(card) {
         if (window.applyFoilToElement) {
             // Use the global utility to ensure consistent application of all classes and styles
             window.applyFoilToElement($card3d, holo, mask);
-            // Also ensure the container is active for standard foils
+
+            // Explicitly ensure both card and container are marked active
+            $container.addClass("active");
+            $card3d.addClass("active foil-loop");
+
             if (!window.POKEMON_FOILS[baseHolo]) {
-                $container.addClass(baseHolo + " active");
+                $container.addClass(baseHolo);
             }
         }
     }
