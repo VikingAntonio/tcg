@@ -861,3 +861,41 @@
         font-size: 0.9rem !important;
     }
 }
+
+/* --- Foil Loop Animation for Investment Previews --- */
+@keyframes inv-foil-loop-float {
+    0% { --mx: 0.45; --my: 0.45; }
+    25% { --mx: 0.55; --my: 0.48; }
+    50% { --mx: 0.50; --my: 0.55; }
+    75% { --mx: 0.48; --my: 0.52; }
+    100% { --mx: 0.45; --my: 0.45; }
+}
+
+.inv-card-slot.active.foil-loop,
+.inv-list-img-wrapper.active.foil-loop,
+.public-inv-album .card-slot.active.foil-loop {
+    animation: inv-foil-loop-float 5s ease-in-out infinite !important;
+}
+
+.inv-card-slot.active.foil-loop {
+    --pointer-x: calc(var(--mx) * 100%);
+    --pointer-y: calc(var(--my) * 100%);
+    --background-x: calc(var(--mx) * 100%);
+    --background-y: calc(var(--my) * 100%);
+    --angle: 135deg;
+    --card-opacity: 1;
+}
+
+.inv-list-img-wrapper.active.foil-loop {
+    --pointer-x: calc(var(--mx) * 100%);
+    --pointer-y: calc(var(--my) * 100%);
+    --background-x: calc(var(--mx) * 100%);
+    --background-y: calc(var(--my) * 100%);
+}
+
+.public-inv-album .card-slot.active.foil-loop {
+    --pointer-x: calc(var(--mx) * 100%);
+    --pointer-y: calc(var(--my) * 100%);
+    --background-x: calc(var(--mx) * 100%);
+    --background-y: calc(var(--my) * 100%);
+}

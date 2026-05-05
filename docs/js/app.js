@@ -1159,49 +1159,13 @@ function applyVisualsToModal(holo, mask, use3d, showFoil = true) {
     const $card3d = $("#card-3d-container");
     const $card = $("#card-3d");
 
-    // Cleanup all possible holo classes and styles
-    $card.removeClass("card masked interacting foil-loop");
-    $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
-    $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
-    $card3d.find('.holo-layer').css('--mask-url', '');
-
-    let baseHolo = holo;
-    let isCustomFoil = false;
-    if (holo && holo.startsWith('custom-foil|')) {
-        isCustomFoil = true;
-        baseHolo = holo.split('|')[1] || 'foil';
-    }
-
-    const POKEMON_FOILS = window.POKEMON_FOILS || {};
-
-    if (baseHolo && showFoil) {
-        $card.addClass("active foil-loop");
-        $card3d.addClass("active");
-        if (POKEMON_FOILS[baseHolo]) {
-            let rarityVal = POKEMON_FOILS[baseHolo];
-            $card.addClass("card");
-            if (rarityVal.includes('trainer gallery')) { $card.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-            if (rarityVal.includes('supporter')) { $card.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-            if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-            $card.attr("data-rarity", rarityVal.trim());
-
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-                $card.addClass("masked");
-                const maskVal = `url(${mask})`;
-                $card.css("--mask", maskVal);
-                $card.css("--mask-url", maskVal);
-            }
-            const rx = Math.random(), ry = Math.random();
-            $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
-        } else {
-            $card3d.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-                $card.addClass("masked");
-                const maskVal = `url(${mask})`;
-                $card.css("--mask", maskVal);
-                $card.css("--mask-url", maskVal);
-            }
+    if (window.applyFoilToElement) {
+        window.applyFoilToElement($card, showFoil ? holo : "", mask);
+        // Sync container if it's a standard foil
+        let baseHolo = holo;
+        if (holo && holo.startsWith('custom-foil|')) baseHolo = holo.split('|')[1] || 'foil';
+        if (showFoil && baseHolo && (!window.POKEMON_FOILS || !window.POKEMON_FOILS[baseHolo])) {
+            $card3d.addClass(baseHolo + " active");
         }
     }
 
