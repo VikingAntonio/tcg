@@ -147,7 +147,13 @@ function initInvestmentListeners() {
     // Open mask editor for investment modal
     $(document).on('click', '#btn-open-mask-editor-inv', function(e) {
         e.preventDefault();
+        const cardImgUrl = $('#inv-card-image-url').val();
+        if (!cardImgUrl) {
+            Swal.fire('Atención', 'Primero selecciona una carta para usar de referencia.', 'warning');
+            return;
+        }
         window.maskTargetInput = '#inv-card-custom-mask';
+        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
         $('#mask-editor-overlay').addClass('active');
         window.initMaskCanvas();
     });
@@ -963,24 +969,12 @@ function updateSummaryTab(card) {
     }
 
     if (card.show_foil && baseHolo) {
-        $container.addClass("active"); // Ensure container is active for both types
-        if (window.POKEMON_FOILS && window.POKEMON_FOILS[baseHolo]) {
-            let rarityVal = window.POKEMON_FOILS[baseHolo];
-            $card3d.addClass("card active foil-loop");
-            if (rarityVal.includes('trainer gallery')) { $card3d.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-            if (rarityVal.includes('supporter')) { $card3d.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-            if (rarityVal.includes('pokemon')) { $card3d.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-            $card3d.attr("data-rarity", rarityVal.trim());
-
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-                $card3d.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
-            }
-            const rx = Math.random(), ry = Math.random();
-            $card3d.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
-        } else {
-            $container.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-                $card3d.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+        if (window.applyFoilToElement) {
+            // Use the global utility to ensure consistent application of all classes and styles
+            window.applyFoilToElement($card3d, holo, mask);
+            // Also ensure the container is active for standard foils
+            if (!window.POKEMON_FOILS[baseHolo]) {
+                $container.addClass(baseHolo + " active");
             }
         }
     }
