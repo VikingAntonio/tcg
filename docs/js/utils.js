@@ -63,23 +63,7 @@ window.getAlbumSize = function($albumContainer) {
 };
 
 window.applyFoilToElement = function($el, holo, mask) {
-    // 1. Clean up any existing foil effects
-    const allHoloClasses = [
-        'super-rare', 'ghost-rare', 'foil', 'secret-rare',
-        'rainbow', 'custom-texture', 'starlight-rare', 'custom-foil',
-        'card', 'masked', 'active', 'foil-loop', 'pk-rare-holo', 'pk-rare-holo-cosmos'
-    ];
-    $el.removeClass(allHoloClasses.join(' '));
-    $el.removeAttr('data-rarity data-trainer-gallery data-subtypes data-supertype');
-    $el.css({
-        '--mask': '', '--mask-url': '', '--mx': '', '--my': '', '--angle': '',
-        '--pointer-x': '', '--pointer-y': '', '--background-x': '', '--background-y': ''
-    });
-
-    if (!holo) {
-        $el.css('--card-opacity', 0);
-        return;
-    }
+    if (!holo) return;
 
     const POKEMON_FOILS = window.POKEMON_FOILS;
 
@@ -99,14 +83,14 @@ window.applyFoilToElement = function($el, holo, mask) {
         $el.attr("data-rarity", rarityVal.trim());
 
         if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-            $el.addClass("masked").css({"--mask": `url("${mask}")`, "--mask-url": `url("${mask}")`});
+            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
         const rx = 0.5, ry = 0.5;
         $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
     } else {
         $el.addClass(baseHolo);
         if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-            $el.addClass("masked").css({"--mask": `url("${mask}")`, "--mask-url": `url("${mask}")`});
+            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
         $el.css({'--mx': 0.5, '--my': 0.5});
     }
@@ -117,15 +101,7 @@ window.applyFoilToElement = function($el, holo, mask) {
     });
 
     if ($el.find('.holo-layer').length === 0) $el.append('<div class="holo-layer"></div>');
-    if ($el.find('.card__shine').length === 0) $el.append('<div class="card__shine"></div>');
-    if ($el.find('.card__glare').length === 0) $el.append('<div class="card__glare"></div>');
-
     $el.addClass('active foil-loop');
-
-    // Ensure the element has proper layout for foil children
-    if ($el.css('position') === 'static') {
-        $el.css('position', 'relative');
-    }
 };
 
 // --- Global Navigation ---
@@ -511,14 +487,13 @@ $(document).ready(function() {
     $(document).on('click', '#btn-nav-return', function() {
         // 1. Check for active overlays/popups
         // Added more selectors to ensure all popups are covered
-        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active, .modal.active, .popup.active, #login-modal.active, #spirit-modal.active, #gltf-overlay.active, #event-details-overlay.active, #wishlist-search-modal.active, #auction-detail-modal.active, #wishlist-modal.active, #spirit-upload-modal.active, #fast-draw-modal.active, #investment-card-modal.active');
+        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active, .modal.active, .popup.active, #login-modal.active, #spirit-modal.active, #gltf-overlay.active, #event-details-overlay.active, #wishlist-search-modal.active, #auction-detail-modal.active, #wishlist-modal.active, #spirit-upload-modal.active, #fast-draw-modal.active');
 
         if ($activeOverlay.length > 0) {
             $activeOverlay.removeClass('active');
             $('body').removeClass('modal-open');
 
             // Specific cleanup for some modals
-            if (window.sharedCard3D) window.sharedCard3D.stop();
             if (window.card3dActive !== undefined) window.card3dActive = false;
             return;
         }
@@ -586,31 +561,23 @@ window.sharedCard3D = {
     currentRX: 0,
     currentRY: 0,
     active: false,
-    loopRunning: false,
     orientationHandler: null,
     touchHandler: null,
     cachedEl: null,
-    currentCardId: 'card-3d',
-    currentOverlayId: 'image-overlay',
-    currentContainerId: 'card-3d-container',
 
-    updateRotation: function() {
-        if (!window.sharedCard3D.active) {
-            window.sharedCard3D.loopRunning = false;
-            return;
-        }
+    updateRotation: function(cardId = 'card-3d', overlayId = 'image-overlay') {
+        if (!window.sharedCard3D.active) return;
 
-        const card3d = document.getElementById(window.sharedCard3D.currentCardId);
+        const card3d = window.sharedCard3D.cachedEl || document.getElementById(cardId);
         if (!card3d) {
             window.sharedCard3D.active = false;
-            window.sharedCard3D.loopRunning = false;
             return;
         }
+        window.sharedCard3D.cachedEl = card3d;
 
-        const overlay = document.getElementById(window.sharedCard3D.currentOverlayId);
+        const overlay = document.getElementById(overlayId);
         if (overlay && !overlay.classList.contains('active')) {
             window.sharedCard3D.active = false;
-            window.sharedCard3D.loopRunning = false;
             return;
         }
 
@@ -650,14 +617,10 @@ window.sharedCard3D = {
         s.setProperty('--pointer-from-left', mx.toFixed(3));
         s.setProperty('--card-opacity', '1');
 
-        requestAnimationFrame(() => window.sharedCard3D.updateRotation());
+        requestAnimationFrame(() => window.sharedCard3D.updateRotation(cardId, overlayId));
     },
 
-    init: function(containerId = 'card-3d-container', cardId = 'card-3d', zTextId = '#z-text-container', overlayId = 'image-overlay') {
-        window.sharedCard3D.currentContainerId = containerId;
-        window.sharedCard3D.currentCardId = cardId;
-        window.sharedCard3D.currentOverlayId = overlayId;
-
+    init: function(containerId = 'card-3d-container', cardId = 'card-3d', zTextId = '#z-text-container') {
         const $container = $(`#${containerId}`);
         const $card = $(`#${cardId}`);
         const $zContainer = $(zTextId);
@@ -750,16 +713,14 @@ window.sharedCard3D = {
             }
         }
 
-        window.sharedCard3D.active = true;
-        if (!window.sharedCard3D.loopRunning) {
-            window.sharedCard3D.loopRunning = true;
-            requestAnimationFrame(() => window.sharedCard3D.updateRotation());
+        if (!window.sharedCard3D.active) {
+            window.sharedCard3D.active = true;
+            requestAnimationFrame(() => window.sharedCard3D.updateRotation(cardId, containerId === 'inv-card-3d-container' ? 'investment-card-modal' : 'image-overlay'));
         }
     },
 
     stop: function() {
         window.sharedCard3D.active = false;
-        window.sharedCard3D.loopRunning = false;
         window.sharedCard3D.cachedEl = null;
         if (window.sharedCard3D.orientationHandler) {
             window.removeEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
