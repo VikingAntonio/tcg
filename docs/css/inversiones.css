@@ -386,6 +386,10 @@
     z-index: 4000000 !important;
 }
 
+#mask-editor-overlay {
+    z-index: 3500000 !important;
+}
+
 /* Side Panel Base Styles (Desktop Hidden) */
 .inv-side-panel, .inv-side-panel-tab, .inv-side-panel-overlay {
     display: none;

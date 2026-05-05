@@ -1838,6 +1838,7 @@ input:checked + .slider:before {
 }
 
 .card-3d-container.active .holo-layer,
+#inv-card-3d-container.active .holo-layer,
 .card-slot.active .holo-layer {
     opacity: 1;
 }
