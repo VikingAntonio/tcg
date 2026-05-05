@@ -135,14 +135,46 @@ function initInvestmentListeners() {
     });
 
     // Holo effect selector change listener
-    $(document).on('change', '#inv-card-holo-effect', function() {
-        const val = $(this).val();
+    $(document).on('change', '#inv-card-holo-effect, #inv-card-show-foil', function() {
+        const val = $('#inv-card-holo-effect').val();
         if (val === 'custom-texture' || val === 'custom-foil') {
             $('#inv-card-mask-container').show();
         } else {
             $('#inv-card-mask-container').hide();
         }
+        updateInvCardFoilPreview();
     });
+
+    $(document).on('change', '#inv-card-custom-mask', function() {
+        updateInvCardFoilPreview();
+    });
+
+    function updateInvCardFoilPreview() {
+        const $card3d = $("#inv-card-3d");
+        const $container = $("#inv-card-3d-container");
+        const holo = $('#inv-card-holo-effect').val();
+        const mask = $('#inv-card-custom-mask').val();
+        const showFoil = $('#inv-card-show-foil').is(':checked');
+
+        if (window.applyFoilToElement) {
+            $container.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
+
+            if (showFoil && holo) {
+                window.applyFoilToElement($card3d, holo, mask);
+                $container.addClass("active");
+                $card3d.addClass("active foil-loop");
+
+                const baseHolo = holo.startsWith('custom-foil|') ? (holo.split('|')[1] || 'foil') : holo;
+                if (!window.POKEMON_FOILS[baseHolo]) {
+                    $container.addClass(baseHolo);
+                }
+            } else {
+                window.applyFoilToElement($card3d, "", "");
+                $container.removeClass("active");
+                $card3d.removeClass("active foil-loop");
+            }
+        }
+    }
 
     // Open mask editor for investment modal
     $(document).on('click', '#btn-open-mask-editor-inv', function(e) {

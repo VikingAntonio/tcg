@@ -63,7 +63,23 @@ window.getAlbumSize = function($albumContainer) {
 };
 
 window.applyFoilToElement = function($el, holo, mask) {
-    if (!holo) return;
+    // 1. Clean up any existing foil effects
+    const allHoloClasses = [
+        'super-rare', 'ghost-rare', 'foil', 'secret-rare',
+        'rainbow', 'custom-texture', 'starlight-rare', 'custom-foil',
+        'card', 'masked', 'active', 'foil-loop', 'pk-rare-holo', 'pk-rare-holo-cosmos'
+    ];
+    $el.removeClass(allHoloClasses.join(' '));
+    $el.removeAttr('data-rarity data-trainer-gallery data-subtypes data-supertype');
+    $el.css({
+        '--mask': '', '--mask-url': '', '--mx': '', '--my': '', '--angle': '',
+        '--pointer-x': '', '--pointer-y': '', '--background-x': '', '--background-y': ''
+    });
+
+    if (!holo) {
+        $el.css('--card-opacity', 0);
+        return;
+    }
 
     const POKEMON_FOILS = window.POKEMON_FOILS;
 
@@ -101,7 +117,15 @@ window.applyFoilToElement = function($el, holo, mask) {
     });
 
     if ($el.find('.holo-layer').length === 0) $el.append('<div class="holo-layer"></div>');
+    if ($el.find('.card__shine').length === 0) $el.append('<div class="card__shine"></div>');
+    if ($el.find('.card__glare').length === 0) $el.append('<div class="card__glare"></div>');
+
     $el.addClass('active foil-loop');
+
+    // Ensure the element has proper layout for foil children
+    if ($el.css('position') === 'static') {
+        $el.css('position', 'relative');
+    }
 };
 
 // --- Global Navigation ---
