@@ -969,6 +969,8 @@ async function openCardModal($slot) {
     const showFoil = isInvestment ? $slot.data('show-foil') : true;
 
     if (baseHolo && showFoil) {
+        $card.addClass("active foil-loop");
+        $card3d.addClass("active");
         if (POKEMON_FOILS[baseHolo]) {
             let rarityVal = POKEMON_FOILS[baseHolo];
             $card.addClass("card");
@@ -1174,6 +1176,8 @@ function applyVisualsToModal(holo, mask, use3d, showFoil = true) {
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
     if (baseHolo && showFoil) {
+        $card.addClass("active foil-loop");
+        $card3d.addClass("active");
         if (POKEMON_FOILS[baseHolo]) {
             let rarityVal = POKEMON_FOILS[baseHolo];
             $card.addClass("card");

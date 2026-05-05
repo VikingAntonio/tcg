@@ -1831,7 +1831,7 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
-    transform: translate3d(0,0,0) translateZ(12px) !important; /* Increased significantly to eliminate Z-fighting with depth layers */
+    transform: translate3d(0,0,0) translateZ(15px) !important; /* Increased significantly to eliminate Z-fighting with depth layers */
     will-change: transform;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
@@ -1839,8 +1839,13 @@ input:checked + .slider:before {
 
 .card-3d-container.active .holo-layer,
 #inv-card-3d-container.active .holo-layer,
-.card-slot.active .holo-layer {
-    opacity: 1;
+.card-3d.active .holo-layer,
+.card.active .holo-layer,
+.card-slot.active .holo-layer,
+.inv-card-slot.active .holo-layer,
+.swiper-slide.active .holo-layer {
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 /* SUPER RARE */
