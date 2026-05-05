@@ -1456,6 +1456,7 @@ async function loadStoreData() {
 
     if (!identifier) {
         $('#public-store-name').hide();
+        initFloatingCompanion();
         return;
     }
 
