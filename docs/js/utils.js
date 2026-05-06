@@ -728,3 +728,55 @@ window.sharedCard3D = {
         }
     }
 };
+
+function makeCompanionDraggable() {
+    const wrapper = document.getElementById('companion-wrapper');
+    const handle = document.getElementById('companion-drag-handle');
+    if (!wrapper || !handle) return;
+
+    let isDragging = false;
+    let startX, startY;
+    let initialX, initialY;
+    window.isCompanionDragging = false;
+
+    // Reset touchAction on the companion container to allow internal interactions
+    const companion = document.getElementById('floating-companion-container');
+    if (companion) companion.style.touchAction = 'auto';
+
+    handle.style.touchAction = 'none';
+
+    handle.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        window.isCompanionDragging = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = wrapper.getBoundingClientRect();
+        initialX = rect.left;
+        initialY = rect.top;
+        handle.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) window.isCompanionDragging = true;
+        let newX = initialX + dx;
+        let newY = initialY + dy;
+        newX = Math.max(0, Math.min(window.innerWidth - wrapper.offsetWidth, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - wrapper.offsetHeight, newY));
+
+        wrapper.style.left = newX + 'px';
+        wrapper.style.top = newY + 'px';
+        wrapper.style.bottom = 'auto';
+        wrapper.style.right = 'auto';
+        wrapper.style.margin = '0';
+    });
+
+    window.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        setTimeout(() => { window.isCompanionDragging = false; }, 100);
+    });
+}
