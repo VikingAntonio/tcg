@@ -1226,7 +1226,6 @@
                 <div class="inv-tab-link active" data-tab="inv-tab-resumen">RESUMEN</div>
                 <div class="inv-tab-link" data-tab="inv-tab-datos">DATOS</div>
                 <div class="inv-tab-link" data-tab="inv-tab-images">IMAGES</div>
-                <div class="inv-tab-link" data-tab="inv-tab-holo">HOLO</div>
                 <div class="inv-tab-link" data-tab="inv-tab-movimientos">MOVIMIENTOS</div>
             </div>
 
@@ -1304,12 +1303,6 @@
                             <input type="number" id="inv-card-quantity" value="1">
                         </div>
                     </div>
-                    <div class="inv-form-row" style="margin-bottom: 25px;">
-                        <div class="inv-form-group" style="flex-direction: row; align-items: center; gap: 10px; grid-column: span 2;">
-                            <input type="checkbox" id="inv-card-show-foil" style="width: 20px; height: 20px; cursor: pointer;">
-                            <label for="inv-card-show-foil" style="margin: 0; cursor: pointer; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Aplicar Foil</label>
-                        </div>
-                    </div>
                     <div class="inv-form-row">
                         <div class="inv-form-group">
                             <label>Precio de Compra ($)</label>
@@ -1341,52 +1334,6 @@
                     </div>
                 </div>
 
-                <!-- Tab: Holo -->
-                <div id="inv-tab-holo" class="slot-tab-content" style="padding: 40px;">
-                    <div class="inv-form-row">
-                        <div class="inv-form-group" style="grid-column: span 2;">
-                            <label>Efecto Holo</label>
-                            <select id="inv-card-holo-effect" style="width: 100%; background: #f9f9f9; color: #000; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-weight: 700;">
-                                <option value="">Ninguno</option>
-                                <option value="foil">Foil</option>
-                                <option value="custom-texture">CustomTexture</option>
-                                <option value="custom-foil">CustomFoil</option>
-                                <option value="pk-rare-holo">PK: Rare Holo</option>
-                                <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
-                                <option value="pk-rare-holo-v">PK: Rare Holo V</option>
-                                <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
-                                <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
-                                <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
-                                <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
-                                <option value="pk-rare-secret">PK: Rare Secret</option>
-                                <option value="pk-rare-shiny">PK: Rare Shiny</option>
-                                <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
-                                <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
-                                <option value="pk-amazing-rare">PK: Amazing Rare</option>
-                                <option value="pk-radiant-rare">PK: Radiant Rare</option>
-                                <option value="pk-rare-ultra">PK: Rare Ultra</option>
-                                <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
-                                <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
-                                <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
-                                <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
-                                <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
-                                <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
-                                <option value="pk-reverse-holo">PK: Reverse Holo</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="inv-form-row" id="inv-card-mask-container" style="display: none;">
-                        <div class="inv-form-group" style="grid-column: span 2;">
-                            <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="inv-card-custom-mask" placeholder="URL de la imagen o Base64" style="flex: 1;">
-                                <button id="btn-open-mask-editor-inv" class="btn-inv-outline" style="white-space: nowrap; padding: 10px;">
-                                    <i class="fas fa-paint-brush"></i> EDITAR
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Tab: History / Movements -->
                 <div id="inv-tab-movimientos" class="slot-tab-content" style="padding: 40px;">
