@@ -259,6 +259,15 @@ $(document).ready(async function() {
         $('#chatbot-container').removeClass('active');
     });
 
+    $('#close-gltf-overlay').click(function() {
+        $('#gltf-overlay').removeClass('active');
+        // Clear src to stop rendering/loading
+        $('#expanded-gltf-viewer').attr('src', '');
+        if (!$('#image-overlay').hasClass('active') && !$('#spirit-modal').hasClass('active')) {
+            $('body').removeClass('modal-open');
+        }
+    });
+
     // --- Companion Menu Logic ---
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#floating-companion-container, #companion-menu').length) {
@@ -266,22 +275,6 @@ $(document).ready(async function() {
         }
     });
 
-    $('#menu-item-chat').click(function() {
-        $('#chatbot-container').addClass('active');
-        $('#companion-menu').removeClass('active');
-    });
-
-    $('#menu-item-details').click(function() {
-        if (window.currentSpirit) {
-            Swal.fire({
-                title: window.currentSpirit.name,
-                html: `<model-viewer src="${window.currentSpirit.gltf_url}" auto-rotate camera-controls style="width:100%; height:300px; background:#000; border-radius:15px;"></model-viewer>`,
-                showCloseButton: true,
-                showConfirmButton: false
-            });
-        }
-        $('#companion-menu').removeClass('active');
-    });
 
     $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
@@ -2284,6 +2277,10 @@ async function updateAlbumOrder(ids) {
 function showView(view) {
     $('.admin-section').hide().removeClass('active');
     $(`#view-${view}`).show().addClass('active');
+
+    if (window.botInstance) {
+        window.botInstance.setContext(view);
+    }
 }
 
 async function editAlbum(album) {
@@ -2636,10 +2633,28 @@ async function loadSpirits() {
     });
 }
 
-function initFloatingCompanion() {
+async function initFloatingCompanion() {
+    // If no spirit selected, try to get a public one from DB
+    if (!window.currentSpirit) {
+        try {
+            const { data: publicSpirits } = await _supabase
+                .from('spirits')
+                .select('*')
+                .eq('is_public', true)
+                .limit(1);
+            if (publicSpirits && publicSpirits.length > 0) {
+                window.currentSpirit = publicSpirits[0];
+            }
+        } catch (e) {
+            console.warn("Could not fetch fallback public spirit", e);
+        }
+    }
+
     if (!window.currentSpirit) return;
 
     const $container = $('#floating-companion-container');
+    if (!$container.length) return;
+
     setTimeout(makeCompanionDraggable, 1000);
     $container.html(`
         <model-viewer
@@ -2650,7 +2665,8 @@ function initFloatingCompanion() {
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none">
+            interaction-prompt="none"
+            oncontextmenu="return false;">
         </model-viewer>
     `);
 
@@ -2658,6 +2674,30 @@ function initFloatingCompanion() {
         if (window.isCompanionDragging) return;
         e.stopPropagation();
         $('#companion-menu').toggleClass('active');
+    });
+
+    // --- Interaction Menu Actions ---
+    $('#menu-item-chat').off('click').on('click', function(e) {
+        e.stopPropagation();
+        $('#chatbot-container').addClass('active');
+        $('#companion-menu').removeClass('active');
+    });
+
+    $('#menu-item-play').off('click').on('click', function(e) {
+        e.stopPropagation();
+        window.location.href = 'play.html';
+    });
+
+    $('#menu-item-details').off('click').on('click', function(e) {
+        e.stopPropagation();
+        if (window.currentSpirit) {
+            $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
+            $('#expanded-gltf-viewer').attr('poster', window.currentSpirit.poster_url || '');
+            $('#expanded-gltf-name').text(window.currentSpirit.name);
+            $('#gltf-overlay').addClass('active');
+            $('body').addClass('modal-open');
+        }
+        $('#companion-menu').removeClass('active');
     });
 
     // Initialize CompanionBot Tips
@@ -2861,33 +2901,6 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-modal').addClass('active');
 }
 
-function makeCompanionDraggable() {
-    const wrapper = document.getElementById('companion-wrapper');
-    const handle = document.getElementById('companion-drag-handle');
-    if (!wrapper || !handle) return;
-
-    let isDragging = false;
-    let startX, startY;
-    let initialX, initialY;
-    window.isCompanionDragging = false;
-
-    // Reset touchAction on the companion container to allow internal interactions
-    const companion = document.getElementById('floating-companion-container');
-    if (companion) companion.style.touchAction = 'auto';
-
-    handle.style.touchAction = 'none';
-
-    handle.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        window.isCompanionDragging = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = wrapper.getBoundingClientRect();
-        initialX = rect.left;
-        initialY = rect.top;
-        handle.setPointerCapture(e.pointerId);
-        e.stopPropagation();
-    });
 
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;

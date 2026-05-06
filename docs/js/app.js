@@ -388,6 +388,7 @@ $(document).ready(async function() {
     }
 
     await loadStoreData();
+    initFloatingCompanion();
 
     $('.nav-btn').click(function() {
         const view = $(this).data('view');
@@ -677,25 +678,6 @@ $(document).ready(async function() {
         }
     });
 
-    $('#menu-item-chat').click(function() {
-        $('#chatbot-container').addClass('active');
-        $('#companion-menu').removeClass('active');
-    });
-
-    $('#menu-item-details').click(function() {
-        if (window.currentSpirit) {
-            $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
-            $('#expanded-gltf-viewer').attr('poster', window.currentSpirit.poster_url || '');
-            $('#expanded-gltf-name').text(window.currentSpirit.name);
-            $('#gltf-overlay').addClass('active');
-            $('body').addClass('modal-open');
-        }
-        $('#companion-menu').removeClass('active');
-    });
-
-    $('#menu-item-play').click(function() {
-        window.location.href = 'play.html';
-    });
 
     // --- Cart Integration ---
     $(document).on('click', '#btn-add-to-cart', function(e) {
@@ -1244,7 +1226,6 @@ async function switchView(view) {
     } else if (view === 'auctions') {
         await loadPublicAuctions();
         if (window.botInstance) {
-            window.botInstance.setContext('auctions');
             window.botInstance.say("¡Bienvenido a las subastas! Elige un artículo para ver los detalles y colocar tu puja. ¡Mucha suerte!", { duration: 8 });
         }
     } else if (view === 'investments') {
@@ -1313,26 +1294,28 @@ async function loadStoreData() {
             messenger: userData.messenger_link
         };
 
-        // Check localStorage first for guest selection
-        const localSpirit = localStorage.getItem('selected_spirit');
-        if (localSpirit) {
-            window.currentSpirit = JSON.parse(localSpirit);
-        } else {
-            // Fetch selected spirit from DB (owner's preference or default)
-            const { data: spiritRef } = await _supabase
-                .from('usuarios')
-                .select('selected_spirit_id')
-                .eq('id', userData.id)
-                .single();
+        // Priority: Owner's selected spirit for their public profile
+        const { data: spiritRef } = await _supabase
+            .from('usuarios')
+            .select('selected_spirit_id')
+            .eq('id', userData.id)
+            .single();
 
-            if (spiritRef && spiritRef.selected_spirit_id) {
-                const { data: spiritData } = await _supabase
-                    .from('spirits')
-                    .select('*')
-                    .eq('id', spiritRef.selected_spirit_id)
-                    .single();
-                if (spiritData) window.currentSpirit = spiritData;
+        if (spiritRef && spiritRef.selected_spirit_id) {
+            const { data: spiritData } = await _supabase
+                .from('spirits')
+                .select('*')
+                .eq('id', spiritRef.selected_spirit_id)
+                .single();
+            if (spiritData) {
+                window.currentSpirit = spiritData;
             }
+        }
+
+        // Fallback: Check localStorage if owner didn't have one set
+        if (!window.currentSpirit) {
+            const localSpirit = localStorage.getItem('selected_spirit');
+            if (localSpirit) window.currentSpirit = JSON.parse(localSpirit);
         }
 
         if (userData.is_store) {
@@ -1473,10 +1456,28 @@ function loadPublicPreorders() {
     });
 }
 
-function initFloatingCompanion() {
+async function initFloatingCompanion() {
+    // If no spirit selected, try to get a public one from DB
+    if (!window.currentSpirit) {
+        try {
+            const { data: publicSpirits } = await _supabase
+                .from('spirits')
+                .select('*')
+                .eq('is_public', true)
+                .limit(1);
+            if (publicSpirits && publicSpirits.length > 0) {
+                window.currentSpirit = publicSpirits[0];
+            }
+        } catch (e) {
+            console.warn("Could not fetch fallback public spirit", e);
+        }
+    }
+
     if (!window.currentSpirit) return;
 
     const $container = $('#floating-companion-container');
+    if (!$container.length) return;
+
     setTimeout(makeCompanionDraggable, 1000);
     $container.html(`
         <model-viewer
@@ -1487,14 +1488,39 @@ function initFloatingCompanion() {
             shadow-intensity="1"
             environment-image="neutral"
             exposure="1"
-            interaction-prompt="none">
+            interaction-prompt="none"
+            oncontextmenu="return false;">
         </model-viewer>
     `);
 
-    $container.on('click', function(e) {
+    $container.off('click').on('click', function(e) {
         if (window.isCompanionDragging) return;
         e.stopPropagation();
         $('#companion-menu').toggleClass('active');
+    });
+
+    // --- Interaction Menu Actions ---
+    $('#menu-item-chat').off('click').on('click', function(e) {
+        e.stopPropagation();
+        $('#chatbot-container').addClass('active');
+        $('#companion-menu').removeClass('active');
+    });
+
+    $('#menu-item-play').off('click').on('click', function(e) {
+        e.stopPropagation();
+        window.location.href = 'play.html';
+    });
+
+    $('#menu-item-details').off('click').on('click', function(e) {
+        e.stopPropagation();
+        if (window.currentSpirit) {
+            $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
+            $('#expanded-gltf-viewer').attr('poster', window.currentSpirit.poster_url || '');
+            $('#expanded-gltf-name').text(window.currentSpirit.name);
+            $('#gltf-overlay').addClass('active');
+            $('body').addClass('modal-open');
+        }
+        $('#companion-menu').removeClass('active');
     });
 
     // Initialize CompanionBot Tips
@@ -2449,33 +2475,6 @@ function loadPublicWishlist() {
     });
 }
 
-function makeCompanionDraggable() {
-    const wrapper = document.getElementById('companion-wrapper');
-    const handle = document.getElementById('companion-drag-handle');
-    if (!wrapper || !handle) return;
-
-    let isDragging = false;
-    let startX, startY;
-    let initialX, initialY;
-    window.isCompanionDragging = false;
-
-    // Reset touchAction on the companion container to allow internal interactions
-    const companion = document.getElementById('floating-companion-container');
-    if (companion) companion.style.touchAction = 'auto';
-
-    handle.style.touchAction = 'none';
-
-    handle.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        window.isCompanionDragging = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = wrapper.getBoundingClientRect();
-        initialX = rect.left;
-        initialY = rect.top;
-        handle.setPointerCapture(e.pointerId);
-        e.stopPropagation();
-    });
 
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
