@@ -17,6 +17,42 @@
     --inv-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* View Container Responsiveness */
+#view-investments, #view-investment-details {
+    padding-bottom: 140px !important;
+    padding-top: 20px;
+    min-height: 100vh;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Investment Album Stability Fixes */
+.investment-album-layout {
+    overflow: hidden !important;
+    height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.02);
+    border-radius: 4px;
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.album-wrapper {
+    width: 600px;
+    height: 420px;
+    position: relative;
+    margin: 0 auto;
+    max-width: 100%;
+}
+
+.investment-album {
+    margin: 0 auto;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+}
+
 /* Category Grid */
 .inv-category-item {
     background: var(--inv-white);
@@ -147,18 +183,23 @@
 }
 
 /* Modal Overhaul */
+#investment-card-modal {
+    z-index: 2000000 !important; /* Extremely high to beat all other navs */
+}
+
 #investment-card-modal .overlay-content {
     background: var(--inv-white) !important;
     border: 1px solid var(--inv-black);
     box-shadow: 0 40px 100px rgba(0,0,0,0.2) !important;
     width: 95% !important;
-    max-width: 800px !important;
-    height: 80vh !important;
-    max-height: 850px !important;
+    max-width: 1000px !important;
+    height: auto !important;
+    max-height: 85vh !important;
     display: flex;
     flex-direction: column;
     padding: 0 !important;
     border-radius: 4px;
+    z-index: 2000001 !important;
 }
 
 .inv-modal-header {
@@ -167,6 +208,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .inv-modal-header h2 {
@@ -176,6 +218,28 @@
     text-transform: uppercase;
     letter-spacing: -0.01em;
     color: var(--inv-black) !important;
+}
+
+.inv-close-btn {
+    color: #ff4757 !important;
+    transition: var(--inv-transition);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 32px !important;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    z-index: 2000005 !important;
+}
+
+.inv-close-btn:hover {
+    background: rgba(255, 71, 87, 0.1);
+    transform: scale(1.1);
 }
 
 .inv-modal-tabs {
@@ -309,6 +373,7 @@
 .inv-swal-popup {
     border-radius: 4px !important;
     border: 1px solid #000 !important;
+    z-index: 3000000 !important;
 }
 
 .inv-swal-popup .swal2-title {
@@ -317,10 +382,216 @@
     text-transform: uppercase !important;
 }
 
+.swal2-container {
+    z-index: 4000000 !important;
+}
+
+/* Side Panel Base Styles (Desktop Hidden) */
+.inv-side-panel, .inv-side-panel-tab, .inv-side-panel-overlay {
+    display: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+    /* Side Panel Mobile Styles */
+    .inv-side-panel-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .inv-side-panel-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .inv-side-panel-tab {
+        display: flex;
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #000;
+        color: #fff;
+        padding: 25px 12px;
+        border-radius: 0 12px 12px 0;
+        z-index: 9998;
+        cursor: pointer;
+        writing-mode: vertical-lr;
+        text-orientation: mixed;
+        font-size: 0.8rem;
+        font-weight: 900;
+        letter-spacing: 0.3em;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-left: none;
+        transition: padding 0.2s ease;
+    }
+
+    .inv-side-panel-tab:hover {
+        padding-left: 18px;
+    }
+
+    .inv-side-panel {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        height: 100vh;
+        background: #fff;
+        z-index: 10000;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 5px 0 25px rgba(0,0,0,0.1);
+        overflow-y: auto;
+    }
+
+    .inv-side-panel.active {
+        left: 0;
+    }
+
+    .inv-side-panel-content {
+        padding: 30px 20px;
+    }
+
+    .inv-pc-header {
+        display: none !important;
+    }
+
+    #investment-card-modal {
+        z-index: 2000000 !important;
+    }
+
+    #investment-card-modal .overlay-content {
+        height: auto !important;
+        max-height: 85vh !important;
+        width: 96% !important;
+        margin: 10px auto !important;
+        border-radius: 12px !important;
+        overflow-x: hidden;
+    }
+
+    .inv-modal-header {
+        padding: 10px 15px;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+    }
+
+    .inv-close-btn {
+        position: static !important;
+        order: -1; /* Move to the left */
+        margin-right: 15px;
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 24px !important;
+        background: rgba(255, 71, 87, 0.1);
+        border: 1px solid rgba(255, 71, 87, 0.3);
+    }
+
+    .inv-modal-header h2 {
+        font-size: 0.85rem !important;
+        text-align: left !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+
+    .inv-modal-tabs {
+        padding: 0 10px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+    }
+
+    .inv-modal-tabs::-webkit-scrollbar { display: none; }
+
+    .inv-tab-link {
+        padding: 8px 12px;
+        font-size: 0.6rem;
+        flex: 1;
+        text-align: center;
+    }
+
+    .inv-modal-body {
+        padding: 15px;
+    }
+
+    #view-investments, #view-investment-details {
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    #view-investments .admin-header {
+        margin-bottom: 5px !important;
+        margin-top: 5px !important;
+        padding: 10px !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 98% !important;
+        border-radius: 8px !important;
+    }
+
+    .admin-header .view-title {
+        font-size: 1.2rem !important;
+        margin: 2px 0 !important;
+    }
+
+    .admin-header .view-subtitle {
+        font-size: 0.7rem !important;
+    }
+
+    .view-mode-selector {
+        gap: 5px !important;
+        margin-top: 10px !important;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .mode-btn {
+        padding: 6px 10px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .add-asset-btn {
+        padding: 8px 12px !important;
+        font-size: 0.75rem !important;
+        bottom: 100px !important;
+        right: 15px !important;
+    }
+
+    .investment-album-layout {
+        height: auto;
+        min-height: 350px;
+        padding: 10px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .album-wrapper {
+        /* Remove !important to allow JS dynamic sizing */
+        max-width: 100%;
+    }
+
     .inv-form-row { grid-template-columns: 1fr; }
-    #investment-card-modal .overlay-content { height: 95vh !important; }
 }
 
 /* Detail Modal Styles */
@@ -333,91 +604,126 @@
 }
 
 .inv-detail-container {
-    display: grid;
-    grid-template-columns: 400px 1fr;
-    gap: 0;
+    display: flex;
+    flex-wrap: wrap;
     background: var(--inv-white);
+    min-height: 500px;
 }
 
 .inv-detail-image-side {
     background: #f8f9fa;
-    padding: 60px;
+    padding: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-right: 1px solid #eee;
+    flex: 1 1 350px;
 }
 
 .inv-detail-image-wrapper {
     position: relative;
     width: 100%;
-    max-width: 280px;
+    max-width: 300px;
     perspective: 1000px;
 }
 
 .inv-detail-image-side img {
     width: 100%;
-    border-radius: 4px;
+    border-radius: 6px;
     border: 3px solid var(--inv-black);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
 
 .inv-detail-info-side {
-    padding: 60px;
+    padding: 40px;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: none;
+    flex: 1 1 450px;
+    max-height: 80vh;
 }
 
-.inv-detail-header-info {
-    margin-bottom: 40px;
-    padding-bottom: 30px;
-    border-bottom: 2px solid #000;
+.inv-detail-info-side::-webkit-scrollbar { display: none; }
+
+.inv-detail-data-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
 }
 
 .inv-detail-set {
     font-size: 0.7rem;
-    font-weight: 900;
-    color: #999;
+    font-weight: 800;
+    color: #888;
     text-transform: uppercase;
-    letter-spacing: 0.2em;
-    margin-bottom: 12px;
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
 }
 
 .inv-detail-price-row {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 15px;
 }
 
 .inv-detail-price {
-    font-size: 3.5rem;
+    font-size: 3rem;
     font-weight: 900;
     color: var(--inv-black);
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
     line-height: 1;
 }
 
+
+.inv-detail-chart-area {
+    margin-bottom: 25px;
+}
+
 .inv-detail-chart-container {
-    height: 300px;
-    margin-bottom: 30px;
+    height: 180px;
+    width: 100%;
     background: #fff;
 }
 
 .inv-detail-history-list {
     flex: 1;
     overflow-y: auto;
-    max-height: 200px;
     border-top: 1px solid #eee;
-    padding-top: 20px;
+    padding-top: 15px;
+    max-height: 150px;
+}
+
+/* Card Badges and Icons */
+.inv-card-info-badge {
+    background: #000;
+    border-radius: 2px;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    padding: 2px 5px;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.inv-trend-icon {
+    margin-left: 10px;
+    font-size: 1.2rem;
 }
 
 /* Album Zoom Button Enhancement */
 .investment-album .zoom-btn {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 35px;
-    height: 35px;
+    bottom: 5px;
+    right: 5px;
+    width: 30px;
+    height: 30px;
     background: #000;
     color: #fff;
     border-radius: 50%;
@@ -426,9 +732,10 @@
     justify-content: center;
     cursor: pointer;
     z-index: 10;
-    opacity: 0.8;
+    opacity: 0.9;
     transition: all 0.2s ease;
     border: 1px solid #fff;
+    font-size: 14px;
 }
 
 .investment-album .zoom-btn:hover {
@@ -440,14 +747,113 @@
 @media (max-width: 768px) {
     .inv-detail-container {
         flex-direction: column;
-        padding: 20px;
     }
+
     .inv-detail-image-side {
-        flex: 0 0 auto;
-        display: flex;
-        justify-content: center;
+        border-right: none;
+        border-bottom: 1px solid #eee;
+        padding: 30px;
     }
-    .inv-detail-image-side img {
-        max-width: 200px;
+
+    .inv-detail-image-wrapper {
+        max-width: 180px;
+    }
+
+    .inv-detail-info-side {
+        padding: 30px;
+        max-height: none;
+    }
+
+    .inv-detail-price {
+        font-size: 1.8rem;
+    }
+
+    /* Deck (Slide) Mode Mobile Adjustments */
+    .investment-slide-layout .swiper {
+        max-width: 240px !important;
+        height: 380px !important;
+    }
+
+    .investment-slide-layout .swiper-slide img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .investment-slide-layout .inv-card-info-overlay {
+        padding: 10px !important;
+        margin-top: 10px !important;
+    }
+
+    .investment-slide-layout .inv-card-info-overlay h4 {
+        font-size: 0.8rem !important;
+    }
+
+    /* List Mode Mobile Adjustments */
+    .inv-list-container {
+        width: 100% !important;
+        padding: 0 5px !important;
+        box-sizing: border-box !important;
+    }
+
+    .inv-list-item {
+        margin-bottom: 8px !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 8px !important;
+    }
+
+    .inv-list-thumb {
+        width: 40px !important;
+        height: 56px !important;
+    }
+
+    .inv-list-name {
+        font-size: 0.75rem !important;
+    }
+
+    .inv-list-set {
+        font-size: 0.6rem !important;
+    }
+
+    .inv-list-prices {
+        width: auto !important;
+        gap: 12px !important;
+        flex-direction: row !important;
+        text-align: right !important;
+    }
+
+    .inv-list-prices .inv-price-row {
+        text-align: right !important;
+    }
+
+    .inv-list-prices .inv-price-row b {
+        font-size: 0.7rem !important;
+    }
+
+    .inv-list-item button {
+        padding: 4px 8px !important;
+        font-size: 0.6rem !important;
+    }
+
+    .investment-album .zoom-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+        bottom: 3px;
+        right: 3px;
+    }
+
+    .inv-card-info-badge {
+        background: transparent !important;
+        top: 2px !important;
+        left: 2px !important;
+        padding: 0 !important;
+        text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000 !important;
+    }
+
+    .inv-trend-icon {
+        margin-left: 5px !important;
+        font-size: 0.9rem !important;
     }
 }
