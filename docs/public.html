@@ -6,7 +6,6 @@
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <title>Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/animacionesdeseos.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="css/cards.css">
     <link rel="stylesheet" href="css/barajaryg.css">
@@ -27,7 +26,6 @@
     </script>
     <script type="module" src="js/loading3d.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="public-body">
     <button id="btn-close-focus-mode" class="btn-close-focus" onclick="window.clearShareFilters()">
@@ -128,11 +126,7 @@
                     <i class="fas fa-heart"></i>
                     <span>Buscamos</span>
                 </div>
-                <div class="home-menu-item" data-view="investments">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Inversiones</span>
-                </div>
-                <div class="home-menu-item" data-view="events">
+                <div class="home-menu-item" data-view="events" style="grid-column: span 2;">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Eventos y Noticias</span>
                 </div>
@@ -198,34 +192,16 @@
                 <!-- Eventos cargados aquí -->
             </div>
         </div>
-
-        <div id="investments-view" class="view-section">
-            <div class="admin-header" id="public-inv-header" style="display: none; text-align: left; background: #fff; padding: 40px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 40px;">
-                <button class="btn-inv-outline" onclick="showPublicInvestmentCategories()" style="margin-bottom: 30px;"><i class="fas fa-chevron-left"></i> All Vaults</button>
-                <div>
-                    <div style="font-size: 0.6rem; letter-spacing: 0.3em; font-weight: 800; color: #999; margin-bottom: 5px; text-transform: uppercase;">Public Portfolio</div>
-                    <h2 id="public-inv-title" style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.03em; color: #000; margin: 0; text-transform: uppercase;">Vault</h2>
-                </div>
-            </div>
-
-            <div class="sticky-tabs-container" id="public-investment-tabs" style="display: none; margin-bottom: 20px;">
-                <button class="tab-pill active" data-mode="album">binders</button>
-                <button class="tab-pill" data-mode="slide">vikingSlide</button>
-                <button class="tab-pill" data-mode="list">lista</button>
-            </div>
-
-            <div id="public-investment-categories" class="album-list">
-                <!-- Public investment categories here -->
-                <div class="loading">Cargando colecciones...</div>
-            </div>
-
-            <div id="public-investment-cards" class="investment-render-area" style="display: none;">
-                <!-- Cards will be rendered here -->
-            </div>
-        </div>
     </div>
 
     <!-- Floating Bottom App Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" id="btn-nav-return" title="Volver">
+            <i class="fas fa-chevron-left"></i>
+        </div>
     </div>
 
     <!-- Image Overlay / Modal -->
@@ -510,68 +486,103 @@
     <script src="js/companion-bot.js"></script>
     <script src="js/ztext.js"></script>
     <script src="js/cart.js"></script>
+    <!-- Mask Editor Modal -->
+    <div id="mask-editor-overlay" class="overlay">
+        <div class="overlay-content" style="max-width: 600px;">
+            <span id="close-mask-editor" class="close-btn">&times;</span>
+            <h2>Editor de Máscara</h2>
+            <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
 
-    <div class="bottom-nav">
-        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
-            <i class="fas fa-home"></i>
-        </div>
-        <div class="nav-item" id="btn-nav-return" title="Volver">
-            <i class="fas fa-chevron-left"></i>
+            <div id="mask-canvas-wrapper" style="position: relative; margin-bottom: 20px; border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 168px; height: 244px;">
+                <!-- Card background will be set via CSS -->
+                <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
+            </div>
+
+            <div class="editor-controls" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño:</label>
+                    <input type="range" id="brush-size" min="1" max="50" value="10" style="flex: 1;">
+                    <span id="brush-size-val" style="font-size: 14px; width: 30px;">10</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <button id="tool-brush" class="btn btn-secondary active"><i class="fas fa-paint-brush"></i> Pincel</button>
+                    <button id="tool-eraser" class="btn btn-secondary"><i class="fas fa-eraser"></i> Borrador</button>
+                    <button id="btn-undo-mask" class="btn btn-secondary"><i class="fas fa-undo"></i> Deshacer</button>
+                    <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar Todo</button>
+                </div>
+
+                <button id="btn-save-mask" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Máscara</button>
+            </div>
         </div>
     </div>
 
-    <!-- Deck List Modal -->
+    <script src="js/utils.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Floating Companion (Jules: Draggable wrapper) -->
+    <div id="companion-wrapper">
+        <div class="companion-drag-handle" id="companion-drag-handle" title="Arrastra para mover al compañero">
+            <i class="fas fa-arrows-alt"></i>
+        </div>
+        <div id="floating-companion-container"></div>
+        <div id="companion-bubble" class="companion-bubble"></div>
+
+        <!-- Companion Menu -->
+        <div class="companion-menu-popup" id="companion-menu">
+            <div class="companion-menu-item" id="menu-item-chat"><i class="fas fa-comment-dots"></i> Hablar</div>
+            <div class="companion-menu-item" id="menu-item-details"><i class="fas fa-search-plus"></i> Ver Detalles</div>
+            <div class="companion-menu-item" id="menu-item-play"><i class="fas fa-gamepad"></i> Jugar Partida</div>
+        </div>
+    </div>
+
+    <!-- Deck List View Modal -->
     <div id="deck-list-overlay" class="overlay">
         <div class="deck-list-modal">
-            <span id="close-deck-list" class="close-btn">&times;</span>
+            <span id="close-deck-list" class="close-btn-floating">&times;</span>
             <div class="deck-list-header">
-                <h2 id="deck-list-title">Nombre del Deck</h2>
+                <h2 id="deck-list-title">Lista de Cartas</h2>
                 <div class="deck-filter-tabs">
                     <button class="deck-filter-tab active" data-filter="all">Todas</button>
                     <button class="deck-filter-tab" data-filter="missing">Faltantes</button>
                 </div>
             </div>
             <div id="deck-grid-container" class="deck-grid-popup">
-                <!-- Cards will be loaded here -->
+                <!-- Cartas se cargarán aquí -->
             </div>
         </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="js/supabase-config.js"></script>
-    <script src="js/companion-bot.js"></script>
-    <script src="js/ztext.js"></script>
-    <script src="js/cart.js"></script>
-    <script src="js/utils.js" id="utils-js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/animacionesdeseos.js"></script>
-
-    <!-- Floating Companion -->
-    <div id="companion-wrapper">
-        <div id="companion-drag-handle" class="companion-drag-handle">
-            <i class="fas fa-arrows-alt"></i>
-        </div>
-        <div id="floating-companion-container"></div>
-        <div id="companion-bubble" class="companion-bubble"></div>
-    </div>
-
-    <!-- Companion Menu -->
-    <div class="companion-menu-popup" id="companion-menu">
-        <div class="companion-menu-item" id="menu-item-chat"><i class="fas fa-comment-dots"></i> Hablar</div>
-        <div class="companion-menu-item" id="menu-item-details"><i class="fas fa-search-plus"></i> Ver Detalles</div>
     </div>
 
     <!-- Chatbot Window -->
+    <!-- Shared Item Dedicated Modal -->
+    <div id="shared-item-modal" class="overlay">
+        <div class="overlay-content shared-preview-content">
+            <button class="btn btn-close-focus" id="close-shared-modal" style="display: flex; position: absolute; top: 15px; left: 15px; width: auto; height: auto;">
+                <i class="fas fa-arrow-left"></i> Ver Catálogo Completo
+            </button>
+            <div id="shared-content-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; margin-top: 40px;">
+                <!-- Cloned content here -->
+            </div>
+
+            <div class="share-tools-integrated" style="width: 100%; margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
+                <h4 style="margin-bottom: 15px; color: var(--primary-color);">¿Te gusta lo que ves? ¡Compártelo!</h4>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-sm" id="btn-shared-copy-link"><i class="fas fa-copy"></i> Copiar Link</button>
+                    <button class="btn btn-sm btn-secondary" id="btn-shared-show-qr"><i class="fas fa-qrcode"></i> QR</button>
+                </div>
+                <div class="social-share-grid" style="margin-top: 0; transform: scale(0.9);">
+                    <button class="social-share-btn wa shared-social-btn" data-platform="wa"><i class="fab fa-whatsapp"></i></button>
+                    <button class="social-share-btn tg shared-social-btn" data-platform="tg"><i class="fab fa-telegram-plane"></i></button>
+                    <button class="social-share-btn fb shared-social-btn" data-platform="fb"><i class="fab fa-facebook-f"></i></button>
+                    <button class="social-share-btn ms shared-social-btn" data-platform="ms"><i class="fab fa-facebook-messenger"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="chatbot-container">
         <div class="chatbot-header">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div id="chatbot-avatar-container" style="width: 40px; height: 40px; background: rgba(0,0,0,0.2); border-radius: 50%; overflow: hidden;">
-                    <!-- GLTF Avatar will be injected here -->
-                </div>
-                <h3 style="margin: 0;">Asistente Vikingdev</h3>
-            </div>
+            <h3>Asistente Vikingdev</h3>
             <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
         </div>
         <div class="chatbot-messages" id="chat-messages">
