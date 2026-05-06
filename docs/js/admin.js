@@ -1639,6 +1639,7 @@ async function checkSession() {
         }
     } else {
         showLoginView();
+        initFloatingCompanion();
     }
 }
 
@@ -1800,33 +1801,30 @@ async function showAuthenticatedContent() {
     $('#store-messenger').val(currentUser.messenger_link || '');
 
     // Load current spirit for floating companion
-    try {
-        if (currentUser.selected_spirit_id) {
-            const { data: spiritData } = await _supabase
-                .from('spirits')
-                .select('*')
-                .eq('id', currentUser.selected_spirit_id)
-                .single();
-            if (spiritData) window.currentSpirit = spiritData;
+    if (currentUser.selected_spirit_id) {
+        const { data: spiritData } = await _supabase
+            .from('spirits')
+            .select('*')
+            .eq('id', currentUser.selected_spirit_id)
+            .single();
+        if (spiritData) {
+            window.currentSpirit = spiritData;
+
+            // Fetch additional data for CompanionBot
+            const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
+                _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true).or('view_type.eq.admin,view_type.eq.both'),
+                _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1)
+            ]);
+
+            window.currentStoreDataForBot = {
+                user: currentUser,
+                customMessages: botMessages,
+                hasSealed: sealedProducts && sealedProducts.length > 0
+            };
+
+            initFloatingCompanion();
         }
-
-        // Fetch additional data for CompanionBot (even if no spirit yet, for the fallback bot)
-        const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
-            _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true).or('view_type.eq.admin,view_type.eq.both'),
-            _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1)
-        ]);
-
-        window.currentStoreDataForBot = {
-            user: currentUser,
-            customMessages: botMessages,
-            hasSealed: sealedProducts && sealedProducts.length > 0
-        };
-    } catch (e) {
-        console.warn("Error loading spirit or bot data:", e);
     }
-
-    // Always try to initialize, fallback logic inside will handle missing window.currentSpirit
-    initFloatingCompanion();
 }
 
 function copyPublicLink() {
