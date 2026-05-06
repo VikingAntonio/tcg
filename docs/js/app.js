@@ -1337,9 +1337,9 @@ async function loadStoreData() {
         const cartIdentifier = userData.is_store ? `store=${encodeURIComponent(userData.store_name)}` : `user=${encodeURIComponent(userData.username)}`;
         $('#cart-btn').attr('href', `carrito.html?${cartIdentifier}`);
 
-        // Fetch additional data for CompanionBot
+        // Fetch additional data for CompanionBot (filtering happens in class context)
         const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
-            _supabase.from('bot_messages').select('*').eq('user_id', userData.id).eq('is_active', true).or('view_type.eq.public,view_type.eq.both'),
+            _supabase.from('bot_messages').select('*').eq('user_id', userData.id).eq('is_active', true),
             _supabase.from('sealed_products').select('id').eq('user_id', userData.id).limit(1)
         ]);
 
@@ -2472,31 +2472,6 @@ function loadPublicWishlist() {
         hideLoading();
         resolve();
     }
-    });
-}
-
-
-    window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) window.isCompanionDragging = true;
-        let newX = initialX + dx;
-        let newY = initialY + dy;
-        newX = Math.max(0, Math.min(window.innerWidth - wrapper.offsetWidth, newX));
-        newY = Math.max(0, Math.min(window.innerHeight - wrapper.offsetHeight, newY));
-
-        wrapper.style.left = newX + 'px';
-        wrapper.style.top = newY + 'px';
-        wrapper.style.bottom = 'auto';
-        wrapper.style.right = 'auto';
-        wrapper.style.margin = '0';
-    });
-
-    window.addEventListener('pointerup', (e) => {
-        if (!isDragging) return;
-        isDragging = false;
-        setTimeout(() => { window.isCompanionDragging = false; }, 100);
     });
 }
 
