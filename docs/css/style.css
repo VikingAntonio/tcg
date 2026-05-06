@@ -1782,8 +1782,6 @@ input:checked + .slider:before {
     height: 308px;
     display: block;
     position: relative;
-    -webkit-transform-style: preserve-3d !important;
-    transform-style: preserve-3d !important;
 }
 
 #expanded-image {
@@ -1798,11 +1796,9 @@ input:checked + .slider:before {
 }
 
 /* Ensure z-text layers are sized correctly and centered */
-.z-text, .z-layers {
+.z-text {
     width: 100% !important;
     height: 100% !important;
-    -webkit-transform-style: preserve-3d !important;
-    transform-style: preserve-3d !important;
 }
 
 .z-text .z-layer {
@@ -1811,9 +1807,8 @@ input:checked + .slider:before {
     border-radius: 8px;
     left: 0 !important;
     top: 0 !important;
-    backface-visibility: visible !important;
-    -webkit-backface-visibility: visible !important;
-    -webkit-transform-style: preserve-3d !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
     transform-style: preserve-3d !important;
     will-change: transform;
 }
@@ -1831,21 +1826,15 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
-    transform: translate3d(0,0,0) translateZ(15px) !important; /* Increased significantly to eliminate Z-fighting with depth layers */
+    transform: translate3d(0,0,0) translateZ(5px) !important; /* Increased significantly to eliminate Z-fighting with depth layers */
     will-change: transform;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
 }
 
 .card-3d-container.active .holo-layer,
-#inv-card-3d-container.active .holo-layer,
-.card-3d.active .holo-layer,
-.card.active .holo-layer,
-.card-slot.active .holo-layer,
-.inv-card-slot.active .holo-layer,
-.swiper-slide.active .holo-layer {
-    opacity: 1 !important;
-    visibility: visible !important;
+.card-slot.active .holo-layer {
+    opacity: 1;
 }
 
 /* SUPER RARE */
