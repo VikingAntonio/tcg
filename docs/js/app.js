@@ -586,10 +586,8 @@ $(document).ready(async function() {
             $("body").removeClass("modal-open");
 
             // Clean up 3D effects
-            window.card3dActive = false;
-            if (card3dOrientationHandler) {
-                window.removeEventListener('deviceorientation', card3dOrientationHandler);
-                card3dOrientationHandler = null;
+            if (window.sharedCard3D) {
+                window.sharedCard3D.stop();
             }
         }
     });
@@ -896,191 +894,20 @@ function resetFilter() {
     $('#no-results').hide();
 }
 
-let card3dZtext = null;
-let targetRX = 0;
-let targetRY = 0;
-let currentRX = 0;
-let currentRY = 0;
-window.card3dActive = false;
-let card3dOrientationHandler = null;
-let card3dTouchHandler = null;
-let card3dCachedEl = null;
-
 window.updateRotation = function() {
-    if (!window.card3dActive) return;
-
-    const card3d = card3dCachedEl || document.getElementById('card-3d');
-    if (!card3d) {
-        window.card3dActive = false;
-        return;
-    }
-    card3dCachedEl = card3d;
-
-    // Optimization: check if modal is actually active to avoid invisible work
-    if (!document.getElementById('image-overlay').classList.contains('active')) {
-        window.card3dActive = false;
-        return;
-    }
-
-    // LERP for smooth motion
-    const lerpFactor = window.innerWidth <= 768 ? 0.15 : 0.1; // Faster on mobile for responsiveness
-    const diffX = targetRX - currentRX;
-    const diffY = targetRY - currentRY;
-
-    // Stop loop if motion is negligible
-    if (Math.abs(diffX) < 0.01 && Math.abs(diffY) < 0.01 && targetRX === 0 && targetRY === 0) {
-        currentRX = 0;
-        currentRY = 0;
-        // We don't stop the loop here to keep reacting to sensor changes quickly,
-        // but we skip the expensive style updates
-    } else {
-        currentRX += diffX * lerpFactor;
-        currentRY += diffY * lerpFactor;
-    }
-
-    const mx = (currentRY + 20) / 40;
-    const my = (currentRX + 20) / 40;
-    const angle = (Math.atan2(currentRX, currentRY) * 180 / Math.PI) + 135;
-
-    // Pokemon style variables
-    const px = mx * 100;
-    const py = my * 100;
-    const cx = (mx - 0.5) * 100;
-    const cy = (my - 0.5) * 100;
-    const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
-
-    const s = card3d.style;
-    // Using translate3d for hardware acceleration
-    s.transform = `translate3d(0,0,0) rotateX(${currentRX.toFixed(2)}deg) rotateY(${currentRY.toFixed(2)}deg)`;
-    s.setProperty('--mx', mx.toFixed(3));
-    s.setProperty('--my', my.toFixed(3));
-    s.setProperty('--angle', `${angle.toFixed(2)}deg`);
-    s.setProperty('--pointer-x', `${px.toFixed(2)}%`);
-    s.setProperty('--pointer-y', `${py.toFixed(2)}%`);
-    s.setProperty('--background-x', `${px.toFixed(2)}%`);
-    s.setProperty('--background-y', `${py.toFixed(2)}%`);
-    s.setProperty('--pointer-from-center', pointerFromCenter.toFixed(3));
-    s.setProperty('--pointer-from-top', my.toFixed(3));
-    s.setProperty('--pointer-from-left', mx.toFixed(3));
-    s.setProperty('--card-opacity', '1');
-
-    requestAnimationFrame(window.updateRotation);
-}
+    if (window.sharedCard3D) window.sharedCard3D.updateRotation();
+};
 
 function init3DCard() {
-    const $container = $('#card-3d-container');
-    const $card = $('#card-3d');
-    const $zContainer = $('#z-text-container');
-
-    if (!$zContainer.length) return;
-
-    // Reset styles
-    $card.css('transform', '');
-    currentRX = 0;
-    currentRY = 0;
-    targetRX = 0;
-    targetRY = 0;
-    card3dCachedEl = $card[0];
-
-    // Initialize ztext with fewer layers on mobile
-    const isMobile = window.innerWidth <= 768;
-    try {
-        card3dZtext = new Ztextify('#z-text-container', {
-            depth: "10px",
-            layers: isMobile ? 6 : 10,
-            fade: true,
-            direction: "backwards",
-            event: "none",
-            perspective: "800px"
-        });
-    } catch (e) {
-        console.error("Ztext init error:", e);
-    }
-
-    $container.off('mousemove mouseleave touchend');
-    if (card3dTouchHandler) {
-        $container[0].removeEventListener('touchmove', card3dTouchHandler);
-    }
-
-    $container.on('mousemove', (e) => {
-        const rect = $container[0].getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        targetRY = ((x / rect.width) - 0.5) * 40;
-        targetRX = ((y / rect.height) - 0.5) * -40;
-    });
-
-    $container.on('mouseleave', () => {
-        targetRX = 0;
-        targetRY = 0;
-    });
-
-    // Touch support - use native listener with {passive: false} to allow e.preventDefault()
-    card3dTouchHandler = (e) => {
-        const rect = $container[0].getBoundingClientRect();
-        const touch = e.touches[0];
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-
-        targetRY = ((x / rect.width) - 0.5) * 40;
-        targetRX = ((y / rect.height) - 0.5) * -40;
-
-        if (e.cancelable) e.preventDefault();
-    };
-
-    $container[0].addEventListener('touchmove', card3dTouchHandler, { passive: false });
-
-    $container.on('touchend', () => {
-        targetRX = 0;
-        targetRY = 0;
-    });
-
-    // Device Orientation support with smoothing
-    if (window.DeviceOrientationEvent) {
-        if (card3dOrientationHandler) {
-            window.removeEventListener('deviceorientation', card3dOrientationHandler);
-        }
-
-        card3dOrientationHandler = (e) => {
-            if (!window.card3dActive) return;
-            if (e.gamma !== null && e.beta !== null) {
-                // Apply a gentle threshold and scaling for smoother gyro motion
-                // Gamma is left-to-right (RY), Beta is front-to-back (RX)
-                let rawRY = Math.max(-25, Math.min(25, e.gamma)) * 1.2;
-                let rawRX = Math.max(-25, Math.min(25, e.beta - 45)) * 1.2;
-
-                // Stronger low-pass filter to eliminate sensor jitter (Exponential Moving Average)
-                // Using 0.9 / 0.1 for maximum stability on noisy mobile sensors
-                targetRY = (targetRY * 0.9) + (rawRY * 0.1);
-                targetRX = (targetRX * 0.9) + (rawRX * 0.1);
-            }
-        };
-
-        // iOS 13+ requires permission
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(state => {
-                    if (state === 'granted') {
-                        window.addEventListener('deviceorientation', card3dOrientationHandler);
-                    }
-                })
-                .catch(err => console.error("Gyroscope permission denied:", err));
-        } else {
-            window.addEventListener('deviceorientation', card3dOrientationHandler);
-        }
-    }
-
-    if (!window.card3dActive) {
-        window.card3dActive = true;
-        requestAnimationFrame(window.updateRotation);
-    }
+    if (window.sharedCard3D) window.sharedCard3D.init();
 }
 
 // Global target values for LERP
 window.set3DTarget = function(rx, ry) {
-    targetRX = rx;
-    targetRY = ry;
+    if (window.sharedCard3D) {
+        window.sharedCard3D.targetRX = rx;
+        window.sharedCard3D.targetRY = ry;
+    }
 };
 
 async function openCardModal($slot) {
@@ -1375,10 +1202,8 @@ function applyVisualsToModal(holo, mask, use3d) {
         init3DCard();
     } else {
         $card.css('transform', 'none');
-        window.card3dActive = false;
-        if (card3dOrientationHandler) {
-            window.removeEventListener('deviceorientation', card3dOrientationHandler);
-            card3dOrientationHandler = null;
+        if (window.sharedCard3D) {
+            window.sharedCard3D.stop();
         }
     }
 
@@ -3472,9 +3297,12 @@ function renderPublicInvAlbumMode($container) {
                 const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                             isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                 `);
+                if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
+                    window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
+                }
             }
             $grid.append($slot);
         }
@@ -3513,9 +3341,10 @@ function renderPublicInvSlideMode($container) {
                     const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                                 isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                     return `
-                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;">
-                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
-                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
+                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;"
+                         data-show-foil="${card.show_foil}" data-holo="${card.holo_effect || ''}" data-mask="${card.custom_mask_url || ''}">
+                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1;">
+                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center; position: relative; z-index: 110;">
                             <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
                             <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
                             <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
@@ -3527,11 +3356,19 @@ function renderPublicInvSlideMode($container) {
     `);
     $container.append($swiper);
 
-    new Swiper(`.${swiperId}`, {
+    const swiper = new Swiper(`.${swiperId}`, {
         effect: "cards",
         grabCursor: true,
         centeredSlides: true,
         slidesPerView: 'auto'
+    });
+
+    // Apply foil to slides
+    $container.find('.swiper-slide').each(function(idx) {
+        const card = publicInvCards[idx];
+        if (card && card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
+            window.applyFoilToElement($(this), card.holo_effect, card.custom_mask_url);
+        }
     });
 }
 
@@ -3546,7 +3383,9 @@ function renderPublicInvListMode($container) {
                     isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.8rem;"></i>' : '';
         const $item = $(`
             <div class="inv-list-item" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px;">
-                <img src="${card.image_url}" class="inv-list-thumb" style="width: 50px; height: 70px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
+                <div class="inv-list-img-wrapper" style="position: relative; width: 50px; height: 70px; flex-shrink: 0;">
+                    <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
+                </div>
                 <div class="inv-list-details" style="flex: 1;">
                     <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.85rem; color: #000;">${escapeHtml(card.card_name).toUpperCase()}</div>
                     <div class="inv-list-set" style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
@@ -3556,6 +3395,9 @@ function renderPublicInvListMode($container) {
                 </div>
             </div>
         `);
+        if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
+            window.applyFoilToElement($item.find('.inv-list-img-wrapper'), card.holo_effect, card.custom_mask_url);
+        }
         $list.append($item);
     });
     $container.append($list);
