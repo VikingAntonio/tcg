@@ -195,6 +195,9 @@
         </div>
     </div>
 
+    <!-- Floating Bottom App Navigation -->
+    </div>
+
     <!-- Image Overlay / Modal -->
     <!-- Spirit Selection Modal -->
     <div id="spirit-modal" class="overlay">
@@ -470,54 +473,6 @@
         </div>
     </div>
 
-    <!-- Chatbot Window -->
-    <div id="chatbot-container">
-        <div class="chatbot-header">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div id="chatbot-avatar-container" style="width: 40px; height: 40px; background: rgba(0,0,0,0.2); border-radius: 50%; overflow: hidden;">
-                    <!-- GLTF Avatar will be injected here -->
-                </div>
-                <h3 style="margin: 0;">Asistente Vikingdev</h3>
-            </div>
-            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
-        </div>
-        <div class="chatbot-messages" id="chat-messages">
-            <div class="chat-msg msg-bot">¡Hola! Soy tu asistente. ¿En qué puedo ayudarte?</div>
-        </div>
-        <div class="chatbot-input-area">
-            <div class="chat-faq-list" style="padding: 10px; display: flex; gap: 5px; overflow-x: auto; border-top: 1px solid rgba(255,255,255,0.05);">
-                <button class="faq-btn" data-faq="album">Álbumes</button>
-                <button class="faq-btn" data-faq="scanner">Scanner</button>
-                <button class="faq-btn" data-faq="theme">Temas</button>
-                <button class="faq-btn" data-faq="spirit">Compañero</button>
-            </div>
-            <div class="chat-input-wrapper">
-                <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
-                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Floating Companion -->
-    <div id="companion-wrapper">
-        <div class="companion-drag-handle" id="companion-drag-handle"><i class="fas fa-arrows-alt"></i></div>
-        <div id="floating-companion-container"></div>
-        <div id="companion-bubble" class="companion-bubble"></div>
-
-        <!-- Companion Menu Popup -->
-        <div id="companion-menu" class="companion-menu-popup">
-            <div class="companion-menu-item" id="menu-item-chat">
-                <i class="fas fa-comment-dots"></i> Chatear
-            </div>
-            <div class="companion-menu-item" id="menu-item-details">
-                <i class="fas fa-info-circle"></i> Ver Detalles
-            </div>
-            <div class="companion-menu-item" id="menu-item-play">
-                <i class="fas fa-gamepad"></i> Ir a Jugar
-            </div>
-        </div>
-    </div>
-
     <div class="bottom-nav">
         <div class="nav-item" id="btn-nav-home" title="Ir al Home">
             <i class="fas fa-home"></i>
@@ -554,5 +509,48 @@
     <script src="js/utils.js" id="utils-js"></script>
     <script src="js/app.js"></script>
     <script src="js/animacionesdeseos.js"></script>
+
+    <!-- Floating Companion -->
+    <div id="companion-wrapper">
+        <div id="companion-drag-handle" class="companion-drag-handle">
+            <i class="fas fa-arrows-alt"></i>
+        </div>
+        <div id="floating-companion-container"></div>
+        <div id="companion-bubble" class="companion-bubble"></div>
+    </div>
+
+    <!-- Companion Menu -->
+    <div class="companion-menu-popup" id="companion-menu">
+        <div class="companion-menu-item" id="menu-item-chat"><i class="fas fa-comment-dots"></i> Hablar</div>
+        <div class="companion-menu-item" id="menu-item-details"><i class="fas fa-search-plus"></i> Ver Detalles</div>
+    </div>
+
+    <!-- Chatbot Window -->
+    <div id="chatbot-container">
+        <div class="chatbot-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="chatbot-avatar-container" style="width: 40px; height: 40px; background: rgba(0,0,0,0.2); border-radius: 50%; overflow: hidden;">
+                    <!-- GLTF Avatar will be injected here -->
+                </div>
+                <h3 style="margin: 0;">Asistente Vikingdev</h3>
+            </div>
+            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
+        </div>
+        <div class="chatbot-messages" id="chat-messages">
+            <div class="chat-msg msg-bot">¡Hola! Soy tu asistente. ¿En qué puedo ayudarte hoy?</div>
+        </div>
+        <div class="chatbot-input-area">
+            <div class="faq-buttons">
+                <button class="faq-btn" data-faq="album">¿Cómo crear álbum?</button>
+                <button class="faq-btn" data-faq="scanner">¿Cómo usar el scanner?</button>
+                <button class="faq-btn" data-faq="theme">Cambiar tema</button>
+                <button class="faq-btn" data-faq="spirit">¿Qué es un compañero?</button>
+            </div>
+            <div class="chat-input-wrapper">
+                <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
+                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

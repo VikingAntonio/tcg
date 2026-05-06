@@ -262,9 +262,6 @@ $(document).ready(async function() {
         $('#chatbot-container').removeClass('active');
     });
 
-    // Also initialize the avatar inside the chatbot header
-    initChatbotAvatar();
-
     // --- Companion Menu Logic ---
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#floating-companion-container, #companion-menu').length) {
@@ -1794,6 +1791,7 @@ async function checkSession() {
         }
     } else {
         showLoginView();
+        initFloatingCompanion();
     }
 }
 
@@ -1955,33 +1953,30 @@ async function showAuthenticatedContent() {
     $('#store-messenger').val(currentUser.messenger_link || '');
 
     // Load current spirit for floating companion
-    try {
-        if (currentUser.selected_spirit_id) {
-            const { data: spiritData } = await _supabase
-                .from('spirits')
-                .select('*')
-                .eq('id', currentUser.selected_spirit_id)
-                .single();
-            if (spiritData) window.currentSpirit = spiritData;
+    if (currentUser.selected_spirit_id) {
+        const { data: spiritData } = await _supabase
+            .from('spirits')
+            .select('*')
+            .eq('id', currentUser.selected_spirit_id)
+            .single();
+        if (spiritData) {
+            window.currentSpirit = spiritData;
+
+            // Fetch additional data for CompanionBot
+            const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
+                _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true).or('view_type.eq.admin,view_type.eq.both'),
+                _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1)
+            ]);
+
+            window.currentStoreDataForBot = {
+                user: currentUser,
+                customMessages: botMessages,
+                hasSealed: sealedProducts && sealedProducts.length > 0
+            };
+
+            initFloatingCompanion();
         }
-
-        // Fetch additional data for CompanionBot (even if no spirit yet, for the fallback bot)
-        const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
-            _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true).or('view_type.eq.admin,view_type.eq.both'),
-            _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1)
-        ]);
-
-        window.currentStoreDataForBot = {
-            user: currentUser,
-            customMessages: botMessages,
-            hasSealed: sealedProducts && sealedProducts.length > 0
-        };
-    } catch (e) {
-        console.warn("Error loading spirit or bot data:", e);
     }
-
-    // Always try to initialize, fallback logic inside will handle missing window.currentSpirit
-    initFloatingCompanion();
 }
 
 function copyPublicLink() {
@@ -2792,6 +2787,25 @@ async function loadSpirits() {
 
         $grid.append($card);
     });
+}
+
+function initChatbotAvatar() {
+    const $avatarContainer = $("#chatbot-avatar-container");
+    if (!$avatarContainer.length || !window.currentSpirit) return;
+
+    $avatarContainer.html(`
+        <model-viewer
+            src="${window.currentSpirit.gltf_url}"
+            auto-rotate
+            camera-controls
+            rotation="0deg 0deg 0deg"
+            shadow-intensity="1"
+            environment-image="neutral"
+            exposure="1.2"
+            interaction-prompt="none"
+            style="width: 100%; height: 100%;">
+        </model-viewer>
+    `);
 }
 
 async function initFloatingCompanion() {
@@ -3763,25 +3777,6 @@ window.deleteAuctionGroupPerm = async function(ids) {
             loadMyAuctionsWinners();
         }
     }
-}
-
-function initChatbotAvatar() {
-    const $avatarContainer = $('#chatbot-avatar-container');
-    if (!$avatarContainer.length || !window.currentSpirit) return;
-
-    $avatarContainer.html(`
-        <model-viewer
-            src="${window.currentSpirit.gltf_url}"
-            auto-rotate
-            camera-controls
-            rotation="0deg 0deg 0deg"
-            shadow-intensity="1"
-            environment-image="neutral"
-            exposure="1.2"
-            interaction-prompt="none"
-            style="width: 100%; height: 100%;">
-        </model-viewer>
-    `);
 }
 
 window.hideWonAuctionGroup = function(ids) {

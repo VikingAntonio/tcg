@@ -661,9 +661,6 @@ $(document).ready(async function() {
         $('#chatbot-container').removeClass('active');
     });
 
-    // Also initialize the avatar inside the chatbot header
-    initChatbotAvatar();
-
     $(document).on('click', '#events-container .deck-public-item', function(e) {
         if ($(e.target).closest('button').length) return;
         const id = $(this).attr('id');
@@ -1648,6 +1645,25 @@ function loadPublicPreorders() {
         resolve();
     }
     });
+}
+
+function initChatbotAvatar() {
+    const $avatarContainer = $("#chatbot-avatar-container");
+    if (!$avatarContainer.length || !window.currentSpirit) return;
+
+    $avatarContainer.html(`
+        <model-viewer
+            src="${window.currentSpirit.gltf_url}"
+            auto-rotate
+            camera-controls
+            rotation="0deg 0deg 0deg"
+            shadow-intensity="1"
+            environment-image="neutral"
+            exposure="1.2"
+            interaction-prompt="none"
+            style="width: 100%; height: 100%;">
+        </model-viewer>
+    `);
 }
 
 async function initFloatingCompanion() {
@@ -3331,25 +3347,6 @@ $(document).on('click', '#close-deck-list, #deck-list-overlay', function(e) {
         }
     }
 });
-
-function initChatbotAvatar() {
-    const $avatarContainer = $('#chatbot-avatar-container');
-    if (!$avatarContainer.length || !window.currentSpirit) return;
-
-    $avatarContainer.html(`
-        <model-viewer
-            src="${window.currentSpirit.gltf_url}"
-            auto-rotate
-            camera-controls
-            rotation="0deg 0deg 0deg"
-            shadow-intensity="1"
-            environment-image="neutral"
-            exposure="1.2"
-            interaction-prompt="none"
-            style="width: 100%; height: 100%;">
-        </model-viewer>
-    `);
-}
 
 async function showGeneralEventDetails(id) {
     try {
