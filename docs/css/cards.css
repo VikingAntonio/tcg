@@ -62,7 +62,7 @@
 
 /* Fix for integration with the existing project's 3D cards */
 /* These styles ensure that the Pokemon holographic effects work correctly within the modal */
-#card-3d.card, .card-slot.card {
+#card-3d, #inv-card-3d, .card-slot.card {
   display: grid !important;
   justify-items: center;
   align-items: center;
@@ -73,21 +73,44 @@
   box-shadow: none !important;
 }
 
-#card-3d.card > *, .card-slot.card > * {
+#card-3d.active .holo-layer,
+#inv-card-3d.active .holo-layer,
+.card-slot.active .holo-layer,
+.card.active .holo-layer {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#card-3d.active .card__shine,
+#card-3d.active .card__glare,
+#inv-card-3d.active .card__shine,
+#inv-card-3d.active .card__glare,
+.card-slot.active .card__shine,
+.card-slot.active .card__glare,
+.card.active .card__shine,
+.card.active .card__glare {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#card-3d > *, #inv-card-3d > *, .card-slot.card > * {
   grid-area: 1/1;
   width: 100%;
   height: 100%;
 }
 
-#card-3d.card .card__shine,
-#card-3d.card .card__glare,
+#card-3d .card__shine,
+#card-3d .card__glare,
+#inv-card-3d .card__shine,
+#inv-card-3d .card__glare,
 .card-slot.card .card__shine,
 .card-slot.card .card__glare {
   z-index: 10;
   pointer-events: none;
 }
 
-#card-3d.card #z-text-container {
+#card-3d #z-text-container,
+#inv-card-3d #inv-z-text-container {
   z-index: 1;
 }
 

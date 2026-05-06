@@ -1,3 +1,7 @@
+// --- TCGAPI.dev CONFIGURATION ---
+window.TCG_API_KEY = 'tcg_live_830032ddb812433fc16a783454caaa5353708266';
+window.TCG_API_BASE = 'https://api.tcgapi.dev/v1';
+
 // parseDateSafe.js - Shared date parsing utility
 function parseDateSafe(dateStr) {
     if (!dateStr) return null;
@@ -41,6 +45,21 @@ window.POKEMON_FOILS = {
     'pk-trainer-gallery-secret-rare': 'trainer gallery rare secret', 'pk-trainer-gallery-v-max': 'trainer gallery rare holo vmax',
     'pk-trainer-gallery-v-regular': 'trainer gallery rare holo v', 'pk-trainer-full-art': 'rare ultra supporter',
     'pk-rare-holo-v-full-art': 'rare holo v full art', 'pk-reverse-holo': 'reverse holo'
+};
+
+window.getAlbumSize = function($albumContainer) {
+    const isMobile = window.innerWidth <= 768;
+    let width = 600;
+    let height = 420;
+
+    if (isMobile) {
+        const containerWidth = $albumContainer.width() || $(window).width();
+        // Return a smaller width for double-page display on mobile
+        const availableWidth = Math.min(340, containerWidth - 10);
+        width = availableWidth;
+        height = Math.floor(width * (420 / 600));
+    }
+    return { width, height };
 };
 
 window.applyFoilToElement = function($el, holo, mask) {
@@ -179,7 +198,7 @@ window.initMaskEditor = function() {
 
 window.initMaskCanvas = function() {
     // Supports all integrated form input IDs
-    const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask').val();
+    const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
 
     window.maskCtx.fillStyle = 'black';
     window.maskCtx.fillRect(0, 0, window.maskCanvas.width, window.maskCanvas.height);
@@ -228,6 +247,208 @@ window.drawMask = function(e) {
     window.maskCtx.stroke();
     window.maskCtx.beginPath();
     window.maskCtx.moveTo(x, y);
+};
+
+// --- GLOBAL SEARCH FUNCTIONS ---
+let ygoSetsCache = null;
+window.getYgoSets = async function() {
+    if (ygoSetsCache) return ygoSetsCache;
+    try {
+        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
+        ygoSetsCache = await response.json();
+    } catch (e) {
+        console.warn("Error fetching YGO sets:", e);
+        ygoSetsCache = [];
+    }
+    return ygoSetsCache;
+};
+
+window.searchExternalCard = async function(inputSelector, resultsSelector, onSelectCallback) {
+    const query = $(inputSelector).val().trim();
+
+    if (query.length < 3) {
+        Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
+        return;
+    }
+
+    $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando...</div>');
+
+    try {
+        // Special YGO search logic for passcodes and set codes
+        const ygoSpecialSearch = async () => {
+            const q = query.toUpperCase();
+            // Passcode (Numeric 5-10 digits)
+            if (/^\d{5,10}$/.test(q)) {
+                const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
+                return r.data || [];
+            }
+            // Set Code (Format XXX-123 or XXX-EN123)
+            const setMatch = q.match(/^([A-Z0-9]{3,6})-([A-Z0-9]{3,8})$/);
+            if (setMatch) {
+                const prefix = setMatch[1];
+                const sets = await window.getYgoSets();
+                const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
+                if (setObj) {
+                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
+                    if (r.data) {
+                        // Filter for the exact set code
+                        return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
+                    }
+                }
+            }
+            return [];
+        };
+
+        // TCGAPI.dev Search (Multi-game)
+        const searchTCGAPI = async (q, game) => {
+            if (!window.TCG_API_KEY) return [];
+            try {
+                const response = await fetch(`${window.TCG_API_BASE}/search?q=${encodeURIComponent(q)}&game=${game}`, {
+                    headers: { 'X-API-Key': window.TCG_API_KEY }
+                });
+                if (!response.ok) return [];
+                const data = await response.json();
+                return (data.data || []).map(c => ({
+                    name: c.name,
+                    image: c.image_url || `https://images.tcgplayer.com/product/${c.id}_200w.jpg`,
+                    high_res: c.image_url || `https://images.tcgplayer.com/product/${c.id}_400w.jpg`,
+                    set: c.set,
+                    number: c.number,
+                    rarity: c.rarity,
+                    price: c.price || c.market_price || 0,
+                    game: game,
+                    external_id: c.id
+                }));
+            } catch(e) { return []; }
+        };
+
+        // Concurrent search across all databases
+        const searchPromises = [
+            // Yu-Gi-Oh! Name Search
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Yu-Gi-Oh! Code/Set Search
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Special YGO Search
+            ygoSpecialSearch(),
+            // Pokémon TCGdex - English
+            fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Pokémon TCGdex - Spanish
+            fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Pokémon TCGdex - Japanese
+            fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Lorcana Search
+            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
+            // Viking Search
+            (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])),
+            // TCGAPI.dev (Top games)
+            searchTCGAPI(query, 'pokemon'),
+            searchTCGAPI(query, 'yugioh'),
+            searchTCGAPI(query, 'magic'),
+            searchTCGAPI(query, 'onepiece'),
+            searchTCGAPI(query, 'lorcana')
+        ];
+
+        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults, tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor] = await Promise.all(searchPromises);
+
+        let combinedResults = [];
+
+        // Process VikingData
+        if (Array.isArray(vikResults)) {
+            combinedResults.push(...vikResults);
+        }
+
+        // Process TCGAPI Results
+        [tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor].forEach(list => {
+            combinedResults.push(...list);
+        });
+
+        // Process Lorcana Results
+        const lorResultsSafe = Array.isArray(lorResults) ? lorResults : [];
+        lorResultsSafe.forEach(c => {
+            if (c.Image) {
+                combinedResults.push({
+                    name: c.Name,
+                    image: c.Image,
+                    high_res: c.Image
+                });
+            }
+        });
+
+        // Process Yu-Gi-Oh Results
+        const ygoResults = [...(ygName.data || []), ...(ygCode.data || []), ...ygSpecial];
+        ygoResults.forEach(c => {
+            if (c.card_images && c.card_images.length > 0) {
+                c.card_images.forEach(img => {
+                    combinedResults.push({
+                        name: c.name,
+                        image: img.image_url_small,
+                        high_res: img.image_url
+                    });
+                } );
+            }
+        });
+
+        // Process Pokémon Results
+        const pkResults = [...(pkEn || []), ...(pkEs || []), ...(pkJa || [])];
+        pkResults.forEach(c => {
+            if (c.image) {
+                combinedResults.push({
+                    name: c.name,
+                    image: `${c.image}/low.webp`,
+                    high_res: `${c.image}/high.webp`
+                });
+            }
+        });
+
+        // Deduplicate by Image URL
+        const uniqueResults = [];
+        const seenImages = new Set();
+        combinedResults.forEach(card => {
+            if (!seenImages.has(card.image)) {
+                seenImages.add(card.image);
+                uniqueResults.push(card);
+            }
+        });
+
+        if (uniqueResults.length === 0) {
+            $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en ninguna base de datos.</div>');
+        } else {
+            window.displayExternalResults(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
+        }
+
+    } catch (err) {
+        console.error(err);
+        $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
+    }
+};
+
+window.displayExternalResults = function(results, resultsSelector, onSelectCallback) {
+    const $container = $(resultsSelector);
+    $container.empty();
+
+    if (results.length === 0) {
+        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No se encontraron resultados.</div>');
+        return;
+    }
+
+    results.forEach(card => {
+        const $item = $(`
+            <div class="external-card-result" title="${card.name}" style="cursor: pointer; transition: transform 0.2s;">
+                <img src="${card.image}" style="width: 100%; border-radius: 4px; border: 1px solid #333;">
+            </div>
+        `);
+
+        $item.hover(
+            function() { $(this).css('transform', 'scale(1.1)'); },
+            function() { $(this).css('transform', 'scale(1)'); }
+        );
+
+        $item.click(function() {
+            onSelectCallback(card);
+        });
+
+        $container.append($item);
+    });
 };
 
 $(document).ready(function() {
@@ -331,3 +552,179 @@ $(document).ready(function() {
         window.initMaskCanvas();
     });
 });
+
+// --- Shared 3D Card Rotation Logic ---
+window.sharedCard3D = {
+    ztext: null,
+    targetRX: 0,
+    targetRY: 0,
+    currentRX: 0,
+    currentRY: 0,
+    active: false,
+    orientationHandler: null,
+    touchHandler: null,
+    cachedEl: null,
+
+    updateRotation: function(cardId = 'card-3d', overlayId = 'image-overlay') {
+        if (!window.sharedCard3D.active) return;
+
+        const card3d = window.sharedCard3D.cachedEl || document.getElementById(cardId);
+        if (!card3d) {
+            window.sharedCard3D.active = false;
+            return;
+        }
+        window.sharedCard3D.cachedEl = card3d;
+
+        const overlay = document.getElementById(overlayId);
+        if (overlay && !overlay.classList.contains('active')) {
+            window.sharedCard3D.active = false;
+            return;
+        }
+
+        const lerpFactor = window.innerWidth <= 768 ? 0.15 : 0.1;
+        const diffX = window.sharedCard3D.targetRX - window.sharedCard3D.currentRX;
+        const diffY = window.sharedCard3D.targetRY - window.sharedCard3D.currentRY;
+
+        if (Math.abs(diffX) < 0.01 && Math.abs(diffY) < 0.01 && window.sharedCard3D.targetRX === 0 && window.sharedCard3D.targetRY === 0) {
+            window.sharedCard3D.currentRX = 0;
+            window.sharedCard3D.currentRY = 0;
+        } else {
+            window.sharedCard3D.currentRX += diffX * lerpFactor;
+            window.sharedCard3D.currentRY += diffY * lerpFactor;
+        }
+
+        const mx = (window.sharedCard3D.currentRY + 20) / 40;
+        const my = (window.sharedCard3D.currentRX + 20) / 40;
+        const angle = (Math.atan2(window.sharedCard3D.currentRX, window.sharedCard3D.currentRY) * 180 / Math.PI) + 135;
+
+        const px = mx * 100;
+        const py = my * 100;
+        const cx = (mx - 0.5) * 100;
+        const cy = (my - 0.5) * 100;
+        const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
+
+        const s = card3d.style;
+        s.transform = `translate3d(0,0,1px) rotateX(${window.sharedCard3D.currentRX.toFixed(2)}deg) rotateY(${window.sharedCard3D.currentRY.toFixed(2)}deg)`;
+        s.setProperty('--mx', mx.toFixed(3));
+        s.setProperty('--my', my.toFixed(3));
+        s.setProperty('--angle', `${angle.toFixed(2)}deg`);
+        s.setProperty('--pointer-x', `${px.toFixed(2)}%`);
+        s.setProperty('--pointer-y', `${py.toFixed(2)}%`);
+        s.setProperty('--background-x', `${px.toFixed(2)}%`);
+        s.setProperty('--background-y', `${py.toFixed(2)}%`);
+        s.setProperty('--pointer-from-center', pointerFromCenter.toFixed(3));
+        s.setProperty('--pointer-from-top', my.toFixed(3));
+        s.setProperty('--pointer-from-left', mx.toFixed(3));
+        s.setProperty('--card-opacity', '1');
+
+        requestAnimationFrame(() => window.sharedCard3D.updateRotation(cardId, overlayId));
+    },
+
+    init: function(containerId = 'card-3d-container', cardId = 'card-3d', zTextId = '#z-text-container') {
+        const $container = $(`#${containerId}`);
+        const $card = $(`#${cardId}`);
+        const $zContainer = $(zTextId);
+
+        if (!$zContainer.length) return;
+
+        $card.css('transform', '');
+        window.sharedCard3D.currentRX = 0;
+        window.sharedCard3D.currentRY = 0;
+        window.sharedCard3D.targetRX = 0;
+        window.sharedCard3D.targetRY = 0;
+        window.sharedCard3D.cachedEl = $card[0];
+
+        const isMobile = window.innerWidth <= 768;
+        try {
+            if (typeof Ztextify !== 'undefined') {
+                window.sharedCard3D.ztext = new Ztextify(zTextId, {
+                    depth: "10px",
+                    layers: isMobile ? 6 : 10,
+                    fade: true,
+                    direction: "backwards",
+                    event: "none",
+                    perspective: "800px"
+                });
+            }
+        } catch (e) {
+            console.error("Ztext init error:", e);
+        }
+
+        $container.off('mousemove mouseleave touchend');
+        if (window.sharedCard3D.touchHandler) {
+            $container[0].removeEventListener('touchmove', window.sharedCard3D.touchHandler);
+        }
+
+        $container.on('mousemove', (e) => {
+            const rect = $container[0].getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            window.sharedCard3D.targetRY = ((x / rect.width) - 0.5) * 40;
+            window.sharedCard3D.targetRX = ((y / rect.height) - 0.5) * -40;
+        });
+
+        $container.on('mouseleave', () => {
+            window.sharedCard3D.targetRX = 0;
+            window.sharedCard3D.targetRY = 0;
+        });
+
+        window.sharedCard3D.touchHandler = (e) => {
+            const rect = $container[0].getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            window.sharedCard3D.targetRY = ((x / rect.width) - 0.5) * 40;
+            window.sharedCard3D.targetRX = ((y / rect.height) - 0.5) * -40;
+            if (e.cancelable) e.preventDefault();
+        };
+
+        $container[0].addEventListener('touchmove', window.sharedCard3D.touchHandler, { passive: false });
+
+        $container.on('touchend', () => {
+            window.sharedCard3D.targetRX = 0;
+            window.sharedCard3D.targetRY = 0;
+        });
+
+        if (window.DeviceOrientationEvent) {
+            if (window.sharedCard3D.orientationHandler) {
+                window.removeEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
+            }
+
+            window.sharedCard3D.orientationHandler = (e) => {
+                if (!window.sharedCard3D.active) return;
+                if (e.gamma !== null && e.beta !== null) {
+                    let rawRY = Math.max(-25, Math.min(25, e.gamma)) * 1.2;
+                    let rawRX = Math.max(-25, Math.min(25, e.beta - 45)) * 1.2;
+                    window.sharedCard3D.targetRY = (window.sharedCard3D.targetRY * 0.95) + (rawRY * 0.05);
+                    window.sharedCard3D.targetRX = (window.sharedCard3D.targetRX * 0.95) + (rawRX * 0.05);
+                }
+            };
+
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(state => {
+                        if (state === 'granted') {
+                            window.addEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
+                        }
+                    })
+                    .catch(err => console.error("Gyroscope permission denied:", err));
+            } else {
+                window.addEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
+            }
+        }
+
+        if (!window.sharedCard3D.active) {
+            window.sharedCard3D.active = true;
+            requestAnimationFrame(() => window.sharedCard3D.updateRotation(cardId, containerId === 'inv-card-3d-container' ? 'investment-card-modal' : 'image-overlay'));
+        }
+    },
+
+    stop: function() {
+        window.sharedCard3D.active = false;
+        window.sharedCard3D.cachedEl = null;
+        if (window.sharedCard3D.orientationHandler) {
+            window.removeEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
+            window.sharedCard3D.orientationHandler = null;
+        }
+    }
+};

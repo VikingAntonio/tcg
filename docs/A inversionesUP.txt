@@ -1,0 +1,63 @@
+-- Actualización para Inversiones
+
+-- 1. Agregar nuevas columnas a la tabla investment_cards si no existen
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='notes') THEN
+        ALTER TABLE investment_cards ADD COLUMN notes TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='extra_images') THEN
+        ALTER TABLE investment_cards ADD COLUMN extra_images TEXT[];
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='previous_price') THEN
+        ALTER TABLE investment_cards ADD COLUMN previous_price DECIMAL(10,2);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='holo_effect') THEN
+        ALTER TABLE investment_cards ADD COLUMN holo_effect TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='investment_cards' AND column_name='custom_mask_url') THEN
+        ALTER TABLE investment_cards ADD COLUMN custom_mask_url TEXT;
+    END IF;
+END $$;
+
+-- 2. Crear tabla de historial de precios si no existe
+CREATE TABLE IF NOT EXISTS investment_price_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    card_id UUID REFERENCES investment_cards(id) ON DELETE CASCADE,
+    price DECIMAL(10,2) NOT NULL,
+    recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Habilitar RLS en la nueva tabla
+ALTER TABLE investment_price_history ENABLE ROW LEVEL SECURITY;
+
+-- 4. Políticas de seguridad para el historial
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'investment_price_history' AND policyname = 'Users can view their own card history') THEN
+        CREATE POLICY "Users can view their own card history" ON investment_price_history
+            FOR ALL USING (
+                EXISTS (
+                    SELECT 1 FROM investment_cards
+                    WHERE investment_cards.id = investment_price_history.card_id
+                    AND investment_cards.user_id = auth.uid()
+                )
+            );
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'investment_price_history' AND policyname = 'Anyone can view public card history') THEN
+        CREATE POLICY "Anyone can view public card history" ON investment_price_history
+            FOR SELECT USING (
+                EXISTS (
+                    SELECT 1 FROM investment_cards
+                    JOIN investment_categories ON investment_cards.category_id = investment_categories.id
+                    WHERE investment_cards.id = investment_price_history.card_id
+                    AND investment_categories.is_public = true
+                )
+            );
+    END IF;
+END $$;

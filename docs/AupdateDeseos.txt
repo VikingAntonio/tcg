@@ -1,0 +1,41 @@
+-- SQL Migration for Wishlist Enhancements
+-- This script creates the table for persistent custom slot names.
+
+-- 1. Create the wishlist_slot_names table
+CREATE TABLE IF NOT EXISTS public.wishlist_slot_names (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    slot_index INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, slot_index)
+);
+
+-- 2. Enable Row Level Security
+ALTER TABLE public.wishlist_slot_names ENABLE ROW LEVEL SECURITY;
+
+-- 3. Create RLS Policies
+
+-- Policy to allow users to select their own slot names
+CREATE POLICY "Users can view their own wishlist slot names"
+ON public.wishlist_slot_names FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Policy to allow users to insert their own slot names
+CREATE POLICY "Users can insert their own wishlist slot names"
+ON public.wishlist_slot_names FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- Policy to allow users to update their own slot names
+CREATE POLICY "Users can update their own wishlist slot names"
+ON public.wishlist_slot_names FOR UPDATE
+USING (auth.uid() = user_id);
+
+-- Policy to allow users to delete their own slot names
+CREATE POLICY "Users can delete their own wishlist slot names"
+ON public.wishlist_slot_names FOR DELETE
+USING (auth.uid() = user_id);
+
+-- 4. Enable Realtime (Optional but recommended)
+ALTER PUBLICATION supabase_realtime ADD TABLE wishlist_slot_names;

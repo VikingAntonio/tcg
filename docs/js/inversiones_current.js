@@ -30,34 +30,48 @@ $(document).ready(function() {
 });
 
 function initInvestmentListeners() {
-    // Navigation to Investments
-    $(document).on('click', '#btn-show-investments', function(e) {
+    // Navigation to Investments (Tile and Menu)
+    $(document).on('click', '#btn-show-investments, #menu-btn-investments', function(e) {
         e.preventDefault();
         showView('investments');
         loadInvestmentCategories();
+
+        // Ensure side panel is available but details section hidden
+        $('#inv-side-panel').css('display', ''); // CSS handles hide/show via media queries
+        $('.inv-only-details').hide();
+        $('#btn-side-back-main').show();
+        $('#btn-side-back-vaults').hide();
     });
 
     // Back to Dashboard
-    $(document).on('click', '#btn-back-to-main-from-investments', function(e) {
+    $(document).on('click', '#btn-back-to-main-from-investments, #btn-side-back-main', function(e) {
         e.preventDefault();
         showView('main-dashboard');
+        $('#inv-side-panel').removeClass('active');
     });
 
-    // Back to Categories from Details
-    $(document).on('click', '#btn-back-to-investments, #btn-back-to-investments-mobile', function(e) {
+    // Back to Categories from Details (PC Header and Mobile Side Panel)
+    $(document).on('click', '#btn-back-to-investments-pc, #btn-side-back-vaults', function(e) {
         e.preventDefault();
         showView('investments');
-        // Ensure side panel is closed
-        $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
+        $('.inv-only-details').hide();
+        $('#btn-side-back-main').show();
+        $('#btn-side-back-vaults').hide();
+        $('#inv-side-panel').removeClass('active');
     });
 
-    // Mobile Side Panel Toggle
-    $(document).on('click', '#inv-side-panel-tab', function() {
-        $('#inv-mobile-side-panel, #inv-side-panel-overlay').toggleClass('active');
-    });
-
-    $(document).on('click', '#inv-side-panel-overlay', function() {
-        $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
+    // Global Add Asset (PC Header)
+    $(document).on('click', '#btn-add-investment-card-pc', function() {
+        if (!currentInvestmentCategoryId) {
+            Swal.fire({
+                title: 'SELECT A VAULT',
+                text: 'Please open a vault first to add an asset.',
+                icon: 'info',
+                customClass: { popup: 'inv-swal-popup' }
+            });
+            return;
+        }
+        openInvestmentCardModal(null, 'inv-tab-datos');
     });
 
     // Create Category
@@ -82,36 +96,35 @@ function initInvestmentListeners() {
         }
     });
 
+    // Side Panel Toggle
+    $(document).on('click', '#btn-toggle-inv-panel', function() {
+        $('#inv-side-panel').toggleClass('active');
+    });
+
+    // Close panel when clicking outside on mobile or when switching mode
+    $(document).click(function(e) {
+        if (!$(e.target).closest('#inv-side-panel').length && $('#inv-side-panel').hasClass('active')) {
+            $('#inv-side-panel').removeClass('active');
+        }
+    });
+
     // View Mode Switches
     $(document).on('click', '.btn-inv-mode', function() {
         const mode = $(this).data('mode');
-        $('.btn-inv-mode').removeClass('active').css({
-            'background': 'transparent',
-            'color': '#666',
-            'border-radius': '0px'
-        });
-
-        // Sync desktop and mobile buttons
-        $(`.btn-inv-mode[data-mode="${mode}"]`).addClass('active').css({
-            'background': '#000',
-            'color': '#fff',
-            'border-radius': '2px'
-        });
-
+        $('.btn-inv-mode').removeClass('active');
+        $(this).addClass('active');
         currentInvestmentViewMode = mode;
         renderInvestmentCards(mode);
 
-        // Close side panel on mobile after selection
+        // Close panel after selection on mobile
         if (window.innerWidth <= 768) {
-            $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
+            $('#inv-side-panel').removeClass('active');
         }
     });
 
     // Add Card to Investment
-    $(document).on('click', '#btn-add-investment-card, #btn-add-investment-card-mobile', function() {
+    $('#btn-add-investment-card').click(function() {
         openInvestmentCardModal(null, 'inv-tab-datos');
-        // Close side panel on mobile
-        $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
     });
 
     // Modal Tabs logic
@@ -128,66 +141,7 @@ function initInvestmentListeners() {
         if (tabId === 'inv-tab-resumen' && currentEditingInvCardId) {
             const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
             if (card) updateSummaryTab(card);
-        } else {
-            // Stop 3D rotation if switching away from Resumen
-            if (window.sharedCard3D) window.sharedCard3D.stop();
         }
-    });
-
-    // Holo effect selector change listener
-    $(document).on('change', '#inv-card-holo-effect, #inv-card-show-foil', function() {
-        const val = $('#inv-card-holo-effect').val();
-        if (val === 'custom-texture' || val === 'custom-foil') {
-            $('#inv-card-mask-container').show();
-        } else {
-            $('#inv-card-mask-container').hide();
-        }
-        updateInvCardFoilPreview();
-    });
-
-    $(document).on('change', '#inv-card-custom-mask', function() {
-        updateInvCardFoilPreview();
-    });
-
-    function updateInvCardFoilPreview() {
-        const $card3d = $("#inv-card-3d");
-        const $container = $("#inv-card-3d-container");
-        const holo = $('#inv-card-holo-effect').val();
-        const mask = $('#inv-card-custom-mask').val();
-        const showFoil = $('#inv-card-show-foil').is(':checked');
-
-        if (window.applyFoilToElement) {
-            $container.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
-
-            if (showFoil && holo) {
-                window.applyFoilToElement($card3d, holo, mask);
-                $container.addClass("active");
-                $card3d.addClass("active foil-loop");
-
-                const baseHolo = holo.startsWith('custom-foil|') ? (holo.split('|')[1] || 'foil') : holo;
-                if (!window.POKEMON_FOILS[baseHolo]) {
-                    $container.addClass(baseHolo);
-                }
-            } else {
-                window.applyFoilToElement($card3d, "", "");
-                $container.removeClass("active");
-                $card3d.removeClass("active foil-loop");
-            }
-        }
-    }
-
-    // Open mask editor for investment modal
-    $(document).on('click', '#btn-open-mask-editor-inv', function(e) {
-        e.preventDefault();
-        const cardImgUrl = $('#inv-card-image-url').val();
-        if (!cardImgUrl) {
-            Swal.fire('Atención', 'Primero selecciona una carta para usar de referencia.', 'warning');
-            return;
-        }
-        window.maskTargetInput = '#inv-card-custom-mask';
-        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-        $('#mask-editor-overlay').addClass('active');
-        window.initMaskCanvas();
     });
 
     $('#btn-inv-add-price').click(async function() {
@@ -284,6 +238,7 @@ async function loadInvestmentCategories() {
         $('#investment-category-list').html('<div class="error">Error al cargar categorías.</div>');
         return;
     }
+
 
     if (categories.length === 0) {
         $('#investment-category-list').html('<div class="empty">No tienes categorías de inversión. Crea una para empezar.</div>');
@@ -425,10 +380,23 @@ async function deleteInvestmentCategory(id) {
 
 async function openInvestmentCategory(cat) {
     currentInvestmentCategoryId = cat.id;
-    const upperName = cat.name.toUpperCase();
-    $('#inv-category-title').text(upperName);
-    $('#inv-category-title-mobile').text(upperName);
+    const name = cat.name.toUpperCase();
+    $('#inv-category-title').text(name);
+    $('#inv-category-title-pc').text(name); // Restore PC title
+
+    // Show specific detail controls in side panel (Mobile)
+    $('.inv-only-details').show();
+    $('#btn-side-back-main').hide();
+    $('#btn-side-back-vaults').show();
+
+    // Reset panel state
+    $('#inv-side-panel').removeClass('active');
+
     showView('investment-details');
+
+    // Ensure we start at the top of the page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     loadInvestmentCards();
 }
 
@@ -516,14 +484,10 @@ function renderAlbumMode($container) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
 
                 $slot.append(`
-                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
-                    <div class="inv-card-info-badge" style="z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain;">
+                    <div class="inv-card-info-badge">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div class="zoom-btn"><i class="fas fa-search"></i></div>
                 `);
-
-                if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
-                    window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
-                }
 
                 $slot.find('.zoom-btn').on('click', (e) => {
                     e.preventDefault();
@@ -609,34 +573,26 @@ function renderSlideMode($container) {
 
     const $swiper = $(`
         <div class="swiper ${swiperId}" style="width: 100%; max-width: ${swiperWidth}; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">
-            <div class="swiper-wrapper"></div>
+            <div class="swiper-wrapper">
+                ${localInvestmentCards.map(card => {
+                    const trend = getTrendIcon(card.current_price, card.previous_price);
+                    return `
+                    <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer;">
+                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '10px' : '20px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '10px' : '15px'}; text-align: center;">
+                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
+                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
+                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                                <button class="btn-inv-outline btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-pen"></i></button>
+                                <button class="btn-inv-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('')}
+            </div>
         </div>
     `);
-
-    localInvestmentCards.forEach(card => {
-        const trend = getTrendIcon(card.current_price, card.previous_price);
-        const $slide = $(`
-            <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative;">
-                <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1;">
-                <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '10px' : '20px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '10px' : '15px'}; text-align: center; position: relative; z-index: 110;">
-                    <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
-                    <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
-                    <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-                        <button class="btn-inv-outline btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-pen"></i></button>
-                        <button class="btn-inv-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-            </div>
-        `);
-
-        if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
-            window.applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
-        }
-
-        $swiper.find('.swiper-wrapper').append($slide);
-    });
-
     $container.append($swiper);
 
     $swiper.find('.inv-card-item').click(function(e) {
@@ -679,9 +635,7 @@ function renderListMode($container) {
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const $item = $(`
             <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
-                <div class="inv-list-img-wrapper" style="position: relative; width: 60px; height: 84px; flex-shrink: 0;">
-                    <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
-                </div>
+                <img src="${card.image_url}" class="inv-list-thumb" style="width: 60px; height: 84px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
                 <div class="inv-list-details" style="flex: 1;">
                     <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000;">${escapeHtml(card.card_name)}</div>
                     <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
@@ -696,10 +650,6 @@ function renderListMode($container) {
                 </div>
             </div>
         `);
-        if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
-            window.applyFoilToElement($item.find('.inv-list-img-wrapper'), card.holo_effect, card.custom_mask_url);
-        }
-
         $item.click((e) => {
             if ($(e.target).closest('button').length) return;
             e.preventDefault();
@@ -750,7 +700,6 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#inv-card-purchase-price').val(card ? card.purchase_price : '');
     $('#inv-card-current-price').val(card ? card.current_price : '');
     $('#inv-card-quantity').val(card ? card.quantity : 1);
-    $('#inv-card-show-foil').prop('checked', card ? !!card.show_foil : false);
     $('#inv-card-rarity-input').val(card ? card.rarity : '');
     $('#inv-card-notes').val(card ? card.notes : '');
 
@@ -761,16 +710,6 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#inv-card-rarity').val(card ? card.rarity : '');
     $('#inv-card-game').val(card ? card.tcg_game : 'pokemon');
 
-    // Holo fields
-    const holoEffect = card ? (card.holo_effect || '') : '';
-    $('#inv-card-holo-effect').val(holoEffect);
-    $('#inv-card-custom-mask').val(card ? (card.custom_mask_url || '') : '');
-    if (holoEffect === 'custom-texture' || holoEffect === 'custom-foil') {
-        $('#inv-card-mask-container').show();
-    } else {
-        $('#inv-card-mask-container').hide();
-    }
-
     $('#inv-card-search-results').empty();
     $('#inv-card-search-input').val('');
 
@@ -779,10 +718,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#investment-card-modal').addClass('active');
 }
 
-$('#close-investment-card-modal').click(() => {
-    $('#investment-card-modal').removeClass('active');
-    if (window.sharedCard3D) window.sharedCard3D.stop();
-});
+$('#close-investment-card-modal').click(() => $('#investment-card-modal').removeClass('active'));
 
 $('#btn-inv-card-search').click(async function() {
     window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
@@ -824,11 +760,8 @@ $('#btn-save-investment-card').click(async function() {
         purchase_price: parseFloat($('#inv-card-purchase-price').val()) || 0,
         current_price: newPrice,
         quantity: parseInt($('#inv-card-quantity').val()) || 1,
-        show_foil: $('#inv-card-show-foil').is(':checked'),
         notes: $('#inv-card-notes').val(),
-        extra_images: currentInvExtraImages,
-        holo_effect: $('#inv-card-holo-effect').val(),
-        custom_mask_url: $('#inv-card-custom-mask').val()
+        extra_images: currentInvExtraImages
     };
 
     if (!cardData.card_name || !cardData.image_url) {
@@ -918,7 +851,7 @@ $('#btn-save-investment-card').click(async function() {
         console.error(e);
         Swal.fire({
             title: 'ERROR',
-            text: 'Could not save asset: ' + (e.message || e),
+            text: 'Could not save asset.',
             icon: 'error',
             customClass: { popup: 'inv-swal-popup' }
         });
@@ -969,59 +902,6 @@ function updateSummaryTab(card) {
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
 
-    // --- 3D Preview and Foil in Summary ---
-    // IMPORTANT: Clear the inner content of #inv-card-3d to remove previous z-text layers
-    // which cause massive memory leaks and mobile freezing.
-    const $card3d = $("#inv-card-3d");
-    const $container = $("#inv-card-3d-container");
-
-    $card3d.html(`
-        <div id="inv-z-text-container">
-            <img id="inv-detail-image" src="${card.image_url}" alt="Card Image" class="card__front">
-        </div>
-        <div class="holo-layer"></div>
-        <div class="card__shine"></div>
-        <div class="card__glare"></div>
-    `);
-
-    // Cleanup and base assignment
-    $card3d.removeClass("card masked interacting foil-loop");
-    $card3d.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
-    $card3d.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $container.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
-
-    let holo = card.holo_effect || "";
-    let mask = card.custom_mask_url || "";
-    let baseHolo = holo;
-    let isCustomFoil = false;
-
-    if (holo.startsWith('custom-foil|')) {
-        isCustomFoil = true;
-        baseHolo = holo.split('|')[1] || 'foil';
-    }
-
-    if (card.show_foil && baseHolo) {
-        if (window.applyFoilToElement) {
-            // Use the global utility to ensure consistent application of all classes and styles
-            window.applyFoilToElement($card3d, holo, mask);
-
-            // Explicitly ensure both card and container are marked active
-            $container.addClass("active");
-            $card3d.addClass("active foil-loop");
-
-            if (!window.POKEMON_FOILS[baseHolo]) {
-                $container.addClass(baseHolo);
-            }
-        }
-    }
-
-    // Always init 3D if in summary tab of investments
-    if (window.sharedCard3D) {
-        setTimeout(() => {
-            window.sharedCard3D.init('inv-card-3d-container', 'inv-card-3d', '#inv-z-text-container', 'investment-card-modal');
-        }, 150);
-    }
-
     // Load History Chart for summary
     renderPriceHistoryChart(card.id, true);
 }
@@ -1063,7 +943,7 @@ async function saveNewPrice(cardId, newPrice) {
 
     } catch (e) {
         console.error(e);
-        Swal.fire({ title: 'Error', text: 'No se pudo actualizar el precio: ' + (e.message || e), icon: 'error', customClass: { popup: 'inv-swal-popup' } });
+        Swal.fire({ title: 'Error', text: 'No se pudo actualizar el precio', icon: 'error', customClass: { popup: 'inv-swal-popup' } });
     }
 }
 

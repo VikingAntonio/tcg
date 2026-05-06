@@ -27,6 +27,7 @@
     </script>
     <script type="module" src="js/loading3d.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="public-body">
     <button id="btn-close-focus-mode" class="btn-close-focus" onclick="window.clearShareFilters()">
@@ -127,7 +128,11 @@
                     <i class="fas fa-heart"></i>
                     <span>Buscamos</span>
                 </div>
-                <div class="home-menu-item" data-view="events" style="grid-column: span 2;">
+                <div class="home-menu-item" data-view="investments">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Inversiones</span>
+                </div>
+                <div class="home-menu-item" data-view="events">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Eventos y Noticias</span>
                 </div>
@@ -191,6 +196,31 @@
         <div id="events-view" class="view-section">
             <div id="events-container" class="decks-grid">
                 <!-- Eventos cargados aquí -->
+            </div>
+        </div>
+
+        <div id="investments-view" class="view-section">
+            <div class="admin-header" id="public-inv-header" style="display: none; text-align: left; background: #fff; padding: 40px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 40px;">
+                <button class="btn-inv-outline" onclick="showPublicInvestmentCategories()" style="margin-bottom: 30px;"><i class="fas fa-chevron-left"></i> All Vaults</button>
+                <div>
+                    <div style="font-size: 0.6rem; letter-spacing: 0.3em; font-weight: 800; color: #999; margin-bottom: 5px; text-transform: uppercase;">Public Portfolio</div>
+                    <h2 id="public-inv-title" style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.03em; color: #000; margin: 0; text-transform: uppercase;">Vault</h2>
+                </div>
+            </div>
+
+            <div class="sticky-tabs-container" id="public-investment-tabs" style="display: none; margin-bottom: 20px;">
+                <button class="tab-pill active" data-mode="album">binders</button>
+                <button class="tab-pill" data-mode="slide">vikingSlide</button>
+                <button class="tab-pill" data-mode="list">lista</button>
+            </div>
+
+            <div id="public-investment-categories" class="album-list">
+                <!-- Public investment categories here -->
+                <div class="loading">Cargando colecciones...</div>
+            </div>
+
+            <div id="public-investment-cards" class="investment-render-area" style="display: none;">
+                <!-- Cards will be rendered here -->
             </div>
         </div>
     </div>
@@ -472,6 +502,14 @@
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/companion-bot.js"></script>
+    <script src="js/ztext.js"></script>
+    <script src="js/cart.js"></script>
 
     <div class="bottom-nav">
         <div class="nav-item" id="btn-nav-home" title="Ir al Home">
