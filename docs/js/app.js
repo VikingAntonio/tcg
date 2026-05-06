@@ -284,10 +284,6 @@ $(document).ready(async function() {
         });
     });
 
-    // Bottom App Navigation
-    $('#btn-nav-home').on('click', function() {
-        switchView('home');
-    });
 
     $('#btn-nav-return').on('click', function() {
         // Simple return logic: if not in home, go to home.
@@ -507,12 +503,11 @@ $(document).ready(async function() {
             return;
         }
 
+        // Set target for global save logic
+        window.maskTargetInput = '#owner-card-mask';
+
         // Set card as background
         $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-
-        // Use standard input ID as target (defined in utils.js save logic)
-        // Actually utils.js logic handles #slot-custom-mask or #modal-custom-mask
-        // Let's make sure it also handles #owner-card-mask
 
         window.initMaskCanvas();
 
@@ -909,19 +904,39 @@ let currentRY = 0;
 window.card3dActive = false;
 let card3dOrientationHandler = null;
 let card3dTouchHandler = null;
+let card3dCachedEl = null;
 
 window.updateRotation = function() {
     if (!window.card3dActive) return;
 
-    const card3d = document.getElementById('card-3d');
-    if (!card3d || !$(card3d).is(':visible')) {
+    const card3d = card3dCachedEl || document.getElementById('card-3d');
+    if (!card3d) {
+        window.card3dActive = false;
+        return;
+    }
+    card3dCachedEl = card3d;
+
+    // Optimization: check if modal is actually active to avoid invisible work
+    if (!document.getElementById('image-overlay').classList.contains('active')) {
         window.card3dActive = false;
         return;
     }
 
     // LERP for smooth motion
-    currentRX += (targetRX - currentRX) * 0.1;
-    currentRY += (targetRY - currentRY) * 0.1;
+    const lerpFactor = window.innerWidth <= 768 ? 0.15 : 0.1; // Faster on mobile for responsiveness
+    const diffX = targetRX - currentRX;
+    const diffY = targetRY - currentRY;
+
+    // Stop loop if motion is negligible
+    if (Math.abs(diffX) < 0.01 && Math.abs(diffY) < 0.01 && targetRX === 0 && targetRY === 0) {
+        currentRX = 0;
+        currentRY = 0;
+        // We don't stop the loop here to keep reacting to sensor changes quickly,
+        // but we skip the expensive style updates
+    } else {
+        currentRX += diffX * lerpFactor;
+        currentRY += diffY * lerpFactor;
+    }
 
     const mx = (currentRY + 20) / 40;
     const my = (currentRX + 20) / 40;
@@ -935,17 +950,18 @@ window.updateRotation = function() {
     const pointerFromCenter = Math.min(Math.sqrt(cx * cx + cy * cy) / 50, 1);
 
     const s = card3d.style;
-    s.transform = `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`;
-    s.setProperty('--mx', mx);
-    s.setProperty('--my', my);
-    s.setProperty('--angle', `${angle}deg`);
-    s.setProperty('--pointer-x', `${px}%`);
-    s.setProperty('--pointer-y', `${py}%`);
-    s.setProperty('--background-x', `${px}%`);
-    s.setProperty('--background-y', `${py}%`);
-    s.setProperty('--pointer-from-center', pointerFromCenter);
-    s.setProperty('--pointer-from-top', my);
-    s.setProperty('--pointer-from-left', mx);
+    // Using translate3d for hardware acceleration
+    s.transform = `translate3d(0,0,0) rotateX(${currentRX.toFixed(2)}deg) rotateY(${currentRY.toFixed(2)}deg)`;
+    s.setProperty('--mx', mx.toFixed(3));
+    s.setProperty('--my', my.toFixed(3));
+    s.setProperty('--angle', `${angle.toFixed(2)}deg`);
+    s.setProperty('--pointer-x', `${px.toFixed(2)}%`);
+    s.setProperty('--pointer-y', `${py.toFixed(2)}%`);
+    s.setProperty('--background-x', `${px.toFixed(2)}%`);
+    s.setProperty('--background-y', `${py.toFixed(2)}%`);
+    s.setProperty('--pointer-from-center', pointerFromCenter.toFixed(3));
+    s.setProperty('--pointer-from-top', my.toFixed(3));
+    s.setProperty('--pointer-from-left', mx.toFixed(3));
     s.setProperty('--card-opacity', '1');
 
     requestAnimationFrame(window.updateRotation);
@@ -964,12 +980,14 @@ function init3DCard() {
     currentRY = 0;
     targetRX = 0;
     targetRY = 0;
+    card3dCachedEl = $card[0];
 
-    // Initialize ztext
+    // Initialize ztext with fewer layers on mobile
+    const isMobile = window.innerWidth <= 768;
     try {
         card3dZtext = new Ztextify('#z-text-container', {
             depth: "10px",
-            layers: 10,
+            layers: isMobile ? 6 : 10,
             fade: true,
             direction: "backwards",
             event: "none",
@@ -1018,16 +1036,24 @@ function init3DCard() {
         targetRY = 0;
     });
 
-    // Device Orientation support
+    // Device Orientation support with smoothing
     if (window.DeviceOrientationEvent) {
         if (card3dOrientationHandler) {
             window.removeEventListener('deviceorientation', card3dOrientationHandler);
         }
+
         card3dOrientationHandler = (e) => {
             if (!window.card3dActive) return;
             if (e.gamma !== null && e.beta !== null) {
-                targetRY = Math.max(-20, Math.min(20, e.gamma)) * 1.5;
-                targetRX = Math.max(-20, Math.min(20, e.beta - 45)) * 1.5;
+                // Apply a gentle threshold and scaling for smoother gyro motion
+                // Gamma is left-to-right (RY), Beta is front-to-back (RX)
+                let rawRY = Math.max(-25, Math.min(25, e.gamma)) * 1.2;
+                let rawRX = Math.max(-25, Math.min(25, e.beta - 45)) * 1.2;
+
+                // Stronger low-pass filter to eliminate sensor jitter (Exponential Moving Average)
+                // Using 0.9 / 0.1 for maximum stability on noisy mobile sensors
+                targetRY = (targetRY * 0.9) + (rawRY * 0.1);
+                targetRX = (targetRX * 0.9) + (rawRX * 0.1);
             }
         };
 
@@ -1067,12 +1093,16 @@ async function openCardModal($slot) {
     const rarity = $slot.data("rarity") || "-";
     const holo = $slot.data("holo") || "";
     const mask = $slot.data("mask") || "";
-    const use3d = $slot.data("3d") !== false && $slot.data("3d") !== "false";
+    let use3d = $slot.data("3d") !== false && $slot.data("3d") !== "false";
     const expansion = $slot.data("expansion") || "-";
     const condition = $slot.data("condition") || "-";
     const quantity = $slot.data("quantity") || "1";
     const price = $slot.data("price") || "-";
     const isWishlist = $slot.hasClass('wishlist-card-item');
+
+    // Force 3D for wishlist items to ensure gyroscope works in the modal
+    if (isWishlist) use3d = true;
+
     const notes = $slot.data("notes") || "";
     const obtained = $slot.data("obtained") === true || $slot.data("obtained") === "true";
 
@@ -1105,6 +1135,8 @@ async function openCardModal($slot) {
         isCustomFoil = true;
         baseHolo = holo.split('|')[1] || 'foil';
     }
+
+    const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
     if (baseHolo) {
         if (POKEMON_FOILS[baseHolo]) {
@@ -1296,10 +1328,10 @@ function applyVisualsToModal(holo, mask, use3d) {
     const $card = $("#card-3d");
 
     // Cleanup all possible holo classes and styles
-    $card.removeClass("card masked interacting");
+    $card.removeClass("card masked interacting foil-loop");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     let baseHolo = holo;
@@ -1308,6 +1340,8 @@ function applyVisualsToModal(holo, mask, use3d) {
         isCustomFoil = true;
         baseHolo = holo.split('|')[1] || 'foil';
     }
+
+    const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
     if (baseHolo) {
         if (POKEMON_FOILS[baseHolo]) {
@@ -1388,6 +1422,8 @@ async function switchView(view) {
             window.botInstance.setContext('auctions');
             window.botInstance.say("¡Bienvenido a las subastas! Elige un artículo para ver los detalles y colocar tu puja. ¡Mucha suerte!", { duration: 8 });
         }
+    } else if (view === 'investments') {
+        await loadPublicInvestmentCategories();
     }
 
     const url = new URL(window.location);
@@ -2564,25 +2600,17 @@ function loadPublicWishlist() {
                      data-3d="${item.use_3d !== false}"
                      data-show-foil="${item.show_foil_in_list || false}">
                     <h3>${item.name}</h3>
-                    <img src="${item.image_url}" alt="${item.name}">
+                    <div class="wishlist-image-container">
+                        <img src="${item.image_url}" alt="${item.name}">
+                    </div>
                     ${item.obtained ? '<div class="event-type-badge" style="background: #00ff88; color: #000; bottom: 5px; top: auto;">CONSEGUIDA</div>' : ''}
                     <div class="zoom-btn" style="display: flex; bottom: 5px; right: 5px; left: auto;"><i class="fas fa-search-plus"></i></div>
                 </div>
             `);
 
             if (item.show_foil_in_list && item.holo_effect) {
-                applyFoilToElement($el, item.holo_effect, item.custom_mask_url);
+                applyFoilToElement($el.find('.wishlist-image-container'), item.holo_effect, item.custom_mask_url);
             }
-
-            $el.click(function(e) {
-                if (isDragging) return;
-                openCardModal($el);
-            });
-
-            $el.find('.zoom-btn').click(function(e) {
-                e.stopPropagation();
-                openCardModal($el);
-            });
 
             $('#wishlist-container').append($el);
         });
@@ -3308,4 +3336,227 @@ async function showGeneralEventDetails(id) {
         console.error(e);
         Swal.fire('Error', 'No se pudieron cargar los detalles del evento.', 'error');
     }
+}
+
+// --- PUBLIC INVESTMENTS ---
+
+async function loadPublicInvestmentCategories() {
+    const userId = window.currentStoreId;
+    if (!userId) return;
+
+    $('#public-investment-categories').show().html('<div class="loading">Cargando colecciones...</div>');
+    $('#public-investment-cards').hide();
+    $('#public-inv-header, #public-investment-tabs').hide();
+
+    const { data: categories, error } = await _supabase
+        .from('investment_categories')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_public', true)
+        .order('position', { ascending: true });
+
+    if (error || !categories) {
+        $('#public-investment-categories').html('<div class="error">Error al cargar inversiones.</div>');
+        return;
+    }
+
+    if (categories.length === 0) {
+        $('#public-investment-categories').html('<div class="empty">No hay colecciones de inversión públicas.</div>');
+        return;
+    }
+
+    const $container = $('#public-investment-categories');
+    $container.empty();
+
+    categories.forEach(cat => {
+        const $card = $(`
+            <div class="inv-category-item" data-id="${cat.id}" style="border: 1px solid #000; border-radius: 4px; overflow: hidden; background: #fff;">
+                <div class="inv-category-preview" style="height: 120px; background: #eee;">
+                    <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=800&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%);">
+                </div>
+                <div class="inv-category-info" style="padding: 20px; text-align: center;">
+                    <h3 style="margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; font-size: 1rem; color: #000;">${escapeHtml(cat.name).toUpperCase()}</h3>
+                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; margin-top: 5px; font-weight: 800; text-transform: uppercase;">Private Asset Vault</div>
+                    <button class="btn-inv-main btn-view-public-inv" style="width: 100%; margin-top: 20px;">ACCESS VAULT</button>
+                </div>
+            </div>
+        `);
+        $card.find('.btn-view-public-inv').click(() => openPublicInvestmentCategory(cat));
+        $container.append($card);
+    });
+}
+
+window.showPublicInvestmentCategories = function() {
+    loadPublicInvestmentCategories();
+};
+
+let currentPublicInvCategory = null;
+let currentPublicInvMode = 'album';
+let publicInvCards = [];
+
+async function openPublicInvestmentCategory(cat) {
+    currentPublicInvCategory = cat;
+    $('#public-inv-title').text(cat.name.toUpperCase());
+    $('#public-inv-header, #public-investment-tabs').show();
+    $('#public-investment-categories').hide();
+    $('#public-investment-cards').show().html('<div class="loading">Cargando cartas...</div>');
+
+    const { data: cards, error } = await _supabase
+        .from('investment_cards')
+        .select('*')
+        .eq('category_id', cat.id)
+        .order('position', { ascending: true });
+
+    if (error) {
+        $('#public-investment-cards').html('<div class="error">Error al cargar cartas.</div>');
+        return;
+    }
+
+    publicInvCards = cards || [];
+    renderPublicInvestmentCards();
+}
+
+$(document).on('click', '#public-investment-tabs .tab-pill', function() {
+    $('#public-investment-tabs .tab-pill').removeClass('active');
+    $(this).addClass('active');
+    currentPublicInvMode = $(this).data('mode');
+    renderPublicInvestmentCards();
+});
+
+function renderPublicInvestmentCards() {
+    const $container = $('#public-investment-cards');
+    $container.empty();
+
+    if (publicInvCards.length === 0) {
+        $container.html('<div class="empty">No hay cartas en esta colección.</div>');
+        return;
+    }
+
+    // Reuse rendering functions if they are global, otherwise replicate logic
+    // For simplicity in app.js, we'll replicate the core rendering logic
+    if (currentPublicInvMode === 'album') {
+        renderPublicInvAlbumMode($container);
+    } else if (currentPublicInvMode === 'slide') {
+        renderPublicInvSlideMode($container);
+    } else {
+        renderPublicInvListMode($container);
+    }
+}
+
+function renderPublicInvAlbumMode($container) {
+    $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
+    const $albumWrapper = $('<div class="album-wrapper"><div class="album public-inv-album"></div></div>');
+    const $album = $albumWrapper.find('.album');
+    $container.append($albumWrapper);
+
+    $album.append(`
+        <div class="page cover-page">
+            <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
+                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(currentPublicInvCategory.name).toUpperCase()}</h2>
+                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
+            </div>
+        </div>
+    `);
+
+    for (let i = 0; i < publicInvCards.length; i += 9) {
+        const pageCards = publicInvCards.slice(i, i + 9);
+        const $page = $('<div class="page album-page"></div>');
+        const $grid = $('<div class="grid-container"></div>');
+
+        for (let j = 0; j < 9; j++) {
+            const card = pageCards[j];
+            const $slot = $('<div class="card-slot"></div>');
+            if (card) {
+                const isUp = card.current_price > card.previous_price;
+                const isDown = card.current_price < card.previous_price;
+                const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                            isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
+                $slot.append(`
+                    <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000;">
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                `);
+            }
+            $grid.append($slot);
+        }
+        $page.append($grid);
+        $album.append($page);
+    }
+
+    if ($album.find('.page').length % 2 !== 0) {
+        $album.append('<div class="page album-page"></div>');
+    }
+
+    $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
+
+    setTimeout(() => {
+        $album.turn({
+            width: 600,
+            height: 420,
+            autoCenter: true,
+            display: 'double',
+            acceleration: true,
+            elevation: 50,
+            duration: 800
+        });
+    }, 100);
+}
+
+function renderPublicInvSlideMode($container) {
+    $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
+    const swiperId = `pub-inv-swiper-${Date.now()}`;
+    const $swiper = $(`
+        <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; min-height: 550px; padding: 20px 0;">
+            <div class="swiper-wrapper">
+                ${publicInvCards.map(card => {
+                    const isUp = card.current_price > card.previous_price;
+                    const isDown = card.current_price < card.previous_price;
+                    const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                                isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
+                    return `
+                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;">
+                        <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                        <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center;">
+                            <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
+                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
+                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                        </div>
+                    </div>
+                `}).join('')}
+            </div>
+        </div>
+    `);
+    $container.append($swiper);
+
+    new Swiper(`.${swiperId}`, {
+        effect: "cards",
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: 'auto'
+    });
+}
+
+function renderPublicInvListMode($container) {
+    $container.addClass('investment-list-layout').removeClass('investment-slide-layout investment-album-layout');
+    const $list = $('<div class="inv-list-container"></div>');
+
+    publicInvCards.forEach(card => {
+        const isUp = card.current_price > card.previous_price;
+        const isDown = card.current_price < card.previous_price;
+        const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.8rem;"></i>' :
+                    isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.8rem;"></i>' : '';
+        const $item = $(`
+            <div class="inv-list-item" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px;">
+                <img src="${card.image_url}" class="inv-list-thumb" style="width: 50px; height: 70px; object-fit: contain; border: 1px solid #000; border-radius: 2px;">
+                <div class="inv-list-details" style="flex: 1;">
+                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.85rem; color: #000;">${escapeHtml(card.card_name).toUpperCase()}</div>
+                    <div class="inv-list-set" style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
+                </div>
+                <div class="inv-list-prices" style="text-align: right;">
+                    <div class="inv-price-row"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999; display: block;">Market Price</span> <b style="color: #000; font-size: 1.1rem;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                </div>
+            </div>
+        `);
+        $list.append($item);
+    });
+    $container.append($list);
 }
