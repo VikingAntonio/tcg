@@ -1250,7 +1250,7 @@ async function resolveUser(identifier) {
     const safeId = identifier.replace(/['"]/g, '');
     const { data } = await _supabase
         .from('usuarios')
-        .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store')
+        .select('id, username, store_name, whatsapp_link, messenger_link, store_logo, is_store, custom_domain')
         .or(`store_name.eq."${safeId}",username.eq."${safeId}"`)
         .maybeSingle();
     return data;
@@ -1259,10 +1259,18 @@ async function resolveUser(identifier) {
 async function loadStoreData() {
     const urlParams = new URLSearchParams(window.location.search);
     const identifier = urlParams.get('id') || urlParams.get('store') || urlParams.get('user');
+    const isEmbed = urlParams.get('embed') === 'true';
 
     if (!identifier) {
         $('#public-store-name').hide();
         return;
+    }
+
+    if (isEmbed) {
+        $('body').addClass('is-embed');
+        // Hide standard UI for embed mode
+        $('.integrated-header, .bottom-nav, #companion-wrapper, #chatbot-container').hide();
+        $('#main-view-container').css('padding-top', '20px');
     }
 
     // --- Clean URL Handling ---
@@ -1289,6 +1297,33 @@ async function loadStoreData() {
 
         // --- Immediate Identity Assignment ---
         window.currentStoreId = userData.id;
+
+        // --- Domain Authorization Check for Embeds ---
+        if (isEmbed) {
+            const domain = userData.custom_domain;
+            const parentUrl = document.referrer;
+            let parentHostname = '';
+            try {
+                if (parentUrl) {
+                    parentHostname = new URL(parentUrl).hostname.toLowerCase();
+                }
+            } catch (e) {}
+
+            const cleanAuthorizedDomain = domain ? domain.toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '') : '';
+
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+            if (!isLocal && cleanAuthorizedDomain && parentHostname && parentHostname !== cleanAuthorizedDomain) {
+                $('body').html(`<div style="display:flex; align-items:center; justify-content:center; height:100vh; background:#000; color:#ff4757; font-family:sans-serif; text-align:center; padding:20px;">
+                    <div>
+                        <h2 style="margin-bottom:10px;">ERROR DE AUTORIZACIÓN</h2>
+                        <p>Error: Domain "${parentHostname}" not authorized or user not found.</p>
+                    </div>
+                </div>`);
+                return;
+            }
+        }
+
         window.currentStoreContact = {
             whatsapp: userData.whatsapp_link,
             messenger: userData.messenger_link
