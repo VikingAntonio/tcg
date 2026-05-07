@@ -12,41 +12,6 @@
     <link rel="stylesheet" href="css/inversiones.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"/>
     <style>
-        /* Slot Modal Tabs (Similar to Auctions) */
-        .slot-modal-tabs {
-            display: flex;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 5px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-        .slot-tab-btn {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            border: none;
-            background: transparent;
-            color: #888;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-        }
-        .slot-tab-btn.active {
-            background: var(--primary-color);
-            color: #000;
-        }
-        .slot-tab-content {
-            display: none;
-            width: 100%;
-        }
-        .slot-tab-content.active {
-            display: block;
-        }
-
         /* Mini Switch for Cards */
         .switch-searching {
             position: absolute;
@@ -293,10 +258,6 @@
                     <i class="fas fa-barcode"></i>
                     <span>Scanner</span>
                 </a>
-                <a href="#" class="tile tile-red" id="btn-fast-mode">
-                    <i class="fas fa-rocket"></i>
-                    <span>Modo Rápido</span>
-                </a>
                 <a href="#" class="tile tile-orange" id="btn-show-expansiones">
                     <i class="fas fa-th-large"></i>
                     <span>Expansiones</span>
@@ -532,64 +493,6 @@
             </div>
         </div>
 
-        <!-- Fast Mode View -->
-        <div id="view-fast-mode" class="admin-section" style="display:none;">
-            <div class="admin-header">
-                <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
-                <h1>Modo Rápido</h1>
-                <p>Registra cartas rápidamente sin distracciones.</p>
-            </div>
-
-            <div class="album-card" style="max-width: 800px; width: 100%; margin: 0 auto;">
-                <div class="info-grid" style="margin-bottom: 20px;">
-                    <div class="form-group">
-                        <label>Añadir a</label>
-                        <select id="fast-target-type">
-                            <option value="album">Álbum</option>
-                            <option value="deck">Deck</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label id="fast-target-label">Seleccionar Álbum</label>
-                        <div style="display: flex; gap: 10px;">
-                            <select id="fast-target-select">
-                                <option value="">Cargando...</option>
-                            </select>
-                            <button id="btn-fast-create-new" class="btn btn-sm" title="Crear Nuevo"><i class="fas fa-plus"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group" style="position: relative;">
-                    <label>Buscar Carta (Nombre, Código, Voz, Imagen)</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <div style="position: relative; flex: 1;">
-                            <input type="text" id="fast-search-input" placeholder="Escribe el nombre o código..." autocomplete="off">
-                            <div id="fast-search-loading" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: none;">
-                                <i class="fas fa-spinner fa-spin"></i>
-                            </div>
-                        </div>
-                        <button id="btn-fast-voice" class="btn btn-secondary" title="Hablar"><i class="fas fa-microphone"></i></button>
-                        <button id="btn-fast-draw" class="btn btn-secondary" title="Dibujar"><i class="fas fa-paint-brush"></i></button>
-                    </div>
-                </div>
-
-                <div id="fast-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px; margin-top: 20px; max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; background: rgba(0,0,0,0.1);">
-                    <div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Los resultados aparecerán aquí mientras escribes.</div>
-                </div>
-
-                <div id="fast-pending-container" style="display: none; margin-top: 30px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h2 style="margin: 0; font-size: 1.2rem; color: #00d2ff;"><i class="fas fa-list-ul"></i> Cartas por Guardar</h2>
-                        <button id="btn-fast-save-all" class="btn btn-success"><i class="fas fa-save"></i> Guardar Todo</button>
-                    </div>
-                    <div id="fast-pending-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px; padding: 10px; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; background: rgba(0,0,0,0.05); max-height: 300px; overflow-y: auto;">
-                        <!-- Pending cards will appear here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Expansiones View -->
         <div id="view-expansiones" class="admin-section" style="display:none;">
             <div class="admin-header">
@@ -623,13 +526,20 @@
 
                 <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
                     <div class="form-group">
-                        <label>Guardar en</label>
+                        <label>Tipo de Destino</label>
+                        <select id="expansion-dest-type">
+                            <option value="album">Álbum</option>
+                            <option value="deck">Deck</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Seleccionar Destino</label>
                         <select id="expansion-album-dest">
-                            <option value="new">Nuevo Álbum</option>
+                            <!-- Populated via JS -->
                         </select>
                     </div>
                     <div class="form-group" id="expansion-new-album-group">
-                        <label>Nombre del Nuevo Álbum</label>
+                        <label id="lbl-expansion-new-name">Nombre del Nuevo Álbum</label>
                         <input type="text" id="expansion-new-album-name" placeholder="Ej: Mi Colección de OP-01">
                     </div>
                 </div>
@@ -1782,75 +1692,90 @@
             <span id="close-spirit-upload-modal" class="close-btn">&times;</span>
             <h2 id="spirit-modal-title">Subir Nuevo Compañero</h2>
             <input type="hidden" id="edit-spirit-id">
-            <div class="form-group">
-                <label>Nombre del Compañero</label>
-                <input type="text" id="input-spirit-name" placeholder="Ej: Pikachu">
+
+            <!-- Tabs Header -->
+            <div class="slot-modal-tabs">
+                <button class="slot-tab-btn active" data-tab="spirit-tab-modelo">Modelo</button>
+                <button class="slot-tab-btn" data-tab="spirit-tab-config">Configuración</button>
             </div>
-            <div class="form-group">
-                <label>Archivos del Modelo (GLTF, GLB, BIN, Texturas)</label>
-                <label class="drop-zone file-drop-zone" id="drop-zone-spirit" for="input-spirit-files" style="display: block;">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <p>Arrastra todos los archivos del modelo (.gltf, .glb, .bin, texturas) aquí o haz clic para seleccionar</p>
-                    <input type="file" id="input-spirit-files" multiple accept=".gltf,.glb,.bin,.png,.jpg,.jpeg,.webp" style="display: none;">
-                    <div class="file-name"></div>
-                </label>
-            </div>
-            <div class="form-group">
-                <label>Poster del Compañero (Imagen que sale mientras carga)</label>
-                <label class="drop-zone file-drop-zone" id="drop-zone-spirit-poster" for="input-spirit-poster" style="display: block;">
-                    <i class="fas fa-image"></i>
-                    <p>Arrastra un poster aquí o haz clic para subir</p>
-                    <input type="file" id="input-spirit-poster" accept="image/*" style="display: none;">
-                    <div class="file-name"></div>
-                </label>
-                <input type="hidden" id="input-spirit-poster-url">
-                <!-- Search UI for Poster -->
-                <div style="margin-top: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <label style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: 700; margin-bottom: 8px; display: block;">Buscar en Bases de Datos</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="spirit-poster-search-input" placeholder="Nombre de la carta para el poster..." style="flex: 1;">
-                        <button id="btn-spirit-poster-search" class="btn btn-sm"><i class="fas fa-search"></i></button>
+
+            <!-- Tab 1: Modelo -->
+            <div id="spirit-tab-modelo" class="slot-tab-content active">
+                <div class="form-group">
+                    <label>Nombre del Compañero</label>
+                    <input type="text" id="input-spirit-name" placeholder="Ej: Pikachu">
+                </div>
+                <div class="form-group">
+                    <label>Archivos del Modelo (GLTF, GLB, BIN, Texturas)</label>
+                    <label class="drop-zone file-drop-zone" id="drop-zone-spirit" for="input-spirit-files" style="display: block;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Arrastra todos los archivos del modelo (.gltf, .glb, .bin, texturas) aquí o haz clic para seleccionar</p>
+                        <input type="file" id="input-spirit-files" multiple accept=".gltf,.glb,.bin,.png,.jpg,.jpeg,.webp" style="display: none;">
+                        <div class="file-name"></div>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Poster del Compañero (Imagen que sale mientras carga)</label>
+                    <label class="drop-zone file-drop-zone" id="drop-zone-spirit-poster" for="input-spirit-poster" style="display: block;">
+                        <i class="fas fa-image"></i>
+                        <p>Arrastra un poster aquí o haz clic para subir</p>
+                        <input type="file" id="input-spirit-poster" accept="image/*" style="display: none;">
+                        <div class="file-name"></div>
+                    </label>
+                    <input type="hidden" id="input-spirit-poster-url">
+                    <!-- Search UI for Poster -->
+                    <div style="margin-top: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <label style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: 700; margin-bottom: 8px; display: block;">Buscar en Bases de Datos</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="spirit-poster-search-input" placeholder="Nombre de la carta para el poster..." style="flex: 1;">
+                            <button id="btn-spirit-poster-search" class="btn btn-sm"><i class="fas fa-search"></i></button>
+                        </div>
+                        <div id="spirit-poster-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; margin-top: 10px; max-height: 120px; overflow-y: auto; padding: 5px;"></div>
                     </div>
-                    <div id="spirit-poster-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; margin-top: 10px; max-height: 120px; overflow-y: auto; padding: 5px;"></div>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Tipo de Animación del Modelo</label>
-                <select id="input-spirit-animation">
-                    <option value="orbit">Giro en Eje Z (Órbita)</option>
-                    <option value="float">Movimiento Sutil (Flotante)</option>
-                    <option value="float-static">Flotante (Sin Rotación)</option>
-                </select>
+
+            <!-- Tab 2: Configuración -->
+            <div id="spirit-tab-config" class="slot-tab-content">
+                <div class="form-group">
+                    <label>Tipo de Animación del Modelo</label>
+                    <select id="input-spirit-animation">
+                        <option value="orbit">Giro en Eje Z (Órbita)</option>
+                        <option value="float">Movimiento Sutil (Flotante)</option>
+                        <option value="float-static">Flotante (Sin Rotación)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Asset de Partículas (Opcional)</label>
+                    <label class="drop-zone file-drop-zone" id="drop-zone-spirit-particle" for="input-spirit-particle-file" style="display: block;">
+                        <i class="fas fa-star"></i>
+                        <p>Arrastra un asset de partículas aquí o haz clic para subir</p>
+                        <input type="file" id="input-spirit-particle-file" accept="image/*" style="display: none;">
+                        <div class="file-name"></div>
+                    </label>
+                    <input type="hidden" id="input-spirit-particle-asset">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Movimiento de Partículas</label>
+                    <select id="input-spirit-particle-movement">
+                        <option value="falling">Cayendo (Gravedad)</option>
+                        <option value="trail">Estela (Sigue al personaje)</option>
+                        <option value="none">Sin Partículas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tamaño del Modelo (Escala)</label>
+                    <input type="number" id="input-spirit-scale" step="0.1" value="1.8" placeholder="Ej: 1.8">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <label class="switch">
+                        <input type="checkbox" id="input-spirit-public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <label style="margin-bottom: 0; cursor: pointer;" for="input-spirit-public">Compañero Público (Visible en el link)</label>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Asset de Partículas (Opcional)</label>
-                <label class="drop-zone file-drop-zone" id="drop-zone-spirit-particle" for="input-spirit-particle-file" style="display: block;">
-                    <i class="fas fa-star"></i>
-                    <p>Arrastra un asset de partículas aquí o haz clic para subir</p>
-                    <input type="file" id="input-spirit-particle-file" accept="image/*" style="display: none;">
-                    <div class="file-name"></div>
-                </label>
-                <input type="hidden" id="input-spirit-particle-asset">
-            </div>
-            <div class="form-group">
-                <label>Tipo de Movimiento de Partículas</label>
-                <select id="input-spirit-particle-movement">
-                    <option value="falling">Cayendo (Gravedad)</option>
-                    <option value="trail">Estela (Sigue al personaje)</option>
-                    <option value="none">Sin Partículas</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Tamaño del Modelo (Escala)</label>
-                <input type="number" id="input-spirit-scale" step="0.1" value="1.8" placeholder="Ej: 1.8">
-            </div>
-            <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                <label class="switch">
-                    <input type="checkbox" id="input-spirit-public" checked>
-                    <span class="slider"></span>
-                </label>
-                <label style="margin-bottom: 0; cursor: pointer;" for="input-spirit-public">Compañero Público (Visible en el link)</label>
-            </div>
+
             <button id="btn-save-spirit" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-cloud-upload-alt"></i> Subir a la Nube</button>
         </div>
     </div>
