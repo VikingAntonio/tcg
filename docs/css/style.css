@@ -4852,3 +4852,35 @@ body.focus-mode-active .event-card {
         gap: 15px;
     }
 }
+
+/* Embed Mode Styles */
+body.is-embed {
+    background: transparent !important;
+    overflow-x: hidden;
+}
+
+body.is-embed #main-view-container {
+    padding: 0 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+body.is-embed .public-album-item {
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+body.is-embed .public-album-header {
+    display: none !important;
+}
+
+body.is-embed .album-wrapper {
+    margin: 0 auto !important;
+}
+
+body.is-embed #albums-view {
+    width: 100%;
+}
