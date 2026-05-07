@@ -4884,3 +4884,38 @@ body.is-embed .album-wrapper {
 body.is-embed #albums-view {
     width: 100%;
 }
+
+/* Shared Tab Styles */
+.slot-modal-tabs {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+.slot-tab-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #888;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+.slot-tab-btn.active {
+    background: var(--primary-color, #00d2ff);
+    color: #000;
+}
+.slot-tab-content {
+    display: none;
+    width: 100%;
+}
+.slot-tab-content.active {
+    display: block;
+}

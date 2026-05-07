@@ -81,100 +81,122 @@
         <!-- Manage Limits Panel -->
         <div id="manage-limits-panel" class="album-card" style="display: none; max-width: 600px; margin: 30px auto; padding: 25px; border: 1px solid #00d2ff; box-shadow: 0 0 15px rgba(0,210,255,0.2);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin:0; color: #00d2ff;"><i class="fas fa-sliders-h"></i> Gestionar Límites</h2>
+                <h2 style="margin:0; color: #00d2ff;"><i class="fas fa-sliders-h"></i> Gestionar Usuario</h2>
                 <button id="btn-close-limits" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Volver</button>
             </div>
             <p style="color: #aaa; margin-bottom: 20px;">Usuario: <strong id="manage-username" style="color: #fff;"></strong></p>
             <input type="hidden" id="manage-user-id">
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div class="form-group">
-                    <label>Máximo de Álbumes</label>
-                    <input type="number" id="limit-albums" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Páginas por Álbum</label>
-                    <input type="number" id="limit-pages" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Máximo de Decks</label>
-                    <input type="number" id="limit-decks" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Cartas por Deck</label>
-                    <input type="number" id="limit-cards" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Máximo Deseos</label>
-                    <input type="number" id="limit-wishlist" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Máximo Sellado</label>
-                    <input type="number" id="limit-sealed" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Máximo Preventas</label>
-                    <input type="number" id="limit-preorders" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Máximo Clientes</label>
-                    <input type="number" id="limit-clients-count" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Máximo Subastas</label>
-                    <input type="number" id="limit-auctions-count" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Máximo Eventos</label>
-                    <input type="number" id="limit-events" min="1">
-                </div>
+            <!-- Tabs Header -->
+            <div class="slot-modal-tabs">
+                <button class="slot-tab-btn active" data-tab="manage-tab-limites">Límites</button>
+                <button class="slot-tab-btn" data-tab="manage-tab-permisos">Permisos</button>
+                <button class="slot-tab-btn" data-tab="manage-tab-perfil">Perfil</button>
             </div>
 
-            <div style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="perm-tracking" style="width: auto;"> Tracking
-                </label>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="perm-clients" style="width: auto;"> Clientes
-                </label>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="perm-auctions" style="width: auto;"> Subastas
-                </label>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="perm-events" style="width: auto;"> Eventos
-                </label>
-            </div>
-            <div class="form-group" style="margin-top: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <label style="margin-bottom: 0;">Compañeros Desbloqueados</label>
-                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; color: #00d2ff;">
-                        <input type="checkbox" id="spirit-select-all"> Seleccionar Todos
-                    </label>
-                </div>
-                <div id="spirits-selection-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; max-height: 250px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);">
-                    <!-- Spirits will be loaded here -->
-                    <div style="color: #666; font-size: 12px;">Cargando compañeros...</div>
-                </div>
-                <small style="color: #666; margin-top: 5px; display: block;">Selecciona los compañeros que este usuario podrá utilizar.</small>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label><i class="fas fa-link"></i> Link Público</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="user-public-link" readonly placeholder="Calculando link...">
-                        <button class="btn btn-secondary btn-sm" onclick="copyUserLink()" title="Copiar Link"><i class="fas fa-copy"></i></button>
+            <!-- Tab 1: Límites -->
+            <div id="manage-tab-limites" class="slot-tab-content active">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Máximo de Álbumes</label>
+                        <input type="number" id="limit-albums" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Páginas por Álbum</label>
+                        <input type="number" id="limit-pages" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Máximo de Decks</label>
+                        <input type="number" id="limit-decks" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Cartas por Deck</label>
+                        <input type="number" id="limit-cards" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Máximo Deseos</label>
+                        <input type="number" id="limit-wishlist" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Máximo Sellado</label>
+                        <input type="number" id="limit-sealed" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Máximo Preventas</label>
+                        <input type="number" id="limit-preorders" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Máximo Clientes</label>
+                        <input type="number" id="limit-clients-count" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Máximo Subastas</label>
+                        <input type="number" id="limit-auctions-count" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Máximo Eventos</label>
+                        <input type="number" id="limit-events" min="1">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label><i class="fab fa-whatsapp"></i> WhatsApp Number</label>
-                    <input type="text" id="user-whatsapp" placeholder="https://wa.me/Telefono">
+            </div>
+
+            <!-- Tab 2: Permisos y Compañeros -->
+            <div id="manage-tab-permisos" class="slot-tab-content">
+                <div style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="perm-tracking" style="width: auto;"> Tracking
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="perm-clients" style="width: auto;"> Clientes
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="perm-auctions" style="width: auto;"> Subastas
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="perm-events" style="width: auto;"> Eventos
+                    </label>
                 </div>
-                <div class="form-group">
-                    <label><i class="fab fa-facebook-messenger"></i> Messenger ID/Link</label>
-                    <input type="text" id="user-messenger" placeholder="https://m.me/nombreUsuario">
+                <div class="form-group" style="margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="margin-bottom: 0;">Compañeros Desbloqueados</label>
+                        <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; color: #00d2ff;">
+                            <input type="checkbox" id="spirit-select-all"> Seleccionar Todos
+                        </label>
+                    </div>
+                    <div id="spirits-selection-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; max-height: 250px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);">
+                        <!-- Spirits will be loaded here -->
+                        <div style="color: #666; font-size: 12px;">Cargando compañeros...</div>
+                    </div>
+                    <small style="color: #666; margin-top: 5px; display: block;">Selecciona los compañeros que este usuario podrá utilizar.</small>
                 </div>
             </div>
+
+            <!-- Tab 3: Perfil y Dominio -->
+            <div id="manage-tab-perfil" class="slot-tab-content">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label><i class="fas fa-link"></i> Link Público</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="user-public-link" readonly placeholder="Calculando link...">
+                            <button class="btn btn-secondary btn-sm" onclick="copyUserLink()" title="Copiar Link"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label><i class="fas fa-globe"></i> Dominio Personalizado</label>
+                        <input type="text" id="user-custom-domain" placeholder="Ej: misitio.com">
+                        <small style="color: #666; display: block; margin-top: 5px;">Dominio autorizado para integraciones externas.</small>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-whatsapp"></i> WhatsApp Number</label>
+                        <input type="text" id="user-whatsapp" placeholder="https://wa.me/Telefono">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-facebook-messenger"></i> Messenger ID/Link</label>
+                        <input type="text" id="user-messenger" placeholder="https://m.me/nombreUsuario">
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-top: 25px;">
                 <button id="btn-save-limits" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Cambios</button>
             </div>
@@ -230,7 +252,7 @@
             async function loadUsers() {
                 const { data: users, error } = await _supabase
                     .from('usuarios')
-                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link, has_tracking, has_clients, has_auctions, has_events, max_events, max_wishlist, max_sealed, max_preorders, max_clients_count, max_auctions_count, public_link')
+                    .select('id, username, store_name, is_store, role, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, whatsapp_link, messenger_link, has_tracking, has_clients, has_auctions, has_events, max_events, max_wishlist, max_sealed, max_preorders, max_clients_count, max_auctions_count, public_link, custom_domain')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -279,6 +301,17 @@
 
             // Initial load
             await loadUsers();
+
+            // Tab switching logic for Manage Limits Panel
+            $(document).on('click', '.slot-tab-btn', function() {
+                const tabId = $(this).data('tab');
+                const $parent = $(this).closest('.album-card');
+
+                $parent.find('.slot-tab-btn').removeClass('active');
+                $(this).addClass('active');
+                $parent.find('.slot-tab-content').removeClass('active');
+                $(`#${tabId}`).addClass('active');
+            });
 
             // Toggle Create Form
             $('#btn-show-create-user').click(() => $('#create-user-panel').slideToggle());
@@ -480,6 +513,7 @@
                 $('#limit-events').val(user.max_events || 1);
                 $('#user-whatsapp').val(user.whatsapp_link || '');
                 $('#user-messenger').val(user.messenger_link || '');
+                $('#user-custom-domain').val(user.custom_domain || '');
 
                 $('#perm-tracking').prop('checked', user.has_tracking || false);
                 $('#perm-clients').prop('checked', user.has_clients || false);
@@ -487,6 +521,12 @@
                 $('#perm-events').prop('checked', user.has_events || false);
 
                 renderSpiritsCheckboxes(user.allowed_spirit_ids || '');
+
+                // Reset Tabs to first one
+                $('#manage-limits-panel .slot-tab-btn').removeClass('active');
+                $('#manage-limits-panel .slot-tab-btn[data-tab="manage-tab-limites"]').addClass('active');
+                $('#manage-limits-panel .slot-tab-content').removeClass('active');
+                $('#manage-tab-limites').addClass('active');
 
                 $('#manage-limits-panel').slideDown();
                 // Scroll to panel
@@ -535,6 +575,7 @@
                     allowed_spirit_ids: allowed_spirit_ids,
                     whatsapp_link: $('#user-whatsapp').val().trim(),
                     messenger_link: $('#user-messenger').val().trim(),
+                    custom_domain: $('#user-custom-domain').val().trim(),
                     has_tracking: $('#perm-tracking').is(':checked'),
                     has_clients: $('#perm-clients').is(':checked'),
                     has_auctions: $('#perm-auctions').is(':checked'),

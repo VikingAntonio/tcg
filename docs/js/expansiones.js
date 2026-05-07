@@ -210,6 +210,14 @@ $(document).ready(function() {
         updateSelectAllState();
     });
 
+    // --- Dest Type Switching ---
+    $('#expansion-dest-type').change(function() {
+        const type = $(this).val();
+        $('#lbl-expansion-new-name').text(type === 'album' ? 'Nombre del Nuevo Álbum' : 'Nombre del Nuevo Deck');
+        $('#expansion-new-album-name').attr('placeholder', type === 'album' ? 'Ej: Mi Colección...' : 'Ej: Nuevo Deck...');
+        loadExpansionTargets();
+    });
+
     $('#expansion-album-dest').change(function() {
         if ($(this).val() === 'new') {
             $('#expansion-new-album-group').show();
@@ -218,22 +226,29 @@ $(document).ready(function() {
         }
     });
 
-    // --- Album Loading ---
-    async function loadExpansionAlbums() {
+    // --- Target Loading ---
+    async function loadExpansionTargets() {
+        const type = $('#expansion-dest-type').val();
         const $select = $('#expansion-album-dest');
-        const { data: albums, error } = await _supabase
-            .from('albums')
-            .select('id, title')
+        const table = type === 'album' ? 'albums' : 'decks';
+        const label = type === 'album' ? 'Nuevo Álbum' : 'Nuevo Deck';
+
+        const { data, error } = await _supabase
+            .from(table)
+            .select('id, ' + (type === 'album' ? 'title' : 'name'))
             .eq('user_id', currentUser.id)
             .order('id', { ascending: false });
 
-        $select.html('<option value="new">Nuevo Álbum</option>');
-        if (albums) {
-            albums.forEach(a => {
-                $select.append(`<option value="${a.id}">${a.title}</option>`);
+        $select.html(`<option value="new">${label}</option>`);
+        if (data) {
+            data.forEach(item => {
+                $select.append(`<option value="${item.id}">${item.title || item.name}</option>`);
             });
         }
     }
+
+    // Support legacy naming in plan/calls
+    window.loadExpansionAlbums = loadExpansionTargets;
 
     // --- Save Logic ---
     $('#btn-save-expansion-cards').click(async function() {
@@ -246,38 +261,45 @@ $(document).ready(function() {
             return;
         }
 
-        const albumDest = $('#expansion-album-dest').val();
-        let albumId = albumDest;
-        const newAlbumName = $('#expansion-new-album-name').val().trim();
+        const type = $('#expansion-dest-type').val();
+        const targetDest = $('#expansion-album-dest').val();
+        const newName = $('#expansion-new-album-name').val().trim();
+        let targetId = targetDest;
 
-        if (albumDest === 'new') {
-            if (!newAlbumName) {
-                Swal.fire('Atención', 'Escribe un nombre para el nuevo álbum.', 'warning');
+        if (targetDest === 'new') {
+            if (!newName) {
+                Swal.fire('Atención', `Escribe un nombre para el nuevo ${type === 'album' ? 'álbum' : 'deck'}.`, 'warning');
                 return;
             }
 
+            const table = type === 'album' ? 'albums' : 'decks';
+            const limit = type === 'album' ? (currentUser.max_albums || 3) : (currentUser.max_decks || 1);
+
             const { count } = await _supabase
-                .from('albums')
+                .from(table)
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', currentUser.id);
 
-            if (count >= (currentUser.max_albums || 3)) {
-                Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_albums || 3} álbumes.`, 'warning');
+            if (count >= limit) {
+                Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${limit} ${type === 'album' ? 'álbumes' : 'deck'}.`, 'warning');
                 return;
             }
 
-            Swal.fire({ title: 'Creando álbum...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: `Creando ${type}...`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-            const { data: newAlbum, error: albumErr } = await _supabase
-                .from('albums')
-                .insert([{ title: newAlbumName, user_id: currentUser.id }])
+            const insertData = { user_id: currentUser.id };
+            if (type === 'album') insertData.title = newName; else insertData.name = newName;
+
+            const { data: newTarget, error: err } = await _supabase
+                .from(table)
+                .insert([insertData])
                 .select();
 
-            if (albumErr) {
-                Swal.fire('Error', 'No se pudo crear el álbum: ' + albumErr.message, 'error');
+            if (err) {
+                Swal.fire('Error', `No se pudo crear el ${type}: ` + err.message, 'error');
                 return;
             }
-            albumId = newAlbum[0].id;
+            targetId = newTarget[0].id;
         }
 
         const selectedCards = selectedIndexes.map(i => currentExpansionCards[i]);
@@ -290,16 +312,22 @@ $(document).ready(function() {
         });
 
         try {
-            await handleBatchExpansionRegistration(albumId, selectedCards);
+            if (type === 'album') {
+                await handleBatchExpansionRegistration(targetId, selectedCards);
+            } else {
+                await handleBatchExpansionRegistrationToDeck(targetId, selectedCards);
+            }
+
             Swal.fire({
                 title: '¡Guardado!',
-                text: 'Las cartas se han añadido correctamente al álbum.',
+                text: `Las cartas se han añadido correctamente al ${type}.`,
                 icon: 'success',
                 timer: 2000,
                 showConfirmButton: false
             });
-            if (albumDest === 'new') {
-                loadExpansionAlbums();
+
+            if (targetDest === 'new') {
+                loadExpansionTargets();
                 $('#expansion-new-album-name').val('');
             }
         } catch (err) {
@@ -307,6 +335,41 @@ $(document).ready(function() {
             Swal.fire('Error', 'No se pudieron registrar las cartas: ' + err.message, 'error');
         }
     });
+
+    async function handleBatchExpansionRegistrationToDeck(deckId, cards) {
+        // 1. Check current deck count
+        const { count, error: cErr } = await _supabase
+            .from('deck_cards')
+            .select('*', { count: 'exact', head: true })
+            .eq('deck_id', deckId);
+
+        if (cErr) throw cErr;
+
+        const limit = (currentUser.max_cards_per_deck || 60);
+        if (count + cards.length > limit) {
+            throw new Error(`Límite de cartas en deck excedido. Espacio restante: ${limit - count}.`);
+        }
+
+        // 2. Prepare cards for batch insert
+        const cardsToInsert = cards.map((card, index) => ({
+            deck_id: deckId,
+            name: card.name,
+            image_url: card.image_url,
+            expansion: card.expansion || '',
+            rarity: card.rarity || '',
+            quantity: 1,
+            position: count + index
+        }));
+
+        // 3. Batch insert (Chunked)
+        for (let i = 0; i < cardsToInsert.length; i += 50) {
+            const chunk = cardsToInsert.slice(i, i + 50);
+            const { error: insErr } = await _supabase
+                .from('deck_cards')
+                .insert(chunk);
+            if (insErr) throw insErr;
+        }
+    }
 
     async function handleBatchExpansionRegistration(albumId, cards) {
         // Fetch existing pages for this album

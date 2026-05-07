@@ -1330,6 +1330,13 @@ $(document).ready(async function() {
         droppedGltfFile = null;
         droppedExtraFiles = [];
         updateSpiritDropZoneUI(null);
+
+        // Reset Tabs
+        $('#spirit-upload-modal .slot-tab-btn').removeClass('active');
+        $('#spirit-upload-modal .slot-tab-btn[data-tab="spirit-tab-modelo"]').addClass('active');
+        $('#spirit-upload-modal .slot-tab-content').removeClass('active');
+        $('#spirit-tab-modelo').addClass('active');
+
         $('#spirit-upload-modal').addClass('active');
     });
 
@@ -1640,6 +1647,12 @@ function editSpirit(spirit) {
     droppedGltfFile = null;
     droppedExtraFiles = [];
     updateSpiritDropZoneUI(null);
+
+    // Reset Tabs
+    $('#spirit-upload-modal .slot-tab-btn').removeClass('active');
+    $('#spirit-upload-modal .slot-tab-btn[data-tab="spirit-tab-modelo"]').addClass('active');
+    $('#spirit-upload-modal .slot-tab-content').removeClass('active');
+    $('#spirit-tab-modelo').addClass('active');
 
     $('#spirit-upload-modal').addClass('active');
 }
