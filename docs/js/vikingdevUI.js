@@ -1,275 +1,188 @@
-/**
- * Vikingdev Binders Integration Library
- * This script handles the <vikingdev-binders> custom element for external site embedding.
- */
-
 (function() {
-    // Prevent multiple definitions
-    if (customElements.get('vikingdev-binders')) return;
+    const SUPABASE_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
 
-    class VikingdevBinders extends HTMLElement {
-        constructor() {
-            super();
-            this.attachShadow({ mode: 'open' });
+    function loadScript(url) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    async function init() {
+        // Load jQuery if not present
+        if (typeof jQuery === 'undefined') {
+            await loadScript('https://code.jquery.com/jquery-3.6.0.min.js');
         }
 
-        static get observedAttributes() {
-            return ['domain', 'album-id'];
+        // Load Supabase if not present
+        if (typeof supabase === 'undefined') {
+            await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
         }
 
-        attributeChangedCallback() {
-            this.render();
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Load Turn.js if not present
+        if (typeof $.fn.turn === 'undefined') {
+             const currentScript = document.querySelector('script[src*="vikingdevUI.js"]');
+             const baseUrl = currentScript ? currentScript.src.replace('/js/vikingdevUI.js', '') : '';
+             await loadScript(baseUrl + '/js/turn.js');
         }
 
-        connectedCallback() {
-            this.render();
-        }
-
-        async render() {
-            const domainAttr = this.getAttribute('domain');
-            const albumId = this.getAttribute('album-id');
-            const currentHostname = window.location.hostname;
-
-            if (!domainAttr || !albumId) {
-                this.shadowRoot.innerHTML = `<div style="color: #ff4757; font-family: sans-serif; padding: 20px; text-align: center; border: 1px dashed #ff4757;">Error: Missing configuration attributes (domain, album-id).</div>`;
-                return;
-            }
-
-            // Normalize domains for comparison
-            const cleanDomainAttr = domainAttr.toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
-            const cleanCurrentHostname = currentHostname.toLowerCase();
-
-            // Injected styles for centering, margins, and responsiveness
-            const styles = `
-                :host {
-                    display: block;
-                    width: 100%;
-                    max-width: 1200px;
-                    margin: 60px auto;
-                    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-                    box-sizing: border-box;
-                }
-                .vikingdev-outer {
-                    width: 100%;
-                    padding: 0 20px;
-                    box-sizing: border-box;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-                .vikingdev-container {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 40px 20px;
-                    background: #ffffff;
-                    border: 1px solid #eee;
-                    border-radius: 16px;
-                    min-height: 300px;
-                    width: 100%;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-                    box-sizing: border-box;
-                }
-                .error-box {
-                    color: #ff4757;
-                    background: rgba(255, 71, 87, 0.05);
-                    border: 1px solid #ff4757;
-                    padding: 30px;
-                    border-radius: 12px;
-                    text-align: center;
-                    width: 100%;
-                    max-width: 600px;
-                    box-sizing: border-box;
-                    font-weight: 500;
-                }
-                .grid-container {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-                    gap: 30px;
-                    width: 100%;
-                    margin-top: 30px;
-                }
-                .card-slot {
-                    background: #fff;
-                    border: 1px solid #f0f0f0;
-                    border-radius: 12px;
-                    padding: 12px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-                    transition: all 0.3s ease;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-                .card-slot:hover {
-                    transform: translateY(-8px);
-                    box-shadow: 0 12px 24px rgba(0,0,0,0.08);
-                    border-color: #00d2ff;
-                }
-                .card-img-wrapper {
-                    width: 100%;
-                    position: relative;
-                    padding-top: 140%; /* 2.5 / 3.5 aspect ratio */
-                    overflow: hidden;
-                    border-radius: 6px;
-                    background: #f8f9fa;
-                }
-                .card-img {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain;
-                }
-                .card-info {
-                    margin-top: 15px;
-                    text-align: center;
-                    width: 100%;
-                }
-                .card-name {
-                    font-size: 14px;
-                    font-weight: 700;
-                    margin: 0;
-                    color: #1a1a1a;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-                .card-price {
-                    font-size: 13px;
-                    color: #00d2ff;
-                    font-weight: 800;
-                    margin-top: 6px;
-                }
-                .loader {
-                    width: 50px;
-                    height: 50px;
-                    border: 5px solid #f3f3f3;
-                    border-top: 5px solid #00d2ff;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-                .viking-badge {
-                    margin-top: 40px;
-                    font-size: 11px;
-                    color: #aaa;
-                    text-transform: uppercase;
-                    letter-spacing: 0.2em;
-                    font-weight: 700;
-                    text-decoration: none;
-                    transition: color 0.2s;
-                }
-                .viking-badge:hover { color: #00d2ff; }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                @media (max-width: 768px) {
-                    :host { margin: 30px auto; }
-                    .grid-container {
-                        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                        gap: 15px;
-                    }
-                    .card-name { font-size: 12px; }
-                    .vikingdev-container { padding: 20px 15px; }
-                }
-            `;
-
-            this.shadowRoot.innerHTML = `
-                <style>${styles}</style>
-                <div class="vikingdev-outer">
-                    <div class="vikingdev-container">
-                        <div class="loader"></div>
-                    </div>
-                </div>
-            `;
-
-            try {
-                const SUPABASE_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co';
-                const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
-
-                // 1. Fetch User by domain and check authorization
-                const userResponse = await fetch(`${SUPABASE_URL}/rest/v1/usuarios?custom_domain=eq.${cleanDomainAttr}&select=id,custom_domain`, {
-                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-                });
-                const users = await userResponse.json();
-                const owner = users && users.length > 0 ? users[0] : null;
-
-                if (!owner) {
-                    this.renderError(`Error: Domain "${cleanDomainAttr}" not authorized or user not found.`);
-                    return;
-                }
-
-                // Domain check: current site must match the authorized domain
-                if (cleanCurrentHostname !== cleanDomainAttr && cleanCurrentHostname !== 'localhost' && cleanCurrentHostname !== '127.0.0.1') {
-                     this.renderError(`Error: Current domain "${cleanCurrentHostname}" does not match authorized domain "${cleanDomainAttr}".`);
-                     return;
-                }
-
-                // 2. Fetch Album data
-                const pagesResponse = await fetch(`${SUPABASE_URL}/rest/v1/album_pages?album_id=eq.${albumId}&select=id&order=position`, {
-                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-                });
-                const pages = await pagesResponse.json();
-
-                if (!pages || pages.length === 0) {
-                    this.renderError("No pages found for this album.");
-                    return;
-                }
-
-                const pageIds = pages.map(p => p.id).join(',');
-                const slotsResponse = await fetch(`${SUPABASE_URL}/rest/v1/card_slots?page_id=in.(${pageIds})&select=name,image_url,price&order=slot_index`, {
-                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-                });
-                const slots = await slotsResponse.json();
-
-                this.renderContent(slots);
-
-            } catch (err) {
-                console.error(err);
-                this.renderError("Failed to load content. Please check your connection.");
-            }
-        }
-
-        renderError(msg) {
-            this.shadowRoot.querySelector('.vikingdev-container').innerHTML = `
-                <div class="error-box">
-                    <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
-                    <strong>VIKINGDEV BINDERS</strong><br>
-                    <span style="font-size: 14px; margin-top: 8px; display: block; opacity: 0.8;">${msg}</span>
-                </div>
-            `;
-        }
-
-        renderContent(slots) {
-            const validSlots = (slots || []).filter(s => s.image_url);
-
-            if (validSlots.length === 0) {
-                this.shadowRoot.querySelector('.vikingdev-container').innerHTML = `<div style="color: #666; font-weight: 500;">Este álbum no contiene cartas visibles.</div>`;
-                return;
-            }
-
-            const gridHtml = validSlots.map(slot => `
-                <div class="card-slot">
-                    <div class="card-img-wrapper">
-                        <img class="card-img" src="${slot.image_url}" loading="lazy">
-                    </div>
-                    <div class="card-info">
-                        <p class="card-name">${slot.name || 'Carta de Colección'}</p>
-                        ${slot.price ? `<p class="card-price">${slot.price}</p>` : ''}
-                    </div>
-                </div>
-            `).join('');
-
-            this.shadowRoot.querySelector('.vikingdev-container').innerHTML = `
-                <h2 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 1.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;">Nuestra Colección</h2>
-                <div style="width: 60px; height: 4px; background: #00d2ff; border-radius: 2px; margin-bottom: 30px;"></div>
-                <div class="grid-container">${gridHtml}</div>
-                <a href="https://vikingtcg.xyz" target="_blank" class="viking-badge">Powered by Vikingdev TCG</a>
-            `;
+        const binders = document.querySelectorAll('vikingdev-binders');
+        for (const binder of binders) {
+            renderBinder(binder, _supabase);
         }
     }
 
-    customElements.define('vikingdev-binders', VikingdevBinders);
+    async function renderBinder(el, _supabase) {
+        const domain = el.getAttribute('domain');
+        const albumId = el.getAttribute('album-id');
+        const albumTitle = el.getAttribute('album-name') || el.getAttribute('album-title');
+
+        if (!domain || (!albumId && !albumTitle)) return;
+
+        // Verify user by domain
+        const { data: user, error: userError } = await _supabase
+            .from('usuarios')
+            .select('id')
+            .eq('custom_domain', domain)
+            .single();
+
+        if (userError || !user) {
+            el.innerHTML = `<p style="color: red; font-family: sans-serif; font-size: 12px;">Error: Domain "${domain}" not authorized or user not found.</p>`;
+            return;
+        }
+
+        // Fetch Album
+        let query = _supabase.from('albums').select('*').eq('user_id', user.id);
+
+        if (albumId) {
+            query = query.eq('id', albumId);
+        } else {
+            query = query.eq('title', albumTitle);
+        }
+
+        const { data: album, error: albumError } = await query.maybeSingle();
+
+        if (albumError || !album) {
+            el.innerHTML = `<p style="color: red; font-family: sans-serif; font-size: 12px;">Error: Album "${albumId || albumTitle}" not found.</p>`;
+            return;
+        }
+
+        const $el = $(el);
+        $el.empty();
+
+        const $container = $('<div class="vikingdev-binders-container"></div>');
+        const $wrapper = $('<div class="viking-album-wrapper"></div>');
+        const $albumDiv = $(`<div class="viking-album"></div>`);
+
+        $wrapper.append($albumDiv);
+        $container.append($wrapper);
+        $el.append($container);
+
+        // Fetch Pages
+        let { data: pages } = await _supabase
+            .from('pages')
+            .select('*')
+            .eq('album_id', album.id)
+            .order('page_index', { ascending: true });
+
+        if (!pages) pages = [];
+
+        // Render Cover
+        if (album.cover_image_url) {
+            $albumDiv.append(`<div class="page cover-page"><img src="${album.cover_image_url}"></div>`);
+        } else {
+            const coverColor = album.cover_color || '#1a1a1a';
+            $albumDiv.append(`
+                <div class="page cover-page">
+                    <div class="textured-cover" style="background-color: ${coverColor}">
+                        <h2>${album.title}</h2>
+                    </div>
+                </div>
+            `);
+        }
+
+        // Fetch all slots for this album at once to minimize requests
+        const pageIds = pages.map(p => p.id);
+        let allSlots = [];
+        if (pageIds.length > 0) {
+            const { data: slots } = await _supabase
+                .from('card_slots')
+                .select('*')
+                .in('page_id', pageIds)
+                .order('slot_index', { ascending: true });
+            allSlots = slots || [];
+        }
+
+        for (const page of pages) {
+            const $pageDiv = $('<div class="page"></div>');
+            const $grid = $('<div class="grid-container"></div>');
+            const pageSlots = allSlots.filter(s => s.page_id === page.id);
+
+            for (let i = 0; i < 9; i++) {
+                const slotData = pageSlots.find(s => s.slot_index === i);
+                const $slot = $('<div class="card-slot"></div>');
+                if (slotData && slotData.image_url) {
+                    $slot.append(`<img src="${slotData.image_url}" alt="${slotData.name || 'Carta'}">`);
+                }
+                $grid.append($slot);
+            }
+            $pageDiv.append($grid).appendTo($albumDiv);
+        }
+
+        // Filler page if needed for even page count (excluding back cover)
+        // Pages count so far: 1 (cover) + pages.length
+        if ((1 + pages.length) % 2 !== 0) {
+            $albumDiv.append('<div class="page empty-page" style="background: #1a1a1a;"></div>');
+        }
+
+        // Back cover
+        if (album.back_image_url) {
+            $albumDiv.append(`<div class="page back-page"><img src="${album.back_image_url}"></div>`);
+        } else {
+            const backColor = album.back_color || '#1a1a1a';
+            $albumDiv.append(`
+                <div class="page back-page">
+                    <div class="textured-cover" style="background-color: ${backColor}"></div>
+                </div>
+            `);
+        }
+
+        // Initialize Turn.js
+        setTimeout(() => {
+            const updateSize = () => {
+                const isMobile = window.innerWidth <= 768;
+                const width = isMobile ? 340 : 600;
+                const height = isMobile ? 250 : 420;
+                if ($albumDiv.turn('is')) {
+                    $albumDiv.turn('size', width, height);
+                } else {
+                    $albumDiv.turn({
+                        width: width,
+                        height: height,
+                        autoCenter: true,
+                        duration: 1000,
+                        gradients: true,
+                        acceleration: true,
+                        elevation: 50
+                    });
+                }
+            };
+
+            updateSize();
+            $(window).on('resize', updateSize);
+        }, 200);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();

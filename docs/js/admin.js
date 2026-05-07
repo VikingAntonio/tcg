@@ -141,6 +141,12 @@ $(document).ready(async function() {
         loadBotMessages();
     });
 
+    $(document).on('click', '#btn-show-code', function(e) {
+        e.preventDefault();
+        showView('code');
+        loadCodeView();
+    });
+
     $(document).on('click', '#btn-bdd-panel', function(e) {
         e.preventDefault();
         showView('bdd');
@@ -291,6 +297,7 @@ $(document).ready(async function() {
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-investments').click(function(e) { e.preventDefault(); showView('investments'); if(typeof loadInvestmentCategories === 'function') loadInvestmentCategories(); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-code').click(function(e) { e.preventDefault(); showView('code'); loadCodeView(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
 
     $(document).on('click', '#nav-btn-auctions-won', function() {
@@ -1184,6 +1191,22 @@ $(document).ready(async function() {
         renderPendingBdd();
         resetBddForm();
         Swal.fire({ icon: 'success', title: 'Añadido a la cola', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' });
+    });
+
+    $(document).on('click', '#btn-save-domain', function() {
+        saveDomain();
+    });
+
+    $(document).on('click', '#btn-copy-integration-code', function() {
+        const code = $('#output-integration-code').val();
+        if (!code) return;
+        navigator.clipboard.writeText(code).then(() => {
+            Swal.fire('Copiado', 'El código se ha copiado al portapapeles.', 'success');
+        });
+    });
+
+    $(document).on('change', '#code-album-select', function() {
+        updateIntegrationCode();
     });
 
     $('#btn-save-bdd-batch').click(async function() {
@@ -2313,6 +2336,92 @@ function showView(view) {
     if (window.botInstance) {
         window.botInstance.setContext(view);
     }
+}
+
+async function loadCodeView() {
+    if (!currentUser) return;
+
+    // Load domain
+    const { data: userData } = await _supabase
+        .from('usuarios')
+        .select('custom_domain')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (userData && userData.custom_domain) {
+        $('#input-custom-domain').val(userData.custom_domain);
+    }
+
+    // Load albums for selector
+    const { data: albums } = await _supabase
+        .from('albums')
+        .select('id, title')
+        .eq('user_id', currentUser.id)
+        .order('title', { ascending: true });
+
+    const $select = $('#code-album-select');
+    $select.empty();
+    $select.append('<option value="">Selecciona un álbum...</option>');
+
+    if (albums && albums.length > 0) {
+        albums.forEach(album => {
+            $select.append(`<option value="${album.id}">${album.title}</option>`);
+        });
+    } else {
+        $select.html('<option value="">No tienes álbumes creados</option>');
+    }
+
+    updateIntegrationCode();
+}
+
+async function saveDomain() {
+    if (!currentUser) return;
+
+    const domain = $('#input-custom-domain').val().trim().toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/$/, '');
+
+    if (!domain) {
+        Swal.fire('Atención', 'Por favor, ingresa un dominio válido.', 'warning');
+        return;
+    }
+
+    showLoading('Guardando dominio...');
+    const { error } = await _supabase
+        .from('usuarios')
+        .update({ custom_domain: domain })
+        .eq('id', currentUser.id);
+
+    hideLoading();
+
+    if (error) {
+        Swal.fire('Error', 'No se pudo guardar el dominio: ' + error.message, 'error');
+    } else {
+        Swal.fire('Guardado', 'Dominio guardado correctamente.', 'success');
+        updateIntegrationCode();
+    }
+}
+
+function updateIntegrationCode() {
+    const domain = $('#input-custom-domain').val().trim() || 'tu-dominio.com';
+    const albumId = $('#code-album-select').val();
+    const albumName = $('#code-album-select option:selected').text();
+
+    if (!albumId) {
+        $('#output-integration-code').val('Selecciona un álbum para generar el código.');
+        return;
+    }
+
+    const scriptUrl = window.location.origin + '/js/vikingdevUI.js';
+    const cssUrl = window.location.origin + '/css/vikingdevUI.css';
+
+    const code = `<!-- Vikingdev Binders Integration -->
+<link rel="stylesheet" href="${cssUrl}">
+<vikingdev-binders domain="${domain}" album-id="${albumId}"></vikingdev-binders>
+<script src="${scriptUrl}"></script>`;
+
+    $('#output-integration-code').val(code);
 }
 
 async function editAlbum(album) {
