@@ -289,7 +289,6 @@ $(document).ready(async function() {
     $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
-    $('#menu-btn-investments').click(function(e) { e.preventDefault(); showView('investments'); if(typeof loadInvestmentCategories === 'function') loadInvestmentCategories(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
 
     $(document).on('click', '#nav-btn-auctions-won', function() {
