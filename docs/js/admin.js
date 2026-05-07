@@ -80,6 +80,16 @@ window.openShareModal = function(title, type, id, extraId) {
     $('#share-tg').off('click').on('click', () => window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank'));
     $('#share-fb').off('click').on('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank'));
     $('#share-ms').off('click').on('click', () => window.open(`fb-messenger://share/?link=${encodedUrl}`, '_blank'));
+
+    // Binders Integration Code
+    if (type === 'albums') {
+        const domain = currentUser.custom_domain || 'tu-dominio.com';
+        const embedCode = `<!-- Vikingdev Binders Integration -->\n<vikingdev-binders domain="${domain}" album-id="${id}"></vikingdev-binders>\n<script src="${window.location.origin}/js/vikingdevUI.js"></script>`;
+        $('#embed-code-input').val(embedCode);
+        $('#embed-code-container').show();
+    } else {
+        $('#embed-code-container').hide();
+    }
 };
 
 // Local state for batch saving
@@ -1495,6 +1505,28 @@ $(document).ready(async function() {
         Swal.fire({
             icon: 'success',
             title: 'Enlace copiado',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    });
+
+    $(document).on('click', '#btn-copy-embed-code', function() {
+        const input = document.getElementById('embed-code-input');
+        input.select();
+        navigator.clipboard.writeText(input.value);
+
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        $btn.html('<i class="fas fa-check"></i>').css('background', '#22c55e');
+        setTimeout(() => {
+            $btn.html(originalHtml).css('background', '');
+        }, 2000);
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Código copiado',
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
