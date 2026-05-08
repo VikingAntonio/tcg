@@ -1,0 +1,139 @@
+/* Binders specific styles */
+
+.admin-section {
+    display: none;
+    width: 100%;
+}
+
+.admin-section.active {
+    display: flex;
+}
+
+.album-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+.album-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.album-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 15px 35px rgba(0, 210, 255, 0.2);
+    transform: translateY(-5px);
+}
+
+.album-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.admin-page-item {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.admin-grid-preview {
+    height: 300px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.card-slot {
+    background: var(--slot-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid var(--slot-border);
+    position: relative;
+    aspect-ratio: 2.5 / 3.5;
+}
+
+.card-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.slot-modal-tabs {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.slot-tab-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #888;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.slot-tab-btn.active {
+    background: var(--primary-color);
+    color: #000;
+}
+
+.slot-tab-content {
+    display: none;
+    width: 100%;
+}
+
+.slot-tab-content.active {
+    display: block;
+}
+
+/* Reusing some admin header styles */
+.admin-header {
+    width: 100%;
+    text-align: center;
+    color: var(--text-color);
+    margin-bottom: 40px;
+}
+
+.admin-header h1 {
+    font-weight: 800;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 8px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tcg-card {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    margin: 0;
+}

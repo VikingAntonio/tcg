@@ -350,7 +350,7 @@ $(document).ready(async function() {
 
     $(document).on('click', '#btn-back-to-albums', function(e) {
         e.preventDefault();
-        showView('dashboard');
+        window.location.href = 'binders.html';
         loadAlbums();
     });
 
@@ -405,14 +405,12 @@ $(document).ready(async function() {
     // Navigation
     $('#btn-dashboard').click(function(e) {
         e.preventDefault();
-        showView('dashboard');
-        loadAlbums();
+        window.location.href = 'binders.html';
     });
 
     $('#btn-decks').click(function(e) {
         e.preventDefault();
-        showView('decks');
-        loadDecks();
+        window.location.href = 'decks.html';
     });
 
     $('#btn-spirits').click(function(e) {
@@ -543,7 +541,7 @@ $(document).ready(async function() {
             localVikingData = [];
 
             loadAlbums();
-            showView('dashboard');
+            window.location.href = 'binders.html';
 
         } catch (err) {
             Swal.fire('Error', 'No se pudieron guardar los cambios: ' + (err.message || ''), 'error');
@@ -2732,8 +2730,7 @@ async function initFloatingCompanion() {
             customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : [],
             onAction: (msg) => {
                 if (msg.type === 'album_link') {
-                    showView('dashboard');
-                    loadAlbums();
+                    window.location.href = 'binders.html';
                 } else if (msg.redirect_url && msg.redirect_url.startsWith('http')) {
                     window.open(msg.redirect_url, '_blank');
                 }
