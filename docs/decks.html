@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <title>Mis Decks - VikingTCG</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/decks.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+</head>
+<body>
+    <!-- Floating User Panel -->
+    <div class="top-left-panel" id="top-panel" style="display: none;">
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                    </div>
+                    <a href="admin.html" class="menu-item"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="binders.html" class="menu-item"><i class="fas fa-book"></i> Mis Álbumes</a>
+                    <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="overlay">
+        <div class="overlay-content login-container">
+            <h1>Iniciar Sesión</h1>
+            <div class="form-group">
+                <input type="text" id="login-username" placeholder="Usuario">
+                <input type="password" id="login-password" placeholder="Contraseña">
+            </div>
+            <button id="btn-login" class="btn" style="width: 100%;">Entrar</button>
+        </div>
+    </div>
+
+    <!-- Authenticated Content -->
+    <div id="authenticated-content" style="display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding-top: 100px;">
+
+        <!-- Decks View -->
+        <div id="view-decks" class="admin-section">
+            <div class="admin-header">
+                <a href="admin.html" class="btn btn-secondary" style="margin-bottom: 20px; text-decoration: none; display: inline-block;"><i class="fas fa-arrow-left"></i> Volver al Panel</a>
+                <h1>Mis Decks</h1>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-create-deck" class="btn"><i class="fas fa-plus"></i> Crear Nuevo Deck</button>
+                    <button id="btn-organize-decks" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                </div>
+            </div>
+            <div id="deck-list" class="album-list"></div>
+        </div>
+
+        <!-- Deck Editor View -->
+        <div id="view-deck-editor" class="admin-section" style="display:none;">
+            <div class="admin-header">
+                <button id="btn-back-to-decks" class="btn btn-secondary" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver a Decks</button>
+                <h1 id="deck-editor-title">Editar Deck</h1>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="btn-save-deck-meta" class="btn"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    <button id="btn-organize-cards" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                </div>
+            </div>
+
+            <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
+                <div class="form-group">
+                    <label>Nombre del Deck</label>
+                    <input type="text" id="input-deck-name">
+                </div>
+                <div class="form-group">
+                    <label class="switch"><input type="checkbox" id="input-deck-public" checked><span class="slider"></span></label>
+                    <label style="margin-left: 10px;">Deck Público</label>
+                </div>
+                <div id="deck-total-price-display">Precio Total: <span id="deck-total-sum">-bash.00</span></div>
+                <div class="form-group">
+                    <label class="switch"><input type="checkbox" id="input-deck-use-special"><span class="slider"></span></label>
+                    <label style="margin-left: 10px;">Precio Especial</label>
+                </div>
+                <div id="special-price-container" style="display:none;">
+                    <input type="text" id="input-deck-special-price" placeholder="Ej: 00.00">
+                </div>
+            </div>
+
+            <div class="form-group" style="max-width: 600px; margin: 20px auto;">
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="deck-external-search-input" placeholder="Buscar carta..." style="flex: 1;">
+                    <button id="btn-deck-external-search" class="btn"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="deck-external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto;"></div>
+            </div>
+
+            <div id="deck-card-list" class="album-list"></div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="gltf-overlay" class="overlay">
+        <span id="close-gltf-overlay" class="close-btn-floating">&times;</span>
+        <div class="overlay-content gltf-expanded-content">
+            <model-viewer id="expanded-gltf-viewer" loading="lazy" camera-controls auto-rotate shadow-intensity="1" environment-image="neutral" exposure="1.2" oncontextmenu="return false;"></model-viewer>
+            <div class="card-info"><div id="expanded-gltf-name" class="card-name">Nombre del Compañero</div></div>
+        </div>
+    </div>
+
+    <div id="share-overlay" class="overlay">
+        <div class="overlay-content">
+            <span id="close-share-modal" class="close-btn">&times;</span>
+            <h2 id="share-modal-title">Compartir</h2>
+            <div id="share-qr-code" style="background:white; padding:10px; border-radius:10px; margin-bottom:10px; display: flex; justify-content: center;"></div>
+            <input type="text" id="share-link-input" readonly style="width:100%; background: #222; color: #00d2ff; border: 1px solid #333; padding: 10px; border-radius: 8px;">
+        </div>
+    </div>
+
+    <div id="slot-modal" class="overlay">
+        <div class="overlay-content">
+            <span id="close-slot-modal" class="close-btn">&times;</span>
+            <h2 style="margin-bottom: 20px;">Editar Carta</h2>
+            <div class="form-group">
+                <input type="text" id="slot-image-url" placeholder="URL Imagen">
+                <input type="text" id="slot-name" placeholder="Nombre">
+                <input type="text" id="slot-price" placeholder="Precio">
+            </div>
+            <button id="btn-save-slot" class="btn" style="width: 100%;">Guardar</button>
+        </div>
+    </div>
+
+    <div id="organize-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 600px;">
+            <span id="close-organize-modal" class="close-btn">&times;</span>
+            <h2>Organizar</h2>
+            <div id="organize-grid" class="organize-grid"></div>
+            <button id="btn-finish-organize" class="btn" style="width: 100%; margin-top: 20px;">Finalizar</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home"><i class="fas fa-home"></i></div>
+        <div class="nav-item" id="btn-nav-return" title="Volver"><i class="fas fa-chevron-left"></i></div>
+    </div>
+
+    <div id="companion-wrapper">
+        <div class="companion-drag-handle" id="companion-drag-handle"><i class="fas fa-arrows-alt"></i></div>
+        <div class="companion-bubble" id="companion-bubble"></div>
+        <div id="floating-companion-container"></div>
+        <div class="companion-menu-popup" id="companion-menu">
+            <div class="companion-menu-item" id="menu-item-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
+            <div class="companion-menu-item" id="menu-item-play"><i class="fas fa-gamepad"></i> Jugar</div>
+            <div class="companion-menu-item" id="menu-item-details"><i class="fas fa-search-plus"></i> Ver Detalle</div>
+        </div>
+    </div>
+
+    <div id="chatbot-container">
+        <div class="chatbot-header">
+            <h3><i class="fas fa-robot"></i> Viking Assistant</h3>
+            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
+        </div>
+        <div class="chatbot-messages" id="chat-messages"></div>
+        <div class="chatbot-input-area">
+            <div class="chat-input-wrapper">
+                <input type="text" id="chat-input" placeholder="Escribe tu duda...">
+                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/viking-data.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/ztext.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/companion-bot.js"></script>
+    <script src="js/decks.js"></script>
+</body>
+</html>
