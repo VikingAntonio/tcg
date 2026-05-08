@@ -15,7 +15,7 @@ $(document).ready(async function() {
         // Refresh data from Supabase to get latest
         const { data, error } = await _supabase
             .from('usuarios')
-            .select('id, username, email, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo, custom_domain')
+            .select('id, username, email, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo')
             .eq('id', session.user.id)
             .single();
 
@@ -39,7 +39,6 @@ $(document).ready(async function() {
         // Always show and load WhatsApp/Messenger for all users
         $('#profile-whatsapp').val(currentUser.whatsapp_link || '');
         $('#profile-messenger').val(currentUser.messenger_link || '');
-        $('#profile-domain').val(currentUser.custom_domain || '');
 
         if (currentUser.is_store) {
             $('.store-only-field').show();
@@ -94,7 +93,6 @@ $(document).ready(async function() {
         const storeName = $('#profile-store-name').val().trim();
         const whatsapp = $('#profile-whatsapp').val().trim();
         const messenger = $('#profile-messenger').val().trim();
-        const domain = $('#profile-domain').val().trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
         const horario = $('#profile-horario').val().trim();
         const ubicacion = $('#profile-ubicacion').val().trim();
 
@@ -149,8 +147,7 @@ $(document).ready(async function() {
             // Start with fields common to all users
             const updateData = {
                 whatsapp_link: whatsapp,
-                messenger_link: messenger,
-                custom_domain: domain
+                messenger_link: messenger
             };
 
             // Only add store-specific fields if the user is a store

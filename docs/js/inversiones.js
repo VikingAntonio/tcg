@@ -1,10 +1,9 @@
 /**
- * Inversiones (Investments) Module - Standalone Version
+ * Inversiones (Investments) Module
  * Logic for managing card investments with manual price tracking and history.
  */
 
 // --- STATE ---
-let currentUser = null;
 let currentInvestmentCategoryId = null;
 let currentInvestmentViewMode = 'album'; // 'album', 'slide', 'list'
 let localInvestmentCards = [];
@@ -25,131 +24,23 @@ function escapeHtml(text) {
     return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-function showView(view) {
-    $('.admin-section').hide().removeClass('active');
-    $(`#view-${view}`).show().addClass('active');
-}
-
-// --- AUTH & SESSION ---
-async function checkSession() {
-    const { data: { session } } = await _supabase.auth.getSession();
-    if (session) {
-        const { data: user } = await _supabase
-            .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, auction_reset_date, monthly_created_count, monthly_bid_count')
-            .eq('id', session.user.id)
-            .single();
-
-        if (user) {
-            currentUser = user;
-            $('#dropdown-user-name').text(user.username);
-            if (user.store_logo) {
-                $('#dropdown-user-logo').attr('src', user.store_logo).show();
-            }
-            $('#top-panel, #authenticated-content').show();
-            loadInvestmentCategories();
-        } else {
-            showLoginView();
-        }
-    } else {
-        showLoginView();
-    }
-}
-
-async function handleLogin() {
-    const userInput = $('#login-username').val().trim();
-    const password = $('#login-password').val().trim();
-
-    if (!userInput || !password) {
-        Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
-        return;
-    }
-
-    let emailToUse = userInput;
-    if (!userInput.includes('@')) {
-        const { data: userRow } = await _supabase
-            .from('usuarios')
-            .select('email')
-            .eq('username', userInput)
-            .maybeSingle();
-
-        if (userRow && userRow.email) {
-            emailToUse = userRow.email;
-        } else {
-            emailToUse = `${userInput}@tcgdual.com`;
-        }
-    }
-
-    const { data, error } = await _supabase.auth.signInWithPassword({
-        email: emailToUse,
-        password: password,
-    });
-
-    if (error) {
-        Swal.fire('Error', 'Error al iniciar sesión: ' + error.message, 'error');
-    } else {
-        location.reload();
-    }
-}
-
-async function handleLogout() {
-    await _supabase.auth.signOut();
-    currentUser = null;
-    localStorage.removeItem('tcg_session');
-    location.reload();
-}
-
-function showLoginView() {
-    $('#login-modal').addClass('active');
-    $('#authenticated-content').hide();
-}
-
 // --- INITIALIZATION ---
 $(document).ready(function() {
-    checkSession();
     initInvestmentListeners();
-    initTheme();
-
-    $('#btn-login').click(handleLogin);
-    $('#menu-btn-logout').click(handleLogout);
-
-    $(document).on('click', '#avatar-btn', function(e) {
-        e.stopPropagation();
-        $('#user-dropdown').toggleClass('active');
-    });
-
-    $(document).on('click', function() {
-        $('#user-dropdown').removeClass('active');
-    });
-
-    $('.theme-btn-small').click(function() {
-        const theme = $(this).data('theme');
-        applyTheme(theme);
-    });
 });
 
-function initTheme() {
-    const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
-    applyTheme(savedTheme);
-}
-
-function applyTheme(theme) {
-    $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
-    localStorage.setItem('tcg_theme', theme);
-}
-
 function initInvestmentListeners() {
-    // Navigation to Investments (categories)
+    // Navigation to Investments
     $(document).on('click', '#btn-show-investments', function(e) {
         e.preventDefault();
         showView('investments');
         loadInvestmentCategories();
     });
 
-    // Back to Dashboard - Handled via <a> in inversiones.html for standalone, but keeping for compatibility if needed
+    // Back to Dashboard
     $(document).on('click', '#btn-back-to-main-from-investments', function(e) {
-        // e.preventDefault();
-        // window.location.href = 'admin.html';
+        e.preventDefault();
+        showView('main-dashboard');
     });
 
     // Back to Categories from Details
@@ -266,16 +157,14 @@ function initInvestmentListeners() {
 
     // Drag & Drop for extra images
     const $dropZone = $('#drop-zone-inv-extra');
-    if ($dropZone.length) {
-        $dropZone.on('dragover', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
-        $dropZone.on('dragleave', function() { $(this).removeClass('dragover'); });
-        $dropZone.on('drop', async function(e) {
-            e.preventDefault();
-            $(this).removeClass('dragover');
-            const files = e.originalEvent.dataTransfer.files;
-            handleInvExtraImages(files);
-        });
-    }
+    $dropZone.on('dragover', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
+    $dropZone.on('dragleave', function() { $(this).removeClass('dragover'); });
+    $dropZone.on('drop', async function(e) {
+        e.preventDefault();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        handleInvExtraImages(files);
+    });
 
     $('#input-inv-extra-files').on('change', function() {
         handleInvExtraImages(this.files);
@@ -288,6 +177,7 @@ async function handleInvExtraImages(files) {
 
     for (const file of files) {
         try {
+            // Reusing cloudinary logic from js/cloudinary-upload.js
             const url = await CloudinaryUpload.uploadImage(file);
             if (url) {
                 currentInvExtraImages.push(url);
@@ -538,7 +428,7 @@ function getTrendIcon(current, previous, showPercentage = false) {
 
 function renderAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
-    const { width, height } = window.getAlbumSize ? window.getAlbumSize($container) : { width: 922, height: 700 };
+    const { width, height } = window.getAlbumSize($container);
     const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album investment-album"></div></div>`);
     const $album = $albumWrapper.find('.album');
 
@@ -562,6 +452,7 @@ function renderAlbumMode($container) {
 
         for (let j = 0; j < 9; j++) {
             const card = pageCards[j];
+            // Rename to .inv-card-slot to avoid global admin.js click listeners
             const $slot = $('<div class="inv-card-slot" style="position: relative;"></div>');
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
@@ -588,11 +479,13 @@ function renderAlbumMode($container) {
                     const isZoomBtn = $(e.target).closest('.zoom-btn').length > 0;
 
                     if (isMobile) {
+                        // En móvil, si no es la lupa, no hacemos nada (permitimos que el evento suba para el flip)
                         if (isZoomBtn) {
                             e.preventDefault();
                             e.stopPropagation();
                         }
                     } else {
+                        // En desktop, permitimos abrir el modal al clickear cualquier parte de la carta
                         if (!isZoomBtn) {
                             openInvestmentCardModal(card);
                         }
@@ -605,6 +498,7 @@ function renderAlbumMode($container) {
         $album.append($page);
     }
 
+    // Add empty page if needed for double display
     const totalPages = $album.find('.page').length;
     if (totalPages % 2 !== 0) {
         $album.append('<div class="page album-page"></div>');
@@ -618,26 +512,26 @@ function renderAlbumMode($container) {
     `);
 
     setTimeout(() => {
-        if ($.isFunction($album.turn)) {
-            if ($album.turn('is')) {
-                $album.turn('destroy');
-            }
-            $album.turn({
-                width: width,
-                height: height,
-                autoCenter: true,
-                display: 'double',
-                acceleration: true,
-                elevation: 50,
-                duration: 800,
-                when: {
-                    turning: function(e, page, view) {
-                        $(this).css('position', 'relative');
-                    }
-                }
-            });
+        if ($album.turn('is')) {
+            $album.turn('destroy');
         }
+        $album.turn({
+            width: width,
+            height: height,
+            autoCenter: true,
+            display: 'double',
+            acceleration: true,
+            elevation: 50,
+            duration: 800,
+            when: {
+                turning: function(e, page, view) {
+                    // Prevent page jumps by forcing fixed position
+                    $(this).css('position', 'relative');
+                }
+            }
+        });
 
+        // Manual centering fix
         $album.css({
             'margin-left': 'auto',
             'margin-right': 'auto'
@@ -703,14 +597,12 @@ function renderSlideMode($container) {
         deleteInvestmentCard(id);
     });
 
-    if (typeof Swiper !== 'undefined') {
-        new Swiper(`.${swiperId}`, {
-            effect: "cards",
-            grabCursor: true,
-            centeredSlides: true,
-            slidesPerView: 'auto'
-        });
-    }
+    new Swiper(`.${swiperId}`, {
+        effect: "cards",
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: 'auto'
+    });
 }
 
 function renderListMode($container) {
@@ -773,6 +665,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').hide();
         $('#inv-card-search-container').show(); // Show search when adding new
+        // If it was the default, switch to datos
         if (defaultTab === 'inv-tab-resumen') {
             $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]').addClass('active');
             $('#inv-tab-resumen').removeClass('active');
@@ -807,11 +700,6 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     renderInvExtraImagesPreview();
 
     $('#investment-card-modal').addClass('active');
-
-    // 3D Card logic if available
-    if (card && window.sharedCard3D) {
-        window.sharedCard3D.init('inv-card-3d', 'inv-card-3d-container', 'inv-z-text-container');
-    }
 }
 
 $('#close-investment-card-modal').click(() => {
@@ -820,28 +708,27 @@ $('#close-investment-card-modal').click(() => {
 });
 
 $('#btn-inv-card-search').click(async function() {
-    if (window.searchExternalCard) {
-        window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
-            $('#inv-card-name').val(card.name.toUpperCase());
-            $('#inv-card-image-url').val(card.high_res || card.image);
-            $('#inv-card-set-name').val(card.set || card.set_name || '');
-            $('#inv-card-set-number').val(card.number || '');
-            $('#inv-card-rarity').val(card.rarity || '');
-            $('#inv-card-rarity-input').val(card.rarity || '');
-            $('#inv-card-current-price').val(card.price || 0);
-            $('#inv-card-game').val(card.game || 'pokemon');
-            $('#inv-card-external-id').val(card.external_id || card.id || '');
+    window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
+        // When a card is selected from combined search
+        $('#inv-card-name').val(card.name.toUpperCase());
+        $('#inv-card-image-url').val(card.high_res || card.image);
+        $('#inv-card-set-name').val(card.set || card.set_name || '');
+        $('#inv-card-set-number').val(card.number || '');
+        $('#inv-card-rarity').val(card.rarity || '');
+        $('#inv-card-rarity-input').val(card.rarity || '');
+        $('#inv-card-current-price').val(card.price || 0);
+        $('#inv-card-game').val(card.game || 'pokemon');
+        $('#inv-card-external-id').val(card.external_id || card.id || '');
 
-            Swal.fire({
-                title: 'ASSET SELECTED',
-                text: card.name,
-                icon: 'success',
-                timer: 1000,
-                showConfirmButton: false,
-                customClass: { popup: 'inv-swal-popup' }
-            });
+        Swal.fire({
+            title: 'ASSET SELECTED',
+            text: card.name,
+            icon: 'success',
+            timer: 1000,
+            showConfirmButton: false,
+            customClass: { popup: 'inv-swal-popup' }
         });
-    }
+    });
 });
 
 $('#btn-save-investment-card').click(async function() {
@@ -888,9 +775,11 @@ $('#btn-save-investment-card').click(async function() {
         let finalCardId = currentEditingInvCardId;
 
         if (currentEditingInvCardId) {
+            // Check if price changed to update previous_price and history
             const oldCard = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
             if (oldCard && oldCard.current_price !== newPrice) {
                 cardData.previous_price = oldCard.current_price;
+                // Log history
                 await _supabase.from('investment_price_history').insert([{
                     card_id: currentEditingInvCardId,
                     price: newPrice
@@ -911,7 +800,8 @@ $('#btn-save-investment-card').click(async function() {
             error = err;
             if (!error && newCards.length > 0) {
                 finalCardId = newCards[0].id;
-                currentEditingInvCardId = finalCardId;
+                currentEditingInvCardId = finalCardId; // Update state to "editing"
+                // Log initial history
                 await _supabase.from('investment_price_history').insert([{
                     card_id: finalCardId,
                     price: newPrice
@@ -929,6 +819,7 @@ $('#btn-save-investment-card').click(async function() {
             customClass: { popup: 'inv-swal-popup' }
         });
 
+        // Update local state and UI
         const { data: updatedCard } = await _supabase.from('investment_cards').select('*').eq('id', finalCardId).single();
         const idx = localInvestmentCards.findIndex(c => c.id === finalCardId);
         if (idx !== -1) {
@@ -940,7 +831,10 @@ $('#btn-save-investment-card').click(async function() {
         updateSummaryTab(updatedCard);
         renderInvestmentCards(currentInvestmentViewMode);
 
+        // Hide search bar now that asset is loaded/saved
         $('#inv-card-search-container').hide();
+
+        // Show summary tab after saving
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').show().click();
 
     } catch (e) {
@@ -998,6 +892,8 @@ function updateSummaryTab(card) {
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
 
+
+    // Load History Chart for summary
     renderPriceHistoryChart(card.id, true);
 }
 
@@ -1008,11 +904,13 @@ async function saveNewPrice(cardId, newPrice) {
         const oldCard = localInvestmentCards.find(c => c.id === cardId);
         const previousPrice = oldCard ? oldCard.current_price : 0;
 
+        // 1. Insert history
         await _supabase.from('investment_price_history').insert([{
             card_id: cardId,
             price: newPrice
         }]);
 
+        // 2. Update card
         const { error } = await _supabase
             .from('investment_cards')
             .update({
@@ -1023,12 +921,13 @@ async function saveNewPrice(cardId, newPrice) {
 
         if (error) throw error;
 
+        // 3. Refresh local data and UI
         const { data: updatedCard } = await _supabase.from('investment_cards').select('*').eq('id', cardId).single();
         const idx = localInvestmentCards.findIndex(c => c.id === cardId);
         if (idx !== -1) localInvestmentCards[idx] = updatedCard;
 
         updateSummaryTab(updatedCard);
-        renderPriceHistoryChart(cardId);
+        renderPriceHistoryChart(cardId); // Main chart
         renderInvestmentCards(currentInvestmentViewMode);
 
         Swal.fire({ icon: 'success', title: 'Precio Actualizado', timer: 1000, showConfirmButton: false, customClass: { popup: 'inv-swal-popup' } });
@@ -1058,8 +957,6 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
     } else {
         if (invPriceChart) invPriceChart.destroy();
     }
-
-    if (typeof Chart === 'undefined') return;
 
     const chart = new Chart(ctx, {
         type: 'line',
@@ -1118,6 +1015,7 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
         invPriceChart = chart;
     }
 
+    // Render list history (cloning to avoid in-place reversal issues)
     const listId = isDetail ? '#inv-detail-history-list' : '#inv-history-list';
     const $list = $(listId);
     $list.empty();

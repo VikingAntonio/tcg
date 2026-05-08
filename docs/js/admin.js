@@ -80,15 +80,6 @@ window.openShareModal = function(title, type, id, extraId) {
     $('#share-tg').off('click').on('click', () => window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank'));
     $('#share-fb').off('click').on('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank'));
     $('#share-ms').off('click').on('click', () => window.open(`fb-messenger://share/?link=${encodedUrl}`, '_blank'));
-
-    // Binders Integration Code
-    if (type === 'albums') {
-        const embedCode = `<!-- Vikingdev Binders Integration -->\n<vikingdev-binders user="${identifier}" album-id="${id}"></vikingdev-binders>\n<script src="${window.location.origin}/js/vikingdevUI.js"></script>`;
-        $('#embed-code-input').val(embedCode);
-        $('#embed-code-container').show();
-    } else {
-        $('#embed-code-container').hide();
-    }
 };
 
 // Local state for batch saving
@@ -109,6 +100,24 @@ $(document).ready(async function() {
     initTheme();
 
     // --- Navigation (Dashboard Tiles) ---
+    $(document).on('click', '#btn-show-albums', function(e) {
+        e.preventDefault();
+        showView('dashboard');
+        loadAlbums();
+    });
+
+    $(document).on('click', '#btn-back-to-decks', function(e) {
+        e.preventDefault();
+        showView('decks');
+        loadDecks();
+    });
+
+
+    $(document).on('click', '#btn-show-decks', function(e) {
+        e.preventDefault();
+        showView('decks');
+        loadDecks();
+    });
 
     $(document).on('click', '#btn-show-spirits', function(e) {
         e.preventDefault();
@@ -268,7 +277,10 @@ $(document).ready(async function() {
 
 
     $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-investments').click(function(e) { e.preventDefault(); showView('investments'); if(typeof loadInvestmentCategories === 'function') loadInvestmentCategories(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
 
     $(document).on('click', '#nav-btn-auctions-won', function() {
@@ -350,7 +362,7 @@ $(document).ready(async function() {
 
     $(document).on('click', '#btn-back-to-albums', function(e) {
         e.preventDefault();
-        window.location.href = 'binders.html';
+        showView('dashboard');
         loadAlbums();
     });
 
@@ -405,12 +417,14 @@ $(document).ready(async function() {
     // Navigation
     $('#btn-dashboard').click(function(e) {
         e.preventDefault();
-        window.location.href = 'binders.html';
+        showView('dashboard');
+        loadAlbums();
     });
 
     $('#btn-decks').click(function(e) {
         e.preventDefault();
-        window.location.href = 'decks.html';
+        showView('decks');
+        loadDecks();
     });
 
     $('#btn-spirits').click(function(e) {
@@ -541,7 +555,7 @@ $(document).ready(async function() {
             localVikingData = [];
 
             loadAlbums();
-            window.location.href = 'binders.html';
+            showView('dashboard');
 
         } catch (err) {
             Swal.fire('Error', 'No se pudieron guardar los cambios: ' + (err.message || ''), 'error');
@@ -1307,13 +1321,6 @@ $(document).ready(async function() {
         droppedGltfFile = null;
         droppedExtraFiles = [];
         updateSpiritDropZoneUI(null);
-
-        // Reset Tabs
-        $('#spirit-upload-modal .slot-tab-btn').removeClass('active');
-        $('#spirit-upload-modal .slot-tab-btn[data-tab="spirit-tab-modelo"]').addClass('active');
-        $('#spirit-upload-modal .slot-tab-content').removeClass('active');
-        $('#spirit-tab-modelo').addClass('active');
-
         $('#spirit-upload-modal').addClass('active');
     });
 
@@ -1495,28 +1502,6 @@ $(document).ready(async function() {
         });
     });
 
-    $(document).on('click', '#btn-copy-embed-code', function() {
-        const input = document.getElementById('embed-code-input');
-        input.select();
-        navigator.clipboard.writeText(input.value);
-
-        const $btn = $(this);
-        const originalHtml = $btn.html();
-        $btn.html('<i class="fas fa-check"></i>').css('background', '#22c55e');
-        setTimeout(() => {
-            $btn.html(originalHtml).css('background', '');
-        }, 2000);
-
-        Swal.fire({
-            icon: 'success',
-            title: 'Código copiado',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2000
-        });
-    });
-
     // --- Organize Modal Listeners ---
     $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('albums'); });
     $(document).on('click', '#btn-organize-decks', function(e) { e.preventDefault(); openOrganizeModal('decks'); });
@@ -1624,12 +1609,6 @@ function editSpirit(spirit) {
     droppedGltfFile = null;
     droppedExtraFiles = [];
     updateSpiritDropZoneUI(null);
-
-    // Reset Tabs
-    $('#spirit-upload-modal .slot-tab-btn').removeClass('active');
-    $('#spirit-upload-modal .slot-tab-btn[data-tab="spirit-tab-modelo"]').addClass('active');
-    $('#spirit-upload-modal .slot-tab-content').removeClass('active');
-    $('#spirit-tab-modelo').addClass('active');
 
     $('#spirit-upload-modal').addClass('active');
 }
@@ -2069,8 +2048,8 @@ function renderDeckCardsLocal(scrollPos = null) {
         });
 
         $cardItem.click((e) => {
-            if ($(e.target).closest('.btn-delete-deck-card, .switch-searching').length) return;
             e.preventDefault();
+            if ($(e.target).closest('.btn-delete-deck-card, .switch-searching').length) return;
             editDeckCard(card);
         });
 
@@ -2730,7 +2709,8 @@ async function initFloatingCompanion() {
             customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : [],
             onAction: (msg) => {
                 if (msg.type === 'album_link') {
-                    window.location.href = 'binders.html';
+                    showView('dashboard');
+                    loadAlbums();
                 } else if (msg.redirect_url && msg.redirect_url.startsWith('http')) {
                     window.open(msg.redirect_url, '_blank');
                 }
