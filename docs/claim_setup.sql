@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS claims (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- The seller
+    user_id UUID REFERENCES usuarios(id) ON DELETE CASCADE, -- The seller
     title TEXT NOT NULL,
     description TEXT,
     rules TEXT,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS claims (
     image_urls TEXT[], -- Array of image URLs
     start_date TIMESTAMPTZ,
     end_date TIMESTAMPTZ,
-    winner_id UUID REFERENCES auth.users(id), -- The buyer
+    winner_id UUID REFERENCES usuarios(id), -- The buyer
     winner_name TEXT,
     claimed_at TIMESTAMPTZ,
     status TEXT DEFAULT 'Activa',

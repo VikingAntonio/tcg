@@ -18,6 +18,11 @@
             padding: 25px;
             margin-bottom: 30px;
             box-shadow: var(--nm-shadow);
+            transition: transform 0.3s ease;
+        }
+        .winner-group:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
         }
         .winner-header {
             display: flex;
@@ -66,19 +71,51 @@
         }
         .contact-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
         }
-        .btn-wa { background: #25d366 !important; color: white !important; }
-        .btn-ms { background: #006aff !important; color: white !important; }
+        .contact-buttons .btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px;
+            font-weight: 800;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-wa { background: #25d366 !important; color: white !important; border: none !important; }
+        .btn-ms { background: #006aff !important; color: white !important; border: none !important; }
     </style>
 </head>
 <body>
-    <div class="top-left-panel">
+    <!-- Floating User Panel -->
+    <div class="top-left-panel" id="top-panel">
         <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
             <a href="admin.html" class="pill-icon" title="Volver al Panel"><i class="fas fa-arrow-left"></i></a>
+
             <div class="user-menu-container">
-                <button class="pill-icon" id="avatar-btn"><i class="fas fa-user"></i></button>
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Admin</div>
+                    </div>
+                    <a href="admin.html" class="menu-item"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="index.html" class="menu-item"><i class="fas fa-globe"></i> Ver Web Pública</a>
+                    <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
             </div>
         </div>
     </div>
@@ -106,6 +143,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/supabase-config.js"></script>
+    <div class="bottom-nav">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Panel">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" id="btn-nav-return" title="Volver">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+    </div>
+
     <script src="js/utils.js"></script>
     <script src="js/adminClaim.js"></script>
 </body>
