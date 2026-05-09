@@ -1,5 +1,4 @@
 let claimUser = null;
-let currentAdminClaimFilter = 'active';
 
 $(document).ready(async function() {
     await checkClaimSession();
@@ -68,13 +67,6 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleClaimUpload(Array.from(this.files));
     });
 
-    $('#admin-claim-tabs .tab-pill').on('click', function() {
-        $('#admin-claim-tabs .tab-pill').removeClass('active');
-        $(this).addClass('active');
-        currentAdminClaimFilter = $(this).data('filter');
-        loadClaims();
-    });
-
     $(document).on('click', '.btn-edit-claim', function() {
         const id = $(this).data('id');
         editClaim(id);
@@ -102,6 +94,23 @@ async function checkClaimSession() {
             $('body').addClass(savedTheme);
             $(`.theme-btn-small[data-theme="${savedTheme}"]`).addClass('active');
 
+            // Load current spirit
+            if (user.selected_spirit_id) {
+                const { data: spiritData } = await _supabase
+                    .from('spirits')
+                    .select('*')
+                    .eq('id', user.selected_spirit_id)
+                    .single();
+                if (spiritData) {
+                    window.currentSpirit = spiritData;
+                }
+            }
+
+            // Fetch additional data for CompanionBot
+            const { data: botMessages } = await _supabase.from('bot_messages').select('*').eq('user_id', user.id).eq('is_active', true);
+            window.currentStoreDataForBot = { user: user, customMessages: botMessages };
+
+            initFloatingCompanion();
             loadClaims();
         } else {
             window.location.href = 'admin.html';
@@ -111,84 +120,122 @@ async function checkClaimSession() {
     }
 }
 
+async function initFloatingCompanion() {
+    if (!window.currentSpirit) {
+        try {
+            const { data: publicSpirits } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1);
+            if (publicSpirits && publicSpirits.length > 0) window.currentSpirit = publicSpirits[0];
+        } catch (e) {}
+    }
+    if (!window.currentSpirit) return;
+
+    const $container = $('#floating-companion-container');
+    if (!$container.length) return;
+
+    if (typeof makeCompanionDraggable === 'function') setTimeout(makeCompanionDraggable, 1000);
+    $container.html(`
+        <model-viewer
+            src="${window.currentSpirit.gltf_url}"
+            auto-rotate camera-controls rotation="0deg 0deg 0deg" shadow-intensity="1" environment-image="neutral" exposure="1" interaction-prompt="none" oncontextmenu="return false;">
+        </model-viewer>
+    `);
+
+    $container.on('click', function(e) {
+        if (window.isCompanionDragging) return;
+        e.stopPropagation();
+        $('#companion-menu').toggleClass('active');
+    });
+
+    $('#menu-item-chat').on('click', function(e) {
+        e.stopPropagation();
+        $('#chatbot-container').addClass('active');
+        $('#companion-menu').removeClass('active');
+    });
+
+    $('#menu-item-details').on('click', function(e) {
+        e.stopPropagation();
+        Swal.fire({ title: window.currentSpirit.name, text: 'Tu fiel compañero de aventuras.', imageUrl: window.currentSpirit.poster_url, imageWidth: 200 });
+        $('#companion-menu').removeClass('active');
+    });
+
+    if (typeof CompanionBot === 'function') {
+        const bot = new CompanionBot({
+            supabase: _supabase,
+            userId: claimUser.id,
+            userType: 'admin',
+            customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : []
+        });
+        bot.init();
+        window.botInstance = bot;
+    }
+}
+
 async function handleClaimUpload(fileList) {
     try {
         Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        let currentUrls = $('#preview-grid-claim').data('urls') || [];
-        const newUrls = [];
+        let entries = $('#preview-grid-claim').data('entries') || [];
         for (const file of fileList) {
             const url = await CloudinaryUpload.uploadImage(file);
-            newUrls.push(url);
+            entries.push({ url: url, price: '', description: '' });
         }
-        const totalUrls = [...currentUrls, ...newUrls];
-        renderClaimPreviews(totalUrls);
+        renderClaimEntries(entries);
         Swal.close();
     } catch (err) { Swal.fire('Error', 'No se pudo subir la imagen.', 'error'); }
 }
 
-function renderClaimPreviews(urls) {
+function renderClaimEntries(entries) {
     const $grid = $('#preview-grid-claim');
-    const $dropZone = $('#drop-zone-claim');
-    $grid.empty().data('urls', urls);
-
-    if (urls && urls.length > 0) {
-        $dropZone.hide();
-        $grid.show();
-        urls.forEach(url => {
-            $grid.append(`
-                <div class="preview-item-mini">
-                    <img src="${url}">
-                    <div class="remove-preview" onclick="removeClaimPreview('${url}')" style="position:absolute; top:2px; right:2px; background:rgba(255,0,0,0.7); color:white; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;"><i class="fas fa-times"></i></div>
+    $grid.empty().data('entries', entries);
+    if (entries && entries.length > 0) {
+        entries.forEach((entry, index) => {
+            const $row = $(`
+                <div class="claim-entry-row" data-index="${index}">
+                    <div class="remove-claim-entry" onclick="removeClaimEntry(${index})"><i class="fas fa-times"></i></div>
+                    <div class="claim-entry-image"><img src="${entry.url}"></div>
+                    <div class="claim-entry-inputs">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <label style="font-size: 0.7rem; color: #888; white-space: nowrap; font-weight: 800;">PRECIO ($):</label>
+                            <input type="text" class="entry-price" placeholder="Ej: 25.00" value="${entry.price || ''}" style="flex:1;">
+                        </div>
+                        <label style="font-size: 0.7rem; color: #888; margin-top: 5px; display:block; font-weight: 800;">REGLAS / DESCRIPCIÓN:</label>
+                        <textarea class="entry-desc" placeholder="Detalles específicos..." rows="2" style="width:100%; resize: none;">${entry.description || ''}</textarea>
+                    </div>
                 </div>
             `);
+            $row.find('input, textarea').on('input', function() {
+                const idx = $(this).closest('.claim-entry-row').data('index');
+                const val = $(this).val();
+                if ($(this).hasClass('entry-price')) entries[idx].price = val;
+                if ($(this).hasClass('entry-desc')) entries[idx].description = val;
+            });
+            $grid.append($row);
         });
-        $grid.append(`<div class="preview-item-mini" style="border: 2px dashed #333; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="$('#input-claim-file').click()"><i class="fas fa-plus"></i></div>`);
-    } else {
-        $dropZone.show();
-        $grid.hide();
     }
 }
 
-window.removeClaimPreview = (url) => {
-    let urls = $('#preview-grid-claim').data('urls') || [];
-    urls = urls.filter(u => u !== url);
-    renderClaimPreviews(urls);
+window.removeClaimEntry = (index) => {
+    let entries = $('#preview-grid-claim').data('entries') || [];
+    entries.splice(index, 1);
+    renderClaimEntries(entries);
 };
 
 async function loadClaims() {
     if (!claimUser) return;
-    const { data: claims, error } = await _supabase
-        .from('claims')
-        .select('*')
-        .eq('user_id', claimUser.id)
-        .order('created_at', { ascending: false });
-
+    const { data: claims, error } = await _supabase.from('claims').select('*').eq('user_id', claimUser.id).order('created_at', { ascending: false });
     if (error) return;
-
     const $container = $('#claim-list');
     $container.empty();
-
-    const filtered = claims.filter(c => {
-        if (currentAdminClaimFilter === 'active') return c.status === 'Activa';
-        return c.status === 'Reclamada' || c.status === 'Finalizada';
-    });
-
+    const filtered = claims.filter(c => c.status === 'Activa');
     if (filtered.length === 0) {
-        $container.html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">No hay claims para mostrar.</div>');
+        $container.html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">No hay claims activos para gestionar.</div>');
         return;
     }
-
     filtered.forEach(claim => {
         const firstImg = claim.image_urls && claim.image_urls.length > 0 ? claim.image_urls[0] : 'https://via.placeholder.com/300x200?text=Sin+Imagen';
-        const isReclamada = claim.status === 'Reclamada';
-
         const $card = $(`
             <div class="pretty-claim-card">
-                <div class="status-badge" style="${isReclamada ? 'background:#ff4757; color:white;' : ''}">${claim.status} ${isReclamada ? 'por ' + claim.winner_name : ''}</div>
-                <div class="card-img-container">
-                    <img src="${firstImg}" alt="${claim.title}">
-                    ${isReclamada ? '<div class="claimed-stamp" style="font-size: 1rem;">RECLAMADO</div>' : ''}
-                </div>
+                <div class="status-badge">${claim.status}</div>
+                <div class="card-img-container"><img src="${firstImg}" alt="${claim.title}"></div>
                 <div class="card-title">${claim.title}</div>
                 <div class="claim-info">
                     <span class="info-label">PRECIO</span>
@@ -204,97 +251,56 @@ async function loadClaims() {
     });
 }
 
-function openClaimModal() {
-    $('#claim-modal').addClass('active');
-    resetClaimModal();
-}
-
-function closeClaimModal() {
-    $('#claim-modal').removeClass('active');
-}
-
+function openClaimModal() { $('#claim-modal').addClass('active'); resetClaimModal(); }
+function closeClaimModal() { $('#claim-modal').removeClass('active'); }
 function resetClaimModal() {
     $('#claim-modal').removeData('editing-id');
-    $('#claim-title').val('');
-    $('#claim-description').val('');
-    $('#claim-price').val('');
-    $('#claim-start-date').val('');
-    $('#claim-end-date').val('');
-    renderClaimPreviews([]);
+    $('#claim-modal-title').text('LANZAR CLAIMS');
+    $('#claim-start-date').val(''); $('#claim-end-date').val('');
+    renderClaimEntries([]);
     $('.modal-tab-btn[data-tab="tab-claim-info"]').click();
 }
 
 async function handleSaveClaim() {
-    const urls = $('#preview-grid-claim').data('urls') || [];
-    if (urls.length === 0) return Swal.fire('Atención', 'Debes cargar al menos una imagen.', 'warning');
-
-    const title = $('#claim-title').val().trim();
-    if (!title) return Swal.fire('Atención', 'Ingresa un título.', 'warning');
-
-    const price = $('#claim-price').val().trim();
+    const entries = $('#preview-grid-claim').data('entries') || [];
+    if (entries.length === 0) return Swal.fire('Atención', 'Debes cargar al menos una imagen.', 'warning');
     const start = document.querySelector("#claim-start-date")._flatpickr.selectedDates[0];
     const end = document.querySelector("#claim-end-date")._flatpickr.selectedDates[0];
-
-    const claimData = {
-        title: title,
-        description: $('#claim-description').val(),
-        price: price,
-        image_urls: urls,
-        start_date: start ? start.toISOString() : null,
-        end_date: end ? end.toISOString() : null,
-        user_id: claimUser.id
-    };
-
     const editingId = $('#claim-modal').data('editing-id');
-
     Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    let result;
-    if (editingId) {
-        result = await _supabase.from('claims').update(claimData).eq('id', editingId);
-    } else {
-        result = await _supabase.from('claims').insert([claimData]);
-    }
-
-    if (result.error) {
-        Swal.fire('Error', result.error.message, 'error');
-    } else {
-        Swal.fire('¡Éxito!', 'Claim guardado correctamente.', 'success');
-        closeClaimModal();
-        loadClaims();
-    }
+    try {
+        if (editingId) {
+            const entry = entries[0];
+            const { error } = await _supabase.from('claims').update({
+                description: entry.description, price: entry.price, image_urls: [entry.url],
+                start_date: start ? start.toISOString() : null, end_date: end ? end.toISOString() : null
+            }).eq('id', editingId);
+            if (error) throw error;
+        } else {
+            const claimsToInsert = entries.map(entry => ({
+                title: 'Producto Claim', description: entry.description, price: entry.price || '0', image_urls: [entry.url],
+                start_date: start ? start.toISOString() : null, end_date: end ? end.toISOString() : null,
+                user_id: claimUser.id, status: 'Activa'
+            }));
+            const { error } = await _supabase.from('claims').insert(claimsToInsert);
+            if (error) throw error;
+        }
+        Swal.fire('¡Éxito!', 'Claims guardados correctamente.', 'success');
+        closeClaimModal(); loadClaims();
+    } catch (err) { Swal.fire('Error', err.message, 'error'); }
 }
 
 async function editClaim(id) {
     const { data: claim, error } = await _supabase.from('claims').select('*').eq('id', id).single();
     if (error) return;
-
-    resetClaimModal();
-    $('#claim-modal').data('editing-id', id);
+    resetClaimModal(); $('#claim-modal').data('editing-id', id).addClass('active');
     $('#claim-modal-title').text('EDITAR CLAIM');
-
-    $('#claim-title').val(claim.title);
-    $('#claim-description').val(claim.description);
-    $('#claim-price').val(claim.price);
-
     if (claim.start_date) document.querySelector("#claim-start-date")._flatpickr.setDate(new Date(claim.start_date));
     if (claim.end_date) document.querySelector("#claim-end-date")._flatpickr.setDate(new Date(claim.end_date));
-
-    renderClaimPreviews(claim.image_urls || []);
-    $('#claim-modal').addClass('active');
+    renderClaimEntries([{ url: claim.image_urls[0], price: claim.price, description: claim.description }]);
 }
 
 async function deleteClaim(id) {
-    const { isConfirmed } = await Swal.fire({
-        title: '¿Eliminar Claim?',
-        text: 'Esta acción no se puede deshacer.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ff4757'
-    });
-
-    if (isConfirmed) {
-        const { error } = await _supabase.from('claims').delete().eq('id', id);
-        if (!error) loadClaims();
-    }
+    const { isConfirmed } = await Swal.fire({ title: '¿Eliminar?', text: 'Esta acción no se puede deshacer.', icon: 'warning', showCancelButton: true });
+    if (isConfirmed && !(await _supabase.from('claims').delete().eq('id', id)).error) loadClaims();
 }

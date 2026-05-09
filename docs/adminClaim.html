@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <style>
         .winner-group {
             background: var(--card-bg);
@@ -130,14 +131,54 @@
             <button class="tab-pill" id="btn-tab-ganados">Claims Ganados (Compras)</button>
         </div>
 
-        <div id="my-claims-winners" class="winner-container">
-            <!-- Winners of my products -->
-            <div class="loading">Cargando ganadores...</div>
+        <div id="my-claims-view" class="winner-container">
+            <div id="my-claims-filters" style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+                <button class="tab-pill active filter-btn" data-filter="Reclamada">Reclamados</button>
+                <button class="tab-pill filter-btn" data-filter="Activa">Activos</button>
+            </div>
+            <div id="my-claims-list"></div>
         </div>
 
-        <div id="won-claims" class="winner-container" style="display: none;">
-            <!-- Claims I have won -->
-            <div class="loading">Cargando mis compras...</div>
+        <div id="won-claims-view" class="winner-container" style="display: none;">
+            <div id="won-claims-list"></div>
+        </div>
+    </div>
+
+    <!-- Floating Companion Wrapper -->
+    <div id="companion-wrapper">
+        <div class="companion-drag-handle" id="companion-drag-handle">
+            <i class="fas fa-arrows-alt"></i>
+        </div>
+        <div class="companion-bubble" id="companion-bubble"></div>
+        <div id="floating-companion-container"></div>
+
+        <div class="companion-menu-popup" id="companion-menu">
+            <div class="companion-menu-item" id="menu-item-chat">
+                <i class="fas fa-comment-dots"></i> Chatear
+            </div>
+            <div class="companion-menu-item" id="menu-item-play">
+                <i class="fas fa-gamepad"></i> Jugar
+            </div>
+            <div class="companion-menu-item" id="menu-item-details">
+                <i class="fas fa-search-plus"></i> Ver Detalle
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Container -->
+    <div id="chatbot-container">
+        <div class="chatbot-header">
+            <h3><i class="fas fa-robot"></i> Viking Assistant</h3>
+            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
+        </div>
+        <div class="chatbot-messages" id="chat-messages">
+            <div class="chat-msg msg-bot">¡Hola! Soy tu asistente Vikingo. ¿En qué puedo ayudarte hoy?</div>
+        </div>
+        <div class="chatbot-input-area">
+            <div class="chat-input-wrapper">
+                <input type="text" id="chat-input" placeholder="Escribe tu duda...">
+                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </div>
     </div>
 
@@ -153,6 +194,7 @@
     </div>
 
     <script src="js/utils.js"></script>
+    <script src="js/companion-bot.js"></script>
     <script src="js/adminClaim.js"></script>
 </body>
 </html>

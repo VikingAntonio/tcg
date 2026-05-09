@@ -18,6 +18,27 @@ CREATE TABLE IF NOT EXISTS claims (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Enable RLS
+ALTER TABLE claims ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+-- Anyone can see active or recently claimed products
+CREATE POLICY "Public can view claims" ON claims
+    FOR SELECT USING (true);
+
+-- Only the seller (authenticated) can create claims
+-- Using auth.uid() = user_id to ensure they only create claims for themselves
+CREATE POLICY "Users can create claims" ON claims
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Owners can update their own claims (for editing)
+-- Also allow updates to the winner fields (this is usually handled by SECURITY DEFINER function)
+CREATE POLICY "Owners can update their claims" ON claims
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Owners can delete their claims" ON claims
+    FOR DELETE USING (auth.uid() = user_id);
+
 -- Index for faster queries
 CREATE INDEX IF NOT EXISTS idx_claims_user_id ON claims(user_id);
 CREATE INDEX IF NOT EXISTS idx_claims_winner_id ON claims(winner_id);
