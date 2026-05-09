@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS claims (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES usuarios(id) ON DELETE CASCADE, -- The seller
-    title TEXT NOT NULL,
+    title TEXT DEFAULT 'Producto Claim',
     description TEXT,
     rules TEXT,
     price TEXT,
@@ -21,23 +21,34 @@ CREATE TABLE IF NOT EXISTS claims (
 -- Enable RLS
 ALTER TABLE claims ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies to recreate them cleanly
+DROP POLICY IF EXISTS "Public can view claims" ON claims;
+DROP POLICY IF EXISTS "Users can create claims" ON claims;
+DROP POLICY IF EXISTS "Owners can update their claims" ON claims;
+DROP POLICY IF EXISTS "Owners can delete their claims" ON claims;
+
 -- Policies
 -- Anyone can see active or recently claimed products
 CREATE POLICY "Public can view claims" ON claims
     FOR SELECT USING (true);
 
 -- Only the seller (authenticated) can create claims
--- Using auth.uid() = user_id to ensure they only create claims for themselves
+-- Using authenticated role check + user_id check
 CREATE POLICY "Users can create claims" ON claims
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
 
 -- Owners can update their own claims (for editing)
--- Also allow updates to the winner fields (this is usually handled by SECURITY DEFINER function)
 CREATE POLICY "Owners can update their claims" ON claims
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = user_id);
 
 CREATE POLICY "Owners can delete their claims" ON claims
-    FOR DELETE USING (auth.uid() = user_id);
+    FOR DELETE
+    TO authenticated
+    USING (auth.uid() = user_id);
 
 -- Index for faster queries
 CREATE INDEX IF NOT EXISTS idx_claims_user_id ON claims(user_id);
