@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <title>Vikingdev TCG - Álbumes</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"/>
+    <style>
+        .switch-searching { position: absolute; top: 5px; left: 5px; z-index: 100; display: flex; align-items: center; }
+        .switch-mini { width: 32px !important; height: 18px !important; }
+        .switch-mini .slider:before { height: 12px !important; width: 12px !important; left: 3px !important; bottom: 3px !important; }
+        .switch-mini input:checked + .slider:before { transform: translateX(14px) !important; }
+        .switch-mini input:checked + .slider { background-color: #ff4757; }
+
+        .wishlist-tab-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #ccc; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease; white-space: nowrap; }
+        .wishlist-tab-btn.active { background: var(--primary-color); color: #000; border-color: var(--primary-color); box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tcgdex/sdk@2/dist/tcgdex.browser.js"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+</head>
+<body>
+    <div class="top-left-panel" id="top-panel" style="display: none;">
+        <div class="pill-panel">
+            <div class="pill-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark"><i class="fas fa-moon"></i></button>
+            </div>
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn"><i class="fas fa-user"></i></button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info"><div id="dropdown-user-name">Usuario</div></div>
+                    <a href="#" class="menu-item logout" id="menu-btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-modal" class="overlay">
+        <div class="overlay-content login-container">
+            <h1>Iniciar Sesión</h1>
+            <div class="form-group"><label>Usuario</label><input type="text" id="login-username"></div>
+            <div class="form-group"><label>Contraseña</label><input type="password" id="login-password"></div>
+            <button id="btn-login" class="btn" style="width: 100%;">Entrar</button>
+        </div>
+    </div>
+
+    <div id="authenticated-content" style="display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding-top: 100px;">
+        <div id="view-dashboard" class="admin-section">
+            <div class="admin-header">
+                <button id="btn-back-to-web" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Web</button>
+                <h1>Mis Álbumes</h1>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-create-album" class="btn"><i class="fas fa-plus"></i> Crear Nuevo Álbum</button>
+                    <button id="btn-organize-albums" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                </div>
+            </div>
+            <div id="album-list" class="album-list"></div>
+        </div>
+
+        <div id="view-editor" class="admin-section" style="display:none;">
+            <div class="admin-header">
+                <button id="btn-back-to-albums" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</button>
+                <h1 id="editor-title">Editar Álbum</h1>
+                <button id="btn-save-album-meta" class="btn"><i class="fas fa-save"></i> Guardar Cambios</button>
+            </div>
+            <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
+                <div class="form-group"><label>Título</label><input type="text" id="input-album-title"></div>
+                <div class="form-group"><label>Portada URL</label><input type="text" id="input-album-cover"></div>
+                <div class="form-group"><label>Contraportada URL</label><input type="text" id="input-album-back"></div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px;"><label class="switch"><input type="checkbox" id="input-album-public"><span class="slider"></span></label><label>Público</label></div>
+            </div>
+            <div class="admin-header"><h2>Páginas</h2><button id="btn-add-page" class="btn">Añadir Página</button></div>
+            <div id="page-list" class="page-list-container"></div>
+        </div>
+    </div>
+
+    <div id="slot-modal" class="overlay">
+        <div class="overlay-content">
+            <span id="close-slot-modal" class="close-btn">&times;</span>
+            <h2>Editar Espacio</h2>
+            <div class="slot-modal-tabs"><button class="slot-tab-btn active" data-tab="slot-tab-info">Información</button></div>
+            <div id="slot-tab-info" class="slot-tab-content active">
+                <div class="form-group"><label>Buscar Carta</label><div style="display: flex; gap: 10px;"><input type="text" id="external-search-input" style="flex: 1;"><button id="btn-external-search" class="btn">Buscar</button></div><div id="external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto;"></div></div>
+                <div class="form-group"><label>URL Imagen</label><input type="text" id="slot-image-url"></div>
+                <div class="form-group"><label>Nombre</label><input type="text" id="slot-name"></div>
+            </div>
+            <button id="btn-save-slot" class="btn" style="width: 100%; margin-top: 15px;">Guardar Carta</button>
+        </div>
+    </div>
+
+    <div id="organize-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 600px;">
+            <span id="close-organize-modal" class="close-btn">&times;</span>
+            <h2>Organizar</h2>
+            <div id="organize-grid" class="organize-grid"></div>
+            <button id="btn-finish-organize" class="btn" style="width: 100%; margin-top: 20px;">Finalizar</button>
+        </div>
+    </div>
+
+    <div id="share-overlay" class="overlay">
+        <div class="overlay-content share-modal-content">
+            <span id="close-share-modal" class="close-btn">&times;</span>
+            <h2 id="share-modal-title">Compartir</h2>
+            <div id="share-qr-code" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;"></div>
+            <div class="form-group"><label>Link</label><input type="text" id="share-link-input" readonly></div>
+        </div>
+    </div>
+
+    <div id="companion-wrapper">
+        <div class="companion-drag-handle" id="companion-drag-handle"><i class="fas fa-arrows-alt"></i></div>
+        <div class="companion-bubble" id="companion-bubble"></div>
+        <div id="floating-companion-container"></div>
+    </div>
+
+    <div id="chatbot-container">
+        <div class="chatbot-header"><h3>Assistant</h3><span id="close-chatbot" style="cursor:pointer;">&times;</span></div>
+        <div class="chatbot-messages" id="chat-messages"></div>
+        <div class="chatbot-input-area"><div class="chat-input-wrapper"><input type="text" id="chat-input"><button id="send-chat" class="btn">Send</button></div></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/viking-data.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/companion-bot.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/ztext.js"></script>
+    <script type="text/javascript" src="js/turn.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+    <script src="js/binders.js"></script>
+</body>
+</html>
