@@ -3,6 +3,31 @@ let adminClaimUser = null;
 $(document).ready(async function() {
     await checkAdminClaimSession();
 
+    // UI Interactions
+    $(document).on('click', '#avatar-btn', function(e) {
+        e.stopPropagation();
+        $('#user-dropdown').toggleClass('active');
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.user-menu-container').length) {
+            $('#user-dropdown').removeClass('active');
+        }
+    });
+
+    $('#menu-btn-logout').on('click', async function() {
+        await _supabase.auth.signOut();
+        window.location.href = 'index.html';
+    });
+
+    $('.theme-btn-small').on('click', function() {
+        const theme = $(this).data('theme');
+        $('body').removeClass('theme-light theme-purple theme-dark').addClass(theme);
+        localStorage.setItem('tcg_theme', theme);
+        $('.theme-btn-small').removeClass('active');
+        $(this).addClass('active');
+    });
+
     $('#btn-tab-mis-claims').on('click', function() {
         $('.tab-pill').removeClass('active');
         $(this).addClass('active');
@@ -26,6 +51,16 @@ async function checkAdminClaimSession() {
         const { data: user } = await _supabase.from('usuarios').select('*').eq('id', session.user.id).single();
         if (user) {
             adminClaimUser = user;
+
+            // UI Update
+            if (user.store_logo) $('#dropdown-user-logo').attr('src', user.store_logo).show();
+            $('#dropdown-user-name').text(user.store_name || user.username);
+            $('#dropdown-user-role').text(user.role || 'Vendedor').show();
+
+            const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+            $('body').addClass(savedTheme);
+            $(`.theme-btn-small[data-theme="${savedTheme}"]`).addClass('active');
+
             loadMyClaimsWinners();
         } else {
             window.location.href = 'admin.html';

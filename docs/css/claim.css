@@ -1,5 +1,9 @@
 /* Claim Management Styles */
 
+#authenticated-content {
+    padding-bottom: 120px !important;
+}
+
 .claim-management-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -140,6 +144,21 @@
     .modal-grid-layout {
         grid-template-columns: 1fr;
     }
+    .overlay-content {
+        padding: 20px !important;
+        margin: 10px !important;
+    }
+    .file-drop-zone {
+        padding: 40px 20px !important;
+    }
+}
+
+.file-drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
 }
 
 .preview-grid-modal {
