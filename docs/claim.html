@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
 </head>
 <body>
     <!-- Floating User Panel -->
@@ -49,11 +50,6 @@
             <button id="btn-open-create-claim" class="btn" style="background: var(--viking-gradient);"><i class="fas fa-plus"></i> NUEVO CLAIM</button>
         </div>
 
-        <div class="sticky-tabs-container" id="admin-claim-tabs" style="margin-bottom: 30px; display: flex; justify-content: center; gap: 10px;">
-            <button class="tab-pill active" data-filter="active">Activos</button>
-            <button class="tab-pill" data-filter="claimed">Reclamados</button>
-        </div>
-
         <div id="claim-list" class="claim-management-grid">
             <!-- Claims will be loaded here -->
             <div class="loading">Cargando claims...</div>
@@ -67,33 +63,25 @@
             <h2 id="claim-modal-title" style="margin-bottom: 25px; font-weight: 900;">LANZAR CLAIM</h2>
 
             <!-- Tabs Header -->
-            <div class="modal-tabs-header">
-                <button class="modal-tab-btn active" data-tab="tab-claim-info">Información</button>
-                <button class="modal-tab-btn" data-tab="tab-claim-config">Precio y Fecha</button>
+            <div class="modal-tabs-header" style="display: flex;">
+                <button class="modal-tab-btn active" data-tab="tab-claim-info" style="flex: 1;">Productos e Imágenes</button>
+                <button class="modal-tab-btn" data-tab="tab-claim-config" style="flex: 1;">Programación Temporal</button>
             </div>
 
             <div class="modal-tabs-content">
                 <!-- Tab 1: Info & Images -->
                 <div id="tab-claim-info" class="modal-tab-pane active">
-                    <div class="modal-grid-layout">
-                        <div class="modal-grid-col">
-                            <div class="form-group">
-                                <label>TÍTULO DEL PRODUCTO</label>
-                                <input type="text" id="claim-title" placeholder="Ej: Pikachu Full Art...">
-                            </div>
-                            <div class="form-group">
-                                <label>DESCRIPCIÓN / REGLAS</label>
-                                <textarea id="claim-description" placeholder="Escribe aquí los detalles y reglas..." style="height: 200px;"></textarea>
-                            </div>
-                        </div>
-                        <div class="modal-grid-col">
-                            <label>IMÁGENES DEL PRODUCTO</label>
+                    <div class="modal-grid-layout" style="display: block;">
+                        <div class="form-group">
+                            <label>CARGAR IMÁGENES</label>
                             <label class="file-drop-zone" id="drop-zone-claim" for="input-claim-file">
                                 <i class="fas fa-cloud-upload-alt"></i>
-                                <p>ARRASTRA O SUBE IMÁGENES</p>
+                                <p>ARRASTRA O SUBE IMÁGENES (Cada una será un claim individual)</p>
                                 <input type="file" id="input-claim-file" accept="image/*" multiple style="display: none;">
                             </label>
-                            <div id="preview-grid-claim" class="preview-grid-modal"></div>
+                        </div>
+                        <div id="preview-grid-claim" class="preview-grid-multi-claims">
+                            <!-- Each image will have its own form here -->
                         </div>
                     </div>
                 </div>
@@ -103,25 +91,61 @@
                     <div class="modal-grid-layout">
                         <div class="modal-grid-col">
                             <div class="form-group">
-                                <label>PRECIO ($)</label>
-                                <input type="text" id="claim-price" placeholder="Ej: 25.00">
+                                <label>FECHA INICIO (Opcional)</label>
+                                <input type="text" id="claim-start-date" placeholder="Inmediato si se deja vacío">
+                                <small style="color: #666;">Aplica a todos los productos de esta tanda.</small>
                             </div>
                         </div>
                         <div class="modal-grid-col">
                             <div class="form-group">
-                                <label>FECHA INICIO (Opcional)</label>
-                                <input type="text" id="claim-start-date" placeholder="Inmediato si se deja vacío">
-                            </div>
-                            <div class="form-group">
                                 <label>FECHA FIN (Opcional)</label>
                                 <input type="text" id="claim-end-date" placeholder="Sin límite si se deja vacío">
+                                <small style="color: #666;">Aplica a todos los productos de esta tanda.</small>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <button id="btn-save-claim" class="btn" style="width: 100%; margin-top: 30px; padding: 15px; font-size: 1.1rem;">GUARDAR CLAIM</button>
+            <button id="btn-save-claim" class="btn" style="width: 100%; margin-top: 30px; padding: 15px; font-size: 1.1rem;">GUARDAR TODOS LOS CLAIMS</button>
+        </div>
+    </div>
+
+    <!-- Floating Companion Wrapper -->
+    <div id="companion-wrapper">
+        <div class="companion-drag-handle" id="companion-drag-handle">
+            <i class="fas fa-arrows-alt"></i>
+        </div>
+        <div class="companion-bubble" id="companion-bubble"></div>
+        <div id="floating-companion-container"></div>
+
+        <div class="companion-menu-popup" id="companion-menu">
+            <div class="companion-menu-item" id="menu-item-chat">
+                <i class="fas fa-comment-dots"></i> Chatear
+            </div>
+            <div class="companion-menu-item" id="menu-item-play">
+                <i class="fas fa-gamepad"></i> Jugar
+            </div>
+            <div class="companion-menu-item" id="menu-item-details">
+                <i class="fas fa-search-plus"></i> Ver Detalle
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Container -->
+    <div id="chatbot-container">
+        <div class="chatbot-header">
+            <h3><i class="fas fa-robot"></i> Viking Assistant</h3>
+            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
+        </div>
+        <div class="chatbot-messages" id="chat-messages">
+            <div class="chat-msg msg-bot">¡Hola! Soy tu asistente Vikingo. ¿Cómo puedo ayudarte con tus Claims hoy?</div>
+        </div>
+        <div class="chatbot-input-area">
+            <div class="chat-input-wrapper">
+                <input type="text" id="chat-input" placeholder="Escribe tu duda...">
+                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </div>
     </div>
 
@@ -139,6 +163,7 @@
     </div>
 
     <script src="js/utils.js"></script>
+    <script src="js/companion-bot.js"></script>
     <script src="js/claim.js"></script>
 </body>
 </html>
