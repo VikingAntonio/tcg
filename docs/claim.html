@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <title>Gestión de Claims - Vikingdev TCG</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/claim.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Floating User Panel (Minimal for this page) -->
+    <div class="top-left-panel" id="top-panel">
+        <div class="pill-panel">
+            <a href="admin.html" class="pill-icon" title="Volver al Panel"><i class="fas fa-arrow-left"></i></a>
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario"><i class="fas fa-user"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="authenticated-content" style="width: 100%; max-width: 1200px; margin: 0 auto; padding: 100px 20px;">
+        <div class="admin-header">
+            <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 10px;">CLAIMS</h1>
+            <p style="color: #888; margin-bottom: 30px;">Crea productos que el primero en reclamar se lleva.</p>
+            <button id="btn-open-create-claim" class="btn" style="background: var(--viking-gradient);"><i class="fas fa-plus"></i> NUEVO CLAIM</button>
+        </div>
+
+        <div class="sticky-tabs-container" id="admin-claim-tabs" style="margin-bottom: 30px; display: flex; justify-content: center; gap: 10px;">
+            <button class="tab-pill active" data-filter="active">Activos</button>
+            <button class="tab-pill" data-filter="claimed">Reclamados</button>
+        </div>
+
+        <div id="claim-list" class="claim-management-grid">
+            <!-- Claims will be loaded here -->
+            <div class="loading">Cargando claims...</div>
+        </div>
+    </div>
+
+    <!-- Claim Creation Modal -->
+    <div id="claim-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 900px; width: 95%;">
+            <span id="close-claim-modal" class="close-btn">&times;</span>
+            <h2 id="claim-modal-title" style="margin-bottom: 25px; font-weight: 900;">LANZAR CLAIM</h2>
+
+            <!-- Tabs Header -->
+            <div class="modal-tabs-header">
+                <button class="modal-tab-btn active" data-tab="tab-claim-info">Información</button>
+                <button class="modal-tab-btn" data-tab="tab-claim-config">Precio y Fecha</button>
+            </div>
+
+            <div class="modal-tabs-content">
+                <!-- Tab 1: Info & Images -->
+                <div id="tab-claim-info" class="modal-tab-pane active">
+                    <div class="modal-grid-layout">
+                        <div class="modal-grid-col">
+                            <div class="form-group">
+                                <label>TÍTULO DEL PRODUCTO</label>
+                                <input type="text" id="claim-title" placeholder="Ej: Pikachu Full Art...">
+                            </div>
+                            <div class="form-group">
+                                <label>DESCRIPCIÓN / REGLAS</label>
+                                <textarea id="claim-description" placeholder="Escribe aquí los detalles y reglas..." style="height: 200px;"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-grid-col">
+                            <label>IMÁGENES DEL PRODUCTO</label>
+                            <label class="file-drop-zone" id="drop-zone-claim" for="input-claim-file">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>ARRASTRA O SUBE IMÁGENES</p>
+                                <input type="file" id="input-claim-file" accept="image/*" multiple style="display: none;">
+                            </label>
+                            <div id="preview-grid-claim" class="preview-grid-modal"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Config -->
+                <div id="tab-claim-config" class="modal-tab-pane">
+                    <div class="modal-grid-layout">
+                        <div class="modal-grid-col">
+                            <div class="form-group">
+                                <label>PRECIO ($)</label>
+                                <input type="text" id="claim-price" placeholder="Ej: 25.00">
+                            </div>
+                        </div>
+                        <div class="modal-grid-col">
+                            <div class="form-group">
+                                <label>FECHA INICIO (Opcional)</label>
+                                <input type="text" id="claim-start-date" placeholder="Inmediato si se deja vacío">
+                            </div>
+                            <div class="form-group">
+                                <label>FECHA FIN (Opcional)</label>
+                                <input type="text" id="claim-end-date" placeholder="Sin límite si se deja vacío">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-save-claim" class="btn" style="width: 100%; margin-top: 30px; padding: 15px; font-size: 1.1rem;">GUARDAR CLAIM</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/claim.js"></script>
+</body>
+</html>

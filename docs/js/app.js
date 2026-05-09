@@ -127,6 +127,10 @@ window.handleDeepLinking = function(retries = 10) {
         targetEl = document.getElementById(`event-${params.get('eventId')}`);
         isDeepLink = true;
         shareType = 'event';
+    } else if (params.has('claimId')) {
+        targetEl = document.getElementById(`claim-${params.get('claimId')}`);
+        isDeepLink = true;
+        shareType = 'claim';
     } else if (params.has('wishlistId')) {
         targetEl = document.getElementById(`wishlist-item-${params.get('wishlistId')}`);
         isDeepLink = true;
@@ -379,6 +383,7 @@ $(document).ready(async function() {
         else if (urlParams.has('productId')) initialView = 'sealed';
         else if (urlParams.has('preorderId')) initialView = 'preorders';
         else if (urlParams.has('eventId')) initialView = 'events';
+        else if (urlParams.has('claimId')) initialView = 'claims';
         else if (urlParams.has('wishlistId') || urlParams.has('slot')) initialView = 'wishlist';
     }
 
@@ -1227,6 +1232,11 @@ async function switchView(view) {
         await loadPublicAuctions();
         if (window.botInstance) {
             window.botInstance.say("¡Bienvenido a las subastas! Elige un artículo para ver los detalles y colocar tu puja. ¡Mucha suerte!", { duration: 8 });
+        }
+    } else if (view === 'claims') {
+        await loadPublicClaims();
+        if (window.botInstance) {
+            window.botInstance.say("¡Bienvenido a los Claims! El primero en reclamar el producto se lo lleva. ¡Sé el más rápido!", { duration: 8 });
         }
     } else if (view === 'investments') {
         await loadPublicInvestmentCategories();
@@ -3114,6 +3124,280 @@ $(document).on('click', '#close-deck-list, #deck-list-overlay', function(e) {
         if (!$("#image-overlay").hasClass("active") && !$('#spirit-modal').hasClass('active')) {
             $('body').removeClass('modal-open');
         }
+    }
+});
+
+// --- CLAIM LOGIC ---
+
+let claimTimers = {};
+window.activeClaimsMap = {};
+
+function loadPublicClaims() {
+    return new Promise(async (resolve) => {
+        let userId = window.currentStoreId;
+        if (!userId) {
+            const identifier = window.currentStoreIdentifier;
+            if (identifier) {
+                const user = await resolveUser(identifier);
+                if (user) userId = user.id;
+            }
+        }
+
+        $('#claims-container').html('<div class="loading">Cargando claims...</div>').addClass('decks-grid');
+
+        try {
+            let query = _supabase
+                .from('claims')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (userId) {
+                query = query.eq('user_id', userId);
+            }
+
+            const { data: claims, error } = await query;
+
+            if (error) throw error;
+
+            if (!claims || claims.length === 0) {
+                $('#claims-container').html('<div class="empty">No hay claims en este momento.</div>');
+                return;
+            }
+
+            // Populate global map
+            claims.forEach(c => { window.activeClaimsMap[c.id] = c; });
+
+            $('#claims-container').empty();
+
+            claims.forEach(claim => {
+                renderClaimCard(claim);
+            });
+
+            // Realtime subscription for claims
+            if (window.globalClaimChannel) { _supabase.removeChannel(window.globalClaimChannel); }
+
+            window.globalClaimChannel = _supabase
+                .channel('global-claims-realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'claims' }, payload => {
+                    console.log("Cambio detectado en claims (Realtime):", payload);
+                    const claimId = payload.new ? payload.new.id : payload.old.id;
+                    if (payload.new) window.activeClaimsMap[claimId] = payload.new;
+                    updateClaimUI(claimId);
+                })
+                .subscribe();
+
+        } catch (e) {
+            console.error("Error loading claims:", e);
+            $('#claims-container').html('<div class="error">Error al cargar claims.</div>');
+        } finally {
+            hideLoading();
+            resolve();
+        }
+    });
+}
+
+function renderClaimCard(claim) {
+    const isClaimed = claim.status === 'Reclamada';
+    const firstImg = claim.image_urls && claim.image_urls.length > 0 ? claim.image_urls[0] : 'https://via.placeholder.com/300x200?text=Sin+Imagen';
+
+    const $card = $(`
+        <div class="claim-public-card" id="claim-${claim.id}">
+            <div class="claim-image-wrapper">
+                <img src="${firstImg}" alt="${claim.title}">
+                ${isClaimed ? '<div class="claimed-stamp">RECLAMADO</div>' : ''}
+                <div class="claim-price-badge">$${claim.price}</div>
+            </div>
+            <div class="claim-info-overlay">
+                <h3 class="claim-title">${claim.title}</h3>
+                <div class="claim-timer-mini" id="claim-timer-${claim.id}">
+                    <i class="fas fa-clock"></i> <span class="timer-countdown">--:--:--</span>
+                </div>
+                ${isClaimed ? `<div class="claim-winner-info"><i class="fas fa-handshake"></i> Por: ${claim.winner_name}</div>` : ''}
+            </div>
+        </div>
+    `);
+
+    $card.on('click', () => {
+        if (isDragging) return;
+        openClaimDetail(claim);
+    });
+    $('#claims-container').append($card);
+
+    startClaimTimer(claim);
+}
+
+function startClaimTimer(claim) {
+    if (claimTimers[claim.id]) clearInterval(claimTimers[claim.id]);
+
+    const endDate = claim.end_date ? new Date(claim.end_date) : null;
+    const startDate = claim.start_date ? new Date(claim.start_date) : null;
+
+    if (!endDate && !startDate) {
+        $(`#claim-timer-${claim.id}`).hide();
+        return;
+    }
+
+    const update = () => {
+        const now = new Date().getTime();
+        const $miniTimer = $(`#claim-timer-${claim.id} .timer-countdown`);
+        const $modalTimer = (window.currentClaimId === claim.id) ? $('#claim-modal-timer') : null;
+
+        if (startDate && now < startDate.getTime()) {
+            const dist = startDate.getTime() - now;
+            const hours = Math.floor(dist / (1000 * 60 * 60));
+            const minutes = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((dist % (1000 * 60)) / 1000);
+            const str = `Inicia en ${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+            $miniTimer.text(str).css('color', '#00d2ff');
+            if ($modalTimer) $modalTimer.text(str).css('color', '#00d2ff');
+            return;
+        }
+
+        if (endDate) {
+            const distance = endDate.getTime() - now;
+            if (distance < 0) {
+                $miniTimer.text("FINALIZADO").css('color', '#666');
+                if ($modalTimer) $modalTimer.text("FINALIZADO").css('color', '#666');
+                clearInterval(claimTimers[claim.id]);
+                return;
+            }
+
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            $miniTimer.text(timeStr).css('color', '#ff4757');
+            if ($modalTimer) $modalTimer.text(timeStr).css('color', '#ff4757');
+        } else {
+            $miniTimer.text("ACTIVO").css('color', '#00ff88');
+            if ($modalTimer) $modalTimer.text("ACTIVO").css('color', '#00ff88');
+        }
+    };
+
+    update();
+    claimTimers[claim.id] = setInterval(update, 1000);
+}
+
+function updateClaimUI(claimId) {
+    const claim = window.activeClaimsMap[claimId];
+    if (!claim) return;
+
+    const isClaimed = claim.status === 'Reclamada';
+    const $card = $(`#claim-${claimId}`);
+
+    if ($card.length) {
+        if (isClaimed) {
+            if ($card.find('.claimed-stamp').length === 0) {
+                $card.find('.claim-image-wrapper').append('<div class="claimed-stamp">RECLAMADO</div>');
+            }
+            if ($card.find('.claim-winner-info').length === 0) {
+                $card.find('.claim-info-overlay').append(`<div class="claim-winner-info"><i class="fas fa-handshake"></i> Por: ${claim.winner_name}</div>`);
+            } else {
+                $card.find('.claim-winner-info').html(`<i class="fas fa-handshake"></i> Por: ${claim.winner_name}`);
+            }
+        }
+    }
+
+    if (window.currentClaimId === claimId) {
+        if (isClaimed) {
+            $('#claim-action-container').hide();
+            $('#claim-winner-display').show();
+            $('#claim-winner-name').text(claim.winner_name);
+            $('#claim-claimed-at').text('Reclamado el ' + new Date(claim.claimed_at).toLocaleString());
+        } else {
+            $('#claim-action-container').show();
+            $('#claim-winner-display').hide();
+        }
+    }
+}
+
+async function openClaimDetail(claim) {
+    window.currentClaimId = claim.id;
+    const $modal = $('#claim-detail-modal');
+
+    $('#claim-modal-title').text(claim.title);
+    $('#claim-modal-desc').text(claim.description || 'Sin descripción.');
+    $('#claim-modal-price').text(`$${claim.price}`);
+
+    const $swiperWrapper = $('#claim-modal-images-container');
+    $swiperWrapper.empty();
+    (claim.image_urls || []).forEach(url => {
+        $swiperWrapper.append(`<div class="swiper-slide"><img src="${url}" style="width:100%; height:100%; object-fit:contain;"></div>`);
+    });
+
+    if (window.claimSwiper) window.claimSwiper.destroy();
+    window.claimSwiper = new Swiper('#claim-modal-images-swiper', {
+        pagination: { el: '.swiper-pagination', clickable: true },
+        navigation: true
+    });
+
+    updateClaimUI(claim.id);
+
+    $('#btn-claim-now').off('click').on('click', () => handleClaimAction(claim.id));
+
+    $modal.addClass('active');
+    $('body').addClass('modal-open');
+}
+
+async function handleClaimAction(claimId) {
+    if (!window.currentUser || !window.currentUser.id) {
+        Swal.fire({
+            title: '¿Quieres reclamar este producto?',
+            text: 'Para participar y llevarte este producto, primero debes formar parte de VikingTCG.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '¡Entrar!',
+            confirmButtonColor: '#00d2ff'
+        }).then((result) => { if (result.isConfirmed) window.location.href = 'index.html'; });
+        return;
+    }
+
+    const { isConfirmed } = await Swal.fire({
+        title: '¿RECLAMAR AHORA?',
+        text: 'Si eres el primero, el producto será tuyo.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '¡SÍ, LO QUIERO!',
+        confirmButtonColor: '#00ff88'
+    });
+
+    if (!isConfirmed) return;
+
+    Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const claimantName = window.currentUser.store_name || window.currentUser.username || 'Usuario';
+        const { data, error } = await _supabase.rpc('claim_product', {
+            p_claim_id: claimId,
+            p_claimant_id: window.currentUser.id,
+            p_claimant_name: claimantName
+        });
+
+        if (error) throw error;
+
+        if (data === true) {
+            Swal.fire({
+                title: '¡FELICIDADES!',
+                text: 'Has reclamado el producto con éxito. El vendedor te contactará pronto.',
+                icon: 'success',
+                confirmButtonColor: '#00ff88'
+            });
+            if (window.botInstance) window.botInstance.say("¡Increíble! Fuiste el más rápido. El producto es tuyo.");
+        } else {
+            Swal.fire('¡Muy lento!', 'Alguien más reclamó este producto justo antes que tú.', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudo procesar el reclamo: ' + e.message, 'error');
+    }
+}
+
+$('#close-claim-modal-public, #claim-detail-modal').click(function(e) {
+    if (e.target === this || $(this).attr('id') === 'close-claim-modal-public') {
+        $('#claim-detail-modal').removeClass('active');
+        $('body').removeClass('modal-open');
+        window.currentClaimId = null;
     }
 });
 
