@@ -272,15 +272,23 @@ async function handleSaveClaim() {
         if (editingId) {
             const entry = entries[0];
             const { error } = await _supabase.from('claims').update({
-                description: entry.description, price: entry.price, image_urls: [entry.url],
-                start_date: start ? start.toISOString() : null, end_date: end ? end.toISOString() : null
+                description: entry.description || null,
+                price: entry.price || '0',
+                image_urls: [entry.url],
+                start_date: start ? start.toISOString() : null,
+                end_date: end ? end.toISOString() : null
             }).eq('id', editingId);
             if (error) throw error;
         } else {
             const claimsToInsert = entries.map(entry => ({
-                title: 'Producto Claim', description: entry.description, price: entry.price || '0', image_urls: [entry.url],
-                start_date: start ? start.toISOString() : null, end_date: end ? end.toISOString() : null,
-                user_id: claimUser.id, status: 'Activa'
+                title: 'Producto Claim',
+                description: entry.description || null,
+                price: entry.price || '0',
+                image_urls: [entry.url],
+                start_date: start ? start.toISOString() : null,
+                end_date: end ? end.toISOString() : null,
+                user_id: claimUser.id,
+                status: 'Activa'
             }));
             const { error } = await _supabase.from('claims').insert(claimsToInsert);
             if (error) throw error;
