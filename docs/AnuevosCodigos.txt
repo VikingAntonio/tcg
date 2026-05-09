@@ -1,0 +1,32 @@
+CÓMO FUNCIONA LA SINCRONIZACIÓN ENTRE MÓDULOS STANDALONE Y LINKS PÚBLICOS
+
+1. LA BASE DE DATOS COMO EJE CENTRAL (SUPABASE)
+Tanto 'admin.html' como los nuevos archivos 'binders.html' y 'decks.html' no guardan la información "dentro" de ellos mismos. Son simplemente interfaces (vistas) que envían y reciben datos de una base de datos central en Supabase.
+- Cuando agregas una carta en 'binders.html', el código JS ejecuta un comando para insertar esa carta en la tabla `card_slots` de Supabase.
+- Los links públicos ('public.html') leen esa misma tabla `card_slots` filtrando por el ID del usuario.
+
+2. ¿POR QUÉ NO SE VEÍAN TUS CAMBIOS? (HIPÓTESIS)
+Si agregaste una carta desde 'binders.html' y no se vio en el link público, puede deberse a:
+- Estado de Guardado: En la lógica migrada, muchos cambios son "locales" hasta que presionas el botón "Guardar Cambios" del álbum. Si cierras la pestaña sin guardar, los datos no se envían a Supabase.
+- Caché del Navegador: A veces el link público guarda una versión antigua de la página.
+- Filtros de Visibilidad: Asegúrate de que el álbum esté marcado como "Público" en 'binders.html'.
+
+3. ESCALABILIDAD Y MANTENIMIENTO
+Tu idea de separar cada sección en su propio archivo es EXCELENTE por varias razones:
+- Código más Limpio: 'admin.js' ya era demasiado grande. Al separarlo, si hay un error en los Decks, solo tocas 'decks.js' sin riesgo de romper los Álbumes.
+- Carga más Rápida: El navegador carga menos código de golpe.
+- Independencia: Puedes actualizar el diseño de una sección sin afectar las otras.
+
+4. ¿ES POSIBLE QUE TODO SIGA FUNCIONANDO IGUAL?
+SÍ, es totalmente posible y es la forma profesional de hacerlo. La clave es que todos los archivos compartan:
+- El mismo archivo de configuración: 'js/supabase-config.js'.
+- Las mismas utilidades: 'js/utils.js' (donde está el foil, 3D, etc.).
+- La misma estructura de tablas en la base de datos.
+
+MIENTRAS TODOS LOS ARCHIVOSStandalone LEAN Y ESCRIBAN EN LAS MISMAS TABLAS DE SUPABASE, EL LINK PÚBLICO SIEMPRE MOSTRARÁ LA INFORMACIÓN ACTUALIZADA, SIN IMPORTAR DESDE QUÉ PÁGINA SE HIZO EL CAMBIO.
+
+PASOS A SEGUIR PARA CADA NUEVO MÓDULO:
+1. Crear el HTML/JS/CSS independiente.
+2. Copiar la lógica de "Guardar" y "Cargar" exactamente como estaba en el admin original.
+3. Verificar que las redirecciones en el Dashboard principal apunten al nuevo archivo.
+4. Probar que al guardar en el nuevo archivo, los datos aparezcan en la tabla correspondiente en el panel de Supabase.
