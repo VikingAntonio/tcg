@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <title>Gestión de Ganadores Claim - Vikingdev TCG</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/claim.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .winner-group {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--nm-shadow);
+        }
+        .winner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .winner-name {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--primary-color);
+        }
+        .claimed-items-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .claimed-item-mini {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .claimed-item-mini img {
+            width: 50px;
+            height: 70px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .claimed-item-info {
+            flex: 1;
+        }
+        .claimed-item-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .claimed-item-price {
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+        .contact-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-wa { background: #25d366 !important; color: white !important; }
+        .btn-ms { background: #006aff !important; color: white !important; }
+    </style>
+</head>
+<body>
+    <div class="top-left-panel">
+        <div class="pill-panel">
+            <a href="admin.html" class="pill-icon" title="Volver al Panel"><i class="fas fa-arrow-left"></i></a>
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn"><i class="fas fa-user"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="authenticated-content" style="width: 100%; max-width: 1200px; margin: 0 auto; padding: 100px 20px;">
+        <div class="admin-header">
+            <h1 style="font-size: 2.2rem; font-weight: 900;">GESTIÓN DE CLAIMS</h1>
+        </div>
+
+        <div class="sticky-tabs-container" id="admin-winner-tabs" style="margin-bottom: 30px; display: flex; justify-content: center; gap: 10px;">
+            <button class="tab-pill active" id="btn-tab-mis-claims">Mis Claims (Ventas)</button>
+            <button class="tab-pill" id="btn-tab-ganados">Claims Ganados (Compras)</button>
+        </div>
+
+        <div id="my-claims-winners" class="winner-container">
+            <!-- Winners of my products -->
+            <div class="loading">Cargando ganadores...</div>
+        </div>
+
+        <div id="won-claims" class="winner-container" style="display: none;">
+            <!-- Claims I have won -->
+            <div class="loading">Cargando mis compras...</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/adminClaim.js"></script>
+</body>
+</html>

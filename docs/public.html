@@ -6,6 +6,7 @@
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <title>Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/claim.css">
     <link rel="stylesheet" href="css/animacionesdeseos.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="css/cards.css">
@@ -132,6 +133,10 @@
                     <i class="fas fa-chart-line"></i>
                     <span>Inversiones</span>
                 </div>
+                <div class="home-menu-item" data-view="claims">
+                    <i class="fas fa-hand-holding-heart"></i>
+                    <span>Claims</span>
+                </div>
                 <div class="home-menu-item" data-view="events">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Eventos y Noticias</span>
@@ -190,6 +195,12 @@
             </div>
             <div id="auctions-container" class="auction-grid">
                 <!-- Subastas cargadas aquí -->
+            </div>
+        </div>
+
+        <div id="claims-view" class="view-section">
+            <div id="claims-container" class="decks-grid">
+                <!-- Claims cargados aquí -->
             </div>
         </div>
 
@@ -314,6 +325,48 @@
                 <button class="social-share-btn tg" id="share-tg"><i class="fab fa-telegram-plane"></i></button>
                 <button class="social-share-btn fb" id="share-fb"><i class="fab fa-facebook-f"></i></button>
                 <button class="social-share-btn ms" id="share-ms"><i class="fab fa-facebook-messenger"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Claim Detail Modal -->
+    <div id="claim-detail-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 900px; width: 95%;">
+            <span id="close-claim-modal-public" class="close-btn">&times;</span>
+            <div class="bidding-layout">
+                <div class="auction-media">
+                    <div id="claim-modal-images-swiper" class="swiper" style="width: 100%; height: 350px;">
+                        <div class="swiper-wrapper" id="claim-modal-images-container">
+                            <!-- Images here -->
+                        </div>
+                        <div class="swiper-pagination"></div>
+                    </div>
+                    <div id="claim-modal-timer" class="auction-timer" style="justify-content: center; margin-top: 15px; font-size: 1.5rem;">
+                        00:00:00
+                    </div>
+                </div>
+                <div class="auction-bidding-area">
+                    <h2 id="claim-modal-title" style="margin: 0 0 10px 0;">Nombre del Artículo</h2>
+                    <p id="claim-modal-desc" style="font-size: 0.9rem; color: #aaa; margin-bottom: 20px; white-space: pre-wrap;"></p>
+
+                    <div class="auction-bid-info" style="padding: 20px; margin-bottom: 20px; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div class="current-bid-label">PRECIO FIJO</div>
+                            <div id="claim-modal-price" class="current-bid-value" style="color: #00ff88;">$0.00</div>
+                        </div>
+                    </div>
+
+                    <div id="claim-action-container">
+                        <button id="btn-claim-now" class="btn btn-save-large" style="width: 100%; height: 60px; font-size: 1.5rem; background: #00ff88; color: #000;">RECLAMAR AHORA</button>
+                    </div>
+
+                    <div id="claim-winner-display" style="display: none; text-align: center; padding: 25px; background: #ff4757; border-radius: 20px; border: 4px solid #fff; box-shadow: 0 10px 20px rgba(255, 71, 87, 0.3); position: relative; overflow: hidden;">
+                        <div class="claimed-stamp" style="font-size: 2.5rem; opacity: 0.3; transform: translate(-50%, -50%) rotate(-25deg); color: #fff; background: transparent; border: none; box-shadow: none;">RECLAMADO</div>
+                        <h3 style="color: #fff; margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;"><i class="fas fa-handshake"></i> RECLAMADO POR</h3>
+                        <div id="claim-winner-name" style="font-size: 2rem; font-weight: 900; margin: 10px 0; color: #fff;">-</div>
+                        <div id="claim-claimed-at" style="font-weight: 700; color: rgba(255,255,255,0.8); font-size: 0.9rem;">-</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

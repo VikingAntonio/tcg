@@ -4724,6 +4724,7 @@ body.focus-mode-active .event-card {
 .home-menu-item[data-view="sealed"] i { color: #55efc4; }
 .home-menu-item[data-view="preorders"] i { color: #ffeaa7; }
 .home-menu-item[data-view="wishlist"] i { color: #fd79a8; }
+.home-menu-item[data-view="claims"] i { color: #fdcb6e; }
 .home-menu-item[data-view="events"] i { color: #81ecec; }
 
 /* Integrated Header Styles */

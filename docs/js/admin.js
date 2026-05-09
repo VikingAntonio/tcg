@@ -1750,6 +1750,16 @@ async function showAuthenticatedContent() {
         $('#btn-subastas').hide();
         $('#menu-btn-subastas').hide();
     }
+
+    // Claims Integration
+    if (currentUser.is_store || currentUser.role === 'admin' || currentUser.role === 'admin_store' || currentUser.role === 'tienda') {
+        $('#btn-claims, #menu-btn-claims').show();
+        $('#btn-admin-claims, #menu-btn-admin-claims').show();
+    } else {
+        // If not a store, maybe they won something? Show only management
+        $('#btn-admin-claims, #menu-btn-admin-claims').show();
+    }
+
     if (currentUser.has_events !== false) $('#btn-eventos').show(); else $('#btn-eventos').hide();
 
     // Upgrade button for starter users
