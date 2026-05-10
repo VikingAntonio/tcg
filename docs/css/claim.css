@@ -124,6 +124,12 @@
     box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
 }
 
+.modal-tab-btn:hover:not(.active) {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border-color: rgba(255,255,255,0.2);
+}
+
 .modal-tab-pane {
     display: none;
 }

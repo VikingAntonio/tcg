@@ -55,6 +55,18 @@ CREATE INDEX IF NOT EXISTS idx_claims_user_id ON claims(user_id);
 CREATE INDEX IF NOT EXISTS idx_claims_winner_id ON claims(winner_id);
 CREATE INDEX IF NOT EXISTS idx_claims_status ON claims(status);
 
+-- Enable Realtime for claims table
+-- Note: This might need to be run manually if the publication already exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE claims;
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'Could not automatically add to realtime publication. Please do it manually in the Supabase Dashboard.';
+END $$;
+
 -- Atomic function to claim a product
 -- This prevents race conditions where two users claim the same product at once
 CREATE OR REPLACE FUNCTION claim_product(p_claim_id UUID, p_claimant_id UUID, p_claimant_name TEXT)

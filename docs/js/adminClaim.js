@@ -1,5 +1,4 @@
 let adminClaimUser = null;
-let currentMyClaimsFilter = 'Reclamada';
 
 $(document).ready(async function() {
     await checkAdminClaimSession();
@@ -30,7 +29,7 @@ $(document).ready(async function() {
     });
 
     $('#btn-tab-mis-claims').on('click', function() {
-        $('.tab-pill').removeClass('active');
+        $('.modal-tab-btn').removeClass('active');
         $(this).addClass('active');
         $('#my-claims-view').show();
         $('#won-claims-view').hide();
@@ -38,18 +37,11 @@ $(document).ready(async function() {
     });
 
     $('#btn-tab-ganados').on('click', function() {
-        $('.tab-pill').removeClass('active');
+        $('.modal-tab-btn').removeClass('active');
         $(this).addClass('active');
         $('#my-claims-view').hide();
         $('#won-claims-view').show();
         loadWonClaims();
-    });
-
-    $('.filter-btn').on('click', function() {
-        $('.filter-btn').removeClass('active');
-        $(this).addClass('active');
-        currentMyClaimsFilter = $(this).data('filter');
-        loadMyClaims();
     });
 });
 
@@ -105,13 +97,52 @@ async function loadMyClaims() {
     if (!adminClaimUser) return;
     const $list = $('#my-claims-list');
     $list.html('<div class="loading">Cargando...</div>');
-    const { data: claims, error } = await _supabase.from('claims').select('*, winner:winner_id(id, username, store_name, whatsapp_link, messenger_link)').eq('user_id', adminClaimUser.id).eq('status', currentMyClaimsFilter).order('created_at', { ascending: false });
+    const { data: claims, error } = await _supabase.from('claims')
+        .select('*, winner:winner_id(id, username, store_name, whatsapp_link, messenger_link)')
+        .eq('user_id', adminClaimUser.id)
+        .order('created_at', { ascending: false });
+
     if (error) return;
-    if (!claims || claims.length === 0) { $list.html('<div style="text-align:center; padding:40px; color:#666;">No hay claims para mostrar.</div>'); return; }
+    if (!claims || claims.length === 0) {
+        $list.html('<div style="text-align:center; padding:40px; color:#666;">No has creado ningún claim aún.</div>');
+        return;
+    }
+
     $list.empty();
-    if (currentMyClaimsFilter === 'Reclamada') {
+
+    const claimed = claims.filter(c => c.status === 'Reclamada');
+    const active = claims.filter(c => c.status === 'Activa');
+
+    // Render Active Claims first
+    if (active.length > 0) {
+        $list.append('<h3 style="margin: 20px 0 15px; font-weight: 900; opacity: 0.7;">CLAIMS ACTIVOS (EN VENTA)</h3>');
+        const $grid = $('<div class="claim-management-grid"></div>');
+        active.forEach(claim => {
+            $grid.append(`
+                <div class="pretty-claim-card">
+                    <div class="status-badge">${claim.status}</div>
+                    <div class="card-img-container"><img src="${claim.image_urls[0]}"></div>
+                    <div class="card-title">${claim.title}</div>
+                    <div class="claim-info">
+                        <span class="info-label">PRECIO</span>
+                        <span class="info-value">$${claim.price || '0.00'}</span>
+                    </div>
+                </div>
+            `);
+        });
+        $list.append($grid);
+    }
+
+    // Render Reclamados grouped by winner
+    if (claimed.length > 0) {
+        $list.append('<h3 style="margin: 40px 0 15px; font-weight: 900; opacity: 0.7;">CLAIMS RECLAMADOS (VENTAS)</h3>');
         const groups = {};
-        claims.forEach(c => { const wid = c.winner_id; if (!groups[wid]) groups[wid] = { winner: c.winner, items: [] }; groups[wid].items.push(c); });
+        claimed.forEach(c => {
+            const wid = c.winner_id;
+            if (!groups[wid]) groups[wid] = { winner: c.winner, items: [] };
+            groups[wid].items.push(c);
+        });
+
         Object.values(groups).forEach(group => {
             const winner = group.winner || { username: 'Usuario Desconocido' };
             const winnerDisplayName = winner.store_name || winner.username || 'Usuario';
@@ -123,7 +154,16 @@ async function loadMyClaims() {
                     </div>
                     <div class="claimed-items-list">
                         ${group.items.map(item => `
-                            <div class="claimed-item-mini"><img src="${item.image_urls[0]}"><div class="claimed-item-info"><div class="claimed-item-title">${item.title}</div><div class="claimed-item-price">$${item.price}</div></div></div>
+                            <div class="claimed-item-mini" style="position: relative;">
+                                <img src="${item.image_urls[0]}">
+                                <div class="claimed-item-info">
+                                    <div class="claimed-item-title">${item.title}</div>
+                                    <div class="claimed-item-price">$${item.price}</div>
+                                </div>
+                                <button class="btn btn-sm btn-danger" onclick="deleteClaim('${item.id}')" style="position: absolute; top: 5px; right: 5px; width: 25px; height: 25px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                    <i class="fas fa-trash" style="font-size: 10px;"></i>
+                                </button>
+                            </div>
                         `).join('')}
                     </div>
                     <div class="contact-buttons">
@@ -133,12 +173,28 @@ async function loadMyClaims() {
                 </div>
             `);
         });
-    } else {
-        const $grid = $('<div class="claim-management-grid"></div>');
-        claims.forEach(claim => {
-            $grid.append(`<div class="pretty-claim-card"><div class="status-badge">${claim.status}</div><div class="card-img-container"><img src="${claim.image_urls[0]}"></div><div class="card-title">${claim.title}</div><div class="claim-info"><span class="info-label">PRECIO</span><span class="info-value">$${claim.price || '0.00'}</span></div></div>`);
-        });
-        $list.append($grid);
+    }
+}
+
+async function deleteClaim(id) {
+    const { isConfirmed } = await Swal.fire({
+        title: '¿Eliminar Claim?',
+        text: 'Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (isConfirmed) {
+        const { error } = await _supabase.from('claims').delete().eq('id', id);
+        if (!error) {
+            Swal.fire('Eliminado', 'El claim ha sido eliminado.', 'success');
+            loadMyClaims();
+        } else {
+            Swal.fire('Error', 'No se pudo eliminar: ' + error.message, 'error');
+        }
     }
 }
 
