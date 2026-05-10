@@ -143,24 +143,27 @@ async function loadMyClaims() {
             groups[wid].items.push(c);
         });
 
-        Object.values(groups).forEach(group => {
+        Object.entries(groups).forEach(([wid, group]) => {
             const winner = group.winner || { username: 'Usuario Desconocido' };
-            const winnerDisplayName = winner.store_name || winner.username || 'Usuario';
+            const winnerDisplayName = (winner.store_name || winner.username || 'Usuario').replace(/'/g, "\\'");
             $list.append(`
                 <div class="winner-group">
                     <div class="winner-header">
-                        <div class="winner-name"><i class="fas fa-crown"></i> ${winnerDisplayName}</div>
-                        <div class="claimed-count">${group.items.length} producto(s)</div>
+                        <div class="winner-name"><i class="fas fa-crown"></i> ${winnerDisplayName.replace(/\\'/g, "'")}</div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div class="claimed-count">${group.items.length} producto(s)</div>
+                            <button class="btn btn-sm btn-danger btn-delete-group" onclick="deleteWinnerClaims('${wid}', '${winnerDisplayName}')" title="Eliminar todos los claims de este usuario"><i class="fas fa-trash-alt"></i></button>
+                        </div>
                     </div>
                     <div class="claimed-items-list">
                         ${group.items.map(item => `
-                            <div class="claimed-item-mini" style="position: relative;">
+                            <div class="claimed-item-mini" style="position: relative; cursor: pointer;" onclick="showClaimDetails('${item.id}')">
                                 <img src="${item.image_urls[0]}">
                                 <div class="claimed-item-info">
                                     <div class="claimed-item-title">${item.title}</div>
                                     <div class="claimed-item-price">$${item.price}</div>
                                 </div>
-                                <button class="btn btn-sm btn-danger" onclick="deleteClaim('${item.id}')" style="position: absolute; top: 5px; right: 5px; width: 25px; height: 25px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteClaim('${item.id}')" style="position: absolute; top: 5px; right: 5px; width: 25px; height: 25px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
                                     <i class="fas fa-trash" style="font-size: 10px;"></i>
                                 </button>
                             </div>
@@ -208,6 +211,59 @@ async function loadWonClaims() {
     $list.empty();
     Object.values(groups).forEach(group => {
         const seller = group.seller; const sellerDisplayName = seller.store_name || seller.username || 'Vendedor';
-        $list.append(`<div class="winner-group" style="border-color: #00ff88;"><div class="winner-header"><div class="winner-name" style="color: #00ff88;"><i class="fas fa-store"></i> ${sellerDisplayName}</div><div class="claimed-count">${group.items.length} producto(s)</div></div><div class="claimed-items-list">${group.items.map(item => `<div class="claimed-item-mini"><img src="${item.image_urls[0]}"><div class="claimed-item-info"><div class="claimed-item-title">${item.title}</div><div class="claimed-item-price">$${item.price}</div></div></div>`).join('')}</div><div class="contact-buttons">${seller.whatsapp_link ? `<button class="btn btn-wa" onclick="window.open('https://wa.me/${seller.whatsapp_link.replace(/\D/g, '')}', '_blank')"><i class="fab fa-whatsapp"></i> Contactar</button>` : ''}${seller.messenger_link ? `<button class="btn btn-ms" onclick="window.open('https://m.me/${seller.messenger_link}', '_blank')"><i class="fab fa-facebook-messenger"></i> Messenger</button>` : ''}</div></div>`);
+        $list.append(`<div class="winner-group" style="border-color: #00ff88;"><div class="winner-header"><div class="winner-name" style="color: #00ff88;"><i class="fas fa-store"></i> ${sellerDisplayName}</div><div class="claimed-count">${group.items.length} producto(s)</div></div><div class="claimed-items-list">${group.items.map(item => `<div class="claimed-item-mini" style="cursor: pointer;" onclick="showClaimDetails('${item.id}')"><img src="${item.image_urls[0]}"><div class="claimed-item-info"><div class="claimed-item-title">${item.title}</div><div class="claimed-item-price">$${item.price}</div></div></div>`).join('')}</div><div class="contact-buttons">${seller.whatsapp_link ? `<button class="btn btn-wa" onclick="window.open('https://wa.me/${seller.whatsapp_link.replace(/\D/g, '')}', '_blank')"><i class="fab fa-whatsapp"></i> Contactar</button>` : ''}${seller.messenger_link ? `<button class="btn btn-ms" onclick="window.open('https://m.me/${seller.messenger_link}', '_blank')"><i class="fab fa-facebook-messenger"></i> Messenger</button>` : ''}</div></div>`);
+    });
+}
+
+async function deleteWinnerClaims(winnerId, winnerDisplayName) {
+    const { isConfirmed } = await Swal.fire({
+        title: '¿Eliminar todos los claims?',
+        text: `Se eliminarán todos los productos reclamados por ${winnerDisplayName}. Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757',
+        confirmButtonText: 'Sí, eliminar todos',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (isConfirmed) {
+        const { error } = await _supabase.from('claims')
+            .delete()
+            .eq('winner_id', winnerId)
+            .eq('user_id', adminClaimUser.id)
+            .eq('status', 'Reclamada');
+
+        if (!error) {
+            Swal.fire('Eliminados', 'Todos los claims del usuario han sido eliminados.', 'success');
+            loadMyClaims();
+        } else {
+            Swal.fire('Error', 'No se pudieron eliminar: ' + error.message, 'error');
+        }
+    }
+}
+
+async function showClaimDetails(claimId) {
+    const { data: claim, error } = await _supabase.from('claims').select('*').eq('id', claimId).single();
+    if (error || !claim) {
+        Swal.fire('Error', 'No se pudo cargar la información del producto.', 'error');
+        return;
+    }
+
+    Swal.fire({
+        title: claim.title,
+        html: `
+            <div style="text-align: center;">
+                <img src="${claim.image_urls[0]}" style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+                <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px;">$${claim.price}</div>
+                <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; font-size: 0.9rem; max-height: 200px; overflow-y: auto;">
+                    ${claim.description || 'Sin descripción disponible.'}
+                </div>
+            </div>
+        `,
+        showCloseButton: true,
+        showConfirmButton: false,
+        width: '500px',
+        background: 'var(--card-bg)',
+        color: 'var(--text-color)'
     });
 }

@@ -89,6 +89,32 @@
         }
         .btn-wa { background: #25d366 !important; color: white !important; border: none !important; }
         .btn-ms { background: #006aff !important; color: white !important; border: none !important; }
+
+        .btn-delete-group {
+            background: #ff4757 !important;
+            border: none !important;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: white !important;
+            cursor: pointer;
+        }
+        .btn-delete-group:hover {
+            transform: scale(1.1) rotate(5deg);
+            background: #ff6b81 !important;
+            box-shadow: 0 0 15px rgba(255, 71, 87, 0.4);
+        }
+        .claimed-item-mini {
+            transition: all 0.3s ease;
+        }
+        .claimed-item-mini:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateX(5px);
+        }
     </style>
 </head>
 <body>
