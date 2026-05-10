@@ -3180,9 +3180,24 @@ function loadPublicClaims() {
                 .channel('global-claims-realtime')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'claims' }, payload => {
                     console.log("Cambio detectado en claims (Realtime):", payload);
-                    const claimId = payload.new ? payload.new.id : payload.old.id;
-                    if (payload.new) window.activeClaimsMap[claimId] = payload.new;
-                    updateClaimUI(claimId);
+                    if (payload.eventType === 'DELETE') {
+                        $(`#claim-${payload.old.id}`).fadeOut(300, function() { $(this).remove(); });
+                        if (window.currentClaimId === payload.old.id) {
+                            $('#claim-detail-modal').removeClass('active');
+                            $('body').removeClass('modal-open');
+                        }
+                        delete window.activeClaimsMap[payload.old.id];
+                        return;
+                    }
+
+                    const claimId = payload.new.id;
+                    window.activeClaimsMap[claimId] = payload.new;
+
+                    if (payload.eventType === 'INSERT') {
+                        renderClaimCard(payload.new);
+                    } else if (payload.eventType === 'UPDATE') {
+                        updateClaimUI(claimId);
+                    }
                 })
                 .subscribe();
 

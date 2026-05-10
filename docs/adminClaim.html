@@ -126,16 +126,13 @@
             <h1 style="font-size: 2.2rem; font-weight: 900;">GESTIÓN DE CLAIMS</h1>
         </div>
 
-        <div class="sticky-tabs-container" id="admin-winner-tabs" style="margin-bottom: 30px; display: flex; justify-content: center; gap: 10px;">
-            <button class="tab-pill active" id="btn-tab-mis-claims">Mis Claims (Ventas)</button>
-            <button class="tab-pill" id="btn-tab-ganados">Claims Ganados (Compras)</button>
+        <div class="sticky-tabs-container" id="admin-winner-tabs" style="margin-bottom: 30px; display: flex; justify-content: center; gap: 15px;">
+            <button class="modal-tab-btn active" id="btn-tab-mis-claims" style="flex: 0 1 250px;">Mis Claims (Ventas)</button>
+            <button class="modal-tab-btn" id="btn-tab-ganados" style="flex: 0 1 250px;">Claims Ganados (Compras)</button>
         </div>
 
         <div id="my-claims-view" class="winner-container">
-            <div id="my-claims-filters" style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
-                <button class="tab-pill active filter-btn" data-filter="Reclamada">Reclamados</button>
-                <button class="tab-pill filter-btn" data-filter="Activa">Activos</button>
-            </div>
+            <!-- Filters removed as requested -->
             <div id="my-claims-list"></div>
         </div>
 
