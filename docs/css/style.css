@@ -363,7 +363,7 @@ body {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: var(--overlay-bg);
-    z-index: 9999;
+    z-index: 2000000;
     justify-content: center;
     align-items: center;
     backdrop-filter: blur(8px);
@@ -2088,7 +2088,7 @@ input:checked + .slider:before {
 
 /* Ensure SweetAlert is always on top of our overlays */
 .swal2-container {
-    z-index: 999999 !important;
+    z-index: 4000000 !important;
 }
 
 
@@ -2113,7 +2113,7 @@ input:checked + .slider:before {
 #loading-screen {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 99999;
+    z-index: 2000000;
     display: none;
     flex-direction: column;
     justify-content: flex-end;
@@ -2618,7 +2618,7 @@ input:checked + .slider:before {
 #gltf-overlay {
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(15px);
-    z-index: 11000; /* Higher than selection modal */
+    z-index: 2000000; /* Higher than selection modal */
 }
 
 .gltf-expanded-content {
@@ -2675,7 +2675,7 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 12000;
+    z-index: 2000010;
     transition: all 0.3s ease;
     backdrop-filter: blur(5px);
     user-select: none;
@@ -2719,7 +2719,7 @@ input:checked + .slider:before {
     left: 20px;
     width: 120px;
     height: 120px;
-    z-index: 12000;
+    z-index: 1500000;
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -2831,7 +2831,7 @@ input:checked + .slider:before {
     display: none;
     flex-direction: column;
     box-shadow: 0 15px 50px rgba(0,0,0,0.6);
-    z-index: 10005;
+    z-index: 1500000;
     overflow: hidden;
     animation: slide-up 0.3s ease-out;
 }
@@ -3032,7 +3032,7 @@ body.focus-mode-active .shared-highlight::before {
     position: fixed;
     top: 20px;
     left: 20px; /* Changed to top-left for clear exit visibility */
-    z-index: 10005;
+    z-index: 2000005;
     background: rgba(0, 210, 255, 0.2);
     color: #00d2ff;
     border: 2px solid #00d2ff;
@@ -3081,7 +3081,7 @@ body.focus-mode-active .event-card {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.9);
-    z-index: 10000;
+    z-index: 2000000;
     justify-content: center;
     align-items: center;
     backdrop-filter: blur(10px);
@@ -4165,13 +4165,13 @@ body.focus-mode-active .event-card {
 
 /* Public Deck List Modal & Grid */
 #deck-list-overlay {
-    z-index: 10002;
+    z-index: 2000000;
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(15px);
 }
 
 #image-overlay {
-    z-index: 11001; /* Must be higher than #deck-list-overlay and #gltf-overlay */
+    z-index: 2000001; /* Must be higher than #deck-list-overlay and #gltf-overlay */
 }
 
 .deck-list-modal {
@@ -4401,7 +4401,7 @@ body.focus-mode-active .event-card {
 
 /* --- Sharing System Styles --- */
 #share-overlay {
-    z-index: 12000;
+    z-index: 2000000;
 }
 
 .btn-share-item {
@@ -4653,7 +4653,7 @@ body.focus-mode-active .event-card {
     display: flex;
     gap: 40px;
     box-shadow: var(--nm-shadow);
-    z-index: 999999;
+    z-index: 1000000;
     border: 1px solid var(--card-border);
     backdrop-filter: blur(10px);
 }

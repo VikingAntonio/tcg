@@ -1357,7 +1357,7 @@ body.admin-body {
 }
 
 .flatpickr-calendar {
-    z-index: 999999 !important;
+    z-index: 3000000 !important;
 }
 
 #auction-modal-timer.date-pulse {
