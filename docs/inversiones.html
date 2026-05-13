@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
-    <title>Inversiones - Vikingdev TCG</title>
+    <title>Mis Inversiones - Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/cards.css">
     <link rel="stylesheet" href="css/inversiones.css">
@@ -15,13 +15,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Floating User Panel -->
     <div class="top-left-panel" id="top-panel" style="display: none;">
         <div class="pill-panel">
             <div class="pill-group" id="header-theme-group">
                 <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
                 <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
                 <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <div class="btn-nav-auctions-pill" id="nav-btn-auctions-won" style="display: none; cursor: pointer;">
+                <i class="fas fa-gavel" style="color: var(--primary-color);"></i>
+                <span id="nav-auction-badge" class="nav-badge" style="display: none;">0</span>
             </div>
 
             <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
@@ -37,15 +41,34 @@
                     <div class="user-dropdown-info">
                         <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
                         <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Admin</div>
                     </div>
-                    <a href="admin.html" class="menu-item"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="#" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="binders.html" class="menu-item" id="menu-btn-albums"><i class="fas fa-book"></i> Mis Álbumes</a>
+                    <a href="decks.html" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
+                    <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
+                    <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
+                    <a href="#" class="menu-item" id="menu-btn-wishlist"><i class="fas fa-heart"></i> Wishlist</a>
+                    <a href="eventos.html" class="menu-item" id="menu-btn-eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
+                    <a href="#" class="menu-item" id="menu-btn-investments"><i class="fas fa-chart-line"></i> Mis Inversiones</a>
+
+                    <!-- Mobile Theme Switcher (Injected here via CSS/JS later) -->
+                    <div class="theme-menu-container-mobile" style="display: none;">
+                        <div class="menu-item"><i class="fas fa-palette"></i> Temas</div>
+                        <div class="theme-switcher-inline" style="padding: 0 20px 10px;">
+                            <button class="theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+                        </div>
+                    </div>
+
                     <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Login Modal -->
     <div id="login-modal" class="overlay">
         <div class="overlay-content login-container">
             <h1>Iniciar Sesión</h1>
@@ -61,13 +84,10 @@
         </div>
     </div>
 
-    <!-- Authenticated Content -->
     <div id="authenticated-content" style="display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding-top: 100px;">
-
-        <!-- Inversiones View (Categories) -->
-        <div id="view-investments" class="admin-section">
+        <div id="view-investments" class="admin-section" style="display:none;">
             <div class="admin-header" style="background: #000; padding: 60px 20px; color: #fff; border-radius: 4px; margin-bottom: 40px; border: 1px solid #111;">
-                <a href="admin.html" class="btn-inv-outline" style="color: #fff; border-color: rgba(255,255,255,0.3); margin-bottom: 30px; text-decoration: none; display: inline-block;"><i class="fas fa-chevron-left"></i> Dashboard</a>
+                <button id="btn-back-to-main-from-investments" class="btn-inv-outline" style="color: #fff; border-color: rgba(255,255,255,0.3); margin-bottom: 30px; text-decoration: none; display: inline-block; background: transparent;"><i class="fas fa-chevron-left"></i> Volver al Panel</button>
                 <div style="font-size: 0.7rem; letter-spacing: 0.4em; font-weight: 800; color: rgba(255,255,255,0.5); margin-bottom: 15px; text-transform: uppercase;">Portfolio Management</div>
                 <h1 style="font-size: 3rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: 10px; text-transform: uppercase; color: #fff;">Asset Vault</h1>
                 <p style="color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto 30px; font-weight: 500;">Monitor physical TCG assets with professional market analytics and manual valuation tracking.</p>
@@ -80,7 +100,6 @@
             </div>
         </div>
 
-        <!-- Investment Details View (Cards within Category) -->
         <div id="view-investment-details" class="admin-section" style="display:none;">
             <!-- Mobile Side Panel Controls -->
             <div id="inv-side-panel-overlay" class="inv-side-panel-overlay"></div>
@@ -134,9 +153,10 @@
                 <!-- Cards will be rendered here based on mode -->
             </div>
         </div>
+
     </div>
 
-    <!-- Investment Asset Manager Modal -->
+    </div>
     <div id="investment-card-modal" class="overlay">
         <div class="overlay-content inv-detail-modal-content">
             <div class="inv-modal-header">
@@ -290,10 +310,10 @@
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item" id="btn-nav-home" onclick="window.location.href='admin.html'" title="Ir al Panel">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
             <i class="fas fa-home"></i>
         </div>
-        <div class="nav-item" id="btn-nav-return" onclick="window.location.href='admin.html'" title="Volver">
+        <div class="nav-item" id="btn-nav-return" title="Volver">
             <i class="fas fa-chevron-left"></i>
         </div>
     </div>
@@ -306,5 +326,164 @@
     <script src="js/inversiones.js"></script>
     <script type="text/javascript" src="js/turn.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+
+    <script>
+        let currentUser = null;
+
+        $(document).ready(async function() {
+            await checkSession();
+            initTheme();
+
+            $('#btn-login').click(function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+
+            $(document).on('click', '#avatar-btn', function(e) {
+                e.stopPropagation();
+                $('#user-dropdown').toggleClass('active');
+            });
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.user-menu-container').length) {
+                    $('#user-dropdown').removeClass('active');
+                }
+            });
+
+            $(document).on('click', '.theme-btn, .theme-btn-small', function() {
+                const theme = $(this).data('theme');
+                applyTheme(theme);
+            });
+
+            $(document).on('click', '#btn-back-to-main-from-investments, #menu-btn-home', function(e) {
+                e.preventDefault();
+                window.location.href = 'admin.html';
+            });
+
+            $(document).on('click', '#btn-nav-home', function() {
+                window.location.href = 'admin.html';
+            });
+            $(document).on('click', '#btn-nav-return', function() {
+                if ($('#view-investment-details').is(':visible')) {
+                    showView('investments');
+                } else {
+                    window.location.href = 'admin.html';
+                }
+            });
+
+            $(document).on('click', '#menu-btn-logout', function(e) {
+                e.preventDefault();
+                handleLogout();
+            });
+        });
+
+        async function checkSession() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                const { data: user } = await _supabase
+                    .from('usuarios')
+                    .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, auction_reset_date, monthly_created_count, monthly_bid_count')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (user) {
+                    currentUser = user;
+                    localStorage.setItem('tcg_session', JSON.stringify(user));
+                    showAuthenticatedContent();
+                } else {
+                    showLoginView();
+                }
+            } else {
+                showLoginView();
+            }
+        }
+
+        async function handleLogin() {
+            const userInput = $('#login-username').val().trim();
+            const password = $('#login-password').val().trim();
+
+            if (!userInput || !password) {
+                Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
+                return;
+            }
+
+            let emailToUse = userInput;
+            if (!userInput.includes('@')) {
+                const { data: userRow } = await _supabase
+                    .from('usuarios')
+                    .select('email')
+                    .eq('username', userInput)
+                    .maybeSingle();
+
+                if (userRow && userRow.email) {
+                    emailToUse = userRow.email;
+                } else {
+                    emailToUse = `${userInput}@tcgdual.com`;
+                }
+            }
+
+            const { data, error } = await _supabase.auth.signInWithPassword({
+                email: emailToUse,
+                password: password,
+            });
+
+            if (error) {
+                Swal.fire('Error', 'Error al iniciar sesión: ' + error.message, 'error');
+            } else {
+                location.reload();
+            }
+        }
+
+        async function handleLogout() {
+            await _supabase.auth.signOut();
+            currentUser = null;
+            localStorage.removeItem('tcg_session');
+            location.reload();
+        }
+
+        function showLoginView() {
+            $('body').removeClass('public-body');
+            $('#login-modal').addClass('active');
+            $('#authenticated-content').hide();
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+            applyTheme(savedTheme);
+        }
+
+        function applyTheme(theme) {
+            $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+            localStorage.setItem('tcg_theme', theme);
+            $('.theme-btn, .theme-btn-small').removeClass('active');
+            $(`.theme-btn[data-theme="${theme}"], .theme-btn-small[data-theme="${theme}"]`).addClass('active');
+        }
+
+        async function showAuthenticatedContent() {
+            $('body').addClass('public-body');
+            initTheme();
+            $('#login-modal').removeClass('active');
+            $('#authenticated-content').show();
+            $('#top-panel').show();
+
+            if (currentUser.is_store) {
+                $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || 'https://midominio.com/placeholder-logo.png');
+                $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
+            } else {
+                $('#dropdown-user-logo').hide();
+                $('#dropdown-user-name').text(currentUser.username);
+            }
+
+            showView('investments');
+            if (typeof loadInvestmentCategories === 'function') {
+                loadInvestmentCategories();
+            }
+        }
+
+        function showView(view) {
+            $('.admin-section').hide().removeClass('active');
+            $(`#view-${view}`).show().addClass('active');
+        }
+    </script>
 </body>
 </html>
