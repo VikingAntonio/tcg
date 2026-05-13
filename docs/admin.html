@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/animacionesdeseos.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
     <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/inversiones.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"/>
     <style>
         /* Mini Switch for Cards */
@@ -186,7 +187,7 @@
                     <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
                     <a href="#" class="menu-item" id="menu-btn-wishlist"><i class="fas fa-heart"></i> Wishlist</a>
                     <a href="eventos.html" class="menu-item" id="menu-btn-eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
-                    <a href="inversiones.html" class="menu-item" id="menu-btn-investments"><i class="fas fa-chart-line"></i> Mis Inversiones</a>
+                    <a href="#" class="menu-item" id="menu-btn-investments"><i class="fas fa-chart-line"></i> Mis Inversiones</a>
 
                     <!-- Mobile Theme Switcher (Injected here via CSS/JS later) -->
                     <div class="theme-menu-container-mobile" style="display: none;">
@@ -309,7 +310,7 @@
                     <i class="fas fa-robot"></i>
                     <span>Chatbot</span>
                 </a>
-                <a href="inversiones.html" class="tile tile-green" id="btn-show-investments">
+                <a href="#" class="tile tile-green" id="btn-show-investments">
                     <i class="fas fa-chart-line"></i>
                     <span>Inversiones</span>
                 </a>
@@ -1055,6 +1056,77 @@
             </div>
         </div>
 
+        <!-- Inversiones View (Categories) -->
+        <div id="view-investments" class="admin-section" style="display:none;">
+            <div class="admin-header" style="background: #000; padding: 60px 20px; color: #fff; border-radius: 4px; margin-bottom: 40px; border: 1px solid #111;">
+                <button id="btn-back-to-main-from-investments" class="btn-inv-outline" style="color: #fff; border-color: rgba(255,255,255,0.3); margin-bottom: 30px; text-decoration: none; display: inline-block; background: transparent;"><i class="fas fa-chevron-left"></i> Volver al Panel</button>
+                <div style="font-size: 0.7rem; letter-spacing: 0.4em; font-weight: 800; color: rgba(255,255,255,0.5); margin-bottom: 15px; text-transform: uppercase;">Portfolio Management</div>
+                <h1 style="font-size: 3rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: 10px; text-transform: uppercase; color: #fff;">Asset Vault</h1>
+                <p style="color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto 30px; font-weight: 500;">Monitor physical TCG assets with professional market analytics and manual valuation tracking.</p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="btn-create-investment-category" class="btn-inv-main" style="background: #fff; color: #000; border-color: #fff;"><i class="fas fa-plus"></i> Create Vault</button>
+                </div>
+            </div>
+            <div id="investment-category-list" class="album-list">
+                <!-- Categories will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Investment Details View (Cards within Category) -->
+        <div id="view-investment-details" class="admin-section" style="display:none;">
+            <!-- Mobile Side Panel Controls -->
+            <div id="inv-side-panel-overlay" class="inv-side-panel-overlay"></div>
+            <div id="inv-side-panel-tab" class="inv-side-panel-tab">
+                <span>ALL MODES</span>
+            </div>
+            <div id="inv-mobile-side-panel" class="inv-side-panel">
+                <div class="inv-side-panel-content">
+                    <button id="btn-back-to-investments-mobile" class="btn-inv-outline" style="width: 100%; margin-bottom: 25px;"><i class="fas fa-chevron-left"></i> All Vaults</button>
+
+                    <div style="margin-bottom: 30px;">
+                        <div style="font-size: 0.6rem; letter-spacing: 0.3em; font-weight: 800; color: #999; margin-bottom: 5px; text-transform: uppercase;">Active Portfolio</div>
+                        <h2 id="inv-category-title-mobile" style="font-size: 1.5rem; font-weight: 900; letter-spacing: -0.03em; color: #000; margin: 0; text-transform: uppercase;">Vault</h2>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div style="font-size: 0.7rem; font-weight: 800; color: #000; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #eee; padding-bottom: 10px;">Select Mode</div>
+                        <div class="inv-mode-selector-mobile" style="display: flex; flex-direction: column; gap: 10px;">
+                            <button class="btn-inv-mode active" data-mode="album" style="width: 100%; text-align: left; padding: 12px 15px; border: 1px solid #eee; background: #fff; font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">binders</button>
+                            <button class="btn-inv-mode" data-mode="slide" style="width: 100%; text-align: left; padding: 12px 15px; border: 1px solid #eee; background: #fff; font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">vikingSlide</button>
+                            <button class="btn-inv-mode" data-mode="list" style="width: 100%; text-align: left; padding: 12px 15px; border: 1px solid #eee; background: #fff; font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">lista</button>
+                        </div>
+
+                        <div style="height: 1px; background: #eee; margin: 10px 0;"></div>
+
+                        <button id="btn-add-investment-card-mobile" class="btn-inv-main" style="width: 100%;"><i class="fas fa-plus"></i> ADD ASSET</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-header inv-pc-header" style="text-align: left; background: #fff; padding: 40px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 40px;">
+                <button id="btn-back-to-investments" class="btn-inv-outline" style="margin-bottom: 30px;"><i class="fas fa-chevron-left"></i> All Vaults</button>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.6rem; letter-spacing: 0.3em; font-weight: 800; color: #999; margin-bottom: 5px; text-transform: uppercase;">Active Portfolio</div>
+                        <h1 id="inv-category-title" style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.03em; color: #000; margin: 0; text-transform: uppercase;">Vault</h1>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <div class="inv-mode-selector" style="background: #f8f9fa; padding: 5px; border-radius: 4px; display: flex; gap: 5px;">
+                            <button class="btn-inv-mode active" data-mode="album" style="border: none; background: #000; color: #fff; border-radius: 2px; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">binders</button>
+                            <button class="btn-inv-mode" data-mode="slide" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">vikingSlide</button>
+                            <button class="btn-inv-mode" data-mode="list" style="border: none; background: transparent; color: #666; padding: 8px 15px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer;">lista</button>
+                        </div>
+                        <button id="btn-add-investment-card" class="btn-inv-main"><i class="fas fa-plus"></i> ADD ASSET</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="investment-card-container" class="investment-render-area">
+                <!-- Cards will be rendered here based on mode -->
+            </div>
+        </div>
+
     </div>
 
 
@@ -1566,6 +1638,159 @@
     </div>
 
 
+    <!-- Investment Asset Manager Modal -->
+    <div id="investment-card-modal" class="overlay">
+        <div class="overlay-content inv-detail-modal-content">
+            <div class="inv-modal-header">
+                <div style="display: flex; flex-direction: column;">
+                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; font-weight: 800; text-transform: uppercase;">Asset Portfolio Management</div>
+                    <h2 id="inv-card-modal-title" style="margin: 0; line-height: 1.1;">ASSET MANAGER</h2>
+                </div>
+                <span id="close-investment-card-modal" class="inv-close-btn">&times;</span>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="inv-modal-tabs">
+                <div class="inv-tab-link active" data-tab="inv-tab-resumen">RESUMEN</div>
+                <div class="inv-tab-link" data-tab="inv-tab-datos">DATOS</div>
+                <div class="inv-tab-link" data-tab="inv-tab-images">IMAGES</div>
+                <div class="inv-tab-link" data-tab="inv-tab-movimientos">MOVIMIENTOS</div>
+            </div>
+
+            <div class="inv-modal-body" style="padding: 0;">
+                <!-- Tab: Resumen (Merged from Detail Modal) -->
+                <div id="inv-tab-resumen" class="slot-tab-content active">
+                    <div class="inv-detail-container">
+                        <div class="inv-detail-image-side">
+                            <div id="inv-card-3d-container" class="card-3d-container inv-detail-image-wrapper">
+                                <div id="inv-card-3d" class="card-3d">
+                                    <div id="inv-z-text-container">
+                                        <img id="inv-detail-image" src="" alt="Card Image" class="card__front">
+                                    </div>
+                                    <div class="holo-layer"></div>
+                                    <div class="card__shine"></div>
+                                    <div class="card__glare"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="inv-detail-info-side">
+                            <div class="inv-detail-data-section">
+                                <h2 id="inv-detail-name" style="margin: 0 0 5px 0; font-size: 1.5rem; font-weight: 900; text-transform: uppercase; color: #000;">CARD NAME</h2>
+                                <div id="inv-detail-set" class="inv-detail-set">EXPANSION NAME - RARITY</div>
+                                <div class="inv-detail-price-row">
+                                    <span id="inv-detail-price" class="inv-detail-price"></span>
+                                    <span id="inv-detail-trend"></span>
+                                </div>
+                                <div style="font-size: 0.6rem; color: #666; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Current Market Valuation</div>
+                            </div>
+
+                            <div class="inv-detail-chart-area">
+                                <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 5px;">Performance History</div>
+                                <div class="inv-detail-chart-container">
+                                    <canvas id="inv-detail-chart"></canvas>
+                                </div>
+                            </div>
+
+                            <div id="inv-detail-history-list" class="inv-detail-history-list">
+                                <!-- History list -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Datos (Edit Mode) -->
+                <div id="inv-tab-datos" class="slot-tab-content" style="padding: 40px;">
+                    <div class="inv-search-container" id="inv-card-search-container">
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-search"></i> BUSCAR</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="inv-card-search-input" class="inv-search-input" placeholder="Nombre de la carta...">
+                                <button id="btn-inv-card-search" class="btn-inv-main" style="padding: 10px 20px;"><i class="fas fa-search"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="inv-card-search-results">
+                        <!-- Results -->
+                    </div>
+
+                    <div style="height: 30px;"></div>
+
+                    <div class="inv-form-row">
+                        <div class="inv-form-group" style="grid-column: span 2;">
+                            <label>Nombre de la Carta</label>
+                            <input type="text" id="inv-card-name" readonly>
+                        </div>
+                    </div>
+                    <div class="inv-form-row">
+                        <div class="inv-form-group">
+                            <label>Rareza</label>
+                            <input type="text" id="inv-card-rarity-input">
+                        </div>
+                        <div class="inv-form-group">
+                            <label>Cantidad</label>
+                            <input type="number" id="inv-card-quantity" value="1">
+                        </div>
+                    </div>
+                    <div class="inv-form-row">
+                        <div class="inv-form-group">
+                            <label>Precio de Compra ($)</label>
+                            <input type="number" id="inv-card-purchase-price" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="inv-form-group">
+                            <label>Precio Mercado ($)</label>
+                            <input type="number" id="inv-card-current-price" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Images -->
+                <div id="inv-tab-images" class="slot-tab-content" style="padding: 40px;">
+                    <div class="inv-form-group" style="margin-bottom: 30px;">
+                        <label>Notas</label>
+                        <textarea id="inv-card-notes" placeholder="Escribe aquí notas adicionales..." style="height: 120px;"></textarea>
+                    </div>
+                    <div class="inv-form-group">
+                        <label>Imágenes Adicionales (Drag & Drop)</label>
+                        <div class="inv-bg-light" id="drop-zone-inv-extra" style="border: 2px dashed var(--inv-gray-300); min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; transition: var(--inv-transition);">
+                            <i class="fas fa-images fa-3x" style="color: var(--inv-gray-300); margin-bottom: 15px;"></i>
+                            <p style="font-size: 0.8rem; font-weight: 600; color: var(--inv-gray-700);">Haz clic o arrastra imágenes aquí</p>
+                            <input type="file" id="input-inv-extra-files" accept="image/*" multiple style="display: none;">
+                        </div>
+                        <div id="inv-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px; margin-top: 20px;">
+                            <!-- Extra images preview -->
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Tab: History / Movements -->
+                <div id="inv-tab-movimientos" class="slot-tab-content" style="padding: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #000;">Market Performance</div>
+                        <button id="btn-inv-add-price" class="btn-inv-main" style="padding: 5px 12px; font-size: 0.7rem;"><i class="fas fa-plus"></i> ADD PRICE</button>
+                    </div>
+                    <div class="inv-chart-container">
+                        <canvas id="inv-price-chart"></canvas>
+                    </div>
+                    <div id="inv-history-list" class="inv-detail-history-list" style="max-height: 250px;">
+                        <!-- Historical list -->
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" id="inv-card-external-id">
+            <input type="hidden" id="inv-card-image-url">
+            <input type="hidden" id="inv-card-set-name">
+            <input type="hidden" id="inv-card-set-number">
+            <input type="hidden" id="inv-card-rarity">
+            <input type="hidden" id="inv-card-game">
+
+            <div class="inv-modal-footer">
+                <button id="btn-save-investment-card" class="btn-inv-main" style="width: 100%; height: 50px;">GUARDAR CAMBIOS</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Organize Modal -->
     <div id="organize-modal" class="overlay">
         <div class="overlay-content" style="max-width: 600px;">
@@ -1596,6 +1821,7 @@
     <script src="js/ztext.js"></script>
     <script src="js/utils.js" id="utils-js"></script>
     <script src="js/admin.js"></script>
+    <script src="js/inversiones.js"></script>
     <script src="js/admin_deseos.js"></script>
     <script src="js/subastas_v2.js"></script>
     <script type="text/javascript" src="js/turn.js"></script>
