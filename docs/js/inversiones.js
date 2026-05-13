@@ -879,9 +879,20 @@ async function deleteInvestmentCard(id) {
 }
 
 function updateSummaryTab(card) {
+    // 1. Force stop and cleanup any existing 3D loops to prevent rapid movement/flickering
+    if (window.sharedCard3D) window.sharedCard3D.stop();
+
     $('#inv-card-modal-title').text('ASSET DETAILS');
     $('#inv-detail-name').text(card.card_name.toUpperCase());
-    $('#inv-detail-image').attr('src', card.image_url);
+
+    // Strict cleanup of the Z-Text container to prevent layer duplication and flickering
+    // We revert to a simple image to ensure fluidity as requested, avoiding heavy 3D re-init
+    const $zContainer = $('#inv-z-text-container');
+    $zContainer.empty().append(`<img id="inv-detail-image" src="${card.image_url}" alt="Card Image" style="width:100%; border-radius:8px; border: 3px solid #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">`);
+
+    // Reset card wrapper state and styles to prevent LERP fighting
+    $('#inv-card-3d').removeClass().addClass('card-3d').attr('style', 'transform: none !important;');
+    $('.holo-layer').removeClass('active foil-loop').hide();
 
     const setInfo = (card.set_name || 'UNKNOWN EXPANSION').toUpperCase();
     const rarityInfo = (card.rarity || 'UNKNOWN RARITY').toUpperCase();
@@ -892,9 +903,10 @@ function updateSummaryTab(card) {
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
 
-
-    // Load History Chart for summary
-    renderPriceHistoryChart(card.id, true);
+    // 2. Load History Chart - wrapped in timeout to ensure modal layout is stable
+    setTimeout(() => {
+        renderPriceHistoryChart(card.id, true);
+    }, 100);
 }
 
 async function saveNewPrice(cardId, newPrice) {
@@ -939,6 +951,14 @@ async function saveNewPrice(cardId, newPrice) {
 }
 
 async function renderPriceHistoryChart(cardId, isDetail = false) {
+    // 1. Prevent overlapping renders and ensure DOM is ready
+    const canvasId = isDetail ? 'inv-detail-chart' : 'inv-price-chart';
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    // Check if modal is visible to avoid rendering on zero-sized canvas which causes Chart.js glitches
+    if (isDetail && !$('#investment-card-modal').hasClass('active')) return;
+
     const { data: history, error } = await _supabase
         .from('investment_price_history')
         .select('*')
@@ -947,15 +967,18 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
 
     if (error || !history) return;
 
-    const canvasId = isDetail ? 'inv-detail-chart' : 'inv-price-chart';
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
     if (isDetail) {
-        if (invDetailChart) invDetailChart.destroy();
+        if (invDetailChart) {
+            invDetailChart.destroy();
+            invDetailChart = null;
+        }
     } else {
-        if (invPriceChart) invPriceChart.destroy();
+        if (invPriceChart) {
+            invPriceChart.destroy();
+            invPriceChart = null;
+        }
     }
 
     const chart = new Chart(ctx, {
