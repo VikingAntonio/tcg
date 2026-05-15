@@ -1215,6 +1215,67 @@ async function switchView(view) {
         $('.bottom-nav').css('display', 'flex'); // Show on other views
     }
 
+    // --- Build Mode Check ---
+    const buildViews = ['albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+    if (buildViews.includes(view) && window.currentStoreId) {
+        try {
+            const { data: assignment } = await _supabase
+                .from('build_assignments')
+                .select('*, build_assets(*)')
+                .eq('user_id', window.currentStoreId)
+                .eq('view_name', view)
+                .eq('target', 'public')
+                .eq('is_active', true)
+                .maybeSingle();
+
+            if (assignment && assignment.build_assets) {
+                const asset = assignment.build_assets;
+                const $view = $(`#${view}-view`);
+
+                // Backup original content if not already backed up
+                if (!$view.data('original-html')) {
+                    $view.data('original-html', $view.html());
+                }
+
+                $view.html(`
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 20px; text-align: center; min-height: 80vh;">
+                        <model-viewer
+                            src="${asset.gltf_url}"
+                            poster="${asset.poster_url || ''}"
+                            loading="lazy"
+                            camera-controls
+                            auto-rotate
+                            shadow-intensity="1"
+                            environment-image="neutral"
+                            exposure="1.2"
+                            style="width: 100%; height: 500px; max-width: 800px; background: rgba(0,0,0,0.05); border-radius: 20px; margin-bottom: 30px;">
+                        </model-viewer>
+                        <h2 style="color: var(--primary-color); font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">Próximamente</h2>
+                        <p style="color: #888; max-width: 500px; font-size: 1.1rem;">Esta sección se encuentra actualmente en mantenimiento o construcción. ¡Vuelve pronto!</p>
+                        <button class="btn" style="margin-top: 30px; padding: 12px 30px; border-radius: 50px;" onclick="switchView('home')">Volver al Inicio</button>
+                    </div>
+                `);
+
+                // Track state
+                const url = new URL(window.location);
+                url.searchParams.set('view', view);
+                window.history.pushState({}, '', url);
+                if (window.botInstance) window.botInstance.setContext(view);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return; // Stop further loading of this view
+            } else {
+                // Restore original if build assignment is gone/inactive
+                const original = $view.data('original-html');
+                if (original) {
+                    $view.html(original);
+                    $view.data('original-html', null);
+                }
+            }
+        } catch (e) {
+            console.error("Error checking build mode:", e);
+        }
+    }
+
     if (view === 'albums') {
         showLoading('Cargando Álbumes...');
         if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);

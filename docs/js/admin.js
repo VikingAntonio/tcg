@@ -2284,12 +2284,77 @@ async function updateAlbumOrder(ids) {
     }
 }
 
-function showView(view) {
+async function showView(view) {
     $('.admin-section').hide().removeClass('active');
     $(`#view-${view}`).show().addClass('active');
 
     if (window.botInstance) {
         window.botInstance.setContext(view);
+    }
+
+    // --- Build Mode Check ---
+    const buildViews = ['albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+    if (buildViews.includes(view)) {
+        try {
+            const { data: assignment } = await _supabase
+                .from('build_assignments')
+                .select('*, build_assets(*)')
+                .eq('user_id', currentUser.id)
+                .eq('view_name', view)
+                .eq('target', 'admin')
+                .eq('is_active', true)
+                .maybeSingle();
+
+            if (assignment && assignment.build_assets) {
+                const asset = assignment.build_assets;
+                const $view = $(`#view-${view}`);
+
+                // Backup original content if not already backed up
+                if (!$view.data('original-html')) {
+                    $view.data('original-html', $view.html());
+                }
+
+                let $buildOverlay = $view.find('.build-mode-overlay');
+                if (!$buildOverlay.length) {
+                    $buildOverlay = $(`
+                        <div class="build-mode-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto; padding: 20px;">
+                            <div class="admin-header">
+                                <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
+                                <h1>${view.toUpperCase()} - MODO CONSTRUCCIÓN</h1>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px 20px; text-align: center;">
+                                <model-viewer
+                                    src="${asset.gltf_url}"
+                                    poster="${asset.poster_url || ''}"
+                                    loading="lazy"
+                                    camera-controls
+                                    auto-rotate
+                                    shadow-intensity="1"
+                                    environment-image="neutral"
+                                    exposure="1.2"
+                                    style="width: 100%; height: 500px; max-width: 800px; background: rgba(0,0,0,0.1); border-radius: 20px; margin-bottom: 30px;">
+                                </model-viewer>
+                                <h2 style="color: var(--primary-color); font-weight: 900; letter-spacing: 2px;">ESTA SECCIÓN ESTÁ EN CONSTRUCCIÓN</h2>
+                                <p style="color: #888; max-width: 500px;">Estamos preparando algo increíble. Vuelve pronto para descubrir las novedades de esta sección.</p>
+                            </div>
+                        </div>
+                    `);
+                    $view.append($buildOverlay);
+                    $view.css('position', 'relative');
+
+                    $buildOverlay.find('.btn-back-main').click((e) => {
+                        e.stopPropagation();
+                        showView('main-dashboard');
+                    });
+                }
+                $buildOverlay.show();
+            }
+        } catch (e) {
+            console.error("Error checking build mode:", e);
+        }
+    } else if (view === 'main-dashboard') {
+        // Hide all build overlays when returning to dashboard
+        $('.build-mode-overlay').hide();
     }
 }
 
