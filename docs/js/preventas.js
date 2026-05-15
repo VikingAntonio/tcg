@@ -1,7 +1,12 @@
 let currentUser = null;
 
 $(document).ready(async function() {
-    await checkSession();
+    console.log("Initializing Preorders Module...");
+    try {
+        await checkSession();
+    } catch (err) {
+        console.error("Critical initialization error:", err);
+    }
 
     // --- Navigation & UI ---
     $('#btn-open-add-modal').click(function() {
@@ -31,8 +36,8 @@ $(document).ready(async function() {
     });
 
     function switchTab(tabId) {
-        $('.modal-tab-btn').removeClass('active').css('border-bottom-color', 'transparent');
-        $(`.modal-tab-btn[data-tab="${tabId}"]`).addClass('active').css('border-bottom-color', '#00d2ff');
+        $('.modal-tab-btn').removeClass('active');
+        $(`.modal-tab-btn[data-tab="${tabId}"]`).addClass('active');
         $('.tab-content').hide();
         $(`#${tabId}`).show();
     }
@@ -103,23 +108,41 @@ $(document).ready(async function() {
 });
 
 async function checkSession() {
-    const { data: { session } } = await _supabase.auth.getSession();
+    console.log("Checking session...");
+    const { data: { session }, error: sessionError } = await _supabase.auth.getSession();
+
+    if (sessionError) {
+        console.error("Session error:", sessionError);
+        window.location.href = 'admin.html';
+        return;
+    }
+
     if (session) {
-        const { data: user } = await _supabase
+        console.log("Session found for user:", session.user.id);
+        const { data: user, error: userError } = await _supabase
             .from('usuarios')
             .select('id, username, max_preorders')
             .eq('id', session.user.id)
             .single();
 
+        if (userError) {
+            console.error("User fetch error:", userError);
+            window.location.href = 'admin.html';
+            return;
+        }
+
         if (user) {
             currentUser = user;
             $('#dropdown-user-name').text(user.username);
+            console.log("Auth success. Showing content for", user.username);
             $('#top-panel, #authenticated-content').show();
             loadPreorders();
         } else {
+            console.warn("User data not found in table.");
             window.location.href = 'admin.html';
         }
     } else {
+        console.log("No active session. Redirecting...");
         window.location.href = 'admin.html';
     }
 }
@@ -130,70 +153,73 @@ async function handleLogout() {
 }
 
 async function loadPreorders() {
-    $('#preorder-list').html('<div class="loading">Cargando preventas...</div>');
+    $('#preorder-list').html('<div class="loading" style="grid-column: 1/-1; padding: 100px; text-align: center;"><i class="fas fa-circle-notch fa-spin"></i> Cargando preventas...</div>');
 
-    const { data: preorders, error } = await _supabase
-        .from('preorders')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
+    try {
+        const { data: preorders, error } = await _supabase
+            .from('preorders')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
 
-    if (error) {
-        $('#preorder-list').html('<div class="error">Error al cargar preventas.</div>');
-        console.error(error);
-        return;
-    }
+        if (error) throw error;
 
-    if (!preorders || preorders.length === 0) {
-        $('#preorder-list').html('<div class="empty">No tienes preventas registradas.</div>');
-        return;
-    }
+        if (!preorders || preorders.length === 0) {
+            $('#preorder-list').html('<div class="empty" style="grid-column: 1/-1; padding: 100px; text-align: center; color: #666;">No tienes preventas registradas.</div>');
+            return;
+        }
 
-    const $container = $('#preorder-list');
-    $container.empty();
+        const $container = $('#preorder-list');
+        $container.empty();
 
-    preorders.forEach(preorder => {
-        const isPublic = preorder.is_public !== false;
-        const $card = $(`
-            <div class="album-card" style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s ease;">
-                <div style="width: 100%; height: 180px; background: rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                    <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                </div>
-                <div style="flex: 1;">
-                    <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: #fff; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${preorder.name}</h3>
-                    <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="color: #00d2ff; font-weight: 900; font-size: 1.1rem;">${preorder.price || 'Consultar'}</div>
-                        <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: 700; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px;">${preorder.tcg}</div>
+        preorders.forEach(preorder => {
+            const isPublic = preorder.is_public !== false;
+            const $card = $(`
+                <div class="premium-card">
+                    <div class="premium-card-image">
+                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}">
                     </div>
-                    <div style="font-size: 0.8rem; color: #ff4757; font-weight: 700; margin-top: 5px;"><i class="fas fa-clock"></i> Límite: ${preorder.payment_deadline || '-'}</div>
-                </div>
-
-                <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label class="switch" style="transform: scale(0.8);">
-                            <input type="checkbox" class="toggle-public" data-id="${preorder.id}" ${isPublic ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                        <span style="font-size: 10px; color: #aaa; font-weight: 600;">${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${preorder.name}</h3>
+                        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="color: #00d2ff; font-weight: 900; font-size: 1.2rem;">${preorder.price || 'Consultar'}</div>
+                            <div style="font-size: 0.7rem; color: #aaa; text-transform: uppercase; font-weight: 800; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">${preorder.tcg}</div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #ff4757; font-weight: 800; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-clock"></i> Límite: ${preorder.payment_deadline || 'No definido'}
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 8px;">
-                         <button class="btn btn-secondary btn-share" style="padding: 8px 12px;"><i class="fas fa-share-alt"></i></button>
-                         <button class="btn btn-edit" style="padding: 8px 12px;"><i class="fas fa-pen"></i></button>
-                         <button class="btn btn-danger btn-delete" style="padding: 8px 12px;"><i class="fas fa-trash"></i></button>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 5px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label class="switch" style="transform: scale(0.75);">
+                                <input type="checkbox" class="toggle-public" data-id="${preorder.id}" ${isPublic ? 'checked' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                            <span style="font-size: 9px; color: #666; font-weight: 800; letter-spacing: 0.5px;">${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                             <button class="btn btn-secondary btn-share" style="padding: 8px 12px; border-radius: 10px;"><i class="fas fa-share-alt"></i></button>
+                             <button class="btn btn-edit" style="padding: 8px 12px; border-radius: 10px; background: rgba(0,210,255,0.1); color: #00d2ff; border: 1px solid rgba(0,210,255,0.2);"><i class="fas fa-pen"></i></button>
+                             <button class="btn btn-danger btn-delete" style="padding: 8px 12px; border-radius: 10px;"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `);
+            `);
 
-        $card.find('.btn-edit').click(() => editPreorder(preorder));
-        $card.find('.btn-share').click(() => openShareModal(preorder.name, 'preorders', preorder.id));
-        $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
-        $card.find('.toggle-public').change(function() {
-            updateVisibility(preorder.id, $(this).is(':checked'));
+            $card.find('.btn-edit').click(() => editPreorder(preorder));
+            $card.find('.btn-share').click(() => openShareModal(preorder.name, 'preorders', preorder.id));
+            $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
+            $card.find('.toggle-public').change(function() {
+                updateVisibility(preorder.id, $(this).is(':checked'));
+            });
+
+            $container.append($card);
         });
-
-        $container.append($card);
-    });
+    } catch (err) {
+        console.error("Load preorders error:", err);
+        $('#preorder-list').html('<div class="error" style="grid-column: 1/-1; padding: 100px; text-align: center; color: #ff4757;">Error al cargar preventas. Por favor, refresca la página.</div>');
+    }
 }
 
 let ygoSetsCache = null;
@@ -217,7 +243,7 @@ async function searchExternalSets() {
         return;
     }
 
-    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #666;"><i class="fas fa-spinner fa-spin"></i> Buscando en todas las bases de datos...</div>');
+    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #888;"><i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>Buscando en bases de datos mundiales...</div>');
 
     try {
         const searchPromises = [
@@ -233,7 +259,7 @@ async function searchExternalSets() {
             fetch(`https://api.lorcana-api.com/sets/fetch?search=name~${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []),
             // Lorcana Cards
             fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image`).then(r => r.json()).catch(() => []),
-            // Viking Search
+            // Viking Search (internal)
             (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([]))
         ];
 
@@ -243,7 +269,12 @@ async function searchExternalSets() {
 
         // Process Viking
         if (Array.isArray(vikResults)) {
-            combinedResults.push(...vikResults.map(i => ({ ...i, tcg: i.tcg || 'custom' })));
+            combinedResults.push(...vikResults.map(i => ({
+                name: i.name,
+                image: i.image,
+                tcg: i.tcg || 'custom',
+                source: 'VikingData'
+            })));
         }
 
         // Process YGO Sets
@@ -252,18 +283,20 @@ async function searchExternalSets() {
                 combinedResults.push({
                     name: s.set_name,
                     image: `https://images.ygoprodeck.com/images/sets/${s.set_code}.jpg`,
-                    tcg: 'yugioh'
+                    tcg: 'yugioh',
+                    source: 'YGOSet'
                 });
             });
         }
 
         // Process YGO Cards
-        if (ygoCards.data) {
+        if (ygoCards && ygoCards.data) {
             ygoCards.data.forEach(c => {
                 combinedResults.push({
                     name: c.name,
                     image: c.card_images[0].image_url_small,
-                    tcg: 'yugioh'
+                    tcg: 'yugioh',
+                    source: 'YGOCard'
                 });
             });
         }
@@ -274,7 +307,8 @@ async function searchExternalSets() {
                 combinedResults.push({
                     name: s.name,
                     image: `${s.logo}.png`,
-                    tcg: 'pokemon'
+                    tcg: 'pokemon',
+                    source: 'PKMSet'
                 });
             });
         }
@@ -285,7 +319,8 @@ async function searchExternalSets() {
                 combinedResults.push({
                     name: c.name,
                     image: `${c.image}/low.webp`,
-                    tcg: 'pokemon'
+                    tcg: 'pokemon',
+                    source: 'PKMCard'
                 });
             });
         }
@@ -296,7 +331,8 @@ async function searchExternalSets() {
                 combinedResults.push({
                     name: s.Name,
                     image: 'https://lorcana-api.com/img/logo.svg',
-                    tcg: 'lorcana'
+                    tcg: 'lorcana',
+                    source: 'LorSet'
                 });
             });
         }
@@ -307,7 +343,8 @@ async function searchExternalSets() {
                 combinedResults.push({
                     name: c.Name,
                     image: c.Image,
-                    tcg: 'lorcana'
+                    tcg: 'lorcana',
+                    source: 'LorCard'
                 });
             });
         }
@@ -322,7 +359,7 @@ async function searchExternalSets() {
             { name: 'Wings of the Captain (OP-06)', image: 'https://m.media-amazon.com/images/I/71Z8I6qG5OL._AC_SL1500_.jpg', tcg: 'onepiece' },
             { name: '500 Years in the Future (OP-07)', image: 'https://m.media-amazon.com/images/I/71H-Z-W-GOL._AC_SL1500_.jpg', tcg: 'onepiece' }
         ];
-        opSets.filter(s => s.name.toLowerCase().includes(query)).forEach(s => combinedResults.push(s));
+        opSets.filter(s => s.name.toLowerCase().includes(query)).forEach(s => combinedResults.push({...s, source: 'OPStatic'}));
 
         // Deduplicate
         const unique = [];
@@ -337,8 +374,8 @@ async function searchExternalSets() {
 
         displayExternalResults(unique);
     } catch (e) {
-        console.error(e);
-        $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
+        console.error("Search error:", e);
+        $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ff4757;">Error al buscar. Inténtalo de nuevo o revisa tu conexión.</div>');
     }
 }
 
@@ -347,25 +384,20 @@ function displayExternalResults(results) {
     $container.empty();
 
     if (results.length === 0) {
-        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #666;">No se encontraron resultados.</div>');
+        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #666;">No se encontraron resultados oficiales.</div>');
         return;
     }
 
     results.forEach(item => {
         const $item = $(`
-            <div class="external-card-result" title="${item.name}" style="cursor: pointer; transition: transform 0.2s; padding: 8px; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; text-align: center; background: rgba(0,0,0,0.2);">
-                <div style="width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
-                    <img src="${item.image}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x80?text=Set'">
+            <div class="external-card-result" title="${item.name}">
+                <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <img src="${item.image}" style="max-width: 90%; max-height: 90%; object-fit: contain;" onerror="this.src='https://via.placeholder.com/100x80?text=Set'">
                 </div>
-                <div style="font-size: 10px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
-                <div style="font-size: 8px; color: #666; text-transform: uppercase; margin-top: 4px;">${item.tcg}</div>
+                <div style="font-size: 10px; font-weight: 800; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
+                <div style="font-size: 8px; color: #00d2ff; text-transform: uppercase; font-weight: 700; margin-top: 5px;">${item.tcg}</div>
             </div>
         `);
-
-        $item.hover(
-            function() { $(this).css({'transform': 'scale(1.05)', 'border-color': '#00d2ff', 'background': 'rgba(0, 210, 255, 0.05)'}); },
-            function() { $(this).css({'transform': 'scale(1)', 'border-color': 'rgba(255,255,255,0.05)', 'background': 'rgba(0,0,0,0.2)'}); }
-        );
 
         $item.click(() => {
             $('#preorder-name').val(item.name);
@@ -376,7 +408,7 @@ function displayExternalResults(results) {
             $('.modal-tab-btn[data-tab="tab-data"]').click();
 
             Swal.fire({
-                title: 'Producto Seleccionado',
+                title: 'Seleccionado',
                 text: item.name,
                 icon: 'success',
                 timer: 1000,
@@ -395,23 +427,25 @@ async function savePreorder() {
 
     // Limit check for new preorders
     if (!id) {
-        const { count, error: countError } = await _supabase
-            .from('preorders')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', currentUser.id);
+        try {
+            const { count, error: countError } = await _supabase
+                .from('preorders')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', currentUser.id);
 
-        if (!countError) {
-            const limit = currentUser.max_preorders || 1;
-            if (count >= limit) {
-                Swal.fire({
-                    title: 'Límite alcanzado',
-                    text: `Has alcanzado el límite de ${limit} preventas.`,
-                    icon: 'warning',
-                    footer: '<a href="admin.html">Sube a Premium para aumentar tu límite</a>'
-                });
-                return;
+            if (!countError) {
+                const limit = currentUser.max_preorders || 1;
+                if (count >= limit) {
+                    Swal.fire({
+                        title: 'Límite alcanzado',
+                        text: `Has alcanzado el límite de ${limit} preventas.`,
+                        icon: 'warning',
+                        footer: '<a href="admin.html">Sube a Premium para aumentar tu límite</a>'
+                    });
+                    return;
+                }
             }
-        }
+        } catch (e) { console.error("Limit check fail:", e); }
     }
 
     const name = $('#preorder-name').val().trim();
@@ -439,33 +473,37 @@ async function savePreorder() {
     Swal.fire({ title: 'Guardando...', didOpen: () => Swal.showLoading() });
 
     let error;
-    if (id) {
-        const result = await _supabase
-            .from('preorders')
-            .update(preorderData)
-            .eq('id', id);
-        error = result.error;
-    } else {
-        const result = await _supabase
-            .from('preorders')
-            .insert([preorderData]);
-        error = result.error;
-    }
+    try {
+        if (id) {
+            const result = await _supabase
+                .from('preorders')
+                .update(preorderData)
+                .eq('id', id);
+            error = result.error;
+        } else {
+            const result = await _supabase
+                .from('preorders')
+                .insert([preorderData]);
+            error = result.error;
+        }
+    } catch (e) { error = e; }
 
     Swal.close();
 
     if (error) {
-        Swal.fire('Error', 'No se pudo guardar la preventa: ' + error.message, 'error');
+        Swal.fire('Error', 'No se pudo guardar la preventa: ' + (error.message || error), 'error');
     } else {
-        // Save to VikingData
+        // Save to VikingData (internal sync)
         if (typeof VikingData !== 'undefined') {
-            VikingData.save({
-                ...preorderData,
-                type: 'preorder'
-            });
+            try {
+                VikingData.save({
+                    ...preorderData,
+                    type: 'preorder'
+                });
+            } catch (e) { console.warn("VikingData sync fail:", e); }
         }
 
-        Swal.fire('Guardado', 'Preventa actualizada correctamente', 'success');
+        Swal.fire('¡Éxito!', 'Preventa guardada correctamente', 'success');
         $('#preorder-modal').removeClass('active');
         loadPreorders();
     }
@@ -473,7 +511,7 @@ async function savePreorder() {
 
 function editPreorder(preorder) {
     resetModal();
-    $('#modal-title').text('Editar Preventa');
+    $('#modal-title').text('EDITAR PREVENTA');
     $('#edit-preorder-id').val(preorder.id);
     $('#preorder-name').val(preorder.name);
     $('#preorder-image-url').val(preorder.image_url);
@@ -495,26 +533,39 @@ async function deletePreorder(id) {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff4757',
-        confirmButtonText: 'Sí, eliminar'
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
     });
 
     if (result.isConfirmed) {
-        const { error } = await _supabase.from('preorders').delete().eq('id', id);
-        if (error) {
-            Swal.fire('Error', 'No se pudo eliminar la preventa', 'error');
-        } else {
+        try {
+            const { error } = await _supabase.from('preorders').delete().eq('id', id);
+            if (error) throw error;
             loadPreorders();
+        } catch (err) {
+            Swal.fire('Error', 'No se pudo eliminar la preventa', 'error');
         }
     }
 }
 
 async function updateVisibility(id, isPublic) {
-    const { error } = await _supabase
-        .from('preorders')
-        .update({ is_public: isPublic })
-        .eq('id', id);
+    try {
+        const { error } = await _supabase
+            .from('preorders')
+            .update({ is_public: isPublic })
+            .eq('id', id);
 
-    if (error) {
+        if (error) throw error;
+
+        Swal.fire({
+            title: isPublic ? 'Público' : 'Privado',
+            icon: 'info',
+            timer: 800,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    } catch (err) {
         Swal.fire('Error', 'No se pudo actualizar la visibilidad', 'error');
     }
 }
@@ -562,7 +613,7 @@ $('#btn-copy-share-link').click(function() {
 });
 
 function resetModal() {
-    $('#modal-title').text('Añadir Preventa');
+    $('#modal-title').text('NUEVA PREVENTA');
     $('#edit-preorder-id').val('');
     $('#preorder-name').val('');
     $('#preorder-image-url').val('');
@@ -572,11 +623,16 @@ function resetModal() {
     $('#preorder-tcg').val('yugioh');
     $('#preorder-public').prop('checked', true);
     $('#external-search-input').val('');
-    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Usa el buscador para encontrar preventas</div>');
+    $('#external-search-results').html(`
+        <div style="grid-column: 1/-1; text-align: center; color: #444; padding: 60px;">
+            <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+            <p style="font-weight: 600; opacity: 0.5;">Busca expansiones oficiales para auto-completar</p>
+        </div>
+    `);
 
     // Switch to Search tab by default
-    $('.modal-tab-btn[data-tab="tab-search"]').addClass('active').css('border-bottom-color', '#00d2ff');
-    $('.modal-tab-btn[data-tab="tab-data"]').removeClass('active').css('border-bottom-color', 'transparent');
+    $('.modal-tab-btn').removeClass('active');
+    $('.modal-tab-btn[data-tab="tab-search"]').addClass('active');
     $('#tab-search').show();
     $('#tab-data').hide();
 }
