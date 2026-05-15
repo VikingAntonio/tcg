@@ -1,0 +1,6 @@
+Las interfaces de preventas.html y productoSellado.html no eran visibles debido a un error de JavaScript: "Identifier 'ygoSetsCache' has already been declared".
+
+Este error ocurría porque tanto el archivo global js/utils.js como los archivos específicos js/productoSellado.js y js/preventas.js estaban intentando declarar la misma variable 'ygoSetsCache' usando 'let' en el mismo ámbito global. En JavaScript, no se puede declarar la misma variable con 'let' dos veces en el mismo ámbito, lo que provocaba que los scripts se detuvieran por completo antes de poder mostrar el contenido o verificar la sesión del usuario.
+
+Solución:
+He eliminado las declaraciones duplicadas de 'ygoSetsCache' y las funciones 'getYgoSets' de los archivos individuales, centralizando el uso de la versión global definida en js/utils.js. También he añadido bloques try-catch más robustos para asegurar que, incluso si una parte falla, la interfaz principal intente cargarse.
