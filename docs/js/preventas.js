@@ -7,6 +7,7 @@ $(document).ready(async function() {
     $('#btn-open-add-modal').click(function() {
         resetModal();
         $('#preorder-modal').addClass('active');
+        switchTab('tab-search');
     });
 
     $('#close-preorder-modal').click(function() {
@@ -22,6 +23,19 @@ $(document).ready(async function() {
         e.preventDefault();
         handleLogout();
     });
+
+    // --- Tab Logic ---
+    $('.modal-tab-btn').click(function() {
+        const tabId = $(this).data('tab');
+        switchTab(tabId);
+    });
+
+    function switchTab(tabId) {
+        $('.modal-tab-btn').removeClass('active').css('border-bottom-color', 'transparent');
+        $(`.modal-tab-btn[data-tab="${tabId}"]`).addClass('active').css('border-bottom-color', '#00d2ff');
+        $('.tab-content').hide();
+        $(`#${tabId}`).show();
+    }
 
     // --- Search Logic ---
     $('#btn-external-search').click(function() {
@@ -141,32 +155,38 @@ async function loadPreorders() {
     preorders.forEach(preorder => {
         const isPublic = preorder.is_public !== false;
         const $card = $(`
-            <div class="album-card">
-                <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                    <h3 style="margin:0;">${preorder.name}</h3>
+            <div class="album-card" style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s ease;">
+                <div style="width: 100%; height: 180px; background: rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                    <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                 </div>
-                <div style="color: #00d2ff; font-weight: bold;">${preorder.price || 'Consultar'}</div>
-                <div style="font-size: 0.85rem; color: #ff4757; font-weight: 600;">Límite: ${preorder.payment_deadline || '-'}</div>
-                <div style="font-size: 0.8rem; color: #666; text-transform: uppercase;">${preorder.tcg}</div>
-
-                <div style="margin-top: 5px; display: flex; align-items: center; gap: 8px;">
-                    <label class="switch">
-                        <input type="checkbox" class="toggle-public" data-id="${preorder.id}" ${isPublic ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                    <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: #fff; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${preorder.name}</h3>
+                    <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: #00d2ff; font-weight: 900; font-size: 1.1rem;">${preorder.price || 'Consultar'}</div>
+                        <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: 700; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px;">${preorder.tcg}</div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #ff4757; font-weight: 700; margin-top: 5px;"><i class="fas fa-clock"></i> Límite: ${preorder.payment_deadline || '-'}</div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-top:auto; flex-wrap: wrap;">
-                    <button class="btn btn-edit" data-id="${preorder.id}" style="flex: 1;">Editar</button>
-                    <button class="btn btn-secondary" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')"><i class="fas fa-share-alt"></i></button>
-                    <button class="btn btn-danger btn-delete" data-id="${preorder.id}" style="flex: 1;">Eliminar</button>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label class="switch" style="transform: scale(0.8);">
+                            <input type="checkbox" class="toggle-public" data-id="${preorder.id}" ${isPublic ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                        <span style="font-size: 10px; color: #aaa; font-weight: 600;">${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                         <button class="btn btn-secondary btn-share" style="padding: 8px 12px;"><i class="fas fa-share-alt"></i></button>
+                         <button class="btn btn-edit" style="padding: 8px 12px;"><i class="fas fa-pen"></i></button>
+                         <button class="btn btn-danger btn-delete" style="padding: 8px 12px;"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             </div>
         `);
 
         $card.find('.btn-edit').click(() => editPreorder(preorder));
+        $card.find('.btn-share').click(() => openShareModal(preorder.name, 'preorders', preorder.id));
         $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
         $card.find('.toggle-public').change(function() {
             updateVisibility(preorder.id, $(this).is(':checked'));
@@ -197,7 +217,7 @@ async function searchExternalSets() {
         return;
     }
 
-    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando en todas las bases de datos...</div>');
+    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #666;"><i class="fas fa-spinner fa-spin"></i> Buscando en todas las bases de datos...</div>');
 
     try {
         const searchPromises = [
@@ -207,15 +227,17 @@ async function searchExternalSets() {
             fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
             // Pokémon Sets
             fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json()).catch(() => []),
+            // Pokémon Cards
+            fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
             // Lorcana Sets
             fetch(`https://api.lorcana-api.com/sets/fetch?search=name~${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []),
             // Lorcana Cards
             fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image`).then(r => r.json()).catch(() => []),
             // Viking Search
-            VikingData.search(query)
+            (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([]))
         ];
 
-        const [ygoSets, ygoCards, pkSets, lorSets, lorCards, vikResults] = await Promise.all(searchPromises);
+        const [ygoSets, ygoCards, pkSets, pkCards, lorSets, lorCards, vikResults] = await Promise.all(searchPromises);
 
         let combinedResults = [];
 
@@ -252,6 +274,17 @@ async function searchExternalSets() {
                 combinedResults.push({
                     name: s.name,
                     image: `${s.logo}.png`,
+                    tcg: 'pokemon'
+                });
+            });
+        }
+
+        // Process PKM Cards
+        if (Array.isArray(pkCards)) {
+            pkCards.forEach(c => {
+                combinedResults.push({
+                    name: c.name,
+                    image: `${c.image}/low.webp`,
                     tcg: 'pokemon'
                 });
             });
@@ -295,8 +328,9 @@ async function searchExternalSets() {
         const unique = [];
         const seen = new Set();
         combinedResults.forEach(i => {
-            if (!seen.has(i.image + i.name)) {
-                seen.add(i.image + i.name);
+            const key = (i.image + i.name).toLowerCase();
+            if (!seen.has(key)) {
+                seen.add(key);
                 unique.push(i);
             }
         });
@@ -304,7 +338,7 @@ async function searchExternalSets() {
         displayExternalResults(unique);
     } catch (e) {
         console.error(e);
-        $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar.</div>');
+        $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
     }
 }
 
@@ -313,33 +347,42 @@ function displayExternalResults(results) {
     $container.empty();
 
     if (results.length === 0) {
-        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No se encontraron resultados.</div>');
+        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #666;">No se encontraron resultados.</div>');
         return;
     }
 
     results.forEach(item => {
         const $item = $(`
-            <div class="external-card-result" title="${item.name}" style="cursor: pointer; transition: transform 0.2s; padding: 5px; border: 1px solid #333; border-radius: 8px; text-align: center;">
-                <img src="${item.image}" style="width: 100%; height: 80px; object-fit: contain; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x80?text=Set'">
-                <div style="font-size: 10px; margin-top: 5px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
+            <div class="external-card-result" title="${item.name}" style="cursor: pointer; transition: transform 0.2s; padding: 8px; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; text-align: center; background: rgba(0,0,0,0.2);">
+                <div style="width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                    <img src="${item.image}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x80?text=Set'">
+                </div>
+                <div style="font-size: 10px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
+                <div style="font-size: 8px; color: #666; text-transform: uppercase; margin-top: 4px;">${item.tcg}</div>
             </div>
         `);
 
         $item.hover(
-            function() { $(this).css('transform', 'scale(1.1)'); },
-            function() { $(this).css('transform', 'scale(1)'); }
+            function() { $(this).css({'transform': 'scale(1.05)', 'border-color': '#00d2ff', 'background': 'rgba(0, 210, 255, 0.05)'}); },
+            function() { $(this).css({'transform': 'scale(1)', 'border-color': 'rgba(255,255,255,0.05)', 'background': 'rgba(0,0,0,0.2)'}); }
         );
 
         $item.click(() => {
             $('#preorder-name').val(item.name);
             $('#preorder-image-url').val(item.image);
             $('#preorder-tcg').val(item.tcg);
+
+            // Switch to DATOS tab
+            $('.modal-tab-btn[data-tab="tab-data"]').click();
+
             Swal.fire({
                 title: 'Producto Seleccionado',
                 text: item.name,
                 icon: 'success',
                 timer: 1000,
-                showConfirmButton: false
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
             });
         });
 
@@ -393,6 +436,8 @@ async function savePreorder() {
         is_public: isPublic
     };
 
+    Swal.fire({ title: 'Guardando...', didOpen: () => Swal.showLoading() });
+
     let error;
     if (id) {
         const result = await _supabase
@@ -407,14 +452,18 @@ async function savePreorder() {
         error = result.error;
     }
 
+    Swal.close();
+
     if (error) {
         Swal.fire('Error', 'No se pudo guardar la preventa: ' + error.message, 'error');
     } else {
         // Save to VikingData
-        VikingData.save({
-            ...preorderData,
-            type: 'preorder'
-        });
+        if (typeof VikingData !== 'undefined') {
+            VikingData.save({
+                ...preorderData,
+                type: 'preorder'
+            });
+        }
 
         Swal.fire('Guardado', 'Preventa actualizada correctamente', 'success');
         $('#preorder-modal').removeClass('active');
@@ -434,6 +483,9 @@ function editPreorder(preorder) {
     $('#preorder-public').prop('checked', preorder.is_public !== false);
 
     $('#preorder-modal').addClass('active');
+
+    // Switch to DATOS tab for editing
+    $('.modal-tab-btn[data-tab="tab-data"]').click();
 }
 
 async function deletePreorder(id) {
@@ -467,6 +519,47 @@ async function updateVisibility(id, isPublic) {
     }
 }
 
+window.openShareModal = function(title, type, id) {
+    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+    const shareUrl = `${baseUrl}public.html?user=${currentUser.username}&view=${type}&id=${id}`;
+
+    $('#share-modal-title').text('Compartir ' + title);
+    $('#share-link-input').val(shareUrl);
+
+    // QR Code
+    $('#share-qr-code').empty();
+    new QRCode(document.getElementById("share-qr-code"), {
+        text: shareUrl,
+        width: 180,
+        height: 180,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+
+    // Social buttons
+    $('#share-wa').off('click').on('click', () => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Mira esta preventa en mi tienda: ' + shareUrl)}`, '_blank'));
+    $('#share-tg').off('click').on('click', () => window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Mira esta preventa en mi tienda')}`, '_blank'));
+    $('#share-fb').off('click').on('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank'));
+    $('#share-ms').off('click').on('click', () => window.open(`fb-messenger://share/?link=${encodeURIComponent(shareUrl)}`, '_blank'));
+
+    $('#share-overlay').addClass('active');
+};
+
+$('#btn-copy-share-link').click(function() {
+    const input = document.getElementById('share-link-input');
+    input.select();
+    document.execCommand('copy');
+    Swal.fire({
+        title: '¡Copiado!',
+        text: 'Enlace copiado al portapapeles',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+    });
+});
 
 function resetModal() {
     $('#modal-title').text('Añadir Preventa');
@@ -479,5 +572,11 @@ function resetModal() {
     $('#preorder-tcg').val('yugioh');
     $('#preorder-public').prop('checked', true);
     $('#external-search-input').val('');
-    $('#external-search-results').empty();
+    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Usa el buscador para encontrar preventas</div>');
+
+    // Switch to Search tab by default
+    $('.modal-tab-btn[data-tab="tab-search"]').addClass('active').css('border-bottom-color', '#00d2ff');
+    $('.modal-tab-btn[data-tab="tab-data"]').removeClass('active').css('border-bottom-color', 'transparent');
+    $('#tab-search').show();
+    $('#tab-data').hide();
 }
