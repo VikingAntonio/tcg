@@ -8,6 +8,7 @@ let startX, startY;
 // --- Loading Screen Functions ---
 window.isLoading = false;
 window.loadingMessage = '';
+window.isInitialLoad = true;
 
 window.showLoading = function(message) {
     window.isLoading = true;
@@ -387,9 +388,10 @@ $(document).ready(async function() {
         else if (urlParams.has('wishlistId') || urlParams.has('slot')) initialView = 'wishlist';
     }
 
-    // Solo mostramos pantalla de carga inicial si la vista no es home
-    if (initialView !== 'home') {
-        showLoading('Cargando...');
+    // Solo mostramos pantalla de carga inicial si la vista es albumes (según requerimiento del usuario)
+    // El usuario NO quiere pantalla de carga GLTF al refrescar o entrar si no es especificamente albumes.
+    if (initialView === 'albums') {
+        showLoading('Cargando Álbumes...');
     }
 
     await loadStoreData();
@@ -402,6 +404,7 @@ $(document).ready(async function() {
 
     // Explicitly call the initial loader
     switchView(initialView).then(() => {
+        window.isInitialLoad = false;
         setTimeout(() => window.handleDeepLinking(), 800);
     });
 
@@ -1197,6 +1200,7 @@ function applyVisualsToModal(holo, mask, use3d) {
     $card3d.addClass("active");
 }
 
+window.switchView = switchView;
 async function switchView(view) {
     if (!view) return;
 
@@ -1275,7 +1279,9 @@ async function switchView(view) {
     }
 
     if (view === 'albums') {
-        showLoading('Cargando Álbumes...');
+        if (!window.isInitialLoad) {
+            showLoading('Cargando Álbumes...');
+        }
         if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
     } else if (view === 'sealed') {
         await loadPublicSealed();
@@ -1628,7 +1634,7 @@ function loadPublicAlbums(userId) {
     return new Promise(async (resolve) => {
     if (!userId) { resolve(); return; }
     const isAlbumsView = $('.nav-btn[data-view="albums"]').hasClass('active');
-    if (isAlbumsView) showLoading('Cargando interfaz...');
+    if (isAlbumsView && !window.isInitialLoad) showLoading('Cargando interfaz...');
 
     const params = new URLSearchParams(window.location.search);
     const filterId = params.get('albumId');
@@ -3467,8 +3473,8 @@ async function handleClaimAction(claimId) {
     }
 }
 
-$('#close-claim-modal-public, #claim-detail-modal').click(function(e) {
-    if (e.target === this || $(this).attr('id') === 'close-claim-modal-public') {
+$(document).on('click', '#close-claim-modal-public, #claim-detail-modal', function(e) {
+    if (e.target === this || $(this).attr('id') === 'close-claim-modal-public' || $(e.target).closest('#close-claim-modal-public').length) {
         $('#claim-detail-modal').removeClass('active');
         $('body').removeClass('modal-open');
         window.currentClaimId = null;

@@ -466,8 +466,8 @@ $(document).ready(function() {
         const isPublic = path.includes('public.html') || ($('#home-view').length > 0 && $('.public-body').length > 0);
 
         if (isPublic) {
-            if (typeof switchView === 'function') {
-                switchView('home');
+            if (typeof window.switchView === 'function') {
+                window.switchView('home');
             } else {
                 const url = new URL(window.location.href);
                 url.searchParams.set('view', 'home');
@@ -487,7 +487,7 @@ $(document).ready(function() {
     $(document).on('click', '#btn-nav-return', function() {
         // 1. Check for active overlays/popups
         // Added more selectors to ensure all popups are covered
-        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active, .modal.active, .popup.active, #login-modal.active, #spirit-modal.active, #gltf-overlay.active, #event-details-overlay.active, #wishlist-search-modal.active, #auction-detail-modal.active, #wishlist-modal.active, #spirit-upload-modal.active, #fast-draw-modal.active');
+        const $activeOverlay = $('.overlay.active, .business-overlay.active, #image-overlay.active, #shared-item-modal.active, #deck-list-overlay.active, #slot-modal.active, #auction-modal.active, #auction-detail-modal.active, #organize-modal.active, #mask-editor-overlay.active, .modal.active, .popup.active, #login-modal.active, #spirit-modal.active, #gltf-overlay.active, #event-details-overlay.active, #wishlist-search-modal.active, #auction-detail-modal.active, #wishlist-modal.active, #spirit-upload-modal.active, #fast-draw-modal.active, #claim-detail-modal.active');
 
         if ($activeOverlay.length > 0) {
             $activeOverlay.removeClass('active');
@@ -495,6 +495,7 @@ $(document).ready(function() {
 
             // Specific cleanup for some modals
             if (window.card3dActive !== undefined) window.card3dActive = false;
+            if (window.currentClaimId !== undefined) window.currentClaimId = null;
             return;
         }
 
