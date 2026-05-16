@@ -582,9 +582,9 @@ body.theme-purple .tile-cyan { background-color: #4b0082 !important; border-colo
 body.theme-purple .tile span, body.theme-purple .tile i { color: #fff !important; }
 
 /* Bento Classes */
-.tile-wide { grid-column: span 2; }
-.tile-tall { grid-row: span 2; }
-.tile-large { grid-column: span 2; grid-row: span 2; }
+.tile-wide { grid-column: span 1; }
+.tile-tall { grid-row: span 1; }
+.tile-large { grid-column: span 1; grid-row: span 1; }
 
 @media (max-width: 1024px) {
     .tile-grid {
@@ -1162,6 +1162,10 @@ body.theme-light input[type="datetime-local"]::-webkit-calendar-picker-indicator
 }
 
 @media (max-width: 768px) {
+    .tile-wide { grid-column: span 1; }
+    .tile-tall { grid-row: span 1; }
+    .tile-large { grid-column: span 1; grid-row: span 1; }
+
     .hero-title { font-size: 2.5rem; }
     .bento-grid {
         grid-template-columns: 1fr;
