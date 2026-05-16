@@ -33,10 +33,10 @@ $(document).ready(async function() {
 
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();
-    if (!session) { window.location.href = 'admin.html'; return; }
+    if (!session) { console.log('Blocked Redirect'); return; }
 
     const { data: user } = await _supabase.from('usuarios').select('*').eq('id', session.user.id).single();
-    if (!user) { window.location.href = 'admin.html'; return; }
+    if (!user) { console.log('Blocked Redirect'); return; }
 
     currentUser = user;
     loadInitialData();
