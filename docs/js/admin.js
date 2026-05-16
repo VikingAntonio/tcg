@@ -2294,6 +2294,9 @@ async function showView(view) {
 
     // --- Build Mode Check ---
     const buildViews = ['albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+    const $view = $(`#view-${view}`);
+    const $overlay = $view.find('.build-mode-overlay');
+
     if (buildViews.includes(view)) {
         try {
             const { data: assignment } = await _supabase
@@ -2307,16 +2310,9 @@ async function showView(view) {
 
             if (assignment && assignment.build_assets) {
                 const asset = assignment.build_assets;
-                const $view = $(`#view-${view}`);
 
-                // Backup original content if not already backed up
-                if (!$view.data('original-html')) {
-                    $view.data('original-html', $view.html());
-                }
-
-                let $buildOverlay = $view.find('.build-mode-overlay');
-                if (!$buildOverlay.length) {
-                    $buildOverlay = $(`
+                if (!$overlay.length) {
+                    const $newOverlay = $(`
                         <div class="build-mode-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto; padding: 20px;">
                             <div class="admin-header">
                                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
@@ -2339,21 +2335,23 @@ async function showView(view) {
                             </div>
                         </div>
                     `);
-                    $view.append($buildOverlay);
+                    $view.append($newOverlay);
                     $view.css('position', 'relative');
 
-                    $buildOverlay.find('.btn-back-main').click((e) => {
+                    $newOverlay.find('.btn-back-main').click((e) => {
                         e.stopPropagation();
                         showView('main-dashboard');
                     });
+                } else {
+                    $overlay.show();
                 }
-                $buildOverlay.show();
+            } else {
+                $overlay.hide();
             }
         } catch (e) {
             console.error("Error checking build mode:", e);
         }
     } else if (view === 'main-dashboard') {
-        // Hide all build overlays when returning to dashboard
         $('.build-mode-overlay').hide();
     }
 }

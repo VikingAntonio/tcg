@@ -1,437 +1,384 @@
 /**
- * build.js - Logic for the Build System
+ * Modern build.js - Visual & Intuitive
  */
 
 let currentUser = null;
-let droppedGltfFile = null;
-let droppedExtraFiles = [];
-let droppedPosterUrl = '';
+let myAssets = [];
+let myAssignments = [];
+let droppedGltf = null;
+let droppedExtras = [];
+let currentAssignView = null;
+let currentAssignTarget = 'public';
+
+const VIEW_CONFIG = [
+    { key: 'albums', name: 'Álbumes', icon: 'fa-book' },
+    { key: 'decks', name: 'Decks', icon: 'fa-layer-group' },
+    { key: 'auctions', name: 'Subastas', icon: 'fa-gavel' },
+    { key: 'sealed', name: 'Producto Sellado', icon: 'fa-box' },
+    { key: 'preorders', name: 'Preventas', icon: 'fa-fire' },
+    { key: 'wishlist', name: 'Buscamos', icon: 'fa-heart' },
+    { key: 'investments', name: 'Inversiones', icon: 'fa-chart-line' },
+    { key: 'claims', name: 'Claims', icon: 'fa-hand-holding-heart' },
+    { key: 'events', name: 'Eventos', icon: 'fa-calendar-alt' }
+];
 
 $(document).ready(async function() {
     await checkSession();
-    initTheme();
-    setupEventListeners();
+    setupEvents();
 });
 
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();
-    if (!session) {
-        $('#login-modal').addClass('active');
-    } else {
-        const { data: user, error } = await _supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+    if (!session) { window.location.href = 'admin.html'; return; }
 
-        if (error || !user) {
-            await _supabase.auth.signOut();
-            window.location.reload();
-            return;
-        }
+    const { data: user } = await _supabase.from('usuarios').select('*').eq('id', session.user.id).single();
+    if (!user) { window.location.href = 'admin.html'; return; }
 
-        currentUser = user;
-        if (currentUser.role !== 'admin' && currentUser.role !== 'admin_store') {
-            Swal.fire('Acceso Denegado', 'Solo administradores pueden acceder a esta sección.', 'error')
-                .then(() => window.location.href = 'index.html');
-            return;
-        }
-
-        showAuthenticatedContent();
-    }
+    currentUser = user;
+    loadInitialData();
 }
 
-function showAuthenticatedContent() {
-    $('#login-modal').removeClass('active');
-    $('#authenticated-content').show();
-    $('#top-panel').show();
-    $('#dropdown-user-name').text(currentUser.username);
-    loadBuildAssets();
-    loadBuildAssignments();
+async function loadInitialData() {
+    const [assetsRes, assignsRes] = await Promise.all([
+        _supabase.from('build_assets').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }),
+        _supabase.from('build_assignments').select('*').eq('user_id', currentUser.id)
+    ]);
+
+    myAssets = assetsRes.data || [];
+    myAssignments = assignsRes.data || [];
+
+    renderViewGrid();
+    renderAssetsGrid();
 }
 
-function setupEventListeners() {
-    // Tabs
-    $('.tab-pill').click(function() {
-        $('.tab-pill').removeClass('active');
-        $(this).addClass('active');
-        const tab = $(this).data('tab');
-        $('.tab-content').hide();
-        $(`#${tab}`).show();
-    });
-
-    // Modal Tabs
-    $('.slot-tab-btn').click(function() {
-        const parent = $(this).closest('.overlay-content');
-        parent.find('.slot-tab-btn').removeClass('active');
-        $(this).addClass('active');
-        const tab = $(this).data('tab');
-        parent.find('.slot-tab-content').removeClass('active');
-        parent.find(`#${tab}`).addClass('active');
-    });
-
-    // Upload Build Modal
-    $('#btn-open-upload-build').click(function() {
-        resetBuildForm();
-        $('#build-upload-modal').addClass('active');
-    });
-
-    $('#close-build-upload-modal').click(function() {
-        $('#build-upload-modal').removeClass('active');
-    });
-
-    // Assignment Modal
-    $('#close-assignment-modal').click(function() {
-        $('#assignment-modal').removeClass('active');
-    });
-
-    // Drop Zone - Build Model
-    $(document).on('dragover dragenter', '#drop-zone-build', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
-    $(document).on('dragleave dragend drop', '#drop-zone-build', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-    $(document).on('drop', '#drop-zone-build', function(e) {
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) {
-            droppedGltfFile = null;
-            droppedExtraFiles = [];
-            processBuildFiles(files);
-        }
-    });
-    $('#input-build-files').change(function() {
-        if (this.files.length > 0) {
-            droppedGltfFile = null;
-            droppedExtraFiles = [];
-            processBuildFiles(this.files);
-        }
-    });
-
-    // Drop Zone - Poster
-    $(document).on('dragover dragenter', '#drop-zone-build-poster', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
-    $(document).on('dragleave dragend drop', '#drop-zone-build-poster', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
-    $(document).on('drop', '#drop-zone-build-poster', function(e) {
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) handlePosterUpload(files[0]);
-    });
-    $('#input-build-poster').change(function() {
-        if (this.files.length > 0) handlePosterUpload(this.files[0]);
-    });
-
-    // Save Asset
-    $('#btn-save-build-asset').click(saveBuildAsset);
-
-    // Confirm Assignment
-    $('#btn-confirm-assignment').click(confirmAssignment);
-
-    // Login
-    $('#btn-login').click(handleLogin);
-
-    // Logout
-    $('#menu-btn-logout').click(handleLogout);
-
-    // Theme
-    $('.theme-btn-small').click(function() {
-        const theme = $(this).data('theme');
-        setTheme(theme);
-    });
-}
-
-function processBuildFiles(files) {
-    const fileArray = Array.from(files);
-    let foundGltf = false;
-
-    fileArray.forEach(file => {
-        const name = file.name.toLowerCase();
-        if (!foundGltf && (name.endsWith('.gltf') || name.endsWith('.glb'))) {
-            droppedGltfFile = file;
-            foundGltf = true;
-        } else {
-            droppedExtraFiles.push(file);
-        }
-    });
-
-    updateBuildDropZoneUI(fileArray);
-}
-
-function updateBuildDropZoneUI(files) {
-    const $zone = $('#drop-zone-build');
-    const $fileName = $zone.find('.file-name');
-    if (files && files.length > 0) {
-        let html = "";
-        if (droppedGltfFile) {
-            html += `<div style="color: #00d2ff; font-weight: bold; margin-bottom: 5px;"><i class="fas fa-file-code"></i> Principal: ${droppedGltfFile.name}</div>`;
-        }
-        if (droppedExtraFiles.length > 0) {
-            html += `<div style="font-size: 11px; color: #aaa;"><i class="fas fa-paperclip"></i> ${droppedExtraFiles.length} archivos adicionales</div>`;
-        }
-        $fileName.html(html);
-        $zone.find('p').hide();
-        $zone.find('i.fa-cloud-upload-alt').hide();
-    } else {
-        $fileName.text('');
-        $zone.find('p').show();
-        $zone.find('i.fa-cloud-upload-alt').show();
-    }
-}
-
-async function handlePosterUpload(file) {
-    Swal.fire({ title: 'Subiendo poster...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-    try {
-        const url = await uploadToCloudinary(file);
-        droppedPosterUrl = url;
-        $('#drop-zone-build-poster .file-name').text('¡Cargado!').css('color', '#00ff88');
-        Swal.close();
-    } catch (err) {
-        Swal.fire('Error', 'No se pudo subir el poster', 'error');
-    }
-}
-
-function resetBuildForm() {
-    $('#edit-build-id').val('');
-    $('#input-build-name').val('');
-    $('#input-build-animation').val('orbit');
-    $('#input-build-scale').val(1.8);
-    $('#input-build-particle-movement').val('falling');
-    droppedGltfFile = null;
-    droppedExtraFiles = [];
-    droppedPosterUrl = '';
-    updateBuildDropZoneUI([]);
-    $('#drop-zone-build-poster .file-name').text('');
-}
-
-async function saveBuildAsset() {
-    const name = $('#input-build-name').val();
-    const editId = $('#edit-build-id').val();
-    const animation = $('#input-build-animation').val();
-    const scale = parseFloat($('#input-build-scale').val()) || 1.8;
-    const particleMovement = $('#input-build-particle-movement').val();
-
-    if (!name) return Swal.fire('Atención', 'El nombre es obligatorio', 'warning');
-    if (!editId && !droppedGltfFile) return Swal.fire('Atención', 'El archivo GLTF es obligatorio', 'warning');
-
-    Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-    try {
-        let gltfUrl = null;
-        let textureUrl = null;
-
-        if (droppedGltfFile) {
-            const folderId = Date.now() + '_' + Math.floor(Math.random() * 1000);
-            const gltfPath = `build-models/${folderId}/${droppedGltfFile.name}`;
-
-            const { error: gltfErr } = await _supabase.storage.from('spirits').upload(gltfPath, droppedGltfFile);
-            if (gltfErr) throw gltfErr;
-            gltfUrl = _supabase.storage.from('spirits').getPublicUrl(gltfPath).data.publicUrl;
-
-            for (const file of droppedExtraFiles) {
-                const path = `build-models/${folderId}/${file.name}`;
-                await _supabase.storage.from('spirits').upload(path, file);
-                if (file.type.startsWith('image/')) {
-                    textureUrl = _supabase.storage.from('spirits').getPublicUrl(path).data.publicUrl;
-                }
-            }
-        }
-
-        const assetData = {
-            name,
-            animation_type: animation,
-            scale,
-            particle_movement_type: particleMovement,
-            poster_url: droppedPosterUrl,
-            user_id: currentUser.id
-        };
-
-        if (gltfUrl) {
-            assetData.gltf_url = gltfUrl;
-            assetData.texture_url = textureUrl;
-        }
-
-        let dbRes;
-        if (editId) {
-            dbRes = await _supabase.from('build_assets').update(assetData).eq('id', editId);
-        } else {
-            dbRes = await _supabase.from('build_assets').insert([assetData]);
-        }
-
-        if (dbRes.error) throw dbRes.error;
-
-        Swal.fire('¡Éxito!', 'Modelo guardado correctamente', 'success');
-        $('#build-upload-modal').removeClass('active');
-        loadBuildAssets();
-    } catch (err) {
-        console.error(err);
-        Swal.fire('Error', 'No se pudo guardar el modelo', 'error');
-    }
-}
-
-async function loadBuildAssets() {
-    const { data: assets, error } = await _supabase
-        .from('build_assets')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-
-    if (error) return $('#build-assets-grid').html('<div class="error">Error al cargar.</div>');
-    if (!assets || assets.length === 0) return $('#build-assets-grid').html('<div class="empty">No tienes modelos build.</div>');
-
-    const $grid = $('#build-assets-grid');
+function renderViewGrid() {
+    const $grid = $('#view-grid');
     $grid.empty();
 
-    assets.forEach(asset => {
+    VIEW_CONFIG.forEach(view => {
+        const publicAss = myAssignments.find(a => a.view_name === view.key && a.target === 'public');
+        const adminAss = myAssignments.find(a => a.view_name === view.key && a.target === 'admin');
+
+        const isPublicActive = publicAss && publicAss.is_active;
+        const isAdminActive = adminAss && adminAss.is_active;
+
+        const publicModel = publicAss ? myAssets.find(a => a.id === publicAss.asset_id) : null;
+        const adminModel = adminAss ? myAssets.find(a => a.id === adminAss.asset_id) : null;
+
         const $card = $(`
-            <div class="build-card">
-                <model-viewer
-                    src="${asset.gltf_url}"
-                    poster="${asset.poster_url || ''}"
-                    loading="lazy"
-                    camera-controls
-                    auto-rotate
-                    style="width: 100%; height: 200px; background: rgba(0,0,0,0.2); border-radius: 10px;">
-                </model-viewer>
-                <h3>${asset.name}</h3>
-                <button class="btn btn-add-assignment" data-id="${asset.id}"><i class="fas fa-link"></i> ASIGNAR A VISTA</button>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary btn-edit-asset" style="flex: 1;"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger btn-delete-asset" data-id="${asset.id}" style="flex: 1;"><i class="fas fa-trash"></i></button>
+            <div class="view-card" data-view="${view.key}">
+                <div class="view-card-header">
+                    <div class="view-icon"><i class="fas ${view.icon}"></i></div>
+                    <div class="view-status ${isPublicActive || isAdminActive ? 'status-build' : 'status-live'}">
+                        ${isPublicActive || isAdminActive ? 'Construcción' : 'En Vivo'}
+                    </div>
+                </div>
+                <h3>${view.name}</h3>
+
+                <div class="view-card-controls">
+                    <div class="target-selector">
+                        <button class="target-btn active" data-target="public">PÚBLICO</button>
+                        <button class="target-btn" data-target="admin">ADMIN</button>
+                    </div>
+
+                    <div class="model-picker-trigger" id="trigger-${view.key}">
+                        ${renderPickerContent(view.key, 'public', publicModel)}
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #888;">ESTADO ACTIVO</span>
+                        <label class="build-toggle">
+                            <input type="checkbox" class="toggle-view" data-view="${view.key}" ${isPublicActive ? 'checked' : ''}>
+                            <span class="build-slider"></span>
+                        </label>
+                    </div>
                 </div>
             </div>
         `);
 
-        $card.find('.btn-add-assignment').click(() => {
-            $('#assign-asset-id').val(asset.id);
-            $('#assignment-modal').addClass('active');
+        // Target switch logic
+        $card.find('.target-btn').click(function() {
+            const $btn = $(this);
+            const target = $btn.data('target');
+            $card.find('.target-btn').removeClass('active');
+            $btn.addClass('active');
+
+            // Update toggle and picker for the selected target
+            const ass = myAssignments.find(a => a.view_name === view.key && a.target === target);
+            const model = ass ? myAssets.find(a => a.id === ass.asset_id) : null;
+
+            $card.find('.model-picker-trigger').html(renderPickerContent(view.key, target, model));
+            $card.find('.toggle-view').prop('checked', ass ? ass.is_active : false);
         });
 
-        $card.find('.btn-edit-asset').click(() => editBuildAsset(asset));
-        $card.find('.btn-delete-asset').click(() => deleteBuildAsset(asset.id));
+        // Open picker logic
+        $card.find('.model-picker-trigger').click(function() {
+            currentAssignView = view.key;
+            currentAssignTarget = $card.find('.target-btn.active').data('target');
+            openModelPicker();
+        });
+
+        // Toggle visibility logic
+        $card.find('.toggle-view').change(async function() {
+            const active = $(this).is(':checked');
+            const target = $card.find('.target-btn.active').data('target');
+
+            const ass = myAssignments.find(a => a.view_name === view.key && a.target === target);
+            if (!ass) {
+                $(this).prop('checked', false);
+                return Swal.fire('Atención', 'Primero selecciona un modelo para esta vista', 'warning');
+            }
+
+            const { error } = await _supabase.from('build_assignments').update({ is_active: active }).eq('id', ass.id);
+            if (error) return Swal.fire('Error', 'No se pudo actualizar', 'error');
+
+            ass.is_active = active;
+            updateStatusLabel($card, view.key);
+        });
 
         $grid.append($card);
     });
 }
 
-async function editBuildAsset(asset) {
-    resetBuildForm();
-    $('#edit-build-id').val(asset.id);
-    $('#input-build-name').val(asset.name);
-    $('#input-build-animation').val(asset.animation_type);
-    $('#input-build-scale').val(asset.scale);
-    $('#input-build-particle-movement').val(asset.particle_movement_type);
-    droppedPosterUrl = asset.poster_url;
-    if (asset.poster_url) $('#drop-zone-build-poster .file-name').text('¡Cargado!');
-    $('#build-upload-modal').addClass('active');
-}
-
-async function deleteBuildAsset(id) {
-    const result = await Swal.fire({
-        title: '¿Eliminar modelo?',
-        text: "Se borrará permanentemente",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ff4757'
-    });
-    if (result.isConfirmed) {
-        await _supabase.from('build_assets').delete().eq('id', id);
-        loadBuildAssets();
-    }
-}
-
-async function confirmAssignment() {
-    const assetId = $('#assign-asset-id').val();
-    const viewName = $('#assign-view-name').val();
-    const target = $('#assign-target').val();
-
-    Swal.fire({ title: 'Asignando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-    try {
-        // Use upsert-like logic: Delete existing assignment for this view/target/user first
-        await _supabase
-            .from('build_assignments')
-            .delete()
-            .eq('user_id', currentUser.id)
-            .eq('view_name', viewName)
-            .eq('target', target);
-
-        const { error } = await _supabase.from('build_assignments').insert([{
-            user_id: currentUser.id,
-            view_name,
-            asset_id: assetId,
-            target,
-            is_active: true
-        }]);
-
-        if (error) throw error;
-
-        Swal.fire('¡Éxito!', 'Vista asignada correctamente', 'success');
-        $('#assignment-modal').removeClass('active');
-        loadBuildAssignments();
-    } catch (err) {
-        console.error(err);
-        Swal.fire('Error', 'No se pudo realizar la asignación', 'error');
-    }
-}
-
-async function loadBuildAssignments() {
-    const { data: assignments, error } = await _supabase
-        .from('build_assignments')
-        .select('*, build_assets(name)')
-        .eq('user_id', currentUser.id);
-
-    if (error) return $('#build-assignments-list').html('<div class="error">Error al cargar.</div>');
-    if (!assignments || assignments.length === 0) return $('#build-assignments-list').html('<div class="empty">No hay asignaciones activas.</div>');
-
-    const $list = $('#build-assignments-list');
-    $list.empty();
-
-    assignments.forEach(ass => {
-        const $row = $(`
-            <div class="assignment-row">
-                <div class="assignment-info">
-                    <span class="assignment-view">${ass.view_name}</span>
-                    <span class="assignment-target">${ass.target === 'public' ? 'Link Público' : 'Link Admin'}</span>
-                    <div style="font-size: 0.8rem; margin-top: 5px;">Modelo: <strong>${ass.build_assets.name}</strong></div>
+function renderPickerContent(view, target, model) {
+    if (model) {
+        return `
+            <div class="model-preview-small">
+                <img src="${model.poster_url || 'https://via.placeholder.com/100?text=3D'}" alt="Preview">
+                <div style="text-align: left;">
+                    <div style="font-size: 0.8rem; font-weight: 800;">${model.name}</div>
+                    <div style="font-size: 0.7rem; color: var(--build-primary);">Cambiar Modelo</div>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <label class="switch">
-                        <input type="checkbox" class="toggle-assignment" data-id="${ass.id}" ${ass.is_active ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                    <button class="btn btn-danger btn-sm btn-delete-assignment" data-id="${ass.id}"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+    } else {
+        return `<i class="fas fa-plus-circle"></i> ASIGNAR MODELO`;
+    }
+}
+
+function updateStatusLabel($card, viewKey) {
+    const pub = myAssignments.find(a => a.view_name === viewKey && a.target === 'public');
+    const adm = myAssignments.find(a => a.view_name === viewKey && a.target === 'admin');
+    const isAnyActive = (pub && pub.is_active) || (adm && adm.is_active);
+
+    $card.find('.view-status')
+        .removeClass('status-live status-build')
+        .addClass(isAnyActive ? 'status-build' : 'status-live')
+        .text(isAnyActive ? 'Construcción' : 'En Vivo');
+}
+
+function renderAssetsGrid() {
+    const $grid = $('#assets-grid');
+    $grid.empty();
+
+    myAssets.forEach(asset => {
+        const $el = $(`
+            <div class="asset-card">
+                <div class="asset-viewer-container">
+                    <model-viewer
+                        src="${asset.gltf_url}"
+                        poster="${asset.poster_url || ''}"
+                        loading="lazy"
+                        camera-controls
+                        auto-rotate
+                        style="width: 100%; height: 100%;">
+                    </model-viewer>
+                </div>
+                <div class="asset-info">
+                    <h4 style="margin: 0; font-size: 1.1rem;">${asset.name}</h4>
+                </div>
+                <div class="asset-actions">
+                    <button class="btn-build-main btn-edit-asset" style="padding: 10px; background: rgba(255,255,255,0.05); color: white;">
+                        <i class="fas fa-edit"></i> EDITAR
+                    </button>
+                    <button class="btn-build-main btn-delete-asset" style="padding: 10px; background: rgba(255,71,87,0.1); color: #ff4757;">
+                        <i class="fas fa-trash"></i> BORRAR
+                    </button>
                 </div>
             </div>
         `);
 
-        $row.find('.toggle-assignment').change(async function() {
-            const active = $(this).is(':checked');
-            await _supabase.from('build_assignments').update({ is_active: active }).eq('id', ass.id);
-        });
+        $el.find('.btn-edit-asset').click(() => openAssetModal(asset));
+        $el.find('.btn-delete-asset').click(() => deleteAsset(asset.id));
 
-        $row.find('.btn-delete-assignment').click(async function() {
-            await _supabase.from('build_assignments').delete().eq('id', ass.id);
-            loadBuildAssignments();
-        });
-
-        $list.append($row);
+        $grid.append($el);
     });
 }
 
-// Reuse some logic from utils.js/admin.js if necessary, but keep it clean
-async function handleLogin() {
-    const username = $('#login-username').val();
-    const password = $('#login-password').val();
-    const { data, error } = await _supabase.auth.signInWithPassword({ email: username + '@viking.com', password });
-    if (error) Swal.fire('Error', 'Credenciales incorrectas', 'error');
-    else window.location.reload();
+function openModelPicker() {
+    const $grid = $('#picker-grid');
+    $grid.empty();
+
+    myAssets.forEach(asset => {
+        const $option = $(`
+            <div class="model-option">
+                <img src="${asset.poster_url || 'https://via.placeholder.com/150?text=3D'}" alt="${asset.name}">
+                <div style="font-weight: bold; font-size: 0.9rem;">${asset.name}</div>
+            </div>
+        `);
+
+        $option.click(async () => {
+            await assignModelToView(asset.id);
+            $('#model-picker').removeClass('active');
+        });
+
+        $grid.append($option);
+    });
+
+    if (myAssets.length === 0) {
+        $grid.html('<div style="grid-column: 1/-1; text-align: center; color: #888;">Primero debes subir un modelo 3D.</div>');
+    }
+
+    $('#model-picker').addClass('active');
 }
 
-async function handleLogout() {
-    await _supabase.auth.signOut();
-    window.location.reload();
+async function assignModelToView(assetId) {
+    Swal.fire({ title: 'Asignando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const assData = {
+            user_id: currentUser.id,
+            view_name: currentAssignView,
+            target: currentAssignTarget,
+            asset_id: assetId,
+            is_active: true
+        };
+
+        const { error } = await _supabase.from('build_assignments').upsert(assData, { onConflict: 'user_id,view_name,target' });
+        if (error) throw error;
+
+        await loadInitialData(); // Refresh UI
+        Swal.fire('¡Éxito!', 'Modelo asignado correctamente', 'success');
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudo asignar el modelo', 'error');
+    }
 }
 
-function initTheme() {
-    const savedTheme = localStorage.getItem('viking-theme') || 'theme-dark';
-    setTheme(savedTheme);
+// --- Asset CRUD ---
+
+function setupEvents() {
+    // Tabs switching
+    $('.slot-tab-btn').click(function() {
+        $('.slot-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.slot-tab-content').removeClass('active');
+        $(`#${$(this).data('tab')}`).addClass('active');
+    });
+
+    $('#btn-open-upload').click(() => openAssetModal());
+
+    // Save
+    $('#btn-save-asset').click(saveAsset);
+
+    // Dropzone
+    const $zone = $('#drop-zone-asset');
+    $zone.on('dragover dragenter', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
+    $zone.on('dragleave dragend drop', function(e) { e.preventDefault(); $(this).removeClass('dragover'); });
+    $zone.on('drop', function(e) {
+        const files = e.originalEvent.dataTransfer.files;
+        handleFiles(files);
+    });
+    $('#input-asset-files').on('change', function() { handleFiles(this.files); });
 }
 
-function setTheme(theme) {
-    $('body').attr('class', theme);
-    localStorage.setItem('viking-theme', theme);
+function handleFiles(files) {
+    droppedGltf = null;
+    droppedExtras = [];
+    Array.from(files).forEach(f => {
+        if (f.name.toLowerCase().endsWith('.gltf') || f.name.toLowerCase().endsWith('.glb')) droppedGltf = f;
+        else droppedExtras.push(f);
+    });
+
+    const $label = $('#drop-zone-asset .file-name');
+    if (droppedGltf) {
+        $label.html(`¡Listo! Principal: ${droppedGltf.name} <br> <small>${droppedExtras.length} archivos extras</small>`);
+    } else {
+        $label.text('No se detectó archivo .gltf o .glb');
+    }
+}
+
+function openAssetModal(asset = null) {
+    $('#asset-modal-title').text(asset ? 'EDITAR MODELO' : 'NUEVO MODELO');
+    $('#asset-id').val(asset ? asset.id : '');
+    $('#asset-name').val(asset ? asset.name : '');
+    $('#asset-animation').val(asset ? asset.animation_type : 'orbit');
+    $('#asset-scale').val(asset ? asset.scale : 1.8);
+    $('#drop-zone-asset .file-name').text('');
+    droppedGltf = null;
+    droppedExtras = [];
+
+    $('#modal-asset').addClass('active');
+}
+
+async function saveAsset() {
+    const name = $('#asset-name').val();
+    const id = $('#asset-id').val();
+    const animation = $('#asset-animation').val();
+    const scale = parseFloat($('#asset-scale').val());
+    const posterFile = $('#input-poster')[0].files[0];
+
+    if (!name) return Swal.fire('Aviso', 'El nombre es obligatorio', 'warning');
+    if (!id && !droppedGltf) return Swal.fire('Aviso', 'Debes subir el archivo 3D', 'warning');
+
+    Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        let gltfUrl = null;
+        let posterUrl = null;
+
+        // 1. Upload Poster to Cloudinary
+        if (posterFile) {
+            posterUrl = await CloudinaryUpload.uploadImage(posterFile);
+        }
+
+        // 2. Upload GLTF to Supabase
+        if (droppedGltf) {
+            const folder = Date.now();
+            const mainPath = `build_models/${currentUser.id}/${folder}/${droppedGltf.name}`;
+            await _supabase.storage.from('spirits').upload(mainPath, droppedGltf);
+            gltfUrl = _supabase.storage.from('spirits').getPublicUrl(mainPath).data.publicUrl;
+
+            for (const f of droppedExtras) {
+                await _supabase.storage.from('spirits').upload(`build_models/${currentUser.id}/${folder}/${f.name}`, f);
+            }
+        }
+
+        const data = {
+            name, animation_type: animation, scale, user_id: currentUser.id
+        };
+        if (gltfUrl) data.gltf_url = gltfUrl;
+        if (posterUrl) data.poster_url = posterUrl;
+
+        let res;
+        if (id) res = await _supabase.from('build_assets').update(data).eq('id', id);
+        else res = await _supabase.from('build_assets').insert([data]);
+
+        if (res.error) throw res.error;
+
+        await loadInitialData();
+        $('#modal-asset').removeClass('active');
+        Swal.fire('¡Éxito!', 'Modelo guardado correctamente', 'success');
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudo guardar: ' + e.message, 'error');
+    }
+}
+
+async function deleteAsset(id) {
+    const { isConfirmed } = await Swal.fire({
+        title: '¿Eliminar modelo?',
+        text: 'Esto también quitará las asignaciones activas.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757'
+    });
+
+    if (isConfirmed) {
+        const { error } = await _supabase.from('build_assets').delete().eq('id', id);
+        if (error) return Swal.fire('Error', 'No se pudo borrar', 'error');
+
+        await loadInitialData();
+        Swal.fire('Eliminado', '', 'success');
+    }
 }

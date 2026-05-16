@@ -1228,33 +1228,36 @@ async function switchView(view) {
                 .eq('is_active', true)
                 .maybeSingle();
 
+            const $view = $(`#${view}-view`);
+            let $buildOverlay = $view.find('.public-build-overlay');
+
             if (assignment && assignment.build_assets) {
                 const asset = assignment.build_assets;
-                const $view = $(`#${view}-view`);
 
-                // Backup original content if not already backed up
-                if (!$view.data('original-html')) {
-                    $view.data('original-html', $view.html());
+                if (!$buildOverlay.length) {
+                    $buildOverlay = $(`
+                        <div class="public-build-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 20px; text-align: center;">
+                            <model-viewer
+                                src="${asset.gltf_url}"
+                                poster="${asset.poster_url || ''}"
+                                loading="lazy"
+                                camera-controls
+                                auto-rotate
+                                shadow-intensity="1"
+                                environment-image="neutral"
+                                exposure="1.2"
+                                style="width: 100%; height: 500px; max-width: 800px; background: rgba(0,0,0,0.05); border-radius: 20px; margin-bottom: 30px;">
+                            </model-viewer>
+                            <h2 style="color: var(--primary-color); font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">Próximamente</h2>
+                            <p style="color: #888; max-width: 500px; font-size: 1.1rem;">Esta sección se encuentra actualmente en mantenimiento o construcción. ¡Vuelve pronto!</p>
+                            <button class="btn" style="margin-top: 30px; padding: 12px 30px; border-radius: 50px;" onclick="switchView('home')">Volver al Inicio</button>
+                        </div>
+                    `);
+                    $view.append($buildOverlay);
+                    $view.css('position', 'relative');
                 }
 
-                $view.html(`
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 20px; text-align: center; min-height: 80vh;">
-                        <model-viewer
-                            src="${asset.gltf_url}"
-                            poster="${asset.poster_url || ''}"
-                            loading="lazy"
-                            camera-controls
-                            auto-rotate
-                            shadow-intensity="1"
-                            environment-image="neutral"
-                            exposure="1.2"
-                            style="width: 100%; height: 500px; max-width: 800px; background: rgba(0,0,0,0.05); border-radius: 20px; margin-bottom: 30px;">
-                        </model-viewer>
-                        <h2 style="color: var(--primary-color); font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">Próximamente</h2>
-                        <p style="color: #888; max-width: 500px; font-size: 1.1rem;">Esta sección se encuentra actualmente en mantenimiento o construcción. ¡Vuelve pronto!</p>
-                        <button class="btn" style="margin-top: 30px; padding: 12px 30px; border-radius: 50px;" onclick="switchView('home')">Volver al Inicio</button>
-                    </div>
-                `);
+                $buildOverlay.show();
 
                 // Track state
                 const url = new URL(window.location);
@@ -1264,12 +1267,7 @@ async function switchView(view) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return; // Stop further loading of this view
             } else {
-                // Restore original if build assignment is gone/inactive
-                const original = $view.data('original-html');
-                if (original) {
-                    $view.html(original);
-                    $view.data('original-html', null);
-                }
+                $buildOverlay.hide();
             }
         } catch (e) {
             console.error("Error checking build mode:", e);
