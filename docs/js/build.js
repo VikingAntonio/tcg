@@ -1,12 +1,16 @@
 /**
- * Modern build.js - Visual & Intuitive
+ * Build Management System - Refined Logic
  */
 
 let currentUser = null;
 let myAssets = [];
 let myAssignments = [];
+
+// Drag & Drop State
 let droppedGltf = null;
 let droppedExtras = [];
+let droppedPoster = null;
+
 let currentAssignView = null;
 let currentAssignTarget = 'public';
 
@@ -51,6 +55,8 @@ async function loadInitialData() {
     renderAssetsGrid();
 }
 
+// --- UI Rendering ---
+
 function renderViewGrid() {
     const $grid = $('#view-grid');
     $grid.empty();
@@ -63,108 +69,95 @@ function renderViewGrid() {
         const isAdminActive = adminAss && adminAss.is_active;
 
         const publicModel = publicAss ? myAssets.find(a => a.id === publicAss.asset_id) : null;
-        const adminModel = adminAss ? myAssets.find(a => a.id === adminAss.asset_id) : null;
 
         const $card = $(`
             <div class="view-card" data-view="${view.key}">
-                <div class="view-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
                     <div class="view-icon"><i class="fas ${view.icon}"></i></div>
                     <div class="view-status ${isPublicActive || isAdminActive ? 'status-build' : 'status-live'}">
-                        ${isPublicActive || isAdminActive ? 'Construcción' : 'En Vivo'}
+                        ${isPublicActive || isAdminActive ? 'Build' : 'Live'}
                     </div>
                 </div>
-                <h3>${view.name}</h3>
+                <h3 style="margin: 0 0 5px 0;">${view.name}</h3>
 
-                <div class="view-card-controls">
-                    <div class="target-selector">
-                        <button class="target-btn active" data-target="public">PÚBLICO</button>
-                        <button class="target-btn" data-target="admin">ADMIN</button>
-                    </div>
+                <div class="target-selector">
+                    <button class="target-btn active" data-target="public">PÚBLICO</button>
+                    <button class="target-btn" data-target="admin">ADMIN</button>
+                </div>
 
-                    <div class="model-picker-trigger" id="trigger-${view.key}">
-                        ${renderPickerContent(view.key, 'public', publicModel)}
-                    </div>
+                <div class="model-picker-trigger" id="trigger-${view.key}">
+                    ${renderPickerContent(publicModel)}
+                </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                        <span style="font-size: 0.8rem; font-weight: 700; color: #888;">ESTADO ACTIVO</span>
-                        <label class="build-toggle">
-                            <input type="checkbox" class="toggle-view" data-view="${view.key}" ${isPublicActive ? 'checked' : ''}>
-                            <span class="build-slider"></span>
-                        </label>
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.75rem; color: #888; font-weight: bold;">ACTIVAR OVERLAY</span>
+                    <label class="build-toggle">
+                        <input type="checkbox" class="toggle-view" ${isPublicActive ? 'checked' : ''}>
+                        <span class="build-slider"></span>
+                    </label>
                 </div>
             </div>
         `);
 
         // Target switch logic
         $card.find('.target-btn').click(function() {
-            const $btn = $(this);
-            const target = $btn.data('target');
+            const target = $(this).data('target');
             $card.find('.target-btn').removeClass('active');
-            $btn.addClass('active');
+            $(this).addClass('active');
 
-            // Update toggle and picker for the selected target
             const ass = myAssignments.find(a => a.view_name === view.key && a.target === target);
             const model = ass ? myAssets.find(a => a.id === ass.asset_id) : null;
 
-            $card.find('.model-picker-trigger').html(renderPickerContent(view.key, target, model));
+            $card.find('.model-picker-trigger').html(renderPickerContent(model));
             $card.find('.toggle-view').prop('checked', ass ? ass.is_active : false);
         });
 
-        // Open picker logic
+        // Open picker
         $card.find('.model-picker-trigger').click(function() {
             currentAssignView = view.key;
             currentAssignTarget = $card.find('.target-btn.active').data('target');
             openModelPicker();
         });
 
-        // Toggle visibility logic
+        // Toggle logic
         $card.find('.toggle-view').change(async function() {
             const active = $(this).is(':checked');
             const target = $card.find('.target-btn.active').data('target');
-
             const ass = myAssignments.find(a => a.view_name === view.key && a.target === target);
+
             if (!ass) {
                 $(this).prop('checked', false);
-                return Swal.fire('Atención', 'Primero selecciona un modelo para esta vista', 'warning');
+                return Swal.fire('Atención', 'Selecciona un modelo primero', 'warning');
             }
 
             const { error } = await _supabase.from('build_assignments').update({ is_active: active }).eq('id', ass.id);
-            if (error) return Swal.fire('Error', 'No se pudo actualizar', 'error');
-
-            ass.is_active = active;
-            updateStatusLabel($card, view.key);
+            if (!error) {
+                ass.is_active = active;
+                updateStatusLabel($card, view.key);
+            }
         });
 
         $grid.append($card);
     });
 }
 
-function renderPickerContent(view, target, model) {
-    if (model) {
-        return `
-            <div class="model-preview-small">
-                <img src="${model.poster_url || 'https://via.placeholder.com/100?text=3D'}" alt="Preview">
-                <div style="text-align: left;">
-                    <div style="font-size: 0.8rem; font-weight: 800;">${model.name}</div>
-                    <div style="font-size: 0.7rem; color: var(--build-primary);">Cambiar Modelo</div>
-                </div>
+function renderPickerContent(model) {
+    if (!model) return `<i class="fas fa-plus-circle"></i> ASIGNAR`;
+    return `
+        <div style="display: flex; align-items: center; gap: 10px; text-align: left;">
+            <img src="${model.poster_url || 'https://via.placeholder.com/40'}" style="width: 30px; height: 30px; border-radius: 5px; object-fit: cover;">
+            <div style="font-size: 0.75rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
+                ${model.name}
             </div>
-        `;
-    } else {
-        return `<i class="fas fa-plus-circle"></i> ASIGNAR MODELO`;
-    }
+        </div>
+    `;
 }
 
 function updateStatusLabel($card, viewKey) {
     const pub = myAssignments.find(a => a.view_name === viewKey && a.target === 'public');
     const adm = myAssignments.find(a => a.view_name === viewKey && a.target === 'admin');
-    const isAnyActive = (pub && pub.is_active) || (adm && adm.is_active);
-
-    $card.find('.view-status')
-        .removeClass('status-live status-build')
-        .addClass(isAnyActive ? 'status-build' : 'status-live')
-        .text(isAnyActive ? 'Construcción' : 'En Vivo');
+    const active = (pub && pub.is_active) || (adm && adm.is_active);
+    $card.find('.view-status').removeClass('status-live status-build').addClass(active ? 'status-build' : 'status-live').text(active ? 'Build' : 'Live');
 }
 
 function renderAssetsGrid() {
@@ -175,90 +168,32 @@ function renderAssetsGrid() {
         const $el = $(`
             <div class="asset-card">
                 <div class="asset-viewer-container">
-                    <model-viewer
-                        src="${asset.gltf_url}"
-                        poster="${asset.poster_url || ''}"
-                        loading="lazy"
-                        camera-controls
-                        auto-rotate
-                        style="width: 100%; height: 100%;">
-                    </model-viewer>
+                    <model-viewer src="${asset.gltf_url}" poster="${asset.poster_url || ''}" loading="lazy" auto-rotate style="width:100%; height:100%;"></model-viewer>
                 </div>
-                <div class="asset-info">
-                    <h4 style="margin: 0; font-size: 1.1rem;">${asset.name}</h4>
-                </div>
-                <div class="asset-actions">
-                    <button class="btn-build-main btn-edit-asset" style="padding: 10px; background: rgba(255,255,255,0.05); color: white;">
-                        <i class="fas fa-edit"></i> EDITAR
-                    </button>
-                    <button class="btn-build-main btn-delete-asset" style="padding: 10px; background: rgba(255,71,87,0.1); color: #ff4757;">
-                        <i class="fas fa-trash"></i> BORRAR
-                    </button>
+                <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 800; font-size: 0.85rem;">${asset.name}</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-edit" style="background: none; border: none; color: #888; cursor: pointer;"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" style="background: none; border: none; color: #ff4757; cursor: pointer;"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             </div>
         `);
 
-        $el.find('.btn-edit-asset').click(() => openAssetModal(asset));
-        $el.find('.btn-delete-asset').click(() => deleteAsset(asset.id));
-
+        $el.find('.btn-edit').click(() => openAssetModal(asset));
+        $el.find('.btn-delete').click(() => deleteAsset(asset.id));
         $grid.append($el);
     });
 }
 
-function openModelPicker() {
-    const $grid = $('#picker-grid');
-    $grid.empty();
-
-    myAssets.forEach(asset => {
-        const $option = $(`
-            <div class="model-option">
-                <img src="${asset.poster_url || 'https://via.placeholder.com/150?text=3D'}" alt="${asset.name}">
-                <div style="font-weight: bold; font-size: 0.9rem;">${asset.name}</div>
-            </div>
-        `);
-
-        $option.click(async () => {
-            await assignModelToView(asset.id);
-            $('#model-picker').removeClass('active');
-        });
-
-        $grid.append($option);
-    });
-
-    if (myAssets.length === 0) {
-        $grid.html('<div style="grid-column: 1/-1; text-align: center; color: #888;">Primero debes subir un modelo 3D.</div>');
-    }
-
-    $('#model-picker').addClass('active');
-}
-
-async function assignModelToView(assetId) {
-    Swal.fire({ title: 'Asignando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    try {
-        const assData = {
-            user_id: currentUser.id,
-            view_name: currentAssignView,
-            target: currentAssignTarget,
-            asset_id: assetId,
-            is_active: true
-        };
-
-        const { error } = await _supabase.from('build_assignments').upsert(assData, { onConflict: 'user_id,view_name,target' });
-        if (error) throw error;
-
-        await loadInitialData(); // Refresh UI
-        Swal.fire('¡Éxito!', 'Modelo asignado correctamente', 'success');
-    } catch (e) {
-        console.error(e);
-        Swal.fire('Error', 'No se pudo asignar el modelo', 'error');
-    }
-}
-
-// --- Asset CRUD ---
+// --- Side Panel & Modal Events ---
 
 function setupEvents() {
-    // Tabs switching
+    // Side Panel
+    $('#btn-toggle-side').click(() => { $('#build-side-panel, #side-panel-overlay').addClass('active'); });
+    $('#btn-close-side, #side-panel-overlay').click(() => { $('#build-side-panel, #side-panel-overlay').removeClass('active'); });
+
+    // Tabs
     $('.slot-tab-btn').click(function() {
         $('.slot-tab-btn').removeClass('active');
         $(this).addClass('active');
@@ -266,36 +201,46 @@ function setupEvents() {
         $(`#${$(this).data('tab')}`).addClass('active');
     });
 
-    $('#btn-open-upload').click(() => openAssetModal());
-
-    // Save
-    $('#btn-save-asset').click(saveAsset);
-
-    // Dropzone
-    const $zone = $('#drop-zone-asset');
-    $zone.on('dragover dragenter', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
-    $zone.on('dragleave dragend drop', function(e) { e.preventDefault(); $(this).removeClass('dragover'); });
-    $zone.on('drop', function(e) {
-        const files = e.originalEvent.dataTransfer.files;
-        handleFiles(files);
+    $('#btn-open-upload').click(() => {
+        $('#build-side-panel, #side-panel-overlay').removeClass('active');
+        openAssetModal();
     });
-    $('#input-asset-files').on('change', function() { handleFiles(this.files); });
+
+    // Asset Dropzone
+    setupDropzone('#drop-zone-asset', (files) => {
+        droppedGltf = null; droppedExtras = [];
+        Array.from(files).forEach(f => {
+            if (f.name.toLowerCase().endsWith('.gltf') || f.name.toLowerCase().endsWith('.glb')) droppedGltf = f;
+            else droppedExtras.push(f);
+        });
+        const label = droppedGltf ? `OK: ${droppedGltf.name}` : 'No 3D file found';
+        $('#drop-zone-asset .file-name').text(label);
+    });
+
+    // Poster Dropzone
+    setupDropzone('#drop-zone-poster', (files) => {
+        droppedPoster = files[0];
+        if (droppedPoster) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                $('#drop-zone-poster').css('background-image', `url(${e.target.result})`).css('background-size', 'cover');
+                $('#drop-zone-poster i, #drop-zone-poster p').hide();
+            };
+            reader.readAsDataURL(droppedPoster);
+            $('#drop-zone-poster .file-name').text(droppedPoster.name);
+        }
+    });
+
+    $('#btn-save-asset').click(saveAsset);
 }
 
-function handleFiles(files) {
-    droppedGltf = null;
-    droppedExtras = [];
-    Array.from(files).forEach(f => {
-        if (f.name.toLowerCase().endsWith('.gltf') || f.name.toLowerCase().endsWith('.glb')) droppedGltf = f;
-        else droppedExtras.push(f);
-    });
-
-    const $label = $('#drop-zone-asset .file-name');
-    if (droppedGltf) {
-        $label.html(`¡Listo! Principal: ${droppedGltf.name} <br> <small>${droppedExtras.length} archivos extras</small>`);
-    } else {
-        $label.text('No se detectó archivo .gltf o .glb');
-    }
+function setupDropzone(selector, callback) {
+    const $zone = $(selector);
+    $zone.on('dragover dragenter', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
+    $zone.on('dragleave dragend drop', function(e) { e.preventDefault(); $(this).removeClass('dragover'); });
+    $zone.on('drop', function(e) { callback(e.originalEvent.dataTransfer.files); });
+    $zone.find('input').on('change', function() { callback(this.files); });
+    $zone.click(function() { $(this).find('input').click(); });
 }
 
 function openAssetModal(asset = null) {
@@ -304,9 +249,13 @@ function openAssetModal(asset = null) {
     $('#asset-name').val(asset ? asset.name : '');
     $('#asset-animation').val(asset ? asset.animation_type : 'orbit');
     $('#asset-scale').val(asset ? asset.scale : 1.8);
-    $('#drop-zone-asset .file-name').text('');
-    droppedGltf = null;
-    droppedExtras = [];
+    $('#asset-particles').val(asset ? (asset.particle_asset || 'none') : 'none');
+
+    // Reset dropzones
+    $('.file-name').text('');
+    $('#drop-zone-poster').css('background-image', 'none');
+    $('#drop-zone-poster i, #drop-zone-poster p').show();
+    droppedGltf = null; droppedExtras = []; droppedPoster = null;
 
     $('#modal-asset').addClass('active');
 }
@@ -314,71 +263,64 @@ function openAssetModal(asset = null) {
 async function saveAsset() {
     const name = $('#asset-name').val();
     const id = $('#asset-id').val();
-    const animation = $('#asset-animation').val();
-    const scale = parseFloat($('#asset-scale').val());
-    const posterFile = $('#input-poster')[0].files[0];
-
-    if (!name) return Swal.fire('Aviso', 'El nombre es obligatorio', 'warning');
-    if (!id && !droppedGltf) return Swal.fire('Aviso', 'Debes subir el archivo 3D', 'warning');
+    if (!name) return Swal.fire('Aviso', 'Nombre requerido', 'warning');
+    if (!id && !droppedGltf) return Swal.fire('Aviso', 'Sube un archivo 3D', 'warning');
 
     Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     try {
-        let gltfUrl = null;
-        let posterUrl = null;
+        let gltfUrl = null, posterUrl = null;
+        if (droppedPoster) posterUrl = await CloudinaryUpload.uploadImage(droppedPoster);
 
-        // 1. Upload Poster to Cloudinary
-        if (posterFile) {
-            posterUrl = await CloudinaryUpload.uploadImage(posterFile);
-        }
-
-        // 2. Upload GLTF to Supabase
         if (droppedGltf) {
             const folder = Date.now();
             const mainPath = `build_models/${currentUser.id}/${folder}/${droppedGltf.name}`;
             await _supabase.storage.from('spirits').upload(mainPath, droppedGltf);
             gltfUrl = _supabase.storage.from('spirits').getPublicUrl(mainPath).data.publicUrl;
-
             for (const f of droppedExtras) {
                 await _supabase.storage.from('spirits').upload(`build_models/${currentUser.id}/${folder}/${f.name}`, f);
             }
         }
 
         const data = {
-            name, animation_type: animation, scale, user_id: currentUser.id
+            name, user_id: currentUser.id,
+            animation_type: $('#asset-animation').val(),
+            scale: parseFloat($('#asset-scale').val()),
+            particle_asset: $('#asset-particles').val()
         };
         if (gltfUrl) data.gltf_url = gltfUrl;
         if (posterUrl) data.poster_url = posterUrl;
 
-        let res;
-        if (id) res = await _supabase.from('build_assets').update(data).eq('id', id);
-        else res = await _supabase.from('build_assets').insert([data]);
-
+        const res = id ? await _supabase.from('build_assets').update(data).eq('id', id) : await _supabase.from('build_assets').insert([data]);
         if (res.error) throw res.error;
 
         await loadInitialData();
         $('#modal-asset').removeClass('active');
-        Swal.fire('¡Éxito!', 'Modelo guardado correctamente', 'success');
+        Swal.fire('¡Éxito!', 'Guardado', 'success');
     } catch (e) {
-        console.error(e);
-        Swal.fire('Error', 'No se pudo guardar: ' + e.message, 'error');
+        Swal.fire('Error', e.message, 'error');
     }
 }
 
 async function deleteAsset(id) {
-    const { isConfirmed } = await Swal.fire({
-        title: '¿Eliminar modelo?',
-        text: 'Esto también quitará las asignaciones activas.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ff4757'
-    });
-
+    const { isConfirmed } = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
     if (isConfirmed) {
         const { error } = await _supabase.from('build_assets').delete().eq('id', id);
-        if (error) return Swal.fire('Error', 'No se pudo borrar', 'error');
-
-        await loadInitialData();
-        Swal.fire('Eliminado', '', 'success');
+        if (!error) { await loadInitialData(); Swal.fire('Eliminado', '', 'success'); }
     }
+}
+
+function openModelPicker() {
+    const $grid = $('#picker-grid').empty();
+    myAssets.forEach(asset => {
+        const $opt = $(`<div class="model-option"><img src="${asset.poster_url || ''}"><div style="font-weight:bold; font-size:0.8rem;">${asset.name}</div></div>`);
+        $opt.click(async () => {
+            const assData = { user_id: currentUser.id, view_name: currentAssignView, target: currentAssignTarget, asset_id: asset.id, is_active: true };
+            await _supabase.from('build_assignments').upsert(assData, { onConflict: 'user_id,view_name,target' });
+            await loadInitialData();
+            $('#model-picker').removeClass('active');
+        });
+        $grid.append($opt);
+    });
+    $('#model-picker').addClass('active');
 }
