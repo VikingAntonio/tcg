@@ -17,17 +17,32 @@
 </head>
 <body class="build-body">
 
-    <div class="build-container">
-        <!-- Header -->
-        <header class="build-header">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 20px;">
-                <button onclick="window.location.href='admin.html'" class="btn-build-main" style="background: rgba(255,255,255,0.1); color: white;">
-                    <i class="fas fa-arrow-left"></i> Panel
-                </button>
-                <div class="view-icon"><i class="fas fa-tools"></i></div>
+    <!-- Collapsible Side Panel -->
+    <div id="build-side-panel" class="side-panel">
+        <div class="side-panel-header">
+            <h3>HERRAMIENTAS</h3>
+            <button id="btn-close-side" class="btn-icon"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="side-panel-content">
+            <button id="btn-open-upload" class="btn-build-main" style="width: 100%; margin-bottom: 20px;">
+                <i class="fas fa-plus"></i> NUEVO MODELO
+            </button>
+            <div class="side-info">
+                <p>Gestiona tus modelos 3D y asígnalos a las vistas públicas o de administración.</p>
             </div>
-            <h1>BUILD SYSTEM</h1>
-            <p>Configura placeholders 3D para tus herramientas en construcción</p>
+        </div>
+    </div>
+    <div id="side-panel-overlay" class="panel-overlay"></div>
+
+    <div class="build-container">
+        <!-- Minimal Header -->
+        <header class="build-header-minimal">
+            <button onclick="window.location.href='admin.html'" class="btn-build-nav">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <button id="btn-toggle-side" class="btn-build-nav">
+                <i class="fas fa-bars"></i>
+            </button>
         </header>
 
         <!-- Tool Interception Cards -->
@@ -40,13 +55,10 @@
         <section class="build-assets-section">
             <div class="section-title-row">
                 <h2>MIS MODELOS 3D</h2>
-                <button id="btn-open-upload" class="btn-build-main">
-                    <i class="fas fa-plus"></i> NUEVO MODELO
-                </button>
             </div>
 
-            <div class="view-grid" id="assets-grid">
-                <!-- Dynamically loaded -->
+            <div class="assets-grid-container" id="assets-grid">
+                <!-- Dynamically loaded 4 columns desktop / 2 mobile -->
             </div>
         </section>
     </div>
@@ -55,31 +67,44 @@
     <div id="modal-asset" class="overlay">
         <div class="overlay-content build-modal">
             <span class="close-btn" onclick="$('#modal-asset').removeClass('active')">&times;</span>
-            <h2 class="modal-title-custom" id="asset-modal-title">NUEVO ASSET</h2>
+            <h2 class="modal-title-custom" id="asset-modal-title">NUEVO MODELO</h2>
             <input type="hidden" id="asset-id">
 
-            <div class="slot-modal-tabs" style="margin-bottom: 30px;">
-                <button class="slot-tab-btn active" data-tab="tab-file">ARCHIVO</button>
-                <button class="slot-tab-btn" data-tab="tab-meta">DETALLES</button>
+            <div class="slot-modal-tabs">
+                <button class="slot-tab-btn active" data-tab="tab-model">MODELO</button>
+                <button class="slot-tab-btn" data-tab="tab-config">CONFIGURACIÓN</button>
             </div>
 
-            <div id="tab-file" class="slot-tab-content active">
+            <div id="tab-model" class="slot-tab-content active">
                 <div class="modern-form-group">
                     <label>NOMBRE DEL MODELO</label>
                     <input type="text" id="asset-name" class="modern-input" placeholder="Ej: Dragon en Construcción">
                 </div>
-                <div class="modern-form-group">
-                    <label>ARCHIVOS GLTF / GLB</label>
-                    <label class="drop-zone-modern" id="drop-zone-asset">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Suelta los archivos aquí (.gltf, .glb, .bin, texturas)</p>
-                        <input type="file" id="input-asset-files" multiple accept=".gltf,.glb,.bin,.png,.jpg,.jpeg,.webp" style="display: none;">
-                        <div class="file-name" style="color: var(--build-primary); margin-top: 10px; font-weight: bold;"></div>
-                    </label>
+
+                <div class="modern-form-grid">
+                    <div class="modern-form-group">
+                        <label>ARCHIVOS GLTF / GLB</label>
+                        <label class="drop-zone-modern" id="drop-zone-asset">
+                            <i class="fas fa-cube"></i>
+                            <p>Arrastra .gltf o .glb</p>
+                            <input type="file" id="input-asset-files" multiple accept=".gltf,.glb,.bin,.png,.jpg,.jpeg,.webp" style="display: none;">
+                            <div class="file-name"></div>
+                        </label>
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label>POSTER / MINIATURA</label>
+                        <label class="drop-zone-modern" id="drop-zone-poster">
+                            <i class="fas fa-image"></i>
+                            <p>Arrastra una imagen</p>
+                            <input type="file" id="input-poster-file" accept="image/*" style="display: none;">
+                            <div class="file-name"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <div id="tab-meta" class="slot-tab-content">
+            <div id="tab-config" class="slot-tab-content">
                 <div class="info-grid">
                     <div class="modern-form-group">
                         <label>ANIMACIÓN</label>
@@ -95,13 +120,18 @@
                     </div>
                 </div>
                 <div class="modern-form-group">
-                    <label>POSTER (OPCIONAL)</label>
-                    <input type="file" id="input-poster" accept="image/*" class="modern-input">
+                    <label>SISTEMA DE PARTÍCULAS</label>
+                    <select id="asset-particles" class="modern-input">
+                        <option value="none">Ninguno</option>
+                        <option value="dust">Polvo Estelar</option>
+                        <option value="fire">Chispas</option>
+                        <option value="snow">Nieve</option>
+                    </select>
                 </div>
             </div>
 
-            <button id="btn-save-asset" class="btn-build-main" style="width: 100%; height: 60px; justify-content: center; margin-top: 20px;">
-                <i class="fas fa-save"></i> GUARDAR MODELO
+            <button id="btn-save-asset" class="btn-build-main btn-save-full">
+                <i class="fas fa-save"></i> GUARDAR CAMBIOS
             </button>
         </div>
     </div>
@@ -109,9 +139,9 @@
     <!-- Model Picker Popover -->
     <div id="model-picker" class="model-picker-overlay">
         <div class="model-picker-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h2 style="margin: 0;">SELECCIONAR MODELO</h2>
-                <button class="btn-build-main" style="padding: 10px 20px; background: rgba(255,255,255,0.1); color: white;" onclick="$('#model-picker').removeClass('active')">CERRAR</button>
+            <div class="picker-header">
+                <h2>SELECCIONAR MODELO</h2>
+                <button class="btn-close-picker" onclick="$('#model-picker').removeClass('active')">&times;</button>
             </div>
             <div class="model-picker-grid" id="picker-grid">
                 <!-- Loaded assets -->
