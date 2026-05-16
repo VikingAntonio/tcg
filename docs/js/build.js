@@ -143,9 +143,22 @@ function renderViewGrid() {
 
 function renderPickerContent(model) {
     if (!model) return `<i class="fas fa-plus-circle"></i> ASIGNAR`;
+    const scale = model.scale || 1.8;
+    const anim = model.animation_type || 'orbit';
+    const autoRotate = (anim === 'orbit' || anim === 'float') ? 'auto-rotate' : '';
+
     return `
         <div style="display: flex; align-items: center; gap: 10px; text-align: left;">
-            <img src="${model.poster_url || 'https://via.placeholder.com/40'}" style="width: 30px; height: 30px; border-radius: 5px; object-fit: cover;">
+            <div style="width: 30px; height: 30px; border-radius: 5px; overflow: hidden; background: rgba(0,0,0,0.1);">
+                <model-viewer
+                    src="${model.gltf_url}"
+                    poster="${model.poster_url || ''}"
+                    loading="lazy"
+                    ${autoRotate}
+                    scale="${scale} ${scale} ${scale}"
+                    style="width: 100%; height: 100%;">
+                </model-viewer>
+            </div>
             <div style="font-size: 0.75rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
                 ${model.name}
             </div>
@@ -165,10 +178,14 @@ function renderAssetsGrid() {
     $grid.empty();
 
     myAssets.forEach(asset => {
+        const scale = asset.scale || 1.8;
+        const anim = asset.animation_type || 'orbit';
+        const autoRotate = (anim === 'orbit' || anim === 'float') ? 'auto-rotate' : '';
+
         const $el = $(`
             <div class="asset-card">
                 <div class="asset-viewer-container">
-                    <model-viewer src="${asset.gltf_url}" poster="${asset.poster_url || ''}" loading="lazy" auto-rotate style="width:100%; height:100%;"></model-viewer>
+                    <model-viewer src="${asset.gltf_url}" poster="${asset.poster_url || ''}" loading="lazy" ${autoRotate} scale="${scale} ${scale} ${scale}" style="width:100%; height:100%;"></model-viewer>
                 </div>
                 <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-weight: 800; font-size: 0.85rem;">${asset.name}</span>
@@ -321,7 +338,25 @@ async function deleteAsset(id) {
 function openModelPicker() {
     const $grid = $('#picker-grid').empty();
     myAssets.forEach(asset => {
-        const $opt = $(`<div class="model-option"><img src="${asset.poster_url || ''}"><div style="font-weight:bold; font-size:0.8rem;">${asset.name}</div></div>`);
+        const scale = asset.scale || 1.8;
+        const anim = asset.animation_type || 'orbit';
+        const autoRotate = (anim === 'orbit' || anim === 'float') ? 'auto-rotate' : '';
+
+        const $opt = $(`
+            <div class="model-option">
+                <div style="width: 100%; height: 80px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.05); margin-bottom: 8px;">
+                    <model-viewer
+                        src="${asset.gltf_url}"
+                        poster="${asset.poster_url || ''}"
+                        loading="lazy"
+                        ${autoRotate}
+                        scale="${scale} ${scale} ${scale}"
+                        style="width: 100%; height: 100%;">
+                    </model-viewer>
+                </div>
+                <div style="font-weight:bold; font-size:0.8rem;">${asset.name}</div>
+            </div>
+        `);
         $opt.click(async () => {
             const assData = { user_id: currentUser.id, view_name: currentAssignView, target: currentAssignTarget, asset_id: asset.id, is_active: true };
             await _supabase.from('build_assignments').upsert(assData, { onConflict: 'user_id,view_name,target' });
