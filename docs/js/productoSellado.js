@@ -109,15 +109,15 @@ $(document).ready(async function() {
 
 async function checkSession() {
     console.log("Checking session...");
-    const { data: { session }, error: sessionError } = await _supabase.auth.getSession();
+    try {
+        const { data: { session }, error: sessionError } = await _supabase.auth.getSession();
 
-    if (sessionError) {
-        console.error("Session error:", sessionError);
-        window.location.href = 'admin.html';
-        return;
-    }
+        if (sessionError || !session) {
+            console.warn("No active session or session error.");
+            window.location.href = 'admin.html';
+            return;
+        }
 
-    if (session) {
         console.log("Session found for user:", session.user.id);
         const { data: user, error: userError } = await _supabase
             .from('usuarios')
@@ -125,24 +125,19 @@ async function checkSession() {
             .eq('id', session.user.id)
             .single();
 
-        if (userError) {
-            console.error("User fetch error:", userError);
+        if (userError || !user) {
+            console.error("User fetch error or user not found.");
             window.location.href = 'admin.html';
             return;
         }
 
-        if (user) {
-            currentUser = user;
-            $('#dropdown-user-name').text(user.username);
-            console.log("Auth success. Showing content for", user.username);
-            $('#top-panel, #authenticated-content').show();
-            loadProducts();
-        } else {
-            console.warn("User data not found in table.");
-            window.location.href = 'admin.html';
-        }
-    } else {
-        console.log("No active session. Redirecting...");
+        currentUser = user;
+        $('#dropdown-user-name').text(user.username);
+        console.log("Auth success. Showing content for", user.username);
+        $('#top-panel, #authenticated-content').fadeIn();
+        loadProducts();
+    } catch (err) {
+        console.error("Unexpected session check error:", err);
         window.location.href = 'admin.html';
     }
 }
@@ -219,19 +214,6 @@ async function loadProducts() {
     }
 }
 
-let ygoSetsCache = null;
-async function getYgoSets() {
-    if (ygoSetsCache) return ygoSetsCache;
-    try {
-        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
-        ygoSetsCache = await response.json();
-    } catch (e) {
-        console.warn("Error fetching YGO sets:", e);
-        ygoSetsCache = [];
-    }
-    return ygoSetsCache;
-}
-
 async function searchExternalSets() {
     const query = $('#external-search-input').val().trim().toLowerCase();
 
@@ -245,7 +227,7 @@ async function searchExternalSets() {
     try {
         const searchPromises = [
             // Yu-Gi-Oh Sets
-            getYgoSets(),
+            (typeof getYgoSets === 'function' ? getYgoSets() : Promise.resolve([])),
             // Yu-Gi-Oh Cards
             fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
             // Pokémon Sets
