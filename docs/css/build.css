@@ -65,10 +65,24 @@ body.build-body {
 
 /* Section Cards Grid (Interceptions) */
 .view-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
     gap: 20px;
     margin-bottom: 60px;
+}
+
+@media (max-width: 1024px) {
+    .view-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 15px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .view-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
 }
 
 .view-card {
@@ -80,6 +94,12 @@ body.build-body {
     transition: all 0.3s ease;
 }
 
+@media (max-width: 480px) {
+    .view-card {
+        padding: 15px;
+    }
+}
+
 .view-card:hover {
     border-color: var(--build-primary);
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
@@ -87,22 +107,24 @@ body.build-body {
 
 /* Assets Grid - STRICT 4 Columns Desktop / 2 Mobile */
 .assets-grid-container {
-    display: grid;
+    display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 30px;
     margin-top: 40px;
 }
 
-@media (max-width: 1200px) {
-    .assets-grid-container { gap: 20px; }
-}
-
-@media (max-width: 992px) {
-    .assets-grid-container { grid-template-columns: repeat(2, 1fr) !important; }
+@media (max-width: 1024px) {
+    .assets-grid-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 15px !important;
+    }
 }
 
 @media (max-width: 480px) {
-    .assets-grid-container { grid-template-columns: repeat(2, 1fr) !important; }
+    .assets-grid-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
 }
 
 .asset-card {
