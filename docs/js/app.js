@@ -1233,28 +1233,28 @@ async function switchView(view) {
 
             if (assignment && assignment.build_assets) {
                 const asset = assignment.build_assets;
+                const scale = asset.scale || 1.8;
+                const anim = asset.animation_type || 'orbit';
+                const autoRotate = (anim === 'orbit' || anim === 'float') ? 'auto-rotate' : '';
 
                 if (!$buildOverlay.length) {
                     $buildOverlay = $(`
-                        <div class="public-build-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 20px; text-align: center;">
+                        <div class="public-build-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 0;">
                             <model-viewer
                                 src="${asset.gltf_url}"
                                 poster="${asset.poster_url || ''}"
                                 loading="lazy"
                                 camera-controls
-                                auto-rotate
+                                ${autoRotate}
+                                scale="${scale} ${scale} ${scale}"
                                 shadow-intensity="1"
                                 environment-image="neutral"
                                 exposure="1.2"
-                                style="width: 100%; height: 500px; max-width: 800px; background: rgba(0,0,0,0.05); border-radius: 20px; margin-bottom: 30px;">
+                                style="width: 100%; height: 100%; max-width: 1000px;">
                             </model-viewer>
-                            <h2 style="color: var(--primary-color); font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">Próximamente</h2>
-                            <p style="color: #888; max-width: 500px; font-size: 1.1rem;">Esta sección se encuentra actualmente en mantenimiento o construcción. ¡Vuelve pronto!</p>
-                            <button class="btn" style="margin-top: 30px; padding: 12px 30px; border-radius: 50px;" onclick="switchView('home')">Volver al Inicio</button>
                         </div>
                     `);
                     $view.append($buildOverlay);
-                    $view.css('position', 'relative');
                 }
 
                 $buildOverlay.show();
