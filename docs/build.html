@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <title>Vikingdev TCG - Build System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        .build-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .build-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+        .build-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.2);
+        }
+        .build-card h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+        .assignment-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .assignment-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .assignment-view {
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            color: var(--primary-color);
+        }
+        .assignment-target {
+            font-size: 0.65rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+        .btn-add-assignment {
+            background: var(--viking-gradient);
+            color: #000;
+            font-weight: 800;
+            border: none;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating User Panel -->
+    <div class="top-left-panel" id="top-panel" style="display: none;">
+        <div class="pill-panel">
+            <div class="pill-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                    </div>
+                    <a href="admin.html" class="menu-item"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="overlay">
+        <div class="overlay-content login-container">
+            <h1>Iniciar Sesión</h1>
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="login-username" placeholder="Tu nombre de usuario">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-password" placeholder="********">
+            </div>
+            <button id="btn-login" class="btn" style="width: 100%;">Entrar</button>
+        </div>
+    </div>
+
+    <!-- Authenticated Content -->
+    <div id="authenticated-content" style="display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding: 100px 20px;">
+        <div class="admin-header">
+            <button onclick="window.location.href='admin.html'" class="btn btn-secondary" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
+            <h1>Sistema Build</h1>
+            <p>Sube modelos GLTF y selecciónalos para mostrar en lugar de herramientas en construcción.</p>
+            <div style="margin-top: 20px;">
+                <button id="btn-open-upload-build" class="btn"><i class="fas fa-upload"></i> Subir Nuevo Modelo Build</button>
+            </div>
+        </div>
+
+        <div class="sticky-tabs-container" style="margin-top: 30px;">
+            <button class="tab-pill active" data-tab="tab-assets">Mis Modelos</button>
+            <button class="tab-pill" data-tab="tab-assignments">Asignaciones Activas</button>
+        </div>
+
+        <div id="tab-assets" class="tab-content active">
+            <div id="build-assets-grid" class="build-grid">
+                <div class="loading">Cargando modelos...</div>
+            </div>
+        </div>
+
+        <div id="tab-assignments" class="tab-content" style="display: none;">
+            <div id="build-assignments-list" style="margin-top: 20px;">
+                <div class="loading">Cargando asignaciones...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Build Upload Modal -->
+    <div id="build-upload-modal" class="overlay">
+        <div class="overlay-content">
+            <span id="close-build-upload-modal" class="close-btn">&times;</span>
+            <h2 id="build-modal-title">Subir Nuevo Modelo Build</h2>
+            <input type="hidden" id="edit-build-id">
+
+            <div class="slot-modal-tabs">
+                <button class="slot-tab-btn active" data-tab="build-tab-modelo">Modelo</button>
+                <button class="slot-tab-btn" data-tab="build-tab-config">Configuración</button>
+            </div>
+
+            <div id="build-tab-modelo" class="slot-tab-content active">
+                <div class="form-group">
+                    <label>Nombre del Modelo</label>
+                    <input type="text" id="input-build-name" placeholder="Ej: En Construcción">
+                </div>
+                <div class="form-group">
+                    <label>Archivos del Modelo (GLTF, GLB, BIN, Texturas)</label>
+                    <label class="drop-zone file-drop-zone" id="drop-zone-build" for="input-build-files" style="display: block;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Arrastra los archivos (.gltf, .glb, .bin, texturas) aquí</p>
+                        <input type="file" id="input-build-files" multiple accept=".gltf,.glb,.bin,.png,.jpg,.jpeg,.webp" style="display: none;">
+                        <div class="file-name"></div>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Poster del Modelo (Imagen de carga)</label>
+                    <label class="drop-zone file-drop-zone" id="drop-zone-build-poster" for="input-build-poster" style="display: block;">
+                        <i class="fas fa-image"></i>
+                        <p>Arrastra un poster aquí</p>
+                        <input type="file" id="input-build-poster" accept="image/*" style="display: none;">
+                        <div class="file-name"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="build-tab-config" class="slot-tab-content">
+                <div class="form-group">
+                    <label>Tipo de Animación</label>
+                    <select id="input-build-animation">
+                        <option value="orbit">Órbita (Giro Z)</option>
+                        <option value="float">Flotante</option>
+                        <option value="float-static">Flotante Estático</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Escala</label>
+                    <input type="number" id="input-build-scale" step="0.1" value="1.8">
+                </div>
+                <div class="form-group">
+                    <label>Partículas</label>
+                    <select id="input-build-particle-movement">
+                        <option value="falling">Cayendo</option>
+                        <option value="trail">Estela</option>
+                        <option value="none">Ninguna</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="btn-save-build-asset" class="btn" style="width: 100%; margin-top: 20px;"><i class="fas fa-save"></i> Guardar Modelo</button>
+        </div>
+    </div>
+
+    <!-- Assignment Modal -->
+    <div id="assignment-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 400px;">
+            <span id="close-assignment-modal" class="close-btn">&times;</span>
+            <h2>Asignar Modelo Build</h2>
+            <input type="hidden" id="assign-asset-id">
+
+            <div class="form-group">
+                <label>Sección / Vista</label>
+                <select id="assign-view-name">
+                    <option value="albums">Álbumes</option>
+                    <option value="decks">Decks</option>
+                    <option value="auctions">Subastas</option>
+                    <option value="sealed">Producto Sellado</option>
+                    <option value="preorders">Preventas</option>
+                    <option value="wishlist">Wishlist</option>
+                    <option value="investments">Inversiones</option>
+                    <option value="claims">Claims</option>
+                    <option value="events">Eventos</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Destino</label>
+                <select id="assign-target">
+                    <option value="public">Link Público</option>
+                    <option value="admin">Link Admin (Herramientas)</option>
+                </select>
+            </div>
+
+            <button id="btn-confirm-assignment" class="btn" style="width: 100%; margin-top: 15px;">Confirmar Asignación</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/cloudinary-upload.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/build.js"></script>
+</body>
+</html>
