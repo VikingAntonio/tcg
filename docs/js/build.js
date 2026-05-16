@@ -190,8 +190,15 @@ function renderAssetsGrid() {
 
 function setupEvents() {
     // Side Panel
-    $('#btn-toggle-side').click(() => { $('#build-side-panel, #side-panel-overlay').addClass('active'); });
-    $('#btn-close-side, #side-panel-overlay').click(() => { $('#build-side-panel, #side-panel-overlay').removeClass('active'); });
+    $('#side-tab-trigger').click(() => {
+        $('#build-side-panel, #side-panel-overlay').addClass('active');
+        $('#side-tab-trigger').css('opacity', '0');
+    });
+
+    $('#side-panel-overlay').click(() => {
+        $('#build-side-panel, #side-panel-overlay').removeClass('active');
+        $('#side-tab-trigger').css('opacity', '1');
+    });
 
     // Tabs
     $('.slot-tab-btn').click(function() {
@@ -203,6 +210,7 @@ function setupEvents() {
 
     $('#btn-open-upload').click(() => {
         $('#build-side-panel, #side-panel-overlay').removeClass('active');
+        $('#side-tab-trigger').css('opacity', '1');
         openAssetModal();
     });
 

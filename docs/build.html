@@ -17,19 +17,17 @@
 </head>
 <body class="build-body">
 
+    <!-- Vertical Side Tab Trigger -->
+    <div id="side-tab-trigger" class="vertical-side-tab">
+        <span>HERRAMIENTAS</span>
+    </div>
+
     <!-- Collapsible Side Panel -->
     <div id="build-side-panel" class="side-panel">
-        <div class="side-panel-header">
-            <h3>HERRAMIENTAS</h3>
-            <button id="btn-close-side" class="btn-icon"><i class="fas fa-times"></i></button>
-        </div>
         <div class="side-panel-content">
             <button id="btn-open-upload" class="btn-build-main" style="width: 100%; margin-bottom: 20px;">
                 <i class="fas fa-plus"></i> NUEVO MODELO
             </button>
-            <div class="side-info">
-                <p>Gestiona tus modelos 3D y asígnalos a las vistas públicas o de administración.</p>
-            </div>
         </div>
     </div>
     <div id="side-panel-overlay" class="panel-overlay"></div>
@@ -40,9 +38,7 @@
             <button onclick="window.location.href='admin.html'" class="btn-build-nav">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <button id="btn-toggle-side" class="btn-build-nav">
-                <i class="fas fa-bars"></i>
-            </button>
+            <h1 class="build-page-title">BUILD MODE</h1>
         </header>
 
         <!-- Tool Interception Cards -->

@@ -1,4 +1,6 @@
 -- New Build System Migration
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Table for Build Assets (Separate from Spirits)
 CREATE TABLE IF NOT EXISTS build_assets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
