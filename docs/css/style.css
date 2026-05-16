@@ -4853,3 +4853,17 @@ body.focus-mode-active .event-card {
         gap: 15px;
     }
 }
+
+/* PC Version - Public Link - Enlarge Companion GLTF */
+@media (min-width: 1024px) {
+    .public-body #companion-wrapper {
+        width: 250px;
+        height: 500px;
+    }
+    .public-body .companion-bubble {
+        bottom: 500px;
+    }
+    .public-body .companion-menu-popup {
+        bottom: 510px;
+    }
+}
