@@ -18,8 +18,10 @@ window.showLoading = function(message) {
 }
 
 window.hideLoading = function() {
-    window.isLoading = false;
-    window.dispatchEvent(new CustomEvent('hide-loading'));
+    if (window.isLoading) {
+        window.isLoading = false;
+        window.dispatchEvent(new CustomEvent('hide-loading'));
+    }
 }
 
 // Aliases for internal use
@@ -289,17 +291,6 @@ $(document).ready(async function() {
     });
 
 
-    $('#btn-nav-return').on('click', function() {
-        // Simple return logic: if not in home, go to home.
-        // Could be enhanced to use a navigation stack.
-        const currentView = new URLSearchParams(window.location.search).get('view');
-        if (currentView && currentView !== 'home') {
-            switchView('home');
-        } else {
-            // If already at home or no view param, maybe go back in history
-            window.history.back();
-        }
-    });
 
     // --- Floating Panel Logic ---
     $(document).on('click', '#avatar-btn', function(e) {
@@ -387,8 +378,8 @@ $(document).ready(async function() {
         else if (urlParams.has('wishlistId') || urlParams.has('slot')) initialView = 'wishlist';
     }
 
-    // Solo mostramos pantalla de carga inicial si la vista no es home
-    if (initialView !== 'home') {
+    // Solo mostramos pantalla de carga inicial si la vista es álbumes (por links públicos o compartidos)
+    if (initialView === 'albums') {
         showLoading('Cargando...');
     }
 
@@ -400,9 +391,18 @@ $(document).ready(async function() {
         if (view) switchView(view);
     });
 
+    // Handle Browser Back/Forward Buttons
+    window.addEventListener('popstate', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const view = urlParams.get('view') || 'home';
+        switchView(view, true);
+    });
+
     // Explicitly call the initial loader
     switchView(initialView).then(() => {
         setTimeout(() => window.handleDeepLinking(), 800);
+    }).finally(() => {
+        hideLoading();
     });
 
     $('#spirit-btn').click(function() {
@@ -1197,7 +1197,7 @@ function applyVisualsToModal(holo, mask, use3d) {
     $card3d.addClass("active");
 }
 
-async function switchView(view) {
+async function switchView(view, skipPush = false) {
     if (!view) return;
 
     $('.nav-btn').removeClass('active');
@@ -1260,9 +1260,11 @@ async function switchView(view) {
                 $buildOverlay.show();
 
                 // Track state
-                const url = new URL(window.location);
-                url.searchParams.set('view', view);
-                window.history.pushState({}, '', url);
+                if (!skipPush) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('view', view);
+                    window.history.pushState({}, '', url);
+                }
                 if (window.botInstance) window.botInstance.setContext(view);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return; // Stop further loading of this view
@@ -1275,7 +1277,7 @@ async function switchView(view) {
     }
 
     if (view === 'albums') {
-        showLoading('Cargando Álbumes...');
+        // La pantalla de carga solo debe salir en el load inicial de álbumes
         if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
     } else if (view === 'sealed') {
         await loadPublicSealed();
@@ -1301,9 +1303,11 @@ async function switchView(view) {
         await loadPublicInvestmentCategories();
     }
 
-    const url = new URL(window.location);
-    url.searchParams.set('view', view);
-    window.history.pushState({}, '', url);
+    if (!skipPush) {
+        const url = new URL(window.location);
+        url.searchParams.set('view', view);
+        window.history.pushState({}, '', url);
+    }
 
     if (window.botInstance) {
         window.botInstance.setContext(view);
@@ -1627,8 +1631,6 @@ async function initFloatingCompanion() {
 function loadPublicAlbums(userId) {
     return new Promise(async (resolve) => {
     if (!userId) { resolve(); return; }
-    const isAlbumsView = $('.nav-btn[data-view="albums"]').hasClass('active');
-    if (isAlbumsView) showLoading('Cargando interfaz...');
 
     const params = new URLSearchParams(window.location.search);
     const filterId = params.get('albumId');
