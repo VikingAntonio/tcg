@@ -192,8 +192,8 @@
     border: 1px solid var(--inv-black);
     box-shadow: 0 40px 100px rgba(0,0,0,0.2) !important;
     width: 95% !important;
-    max-width: 900px !important;
-    height: 700px !important;
+    max-width: 950px !important;
+    height: 650px !important;
     max-height: 95vh !important;
     display: flex;
     flex-direction: column;
@@ -201,6 +201,7 @@
     border-radius: 8px;
     z-index: 2000001 !important;
     overflow: hidden !important;
+    transition: none !important; /* Eliminate layout shift animations */
 }
 
 .inv-modal-header {
@@ -268,7 +269,7 @@
 
 .inv-modal-body {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden !important;
     padding: 0;
     scrollbar-width: none;
     -ms-overflow-style: none;

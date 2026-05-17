@@ -176,40 +176,42 @@
             </div>
 
             <div class="inv-modal-body" style="padding: 0;">
-                <!-- Tab: RESUMEN (Main Showcase) -->
+                <!-- Tab: RESUMEN (Asset Image + Market Chart) -->
                 <div id="inv-tab-resumen" class="slot-tab-content active">
-                    <div class="inv-detail-container" style="display: flex; height: 100%;">
-                        <div class="inv-detail-image-side" style="flex: 1; background: #f8f9fa; display: flex; align-items: center; justify-content: center; padding: 40px; border-right: 1px solid #eee;">
-                            <div id="inv-card-3d-container" style="width: 100%; max-width: 350px;">
-                                <div id="inv-z-text-container">
-                                    <img id="inv-detail-image" src="" alt="Card Image" style="width: 100%; border-radius: 8px; border: 3px solid #000; box-shadow: 0 15px 40px rgba(0,0,0,0.15); transition: opacity 0.3s ease;">
-                                </div>
+                    <div style="display: flex; height: 100%;">
+                        <!-- Left: Image Preview -->
+                        <div style="flex: 1; background: #f8f9fa; display: flex; align-items: center; justify-content: center; padding: 40px; border-right: 1px solid #eee;">
+                            <div style="width: 100%; max-width: 320px;">
+                                <img id="inv-detail-image" src="" alt="Card Image" style="width: 100%; border-radius: 8px; border: 3px solid #000; box-shadow: 0 15px 40px rgba(0,0,0,0.15); transition: opacity 0.3s ease;">
                             </div>
                         </div>
-                        <div class="inv-detail-info-side" style="flex: 1; padding: 50px; display: flex; flex-direction: column; justify-content: center;">
-                            <div style="margin-bottom: 30px;">
-                                <div id="inv-detail-set" style="font-size: 0.65rem; font-weight: 800; color: #999; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 10px;">EXPANSION NAME - RARITY</div>
-                                <h2 id="inv-detail-name" style="margin: 0; font-size: 2.2rem; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1;">CARD NAME</h2>
+                        <!-- Right: Market Chart -->
+                        <div style="flex: 1.2; padding: 40px; display: flex; flex-direction: column;">
+                            <div style="margin-bottom: 20px;">
+                                <div id="inv-detail-set" style="font-size: 0.6rem; font-weight: 800; color: #999; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 5px;">EXPANSION NAME - RARITY</div>
+                                <h2 id="inv-detail-name" style="margin: 0; font-size: 1.8rem; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1;">CARD NAME</h2>
                             </div>
 
-                            <div style="background: #000; color: #fff; padding: 30px; border-radius: 4px; margin-bottom: 20px;">
-                                <div style="font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 5px;">Valoración Actual Mercado</div>
-                                <div style="display: flex; align-items: baseline; gap: 15px;">
-                                    <span id="inv-detail-price" style="font-size: 3rem; font-weight: 900; letter-spacing: -0.04em;">$0.00</span>
-                                    <span id="inv-detail-trend"></span>
+                            <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+                                <span id="inv-detail-price" style="font-size: 2.2rem; font-weight: 900; letter-spacing: -0.04em;">$0.00</span>
+                                <span id="inv-detail-trend"></span>
+                            </div>
+
+                            <div style="flex: 1; min-height: 0;">
+                                <label style="font-size: 0.65rem; font-weight: 800; color: #aaa; text-transform: uppercase; margin-bottom: 10px; display: block;">GRÁFICA DE MERCADO</label>
+                                <div style="height: calc(100% - 30px); background: #fff; border: 1px solid #f0f0f0; border-radius: 4px; padding: 15px;">
+                                    <canvas id="inv-price-chart"></canvas>
                                 </div>
                             </div>
-
-                            <p style="font-size: 0.85rem; color: #666; line-height: 1.6;">Monitorea el rendimiento de este activo físico en tiempo real con datos históricos integrados.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: DATOS (Search & Metadata) -->
-                <div id="inv-tab-datos" class="slot-tab-content">
-                    <div style="display: flex; height: 100%;">
-                        <div style="flex: 1; padding: 40px; overflow-y: auto; border-right: 1px solid #eee;">
-                            <div class="inv-search-container" id="inv-card-search-container" style="margin-bottom: 25px; display: flex; flex-direction: column; gap: 15px;">
+                <!-- Tab: DATOS (Search & Metadata - NO IMAGE) -->
+                <div id="inv-tab-datos" class="slot-tab-content" style="padding: 40px;">
+                    <div style="max-width: 650px; margin: 0 auto; display: flex; gap: 30px;">
+                        <div style="flex: 1;">
+                            <div class="inv-search-container" id="inv-card-search-container" style="margin-bottom: 30px; display: flex; flex-direction: column; gap: 20px; background: #f9f9f9; padding: 25px; border-radius: 8px;">
                                 <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
                                     <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-search"></i> BUSCAR EN BASES DE DATOS</label>
                                     <div style="display: flex; gap: 10px;">
@@ -219,17 +221,17 @@
                                 </div>
                                 <div style="height: 1px; background: #eee; width: 100%;"></div>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                                    <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-upload"></i> O CARGAR IMAGEN LOCAL</label>
-                                    <div class="inv-bg-light" id="drop-zone-inv-main" style="border: 2px dashed var(--inv-gray-300); height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer;">
-                                        <p style="font-size: 0.7rem; font-weight: 600; color: var(--inv-gray-700); margin: 0;">ARRASTRA O HAZ CLIC AQUÍ</p>
+                                    <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-upload"></i> CARGAR IMAGEN LOCAL</label>
+                                    <div class="inv-bg-light" id="drop-zone-inv-main" style="border: 2px dashed var(--inv-gray-300); height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: #fff;">
+                                        <p style="font-size: 0.7rem; font-weight: 600; color: var(--inv-gray-700); margin: 0;">SUBIR O ARRASTRAR IMAGEN</p>
                                         <input type="file" id="input-inv-main-file" accept="image/*" style="display: none;">
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="inv-card-search-results" style="margin-bottom: 30px; max-height: 120px; overflow-y: auto;">
-                                <!-- Results -->
-                            </div>
+                            <div id="inv-card-search-results" style="margin-bottom: 30px; max-height: 100px; overflow-y: auto;">
+                            <!-- Results -->
+                        </div>
 
                             <div class="inv-form-row">
                                 <div class="inv-form-group" style="grid-column: span 2;">
@@ -259,56 +261,58 @@
                             </div>
                         </div>
 
-                        <!-- Sidebar for Preview in Datos Tab -->
-                        <div style="flex: 0 0 300px; background: #fafafa; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <label style="font-size: 0.65rem; font-weight: 800; color: #999; text-transform: uppercase; margin-bottom: 20px;">VISTA PREVIA ACTIVO</label>
-                            <div id="inv-form-preview-container" style="width: 100%; max-width: 200px; opacity: 0; transition: opacity 0.3s ease;">
-                                <img id="inv-form-preview-image" src="" alt="Preview" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                            </div>
-                            <div id="inv-preview-placeholder" style="color: #ccc; text-align: center; font-size: 0.8rem;">
-                                <i class="fas fa-image fa-3x" style="margin-bottom: 15px; display: block;"></i>
-                                NINGUNA IMAGEN SELECCIONADA
+                        <!-- Mini Image Preview for Add Asset flow in DATOS tab -->
+                        <div id="inv-add-preview-container" style="flex: 0 0 150px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 25px;">
+                            <label style="font-size: 0.6rem; font-weight: 800; color: #aaa; text-transform: uppercase; margin-bottom: 15px;">VISTA PREVIA</label>
+                            <div style="width: 100%; border: 1px solid #eee; border-radius: 4px; padding: 10px; background: #fff;">
+                                <img id="inv-add-preview-image" src="" alt="Preview" style="width: 100%; border-radius: 2px; opacity: 0; transition: opacity 0.3s ease;">
+                                <div id="inv-add-preview-placeholder" style="font-size: 0.6rem; color: #ccc; text-align: center; padding: 20px 0;">
+                                    <i class="fas fa-image fa-2x" style="display: block; margin-bottom: 5px;"></i>
+                                    SIN IMAGEN
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: Images -->
+                <!-- Tab: IMAGES (Slideshow/Extra photos) -->
                 <div id="inv-tab-images" class="slot-tab-content" style="padding: 40px;">
-                    <div class="inv-form-group" style="margin-bottom: 30px;">
-                        <label>Notas</label>
-                        <textarea id="inv-card-notes" placeholder="Escribe aquí notas adicionales..." style="height: 120px;"></textarea>
-                    </div>
-                    <div class="inv-form-group">
-                        <label>Imágenes Adicionales (Drag & Drop)</label>
-                        <div class="inv-bg-light" id="drop-zone-inv-extra" style="border: 2px dashed var(--inv-gray-300); min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; transition: var(--inv-transition);">
-                            <i class="fas fa-images fa-3x" style="color: var(--inv-gray-300); margin-bottom: 15px;"></i>
-                            <p style="font-size: 0.8rem; font-weight: 600; color: var(--inv-gray-700);">Haz clic o arrastra imágenes aquí</p>
-                            <input type="file" id="input-inv-extra-files" accept="image/*" multiple style="display: none;">
+                    <div style="display: flex; gap: 40px; height: 100%;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700); margin-bottom: 15px; display: block;">SLIDE DE IMÁGENES ADICIONALES</label>
+                            <div class="inv-bg-light" id="drop-zone-inv-extra" style="border: 2px dashed var(--inv-gray-300); height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; transition: var(--inv-transition);">
+                                <i class="fas fa-images fa-3x" style="color: var(--inv-gray-300); margin-bottom: 15px;"></i>
+                                <p style="font-size: 0.8rem; font-weight: 600; color: var(--inv-gray-700);">Haz clic o arrastra imágenes aquí</p>
+                                <input type="file" id="input-inv-extra-files" accept="image/*" multiple style="display: none;">
+                            </div>
+                            <div id="inv-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px; margin-top: 25px;">
+                                <!-- Extra images preview -->
+                            </div>
                         </div>
-                        <div id="inv-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px; margin-top: 20px;">
-                            <!-- Extra images preview -->
+                        <div style="flex: 1; border-left: 1px solid #eee; padding-left: 40px;">
+                            <div class="inv-form-group">
+                                <label>NOTAS ADICIONALES</label>
+                                <textarea id="inv-card-notes" placeholder="Condición física, ubicación, etc..." style="height: 300px; padding: 20px; resize: none;"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
 
 
-                <!-- Tab: MOVIMIENTOS (History & Charts) -->
-                <div id="inv-tab-movimientos" class="slot-tab-content">
-                    <div style="display: flex; height: 100%;">
-                        <div style="flex: 1.5; padding: 40px; border-right: 1px solid #eee; display: flex; flex-direction: column;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                                <h3 style="margin: 0; font-size: 1rem; font-weight: 800; text-transform: uppercase;">Gráfica de Rendimiento</h3>
-                                <button id="btn-inv-add-price" class="btn-inv-main" style="padding: 8px 15px; font-size: 0.7rem;"><i class="fas fa-plus"></i> ACTUALIZAR VALOR</button>
+                <!-- Tab: MOVIMIENTOS (History list & Add price) -->
+                <div id="inv-tab-movimientos" class="slot-tab-content" style="padding: 40px;">
+                    <div style="max-width: 700px; margin: 0 auto; height: 100%; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: #000; padding: 20px; border-radius: 4px;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #fff; text-transform: uppercase;">Control de Historial</h3>
+                                <p style="margin: 5px 0 0 0; font-size: 0.7rem; color: #888;">Registra actualizaciones de precio manuales.</p>
                             </div>
-                            <div style="flex: 1; background: #fff; border: 1px solid #f0f0f0; border-radius: 4px; padding: 20px;">
-                                <canvas id="inv-price-chart"></canvas>
-                            </div>
+                            <button id="btn-inv-add-price" class="btn-inv-main" style="background: #fff; color: #000; border-color: #fff;"><i class="fas fa-plus-circle"></i> AÑADIR PRECIO</button>
                         </div>
-                        <div style="flex: 1; padding: 40px; background: #fafafa; overflow-y: auto;">
-                            <h3 style="margin: 0 0 20px 0; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #999;">Historial de Cambios</h3>
-                            <div id="inv-history-list" style="display: flex; flex-direction: column; gap: 10px;">
-                                <!-- Historical list -->
+
+                        <div style="flex: 1; overflow-y: auto; background: #fff; border: 1px solid #eee; border-radius: 4px;">
+                            <div id="inv-history-list" style="display: flex; flex-direction: column;">
+                                <!-- Historical list items -->
                             </div>
                         </div>
                     </div>
