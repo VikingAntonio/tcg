@@ -361,7 +361,7 @@ window.addEventListener('show-loading', (e) => {
 
 window.addEventListener('hide-loading', () => {
     // EDIT HERE: Adjust this value to change how long the loading screen stays (in milliseconds)
-    const LOADING_DELAY = 3000;
+    const LOADING_DELAY = 500;
 
     setTimeout(() => {
         updateLoadingScreen(false);
