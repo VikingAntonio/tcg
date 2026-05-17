@@ -397,7 +397,7 @@ $(document).ready(async function() {
 
         // Only show 3D loading screen if the entry point is 'albums' (public/share links)
         if (initialView === 'albums') {
-            showLoading('Cargando...');
+            showLoading('Cargando Álbumes...');
         }
 
         // Load store data first as it's required for view initialization
@@ -1224,6 +1224,11 @@ function applyVisualsToModal(holo, mask, use3d) {
 async function switchView(view, skipPush = false) {
     if (!view) return;
 
+    // Show loader early for albums to mask data loading and build mode checks
+    if (view === 'albums') {
+        showLoading('Cargando Álbumes...');
+    }
+
     // Robust View Validation (fixes common truncations like "albu")
     const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
     const originalView = view;
@@ -1327,6 +1332,7 @@ async function switchView(view, skipPush = false) {
                 $buildOverlay.show();
                 if (window.botInstance) window.botInstance.setContext(view);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (view === 'albums') hideLoading();
                 return; // Stop further loading of this view
             } else {
                 $buildOverlay.hide();
@@ -1338,7 +1344,13 @@ async function switchView(view, skipPush = false) {
 
     // View-specific data loading
     if (view === 'albums') {
-        if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
+        if (window.currentStoreId) {
+            try {
+                await loadPublicAlbums(window.currentStoreId);
+            } finally {
+                hideLoading();
+            }
+        }
     } else if (view === 'sealed') {
         await loadPublicSealed();
     } else if (view === 'preorders') {

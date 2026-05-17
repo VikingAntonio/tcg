@@ -7,6 +7,7 @@ let scene, camera, renderer, character, clock;
 let isAnimating = false;
 window.isAsh = false;
 let cherryTexture;
+let hideTimeout = null;
 const particles = [];
 let lastParticleTime = 0;
 
@@ -354,6 +355,10 @@ function ensureSpiritAndInit() {
 }
 
 window.addEventListener('show-loading', (e) => {
+    if (hideTimeout) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
+    }
     isAnimating = true;
     updateLoadingScreen(true, e.detail ? e.detail.message : null);
     ensureSpiritAndInit();
@@ -364,13 +369,17 @@ window.addEventListener('hide-loading', () => {
     const screen = document.getElementById('loading-screen');
     if (!screen || !screen.classList.contains('active')) return;
 
+    if (hideTimeout) clearTimeout(hideTimeout);
+
     // EDIT HERE: Adjust this value to change how long the loading screen stays (in milliseconds)
     const LOADING_DELAY = 3000;
 
-    setTimeout(() => {
+    hideTimeout = setTimeout(() => {
         updateLoadingScreen(false);
+        hideTimeout = null;
 
         setTimeout(() => {
+            if (hideTimeout) return; // Another loader started
             if (!isAnimating) return;
             isAnimating = false;
             if (scene) {
