@@ -30,10 +30,10 @@ $(document).ready(function() {
 });
 
 function initInvestmentListeners() {
-    // Back to Dashboard
+    // Back to Dashboard (Navegación nativa entre páginas)
     $(document).on('click', '#btn-back-to-main-from-investments', function(e) {
         e.preventDefault();
-        showView('main-dashboard');
+        window.location.href = 'admin.html';
     });
 
     // Back to Categories from Details
@@ -102,7 +102,7 @@ function initInvestmentListeners() {
 
     // Add Card to Investment
     $(document).on('click', '#btn-add-investment-card, #btn-add-investment-card-mobile', function() {
-        openInvestmentCardModal(null, 'inv-tab-datos');
+        openInvestmentCardModal(null, 'inv-tab-asset');
         // Close side panel on mobile
         $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
     });
@@ -114,11 +114,24 @@ function initInvestmentListeners() {
         $(this).addClass('active');
         $('#investment-card-modal .slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
+
+        // Render chart if switching to DATOS tab and we have a card ID
+        if (tabId === 'inv-tab-datos' && currentEditingInvCardId) {
+            setTimeout(() => renderPriceHistoryChart(currentEditingInvCardId, true), 50);
+        }
     });
 
 
-    $('#btn-inv-add-price').click(async function() {
-        if (!currentEditingInvCardId) return;
+    $(document).on('click', '#btn-inv-add-price-manual', async function() {
+        if (!currentEditingInvCardId) {
+            Swal.fire({
+                title: 'INFO',
+                text: 'Guarda el activo primero para registrar historial.',
+                icon: 'info',
+                customClass: { popup: 'inv-swal-popup' }
+            });
+            return;
+        }
 
         const { value: newPrice } = await Swal.fire({
             title: 'NUEVO PRECIO DE MERCADO',
@@ -183,7 +196,6 @@ function initInvestmentListeners() {
     });
 
     // Metadata sync
-    $('#inv-card-name').on('input change', function() { $('#inv-card-modal-title').text($(this).val().toUpperCase() || 'NUEVO ACTIVO'); });
     $('#inv-card-rarity-input').on('input change', function() { $('#inv-card-rarity').val($(this).val()); });
 }
 
@@ -682,6 +694,8 @@ function renderListMode($container) {
 let currentEditingInvCardId = null;
 
 function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-asset') {
+    if (window.sharedCard3D) window.sharedCard3D.stop();
+
     currentEditingInvCardId = card ? card.id : null;
     currentInvExtraImages = card ? (card.extra_images || []) : [];
 
@@ -691,8 +705,11 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-asset') {
     $('#investment-card-modal .slot-tab-content').removeClass('active');
     $(`#${defaultTab}`).addClass('active');
 
+    // Robust Image Preview Loading
+    const $img = $('#inv-detail-image');
+    $img.css('opacity', '0');
+
     if (!card) {
-        $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
         $('#inv-card-image-url-display').val('');
         $('#inv-compact-preview').hide();
 
@@ -704,8 +721,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-asset') {
         $('#inv-card-rarity').val('');
         $('#inv-card-game').val('pokemon');
     } else {
-        $('#inv-card-modal-title').text(card.card_name.toUpperCase());
-        $('#inv-detail-image').attr('src', card.image_url);
+        $img.attr('src', card.image_url).on('load', function() { $(this).fadeTo(200, 1); });
         $('#inv-card-image-url-display').val(card.image_url);
         $('#inv-compact-preview').show();
     }
