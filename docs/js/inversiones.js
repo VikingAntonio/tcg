@@ -118,13 +118,33 @@ function initInvestmentListeners() {
         $(`#${tabId}`).addClass('active');
 
         if (tabId === 'inv-tab-movimientos' && currentEditingInvCardId) {
-            renderPriceHistoryChart(currentEditingInvCardId);
+            setTimeout(() => renderPriceHistoryChart(currentEditingInvCardId), 100);
         }
         if (tabId === 'inv-tab-resumen' && currentEditingInvCardId) {
             const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
             if (card) updateSummaryTab(card);
         }
+        if (tabId === 'inv-tab-datos') {
+            syncDatosPreview();
+        }
     });
+
+    function syncDatosPreview() {
+        const url = $('#inv-card-image-url').val();
+        const $previewImg = $('#inv-form-preview-image');
+        const $container = $('#inv-form-preview-container');
+        const $placeholder = $('#inv-preview-placeholder');
+
+        if (url) {
+            $previewImg.attr('src', url).on('load', function() {
+                $placeholder.hide();
+                $container.css('opacity', '1');
+            });
+        } else {
+            $container.css('opacity', '0');
+            $placeholder.show();
+        }
+    }
 
 
     $('#btn-inv-add-price').click(async function() {
@@ -164,6 +184,41 @@ function initInvestmentListeners() {
     $('#input-inv-extra-files').on('change', function() {
         handleInvExtraImages(this.files);
     });
+
+    // Drag & Drop for Main Image (Datos tab)
+    const $dropZoneMain = $('#drop-zone-inv-main');
+    $dropZoneMain.on('dragover', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
+    $dropZoneMain.on('dragleave', function() { $(this).removeClass('dragover'); });
+    $dropZoneMain.on('drop', async function(e) {
+        e.preventDefault();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length) handleInvMainImage(files[0]);
+    });
+
+    $('#input-inv-main-file').on('change', function() {
+        if (this.files.length) handleInvMainImage(this.files[0]);
+    });
+
+    $(document).on('click', '#drop-zone-inv-main', function() {
+        $('#input-inv-main-file').click();
+    });
+}
+
+async function handleInvMainImage(file) {
+    if (!file) return;
+    Swal.fire({ title: 'Subiendo imagen...', didOpen: () => Swal.showLoading() });
+    try {
+        const url = await CloudinaryUpload.uploadImage(file);
+        if (url) {
+            $('#inv-card-image-url').val(url);
+            syncDatosPreview();
+            Swal.fire({ icon: 'success', title: 'Imagen cargada', timer: 1000, showConfirmButton: false });
+        }
+    } catch (e) {
+        console.error("Error uploading main image:", e);
+        Swal.fire('Error', 'No se pudo subir la imagen', 'error');
+    }
 }
 
 async function handleInvExtraImages(files) {
@@ -662,8 +717,11 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-movimientos"]').hide();
         $('#inv-card-search-container').show();
 
-        // Reset preview image
+        // Reset previews
         $('#inv-detail-image').attr('src', '').css('opacity', '0');
+        $('#inv-form-preview-image').attr('src', '');
+        $('#inv-form-preview-container').css('opacity', '0');
+        $('#inv-preview-placeholder').show();
 
         // Default to DATOS tab for new assets
         $(`#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]`).addClass('active');
@@ -688,6 +746,10 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-search-container').hide();
         $('#inv-card-name').prop('readonly', true);
 
+        // Reset preview states
+        $('#inv-form-preview-container').css('opacity', '0');
+        $('#inv-preview-placeholder').show();
+
         // Set requested tab or default to resumen
         $(`#investment-card-modal .inv-tab-link[data-tab="${defaultTab}"]`).addClass('active');
         $(`#${defaultTab}`).addClass('active');
@@ -710,7 +772,9 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         if (defaultTab === 'inv-tab-resumen') {
             updateSummaryTab(card);
         } else if (defaultTab === 'inv-tab-movimientos') {
-            renderPriceHistoryChart(card.id);
+            setTimeout(() => renderPriceHistoryChart(card.id), 100);
+        } else if (defaultTab === 'inv-tab-datos') {
+            syncDatosPreview();
         }
     }
 
@@ -726,15 +790,12 @@ $('#close-investment-card-modal').click(() => {
 $('#btn-inv-card-search').click(async function() {
     window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
         // When a card is selected from combined search
+        const finalUrl = card.high_res || card.image;
         $('#inv-card-name').val(card.name.toUpperCase());
-        $('#inv-card-image-url').val(card.high_res || card.image);
+        $('#inv-card-image-url').val(finalUrl);
 
-        // Update preview image in modal
-        const $img = $('#inv-detail-image');
-        $img.stop().css('opacity', '0');
-        $img.attr('src', card.high_res || card.image).one('load', function() {
-            $(this).animate({ opacity: 1 }, 300);
-        });
+        // Update previews in both potential views
+        syncDatosPreview();
         $('#inv-card-set-name').val(card.set || card.set_name || '');
         $('#inv-card-set-number').val(card.number || '');
         $('#inv-card-rarity').val(card.rarity || '');
@@ -928,12 +989,6 @@ function updateSummaryTab(card) {
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
 
-    // 2. Load History Chart - delayed to ensure modal layout is fully stable and visible
-    setTimeout(() => {
-        if ($('#inv-tab-resumen').is(':visible')) {
-            renderPriceHistoryChart(card.id, true);
-        }
-    }, 400);
 }
 
 async function saveNewPrice(cardId, newPrice) {
@@ -977,14 +1032,14 @@ async function saveNewPrice(cardId, newPrice) {
     }
 }
 
-async function renderPriceHistoryChart(cardId, isDetail = false) {
+async function renderPriceHistoryChart(cardId) {
     // 1. Prevent overlapping renders and ensure DOM is ready
-    const canvasId = isDetail ? 'inv-detail-chart' : 'inv-price-chart';
+    const canvasId = 'inv-price-chart';
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    // Check if modal is visible to avoid rendering on zero-sized canvas which causes Chart.js glitches
-    if (isDetail && !$('#investment-card-modal').hasClass('active')) return;
+    // Check if modal and correct tab is visible to avoid glitches
+    if (!$('#investment-card-modal').hasClass('active') || !$('#inv-tab-movimientos').is(':visible')) return;
 
     const { data: history, error } = await _supabase
         .from('investment_price_history')
@@ -996,16 +1051,9 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
 
     const ctx = canvas.getContext('2d');
 
-    if (isDetail) {
-        if (invDetailChart) {
-            invDetailChart.destroy();
-            invDetailChart = null;
-        }
-    } else {
-        if (invPriceChart) {
-            invPriceChart.destroy();
-            invPriceChart = null;
-        }
+    if (invPriceChart) {
+        invPriceChart.destroy();
+        invPriceChart = null;
     }
 
     const chart = new Chart(ctx, {
@@ -1059,14 +1107,10 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
         }
     });
 
-    if (isDetail) {
-        invDetailChart = chart;
-    } else {
-        invPriceChart = chart;
-    }
+    invPriceChart = chart;
 
     // Render list history (cloning to avoid in-place reversal issues)
-    const listId = isDetail ? '#inv-detail-history-list' : '#inv-history-list';
+    const listId = '#inv-history-list';
     const $list = $(listId);
     $list.empty();
     [...history].reverse().forEach(h => {
