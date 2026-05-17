@@ -169,89 +169,69 @@
 
             <!-- Tabs Navigation -->
             <div class="inv-modal-tabs">
-                <div class="inv-tab-link active" data-tab="inv-tab-resumen">RESUMEN</div>
+                <div class="inv-tab-link active" data-tab="inv-tab-busqueda">BÚSQUEDA</div>
                 <div class="inv-tab-link" data-tab="inv-tab-datos">DATOS</div>
-                <div class="inv-tab-link" data-tab="inv-tab-images">IMAGES</div>
                 <div class="inv-tab-link" data-tab="inv-tab-movimientos">MOVIMIENTOS</div>
             </div>
 
             <div class="inv-modal-body" style="padding: 0;">
-                <!-- Tab: Resumen (Merged from Detail Modal) -->
-                <div id="inv-tab-resumen" class="slot-tab-content active">
-                    <div class="inv-detail-container">
-                        <div class="inv-detail-image-side">
-                            <div id="inv-card-3d-container" class="card-3d-container inv-detail-image-wrapper">
-                                <div id="inv-card-3d" class="card-3d">
-                                    <div id="inv-z-text-container">
-                                        <img id="inv-detail-image" src="" alt="Card Image" class="card__front">
-                                    </div>
-                                    <div class="holo-layer"></div>
-                                    <div class="card__shine"></div>
-                                    <div class="card__glare"></div>
-                                </div>
+                <!-- Tab: BÚSQUEDA (Search + Main Image) -->
+                <div id="inv-tab-busqueda" class="slot-tab-content active" style="padding: 30px;">
+                    <div class="inv-search-container" style="padding: 15px; margin-bottom: 20px;">
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-search"></i> BUSCAR EN BASES DE DATOS</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="inv-card-search-input" class="inv-search-input" placeholder="Nombre de la carta o código...">
+                                <button id="btn-inv-card-search" class="btn-inv-main" style="padding: 10px 20px;"><i class="fas fa-search"></i></button>
                             </div>
                         </div>
-                        <div class="inv-detail-info-side">
-                            <div class="inv-detail-data-section">
-                                <h2 id="inv-detail-name" style="margin: 0 0 5px 0; font-size: 1.5rem; font-weight: 900; text-transform: uppercase; color: #000;">CARD NAME</h2>
-                                <div id="inv-detail-set" class="inv-detail-set">EXPANSION NAME - RARITY</div>
-                                <div class="inv-detail-price-row">
-                                    <span id="inv-detail-price" class="inv-detail-price"></span>
-                                    <span id="inv-detail-trend"></span>
-                                </div>
-                                <div style="font-size: 0.6rem; color: #666; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Current Market Valuation</div>
+                    </div>
+                    <div id="inv-card-search-results" style="margin-bottom: 25px; min-height: 50px;">
+                        <!-- Results will appear here -->
+                    </div>
+
+                    <div class="inv-detail-container" style="min-height: auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fafafa;">
+                        <div class="inv-detail-image-side" style="padding: 20px; flex: 0 0 180px; background: #fff; border-right: 1px solid #eee; display: flex; align-items: center; justify-content: center;">
+                            <img id="inv-detail-image" src="https://vikingtcg.xyz/images/card-back.png" alt="Card Preview" style="width: 100%; max-width: 140px; border-radius: 8px; border: 2px solid #000; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+                        </div>
+                        <div class="inv-detail-info-side" style="padding: 20px; flex: 1;">
+                            <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700); margin-bottom: 10px; display: block;">IMAGEN PRINCIPAL</label>
+
+                            <div class="inv-bg-light" id="drop-zone-inv-main" style="border: 2px dashed var(--inv-gray-300); min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; margin-bottom: 15px; background: #fff;">
+                                <i class="fas fa-cloud-upload-alt fa-lg" style="color: var(--inv-gray-300); margin-bottom: 8px;"></i>
+                                <p style="font-size: 0.7rem; font-weight: 600; color: var(--inv-gray-700); margin: 0;">Subir imagen local</p>
+                                <input type="file" id="input-inv-main-file" accept="image/*" style="display: none;">
                             </div>
 
-                            <div class="inv-detail-chart-area">
-                                <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 5px;">Performance History</div>
-                                <div class="inv-detail-chart-container">
-                                    <canvas id="inv-detail-chart"></canvas>
-                                </div>
-                            </div>
-
-                            <div id="inv-detail-history-list" class="inv-detail-history-list">
-                                <!-- History list -->
+                            <div class="inv-form-group">
+                                <label style="font-size: 0.6rem;">URL DE LA IMAGEN</label>
+                                <input type="text" id="inv-card-image-url-display" class="inv-search-input" style="width: 100%; padding: 10px; font-size: 0.8rem;" placeholder="https://...">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: Datos (Edit Mode) -->
-                <div id="inv-tab-datos" class="slot-tab-content" style="padding: 40px;">
-                    <div class="inv-search-container" id="inv-card-search-container">
-                        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                            <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-search"></i> BUSCAR</label>
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="inv-card-search-input" class="inv-search-input" placeholder="Nombre de la carta...">
-                                <button id="btn-inv-card-search" class="btn-inv-main" style="padding: 10px 20px;"><i class="fas fa-search"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="inv-card-search-results">
-                        <!-- Results -->
-                    </div>
-
-                    <div style="height: 30px;"></div>
-
+                <!-- Tab: DATOS (Metadata) -->
+                <div id="inv-tab-datos" class="slot-tab-content" style="padding: 30px;">
                     <div class="inv-form-row">
                         <div class="inv-form-group" style="grid-column: span 2;">
                             <label>Nombre de la Carta</label>
-                            <input type="text" id="inv-card-name" readonly>
+                            <input type="text" id="inv-card-name" placeholder="Ej: Blue-Eyes White Dragon">
                         </div>
                     </div>
                     <div class="inv-form-row">
                         <div class="inv-form-group">
                             <label>Rareza</label>
-                            <input type="text" id="inv-card-rarity-input">
+                            <input type="text" id="inv-card-rarity-input" placeholder="Ej: Ultra Rare">
                         </div>
                         <div class="inv-form-group">
                             <label>Cantidad</label>
-                            <input type="number" id="inv-card-quantity" value="1">
+                            <input type="number" id="inv-card-quantity" value="1" min="1">
                         </div>
                     </div>
                     <div class="inv-form-row">
                         <div class="inv-form-group">
-                            <label>Precio de Compra ($)</label>
+                            <label>Precio Compra ($)</label>
                             <input type="number" id="inv-card-purchase-price" step="0.01" placeholder="0.00">
                         </div>
                         <div class="inv-form-group">
@@ -259,24 +239,18 @@
                             <input type="number" id="inv-card-current-price" step="0.01" placeholder="0.00">
                         </div>
                     </div>
-                </div>
-
-                <!-- Tab: Images -->
-                <div id="inv-tab-images" class="slot-tab-content" style="padding: 40px;">
-                    <div class="inv-form-group" style="margin-bottom: 30px;">
-                        <label>Notas</label>
-                        <textarea id="inv-card-notes" placeholder="Escribe aquí notas adicionales..." style="height: 120px;"></textarea>
+                    <div class="inv-form-group" style="margin-top: 10px;">
+                        <label>Notas Adicionales</label>
+                        <textarea id="inv-card-notes" placeholder="Condición, ubicación física, etc..." style="height: 80px; font-size: 0.9rem; padding: 12px;"></textarea>
                     </div>
-                    <div class="inv-form-group">
-                        <label>Imágenes Adicionales (Drag & Drop)</label>
-                        <div class="inv-bg-light" id="drop-zone-inv-extra" style="border: 2px dashed var(--inv-gray-300); min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; transition: var(--inv-transition);">
-                            <i class="fas fa-images fa-3x" style="color: var(--inv-gray-300); margin-bottom: 15px;"></i>
-                            <p style="font-size: 0.8rem; font-weight: 600; color: var(--inv-gray-700);">Haz clic o arrastra imágenes aquí</p>
-                            <input type="file" id="input-inv-extra-files" accept="image/*" multiple style="display: none;">
+
+                    <!-- Hidden fields still needed for DB consistency -->
+                    <div style="display: none;">
+                        <label>Imágenes Extra</label>
+                        <div id="drop-zone-inv-extra">
+                            <input type="file" id="input-inv-extra-files" multiple accept="image/*">
                         </div>
-                        <div id="inv-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px; margin-top: 20px;">
-                            <!-- Extra images preview -->
-                        </div>
+                        <div id="inv-extra-images-preview"></div>
                     </div>
                 </div>
 
@@ -288,7 +262,7 @@
                         <button id="btn-inv-add-price" class="btn-inv-main" style="padding: 5px 12px; font-size: 0.7rem;"><i class="fas fa-plus"></i> ADD PRICE</button>
                     </div>
                     <div class="inv-chart-container">
-                        <canvas id="inv-price-chart"></canvas>
+                        <canvas id="inv-detail-chart"></canvas>
                     </div>
                     <div id="inv-history-list" class="inv-detail-history-list" style="max-height: 250px;">
                         <!-- Historical list -->
