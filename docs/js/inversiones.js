@@ -30,10 +30,12 @@ $(document).ready(function() {
 });
 
 function initInvestmentListeners() {
-    // Back to Dashboard (Navegación nativa entre páginas)
+    // Navigation to Investments (Removido para redirección nativa)
+
+    // Back to Dashboard
     $(document).on('click', '#btn-back-to-main-from-investments', function(e) {
         e.preventDefault();
-        window.location.href = 'admin.html';
+        showView('main-dashboard');
     });
 
     // Back to Categories from Details
@@ -102,7 +104,7 @@ function initInvestmentListeners() {
 
     // Add Card to Investment
     $(document).on('click', '#btn-add-investment-card, #btn-add-investment-card-mobile', function() {
-        openInvestmentCardModal(null, 'inv-tab-asset');
+        openInvestmentCardModal(null, 'inv-tab-datos');
         // Close side panel on mobile
         $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
     });
@@ -115,23 +117,18 @@ function initInvestmentListeners() {
         $('#investment-card-modal .slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
 
-        // Render chart if switching to DATOS tab and we have a card ID
-        if (tabId === 'inv-tab-datos' && currentEditingInvCardId) {
-            setTimeout(() => renderPriceHistoryChart(currentEditingInvCardId, true), 50);
+        if (tabId === 'inv-tab-movimientos' && currentEditingInvCardId) {
+            renderPriceHistoryChart(currentEditingInvCardId);
+        }
+        if (tabId === 'inv-tab-resumen' && currentEditingInvCardId) {
+            const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
+            if (card) updateSummaryTab(card);
         }
     });
 
 
-    $(document).on('click', '#btn-inv-add-price-manual', async function() {
-        if (!currentEditingInvCardId) {
-            Swal.fire({
-                title: 'INFO',
-                text: 'Guarda el activo primero para registrar historial.',
-                icon: 'info',
-                customClass: { popup: 'inv-swal-popup' }
-            });
-            return;
-        }
+    $('#btn-inv-add-price').click(async function() {
+        if (!currentEditingInvCardId) return;
 
         const { value: newPrice } = await Swal.fire({
             title: 'NUEVO PRECIO DE MERCADO',
@@ -153,26 +150,11 @@ function initInvestmentListeners() {
         }
     });
 
-    // Drag & Drop for Main Image (Busqueda tab)
-    const $dropZoneMain = $('#drop-zone-inv-main');
-    $dropZoneMain.on('dragover', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
-    $dropZoneMain.on('dragleave', function() { $(this).removeClass('dragover'); });
-    $dropZoneMain.on('drop', async function(e) {
-        e.preventDefault();
-        $(this).removeClass('dragover');
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length) handleInvMainImage(files[0]);
-    });
-
-    $('#input-inv-main-file').on('change', function() {
-        if (this.files.length) handleInvMainImage(this.files[0]);
-    });
-
     // Drag & Drop for extra images
-    const $dropZoneExtra = $('#drop-zone-inv-extra');
-    $dropZoneExtra.on('dragover', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
-    $dropZoneExtra.on('dragleave', function() { $(this).removeClass('dragover'); });
-    $dropZoneExtra.on('drop', async function(e) {
+    const $dropZone = $('#drop-zone-inv-extra');
+    $dropZone.on('dragover', function(e) { e.preventDefault(); $(this).addClass('dragover'); });
+    $dropZone.on('dragleave', function() { $(this).removeClass('dragover'); });
+    $dropZone.on('drop', async function(e) {
         e.preventDefault();
         $(this).removeClass('dragover');
         const files = e.originalEvent.dataTransfer.files;
@@ -182,36 +164,6 @@ function initInvestmentListeners() {
     $('#input-inv-extra-files').on('change', function() {
         handleInvExtraImages(this.files);
     });
-
-    // URL sync for main image
-    $('#inv-card-image-url-display').on('input change', function() {
-        const url = $(this).val();
-        if (url && url.startsWith('http')) {
-            $('#inv-detail-image').attr('src', url);
-            $('#inv-compact-preview').fadeIn();
-        } else {
-            $('#inv-compact-preview').hide();
-        }
-        $('#inv-card-image-url').val(url);
-    });
-
-    // Metadata sync
-    $('#inv-card-rarity-input').on('input change', function() { $('#inv-card-rarity').val($(this).val()); });
-}
-
-async function handleInvMainImage(file) {
-    if (!file) return;
-    Swal.fire({ title: 'Subiendo imagen...', didOpen: () => Swal.showLoading() });
-    try {
-        const url = await CloudinaryUpload.uploadImage(file);
-        if (url) {
-            $('#inv-card-image-url-display').val(url).trigger('change');
-            $('#inv-compact-preview').show();
-        }
-    } catch (e) {
-        console.error("Error uploading main image:", e);
-    }
-    Swal.close();
 }
 
 async function handleInvExtraImages(files) {
@@ -693,60 +645,76 @@ function renderListMode($container) {
 
 let currentEditingInvCardId = null;
 
-function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-asset') {
+function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     if (window.sharedCard3D) window.sharedCard3D.stop();
 
     currentEditingInvCardId = card ? card.id : null;
     currentInvExtraImages = card ? (card.extra_images || []) : [];
 
-    // Reset Tabs
-    $('#investment-card-modal .inv-tab-link').removeClass('active');
-    $(`#investment-card-modal .inv-tab-link[data-tab="${defaultTab}"]`).addClass('active');
+    // Reset Tabs visibility and active state
+    $('#investment-card-modal .inv-tab-link').removeClass('active').show();
     $('#investment-card-modal .slot-tab-content').removeClass('active');
-    $(`#${defaultTab}`).addClass('active');
-
-    // Robust Image Preview Loading
-    const $img = $('#inv-detail-image');
-    $img.css('opacity', '0');
 
     if (!card) {
-        $('#inv-card-image-url-display').val('');
-        $('#inv-compact-preview').hide();
+        // New Card Mode
+        $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
+        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').hide();
+        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-movimientos"]').hide();
+        $('#inv-card-search-container').show();
 
-        // Reset hidden fields
-        $('#inv-card-external-id').val('');
-        $('#inv-card-image-url').val('');
-        $('#inv-card-set-name').val('');
-        $('#inv-card-set-number').val('');
-        $('#inv-card-rarity').val('');
+        // Reset preview image
+        $('#inv-detail-image').attr('src', '').css('opacity', '0');
+
+        // Default to DATOS tab for new assets
+        $(`#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]`).addClass('active');
+        $('#inv-tab-datos').addClass('active');
+
+        // Clear Fields for clean state
+        $('#inv-card-name').val('').prop('readonly', false);
+        $('#inv-card-purchase-price').val('');
+        $('#inv-card-current-price').val('');
+        $('#inv-card-quantity').val(1);
+        $('#inv-card-rarity-input').val('');
+        $('#inv-card-notes').val('');
+        $('#inv-card-external-id, #inv-card-image-url, #inv-card-set-name, #inv-card-set-number, #inv-card-rarity').val('');
         $('#inv-card-game').val('pokemon');
+
+        // Cleanup search
+        $('#inv-card-search-results').empty();
+        $('#inv-card-search-input').val('');
     } else {
-        $img.attr('src', card.image_url).on('load', function() { $(this).fadeTo(200, 1); });
-        $('#inv-card-image-url-display').val(card.image_url);
-        $('#inv-compact-preview').show();
+        // Edit / View Mode
+        $('#inv-card-modal-title').text(card.card_name.toUpperCase());
+        $('#inv-card-search-container').hide();
+        $('#inv-card-name').prop('readonly', true);
+
+        // Set requested tab or default to resumen
+        $(`#investment-card-modal .inv-tab-link[data-tab="${defaultTab}"]`).addClass('active');
+        $(`#${defaultTab}`).addClass('active');
+
+        // Populate Metadata Fields
+        $('#inv-card-name').val(card.card_name.toUpperCase());
+        $('#inv-card-purchase-price').val(card.purchase_price);
+        $('#inv-card-current-price').val(card.current_price);
+        $('#inv-card-quantity').val(card.quantity);
+        $('#inv-card-rarity-input').val(card.rarity);
+        $('#inv-card-notes').val(card.notes);
+
+        $('#inv-card-external-id').val(card.external_id);
+        $('#inv-card-image-url').val(card.image_url);
+        $('#inv-card-set-name').val(card.set_name);
+        $('#inv-card-set-number').val(card.set_number);
+        $('#inv-card-rarity').val(card.rarity);
+        $('#inv-card-game').val(card.tcg_game);
+
+        if (defaultTab === 'inv-tab-resumen') {
+            updateSummaryTab(card);
+        } else if (defaultTab === 'inv-tab-movimientos') {
+            renderPriceHistoryChart(card.id);
+        }
     }
 
-    // Populate Fields
-    $('#inv-card-name').val(card ? card.card_name.toUpperCase() : '');
-    $('#inv-card-purchase-price').val(card ? card.purchase_price : '');
-    $('#inv-card-current-price').val(card ? card.current_price : '');
-    $('#inv-card-quantity').val(card ? card.quantity : 1);
-    $('#inv-card-rarity-input').val(card ? card.rarity : '');
-    $('#inv-card-notes').val(card ? card.notes : '');
-
-    $('#inv-card-external-id').val(card ? card.external_id : '');
-    $('#inv-card-image-url').val(card ? card.image_url : '');
-    $('#inv-card-set-name').val(card ? card.set_name : '');
-    $('#inv-card-set-number').val(card ? card.set_number : '');
-    $('#inv-card-rarity').val(card ? card.rarity : '');
-    $('#inv-card-game').val(card ? card.tcg_game : 'pokemon');
-
-
-    $('#inv-card-search-results').empty();
-    $('#inv-card-search-input').val('');
-
     renderInvExtraImagesPreview();
-
     $('#investment-card-modal').addClass('active');
 }
 
@@ -758,15 +726,17 @@ $('#close-investment-card-modal').click(() => {
 $('#btn-inv-card-search').click(async function() {
     window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
         // When a card is selected from combined search
-        const highRes = card.high_res || card.image;
         $('#inv-card-name').val(card.name.toUpperCase());
-        $('#inv-card-image-url').val(highRes);
-        $('#inv-card-image-url-display').val(highRes);
-        $('#inv-detail-image').attr('src', highRes);
-        $('#inv-compact-preview').show();
+        $('#inv-card-image-url').val(card.high_res || card.image);
 
-        $('#inv-card-set-name').val(card.set || card.set_name || card.expansion || '');
-        $('#inv-card-set-number').val(card.number || card.set_number || '');
+        // Update preview image in modal
+        const $img = $('#inv-detail-image');
+        $img.stop().css('opacity', '0');
+        $img.attr('src', card.high_res || card.image).one('load', function() {
+            $(this).animate({ opacity: 1 }, 300);
+        });
+        $('#inv-card-set-name').val(card.set || card.set_name || '');
+        $('#inv-card-set-number').val(card.number || '');
         $('#inv-card-rarity').val(card.rarity || '');
         $('#inv-card-rarity-input').val(card.rarity || '');
         $('#inv-card-current-price').val(card.price || 0);
@@ -883,7 +853,8 @@ $('#btn-save-investment-card').click(async function() {
 
         renderInvestmentCards(currentInvestmentViewMode);
 
-        $('#investment-card-modal').removeClass('active');
+        // Re-open the modal in "Edit" mode to show all tabs and summary
+        openInvestmentCardModal(updatedCard, 'inv-tab-resumen');
 
     } catch (e) {
         console.error(e);
@@ -926,7 +897,44 @@ async function deleteInvestmentCard(id) {
     }
 }
 
-// updateSummaryTab removed in favor of direct tab-based initialization
+function updateSummaryTab(card) {
+    // 1. Force stop and cleanup any existing 3D loops to prevent rapid movement/flickering
+    if (window.sharedCard3D) window.sharedCard3D.stop();
+
+    $('#inv-card-modal-title').text('ASSET DETAILS');
+    $('#inv-detail-name').text(card.card_name.toUpperCase());
+
+    // Smooth image update to prevent flickering
+    const $img = $('#inv-detail-image');
+    if ($img.attr('src') !== card.image_url) {
+        $img.stop().css('opacity', '0');
+        $img.attr('src', card.image_url).one('load', function() {
+            $(this).animate({ opacity: 1 }, 300);
+        });
+    } else {
+        $img.css('opacity', '1');
+    }
+
+    // Reset card wrapper state and styles to prevent LERP fighting
+    $('#inv-card-3d').removeClass().addClass('card-3d').attr('style', 'transform: none !important;');
+    $('.holo-layer').removeClass('active foil-loop').hide();
+
+    const setInfo = (card.set_name || 'UNKNOWN EXPANSION').toUpperCase();
+    const rarityInfo = (card.rarity || 'UNKNOWN RARITY').toUpperCase();
+    $('#inv-detail-set').text(`${setInfo} - ${rarityInfo}`);
+
+    $('#inv-detail-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
+
+    const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
+    $('#inv-detail-trend').html(trendIcon);
+
+    // 2. Load History Chart - delayed to ensure modal layout is fully stable and visible
+    setTimeout(() => {
+        if ($('#inv-tab-resumen').is(':visible')) {
+            renderPriceHistoryChart(card.id, true);
+        }
+    }, 400);
+}
 
 async function saveNewPrice(cardId, newPrice) {
     Swal.fire({ title: 'Actualizando precio...', didOpen: () => Swal.showLoading(), customClass: { popup: 'inv-swal-popup' } });
@@ -957,7 +965,8 @@ async function saveNewPrice(cardId, newPrice) {
         const idx = localInvestmentCards.findIndex(c => c.id === cardId);
         if (idx !== -1) localInvestmentCards[idx] = updatedCard;
 
-        renderPriceHistoryChart(cardId, true); // Update history chart
+        updateSummaryTab(updatedCard);
+        renderPriceHistoryChart(cardId); // Main chart
         renderInvestmentCards(currentInvestmentViewMode);
 
         Swal.fire({ icon: 'success', title: 'Precio Actualizado', timer: 1000, showConfirmButton: false, customClass: { popup: 'inv-swal-popup' } });
@@ -968,7 +977,7 @@ async function saveNewPrice(cardId, newPrice) {
     }
 }
 
-async function renderPriceHistoryChart(cardId, isDetail = true) {
+async function renderPriceHistoryChart(cardId, isDetail = false) {
     // 1. Prevent overlapping renders and ensure DOM is ready
     const canvasId = isDetail ? 'inv-detail-chart' : 'inv-price-chart';
     const canvas = document.getElementById(canvasId);
@@ -976,15 +985,6 @@ async function renderPriceHistoryChart(cardId, isDetail = true) {
 
     // Check if modal is visible to avoid rendering on zero-sized canvas which causes Chart.js glitches
     if (isDetail && !$('#investment-card-modal').hasClass('active')) return;
-
-    // If cardId is missing (e.g. during "Add Asset" initialization), clear chart and return
-    if (!cardId) {
-        if (isDetail && invDetailChart) { invDetailChart.destroy(); invDetailChart = null; }
-        else if (!isDetail && invPriceChart) { invPriceChart.destroy(); invPriceChart = null; }
-        const listId = isDetail ? '#inv-detail-history-list' : '#inv-history-list';
-        $(listId).empty();
-        return;
-    }
 
     const { data: history, error } = await _supabase
         .from('investment_price_history')
@@ -1066,7 +1066,7 @@ async function renderPriceHistoryChart(cardId, isDetail = true) {
     }
 
     // Render list history (cloning to avoid in-place reversal issues)
-    const listId = '#inv-history-list';
+    const listId = isDetail ? '#inv-detail-history-list' : '#inv-history-list';
     const $list = $(listId);
     $list.empty();
     [...history].reverse().forEach(h => {
