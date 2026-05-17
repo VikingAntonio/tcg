@@ -31,11 +31,11 @@ $(document).ready(function() {
 
 function initInvestmentListeners() {
     // Navigation to Investments
-    $(document).on('click', '#btn-show-investments', function(e) {
-        e.preventDefault();
-        showView('investments');
-        loadInvestmentCategories();
-    });
+    // $(document).on('click', '#btn-show-investments', function(e) {
+    //     e.preventDefault();
+    //     showView('investments');
+    //     loadInvestmentCategories();
+    // });
 
     // Back to Dashboard
     $(document).on('click', '#btn-back-to-main-from-investments', function(e) {
@@ -660,19 +660,32 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#investment-card-modal .slot-tab-content').removeClass('active');
     $(`#${defaultTab}`).addClass('active');
 
+    // Always show RESUMEN tab as requested for unified form
+    $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').show();
+
     if (!card) {
         // New Card Mode
         $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
-        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').hide();
         $('#inv-card-search-container').show(); // Show search when adding new
-        // If it was the default, switch to datos
+
+        // Initialize Resumen with placeholder
+        updateSummaryTab({
+            card_name: 'NUEVA CARTA',
+            image_url: 'https://vikingtcg.xyz/images/card-back.png', // Fallback card back
+            set_name: 'BUSCA UNA CARTA',
+            rarity: 'PARA EMPEZAR',
+            current_price: 0,
+            previous_price: 0
+        });
+
+        // Default to search tab for better UX when adding new
         if (defaultTab === 'inv-tab-resumen') {
+            $('#investment-card-modal .inv-tab-link').removeClass('active');
             $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]').addClass('active');
-            $('#inv-tab-resumen').removeClass('active');
+            $('#investment-card-modal .slot-tab-content').removeClass('active');
             $('#inv-tab-datos').addClass('active');
         }
     } else {
-        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').show();
         $('#inv-card-search-container').hide(); // Hide search when editing
         updateSummaryTab(card);
     }
@@ -710,8 +723,9 @@ $('#close-investment-card-modal').click(() => {
 $('#btn-inv-card-search').click(async function() {
     window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
         // When a card is selected from combined search
+        const highRes = card.high_res || card.image;
         $('#inv-card-name').val(card.name.toUpperCase());
-        $('#inv-card-image-url').val(card.high_res || card.image);
+        $('#inv-card-image-url').val(highRes);
         $('#inv-card-set-name').val(card.set || card.set_name || '');
         $('#inv-card-set-number').val(card.number || '');
         $('#inv-card-rarity').val(card.rarity || '');
@@ -719,6 +733,16 @@ $('#btn-inv-card-search').click(async function() {
         $('#inv-card-current-price').val(card.price || 0);
         $('#inv-card-game').val(card.game || 'pokemon');
         $('#inv-card-external-id').val(card.external_id || card.id || '');
+
+        // Immediate Preview update in Resumen tab
+        updateSummaryTab({
+            card_name: card.name,
+            image_url: highRes,
+            set_name: card.set || card.set_name || 'EXTERNAL SET',
+            rarity: card.rarity || 'COMMON',
+            current_price: card.price || 0,
+            previous_price: 0
+        });
 
         Swal.fire({
             title: 'ASSET SELECTED',
@@ -885,10 +909,17 @@ function updateSummaryTab(card) {
     $('#inv-card-modal-title').text('ASSET DETAILS');
     $('#inv-detail-name').text(card.card_name.toUpperCase());
 
-    // Strict cleanup of the Z-Text container to prevent layer duplication and flickering
-    // We revert to a simple image to ensure fluidity as requested, avoiding heavy 3D re-init
+    // Reduce flickering: Only update src if it changed, and avoid empty/append cycle
     const $zContainer = $('#inv-z-text-container');
-    $zContainer.empty().append(`<img id="inv-detail-image" src="${card.image_url}" alt="Card Image" style="width:100%; border-radius:8px; border: 3px solid #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">`);
+    let $img = $('#inv-detail-image');
+
+    if (!$img.length) {
+        $zContainer.empty().append(`<img id="inv-detail-image" src="${card.image_url}" alt="Card Image" style="width:100%; border-radius:8px; border: 3px solid #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">`);
+    } else {
+        if ($img.attr('src') !== card.image_url) {
+            $img.attr('src', card.image_url);
+        }
+    }
 
     // Reset card wrapper state and styles to prevent LERP fighting
     $('#inv-card-3d').removeClass().addClass('card-3d').attr('style', 'transform: none !important;');
@@ -958,6 +989,15 @@ async function renderPriceHistoryChart(cardId, isDetail = false) {
 
     // Check if modal is visible to avoid rendering on zero-sized canvas which causes Chart.js glitches
     if (isDetail && !$('#investment-card-modal').hasClass('active')) return;
+
+    // If cardId is missing (e.g. during "Add Asset" initialization), clear chart and return
+    if (!cardId) {
+        if (isDetail && invDetailChart) { invDetailChart.destroy(); invDetailChart = null; }
+        else if (!isDetail && invPriceChart) { invPriceChart.destroy(); invPriceChart = null; }
+        const listId = isDetail ? '#inv-detail-history-list' : '#inv-history-list';
+        $(listId).empty();
+        return;
+    }
 
     const { data: history, error } = await _supabase
         .from('investment_price_history')
