@@ -131,6 +131,8 @@ $(document).ready(async function() {
         loadBotMessages();
     });
 
+    // Removido listener de #btn-show-investments para permitir redirección nativa a inversiones.html
+
     $(document).on('click', '#btn-bdd-panel', function(e) {
         e.preventDefault();
         showView('bdd');
