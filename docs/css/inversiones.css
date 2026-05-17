@@ -192,14 +192,16 @@
     border: 1px solid var(--inv-black);
     box-shadow: 0 40px 100px rgba(0,0,0,0.2) !important;
     width: 95% !important;
-    max-width: 1000px !important;
+    max-width: 500px !important;
+    min-height: 550px !important;
     height: auto !important;
-    max-height: 85vh !important;
+    max-height: 90vh !important;
     display: flex;
     flex-direction: column;
     padding: 0 !important;
     border-radius: 4px;
     z-index: 2000001 !important;
+    transition: var(--inv-transition);
 }
 
 .inv-modal-header {
@@ -258,6 +260,8 @@
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: var(--inv-transition);
+    flex: 1;
+    text-align: center;
 }
 
 .inv-tab-link.active {
@@ -268,14 +272,23 @@
 .inv-modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 40px;
+    padding: 0;
     scrollbar-width: none;
 }
 
 .inv-modal-body::-webkit-scrollbar { display: none; }
 
-#inv-tab-asset {
-    max-height: 500px;
+.slot-tab-content {
+    display: none;
+    height: 100%;
+}
+
+.slot-tab-content.active {
+    display: block;
+}
+
+#inv-tab-asset, #inv-tab-datos {
+    max-height: 550px;
     overflow-y: auto;
 }
 
@@ -616,105 +629,7 @@
     .inv-form-row { grid-template-columns: 1fr; }
 }
 
-/* Detail Modal Styles */
-.inv-detail-modal-content {
-    max-width: 1000px !important;
-    width: 95% !important;
-    height: auto !important;
-    max-height: 95vh !important;
-    border: 1px solid #000;
-}
-
-.inv-detail-container {
-    display: flex;
-    flex-wrap: wrap;
-    background: var(--inv-white);
-    min-height: 500px;
-}
-
-.inv-detail-image-side {
-    background: #f8f9fa;
-    padding: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-right: 1px solid #eee;
-    flex: 1 1 350px;
-}
-
-.inv-detail-image-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 300px;
-    perspective: 1000px;
-}
-
-.inv-detail-image-side img {
-    width: 100%;
-    border-radius: 6px;
-    border: 3px solid var(--inv-black);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-}
-
-.inv-detail-info-side {
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    scrollbar-width: none;
-    flex: 1 1 450px;
-    max-height: 80vh;
-}
-
-.inv-detail-info-side::-webkit-scrollbar { display: none; }
-
-.inv-detail-data-section {
-    margin-bottom: 25px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
-}
-
-.inv-detail-set {
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 8px;
-}
-
-.inv-detail-price-row {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.inv-detail-price {
-    font-size: 3rem;
-    font-weight: 900;
-    color: var(--inv-black);
-    letter-spacing: -0.04em;
-    line-height: 1;
-}
-
-
-.inv-detail-chart-area {
-    margin-bottom: 25px;
-}
-
-.inv-detail-chart-container {
-    height: 180px;
-    width: 100%;
-    background: #fff;
-}
-
-.inv-detail-history-list {
-    flex: 1;
-    overflow-y: auto;
-    border-top: 1px solid #eee;
-    padding-top: 15px;
-    max-height: 150px;
-}
+/* Removed redundant detail modal styles */
 
 /* Card Badges and Icons */
 .inv-card-info-badge {
