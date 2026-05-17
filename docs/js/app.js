@@ -378,31 +378,55 @@ $(document).ready(async function() {
         else if (urlParams.has('wishlistId') || urlParams.has('slot')) initialView = 'wishlist';
     }
 
-    // Solo mostramos pantalla de carga inicial si la vista es álbumes (por links públicos o compartidos)
-    if (initialView === 'albums') {
-        showLoading('Cargando...');
-    }
+    // --- Initial Entry Logic ---
+    try {
+        // Validation for the initial view (fixes common truncations like "albu")
+        const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+        if (!validViews.includes(initialView)) {
+            if (initialView.startsWith('albu')) initialView = 'albums';
+            else if (initialView.startsWith('deck')) initialView = 'decks';
+            else if (initialView.startsWith('preord')) initialView = 'preorders';
+            else if (initialView.startsWith('seal')) initialView = 'sealed';
+            else if (initialView.startsWith('wish')) initialView = 'wishlist';
+            else if (initialView.startsWith('event')) initialView = 'events';
+            else if (initialView.startsWith('claim')) initialView = 'claims';
+            else if (initialView.startsWith('auct') || initialView.startsWith('suba')) initialView = 'auctions';
+            else if (initialView.startsWith('invest')) initialView = 'investments';
+            else initialView = 'home';
+        }
 
-    await loadStoreData();
-    initFloatingCompanion();
+        // Only show 3D loading screen if the entry point is 'albums' (public/share links)
+        if (initialView === 'albums') {
+            showLoading('Cargando...');
+        }
+
+        // Load store data first as it's required for view initialization
+        await loadStoreData();
+        initFloatingCompanion();
+
+        // Initial view load (skipPush=true as the URL already contains the state)
+        await switchView(initialView, true);
+
+        // Finalize deep linking after views are ready
+        setTimeout(() => window.handleDeepLinking(), 800);
+    } catch (e) {
+        console.error("Error during initial app load:", e);
+    } finally {
+        hideLoading();
+    }
 
     $('.nav-btn').click(function() {
         const view = $(this).data('view');
         if (view) switchView(view);
     });
 
+    // Redundant return button handler removed as docs/js/utils.js handles this globally and more robustly
+
     // Handle Browser Back/Forward Buttons
     window.addEventListener('popstate', function() {
         const urlParams = new URLSearchParams(window.location.search);
-        const view = urlParams.get('view') || 'home';
+        let view = urlParams.get('view') || 'home';
         switchView(view, true);
-    });
-
-    // Explicitly call the initial loader
-    switchView(initialView).then(() => {
-        setTimeout(() => window.handleDeepLinking(), 800);
-    }).finally(() => {
-        hideLoading();
     });
 
     $('#spirit-btn').click(function() {
@@ -1200,6 +1224,49 @@ function applyVisualsToModal(holo, mask, use3d) {
 async function switchView(view, skipPush = false) {
     if (!view) return;
 
+    // Robust View Validation (fixes common truncations like "albu")
+    const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+    const originalView = view;
+    let wasCorrected = false;
+
+    if (!validViews.includes(view)) {
+        if (view.startsWith('albu')) view = 'albums';
+        else if (view.startsWith('deck')) view = 'decks';
+        else if (view.startsWith('preord')) view = 'preorders';
+        else if (view.startsWith('seal')) view = 'sealed';
+        else if (view.startsWith('wish')) view = 'wishlist';
+        else if (view.startsWith('event')) view = 'events';
+        else if (view.startsWith('claim')) view = 'claims';
+        else if (view.startsWith('auct') || view.startsWith('suba')) view = 'auctions';
+        else if (view.startsWith('invest')) view = 'investments';
+        else view = 'home';
+
+        if (view !== originalView) wasCorrected = true;
+    }
+
+    // Sync history state early to ensure URL reflects intent immediately
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentUrlView = urlParams.get('view') || 'home';
+
+    // If the URL contains a truncated/invalid view, we treat it as a correction
+    if (!validViews.includes(currentUrlView)) wasCorrected = true;
+
+    let useReplace = wasCorrected;
+    if (!skipPush && currentUrlView === view && !wasCorrected) {
+        skipPush = true;
+    }
+
+    if (!skipPush || useReplace) {
+        const url = new URL(window.location);
+        url.searchParams.set('view', view);
+        if (useReplace) {
+            window.history.replaceState({}, '', url);
+        } else {
+            window.history.pushState({}, '', url);
+        }
+    }
+
+    // UI Updates
     $('.nav-btn').removeClass('active');
     $(`.nav-btn[data-view="${view}"]`).addClass('active');
 
@@ -1209,10 +1276,10 @@ async function switchView(view, skipPush = false) {
     // Show/Hide search bar based on view
     if (view === 'home') {
         $('.search-container').hide();
-        $('.bottom-nav').hide(); // Hide bottom nav on home
+        $('.bottom-nav').hide();
     } else {
         $('.search-container').show();
-        $('.bottom-nav').css('display', 'flex'); // Show on other views
+        $('.bottom-nav').css('display', 'flex');
     }
 
     // --- Build Mode Check ---
@@ -1258,13 +1325,6 @@ async function switchView(view, skipPush = false) {
                 }
 
                 $buildOverlay.show();
-
-                // Track state
-                if (!skipPush) {
-                    const url = new URL(window.location);
-                    url.searchParams.set('view', view);
-                    window.history.pushState({}, '', url);
-                }
                 if (window.botInstance) window.botInstance.setContext(view);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return; // Stop further loading of this view
@@ -1276,8 +1336,8 @@ async function switchView(view, skipPush = false) {
         }
     }
 
+    // View-specific data loading
     if (view === 'albums') {
-        // La pantalla de carga solo debe salir en el load inicial de álbumes
         if (window.currentStoreId) await loadPublicAlbums(window.currentStoreId);
     } else if (view === 'sealed') {
         await loadPublicSealed();
@@ -1301,12 +1361,6 @@ async function switchView(view, skipPush = false) {
         }
     } else if (view === 'investments') {
         await loadPublicInvestmentCategories();
-    }
-
-    if (!skipPush) {
-        const url = new URL(window.location);
-        url.searchParams.set('view', view);
-        window.history.pushState({}, '', url);
     }
 
     if (window.botInstance) {
@@ -1345,7 +1399,18 @@ async function loadStoreData() {
         params.delete('store');
         params.delete('user');
         const search = params.toString();
-        const newUrl = `${window.location.origin}/${encodeURIComponent(identifier)}${search ? '?' + search : ''}${window.location.hash}`;
+
+        // Preserve the current path to avoid breaking asset loads on refresh (especially when in subdirectories like /toonShop)
+        // Ensure no double question marks or ampersands
+        const currentPath = window.location.pathname;
+        let newUrl = `${window.location.origin}${currentPath}?id=${encodeURIComponent(identifier)}`;
+        if (search) {
+            newUrl += `&${search}`;
+        }
+        if (window.location.hash) {
+            newUrl += window.location.hash;
+        }
+
         window.history.replaceState({}, '', newUrl);
         window.currentStoreIdentifier = identifier;
     } else {
@@ -1523,7 +1588,6 @@ function loadPublicPreorders() {
         console.error("Error loading preorders:", e);
         $('#preorders-container').html('<div class="error">Error al cargar preventas.</div>');
     } finally {
-        hideLoading();
         resolve();
     }
     });
@@ -1686,7 +1750,6 @@ function loadPublicAlbums(userId) {
         console.error("Error in loadPublicAlbums:", e);
         $('#albums-container').html('<div class="error">Error al cargar la colección.</div>');
     } finally {
-        hideLoading();
         resolve();
     }
     });
@@ -1878,10 +1941,7 @@ function loadPublicDecks() {
         console.error("Error in loadPublicDecks:", e);
         $('#decks-container').html('<div class="error">Error al cargar los decks.</div>');
     } finally {
-        setTimeout(() => {
-            hideLoading();
-            resolve();
-        }, 500);
+        resolve();
     }
     });
 }
@@ -2307,7 +2367,6 @@ function loadPublicSealed() {
         console.error("Error loading sealed products:", e);
         $('#sealed-container').html('<div class="error">Error al cargar productos.</div>');
     } finally {
-        hideLoading();
         resolve();
     }
     });
@@ -2401,7 +2460,6 @@ function loadPublicEvents() {
         console.error(e);
         $('#events-container').html('<div class="error">Error al cargar la sección.</div>');
     } finally {
-        hideLoading();
         resolve();
     }
     });
@@ -2540,7 +2598,6 @@ function loadPublicWishlist() {
         console.error("Error loading wishlist:", e);
         $('#wishlist-container').html('<div class="error">Error al cargar los deseos.</div>');
     } finally {
-        hideLoading();
         resolve();
     }
     });
@@ -2734,7 +2791,6 @@ function loadPublicAuctions() {
             console.error("Error loading auctions:", e);
             $('#auctions-container').html('<div class="error">Error al cargar subastas.</div>');
         } finally {
-            hideLoading();
             resolve();
         }
     });
@@ -3266,7 +3322,6 @@ function loadPublicClaims() {
             console.error("Error loading claims:", e);
             $('#claims-container').html('<div class="error">Error al cargar claims.</div>');
         } finally {
-            hideLoading();
             resolve();
         }
     });
