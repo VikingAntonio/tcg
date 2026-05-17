@@ -114,10 +114,6 @@ function initInvestmentListeners() {
         $(this).addClass('active');
         $('#investment-card-modal .slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
-
-        if (tabId === 'inv-tab-movimientos' && currentEditingInvCardId) {
-            setTimeout(() => renderPriceHistoryChart(currentEditingInvCardId), 100);
-        }
     });
 
 
@@ -177,14 +173,18 @@ function initInvestmentListeners() {
     // URL sync for main image
     $('#inv-card-image-url-display').on('input change', function() {
         const url = $(this).val();
-        $('#inv-detail-image').attr('src', url || 'https://vikingtcg.xyz/images/card-back.png');
+        if (url && url.startsWith('http')) {
+            $('#inv-detail-image').attr('src', url);
+            $('#inv-compact-preview').fadeIn();
+        } else {
+            $('#inv-compact-preview').hide();
+        }
         $('#inv-card-image-url').val(url);
     });
 
-    // Rarity sync
-    $('#inv-card-rarity-input').on('input change', function() {
-        $('#inv-card-rarity').val($(this).val());
-    });
+    // Metadata sync
+    $('#inv-card-name').on('input change', function() { $('#inv-card-modal-title').text($(this).val().toUpperCase() || 'NUEVO ACTIVO'); });
+    $('#inv-card-rarity-input').on('input change', function() { $('#inv-card-rarity').val($(this).val()); });
 }
 
 async function handleInvMainImage(file) {
@@ -194,6 +194,7 @@ async function handleInvMainImage(file) {
         const url = await CloudinaryUpload.uploadImage(file);
         if (url) {
             $('#inv-card-image-url-display').val(url).trigger('change');
+            $('#inv-compact-preview').show();
         }
     } catch (e) {
         console.error("Error uploading main image:", e);
@@ -680,7 +681,7 @@ function renderListMode($container) {
 
 let currentEditingInvCardId = null;
 
-function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-busqueda') {
+function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-asset') {
     currentEditingInvCardId = card ? card.id : null;
     currentInvExtraImages = card ? (card.extra_images || []) : [];
 
@@ -692,12 +693,21 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-busqueda') {
 
     if (!card) {
         $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
-        $('#inv-detail-image').attr('src', 'https://vikingtcg.xyz/images/card-back.png');
         $('#inv-card-image-url-display').val('');
+        $('#inv-compact-preview').hide();
+
+        // Reset hidden fields
+        $('#inv-card-external-id').val('');
+        $('#inv-card-image-url').val('');
+        $('#inv-card-set-name').val('');
+        $('#inv-card-set-number').val('');
+        $('#inv-card-rarity').val('');
+        $('#inv-card-game').val('pokemon');
     } else {
         $('#inv-card-modal-title').text(card.card_name.toUpperCase());
         $('#inv-detail-image').attr('src', card.image_url);
         $('#inv-card-image-url-display').val(card.image_url);
+        $('#inv-compact-preview').show();
     }
 
     // Populate Fields
@@ -737,6 +747,7 @@ $('#btn-inv-card-search').click(async function() {
         $('#inv-card-image-url').val(highRes);
         $('#inv-card-image-url-display').val(highRes);
         $('#inv-detail-image').attr('src', highRes);
+        $('#inv-compact-preview').show();
 
         $('#inv-card-set-name').val(card.set || card.set_name || card.expansion || '');
         $('#inv-card-set-number').val(card.number || card.set_number || '');
@@ -856,8 +867,7 @@ $('#btn-save-investment-card').click(async function() {
 
         renderInvestmentCards(currentInvestmentViewMode);
 
-        // Transition to Movements tab after saving
-        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-movimientos"]').click();
+        $('#investment-card-modal').removeClass('active');
 
     } catch (e) {
         console.error(e);

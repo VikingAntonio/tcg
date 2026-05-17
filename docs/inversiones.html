@@ -169,15 +169,14 @@
 
             <!-- Tabs Navigation -->
             <div class="inv-modal-tabs">
-                <div class="inv-tab-link active" data-tab="inv-tab-busqueda">BÚSQUEDA</div>
+                <div class="inv-tab-link active" data-tab="inv-tab-asset">ASSET</div>
                 <div class="inv-tab-link" data-tab="inv-tab-datos">DATOS</div>
-                <div class="inv-tab-link" data-tab="inv-tab-movimientos">MOVIMIENTOS</div>
             </div>
 
-            <div class="inv-modal-body" style="padding: 0;">
-                <!-- Tab: BÚSQUEDA (Search + Main Image) -->
-                <div id="inv-tab-busqueda" class="slot-tab-content active" style="padding: 30px;">
-                    <div class="inv-search-container" style="padding: 15px; margin-bottom: 20px;">
+            <div class="inv-modal-body" style="padding: 0; min-height: 450px;">
+                <!-- Tab: ASSET (Search + Drag & Drop) -->
+                <div id="inv-tab-asset" class="slot-tab-content active" style="padding: 30px;">
+                    <div class="inv-search-container" style="padding: 15px; margin-bottom: 20px; border-radius: 8px;">
                         <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
                             <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-search"></i> BUSCAR EN BASES DE DATOS</label>
                             <div style="display: flex; gap: 10px;">
@@ -186,28 +185,27 @@
                             </div>
                         </div>
                     </div>
-                    <div id="inv-card-search-results" style="margin-bottom: 25px; min-height: 50px;">
-                        <!-- Results will appear here -->
+
+                    <div id="inv-card-search-results" style="margin-bottom: 20px; max-height: 120px; overflow-y: auto;">
+                        <!-- Results -->
                     </div>
 
-                    <div class="inv-detail-container" style="min-height: auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fafafa;">
-                        <div class="inv-detail-image-side" style="padding: 20px; flex: 0 0 180px; background: #fff; border-right: 1px solid #eee; display: flex; align-items: center; justify-content: center;">
-                            <img id="inv-detail-image" src="https://vikingtcg.xyz/images/card-back.png" alt="Card Preview" style="width: 100%; max-width: 140px; border-radius: 8px; border: 2px solid #000; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+                    <div style="display: flex; gap: 20px; align-items: flex-start;">
+                        <div class="inv-bg-light" id="drop-zone-inv-main" style="flex: 1; border: 2px dashed var(--inv-gray-300); min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; background: #fff;">
+                            <i class="fas fa-cloud-upload-alt fa-2x" style="color: var(--inv-gray-300); margin-bottom: 10px;"></i>
+                            <p style="font-size: 0.75rem; font-weight: 600; color: var(--inv-gray-700); margin: 0; text-align: center; padding: 0 10px;">SUBIR IMAGEN LOCAL O ARRASTRAR</p>
+                            <input type="file" id="input-inv-main-file" accept="image/*" style="display: none;">
                         </div>
-                        <div class="inv-detail-info-side" style="padding: 20px; flex: 1;">
-                            <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700); margin-bottom: 10px; display: block;">IMAGEN PRINCIPAL</label>
 
-                            <div class="inv-bg-light" id="drop-zone-inv-main" style="border: 2px dashed var(--inv-gray-300); min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; margin-bottom: 15px; background: #fff;">
-                                <i class="fas fa-cloud-upload-alt fa-lg" style="color: var(--inv-gray-300); margin-bottom: 8px;"></i>
-                                <p style="font-size: 0.7rem; font-weight: 600; color: var(--inv-gray-700); margin: 0;">Subir imagen local</p>
-                                <input type="file" id="input-inv-main-file" accept="image/*" style="display: none;">
-                            </div>
-
-                            <div class="inv-form-group">
-                                <label style="font-size: 0.6rem;">URL DE LA IMAGEN</label>
-                                <input type="text" id="inv-card-image-url-display" class="inv-search-input" style="width: 100%; padding: 10px; font-size: 0.8rem;" placeholder="https://...">
-                            </div>
+                        <div id="inv-compact-preview" style="flex: 0 0 100px; display: none;">
+                            <label style="font-size: 0.6rem; font-weight: 800; margin-bottom: 5px; display: block; text-align: center;">VISTA PREVIA</label>
+                            <img id="inv-detail-image" src="" alt="Preview" style="width: 100%; border-radius: 6px; border: 2px solid #000; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
                         </div>
+                    </div>
+
+                    <div class="inv-form-group" style="margin-top: 20px;">
+                        <label style="font-size: 0.6rem;">URL DE LA IMAGEN (OPCIONAL)</label>
+                        <input type="text" id="inv-card-image-url-display" class="inv-search-input" style="width: 100%; padding: 10px; font-size: 0.8rem;" placeholder="https://...">
                     </div>
                 </div>
 
@@ -241,31 +239,15 @@
                     </div>
                     <div class="inv-form-group" style="margin-top: 10px;">
                         <label>Notas Adicionales</label>
-                        <textarea id="inv-card-notes" placeholder="Condición, ubicación física, etc..." style="height: 80px; font-size: 0.9rem; padding: 12px;"></textarea>
+                        <textarea id="inv-card-notes" placeholder="Condición, ubicación física, etc..." style="height: 80px; font-size: 0.9rem; padding: 12px; resize: none;"></textarea>
                     </div>
 
-                    <!-- Hidden fields still needed for DB consistency -->
+                    <!-- Hidden persistence elements -->
                     <div style="display: none;">
-                        <label>Imágenes Extra</label>
-                        <div id="drop-zone-inv-extra">
-                            <input type="file" id="input-inv-extra-files" multiple accept="image/*">
-                        </div>
-                        <div id="inv-extra-images-preview"></div>
-                    </div>
-                </div>
-
-
-                <!-- Tab: History / Movements -->
-                <div id="inv-tab-movimientos" class="slot-tab-content" style="padding: 40px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #000;">Market Performance</div>
-                        <button id="btn-inv-add-price" class="btn-inv-main" style="padding: 5px 12px; font-size: 0.7rem;"><i class="fas fa-plus"></i> ADD PRICE</button>
-                    </div>
-                    <div class="inv-chart-container">
                         <canvas id="inv-detail-chart"></canvas>
-                    </div>
-                    <div id="inv-history-list" class="inv-detail-history-list" style="max-height: 250px;">
-                        <!-- Historical list -->
+                        <div id="inv-history-list"></div>
+                        <div id="drop-zone-inv-extra"><input type="file" id="input-inv-extra-files" multiple></div>
+                        <div id="inv-extra-images-preview"></div>
                     </div>
                 </div>
             </div>
