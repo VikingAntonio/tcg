@@ -360,8 +360,12 @@ window.addEventListener('show-loading', (e) => {
 });
 
 window.addEventListener('hide-loading', () => {
+    // Safety check to avoid double calls or hiding while already hidden
+    const screen = document.getElementById('loading-screen');
+    if (!screen || !screen.classList.contains('active')) return;
+
     // EDIT HERE: Adjust this value to change how long the loading screen stays (in milliseconds)
-    const LOADING_DELAY = 500;
+    const LOADING_DELAY = 3000;
 
     setTimeout(() => {
         updateLoadingScreen(false);
