@@ -13,6 +13,77 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Responsive Fixes for Asset Manager Modal */
+        #inv-detail-image {
+            max-height: 280px !important;
+            width: auto !important;
+            transform: scale(0.92);
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #inv-detail-price {
+            color: #000 !important;
+        }
+
+        @media (max-width: 768px) {
+            .inv-modal-resumen-container,
+            .inv-modal-datos-container {
+                flex-direction: column !important;
+                height: auto !important;
+                gap: 20px !important;
+            }
+
+            .inv-modal-image-side,
+            .inv-modal-info-side {
+                width: 100% !important;
+                padding: 20px !important;
+                border: none !important;
+            }
+
+            #inv-detail-name {
+                font-size: 1.5rem !important;
+            }
+
+            #inv-detail-price {
+                font-size: 1.8rem !important;
+                color: #000 !important;
+            }
+
+            .inv-modal-image-side {
+                background: #f8f9fa !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+
+            #inv-price-chart {
+                height: 200px !important;
+                width: 100% !important;
+            }
+
+            .inv-modal-datos-container {
+                gap: 10px !important;
+                padding: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+
+            #inv-add-preview-container {
+                display: none !important; /* Hide mini preview on mobile DATOS tab as it's now in RESUMEN */
+            }
+
+            #inv-tab-datos {
+                padding: 20px !important;
+            }
+
+            .inv-detail-modal-content {
+                height: 95vh !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="top-left-panel" id="top-panel" style="display: none;">
@@ -178,15 +249,15 @@
             <div class="inv-modal-body" style="padding: 0;">
                 <!-- Tab: RESUMEN (Asset Image + Market Chart) -->
                 <div id="inv-tab-resumen" class="slot-tab-content active">
-                    <div style="display: flex; height: 100%;">
+                    <div class="inv-modal-resumen-container" style="display: flex; height: 100%;">
                         <!-- Left: Image Preview -->
-                        <div style="flex: 1; background: #f8f9fa; display: flex; align-items: center; justify-content: center; padding: 40px; border-right: 1px solid #eee;">
+                        <div class="inv-modal-image-side" style="flex: 1; background: #f8f9fa; display: flex; align-items: center; justify-content: center; padding: 40px; border-right: 1px solid #eee;">
                             <div style="width: 100%; max-width: 320px;">
                                 <img id="inv-detail-image" src="" alt="Card Image" style="width: 100%; border-radius: 8px; border: 3px solid #000; box-shadow: 0 15px 40px rgba(0,0,0,0.15); transition: opacity 0.3s ease;">
                             </div>
                         </div>
                         <!-- Right: Market Chart -->
-                        <div style="flex: 1.2; padding: 40px; display: flex; flex-direction: column;">
+                        <div class="inv-modal-info-side" style="flex: 1.2; padding: 40px; display: flex; flex-direction: column;">
                             <div style="margin-bottom: 20px;">
                                 <div id="inv-detail-set" style="font-size: 0.6rem; font-weight: 800; color: #999; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 5px;">EXPANSION NAME - RARITY</div>
                                 <h2 id="inv-detail-name" style="margin: 0; font-size: 1.8rem; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1;">CARD NAME</h2>
@@ -209,7 +280,7 @@
 
                 <!-- Tab: DATOS (Search & Metadata - NO IMAGE) -->
                 <div id="inv-tab-datos" class="slot-tab-content" style="padding: 40px;">
-                    <div style="max-width: 650px; margin: 0 auto; display: flex; gap: 30px;">
+                    <div class="inv-modal-datos-container" style="max-width: 650px; margin: 0 auto; display: flex; gap: 30px;">
                         <div style="flex: 1;">
                             <div class="inv-search-container" id="inv-card-search-container" style="margin-bottom: 30px; display: flex; flex-direction: column; gap: 20px; background: #f9f9f9; padding: 25px; border-radius: 8px;">
                                 <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
@@ -507,6 +578,69 @@
             $('.admin-section').hide().removeClass('active');
             $(`#view-${view}`).show().addClass('active');
         }
+
+        // --- OVERRIDE INVERSIONES.JS FUNCTIONS ---
+
+        const originalOpenInvestmentCardModal = window.openInvestmentCardModal;
+        window.openInvestmentCardModal = function(card = null, defaultTab = 'inv-tab-resumen') {
+            // First call original to set up state
+            if (typeof originalOpenInvestmentCardModal === 'function') {
+                originalOpenInvestmentCardModal(card, defaultTab);
+            }
+
+            // UI adjustments: ensure RESUMEN tab is ALWAYS visible
+            $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').show();
+
+            if (!card) {
+                // For NEW card, manually set some default text in RESUMEN tab
+                $('#inv-detail-name').text('NEW ASSET');
+                $('#inv-detail-set').text('SELECT A CARD IN DATOS TAB');
+                $('#inv-detail-price').text('$0.00');
+                $('#inv-detail-trend').empty();
+                if (invPriceChart) invPriceChart.destroy();
+            }
+        };
+
+        const originalSyncAddPreview = window.syncAddPreview;
+        window.syncAddPreview = function() {
+            if (typeof originalSyncAddPreview === 'function') {
+                originalSyncAddPreview();
+            }
+
+            // Sync with RESUMEN tab too
+            const url = $('#inv-card-image-url').val();
+            const name = $('#inv-card-name').val();
+            const set = $('#inv-card-set-name').val();
+            const rarity = $('#inv-card-rarity-input').val();
+            const price = $('#inv-card-current-price').val();
+
+            const $detailImg = $('#inv-detail-image');
+            if (url) {
+                if ($detailImg.attr('src') !== url) {
+                    $detailImg.css('opacity', '0').attr('src', url).one('load', function() {
+                        $(this).css('opacity', '1');
+                    });
+                }
+            } else {
+                $detailImg.attr('src', '').css('opacity', '0');
+            }
+
+            if (!currentEditingInvCardId) {
+                $('#inv-detail-name').text(name.toUpperCase() || 'NEW ASSET');
+                const setInfo = set.toUpperCase() || 'UNKNOWN SET';
+                const rarityInfo = rarity.toUpperCase() || 'UNKNOWN RARITY';
+                $('#inv-detail-set').text(`${setInfo} - ${rarityInfo}`);
+                $('#inv-detail-price').text(`$${parseFloat(price || 0).toFixed(2)}`);
+            }
+        };
+
+        // Real-time metadata sync from DATOS to RESUMEN
+        $(document).on('input', '#inv-card-name, #inv-card-rarity-input, #inv-card-set-name, #inv-card-current-price', function() {
+            if (typeof syncAddPreview === 'function') {
+                syncAddPreview();
+            }
+        });
+
     </script>
 </body>
 </html>
