@@ -117,31 +117,27 @@ function initInvestmentListeners() {
         $('#investment-card-modal .slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
 
-        if (tabId === 'inv-tab-movimientos' && currentEditingInvCardId) {
-            setTimeout(() => renderPriceHistoryChart(currentEditingInvCardId), 100);
-        }
         if (tabId === 'inv-tab-resumen' && currentEditingInvCardId) {
             const card = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
             if (card) updateSummaryTab(card);
         }
         if (tabId === 'inv-tab-datos') {
-            syncDatosPreview();
+            syncAddPreview();
         }
     });
 
-    function syncDatosPreview() {
+    function syncAddPreview() {
         const url = $('#inv-card-image-url').val();
-        const $previewImg = $('#inv-form-preview-image');
-        const $container = $('#inv-form-preview-container');
-        const $placeholder = $('#inv-preview-placeholder');
+        const $img = $('#inv-add-preview-image');
+        const $placeholder = $('#inv-add-preview-placeholder');
 
         if (url) {
-            $previewImg.attr('src', url).on('load', function() {
+            $img.attr('src', url).one('load', function() {
                 $placeholder.hide();
-                $container.css('opacity', '1');
+                $(this).css('opacity', '1');
             });
         } else {
-            $container.css('opacity', '0');
+            $img.attr('src', '').css('opacity', '0');
             $placeholder.show();
         }
     }
@@ -212,7 +208,7 @@ async function handleInvMainImage(file) {
         const url = await CloudinaryUpload.uploadImage(file);
         if (url) {
             $('#inv-card-image-url').val(url);
-            syncDatosPreview();
+            syncAddPreview();
             Swal.fire({ icon: 'success', title: 'Imagen cargada', timer: 1000, showConfirmButton: false });
         }
     } catch (e) {
@@ -714,14 +710,11 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         // New Card Mode
         $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').hide();
-        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-movimientos"]').hide();
         $('#inv-card-search-container').show();
 
         // Reset previews
         $('#inv-detail-image').attr('src', '').css('opacity', '0');
-        $('#inv-form-preview-image').attr('src', '');
-        $('#inv-form-preview-container').css('opacity', '0');
-        $('#inv-preview-placeholder').show();
+        $('#inv-main-image-status').hide();
 
         // Default to DATOS tab for new assets
         $(`#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]`).addClass('active');
@@ -745,10 +738,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-modal-title').text(card.card_name.toUpperCase());
         $('#inv-card-search-container').hide();
         $('#inv-card-name').prop('readonly', true);
-
-        // Reset preview states
-        $('#inv-form-preview-container').css('opacity', '0');
-        $('#inv-preview-placeholder').show();
+        $('#inv-main-image-status').hide();
 
         // Set requested tab or default to resumen
         $(`#investment-card-modal .inv-tab-link[data-tab="${defaultTab}"]`).addClass('active');
@@ -771,10 +761,6 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
 
         if (defaultTab === 'inv-tab-resumen') {
             updateSummaryTab(card);
-        } else if (defaultTab === 'inv-tab-movimientos') {
-            setTimeout(() => renderPriceHistoryChart(card.id), 100);
-        } else if (defaultTab === 'inv-tab-datos') {
-            syncDatosPreview();
         }
     }
 
@@ -794,8 +780,9 @@ $('#btn-inv-card-search').click(async function() {
         $('#inv-card-name').val(card.name.toUpperCase());
         $('#inv-card-image-url').val(finalUrl);
 
-        // Update previews in both potential views
-        syncDatosPreview();
+        // Update Preview
+        syncAddPreview();
+
         $('#inv-card-set-name').val(card.set || card.set_name || '');
         $('#inv-card-set-number').val(card.number || '');
         $('#inv-card-rarity').val(card.rarity || '');
@@ -989,6 +976,12 @@ function updateSummaryTab(card) {
     const trendIcon = getTrendIcon(card.current_price, card.previous_price, true);
     $('#inv-detail-trend').html(trendIcon);
 
+    // 2. Load History Chart - delayed to ensure modal layout is fully stable and visible
+    setTimeout(() => {
+        if ($('#inv-tab-resumen').is(':visible')) {
+            renderPriceHistoryChart(card.id);
+        }
+    }, 400);
 }
 
 async function saveNewPrice(cardId, newPrice) {
@@ -1039,7 +1032,8 @@ async function renderPriceHistoryChart(cardId) {
     if (!canvas) return;
 
     // Check if modal and correct tab is visible to avoid glitches
-    if (!$('#investment-card-modal').hasClass('active') || !$('#inv-tab-movimientos').is(':visible')) return;
+    // Only render if RESUMEN tab is visible
+    if (!$('#investment-card-modal').hasClass('active') || !$('#inv-tab-resumen').is(':visible')) return;
 
     const { data: history, error } = await _supabase
         .from('investment_price_history')
