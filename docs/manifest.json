@@ -1,0 +1,29 @@
+{
+  "name": "Vikingdev TCG",
+  "short_name": "Vikingdev",
+  "description": "Organiza. Muestra. Comparte. Todo lo que necesitas para gestionar tus colecciones con estilo.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00d2ff",
+  "icons": [
+    {
+      "src": "favi.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favi.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favi.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
