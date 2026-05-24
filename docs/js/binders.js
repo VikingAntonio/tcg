@@ -289,7 +289,7 @@ async function editAlbum(album) {
     currentAlbumId = album.id;
     $('#editor-title').text(`Editando: ${album.title}`);
     $('#input-album-title').val(album.title);
-    $('#input-album-style').val(album.cover_style || 'default');
+    $('#input-album-style').val(album.cover_style || 'style-inversiones');
     $('#input-album-cover').val(album.cover_image_url || '');
     $('#input-album-back').val(album.back_image_url || '');
     $('#input-album-cover-color').val(album.cover_color || '#1a1a1a');
