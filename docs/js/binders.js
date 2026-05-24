@@ -82,6 +82,23 @@ $(document).ready(async function() {
         setTimeout(() => { $("#chat-messages").append(`<div class="chat-msg msg-bot">Aún estoy aprendiendo...</div>`); }, 800);
     });
 
+    // --- Album Tabs Logic ---
+    $(document).on('click', '.album-tab-btn', function(e) {
+        e.preventDefault();
+        const tab = $(this).data('tab');
+        $('.album-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.album-tab-content').hide();
+        $(`#tab-${tab}`).show();
+    });
+
+    $(document).on('click', '.cover-option-card', function() {
+        const style = $(this).data('style');
+        $('.cover-option-card').removeClass('active');
+        $(this).addClass('active');
+        $('#input-album-style').val(style);
+    });
+
     $(document).on('click', '#btn-create-album', async function(e) {
         e.preventDefault();
         if (!currentUser) return;
@@ -289,7 +306,11 @@ async function editAlbum(album) {
     currentAlbumId = album.id;
     $('#editor-title').text(`Editando: ${album.title}`);
     $('#input-album-title').val(album.title);
-    $('#input-album-style').val(album.cover_style || 'style-inversiones');
+    let style = album.cover_style || 'style-standard';
+    if (style === 'style-inversiones' || style === 'default') style = 'style-standard';
+    $('#input-album-style').val(style);
+    $('.cover-option-card').removeClass('active');
+    $(`.cover-option-card[data-style="${style}"]`).addClass('active');
     $('#input-album-cover').val(album.cover_image_url || '');
     $('#input-album-back').val(album.back_image_url || '');
     $('#input-album-cover-color').val(album.cover_color || '#1a1a1a');

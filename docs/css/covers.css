@@ -1,175 +1,201 @@
-/* Album Cover Styles */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
+/* Album Covers System - Professional Styles */
 
-/* Base container for all styles */
 .textured-cover {
     width: 100%;
     height: 100%;
+    position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    position: relative;
+    justify-content: center;
     overflow: hidden;
     transition: all 0.3s ease;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.2);
 }
 
-/* Subtitle helper */
-.textured-cover .style-subtitle {
-    display: block;
+.textured-cover h2 {
+    margin: 0;
     font-weight: 800;
     text-transform: uppercase;
-}
-
-/* 1. Inversiones Style - The requested primary option */
-.textured-cover.style-inversiones {
-    background-color: #000;
-    border: 10px solid #111;
-}
-.textured-cover.style-inversiones h2 {
-    color: white !important;
     text-align: center;
-    padding: 10% 0;
-    font-size: 1.5rem;
-    letter-spacing: 0.1em;
-    border-top: 1px solid white;
-    border-bottom: 1px solid white;
-    width: 80%;
-    text-transform: uppercase;
-    font-weight: 900;
-    margin: 0;
+    padding: 10% 5%;
+    width: 85%;
+    z-index: 2;
+    transition: color 0.3s ease;
 }
-.textured-cover.style-inversiones .style-subtitle {
-    color: rgba(255,255,255,0.7);
-    font-size: 0.7rem;
+
+.style-subtitle {
+    font-size: 0.65rem;
     letter-spacing: 0.3em;
-    margin-top: 20px;
-}
-
-/* 2. Minimalist Style - Clean and modern */
-.textured-cover.style-minimalist {
-    background-color: #f5f5f5;
-}
-.textured-cover.style-minimalist h2 {
-    color: #333 !important;
-    font-weight: 300;
-    font-size: 1.8rem;
-    letter-spacing: -0.02em;
-    margin: 0;
-    border: none;
-}
-.textured-cover.style-minimalist .style-subtitle {
-    color: #999;
-    font-size: 0.6rem;
-    letter-spacing: 0.5em;
-    margin-top: 10px;
-}
-
-/* 3. Luxury Style - Dark with gold accents */
-.textured-cover.style-luxury {
-    background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
-}
-.textured-cover.style-luxury::before {
-    content: '';
-    position: absolute;
-    top: 20px; right: 20px; bottom: 20px; left: 20px;
-    border: 1px solid #d4af37;
-    opacity: 0.5;
-}
-.textured-cover.style-luxury h2 {
-    color: #d4af37 !important;
-    font-family: 'Playfair Display', serif;
-    font-size: 2rem;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    margin: 0;
-}
-.textured-cover.style-luxury .style-subtitle {
-    color: #fff;
-    background: #d4af37;
-    padding: 4px 15px;
-    font-size: 0.6rem;
-    margin-top: 15px;
-}
-
-/* 4. Vintage Style - Old book feel */
-.textured-cover.style-vintage {
-    background-color: #eaddca;
-    background-image: url("https://www.transparenttextures.com/patterns/parchment.png");
-}
-.textured-cover.style-vintage h2 {
-    color: #4a3728 !important;
-    font-family: 'Georgia', serif;
-    font-style: italic;
-    font-size: 1.8rem;
-    border-bottom: 2px double #4a3728;
-    padding-bottom: 5px;
-    margin: 0;
-}
-.textured-cover.style-vintage .style-subtitle {
-    color: #4a3728;
-    font-size: 0.8rem;
-    margin-top: 10px;
-    font-family: 'serif';
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-top: -20px;
+    z-index: 2;
     opacity: 0.8;
 }
 
-/* 5. Geometric Style - Modern shapes */
-.textured-cover.style-geometric {
-    background-color: #2a5298;
+/* 1. Estándar (Legacy Inversiones, now blends with user color) */
+.style-standard {
+    background-image:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 80%),
+        url('https://www.transparenttextures.com/patterns/pinstripe-dark.png');
+    border: 12px double rgba(0,0,0,0.15);
 }
-.textured-cover.style-geometric::after {
-    content: '';
+.style-standard h2 {
+    border-top: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    color: white;
+}
+
+/* 2. Espacial (Animated Stars) */
+.style-cosmic {
+    background: #050505;
+    background-image: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
+}
+.style-cosmic::before {
+    content: "";
     position: absolute;
     width: 200%;
     height: 200%;
-    background-image: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
-    background-size: 60px 60px;
-    opacity: 0.2;
-    transform: rotate(15deg);
+    top: -50%;
+    left: -50%;
+    background-image:
+        radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 130px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 160px 120px, #ddd, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    animation: cosmic-drift 60s linear infinite;
+    opacity: 0.5;
 }
-.textured-cover.style-geometric h2 {
-    color: #fff !important;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(5px);
-    padding: 20px 40px;
-    font-weight: 800;
-    transform: skew(-10deg);
-    margin: 0;
+@keyframes cosmic-drift {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
-.textured-cover.style-geometric .style-subtitle {
-    color: #00d2ff;
-    font-size: 0.7rem;
-    margin-top: 20px;
-    font-weight: 800;
-}
+.style-cosmic h2 { color: #fff; text-shadow: 0 0 10px rgba(0,210,255,0.5); }
+.style-cosmic .style-subtitle { color: #00d2ff; }
 
-/* 6. Cosmic Style - Deep space */
-.textured-cover.style-cosmic {
-    background: radial-gradient(circle at center, #2c3e50 0%, #000 100%);
+/* 3. Holográfico (Animated Mesh Gradient) */
+.style-holographic {
+    background: linear-gradient(125deg, #ff00cc, #3333ff, #00d2ff, #33ff00, #ffcc00, #ff00cc);
+    background-size: 400% 400%;
+    animation: holo-flow 15s ease infinite;
 }
-.textured-cover.style-cosmic::before {
-    content: '';
+@keyframes holo-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+.style-holographic::after {
+    content: "";
     position: absolute;
-    width: 100%; height: 100%;
-    background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
-    opacity: 0.4;
+    inset: 0;
+    background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+    opacity: 0.1;
 }
-.textured-cover.style-cosmic h2 {
-    color: #fff !important;
-    font-size: 2.2rem;
-    letter-spacing: 4px;
-    text-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
-    margin: 0;
+.style-holographic h2 { color: #000; mix-blend-mode: overlay; font-weight: 900; }
+.style-holographic .style-subtitle { color: #000; opacity: 0.5; }
+
+/* 4. Luxury Gold (Silk Texture + Gold Accents) */
+.style-luxury {
+    background-color: #1a1a1a;
+    background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
 }
-.textured-cover.style-cosmic .style-subtitle {
-    color: #a29bfe;
-    font-size: 0.65rem;
-    letter-spacing: 0.4em;
-    margin-top: 15px;
-    animation: glow-text 2s infinite alternate;
+.style-luxury::before {
+    content: "";
+    position: absolute;
+    inset: 20px;
+    border: 2px solid #d4af37;
+    z-index: 1;
+}
+.style-luxury h2 {
+    color: #d4af37;
+    font-family: 'Playfair Display', serif;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.style-luxury .style-subtitle { color: #d4af37; }
+
+/* 5. Mármol (Elegant Marble Texture) */
+.style-marble {
+    background-color: #f5f5f5;
+    background-image: url('https://www.transparenttextures.com/patterns/white-diamond.png');
+}
+.style-marble::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, rgba(0,0,0,0.05) 0%, transparent 100%);
+    z-index: 1;
+}
+.style-marble h2 { color: #333; letter-spacing: 0.1em; }
+.style-marble .style-subtitle { color: #888; }
+
+/* 6. Crimson Velvet */
+.style-velvet {
+    background-color: #4a0404;
+    background-image: url('https://www.transparenttextures.com/patterns/padded-little.png');
+}
+.style-velvet::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+}
+.style-velvet h2 { color: #fff; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
+.style-velvet .style-subtitle { color: rgba(255,255,255,0.6); }
+
+
+/* UI Selection Cards (for Admin) */
+.cover-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 10px;
 }
 
-@keyframes glow-text {
-    from { text-shadow: 0 0 5px rgba(162, 155, 254, 0.5); }
-    to { text-shadow: 0 0 15px rgba(162, 155, 254, 1); }
+.cover-option-card {
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 3px solid transparent;
+    transition: all 0.2s ease;
+    aspect-ratio: 3/4;
+    position: relative;
+}
+
+.cover-option-card.active {
+    border-color: #00d2ff;
+    box-shadow: 0 0 15px rgba(0,210,255,0.4);
+    transform: scale(1.05);
+    z-index: 2;
+}
+
+.cover-option-card .label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    font-size: 0.6rem;
+    padding: 4px;
+    text-align: center;
+    z-index: 3;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.cover-option-card .textured-cover {
+    pointer-events: none;
+    transform: scale(0.5);
+    width: 200%;
+    height: 200%;
+    transform-origin: top left;
+}
+
+.cover-option-card .textured-cover h2 {
+    font-size: 2rem !important;
 }
