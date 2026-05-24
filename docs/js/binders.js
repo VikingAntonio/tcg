@@ -104,11 +104,12 @@ $(document).ready(async function() {
         const title = $('#input-album-title').val();
         const cover = $('#input-album-cover').val();
         const back = $('#input-album-back').val();
+        const style = $('#input-album-style').val();
         const coverColor = $('#input-album-cover-color').val();
         const backColor = $('#input-album-back-color').val();
         const is_public = $('#input-album-public').is(':checked');
 
-        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: coverColor, back_color: backColor, is_public };
+        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_style: style, cover_color: coverColor, back_color: backColor, is_public };
 
         try {
             let { error: albumErr } = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
@@ -288,6 +289,7 @@ async function editAlbum(album) {
     currentAlbumId = album.id;
     $('#editor-title').text(`Editando: ${album.title}`);
     $('#input-album-title').val(album.title);
+    $('#input-album-style').val(album.cover_style || 'default');
     $('#input-album-cover').val(album.cover_image_url || '');
     $('#input-album-back').val(album.back_image_url || '');
     $('#input-album-cover-color').val(album.cover_color || '#1a1a1a');

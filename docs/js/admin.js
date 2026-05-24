@@ -476,6 +476,7 @@ $(document).ready(async function() {
         const title = $('#input-album-title').val();
         const cover = $('#input-album-cover').val();
         const back = $('#input-album-back').val();
+        const style = $('#input-album-style').val();
         const coverColor = $('#input-album-cover-color').val();
         const backColor = $('#input-album-back-color').val();
         const is_public = $('#input-album-public').is(':checked');
@@ -484,6 +485,7 @@ $(document).ready(async function() {
             title,
             cover_image_url: cover,
             back_image_url: back,
+            cover_style: style,
             cover_color: coverColor,
             back_color: backColor,
             is_public
@@ -2374,6 +2376,7 @@ async function editAlbum(album) {
     currentAlbumId = target.id;
     $('#editor-title').text(`Editando: ${target.title}`);
     $('#input-album-title').val(target.title);
+    $('#input-album-style').val(target.cover_style || 'default');
     $('#input-album-cover').val(target.cover_image_url || '');
     $('#input-album-back').val(target.back_image_url || '');
     $('#drop-zone-album-cover .file-name').text('');

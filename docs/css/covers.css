@@ -1,0 +1,175 @@
+/* Album Cover Styles */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
+
+/* Base container for all styles */
+.textured-cover {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* Subtitle helper */
+.textured-cover .style-subtitle {
+    display: block;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+/* 1. Inversiones Style - The requested primary option */
+.textured-cover.style-inversiones {
+    background-color: #000;
+    border: 10px solid #111;
+}
+.textured-cover.style-inversiones h2 {
+    color: white !important;
+    text-align: center;
+    padding: 10% 0;
+    font-size: 1.5rem;
+    letter-spacing: 0.1em;
+    border-top: 1px solid white;
+    border-bottom: 1px solid white;
+    width: 80%;
+    text-transform: uppercase;
+    font-weight: 900;
+    margin: 0;
+}
+.textured-cover.style-inversiones .style-subtitle {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    margin-top: 20px;
+}
+
+/* 2. Minimalist Style - Clean and modern */
+.textured-cover.style-minimalist {
+    background-color: #f5f5f5;
+}
+.textured-cover.style-minimalist h2 {
+    color: #333 !important;
+    font-weight: 300;
+    font-size: 1.8rem;
+    letter-spacing: -0.02em;
+    margin: 0;
+    border: none;
+}
+.textured-cover.style-minimalist .style-subtitle {
+    color: #999;
+    font-size: 0.6rem;
+    letter-spacing: 0.5em;
+    margin-top: 10px;
+}
+
+/* 3. Luxury Style - Dark with gold accents */
+.textured-cover.style-luxury {
+    background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+}
+.textured-cover.style-luxury::before {
+    content: '';
+    position: absolute;
+    top: 20px; right: 20px; bottom: 20px; left: 20px;
+    border: 1px solid #d4af37;
+    opacity: 0.5;
+}
+.textured-cover.style-luxury h2 {
+    color: #d4af37 !important;
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    margin: 0;
+}
+.textured-cover.style-luxury .style-subtitle {
+    color: #fff;
+    background: #d4af37;
+    padding: 4px 15px;
+    font-size: 0.6rem;
+    margin-top: 15px;
+}
+
+/* 4. Vintage Style - Old book feel */
+.textured-cover.style-vintage {
+    background-color: #eaddca;
+    background-image: url("https://www.transparenttextures.com/patterns/parchment.png");
+}
+.textured-cover.style-vintage h2 {
+    color: #4a3728 !important;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    font-size: 1.8rem;
+    border-bottom: 2px double #4a3728;
+    padding-bottom: 5px;
+    margin: 0;
+}
+.textured-cover.style-vintage .style-subtitle {
+    color: #4a3728;
+    font-size: 0.8rem;
+    margin-top: 10px;
+    font-family: 'serif';
+    opacity: 0.8;
+}
+
+/* 5. Geometric Style - Modern shapes */
+.textured-cover.style-geometric {
+    background-color: #2a5298;
+}
+.textured-cover.style-geometric::after {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background-image: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
+    background-size: 60px 60px;
+    opacity: 0.2;
+    transform: rotate(15deg);
+}
+.textured-cover.style-geometric h2 {
+    color: #fff !important;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(5px);
+    padding: 20px 40px;
+    font-weight: 800;
+    transform: skew(-10deg);
+    margin: 0;
+}
+.textured-cover.style-geometric .style-subtitle {
+    color: #00d2ff;
+    font-size: 0.7rem;
+    margin-top: 20px;
+    font-weight: 800;
+}
+
+/* 6. Cosmic Style - Deep space */
+.textured-cover.style-cosmic {
+    background: radial-gradient(circle at center, #2c3e50 0%, #000 100%);
+}
+.textured-cover.style-cosmic::before {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
+    opacity: 0.4;
+}
+.textured-cover.style-cosmic h2 {
+    color: #fff !important;
+    font-size: 2.2rem;
+    letter-spacing: 4px;
+    text-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
+    margin: 0;
+}
+.textured-cover.style-cosmic .style-subtitle {
+    color: #a29bfe;
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    margin-top: 15px;
+    animation: glow-text 2s infinite alternate;
+}
+
+@keyframes glow-text {
+    from { text-shadow: 0 0 5px rgba(162, 155, 254, 0.5); }
+    to { text-shadow: 0 0 15px rgba(162, 155, 254, 1); }
+}

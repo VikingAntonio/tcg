@@ -2121,6 +2121,7 @@ function renderAlbum(album) {
 
     const coverImg = album.cover_image_url;
     const coverColor = album.cover_color || '#1a1a1a';
+    const coverStyle = album.cover_style || 'default';
     let pageCount = 1;
 
     if (coverImg) {
@@ -2128,9 +2129,7 @@ function renderAlbum(album) {
     } else {
         $albumDiv.append(`
             <div class="page album-page cover-page" data-page-num="${pageCount}">
-                <div class="textured-cover" style="background-color: ${coverColor}">
-                    <h2>${album.title}</h2>
-                </div>
+                ${getCoverHtml(coverStyle, album.title, coverColor)}
             </div>
         `);
     }
@@ -2205,7 +2204,7 @@ function renderAlbum(album) {
     } else {
         $albumDiv.append(`
             <div class="page album-page cover-page" data-page-num="${pageCount}">
-                <div class="textured-cover" style="background-color: ${backColor}"></div>
+                <div class="textured-cover ${coverStyle !== 'default' ? coverStyle : ''}" style="background-color: ${backColor}"></div>
             </div>
         `);
     }
@@ -3648,6 +3647,32 @@ $(document).on('click', '#public-investment-tabs .tab-pill', function() {
     currentPublicInvMode = $(this).data('mode');
     renderPublicInvestmentCards();
 });
+
+function getCoverHtml(style, title, color) {
+    let styleClass = style || 'default';
+    if (styleClass === 'default') {
+        return `
+            <div class="textured-cover" style="background-color: ${color}">
+                <h2>${title}</h2>
+            </div>
+        `;
+    }
+
+    let subtitle = "COLLECTION";
+    if (styleClass === 'style-inversiones') subtitle = "VAULT COLLECTION";
+    if (styleClass === 'style-minimalist') subtitle = "LIMITED EDITION";
+    if (styleClass === 'style-luxury') subtitle = "PREMIUM ASSETS";
+    if (styleClass === 'style-vintage') subtitle = "ARCHIVE";
+    if (styleClass === 'style-geometric') subtitle = "MODERN DECK";
+    if (styleClass === 'style-cosmic') subtitle = "SPACE VAULT";
+
+    return `
+        <div class="textured-cover ${styleClass}" style="background-color: ${color}">
+            <h2>${title}</h2>
+            <span class="style-subtitle">${subtitle}</span>
+        </div>
+    `;
+}
 
 function renderPublicInvestmentCards() {
     const $container = $('#public-investment-cards');
