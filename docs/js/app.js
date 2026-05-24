@@ -3654,23 +3654,16 @@ $(document).on('click', '#public-investment-tabs .tab-pill', function() {
 });
 
 function getCoverHtml(style, title, color) {
-    let styleClass = style || 'style-inversiones';
-
-    if (styleClass === 'default') {
-        return `
-            <div class="textured-cover" style="background-color: ${color}">
-                <h2 style="color: white; text-align: center; font-size: 1.5rem; padding: 20px;">${title}</h2>
-            </div>
-        `;
-    }
+    // Default to 'style-standard' if not set or explicitly 'default'
+    let styleClass = (!style || style === 'default' || style === 'style-inversiones') ? 'style-standard' : style;
 
     let subtitle = "COLLECTION";
-    if (styleClass === 'style-inversiones') subtitle = "VAULT COLLECTION";
-    if (styleClass === 'style-minimalist') subtitle = "LIMITED EDITION";
-    if (styleClass === 'style-luxury') subtitle = "PREMIUM ASSETS";
-    if (styleClass === 'style-vintage') subtitle = "ARCHIVE";
-    if (styleClass === 'style-geometric') subtitle = "MODERN DECK";
-    if (styleClass === 'style-cosmic') subtitle = "SPACE VAULT";
+    if (styleClass === 'style-standard') subtitle = "VAULT COLLECTION";
+    else if (styleClass === 'style-cosmic') subtitle = "SPACE VAULT";
+    else if (styleClass === 'style-holographic') subtitle = "SPECTRUM";
+    else if (styleClass === 'style-luxury') subtitle = "PREMIUM ASSETS";
+    else if (styleClass === 'style-marble') subtitle = "ELEGANCE";
+    else if (styleClass === 'style-velvet') subtitle = "CRIMSON ARCHIVE";
 
     return `
         <div class="textured-cover ${styleClass}" style="background-color: ${color}">
