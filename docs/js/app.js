@@ -2121,10 +2121,15 @@ function renderAlbum(album) {
 
     const coverImg = album.cover_image_url;
     const coverColor = album.cover_color || '#1a1a1a';
-    const coverStyle = album.cover_style || 'default';
+    // Prioritize Inversiones style as default if nothing is specified
+    const coverStyle = album.cover_style && album.cover_style !== 'default' ? album.cover_style : 'style-inversiones';
     let pageCount = 1;
 
-    if (coverImg) {
+    // Only use cover image if explicitly provided and style is 'default' or not explicitly set to a premium one
+    // But per user request, we want the beautiful covers to be prominent.
+    // If they have a cover style that is NOT 'default', we use the style.
+    // If they have an image and style is 'default', we use the image.
+    if (coverImg && (!album.cover_style || album.cover_style === 'default')) {
         $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
     } else {
         $albumDiv.append(`
@@ -3649,11 +3654,12 @@ $(document).on('click', '#public-investment-tabs .tab-pill', function() {
 });
 
 function getCoverHtml(style, title, color) {
-    let styleClass = style || 'default';
+    let styleClass = style || 'style-inversiones';
+
     if (styleClass === 'default') {
         return `
             <div class="textured-cover" style="background-color: ${color}">
-                <h2>${title}</h2>
+                <h2 style="color: white; text-align: center; font-size: 1.5rem; padding: 20px;">${title}</h2>
             </div>
         `;
     }
