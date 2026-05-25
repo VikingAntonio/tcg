@@ -6,7 +6,6 @@
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <title>Vikingdev TCG - Álbumes</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/covers.css">
     <link rel="stylesheet" href="css/cards.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"/>
     <style>
@@ -74,58 +73,9 @@
             </div>
             <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
                 <div class="form-group"><label>Título</label><input type="text" id="input-album-title"></div>
-                <div class="album-tabs-container" style="height: 480px; display: flex; flex-direction: column;">
-                    <div class="album-tabs-header" style="display: flex; gap: 10px; margin-bottom: 20px; flex-shrink: 0;">
-                        <button class="btn btn-sm album-tab-btn active" data-tab="diseno" style="flex: 1; border-radius: 50px;">DISEÑO</button>
-                        <button class="btn btn-sm album-tab-btn" data-tab="cargar" style="flex: 1; border-radius: 50px;">CARGAR</button>
-                    </div>
-
-                    <div id="tab-diseno" class="album-tab-content active" style="flex: 1; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
-                        <style>#tab-diseno::-webkit-scrollbar { display: none; }</style>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <input type="hidden" id="input-album-style" value="style-standard">
-                            <div class="cover-preview-grid">
-                                <div class="cover-option-card active" data-style="style-standard">
-                                     <div class="textured-cover style-standard no-animation"></div>
-                                </div>
-                                <div class="cover-option-card" data-style="style-cosmic">
-                                     <div class="textured-cover style-cosmic no-animation"></div>
-                                </div>
-                                <div class="cover-option-card" data-style="style-holographic">
-                                     <div class="textured-cover style-holographic no-animation"></div>
-                                </div>
-                                <div class="cover-option-card" data-style="style-luxury">
-                                     <div class="textured-cover style-luxury no-animation"></div>
-                                </div>
-                                <div class="cover-option-card" data-style="style-marble">
-                                     <div class="textured-cover style-marble no-animation"></div>
-                                </div>
-                                <div class="cover-option-card" data-style="style-velvet">
-                                     <div class="textured-cover style-velvet no-animation"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="tab-cargar" class="album-tab-content" style="display: none; flex: 1; overflow-y: auto;">
-                        <div class="form-group">
-                            <label>Portada URL (Recomendado: 600x800px)</label>
-                            <input type="text" id="input-album-cover" placeholder="URL de la portada" style="width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label>Contraportada URL (Recomendado: 600x800px)</label>
-                            <input type="text" id="input-album-back" placeholder="URL de la contraportada" style="width: 100%;">
-                            <input type="color" id="input-album-back-color" value="#1a1a1a" style="display: none;">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
-                    <label class="switch" for="input-album-public">
-                        <input type="checkbox" id="input-album-public">
-                        <span class="slider"></span>
-                    </label>
-                    <label for="input-album-public" style="cursor: pointer;">Álbum Público</label>
-                </div>
+                <div class="form-group"><label>Portada URL</label><input type="text" id="input-album-cover"></div>
+                <div class="form-group"><label>Contraportada URL</label><input type="text" id="input-album-back"></div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px;"><label class="switch"><input type="checkbox" id="input-album-public"><span class="slider"></span></label><label>Público</label></div>
             </div>
             <div class="admin-header"><h2>Páginas</h2><button id="btn-add-page" class="btn">Añadir Página</button></div>
             <div id="page-list" class="page-list-container"></div>
