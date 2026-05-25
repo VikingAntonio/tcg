@@ -2125,11 +2125,10 @@ function renderAlbum(album) {
     const coverStyle = album.cover_style && album.cover_style !== 'default' ? album.cover_style : 'style-inversiones';
     let pageCount = 1;
 
-    // Only use cover image if explicitly provided and style is 'default' or not explicitly set to a premium one
-    // But per user request, we want the beautiful covers to be prominent.
-    // If they have a cover style that is NOT 'default', we use the style.
-    // If they have an image and style is 'default', we use the image.
-    if (coverImg && (!album.cover_style || album.cover_style === 'default')) {
+    // Priority: 1. Explicit image (if style is 'none' or 'default') 2. Professional Style
+    const useImage = coverImg && (coverStyle === 'none' || !coverStyle || coverStyle === 'default' || coverStyle === 'style-inversiones');
+
+    if (useImage) {
         $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
     } else {
         $albumDiv.append(`
@@ -2207,9 +2206,12 @@ function renderAlbum(album) {
     if (backImg) {
         $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
     } else {
+        const backStyleClass = (!coverStyle || coverStyle === 'default' || coverStyle === 'style-inversiones' || coverStyle === 'none') ? 'style-standard' : coverStyle;
+        const bgStyleBack = (backStyleClass === 'style-standard') ? `style="background-color: ${backColor || '#1a1a1a'}"` : '';
+
         $albumDiv.append(`
             <div class="page album-page cover-page" data-page-num="${pageCount}">
-                <div class="textured-cover ${coverStyle !== 'default' ? coverStyle : ''}" style="background-color: ${backColor}"></div>
+                <div class="textured-cover ${backStyleClass}" ${bgStyleBack}></div>
             </div>
         `);
     }
@@ -3654,6 +3656,14 @@ $(document).on('click', '#public-investment-tabs .tab-pill', function() {
 });
 
 function getCoverHtml(style, title, color) {
+    if (style === 'none') {
+        return `
+            <div class="textured-cover" style="background-color: ${color || '#1a1a1a'}">
+                <h2 style="color: white; text-align: center; font-size: 1.5rem; padding: 20px;">${title}</h2>
+            </div>
+        `;
+    }
+
     // Default to 'style-standard' if not set or explicitly 'default'
     let styleClass = (!style || style === 'default' || style === 'style-inversiones') ? 'style-standard' : style;
 
@@ -3665,8 +3675,10 @@ function getCoverHtml(style, title, color) {
     else if (styleClass === 'style-marble') subtitle = "ELEGANCE";
     else if (styleClass === 'style-velvet') subtitle = "CRIMSON ARCHIVE";
 
+    const bgStyle = (styleClass === 'style-standard') ? `style="background-color: ${color || '#1a1a1a'}"` : '';
+
     return `
-        <div class="textured-cover ${styleClass}" style="background-color: ${color}">
+        <div class="textured-cover ${styleClass}" ${bgStyle}>
             <h2>${title}</h2>
             <span class="style-subtitle">${subtitle}</span>
         </div>
