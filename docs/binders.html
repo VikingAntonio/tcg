@@ -80,7 +80,8 @@
                         <button class="btn btn-sm album-tab-btn" data-tab="cargar" style="flex: 1; border-radius: 50px;">CARGAR</button>
                     </div>
 
-                    <div id="tab-diseno" class="album-tab-content active" style="flex: 1; overflow-y: auto;">
+                    <div id="tab-diseno" class="album-tab-content active" style="flex: 1; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+                        <style>#tab-diseno::-webkit-scrollbar { display: none; }</style>
                         <div class="form-group" style="margin-bottom: 0;">
                             <input type="hidden" id="input-album-style" value="style-standard">
                             <div class="cover-preview-grid">
@@ -118,7 +119,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 15px;"><label class="switch"><input type="checkbox" id="input-album-public"><span class="slider"></span></label><label>Álbum Público</label></div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+                    <label class="switch" for="input-album-public">
+                        <input type="checkbox" id="input-album-public">
+                        <span class="slider"></span>
+                    </label>
+                    <label for="input-album-public" style="cursor: pointer;">Álbum Público</label>
+                </div>
             </div>
             <div class="admin-header"><h2>Páginas</h2><button id="btn-add-page" class="btn">Añadir Página</button></div>
             <div id="page-list" class="page-list-container"></div>

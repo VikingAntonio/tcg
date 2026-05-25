@@ -2121,27 +2121,19 @@ function renderAlbum(album) {
 
     const coverImg = album.cover_image_url;
     const coverColor = album.cover_color || '#1a1a1a';
-    // Prioritize Inversiones style as default if nothing is specified
-    const coverStyle = album.cover_style && album.cover_style !== 'default' ? album.cover_style : 'style-inversiones';
+    // Use selected style or default to standard (Investment style)
+    const coverStyle = album.cover_style && album.cover_style !== 'none' ? album.cover_style : 'style-standard';
     let pageCount = 1;
 
-    // Priority: If a professional style is selected (and not 'none'), use it.
-    // Otherwise, fallback to the uploaded image if it exists.
-    const hasStyle = coverStyle && coverStyle !== 'none' && coverStyle !== 'default';
-
-    if (hasStyle) {
+    // Priority 1: Uploaded image
+    if (coverImg) {
+        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
+    }
+    // Priority 2: Styled preset
+    else {
         $albumDiv.append(`
             <div class="page album-page cover-page" data-page-num="${pageCount}">
                 ${getCoverHtml(coverStyle, album.title, coverColor)}
-            </div>
-        `);
-    } else if (coverImg) {
-        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
-    } else {
-        // Ultimate fallback to standard style if nothing else
-        $albumDiv.append(`
-            <div class="page album-page cover-page" data-page-num="${pageCount}">
-                ${getCoverHtml('style-standard', album.title, coverColor)}
             </div>
         `);
     }
@@ -3664,29 +3656,20 @@ $(document).on('click', '#public-investment-tabs .tab-pill', function() {
 });
 
 function getCoverHtml(style, title, color) {
-    if (style === 'none') {
-        return `
-            <div class="textured-cover" style="background-color: ${color || '#1a1a1a'}">
-                <h2 style="color: white; text-align: center; font-size: 1.5rem; padding: 20px;">${title}</h2>
-            </div>
-        `;
-    }
+    // Standard is the default black vault design (Inversiones style)
+    let styleClass = (!style || style === 'none' || style === 'style-standard' || style === 'style-inversiones') ? 'style-standard' : style;
 
-    // Standard is the default black vault design
-    let styleClass = (!style || style === 'default' || style === 'style-standard' || style === 'style-inversiones') ? 'style-standard' : style;
-
+    // Default subtitle based on style
     let subtitle = "COLLECTION";
-    if (styleClass === 'style-standard') subtitle = "VAULT COLLECTION";
-    else if (styleClass === 'style-cosmic') subtitle = "SPACE VAULT";
-    else if (styleClass === 'style-holographic') subtitle = "SPECTRUM";
-    else if (styleClass === 'style-luxury') subtitle = "PREMIUM ASSETS";
-    else if (styleClass === 'style-marble') subtitle = "ELEGANCE";
-    else if (styleClass === 'style-velvet') subtitle = "CRIMSON ARCHIVE";
-
-    const bgStyle = (styleClass === 'style-standard') ? `style="background-color: ${color || '#1a1a1a'}"` : '';
+    if (styleClass === 'style-standard') subtitle = "VAULT";
+    else if (styleClass === 'style-cosmic') subtitle = "COSMIC";
+    else if (styleClass === 'style-holographic') subtitle = "HOLOGRAPHIC";
+    else if (styleClass === 'style-luxury') subtitle = "LUXURY";
+    else if (styleClass === 'style-marble') subtitle = "MARBLE";
+    else if (styleClass === 'style-velvet') subtitle = "VELVET";
 
     return `
-        <div class="textured-cover ${styleClass}" ${bgStyle}>
+        <div class="textured-cover ${styleClass}">
             <h2>${title}</h2>
             <span class="style-subtitle">${subtitle}</span>
         </div>
