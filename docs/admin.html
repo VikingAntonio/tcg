@@ -170,9 +170,32 @@
             box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
         }
         .slot-tabs-body {
-            min-height: 650px;
+            min-height: 480px;
             width: 100%;
             overflow: visible !important;
+        }
+        @media (max-width: 640px) {
+            .slot-tabs-body {
+                min-height: 450px;
+            }
+            .slot-tabs-body .form-group {
+                margin-bottom: 12px;
+            }
+            .slot-tabs-body .info-grid {
+                margin-top: 15px;
+                gap: 8px;
+            }
+            #slot-modal .overlay-content {
+                padding: 15px;
+                border-radius: 16px;
+            }
+            #slot-modal h2 {
+                font-size: 1.2rem;
+                margin-bottom: 10px !important;
+            }
+            .slot-modal-tabs {
+                margin-bottom: 15px;
+            }
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
