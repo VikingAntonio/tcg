@@ -4942,7 +4942,7 @@ body.focus-mode-active .event-card {
 }
 
 .textured-cover h2 {
-    font-size: 1.8rem;
+    font-size: 1.2rem;
     font-weight: 900;
     text-align: center;
     margin: 0;
@@ -4950,6 +4950,12 @@ body.focus-mode-active .event-card {
     z-index: 5;
     text-transform: uppercase;
     letter-spacing: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
 }
 
 .style-subtitle {
@@ -4976,34 +4982,57 @@ body.focus-mode-active .event-card {
 
 /* 2. COSMIC */
 .style-cosmic {
-    background: radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+    background: #000 !important;
 }
-.style-cosmic::before {
+.style-cosmic::before, .style-cosmic::after {
     content: "";
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: -50%; left: -50%; width: 200%; height: 200%;
     background-image:
-        radial-gradient(1px 1px at 20px 30px, white, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1.5px 1.5px at 50px 160px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 80px 40px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 130px 80px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1.5px 1.5px at 110px 10px, #fff, rgba(0,0,0,0));
+        radial-gradient(1px 1px at 25px 35px, #fff, transparent),
+        radial-gradient(1px 1px at 50px 80px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 100px 150px, #fff, transparent),
+        radial-gradient(1px 1px at 150px 40px, #fff, transparent),
+        radial-gradient(1px 1px at 190px 190px, #fff, transparent),
+        radial-gradient(2px 2px at 30px 140px, #00d2ff, transparent);
     background-repeat: repeat;
     background-size: 200px 200px;
-    opacity: 0.4;
-    animation: cosmic-twinkle 10s linear infinite;
+    opacity: 0.6;
 }
-@keyframes cosmic-twinkle {
-    from { transform: translateY(0); }
-    to { transform: translateY(-200px); }
+.style-cosmic::before {
+    animation: cosmic-twinkle-slow 60s linear infinite;
+}
+.style-cosmic::after {
+    background-size: 300px 300px;
+    opacity: 0.4;
+    animation: cosmic-twinkle-fast 40s linear infinite reverse;
+}
+@keyframes cosmic-twinkle-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes cosmic-twinkle-fast {
+    from { transform: rotate(0deg) scale(1.2); }
+    to { transform: rotate(360deg) scale(1.2); }
 }
 
 /* 3. HOLOGRAPHIC */
 .style-holographic {
-    background: linear-gradient(135deg, #ff00ff, #00ffff, #ff00ff, #ffff00) !important;
+    background: linear-gradient(135deg,
+        rgba(255,0,255,1) 0%,
+        rgba(0,255,255,1) 25%,
+        rgba(255,255,0,1) 50%,
+        rgba(0,255,255,1) 75%,
+        rgba(255,0,255,1) 100%
+    ) !important;
     background-size: 400% 400% !important;
-    animation: holo-shift 8s ease infinite !important;
+    animation: holo-shift-vibrant 10s ease infinite !important;
+    box-shadow: inset 0 0 50px rgba(255,255,255,0.3) !important;
+}
+@keyframes holo-shift-vibrant {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 /* 4. LUXURY */
@@ -5011,6 +5040,18 @@ body.focus-mode-active .event-card {
     background-color: #1a1a1a !important;
     background-image: url("https://www.transparenttextures.com/patterns/black-leather.png") !important;
     box-shadow: inset 0 0 80px rgba(0,0,0,0.9) !important;
+}
+.style-luxury::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -150%; width: 100%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(212,175,55,0.2), transparent);
+    animation: luxury-sheen 6s infinite;
+}
+@keyframes luxury-sheen {
+    0% { left: -150%; }
+    20% { left: 150%; }
+    100% { left: 150%; }
 }
 .style-luxury h2, .preview-box.style-luxury .preview-title {
     color: #d4af37 !important;
@@ -5021,7 +5062,19 @@ body.focus-mode-active .event-card {
 /* 5. MARBLE */
 .style-marble {
     background-color: #e0e0e0 !important;
+    position: relative;
+}
+.style-marble::before {
+    content: "";
+    position: absolute;
+    top: -10%; left: -10%; width: 120%; height: 120%;
     background-image: url("https://www.transparenttextures.com/patterns/shattered-island.png") !important;
+    opacity: 0.8;
+    animation: marble-drift 20s linear infinite;
+}
+@keyframes marble-drift {
+    from { transform: translate(0,0); }
+    to { transform: translate(10%, 10%); }
 }
 .style-marble h2, .preview-box.style-marble .preview-title {
     color: #333 !important;
@@ -5033,8 +5086,20 @@ body.focus-mode-active .event-card {
 
 /* 6. VELVET */
 .style-velvet {
-    background: radial-gradient(circle at center, #800000 0%, #300000 100%) !important;
+    background: radial-gradient(circle at center, #900000 0%, #300000 100%) !important;
     box-shadow: inset 0 0 100px rgba(0,0,0,0.8) !important;
+    position: relative;
+}
+.style-velvet::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05), transparent 70%);
+    animation: velvet-light 8s ease-in-out infinite alternate;
+}
+@keyframes velvet-light {
+    0% { transform: translate(-10%, -10%) scale(1); }
+    100% { transform: translate(10%, 10%) scale(1.2); }
 }
 .style-velvet h2, .preview-box.style-velvet .preview-title {
     color: #fff;
