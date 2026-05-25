@@ -2125,15 +2125,23 @@ function renderAlbum(album) {
     const coverStyle = album.cover_style && album.cover_style !== 'default' ? album.cover_style : 'style-inversiones';
     let pageCount = 1;
 
-    // Priority: 1. Explicit image (if style is 'none' or 'default') 2. Professional Style
-    const useImage = coverImg && (coverStyle === 'none' || !coverStyle || coverStyle === 'default' || coverStyle === 'style-inversiones');
+    // Priority: If a professional style is selected (and not 'none'), use it.
+    // Otherwise, fallback to the uploaded image if it exists.
+    const hasStyle = coverStyle && coverStyle !== 'none' && coverStyle !== 'default';
 
-    if (useImage) {
-        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
-    } else {
+    if (hasStyle) {
         $albumDiv.append(`
             <div class="page album-page cover-page" data-page-num="${pageCount}">
                 ${getCoverHtml(coverStyle, album.title, coverColor)}
+            </div>
+        `);
+    } else if (coverImg) {
+        $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
+    } else {
+        // Ultimate fallback to standard style if nothing else
+        $albumDiv.append(`
+            <div class="page album-page cover-page" data-page-num="${pageCount}">
+                ${getCoverHtml('style-standard', album.title, coverColor)}
             </div>
         `);
     }
@@ -3664,8 +3672,8 @@ function getCoverHtml(style, title, color) {
         `;
     }
 
-    // Default to 'style-standard' if not set or explicitly 'default'
-    let styleClass = (!style || style === 'default' || style === 'style-inversiones') ? 'style-standard' : style;
+    // Standard is the default black vault design
+    let styleClass = (!style || style === 'default' || style === 'style-standard' || style === 'style-inversiones') ? 'style-standard' : style;
 
     let subtitle = "COLLECTION";
     if (styleClass === 'style-standard') subtitle = "VAULT COLLECTION";
