@@ -192,23 +192,6 @@ $(document).ready(async function() {
         applyTheme(theme);
     });
 
-    // --- Album Tabs Logic ---
-    $(document).on('click', '.album-tab-btn', function(e) {
-        e.preventDefault();
-        const tab = $(this).data('tab');
-        $('.album-tab-btn').removeClass('active');
-        $(this).addClass('active');
-        $('.album-tab-content').hide();
-        $(`#tab-${tab}`).show();
-    });
-
-    $(document).on('click', '.cover-option-card', function() {
-        const style = $(this).data('style');
-        $('.cover-option-card').removeClass('active');
-        $(this).addClass('active');
-        $('#input-album-style').val(style);
-    });
-
     // Special Price Toggle
     $(document).on('change', '#input-deck-use-special', function() {
         if ($(this).is(':checked')) {
@@ -227,6 +210,14 @@ $(document).ready(async function() {
         $(this).addClass('active');
         $parent.find('.slot-tab-content').removeClass('active');
         $(`#${tabId}`).addClass('active');
+    });
+
+    // Visual Cover Style Selection
+    $(document).on("click", ".cover-preview-item", function() {
+        $(".cover-preview-item").removeClass("active");
+        $(this).addClass("active");
+        const style = $(this).data("style");
+        $("#input-album-cover-style").val(style);
     });
 
     // --- Chatbot Logic ---
@@ -493,18 +484,18 @@ $(document).ready(async function() {
         const title = $('#input-album-title').val();
         const cover = $('#input-album-cover').val();
         const back = $('#input-album-back').val();
-        const style = $('#input-album-style').val();
         const coverColor = $('#input-album-cover-color').val();
         const backColor = $('#input-album-back-color').val();
+        const coverStyle = $('#input-album-cover-style').val();
         const is_public = $('#input-album-public').is(':checked');
 
         let updateData = {
             title,
             cover_image_url: cover,
             back_image_url: back,
-            cover_style: style,
             cover_color: coverColor,
             back_color: backColor,
+            cover_style: coverStyle,
             is_public
         };
 
@@ -2393,19 +2384,22 @@ async function editAlbum(album) {
     currentAlbumId = target.id;
     $('#editor-title').text(`Editando: ${target.title}`);
     $('#input-album-title').val(target.title);
-    let style = target.cover_style || 'style-standard';
-    if (style === 'style-inversiones' || style === 'default') style = 'style-standard';
-    $('#input-album-style').val(style);
-    $('.cover-option-card').removeClass('active');
-    $(`.cover-option-card[data-style="${style}"]`).addClass('active');
     $('#input-album-cover').val(target.cover_image_url || '');
     $('#input-album-back').val(target.back_image_url || '');
     $('#drop-zone-album-cover .file-name').text('');
     $('#drop-zone-album-back .file-name').text('');
     $('#input-album-cover-color').val(target.cover_color || '#1a1a1a');
     $('#input-album-back-color').val(target.back_color || '#1a1a1a');
+    const coverStyle = target.cover_style || 'style-standard';
+    $('#input-album-cover-style').val(coverStyle);
+    $('.cover-preview-item').removeClass('active');
+    $(`.cover-preview-item[data-style="${coverStyle}"]`).addClass('active');
+
     $('#input-album-public').prop('checked', target.is_public !== false);
     
+    // Reset tabs to Designs
+    $('.slot-tab-btn[data-tab="album-tab-designs"]').click();
+
     showView('editor');
     loadAlbumPages(target.id, true);
 }

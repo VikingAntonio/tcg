@@ -275,24 +275,22 @@ body {
     padding: 20px;
     font-weight: 800;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-    z-index: 1;
+    z-index: 2;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.color-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 5px;
+.style-subtitle {
+    position: absolute;
+    bottom: 20px;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    font-weight: 800;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    z-index: 2;
 }
 
-.color-picker-custom {
-    padding: 0 !important;
-    width: 45px !important;
-    height: 45px !important;
-    cursor: pointer;
-    border: 2px solid #3d3d3d !important;
-    background: none !important;
-}
 
 .grid-container {
     display: grid;
@@ -4866,4 +4864,195 @@ body.focus-mode-active .event-card {
     .public-body .companion-menu-popup {
         bottom: 510px;
     }
+}
+
+/* Album Cover Design Previews (Admin) */
+.cover-previews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.cover-preview-item {
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.cover-preview-item:hover {
+    transform: scale(1.05);
+}
+
+.cover-preview-item.active .preview-box {
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+}
+
+.preview-box {
+    aspect-ratio: 3/4;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.1);
+    background: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.preview-title {
+    font-size: 10px;
+    font-weight: 900;
+    color: white;
+    border-top: 1px solid white;
+    border-bottom: 1px solid white;
+    padding: 2px 5px;
+    z-index: 2;
+}
+
+.preview-subtitle {
+    font-size: 6px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 5px;
+    z-index: 2;
+}
+
+.cover-preview-item span {
+    font-size: 11px;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+}
+
+/* Professional Cover Styles Refined */
+.textured-cover {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background-color: #1a1a1a;
+}
+
+.textured-cover h2 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    text-align: center;
+    margin: 0;
+    padding: 10px 20px;
+    z-index: 5;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.style-subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.6);
+    margin-top: 15px;
+    z-index: 5;
+    text-transform: uppercase;
+}
+
+/* 1. VAULT (Standard) - Inversiones Style */
+.style-standard {
+    background: #000 !important;
+    border: 15px solid #111;
+}
+.style-standard h2, .preview-box.style-standard .preview-title {
+    border-top: 2px solid white !important;
+    border-bottom: 2px solid white !important;
+    color: white !important;
+    font-family: 'Inter', sans-serif;
+}
+
+/* 2. COSMIC */
+.style-cosmic {
+    background: radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+}
+.style-cosmic::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+        radial-gradient(1px 1px at 20px 30px, white, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 50px 160px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 80px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 130px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 110px 10px, #fff, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    opacity: 0.4;
+    animation: cosmic-twinkle 10s linear infinite;
+}
+@keyframes cosmic-twinkle {
+    from { transform: translateY(0); }
+    to { transform: translateY(-200px); }
+}
+
+/* 3. HOLOGRAPHIC */
+.style-holographic {
+    background: linear-gradient(135deg, #ff00ff, #00ffff, #ff00ff, #ffff00) !important;
+    background-size: 400% 400% !important;
+    animation: holo-shift 8s ease infinite !important;
+}
+
+/* 4. LUXURY */
+.style-luxury {
+    background-color: #1a1a1a !important;
+    background-image: url("https://www.transparenttextures.com/patterns/black-leather.png") !important;
+    box-shadow: inset 0 0 80px rgba(0,0,0,0.9) !important;
+}
+.style-luxury h2, .preview-box.style-luxury .preview-title {
+    color: #d4af37 !important;
+    border-color: #d4af37 !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 5. MARBLE */
+.style-marble {
+    background-color: #e0e0e0 !important;
+    background-image: url("https://www.transparenttextures.com/patterns/shattered-island.png") !important;
+}
+.style-marble h2, .preview-box.style-marble .preview-title {
+    color: #333 !important;
+    border-color: #333 !important;
+}
+.style-marble .style-subtitle, .preview-box.style-marble .preview-subtitle {
+    color: #666 !important;
+}
+
+/* 6. VELVET */
+.style-velvet {
+    background: radial-gradient(circle at center, #800000 0%, #300000 100%) !important;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.8) !important;
+}
+.style-velvet h2, .preview-box.style-velvet .preview-title {
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+.color-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.color-picker-custom {
+    padding: 0 !important;
+    width: 45px !important;
+    height: 45px !important;
+    cursor: pointer;
+    border: 2px solid #3d3d3d !important;
+    background: none !important;
 }

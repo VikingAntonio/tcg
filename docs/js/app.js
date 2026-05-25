@@ -2121,16 +2121,12 @@ function renderAlbum(album) {
 
     const coverImg = album.cover_image_url;
     const coverColor = album.cover_color || '#1a1a1a';
-    // Use selected style or default to standard (Investment style)
-    const coverStyle = album.cover_style && album.cover_style !== 'none' ? album.cover_style : 'style-standard';
+    const coverStyle = album.cover_style || 'style-standard';
     let pageCount = 1;
 
-    // Priority 1: Uploaded image
     if (coverImg) {
         $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
-    }
-    // Priority 2: Styled preset
-    else {
+    } else {
         $albumDiv.append(`
             <div class="page album-page cover-page" data-page-num="${pageCount}">
                 ${getCoverHtml(coverStyle, album.title, coverColor)}
@@ -2206,12 +2202,9 @@ function renderAlbum(album) {
     if (backImg) {
         $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
     } else {
-        const backStyleClass = (!coverStyle || coverStyle === 'default' || coverStyle === 'style-inversiones' || coverStyle === 'none') ? 'style-standard' : coverStyle;
-        const bgStyleBack = (backStyleClass === 'style-standard') ? `style="background-color: ${backColor || '#1a1a1a'}"` : '';
-
         $albumDiv.append(`
             <div class="page album-page cover-page" data-page-num="${pageCount}">
-                <div class="textured-cover ${backStyleClass}" ${bgStyleBack}></div>
+                <div class="textured-cover ${coverStyle}" style="background-color: ${backColor}"></div>
             </div>
         `);
     }
@@ -3655,27 +3648,6 @@ $(document).on('click', '#public-investment-tabs .tab-pill', function() {
     renderPublicInvestmentCards();
 });
 
-function getCoverHtml(style, title, color) {
-    // Standard is the default black vault design (Inversiones style)
-    let styleClass = (!style || style === 'none' || style === 'style-standard' || style === 'style-inversiones') ? 'style-standard' : style;
-
-    // Default subtitle based on style
-    let subtitle = "COLLECTION";
-    if (styleClass === 'style-standard') subtitle = "VAULT";
-    else if (styleClass === 'style-cosmic') subtitle = "COSMIC";
-    else if (styleClass === 'style-holographic') subtitle = "HOLOGRAPHIC";
-    else if (styleClass === 'style-luxury') subtitle = "LUXURY";
-    else if (styleClass === 'style-marble') subtitle = "MARBLE";
-    else if (styleClass === 'style-velvet') subtitle = "VELVET";
-
-    return `
-        <div class="textured-cover ${styleClass}">
-            <h2>${title}</h2>
-            <span class="style-subtitle">${subtitle}</span>
-        </div>
-    `;
-}
-
 function renderPublicInvestmentCards() {
     const $container = $('#public-investment-cards');
     $container.empty();
@@ -3829,4 +3801,24 @@ function renderPublicInvListMode($container) {
         $list.append($item);
     });
     $container.append($list);
+}
+
+function getCoverHtml(style, title, color) {
+    let styleClass = style || "style-standard";
+    let subtitle = "COLLECTION";
+    if (styleClass === "style-standard") subtitle = "VAULT";
+    else if (styleClass === "style-cosmic") subtitle = "COSMIC";
+    else if (styleClass === "style-holographic") subtitle = "HOLOGRAPHIC";
+    else if (styleClass === "style-luxury") subtitle = "LUXURY";
+    else if (styleClass === "style-marble") subtitle = "MARBLE";
+    else if (styleClass === "style-velvet") subtitle = "VELVET";
+
+    const displayTitle = (title || 'NUEVO ÁLBUM').toUpperCase();
+
+    return `
+        <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
+            <h2>${displayTitle}</h2>
+            <span class="style-subtitle">${subtitle}</span>
+        </div>
+    `;
 }

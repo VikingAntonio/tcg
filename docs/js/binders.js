@@ -82,23 +82,6 @@ $(document).ready(async function() {
         setTimeout(() => { $("#chat-messages").append(`<div class="chat-msg msg-bot">Aún estoy aprendiendo...</div>`); }, 800);
     });
 
-    // --- Album Tabs Logic ---
-    $(document).on('click', '.album-tab-btn', function(e) {
-        e.preventDefault();
-        const tab = $(this).data('tab');
-        $('.album-tab-btn').removeClass('active');
-        $(this).addClass('active');
-        $('.album-tab-content').hide();
-        $(`#tab-${tab}`).show();
-    });
-
-    $(document).on('click', '.cover-option-card', function() {
-        const style = $(this).data('style');
-        $('.cover-option-card').removeClass('active');
-        $(this).addClass('active');
-        $('#input-album-style').val(style);
-    });
-
     $(document).on('click', '#btn-create-album', async function(e) {
         e.preventDefault();
         if (!currentUser) return;
@@ -121,12 +104,11 @@ $(document).ready(async function() {
         const title = $('#input-album-title').val();
         const cover = $('#input-album-cover').val();
         const back = $('#input-album-back').val();
-        const style = $('#input-album-style').val();
         const coverColor = $('#input-album-cover-color').val();
         const backColor = $('#input-album-back-color').val();
         const is_public = $('#input-album-public').is(':checked');
 
-        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_style: style, cover_color: coverColor, back_color: backColor, is_public };
+        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: coverColor, back_color: backColor, is_public };
 
         try {
             let { error: albumErr } = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
@@ -306,11 +288,6 @@ async function editAlbum(album) {
     currentAlbumId = album.id;
     $('#editor-title').text(`Editando: ${album.title}`);
     $('#input-album-title').val(album.title);
-    let style = album.cover_style || 'style-standard';
-    if (style === 'style-inversiones' || style === 'default') style = 'style-standard';
-    $('#input-album-style').val(style);
-    $('.cover-option-card').removeClass('active');
-    $(`.cover-option-card[data-style="${style}"]`).addClass('active');
     $('#input-album-cover').val(album.cover_image_url || '');
     $('#input-album-back').val(album.back_image_url || '');
     $('#input-album-cover-color').val(album.cover_color || '#1a1a1a');
