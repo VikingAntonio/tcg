@@ -1,4 +1,4 @@
-/* Album Covers System - Ultra Professional Animated Styles */
+/* Album Covers System - Professional Animated Styles */
 
 .textured-cover {
     width: 100%;
@@ -10,8 +10,7 @@
     justify-content: center;
     overflow: hidden;
     transition: all 0.3s ease;
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
-    background-color: #1a1a1a;
+    background-color: #000;
 }
 
 .textured-cover h2 {
@@ -36,22 +35,26 @@
     opacity: 0.8;
 }
 
-/* 1. Estándar (Classic Vault) */
+/* 1. Estándar (Exact Inversiones/Vault Design) */
 .style-standard {
-    background-image:
-        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, transparent 80%),
-        url('https://www.transparenttextures.com/patterns/pinstripe-dark.png');
-    border: 10px double rgba(255,255,255,0.1);
+    background-color: #000 !important;
+    border: 10px solid #111;
+    background-image: url('https://www.transparenttextures.com/patterns/pinstripe-dark.png');
 }
 .style-standard h2 {
-    border-top: 2px solid rgba(255,255,255,0.8);
-    border-bottom: 2px solid rgba(255,255,255,0.8);
-    color: #fff;
+    color: white !important;
+    border-top: 1px solid white;
+    border-bottom: 1px solid white;
+    font-size: 1.5rem;
+}
+.style-standard .style-subtitle {
+    color: rgba(255,255,255,0.7);
+    margin-top: 20px;
 }
 
-/* 2. Espacial (Deep Space with parallax particles) */
+/* 2. Espacial (Deep Space with glowing particles) */
 .style-cosmic {
-    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+    background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
 }
 .style-cosmic::before, .style-cosmic::after {
     content: "";
@@ -62,112 +65,127 @@
         radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
         radial-gradient(3px 3px at 50px 160px, #fff, rgba(0,0,0,0)),
         radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
-    background-size: 250px 250px;
-    animation: space-drift 100s linear infinite;
-    opacity: 0.8;
+        radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(4px 4px at 160px 120px, rgba(255,255,255,0.3), rgba(0,0,0,0));
+    background-size: 300px 300px;
+    animation: cosmic-particles 80s linear infinite;
+    opacity: 1;
 }
 .style-cosmic::after {
-    background-size: 400px 400px;
-    animation-duration: 150s;
-    opacity: 0.4;
+    background-size: 500px 500px;
+    animation-duration: 120s;
+    opacity: 0.6;
     filter: blur(1px);
 }
-@keyframes space-drift {
-    from { transform: translateY(0); }
-    to { transform: translateY(-1000px); }
+@keyframes cosmic-particles {
+    from { transform: translateY(0) rotate(0deg); }
+    to { transform: translateY(-1000px) rotate(10deg); }
 }
-.style-cosmic h2 { color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.5); }
+.style-cosmic h2 {
+    color: #fff;
+    text-shadow: 0 0 20px rgba(0,210,255,0.8), 0 0 40px rgba(0,210,255,0.4);
+}
 .style-cosmic .style-subtitle { color: #00d2ff; }
 
-/* 3. Holográfico (Pastel Rainbow Flow) */
+/* 3. Holográfico (Pastel Rainbow Animated) */
 .style-holographic {
     background: linear-gradient(135deg, #FFB7B2, #FFDAC1, #E2F0CB, #B5EAD7, #C7CEEA, #FFB7B2);
-    background-size: 300% 300%;
-    animation: holo-pastel 12s ease infinite;
+    background-size: 400% 400%;
+    animation: holo-flow 10s ease infinite;
 }
-@keyframes holo-pastel {
+.style-holographic::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(125deg, transparent 0%, rgba(255,255,255,0.4) 45%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.4) 55%, transparent 100%);
+    background-size: 200% 200%;
+    animation: holo-shine 4s linear infinite;
+    mix-blend-mode: soft-light;
+}
+@keyframes holo-flow {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
-.style-holographic h2 {
-    color: rgba(255,255,255,0.9);
-    mix-blend-mode: overlay;
-    font-weight: 900;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+@keyframes holo-shine {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
 }
-.style-holographic .style-subtitle { color: rgba(0,0,0,0.3); }
+.style-holographic h2 {
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    mix-blend-mode: normal;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(5px);
+    border-radius: 10px;
+}
+.style-holographic .style-subtitle { color: #333; opacity: 0.6; }
 
-/* 4. Luxury (Porous Hardcover / Leather Texture) */
+/* 4. Luxury (Porous Leather Texture) */
 .style-luxury {
-    background-color: #111;
+    background-color: #0a0a0a;
     background-image: url('https://www.transparenttextures.com/patterns/leather.png');
-    border: 1px solid rgba(212, 175, 55, 0.3);
 }
 .style-luxury::before {
     content: "";
     position: absolute;
-    inset: 15px;
-    border: 1px solid rgba(212, 175, 55, 0.5);
+    inset: 20px;
+    border: 2px solid #d4af37;
     z-index: 1;
 }
 .style-luxury h2 {
     color: #d4af37;
     font-family: 'Playfair Display', serif;
-    background: linear-gradient(to bottom, #f1d37e 0%, #d4af37 50%, #b38d1d 100%);
+    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+    background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
 }
 .style-luxury .style-subtitle { color: #d4af37; letter-spacing: 0.5em; }
 
-/* 5. Mármol (Fluid Silk Animation) */
+/* 5. Mármol (Animated Silk/Marble Flow) */
 .style-marble {
-    background: #fff;
-    background-image: linear-gradient(45deg, #f3f3f3 25%, transparent 25%, transparent 50%, #f3f3f3 50%, #f3f3f3 75%, transparent 75%, transparent);
-    background-size: 100px 100px;
-    position: relative;
+    background-color: #f5f5f5;
+    background-image: url('https://www.transparenttextures.com/patterns/white-diamond.png');
 }
 .style-marble::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(120deg, rgba(0,0,0,0.05) 0%, rgba(255,255,255,0.8) 50%, rgba(0,0,0,0.05) 100%);
+    background: linear-gradient(135deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.05) 100%);
     background-size: 200% 200%;
-    animation: fluid-silk 8s ease-in-out infinite;
+    animation: marble-flow 15s ease-in-out infinite;
     z-index: 1;
 }
-@keyframes fluid-silk {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+@keyframes marble-flow {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
 }
-.style-marble h2 { color: #222; font-weight: 300; letter-spacing: 0.2em; }
-.style-marble .style-subtitle { color: #aaa; }
+.style-marble h2 { color: #333; letter-spacing: 0.1em; font-weight: 300; }
+.style-marble .style-subtitle { color: #999; }
 
-/* 6. Velvet (Deep Rich Texture with Shine) */
+/* 6. Velvet (Professional Deep Texture) */
 .style-velvet {
-    background: #4a0404;
-    background-image: url('https://www.transparenttextures.com/patterns/black-linen-2.png');
+    background-color: #500;
+    background-image: url('https://www.transparenttextures.com/patterns/padded-little.png');
 }
 .style-velvet::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 45%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 55%, transparent 100%);
-    background-size: 300% 300%;
-    animation: velvet-shine 10s linear infinite;
+    background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+    animation: velvet-pulse 8s ease-in-out infinite;
 }
-@keyframes velvet-shine {
-    0% { background-position: -200% -200%; }
-    100% { background-position: 200% 200%; }
+@keyframes velvet-pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
 }
-.style-velvet h2 { color: #fff; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-.style-velvet .style-subtitle { color: rgba(255,255,255,0.5); }
+.style-velvet h2 { color: #fff; text-shadow: 0 5px 15px rgba(0,0,0,0.9); }
+.style-velvet .style-subtitle { color: rgba(255,255,255,0.7); }
 
 
-/* UI Selection Grid Fixes */
+/* UI Selection Grid */
 .cover-preview-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -175,13 +193,12 @@
     padding: 10px;
 }
 
-/* Hide Scrollbar for PC */
 .album-tab-content {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 .album-tab-content::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
 }
 
 .cover-option-card {
@@ -189,7 +206,7 @@
     border-radius: 12px;
     overflow: hidden;
     border: 3px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     aspect-ratio: 3/4;
     position: relative;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
@@ -198,12 +215,11 @@
 .cover-option-card.active {
     border-color: #00d2ff;
     box-shadow: 0 0 20px rgba(0,210,255,0.5);
-    transform: translateY(-5px);
-    z-index: 2;
+    transform: scale(1.02);
 }
 
 .cover-option-card .label {
-    display: none; /* User requested no names */
+    display: none;
 }
 
 .cover-option-card .textured-cover {
@@ -215,10 +231,10 @@
 }
 
 .cover-option-card .textured-cover h2 {
-    font-size: 2.2rem !important;
+    font-size: 2rem !important;
 }
 
-/* No Animation Modifier for Previews */
+/* Static previews for Admin */
 .no-animation::before,
 .no-animation::after,
 .no-animation {
