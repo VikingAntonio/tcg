@@ -1,10 +1,14 @@
-Confirmación de Animaciones en Portadas de Álbumes (VERSION FINAL X50):
+Confirmación de Animaciones en Portadas de Álbumes (VERSION DEFINITIVA X100):
 
-1. Estándar (Vault): Animación "vault-pulse". Idéntico al diseño de Inversiones con fondo negro, bordes oscuros de 10px y el título del álbum entre dos franjas blancas horizontales. Muestra "VAULT COLLECTION" en la parte inferior.
-2. Cosmic: Animación dual con densidad EXTREMA (x50). Dos capas de rotación rápida sobre fondo negro absoluto, con decenas de partículas generadas por múltiples gradientes radiales pequeños y repetición de fondo optimizada.
-3. Holographic: Animación "holo-shift-pastel". Efecto Rainbow con colores pastel suaves que cambian fluidamente mediante rotación de tono (hue-rotate) y desplazamiento de gradiente.
-4. Luxury: Animación "luxury-shine". Destello dorado profesional sobre cuero.
-5. Marble: Animación "marble-shine". Reflejo de luz móvil sobre mármol.
-6. Velvet: Animación "velvet-glow". Pulso de luz ambiental sobre terciopelo rojo.
+1. Estándar (Vault): Animación "vault-pulse". Diseño idéntico al de Inversiones: fondo negro, bordes de 15px, título centrado entre dos franjas blancas horizontales y pie de página "VAULT COLLECTION".
+2. Cosmic: Animación CAÓTICA y densidad EXTREMA (x100). Dos capas de estrellas ( radial-gradients) con repetición masiva (tiling de 60px) que combinan rotación, desplazamiento (translate) y escalado aleatorio para eliminar el movimiento uniforme.
+3. Holographic: Animación "Pastel Rainbow Flow". Colores rosa, azul y amarillo en tonos pastel vibrantes que fluyen fluidamente mediante rotación de tono y desplazamiento rápido.
+4. Luxury: Animación "luxury-shine". Destello dorado intenso sobre textura de cuero.
+5. Marble: Animación "marble-shine". Reflejo de luz barrido sobre la textura de mármol.
+6. Velvet: Animación "velvet-glow". Pulso de luz ambiental sobre terciopelo rojo profundo.
 
-Todos los álbumes muestran ahora su título correspondiente en el centro de la portada. Las etiquetas de referencia (nombres de estilos) han sido eliminadas por completo. La interfaz de administración ha sido renombrada a "CARGAR" y los diseños se muestran en un formato más grande y visual.
+Detalles de Interfaz:
+- Se eliminó el scroll en el modal de edición reduciendo márgenes y optimizando la altura de las pestañas.
+- Se renombró la pestaña a "CARGAR".
+- Todas las portadas muestran el título del álbum en el centro.
+- Los diseños en el panel de administrador son ahora más grandes y visuales.
