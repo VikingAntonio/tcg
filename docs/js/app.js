@@ -1344,12 +1344,12 @@ async function switchView(view, skipPush = false) {
 
     // View-specific data loading
     if (view === 'albums') {
-        if (window.currentStoreId) {
-            try {
+        try {
+            if (window.currentStoreId) {
                 await loadPublicAlbums(window.currentStoreId);
-            } finally {
-                hideLoading();
             }
+        } finally {
+            hideLoading();
         }
     } else if (view === 'sealed') {
         await loadPublicSealed();
@@ -1716,7 +1716,8 @@ function loadPublicAlbums(userId) {
             .from('albums')
             .select('*')
             .eq('user_id', userId)
-            .order('position', { ascending: true });
+            .order('position', { ascending: true })
+            .order('id', { ascending: true });
 
         if (filterId) {
             query = query.eq('id', filterId);
@@ -1731,7 +1732,8 @@ function loadPublicAlbums(userId) {
                 .from('albums')
                 .select('*')
                 .eq('user_id', userId)
-                .order('position', { ascending: true });
+                .order('position', { ascending: true })
+                .order('id', { ascending: true });
             albums = retry.data;
             error = retry.error;
         }
@@ -3805,20 +3807,12 @@ function renderPublicInvListMode($container) {
 
 function getCoverHtml(style, title, color) {
     let styleClass = style || "style-standard";
-    let subtitle = "COLLECTION";
-    if (styleClass === "style-standard") subtitle = "VAULT";
-    else if (styleClass === "style-cosmic") subtitle = "COSMIC";
-    else if (styleClass === "style-holographic") subtitle = "HOLOGRAPHIC";
-    else if (styleClass === "style-luxury") subtitle = "LUXURY";
-    else if (styleClass === "style-marble") subtitle = "MARBLE";
-    else if (styleClass === "style-velvet") subtitle = "VELVET";
-
     const displayTitle = (title || 'NUEVO ÁLBUM').toUpperCase();
+    const showTitle = styleClass === "style-standard";
 
     return `
         <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
-            <h2>${displayTitle}</h2>
-            <span class="style-subtitle">${subtitle}</span>
+            ${showTitle ? `<h2>${displayTitle}</h2>` : ''}
         </div>
     `;
 }

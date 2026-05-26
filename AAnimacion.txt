@@ -1,0 +1,10 @@
+Confirmación de Animaciones en Portadas de Álbumes:
+
+1. Estándar (Vault): Animación "vault-pulse". Efecto de respiración profesional que pulsa el grosor visual del borde y el brillo interno (box-shadow).
+2. Cosmic: Animación dual "cosmic-rotate" y "cosmic-rotate-reverse". Dos capas de estrellas con muchísimas partículas que rotan en sentidos opuestos a diferentes velocidades (40s y 30s) para un efecto de profundidad espacial real.
+3. Holographic: Animación "holo-shift-hyper". Desplazamiento vibrante de un gradiente de 8 colores que simula el brillo iridiscente de una carta foil premium.
+4. Luxury: Animación "luxury-shine". Un destello dorado diagonal que recorre la portada de cuero negro cada 4 segundos.
+5. Marble: Animación "marble-shine". Un efecto de luz barrida (sweep) sobre la textura de mármol que le da vida y movimiento al material.
+6. Velvet: Animación "velvet-glow". Un pulso de luz radial suave que crece y decrece en intensidad, simulando el reflejo de luz sobre terciopelo rojo profundo.
+
+Todas las animaciones están activas, son reales y funcionan correctamente sin nombres visibles en las portadas.

@@ -4958,26 +4958,21 @@ body.focus-mode-active .event-card {
     max-width: 90%;
 }
 
-.style-subtitle {
-    font-size: 0.7rem;
-    letter-spacing: 4px;
-    font-weight: 800;
-    color: rgba(255,255,255,0.6);
-    margin-top: 15px;
-    z-index: 5;
-    text-transform: uppercase;
-}
-
 /* 1. VAULT (Standard) - Inversiones Style */
 .style-standard {
     background: #000 !important;
-    border: 15px solid #111;
+    border: 15px solid #111 !important;
+    animation: vault-pulse 4s ease-in-out infinite alternate;
 }
 .style-standard h2, .preview-box.style-standard .preview-title {
     border-top: 2px solid white !important;
     border-bottom: 2px solid white !important;
     color: white !important;
     font-family: 'Inter', sans-serif;
+}
+@keyframes vault-pulse {
+    0% { border-color: #111; box-shadow: inset 0 0 30px rgba(255,255,255,0.05); }
+    100% { border-color: #222; box-shadow: inset 0 0 60px rgba(255,255,255,0.15); }
 }
 
 /* 2. COSMIC */
@@ -4989,47 +4984,59 @@ body.focus-mode-active .event-card {
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
     background-image:
-        radial-gradient(1px 1px at 25px 35px, #fff, transparent),
-        radial-gradient(1px 1px at 50px 80px, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 100px 150px, #fff, transparent),
-        radial-gradient(1px 1px at 150px 40px, #fff, transparent),
-        radial-gradient(1px 1px at 190px 190px, #fff, transparent),
-        radial-gradient(2px 2px at 30px 140px, #00d2ff, transparent);
+        radial-gradient(1px 1px at 10px 10px, #fff, transparent),
+        radial-gradient(1px 1px at 30px 50px, #fff, transparent),
+        radial-gradient(1px 1px at 50px 20px, #fff, transparent),
+        radial-gradient(1px 1px at 70px 80px, #fff, transparent),
+        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+        radial-gradient(1px 1px at 110px 110px, #fff, transparent),
+        radial-gradient(1px 1px at 130px 10px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 145px 145px, #00d2ff, transparent),
+        radial-gradient(1px 1px at 20px 130px, #fff, transparent),
+        radial-gradient(1px 1px at 40px 100px, #fff, transparent),
+        radial-gradient(1px 1px at 60px 140px, #fff, transparent),
+        radial-gradient(1px 1px at 80px 20px, #fff, transparent),
+        radial-gradient(1px 1px at 100px 60px, #fff, transparent),
+        radial-gradient(1px 1px at 120px 90px, #fff, transparent),
+        radial-gradient(1px 1px at 140px 30px, #fff, transparent);
     background-repeat: repeat;
-    background-size: 200px 200px;
-    opacity: 0.6;
+    background-size: 150px 150px;
+    opacity: 0.95;
 }
 .style-cosmic::before {
-    animation: cosmic-twinkle-slow 60s linear infinite;
+    animation: cosmic-rotate 40s linear infinite;
 }
 .style-cosmic::after {
-    background-size: 300px 300px;
-    opacity: 0.4;
-    animation: cosmic-twinkle-fast 40s linear infinite reverse;
+    background-size: 250px 250px;
+    opacity: 0.5;
+    animation: cosmic-rotate-reverse 30s linear infinite;
 }
-@keyframes cosmic-twinkle-slow {
+@keyframes cosmic-rotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
-@keyframes cosmic-twinkle-fast {
-    from { transform: rotate(0deg) scale(1.2); }
-    to { transform: rotate(360deg) scale(1.2); }
+@keyframes cosmic-rotate-reverse {
+    from { transform: rotate(360deg) scale(1.2); }
+    to { transform: rotate(0deg) scale(1.2); }
 }
 
 /* 3. HOLOGRAPHIC */
 .style-holographic {
     background: linear-gradient(135deg,
-        rgba(255,0,255,1) 0%,
-        rgba(0,255,255,1) 25%,
-        rgba(255,255,0,1) 50%,
-        rgba(0,255,255,1) 75%,
-        rgba(255,0,255,1) 100%
+        #ff0000 0%,
+        #ff8000 15%,
+        #ffff00 30%,
+        #00ff00 45%,
+        #00ffff 60%,
+        #0000ff 75%,
+        #8000ff 90%,
+        #ff0000 100%
     ) !important;
     background-size: 400% 400% !important;
-    animation: holo-shift-vibrant 10s ease infinite !important;
-    box-shadow: inset 0 0 50px rgba(255,255,255,0.3) !important;
+    animation: holo-shift-hyper 8s ease infinite !important;
+    box-shadow: inset 0 0 80px rgba(255,255,255,0.4) !important;
 }
-@keyframes holo-shift-vibrant {
+@keyframes holo-shift-hyper {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
@@ -5039,67 +5046,70 @@ body.focus-mode-active .event-card {
 .style-luxury {
     background-color: #1a1a1a !important;
     background-image: url("https://www.transparenttextures.com/patterns/black-leather.png") !important;
-    box-shadow: inset 0 0 80px rgba(0,0,0,0.9) !important;
+    box-shadow: inset 0 0 100px rgba(0,0,0,1) !important;
 }
 .style-luxury::before {
     content: "";
     position: absolute;
-    top: 0; left: -150%; width: 100%; height: 100%;
-    background: linear-gradient(120deg, transparent, rgba(212,175,55,0.2), transparent);
-    animation: luxury-sheen 6s infinite;
+    top: 0; left: -150%; width: 200%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(212,175,55,0.4), transparent);
+    animation: luxury-shine 4s ease-in-out infinite;
 }
-@keyframes luxury-sheen {
-    0% { left: -150%; }
-    20% { left: 150%; }
-    100% { left: 150%; }
+@keyframes luxury-shine {
+    0% { left: -200%; }
+    30% { left: 200%; }
+    100% { left: 200%; }
 }
 .style-luxury h2, .preview-box.style-luxury .preview-title {
     color: #d4af37 !important;
     border-color: #d4af37 !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
 }
 
 /* 5. MARBLE */
 .style-marble {
-    background-color: #e0e0e0 !important;
-    position: relative;
+    background-color: #f0f0f0 !important;
 }
 .style-marble::before {
     content: "";
     position: absolute;
-    top: -10%; left: -10%; width: 120%; height: 120%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background-image: url("https://www.transparenttextures.com/patterns/shattered-island.png") !important;
-    opacity: 0.8;
-    animation: marble-drift 20s linear infinite;
+    opacity: 1;
 }
-@keyframes marble-drift {
-    from { transform: translate(0,0); }
-    to { transform: translate(10%, 10%); }
+.style-marble::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+    background-size: 200% 200%;
+    animation: marble-shine 6s linear infinite;
+}
+@keyframes marble-shine {
+    0% { background-position: -200% -200%; }
+    100% { background-position: 200% 200%; }
 }
 .style-marble h2, .preview-box.style-marble .preview-title {
-    color: #333 !important;
-    border-color: #333 !important;
-}
-.style-marble .style-subtitle, .preview-box.style-marble .preview-subtitle {
-    color: #666 !important;
+    color: #222 !important;
+    border-color: #222 !important;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
 }
 
 /* 6. VELVET */
 .style-velvet {
-    background: radial-gradient(circle at center, #900000 0%, #300000 100%) !important;
-    box-shadow: inset 0 0 100px rgba(0,0,0,0.8) !important;
-    position: relative;
+    background: radial-gradient(circle at center, #b00000 0%, #400000 100%) !important;
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.9) !important;
 }
 .style-velvet::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05), transparent 70%);
-    animation: velvet-light 8s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent 80%);
+    animation: velvet-glow 5s ease-in-out infinite alternate;
 }
-@keyframes velvet-light {
-    0% { transform: translate(-10%, -10%) scale(1); }
-    100% { transform: translate(10%, 10%) scale(1.2); }
+@keyframes velvet-glow {
+    0% { transform: scale(0.8); opacity: 0.3; }
+    100% { transform: scale(1.3); opacity: 0.7; }
 }
 .style-velvet h2, .preview-box.style-velvet .preview-title {
     color: #fff;

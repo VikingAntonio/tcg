@@ -2211,7 +2211,8 @@ async function loadAlbums() {
         .from('albums')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('position', { ascending: true });
+        .order('position', { ascending: true })
+        .order('id', { ascending: true });
 
     if (error) {
         $('#album-list').html('<div class="error">Error al cargar álbumes.</div>');
@@ -3526,7 +3527,7 @@ async function openOrganizeModal(type) {
 
     let items = [];
     if (type === 'albums') {
-        const { data } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true });
+        const { data } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
         items = data || [];
     } else if (type === 'decks') {
         const { data } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id).order('position', { ascending: true });
