@@ -4998,14 +4998,14 @@ body.focus-mode-active .event-card {
 
 .style-standard h2 {
     color: #fff !important;
-    font-size: 3rem !important;
+    font-size: 2.2rem !important; /* Adjusted to fit 300px width on one line */
     font-weight: 900 !important;
-    letter-spacing: -0.04em !important;
-    line-height: 1.1 !important;
+    letter-spacing: -0.05em !important;
+    line-height: 1 !important;
     text-transform: uppercase !important;
     text-align: center !important;
     margin: 0 !important;
-    padding: 10px 0 !important;
+    padding: 5px 0 !important;
     z-index: 5 !important;
     position: relative !important;
     display: block !important;
@@ -5013,6 +5013,7 @@ body.focus-mode-active .event-card {
     -webkit-line-clamp: unset !important;
     background: transparent !important;
     backdrop-filter: none !important;
+    white-space: nowrap !important;
 }
 
 .style-standard h2::before {
@@ -5056,144 +5057,163 @@ body.focus-mode-active .event-card {
     position: static !important;
 }
 
-/* 2. COSMIC - ULTRA Galaxy Density & Chaotic Movement */
+/* 2. COSMIC - Deep Galaxy Density & Randomized Movement */
 .style-cosmic {
     background: #000 !important;
     overflow: hidden !important;
     position: relative !important;
 }
 
-/* Layer 1: ULTRA Dense Micro Stars */
+/* Layer 1: ULTRA Dense Micro Stars - Individual Cluster Movement */
 .style-cosmic::before {
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
     background-image:
-        radial-gradient(1px 1px at 2px 2px, #fff, transparent),
-        radial-gradient(1px 1px at 12px 18px, #fff, transparent),
-        radial-gradient(1px 1px at 22px 5px, #eee, transparent),
-        radial-gradient(1px 1px at 5px 25px, #fff, transparent),
-        radial-gradient(1px 1px at 28px 12px, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 15px 15px, #fff, transparent),
-        radial-gradient(1px 1px at 8px 30px, #eee, transparent),
-        radial-gradient(1px 1px at 20px 28px, #fff, transparent);
-    background-size: 30px 30px;
-    animation: cosmic-star-chaotic-slow 15s linear infinite;
-    opacity: 1;
-}
-
-/* Layer 2: Even more colored stars & faster movement */
-.style-cosmic::after {
-    content: "";
-    position: absolute;
-    top: -100%; left: -100%; width: 300%; height: 300%;
-    background-image:
-        radial-gradient(2px 2px at 10% 10%, #00d2ff, transparent),
-        radial-gradient(2px 2px at 40% 60%, #ff00ff, transparent),
-        radial-gradient(1.5px 1.5px at 70% 20%, #00ffaa, transparent),
-        radial-gradient(2px 2px at 90% 90%, #ffaa00, transparent),
-        radial-gradient(1.5px 1.5px at 20% 80%, #00d2ff, transparent),
-        radial-gradient(2px 2px at 50% 50%, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 80% 40%, #ff00ff, transparent);
+        radial-gradient(1px 1px at 10px 10px, #fff, transparent),
+        radial-gradient(1.2px 1.2px at 30px 50px, #fff, transparent),
+        radial-gradient(1px 1px at 70px 120px, #eee, transparent),
+        radial-gradient(1.2px 1.2px at 150px 10px, #fff, transparent),
+        radial-gradient(1px 1px at 110px 180px, #fff, transparent),
+        radial-gradient(1.3px 1.3px at 200px 150px, #eee, transparent),
+        radial-gradient(1px 1px at 20px 250px, #fff, transparent),
+        radial-gradient(1.1px 1.1px at 180px 230px, #fff, transparent);
     background-size: 120px 120px;
-    animation: cosmic-star-chaotic-fast 10s linear infinite;
+    animation: cosmic-random-drift-1 59s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
     opacity: 0.9;
 }
 
-/* Layer 3: Extra Depth Nebula Core */
-.style-cosmic h2::before,
-.preview-box.style-cosmic .preview-title::before {
+/* Layer 2: Colored Stars & Fast Non-Linear Pulses */
+.style-cosmic::after {
+    content: "";
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background-image:
+        radial-gradient(2px 2px at 15% 15%, #00d2ff, transparent),
+        radial-gradient(2px 2px at 85% 35%, #ff00ff, transparent),
+        radial-gradient(1.5px 1.5px at 35% 75%, #00ffaa, transparent),
+        radial-gradient(2px 2px at 65% 55%, #ffaa00, transparent),
+        radial-gradient(2px 2px at 5% 85%, #fff, transparent);
+    background-size: 250px 250px;
+    animation: cosmic-random-drift-2 31s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    opacity: 0.8;
+}
+
+/* Layer 3: Extra Depth Star Cluster (Hyper-Density Simulation) */
+.style-cosmic h2::before {
     content: "" !important;
     position: absolute;
-    top: 50%; left: 50%; width: 800%; height: 800%;
-    transform: translate(-50%, -50%);
-    background:
-        radial-gradient(circle at center, rgba(120, 0, 255, 0.6) 0%, rgba(0, 100, 255, 0.4) 20%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(255, 0, 150, 0.3) 0%, transparent 40%),
-        radial-gradient(circle at 60% 60%, rgba(0, 255, 200, 0.3) 0%, transparent 40%),
-        radial-gradient(1.5px 1.5px at 5px 5px, #fff, transparent),
-        radial-gradient(1px 1px at 15px 10px, #fff, transparent),
-        radial-gradient(2px 2px at 25px 20px, #fff, transparent);
-    background-size: 100%, 100%, 100%, 40px 40px, 30px 30px, 50px 50px;
-    animation: nebula-pulse-galaxy 6s ease-in-out infinite alternate !important;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background-image:
+        radial-gradient(1px 1px at 5px 5px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 45px 85px, #eee, transparent),
+        radial-gradient(1px 1px at 95px 35px, #fff, transparent),
+        radial-gradient(1.2px 1.2px at 125px 125px, #fff, transparent);
+    background-size: 70px 70px;
+    animation: cosmic-random-drift-3 47s ease-in-out infinite alternate-reverse;
     z-index: -1 !important;
-    opacity: 1 !important;
+    opacity: 0.7;
 }
 
-@keyframes cosmic-star-chaotic-slow {
+@keyframes cosmic-random-drift-1 {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-5%, 8%) scale(1.1) rotate(5deg); }
+    66% { transform: translate(7%, -4%) scale(0.9) rotate(-3deg); }
+    100% { transform: translate(-2%, -2%) scale(1.05) rotate(2deg); }
+}
+
+@keyframes cosmic-random-drift-2 {
     0% { transform: translate(0, 0) rotate(0deg); }
-    33% { transform: translate(-40px, 30px) rotate(120deg); }
-    66% { transform: translate(30px, -40px) rotate(240deg); }
-    100% { transform: translate(0, 0) rotate(360deg); }
+    50% { transform: translate(10%, -10%) rotate(180deg) scale(1.2); }
+    100% { transform: translate(0, 0) rotate(360deg) scale(1); }
 }
 
-@keyframes cosmic-star-chaotic-fast {
-    0% { transform: rotate(0deg) scale(1) translate(0, 0); }
-    50% { transform: rotate(180deg) scale(1.3) translate(50px, -50px); }
-    100% { transform: rotate(360deg) scale(1) translate(0, 0); }
-}
-
-@keyframes nebula-pulse-galaxy {
-    0% { transform: translate(-50%, -50%) scale(0.7) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) scale(1.3) rotate(15deg); }
+@keyframes cosmic-random-drift-3 {
+    0% { transform: translate(-5%, -5%) rotate(0deg); }
+    25% { transform: translate(5%, 3%) rotate(90deg); }
+    50% { transform: translate(-3%, 7%) rotate(180deg); }
+    75% { transform: translate(4%, -6%) rotate(270deg); }
+    100% { transform: translate(-5%, -5%) rotate(360deg); }
 }
 
 .style-cosmic h2 {
-    background: rgba(0,0,0,0.7) !important;
-    backdrop-filter: blur(15px) !important;
-    padding: 20px 40px !important;
-    border: 1px solid rgba(255,255,255,0.3) !important;
+    background: rgba(0,0,0,0.5) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
     border-radius: 4px;
-    color: white !important;
 }
 
-/* 3. HOLOGRAPHIC - Liquid Saturated Pastel Rainbow */
+/* 3. HOLOGRAPHIC - Liquid Pastel Rainbow & Dual Animation */
 .style-holographic {
     background: #fff !important;
     overflow: hidden !important;
     position: relative !important;
-    box-shadow: inset 0 0 50px rgba(255,255,255,0.5) !important;
 }
 
+/* Base Liquid Layer: Soft Pastels (Increased Opacity) */
 .style-holographic::before {
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
     background:
-        radial-gradient(circle at 20% 30%, #FFB5C5 0%, transparent 60%),
-        radial-gradient(circle at 80% 40%, #B5D1FF 0%, transparent 60%),
-        radial-gradient(circle at 40% 80%, #B5FFC8 0%, transparent 60%),
-        radial-gradient(circle at 70% 70%, #FFF7B5 0%, transparent 60%),
-        radial-gradient(circle at 30% 60%, #E3B5FF 0%, transparent 60%),
-        radial-gradient(circle at 50% 50%, #FFB5C5 0%, transparent 50%);
+        radial-gradient(circle at 30% 30%, #FFB6C1 0%, transparent 60%),
+        radial-gradient(circle at 70% 30%, #ADD8E6 0%, transparent 60%),
+        radial-gradient(circle at 30% 70%, #90EE90 0%, transparent 60%),
+        radial-gradient(circle at 70% 70%, #FFFACD 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, #E6E6FA 0%, transparent 60%);
     filter: blur(40px);
-    animation: liquid-lava-lamp-smooth 10s ease-in-out infinite alternate;
+    animation: holo-liquid-base 23s ease-in-out infinite alternate;
 }
 
+/* Secondary Liquid Layer: Moving Overlays */
 .style-holographic::after {
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
     background:
-        linear-gradient(135deg,
-            transparent 20%,
-            rgba(255,255,255,0.6) 50%,
-            transparent 80%
-        );
-    background-size: 200% 200%;
-    mix-blend-mode: overlay;
-    animation: liquid-lava-lamp-smooth 7s ease-in-out infinite alternate-reverse;
+        radial-gradient(circle at 20% 80%, rgba(255, 182, 193, 0.6) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(173, 216, 230, 0.6) 0%, transparent 50%);
+    filter: blur(30px);
+    animation: holo-liquid-overlay 17s ease-in-out infinite alternate-reverse;
+    mix-blend-mode: color-burn;
+}
+
+/* Shimmer Texture on Title Area */
+.style-holographic h2::after {
+    content: "";
+    position: absolute;
+    top: -100%; left: -100%; width: 300%; height: 300%;
+    background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.6) 50%, transparent 55%);
+    background-size: 100% 100%;
+    animation: holo-shimmer-fast 5s linear infinite;
+    z-index: -1;
 }
 
 .style-holographic h2, .preview-box.style-holographic .preview-title {
     color: #000 !important;
     font-weight: 900 !important;
-    text-shadow: 0 0 10px rgba(255,255,255,0.5) !important;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3) !important;
     z-index: 5;
     border: none !important;
 }
 
-/* 4. LUXURY - Liquid Gold Lava with Chaotic Dust */
+@keyframes holo-liquid-base {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-10%, 5%) rotate(5deg) scale(1.1); }
+    100% { transform: translate(5%, -5%) rotate(-5deg); }
+}
+
+@keyframes holo-liquid-overlay {
+    0% { transform: translate(0, 0) rotate(360deg); }
+    100% { transform: translate(10%, 10%) rotate(0deg) scale(1.2); }
+}
+
+@keyframes holo-shimmer-fast {
+    0% { transform: translate(-30%, -30%); }
+    100% { transform: translate(30%, 30%); }
+}
+
+/* 4. LUXURY - Gold Lava with randomized particles */
 .style-luxury {
     background: #000 !important;
     overflow: hidden !important;
@@ -5204,31 +5224,40 @@ body.focus-mode-active .event-card {
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
-    background:
-        radial-gradient(circle at 30% 30%, #D4AF37 0%, transparent 50%),
-        radial-gradient(circle at 70% 60%, #AA8418 0%, transparent 50%),
-        radial-gradient(circle at 40% 70%, #FFD700 0%, transparent 40%),
-        radial-gradient(circle at 10% 80%, #D4AF37 0%, transparent 30%);
-    filter: blur(50px);
-    opacity: 0.8;
-    animation: liquid-lava-lamp-smooth 18s ease-in-out infinite alternate-reverse;
+    background: radial-gradient(circle at center, #D4AF37 0%, #000 70%);
+    opacity: 0.6;
+    animation: luxury-glow-chaotic 11s ease-in-out infinite alternate;
 }
 
 .style-luxury::after {
     content: "";
     position: absolute;
-    top: -20%; left: -20%; width: 140%; height: 140%;
+    top: -50%; left: -50%; width: 200%; height: 200%;
     background-image:
-        radial-gradient(circle, rgba(212,175,55,0.8) 1.5px, transparent 2px),
-        radial-gradient(circle, rgba(255,215,0,0.6) 2px, transparent 3px),
-        radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 2px);
-    background-size: 40px 40px, 70px 70px, 110px 110px;
-    animation: liquid-particles-chaotic 15s linear infinite;
+        radial-gradient(circle, #D4AF37 1.5px, transparent 1.5px),
+        radial-gradient(circle, #FFD700 1.2px, transparent 1.2px);
+    background-size: 80px 80px;
+    animation: luxury-particles-random 23s linear infinite;
+    opacity: 0.8;
 }
 
-/* 5. MARBLE - Fluid Mineral Lava with Random Flecks */
+@keyframes luxury-glow-chaotic {
+    0% { transform: scale(1) translate(0,0); opacity: 0.4; }
+    50% { transform: scale(1.3) translate(-5%, 5%); opacity: 0.7; }
+    100% { transform: scale(1) translate(5%, -5%); opacity: 0.4; }
+}
+
+@keyframes luxury-particles-random {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(15px, 15px) rotate(90deg) scale(1.2); }
+    50% { transform: translate(0, 30px) rotate(180deg) scale(1); }
+    75% { transform: translate(-15px, 15px) rotate(270deg) scale(0.8); }
+    100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+/* 5. MARBLE - Mineral Sweep with Fluid Particles */
 .style-marble {
-    background: #f8f8f8 !important;
+    background: #f0f0f0 !important;
     overflow: hidden !important;
     position: relative !important;
 }
@@ -5237,29 +5266,38 @@ body.focus-mode-active .event-card {
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
-    background:
-        radial-gradient(circle at 20% 20%, #ffffff 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, #e8e8e8 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, #dcdcdc 0%, transparent 60%);
-    filter: blur(35px);
-    animation: liquid-lava-lamp-smooth 22s ease-in-out infinite;
+    background: linear-gradient(45deg, transparent, rgba(0,0,0,0.05), transparent);
+    animation: marble-fluid-sweep 19s linear infinite;
 }
 
 .style-marble::after {
     content: "";
     position: absolute;
-    top: -20%; left: -20%; width: 140%; height: 140%;
+    top: -50%; left: -50%; width: 200%; height: 200%;
     background-image:
-        radial-gradient(circle, rgba(0,0,0,0.15) 2px, transparent 3px),
-        radial-gradient(circle, rgba(255,255,255,0.8) 1.5px, transparent 2px),
-        radial-gradient(circle, rgba(200,200,200,0.4) 3px, transparent 5px);
-    background-size: 60px 60px, 90px 90px, 140px 140px;
-    animation: liquid-particles-chaotic 25s linear infinite reverse;
+        radial-gradient(circle, #888 1.5px, transparent 1.5px),
+        radial-gradient(circle, #aaa 2px, transparent 2px);
+    background-size: 100px 100px;
+    animation: marble-particles-random 31s linear infinite reverse;
+    opacity: 0.5;
 }
 
-/* 6. VELVET - Liquid Red Lava Glow with Sparks */
+@keyframes marble-fluid-sweep {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes marble-particles-random {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-20px, 20px) scale(1.1); }
+    66% { transform: translate(20px, -10px) scale(0.9); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+/* 6. VELVET - Red Glow with Randomized Sparks */
 .style-velvet {
-    background: #0a0000 !important;
+    background: #050000 !important;
     overflow: hidden !important;
     position: relative !important;
 }
@@ -5268,55 +5306,42 @@ body.focus-mode-active .event-card {
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
-    background:
-        radial-gradient(circle at 50% 50%, #b00000 0%, transparent 50%),
-        radial-gradient(circle at 20% 80%, #800000 0%, transparent 40%),
-        radial-gradient(circle at 80% 20%, #500000 0%, transparent 40%);
-    filter: blur(65px);
-    animation: liquid-lava-lamp-smooth 14s ease-in-out infinite alternate;
+    background: radial-gradient(circle at center, #b00000 0%, transparent 60%);
+    animation: velvet-pulse-chaotic 7s ease-in-out infinite alternate;
 }
 
 .style-velvet::after {
     content: "";
     position: absolute;
-    top: -20%; left: -20%; width: 140%; height: 140%;
+    top: -50%; left: -50%; width: 200%; height: 200%;
     background-image:
-        radial-gradient(circle, rgba(255,20,20,0.6) 2.5px, transparent 3px),
-        radial-gradient(circle, rgba(255,100,100,0.4) 1.5px, transparent 2px),
-        radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 4px);
-    background-size: 50px 50px, 100px 100px, 160px 160px;
-    animation: liquid-particles-chaotic 12s linear infinite;
+        radial-gradient(circle, #ff4d4d 2px, transparent 2px),
+        radial-gradient(circle, #fff 1.5px, transparent 1.5px);
+    background-size: 70px 70px;
+    animation: velvet-particles-random 17s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes velvet-pulse-chaotic {
+    0% { transform: scale(0.8) translate(0,0); opacity: 0.5; }
+    50% { transform: scale(1.1) translate(-3%, 3%); opacity: 0.8; }
+    100% { transform: scale(0.9) translate(3%, -3%); opacity: 0.5; }
+}
+
+@keyframes velvet-particles-random {
+    0% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -20px) scale(1.2) rotate(45deg); }
+    50% { transform: translate(-20px, 30px) scale(0.8) rotate(-45deg); }
+    75% { transform: translate(-30px, -30px) scale(1.1) rotate(10deg); }
+    100% { transform: translate(0, 0) scale(1); }
 }
 
 .style-velvet h2 {
-    color: #ffdddd !important;
-    text-shadow: 0 0 25px rgba(255,0,0,0.8) !important;
-    font-weight: 900 !important;
-    z-index: 2;
+    color: #ffcccc !important;
+    text-shadow: 0 0 15px rgba(255,0,0,0.5) !important;
 }
 
-/* Enhanced Liquid Keyframes */
-@keyframes liquid-lava-lamp-smooth {
-    0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-    25% { transform: translate(-8%, 5%) rotate(2deg) scale(1.05); }
-    50% { transform: translate(5%, -10%) rotate(-3deg) scale(0.95); }
-    75% { transform: translate(10%, 8%) rotate(1deg) scale(1.02); }
-    100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-}
-
-@keyframes liquid-surface-shine-chaotic {
-    0% { background-position: -200% -200%; opacity: 0.3; }
-    50% { opacity: 0.7; }
-    100% { background-position: 200% 200%; opacity: 0.3; }
-}
-
-@keyframes liquid-particles-chaotic {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    25% { transform: translate(30px, 20px) rotate(5deg); }
-    50% { transform: translate(-20px, 40px) rotate(-3deg); }
-    75% { transform: translate(-40px, -20px) rotate(2deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
-}
+/* Shared Particle Animations Replaced by Specific Ones Above */
 
 /* Shared Particle Animations */
 @keyframes particle-float {
