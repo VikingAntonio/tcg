@@ -3809,6 +3809,14 @@ function getCoverHtml(style, title, color) {
     let styleClass = style || "style-standard";
     const displayTitle = (title || 'NUEVO ÁLBUM').toUpperCase();
 
+    if (styleClass === 'style-standard') {
+        return `
+            <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
+                <h2 style="margin:0;">${displayTitle}</h2>
+            </div>
+        `;
+    }
+
     return `
         <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
             <h2 style="margin:0;">${displayTitle}</h2>
