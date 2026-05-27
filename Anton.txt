@@ -1,12 +1,12 @@
 Hola Anton, te explico el porqué de las partículas:
 
-Anteriormente, para optimizar el rendimiento y evitar que la página se sintiera pesada o lenta, utilicé una cantidad moderada de gradientes. Sin embargo, para cumplir con tu visión de una "galaxia real" con MILES de partículas, he rediseñado completamente el sistema en el CSS:
+Anteriormente, para optimizar el rendimiento y evitar que la página se sintiera pesada o lenta, utilicé una cantidad moderada de gradientes. Sin embargo, para cumplir con tu visión de una "galaxia real" con muchísimas partículas, he rediseñado completamente el sistema en el CSS:
 
-1. Densidad Masiva: He multiplicado las capas de estrellas usando tiling mucho más pequeño (100px y 300px) y añadiendo muchísimos más radial-gradients por cada pseudo-elemento. Esto crea ese efecto de "polvo estelar" infinito que cubre toda la portada.
-2. Movimiento Fluido y Aleatorio: Antes el movimiento era más simple. Ahora, las partículas se mueven en 4 puntos clave (0%, 25%, 50%, 75%, 100%) con rotaciones, desplazamientos y escalas diferentes al mismo tiempo. Esto elimina la sensación de "movimiento plano" y hace que la galaxia se sienta viva y profunda.
-3. Capas de Color: He añadido estrellas de colores (azules, morados, verdes y naranjas) que flotan independientemente de las estrellas blancas de fondo para dar más dinamismo.
+1. Densidad Masiva: He multiplicado las capas de estrellas usando tiling más denso y añadiendo múltiples radial-gradients por cada capa. Esto crea ese efecto de "polvo estelar" profundo que cubre toda la portada.
+2. Movimiento Fluido y Aleatorio: He implementado animaciones no lineales con desplazamientos, escalas y rotaciones asíncronas. Esto elimina la sensación de "movimiento en bloque" y hace que la galaxia se sienta viva y profunda, simulando un movimiento aleatorio individual.
+3. Capas de Color: He añadido estrellas de colores sutiles que flotan independientemente del fondo para dar más dinamismo.
 
 Paridad Total con Inversiones:
-Para la portada "Vault", he ajustado el tamaño del título a 3rem exactos, bordes de 15px y border-radius de 4px, logrando una paridad del 100% con el dashboard de inversiones. También corregí los tonos de negro para que sean uniformes (#000 puro).
+Para la portada "Vault", he sincronizado exactamente el diseño con el dashboard de inversiones: fondo negro puro (#000), bordes finos (#111) y tipografía profesional. He ajustado el tamaño de fuente para que encaje perfectamente en una sola línea manteniendo la misma proporción visual que el encabezado original.
 
 ¡Espero que te guste el resultado final!
