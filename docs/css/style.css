@@ -4904,21 +4904,23 @@ body.focus-mode-active .event-card {
 }
 
 .preview-title {
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 900;
     color: white;
     border-top: 1px solid white;
     border-bottom: 1px solid white;
-    padding: 2px 5px;
-    z-index: 2;
+    padding: 2px 10px;
+    width: 80%;
+    text-align: center;
+    z-index: 5;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .preview-subtitle {
-    font-size: 6px;
-    letter-spacing: 2px;
-    color: rgba(255,255,255,0.7);
-    margin-top: 5px;
-    z-index: 2;
+    display: none !important;
 }
 
 .cover-preview-item span {
@@ -4962,22 +4964,59 @@ body.focus-mode-active .event-card {
 /* 1. VAULT (Standard) - Inversiones Style */
 .style-standard {
     background: #000 !important;
-    border: 15px solid #111 !important;
+    border: 10px solid #111 !important;
     animation: vault-pulse 4s ease-in-out infinite alternate;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
-.style-standard h2 {
-    border-top: 2px solid white !important;
-    border-bottom: 2px solid white !important;
+
+/* Remove noise and overlays for Vault to match Inversiones pure black look */
+.style-standard::before {
+    display: none !important;
+}
+
+.style-standard h2,
+.preview-box.style-standard .preview-title {
+    border-top: 1.5px solid white !important;
+    border-bottom: 1.5px solid white !important;
     color: white !important;
-    padding: 15px 10px !important;
-    width: 85%;
+    padding: 12% 5% !important;
+    width: 82% !important;
+    font-size: 1.6rem !important;
+    letter-spacing: 0.12em !important;
+    margin: 0 !important;
+    text-align: center !important;
+    font-weight: 900 !important;
+    line-height: 1.2 !important;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3) !important;
+}
+
+/* Specific sizing for the tiny admin preview title to match visually */
+.preview-box.style-standard .preview-title {
+    font-size: 9px !important;
+    padding: 5px 2px !important;
+    border-width: 0.5px !important;
+}
+
+.style-standard::after {
+    content: "VAULT COLLECTION";
+    display: block;
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.75rem;
+    letter-spacing: 0.35em;
+    margin-top: 25px;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 @keyframes vault-pulse {
     0% { border-color: #111; box-shadow: inset 0 0 30px rgba(255,255,255,0.1); }
     100% { border-color: #222; box-shadow: inset 0 0 60px rgba(255,255,255,0.25); }
 }
 
-/* 2. COSMIC - EXTREME X100 DENSITY & CHAOTIC RANDOMNESS */
+/* 2. COSMIC - DEEP GALAXY Giga Density */
 .style-cosmic {
     background: #000 !important;
 }
@@ -4986,48 +5025,67 @@ body.focus-mode-active .event-card {
     position: absolute;
     top: -1000%; left: -1000%; width: 2100%; height: 2100%;
     background-image:
+        radial-gradient(1px 1px at 5% 5%, #fff, transparent),
         radial-gradient(1px 1px at 10% 10%, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 20% 35%, #fff, transparent),
-        radial-gradient(1px 1px at 35% 15%, #fff, transparent),
-        radial-gradient(1px 1px at 45% 65%, #fff, transparent),
-        radial-gradient(2px 2px at 60% 25%, #fff, transparent),
-        radial-gradient(1px 1px at 75% 80%, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 90% 45%, #00d2ff, transparent),
-        radial-gradient(1px 1px at 15% 90%, #fff, transparent),
-        radial-gradient(2px 2px at 25% 10%, #fff, transparent),
-        radial-gradient(1px 1px at 40% 85%, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 55% 40%, #fff, transparent),
-        radial-gradient(1px 1px at 70% 5%, #fff, transparent),
-        radial-gradient(2px 2px at 85% 60%, #fff, transparent),
-        radial-gradient(1px 1px at 5% 55%, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 50% 95%, #fff, transparent),
-        radial-gradient(1px 1px at 95% 15%, #fff, transparent),
-        radial-gradient(2px 2px at 15% 15%, #fff, transparent),
-        radial-gradient(1px 1px at 80% 80%, #fff, transparent);
+        radial-gradient(1.5px 1.5px at 15% 20%, #fff, transparent),
+        radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+        radial-gradient(2px 2px at 25% 40%, #fff, transparent),
+        radial-gradient(1px 1px at 30% 50%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 35% 60%, #fff, transparent),
+        radial-gradient(1px 1px at 40% 70%, #fff, transparent),
+        radial-gradient(2px 2px at 45% 80%, #fff, transparent),
+        radial-gradient(1px 1px at 50% 90%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 55% 5%, #fff, transparent),
+        radial-gradient(1px 1px at 60% 15%, #fff, transparent),
+        radial-gradient(2px 2px at 65% 25%, #fff, transparent),
+        radial-gradient(1px 1px at 70% 35%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 75% 45%, #fff, transparent),
+        radial-gradient(1px 1px at 80% 55%, #fff, transparent),
+        radial-gradient(2px 2px at 85% 65%, #fff, transparent),
+        radial-gradient(1px 1px at 90% 75%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 95% 85%, #fff, transparent),
+        radial-gradient(1px 1px at 2% 98%, #00d2ff, transparent),
+        radial-gradient(1px 1px at 12% 88%, #ff00ff, transparent),
+        radial-gradient(1.5px 1.5px at 22% 78%, #00d2ff, transparent),
+        radial-gradient(1px 1px at 32% 68%, #ff00ff, transparent),
+        radial-gradient(2px 2px at 42% 58%, #fff, transparent),
+        radial-gradient(1px 1px at 52% 48%, #00d2ff, transparent),
+        radial-gradient(1.5px 1.5px at 62% 38%, #ff00ff, transparent),
+        radial-gradient(1px 1px at 72% 28%, #00d2ff, transparent),
+        radial-gradient(2px 2px at 82% 18%, #ff00ff, transparent),
+        radial-gradient(1px 1px at 92% 8%, #fff, transparent),
+        radial-gradient(1px 1px at 48% 48%, #fff, transparent),
+        radial-gradient(1px 1px at 18% 18%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 28% 28%, #fff, transparent),
+        radial-gradient(1px 1px at 38% 38%, #fff, transparent),
+        radial-gradient(2px 2px at 48% 48%, #fff, transparent),
+        radial-gradient(1px 1px at 58% 58%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 68% 68%, #fff, transparent),
+        radial-gradient(1px 1px at 78% 78%, #fff, transparent),
+        radial-gradient(2px 2px at 88% 88%, #fff, transparent),
+        radial-gradient(1px 1px at 98% 98%, #fff, transparent);
     background-repeat: repeat;
-    background-size: 60px 60px; /* Extreme tiling */
+    background-size: 100px 100px;
     opacity: 1;
 }
 .style-cosmic::before {
-    animation: cosmic-rotate-slow 160s linear infinite, cosmic-chaotic 35s ease-in-out infinite alternate;
+    animation: cosmic-rotate-slow 120s linear infinite, cosmic-drift 40s ease-in-out infinite alternate;
 }
 .style-cosmic::after {
-    background-size: 100px 100px;
-    opacity: 0.9;
-    animation: cosmic-rotate-fast 90s linear infinite reverse, cosmic-chaotic-alt 28s ease-in-out infinite alternate;
+    background-size: 140px 140px;
+    opacity: 0.8;
+    animation: cosmic-rotate-fast 60s linear infinite reverse, cosmic-drift-alt 25s ease-in-out infinite alternate;
 }
 
-@keyframes cosmic-chaotic {
-    0% { transform: translate(-10%, -5%) scale(1) rotate(0deg); }
-    33% { transform: translate(5%, 8%) scale(1.05) rotate(2deg); }
-    66% { transform: translate(-7%, -4%) scale(0.95) rotate(-1deg); }
-    100% { transform: translate(8%, 6%) scale(1.1) rotate(1deg); }
+@keyframes cosmic-drift {
+    0% { transform: translate(-5%, -5%) scale(1); }
+    100% { transform: translate(5%, 5%) scale(1.1); }
 }
-@keyframes cosmic-chaotic-alt {
-    0% { transform: translate(8%, -8%) scale(1.2) rotate(0deg); }
-    50% { transform: translate(-6%, 5%) scale(1.1) rotate(-3deg); }
-    100% { transform: translate(-10%, 10%) scale(1.2) rotate(2deg); }
+@keyframes cosmic-drift-alt {
+    0% { transform: translate(5%, -5%) scale(1.2); }
+    100% { transform: translate(-5%, 5%) scale(1); }
 }
+
 @keyframes cosmic-rotate-slow {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -5040,20 +5098,36 @@ body.focus-mode-active .event-card {
 /* 3. HOLOGRAPHIC - DREAMY PASTEL RAINBOW */
 .style-holographic {
     background: linear-gradient(135deg,
-        #FFB7CE 0%,
-        #C7CEEA 25%,
-        #FFF9C2 50%,
-        #B5EAD7 75%,
-        #FFB7CE 100%
+        #FFD1DC 0%, /* Pastel Pink */
+        #E0BBE4 20%, /* Pastel Purple */
+        #BEE7E8 40%, /* Pastel Blue-Cyan */
+        #E2F0CB 60%, /* Pastel Green */
+        #FFF9C2 80%, /* Pastel Yellow */
+        #FFD1DC 100%
     ) !important;
-    background-size: 200% 200% !important;
-    animation: holo-pastel-flow 4s linear infinite !important;
-    box-shadow: inset 0 0 120px rgba(255,255,255,0.6) !important;
+    background-size: 300% 300% !important;
+    animation: holo-pastel-flow 8s linear infinite !important;
+    box-shadow: inset 0 0 150px rgba(255,255,255,0.5) !important;
+}
+.style-holographic::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.2) 100%);
+    animation: holo-shine-overlay 3s ease-in-out infinite alternate;
+}
+.style-holographic h2, .preview-box.style-holographic .preview-title {
+    color: #000 !important;
+    text-shadow: none !important;
 }
 @keyframes holo-pastel-flow {
-    0% { background-position: 0% 50%; filter: hue-rotate(0deg) brightness(1.1); }
-    50% { background-position: 100% 50%; filter: hue-rotate(180deg) brightness(1.2); }
-    100% { background-position: 0% 50%; filter: hue-rotate(360deg) brightness(1.1); }
+    0% { background-position: 0% 50%; filter: hue-rotate(0deg) brightness(1.05); }
+    50% { background-position: 100% 50%; filter: hue-rotate(90deg) brightness(1.15); }
+    100% { background-position: 0% 50%; filter: hue-rotate(180deg) brightness(1.05); }
+}
+@keyframes holo-shine-overlay {
+    0% { transform: translateX(-100%) skewX(-15deg); }
+    100% { transform: translateX(100%) skewX(-15deg); }
 }
 
 /* 4. LUXURY */
@@ -5068,6 +5142,16 @@ body.focus-mode-active .event-card {
     top: 0; left: -150%; width: 200%; height: 100%;
     background: linear-gradient(120deg, transparent, rgba(212,175,55,0.4), transparent);
     animation: luxury-shine 4s ease-in-out infinite;
+    z-index: 1;
+}
+.style-luxury::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: radial-gradient(circle, #d4af37 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: particle-float 10s linear infinite;
+    opacity: 0.4;
 }
 @keyframes luxury-shine {
     0% { left: -200%; }
@@ -5078,6 +5162,7 @@ body.focus-mode-active .event-card {
     color: #d4af37 !important;
     border-color: #d4af37 !important;
     text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    z-index: 2;
 }
 
 /* 5. MARBLE */
@@ -5090,23 +5175,27 @@ body.focus-mode-active .event-card {
     top: 0; left: 0; width: 100%; height: 100%;
     background-image: url("https://www.transparenttextures.com/patterns/shattered-island.png") !important;
     opacity: 1;
+    z-index: 1;
 }
 .style-marble::after {
     content: "";
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
-    background-size: 200% 200%;
-    animation: marble-shine 6s linear infinite;
+    background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%),
+                radial-gradient(circle, #ccc 1px, transparent 1px);
+    background-size: 200% 200%, 30px 30px;
+    animation: marble-shine 6s linear infinite, particle-float-alt 15s linear infinite;
+    opacity: 0.6;
 }
 @keyframes marble-shine {
-    0% { background-position: -200% -200%; }
-    100% { background-position: 200% 200%; }
+    0% { background-position: -200% -200%, 0 0; }
+    100% { background-position: 200% 200%, -80px 120px; }
 }
 .style-marble h2, .preview-box.style-marble .preview-title {
     color: #222 !important;
     border-color: #222 !important;
     text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+    z-index: 2;
 }
 
 /* 6. VELVET */
@@ -5120,6 +5209,16 @@ body.focus-mode-active .event-card {
     top: 0; left: 0; right: 0; bottom: 0;
     background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent 80%);
     animation: velvet-glow 5s ease-in-out infinite alternate;
+    z-index: 1;
+}
+.style-velvet::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: radial-gradient(circle, #ff4d4d 1.5px, transparent 1.5px);
+    background-size: 50px 50px;
+    animation: particle-float 12s linear infinite reverse;
+    opacity: 0.3;
 }
 @keyframes velvet-glow {
     0% { transform: scale(0.8); opacity: 0.3; }
@@ -5128,6 +5227,17 @@ body.focus-mode-active .event-card {
 .style-velvet h2, .preview-box.style-velvet .preview-title {
     color: #fff;
     text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    z-index: 2;
+}
+
+/* Shared Particle Animations */
+@keyframes particle-float {
+    0% { background-position: 0 0; }
+    100% { background-position: 100px 100px; }
+}
+@keyframes particle-float-alt {
+    0% { background-position: 0 0; }
+    100% { background-position: -80px 120px; }
 }
 
 .color-input-wrapper {
