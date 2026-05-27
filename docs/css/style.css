@@ -4978,216 +4978,181 @@ body.focus-mode-active .event-card {
 }
 
 /* 1. VAULT (Standard) - Exact Inversiones Parity */
-.style-standard {
-    background-color: #000 !important;
-    background-image: none !important; /* Eliminate noise filters */
-    border: 15px solid #111 !important; /* Professional thick border */
-    border-radius: 4px !important; /* Matches Investment Dashboard rounding */
+.style-standard, .preview-box.style-standard {
+    background: #000 !important;
+    background-image: none !important;
+    border: 1px solid #111 !important;
+    border-radius: 4px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     position: relative !important;
+    padding: 20px !important;
 }
 
-/* Disable base noise/textured overlays specifically for standard */
-.style-standard::before, .style-standard::after {
+.style-standard::before, .style-standard::after,
+.preview-box.style-standard::before, .preview-box.style-standard::after {
     display: none !important;
 }
 
 .style-standard h2 {
     color: #fff !important;
-    font-size: 3rem !important; /* Matches Asset Vault title exactly */
+    font-size: 3rem !important;
     font-weight: 900 !important;
     letter-spacing: -0.04em !important;
-    line-height: 1 !important;
+    line-height: 1.1 !important;
     text-transform: uppercase !important;
     text-align: center !important;
     margin: 0 !important;
-    padding: 20px 0 !important; /* Slightly more padding for 3rem */
-    background: transparent !important;
-    backdrop-filter: none !important;
+    padding: 10px 0 !important;
     z-index: 5 !important;
     position: relative !important;
-    border-top: 2px solid white !important;
-    border-bottom: 2px solid white !important;
-    overflow: visible !important;
+    display: block !important;
+    max-width: none !important;
+    -webkit-line-clamp: unset !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
 }
 
-/* Labels positioned relative to the title lines */
 .style-standard h2::before {
     content: "Portfolio Management" !important;
     display: block !important;
-    font-size: 0.7rem !important; /* Increased for 3rem title context */
+    font-size: 0.7rem !important;
     letter-spacing: 0.4em !important;
     font-weight: 800 !important;
     color: rgba(255,255,255,0.5) !important;
     margin-bottom: 15px !important;
     text-transform: uppercase !important;
-    position: absolute !important;
-    width: 200% !important;
-    left: -50% !important;
-    top: -40px !important; /* Adjusted for larger title */
-    background: none !important;
+    position: static !important;
 }
 
 .style-standard h2::after {
-    content: "VAULT COLLECTION" !important;
-    display: block !important;
-    font-size: 0.7rem !important; /* Increased for 3rem title context */
-    letter-spacing: 0.35em !important;
-    font-weight: 800 !important;
-    color: rgba(255,255,255,0.5) !important;
-    margin-top: 15px !important;
-    text-transform: uppercase !important;
-    position: absolute !important;
-    width: 200% !important;
-    left: -50% !important;
-    bottom: -40px !important; /* Adjusted for larger title */
-    background: none !important;
+    display: none !important;
 }
 
-/* Admin Grid Specific Fixes for Standard */
+/* Admin Grid Fix for Standard */
 .preview-box.style-standard .preview-title {
     color: #fff !important;
-    font-size: 0.85rem !important; /* Scaled down for admin grid */
+    font-size: 0.8rem !important;
     font-weight: 900 !important;
     letter-spacing: -0.02em !important;
     line-height: 1 !important;
-    padding: 8px 0 !important;
-    border-top: 1px solid white !important; /* Scaled line */
-    border-bottom: 1px solid white !important; /* Scaled line */
-    width: 90% !important;
-    left: 0 !important;
-    position: relative !important;
+    padding: 5px 0 !important;
+    border: none !important;
+    width: 100% !important;
+    display: block !important;
+    max-width: none !important;
+    text-align: center !important;
 }
 
 .preview-box.style-standard .preview-title::before {
-    content: "Portfolio" !important; /* Shortened for fit */
+    content: "Portfolio Management" !important;
     display: block !important;
-    font-size: 0.3rem !important;
+    font-size: 0.25rem !important;
     letter-spacing: 0.15em !important;
-    width: 100% !important;
-    left: 0 !important;
-    top: -15px !important;
-    position: absolute !important;
-    font-weight: 800 !important;
-    color: rgba(255,255,255,0.5) !important;
+    margin-bottom: 3px !important;
+    color: rgba(255,255,255,0.4) !important;
+    position: static !important;
 }
 
-.preview-box.style-standard .preview-title::after {
-    content: "COLLECTION" !important;
-    display: block !important;
-    font-size: 0.3rem !important;
-    letter-spacing: 0.15em !important;
-    width: 100% !important;
-    left: 0 !important;
-    bottom: -15px !important;
-    position: absolute !important;
-    font-weight: 800 !important;
-    color: rgba(255,255,255,0.5) !important;
-}
-
-/* 2. COSMIC - EXTREME Galaxy Density & Chaotic Movement */
+/* 2. COSMIC - ULTRA Galaxy Density & Chaotic Movement */
 .style-cosmic {
     background: #000 !important;
     overflow: hidden !important;
     position: relative !important;
 }
 
-/* Layer 1: THOUSANDS of Micro Stars (Small tiling, many gradients) */
+/* Layer 1: ULTRA Dense Micro Stars */
 .style-cosmic::before {
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
     background-image:
-        radial-gradient(1px 1px at 10px 10px, #fff, transparent),
-        radial-gradient(1px 1px at 30px 50px, #eee, transparent),
-        radial-gradient(1px 1px at 50px 20px, #ddd, transparent),
-        radial-gradient(1px 1px at 70px 80px, #fff, transparent),
-        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
-        radial-gradient(1px 1px at 20px 90px, #eee, transparent),
-        radial-gradient(1px 1px at 40px 10px, #ddd, transparent),
-        radial-gradient(1px 1px at 60px 60px, #fff, transparent),
-        radial-gradient(1px 1px at 80px 30px, #fff, transparent),
-        radial-gradient(1px 1px at 100px 70px, #eee, transparent);
-    background-size: 100px 100px;
-    animation: cosmic-star-chaotic-slow 60s linear infinite;
-    opacity: 0.8;
+        radial-gradient(1px 1px at 2px 2px, #fff, transparent),
+        radial-gradient(1px 1px at 12px 18px, #fff, transparent),
+        radial-gradient(1px 1px at 22px 5px, #eee, transparent),
+        radial-gradient(1px 1px at 5px 25px, #fff, transparent),
+        radial-gradient(1px 1px at 28px 12px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 15px 15px, #fff, transparent),
+        radial-gradient(1px 1px at 8px 30px, #eee, transparent),
+        radial-gradient(1px 1px at 20px 28px, #fff, transparent);
+    background-size: 30px 30px;
+    animation: cosmic-star-chaotic-slow 15s linear infinite;
+    opacity: 1;
 }
 
-/* Layer 2: Colored Chaotic Floating Stars */
+/* Layer 2: Even more colored stars & faster movement */
 .style-cosmic::after {
     content: "";
     position: absolute;
     top: -100%; left: -100%; width: 300%; height: 300%;
     background-image:
-        radial-gradient(2px 2px at 50px 50px, #00d2ff, transparent),
-        radial-gradient(2px 2px at 150px 150px, #ff00ff, transparent),
-        radial-gradient(2px 2px at 250px 50px, #00ffaa, transparent),
-        radial-gradient(2px 2px at 50px 250px, #ffaa00, transparent),
-        radial-gradient(1.5px 1.5px at 100px 200px, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 200px 100px, #fff, transparent);
-    background-size: 300px 300px;
-    animation: cosmic-star-chaotic-fast 35s linear infinite;
-    opacity: 0.6;
+        radial-gradient(2px 2px at 10% 10%, #00d2ff, transparent),
+        radial-gradient(2px 2px at 40% 60%, #ff00ff, transparent),
+        radial-gradient(1.5px 1.5px at 70% 20%, #00ffaa, transparent),
+        radial-gradient(2px 2px at 90% 90%, #ffaa00, transparent),
+        radial-gradient(1.5px 1.5px at 20% 80%, #00d2ff, transparent),
+        radial-gradient(2px 2px at 50% 50%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 80% 40%, #ff00ff, transparent);
+    background-size: 120px 120px;
+    animation: cosmic-star-chaotic-fast 10s linear infinite;
+    opacity: 0.9;
 }
 
-/* Layer 3: Nebula + Dense Core (Enhanced) */
+/* Layer 3: Extra Depth Nebula Core */
 .style-cosmic h2::before,
 .preview-box.style-cosmic .preview-title::before {
     content: "" !important;
     position: absolute;
-    top: 50%; left: 50%;
-    width: 600%; height: 600%;
+    top: 50%; left: 50%; width: 800%; height: 800%;
     transform: translate(-50%, -50%);
     background:
-        radial-gradient(circle at center, rgba(100, 0, 200, 0.4) 0%, rgba(0, 80, 200, 0.2) 30%, transparent 70%),
-        radial-gradient(circle at 40% 40%, rgba(255, 0, 150, 0.2) 0%, transparent 50%),
-        radial-gradient(circle at 60% 60%, rgba(0, 200, 255, 0.2) 0%, transparent 50%),
-        radial-gradient(1px 1px at 10% 10%, #fff, transparent),
-        radial-gradient(1.5px 1.5px at 30% 20%, #fff, transparent),
-        radial-gradient(1px 1px at 50% 40%, #fff, transparent),
-        radial-gradient(2px 2px at 70% 60%, #fff, transparent),
-        radial-gradient(1px 1px at 90% 80%, #fff, transparent);
-    background-size: 100%, 100%, 100%, 50px 50px, 80px 80px, 60px 60px, 90px 90px, 70px 70px;
-    animation: nebula-pulse-galaxy 15s ease-in-out infinite alternate !important;
+        radial-gradient(circle at center, rgba(120, 0, 255, 0.6) 0%, rgba(0, 100, 255, 0.4) 20%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(255, 0, 150, 0.3) 0%, transparent 40%),
+        radial-gradient(circle at 60% 60%, rgba(0, 255, 200, 0.3) 0%, transparent 40%),
+        radial-gradient(1.5px 1.5px at 5px 5px, #fff, transparent),
+        radial-gradient(1px 1px at 15px 10px, #fff, transparent),
+        radial-gradient(2px 2px at 25px 20px, #fff, transparent);
+    background-size: 100%, 100%, 100%, 40px 40px, 30px 30px, 50px 50px;
+    animation: nebula-pulse-galaxy 6s ease-in-out infinite alternate !important;
     z-index: -1 !important;
+    opacity: 1 !important;
 }
 
 @keyframes cosmic-star-chaotic-slow {
     0% { transform: translate(0, 0) rotate(0deg); }
-    33% { transform: translate(-20px, 15px) rotate(10deg); }
-    66% { transform: translate(15px, -20px) rotate(-10deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(-40px, 30px) rotate(120deg); }
+    66% { transform: translate(30px, -40px) rotate(240deg); }
+    100% { transform: translate(0, 0) rotate(360deg); }
 }
 
 @keyframes cosmic-star-chaotic-fast {
-    0% { transform: rotate(0deg) scale(1); }
-    25% { transform: rotate(90deg) scale(1.1) translate(15px, -15px); }
-    50% { transform: rotate(180deg) scale(1.2) translate(-15px, 15px); }
-    75% { transform: rotate(270deg) scale(1.1) translate(10px, 10px); }
-    100% { transform: rotate(360deg) scale(1); }
+    0% { transform: rotate(0deg) scale(1) translate(0, 0); }
+    50% { transform: rotate(180deg) scale(1.3) translate(50px, -50px); }
+    100% { transform: rotate(360deg) scale(1) translate(0, 0); }
 }
 
 @keyframes nebula-pulse-galaxy {
-    0% { transform: translate(-50%, -50%) scale(0.9) rotate(0deg); opacity: 0.6; }
-    100% { transform: translate(-50%, -50%) scale(1.1) rotate(5deg); opacity: 0.9; }
+    0% { transform: translate(-50%, -50%) scale(0.7) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) scale(1.3) rotate(15deg); }
 }
 
 .style-cosmic h2 {
-    background: rgba(0,0,0,0.5) !important;
-    backdrop-filter: blur(12px) !important;
+    background: rgba(0,0,0,0.7) !important;
+    backdrop-filter: blur(15px) !important;
     padding: 20px 40px !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
     border-radius: 4px;
+    color: white !important;
 }
 
-/* 3. HOLOGRAPHIC - Liquid Pastel Rainbow Lava */
+/* 3. HOLOGRAPHIC - Liquid Saturated Pastel Rainbow */
 .style-holographic {
-    background: #FFC8C8 !important;
+    background: #fff !important;
     overflow: hidden !important;
     position: relative !important;
+    box-shadow: inset 0 0 50px rgba(255,255,255,0.5) !important;
 }
 
 .style-holographic::before {
@@ -5195,35 +5160,36 @@ body.focus-mode-active .event-card {
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
     background:
-        radial-gradient(circle at 20% 30%, #FFDDC1 0%, transparent 45%),
-        radial-gradient(circle at 80% 40%, #E8F0D1 0%, transparent 45%),
-        radial-gradient(circle at 40% 80%, #C1EAD7 0%, transparent 45%),
-        radial-gradient(circle at 70% 70%, #D1D8EA 0%, transparent 45%),
-        radial-gradient(circle at 30% 60%, #FFC8FF 0%, transparent 45%),
-        radial-gradient(circle at 50% 50%, #FFC8C8 0%, transparent 40%);
+        radial-gradient(circle at 20% 30%, #FFB5C5 0%, transparent 60%),
+        radial-gradient(circle at 80% 40%, #B5D1FF 0%, transparent 60%),
+        radial-gradient(circle at 40% 80%, #B5FFC8 0%, transparent 60%),
+        radial-gradient(circle at 70% 70%, #FFF7B5 0%, transparent 60%),
+        radial-gradient(circle at 30% 60%, #E3B5FF 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, #FFB5C5 0%, transparent 50%);
     filter: blur(40px);
-    animation: liquid-lava-lamp-smooth 15s ease-in-out infinite alternate;
+    animation: liquid-lava-lamp-smooth 10s ease-in-out infinite alternate;
 }
 
 .style-holographic::after {
     content: "";
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(135deg,
-        transparent 40%,
-        rgba(255,255,255,0.5) 50%,
-        transparent 60%
-    );
-    background-size: 300% 300%;
-    animation: liquid-surface-shine-chaotic 6s ease-in-out infinite;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background:
+        linear-gradient(135deg,
+            transparent 20%,
+            rgba(255,255,255,0.6) 50%,
+            transparent 80%
+        );
+    background-size: 200% 200%;
+    mix-blend-mode: overlay;
+    animation: liquid-lava-lamp-smooth 7s ease-in-out infinite alternate-reverse;
 }
 
-.style-holographic h2,
-.preview-box.style-holographic .preview-title {
+.style-holographic h2, .preview-box.style-holographic .preview-title {
     color: #000 !important;
     font-weight: 900 !important;
-    text-shadow: 1px 1px 1px rgba(255,255,255,0.8) !important;
-    z-index: 2;
+    text-shadow: 0 0 10px rgba(255,255,255,0.5) !important;
+    z-index: 5;
     border: none !important;
 }
 
@@ -5253,16 +5219,11 @@ body.focus-mode-active .event-card {
     position: absolute;
     top: -20%; left: -20%; width: 140%; height: 140%;
     background-image:
-        radial-gradient(circle, rgba(212,175,55,0.5) 1.5px, transparent 1.5px),
-        radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px);
-    background-size: 70px 70px, 110px 110px;
-    animation: liquid-particles-chaotic 25s linear infinite;
-}
-
-.style-luxury h2 {
-    color: #d4af37 !important;
-    text-shadow: 0 0 20px rgba(212,175,55,0.8) !important;
-    z-index: 2;
+        radial-gradient(circle, rgba(212,175,55,0.8) 1.5px, transparent 2px),
+        radial-gradient(circle, rgba(255,215,0,0.6) 2px, transparent 3px),
+        radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 2px);
+    background-size: 40px 40px, 70px 70px, 110px 110px;
+    animation: liquid-particles-chaotic 15s linear infinite;
 }
 
 /* 5. MARBLE - Fluid Mineral Lava with Random Flecks */
@@ -5288,15 +5249,12 @@ body.focus-mode-active .event-card {
     content: "";
     position: absolute;
     top: -20%; left: -20%; width: 140%; height: 140%;
-    background-image: radial-gradient(circle, rgba(0,0,0,0.08) 2px, transparent 2px);
-    background-size: 140px 140px;
-    animation: liquid-particles-chaotic 35s linear infinite reverse;
-}
-
-.style-marble h2 {
-    color: #111 !important;
-    font-weight: 900 !important;
-    z-index: 2;
+    background-image:
+        radial-gradient(circle, rgba(0,0,0,0.15) 2px, transparent 3px),
+        radial-gradient(circle, rgba(255,255,255,0.8) 1.5px, transparent 2px),
+        radial-gradient(circle, rgba(200,200,200,0.4) 3px, transparent 5px);
+    background-size: 60px 60px, 90px 90px, 140px 140px;
+    animation: liquid-particles-chaotic 25s linear infinite reverse;
 }
 
 /* 6. VELVET - Liquid Red Lava Glow with Sparks */
@@ -5322,9 +5280,12 @@ body.focus-mode-active .event-card {
     content: "";
     position: absolute;
     top: -20%; left: -20%; width: 140%; height: 140%;
-    background-image: radial-gradient(circle, rgba(255,20,20,0.3) 2.5px, transparent 2.5px);
-    background-size: 160px 160px;
-    animation: liquid-particles-chaotic 18s linear infinite;
+    background-image:
+        radial-gradient(circle, rgba(255,20,20,0.6) 2.5px, transparent 3px),
+        radial-gradient(circle, rgba(255,100,100,0.4) 1.5px, transparent 2px),
+        radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 4px);
+    background-size: 50px 50px, 100px 100px, 160px 160px;
+    animation: liquid-particles-chaotic 12s linear infinite;
 }
 
 .style-velvet h2 {
