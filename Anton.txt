@@ -1,12 +1,18 @@
-Hola Anton, te explico el porqué de las partículas:
+Hola Anton, te explico el porqué de las partículas (ACTUALIZADO):
 
-Anteriormente, para optimizar el rendimiento y evitar que la página se sintiera pesada o lenta, utilicé una cantidad moderada de gradientes. Sin embargo, para cumplir con tu visión de una "galaxia real" con muchísimas partículas, he rediseñado completamente el sistema en el CSS:
+Para cumplir con tu visión de una "galaxia real" con MILES de partículas que se mueven de forma independiente y aleatoria, he descartado los métodos tradicionales (como patrones repetitivos o tiling) y he implementado una técnica avanzada de simulación por CSS:
 
-1. Densidad Masiva: He multiplicado las capas de estrellas usando tiling más denso y añadiendo múltiples radial-gradients por cada capa. Esto crea ese efecto de "polvo estelar" profundo que cubre toda la portada.
-2. Movimiento Fluido y Aleatorio: He implementado animaciones no lineales con desplazamientos, escalas y rotaciones asíncronas. Esto elimina la sensación de "movimiento en bloque" y hace que la galaxia se sienta viva y profunda, simulando un movimiento aleatorio individual.
-3. Capas de Color: He añadido estrellas de colores sutiles que flotan independientemente del fondo para dar más dinamismo.
+1. Simulación de Partículas Individuales: He generado nubes masivas de partículas usando miles de 'box-shadows' con coordenadas aleatorias. Esto significa que cada partícula es única y no forma un patrón que se repita como un papel tapiz.
+2. Ciclos de Movimiento No Lineal: Utilizo números primos para las duraciones de las animaciones (127s, 79s, 41s, etc.). Esto garantiza que los ciclos de las 4 capas de profundidad casi nunca coincidan, eliminando cualquier sensación de movimiento en bloque o circular. Las partículas parecen flotar y derivar de forma caótica y natural.
+3. Profundidad Espacial: Hay capas de micro-polvo estelar muy lento al fondo y clusters brillantes más rápidos al frente, creando un efecto de paralaje 3D real sin necesidad de scripts pesados.
 
 Paridad Total con Inversiones:
-Para la portada "Vault", he sincronizado exactamente el diseño con el dashboard de inversiones: fondo negro puro (#000), bordes finos (#111) y tipografía profesional. He ajustado el tamaño de fuente para que encaje perfectamente en una sola línea manteniendo la misma proporción visual que el encabezado original.
+La portada "Standard" (Vault) ahora es 100% idéntica al diseño de inversiones.html. Utiliza el mismo fondo #000 puro, la tipografía exacta de 3rem con espaciado negativo (-0.04em) y el subtítulo "Portfolio Management" superior. Se han eliminado todas las texturas de ruido para mantener el acabado minimalista premium que querías.
 
-¡Espero que te guste el resultado final!
+Holographic & Otros:
+La portada Rainbow ahora usa tonos pastel suaves con un efecto de "metaballs" líquido y dos animaciones superpuestas. El texto ahora es negro para un contraste perfecto. También añadí partículas aleatorias acordes al color en Luxury, Marble y Velvet para darles más vida.
+
+Mejoras en Admin:
+He fijado la altura de las pestañas en el editor de álbumes para que la interfaz no "salte" al cambiar entre DISEÑOS y CARGAR.
+
+¡Espero que esta nueva versión sea exactamente lo que buscabas!
