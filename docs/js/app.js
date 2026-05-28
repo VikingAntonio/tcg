@@ -3809,10 +3809,11 @@ function getCoverHtml(style, title, color) {
     let styleClass = style || "style-standard";
     const displayTitle = (title || 'NUEVO ÁLBUM').toUpperCase();
 
-    if (styleClass === 'style-standard') {
+    if (styleClass === "style-standard") {
         return `
-            <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
-                <h2 style="margin:0;">${displayTitle}</h2>
+            <div class="textured-cover style-standard" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
+                <h2 style="color:white; text-align:center; padding: 10% 5%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 2px solid white; border-bottom: 2px solid white; width: 80%; margin:0;">${displayTitle}</h2>
+                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
             </div>
         `;
     }
