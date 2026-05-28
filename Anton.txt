@@ -1,18 +1,28 @@
-Hola Anton, te explico el porqué de las partículas (ACTUALIZADO):
+# Vikingdev TCG - Album Cover Improvements
 
-Para cumplir con tu visión de una "galaxia real" con MILES de partículas que se mueven de forma independiente y aleatoria, he descartado los métodos tradicionales (como patrones repetitivos o tiling) y he implementado una técnica avanzada de simulación por CSS:
+## 1. Vault (Standard) Style
+Synchronized with inversiones.html header.
+- Background: Pure black (#000)
+- Typography: 3rem font-size, 900 weight, -0.04em letter-spacing.
+- Subtitle: Added "Portfolio Management" for 100% parity.
 
-1. Simulación de Partículas Individuales: He generado nubes masivas de partículas usando miles de 'box-shadows' con coordenadas aleatorias. Esto significa que cada partícula es única y no forma un patrón que se repita como un papel tapiz.
-2. Ciclos de Movimiento No Lineal: Utilizo números primos para las duraciones de las animaciones (127s, 79s, 41s, etc.). Esto garantiza que los ciclos de las 4 capas de profundidad casi nunca coincidan, eliminando cualquier sensación de movimiento en bloque o circular. Las partículas parecen flotar y derivar de forma caótica y natural.
-3. Profundidad Espacial: Hay capas de micro-polvo estelar muy lento al fondo y clusters brillantes más rápidos al frente, creando un efecto de paralaje 3D real sin necesidad de scripts pesados.
+## 2. Cosmic (Galaxy) Style
+Complete rebuild of the deep space simulation.
+- Multiple Layers: 4 independent layers of box-shadow particles.
+- Particle Density: ~900 randomized particles across different sizes and colors (white, pastel blue, pastel pink, pastel yellow).
+- Animations: Used prime-number durations (127s, 79s, 53s, 41s) for the layers to ensure the pattern never repeats in a recognizable way.
+- Movement: Combinations of drift, rotation, and skew for a truly random liquid space feel.
 
-Paridad Total con Inversiones:
-La portada "Standard" (Vault) ahora es 100% idéntica al diseño de inversiones.html. Utiliza el mismo fondo #000 puro, la tipografía exacta de 3rem con espaciado negativo (-0.04em) y el subtítulo "Portfolio Management" superior. Se han eliminado todas las texturas de ruido para mantener el acabado minimalista premium que querías.
+## 3. Holographic Style
+Improved liquid pastel effect.
+- Colors: Vibrant saturated pastels (FFB7B2, B5EAD7, C7CEEA, E2F0CB, FFDAC1).
+- Overlapping Animations: 'liquid-holographic-flow' (31s) and 'liquid-holographic-metaballs' (23s) with different speeds and directions.
+- Contrast: Title font changed to pure black (#000) with a white text-shadow.
 
-Holographic & Otros:
-La portada Rainbow ahora usa tonos pastel suaves con un efecto de "metaballs" líquido y dos animaciones superpuestas. El texto ahora es negro para un contraste perfecto. También añadí partículas aleatorias acordes al color en Luxury, Marble y Velvet para darles más vida.
+## 4. Luxury, Marble, Velvet
+Added high-density particle clouds tailored to each style.
+- Luxury: High-density gold dust (#D4AF37).
+- Marble: Mineral flecks (#888) with randomized drift.
+- Velvet: Bright white sparks (#fff) with breathing movement.
 
-Mejoras en Admin:
-He fijado la altura de las pestañas en el editor de álbumes para que la interfaz no "salte" al cambiar entre DISEÑOS y CARGAR.
-
-¡Espero que esta nueva versión sea exactamente lo que buscabas!
+All styles have been cleared of previous "grey arc" artifacts to ensure the deepest black backgrounds requested.
