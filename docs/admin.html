@@ -196,6 +196,186 @@
                 margin-bottom: 15px;
             }
         }
+
+        /* --- PROFESSIONAL ALBUM COVERS ANIMATIONS (ADMIN ONLY) --- */
+
+        /* Safety Containment for all professional styles */
+        .style-cosmic, .style-holographic, .style-luxury, .style-marble, .style-velvet,
+        .preview-box.style-cosmic, .preview-box.style-holographic, .preview-box.style-luxury,
+        .preview-box.style-marble, .preview-box.style-velvet {
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        /* Ensure Titles stay visible and on top */
+        .textured-cover h2, .preview-box .preview-title {
+            position: relative !important;
+            z-index: 10 !important;
+        }
+
+        /* 1. LIQUID ANIMATION BASE (Holographic, Luxury, Marble, Velvet) */
+        .style-holographic::before, .style-luxury::before, .style-marble::before, .style-velvet::before,
+        .preview-box.style-holographic::before, .preview-box.style-luxury::before, .preview-box.style-marble::before, .preview-box.style-velvet::before {
+            content: "" !important;
+            position: absolute !important;
+            top: -50% !important;
+            left: -50% !important;
+            width: 200% !important;
+            height: 200% !important;
+            filter: blur(40px) !important;
+            opacity: 0.8 !important;
+            z-index: 1 !important;
+            animation: liquid-flow 20s linear infinite !important;
+            pointer-events: none !important;
+        }
+
+        .style-holographic::after, .style-luxury::after, .style-marble::after, .style-velvet::after,
+        .preview-box.style-holographic::after, .preview-box.style-luxury::after, .preview-box.style-marble::after, .preview-box.style-velvet::after {
+            content: "" !important;
+            position: absolute !important;
+            top: -25% !important;
+            left: -25% !important;
+            width: 150% !important;
+            height: 150% !important;
+            filter: blur(30px) !important;
+            opacity: 0.6 !important;
+            z-index: 2 !important;
+            animation: liquid-flow 15s linear infinite reverse !important;
+            mix-blend-mode: overlay !important;
+            pointer-events: none !important;
+        }
+
+        /* Specific Liquid Colors */
+        .style-holographic, .preview-box.style-holographic { background: #fff !important; }
+        .style-holographic::before, .preview-box.style-holographic::before {
+            background: radial-gradient(circle at 30% 30%, #A0E0FF 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, #FFB6C1 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, #FFF9C4 0%, transparent 50%) !important;
+        }
+        .style-holographic::after, .preview-box.style-holographic::after {
+            background: radial-gradient(circle at 20% 80%, #E0F7FA 0%, transparent 40%),
+                        radial-gradient(circle at 80% 20%, #F8BBD0 0%, transparent 40%) !important;
+        }
+
+        .style-luxury, .preview-box.style-luxury { background: #000 !important; }
+        .style-luxury::before, .preview-box.style-luxury::before {
+            background: radial-gradient(circle at 30% 30%, #bf953f 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, #b38728 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, #f7ef8a 0%, transparent 50%) !important;
+        }
+        .style-luxury::after, .preview-box.style-luxury::after {
+            background: radial-gradient(circle at 20% 80%, #aa771c 0%, transparent 40%),
+                        radial-gradient(circle at 80% 20%, #d4af37 0%, transparent 40%) !important;
+        }
+
+        .style-marble, .preview-box.style-marble { background: #f0f0f0 !important; }
+        .style-marble::before, .preview-box.style-marble::before {
+            background: radial-gradient(circle at 30% 30%, #333 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, #666 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, #999 0%, transparent 50%) !important;
+            opacity: 0.4 !important;
+        }
+        .style-marble::after, .preview-box.style-marble::after {
+            background: radial-gradient(circle at 20% 80%, #222 0%, transparent 40%),
+                        radial-gradient(circle at 80% 20%, #444 0%, transparent 40%) !important;
+            opacity: 0.3 !important;
+        }
+
+        .style-velvet, .preview-box.style-velvet { background: #200 !important; }
+        .style-velvet::before, .preview-box.style-velvet::before {
+            background: radial-gradient(circle at 30% 30%, #800 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, #400 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, #a00 0%, transparent 50%) !important;
+        }
+        .style-velvet::after, .preview-box.style-velvet::after {
+            background: radial-gradient(circle at 20% 80%, #600 0%, transparent 40%),
+                        radial-gradient(circle at 80% 20%, #b00 0%, transparent 40%) !important;
+        }
+
+        @keyframes liquid-flow {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* 2. COSMIC GALAXY ANIMATION (ADMIN ONLY) */
+        .style-cosmic, .preview-box.style-cosmic { background: #000 !important; }
+
+        /* Star Layers Base */
+        .style-cosmic::before, .preview-box.style-cosmic::before,
+        .style-cosmic::after, .preview-box.style-cosmic::after,
+        .style-cosmic h2::before, .preview-box.style-cosmic .preview-title::before {
+            content: "" !important;
+            position: absolute !important;
+            background: transparent !important;
+            z-index: 1 !important;
+            border-radius: 50% !important;
+            pointer-events: none !important;
+        }
+
+        /* White Stars - Layer 1 (Extremely Dense) */
+        .style-cosmic::before, .preview-box.style-cosmic::before {
+            width: 1px !important;
+            height: 1px !important;
+            box-shadow:
+                50px 30px #fff, 150px 80px #fff, 250px 120px #fff, 50px 200px #fff, 180px 250px #fff, 280px 320px #fff, 30px 400px #fff, 200px 50px #fff,
+                120px 150px #fff, 40px 280px #fff, 220px 380px #fff, 90px 350px #fff, 260px 100px #fff, 140px 220px #fff, 60px 120px #fff, 210px 290px #fff,
+                100px 410px #fff, 290px 180px #fff, 70px 60px #fff, 190px 130px #fff, 270px 240px #fff, 40px 190px #fff, 150px 300px #fff, 240px 370px #fff,
+                80px 330px #fff, 200px 210px #fff, 30px 110px #fff, 160px 40px #fff, 250px 280px #fff, 110px 360px #fff, 10px 240px #fff, 295px 10px #fff,
+                25px 45px #fff, 125px 145px #fff, 225px 245px #fff, 25px 345px #fff, 155px 35px #fff, 255px 135px #fff, 55px 235px #fff, 155px 335px #fff,
+                15px 15px #fff, 115px 115px #fff, 215px 215px #fff, 15px 315px #fff, 145px 45px #fff, 245px 145px #fff, 45px 245px #fff, 145px 345px #fff,
+                2px 2px #fff, 102px 102px #fff, 202px 202px #fff, 2px 302px #fff, 132px 32px #fff, 232px 132px #fff, 32px 232px #fff, 132px 332px #fff !important;
+            animation: cosmic-movement-1 60s linear infinite !important;
+        }
+
+        /* Red & Blue Stars - Layer 2 (Dense) */
+        .style-cosmic::after, .preview-box.style-cosmic::after {
+            width: 2px !important;
+            height: 2px !important;
+            box-shadow:
+                80px 120px #ff4757, 160px 40px #3a7bd5, 240px 200px #ff4757, 30px 310px #3a7bd5, 190px 380px #ff4757, 270px 90px #3a7bd5, 120px 250px #ff4757, 50px 40px #3a7bd5,
+                220px 320px #ff4757, 100px 180px #3a7bd5, 40px 390px #ff4757, 280px 150px #3a7bd5, 140px 60px #ff4757, 60px 220px #3a7bd5, 210px 110px #ff4757, 90px 340px #3a7bd5,
+                250px 300px #ff4757, 110px 400px #3a7bd5, 20px 150px #ff4757, 170px 230px #3a7bd5, 290px 50px #ff4757, 130px 320px #3a7bd5, 70px 90px #ff4757, 230px 390px #3a7bd5,
+                150px 170px #ff4757, 40px 260px #3a7bd5, 260px 20px #ff4757, 100px 350px #3a7bd5, 30px 80px #ff4757, 180px 130px #3a7bd5, 280px 270px #ff4757, 120px 10px #3a7bd5,
+                15px 125px #ff4757, 115px 45px #3a7bd5, 215px 205px #ff4757, 5px 315px #3a7bd5, 165px 385px #ff4757, 265px 95px #3a7bd5, 115px 255px #ff4757, 45px 45px #3a7bd5,
+                45px 145px #ff4757, 145px 65px #3a7bd5, 245px 225px #ff4757, 35px 335px #3a7bd5, 195px 405px #ff4757, 295px 115px #3a7bd5, 145px 275px #ff4757, 75px 65px #3a7bd5 !important;
+            animation: cosmic-movement-2 40s linear infinite reverse !important;
+            opacity: 0.8 !important;
+        }
+
+        /* Ultra Dense White Dust - Layer 3 (Random Drift) */
+        .style-cosmic h2::before, .preview-box.style-cosmic .preview-title::before {
+            width: 1px !important;
+            height: 1px !important;
+            box-shadow:
+                10px 10px #fff, 40px 60px #fff, 70px 110px #fff, 100px 160px #fff, 130px 210px #fff, 160px 260px #fff, 190px 310px #fff, 220px 360px #fff, 250px 410px #fff, 280px 20px #fff,
+                20px 70px #fff, 50px 120px #fff, 80px 170px #fff, 110px 220px #fff, 140px 270px #fff, 170px 320px #fff, 200px 370px #fff, 230px 10px #fff, 260px 60px #fff, 290px 110px #fff,
+                15px 150px #fff, 45px 200px #fff, 75px 250px #fff, 105px 300px #fff, 135px 350px #fff, 165px 400px #fff, 195px 15px #fff, 225px 65px #fff, 255px 115px #fff, 285px 165px #fff,
+                35px 30px #fff, 65px 80px #fff, 95px 130px #fff, 125px 180px #fff, 155px 230px #fff, 185px 280px #fff, 215px 330px #fff, 245px 380px #fff, 275px 10px #fff, 5px 60px #fff,
+                25px 110px #fff, 55px 160px #fff, 85px 210px #fff, 115px 260px #fff, 145px 310px #fff, 175px 360px #fff, 205px 410px #fff, 235px 20px #fff, 265px 70px #fff, 295px 120px #fff,
+                10px 180px #fff, 40px 230px #fff, 70px 280px #fff, 100px 330px #fff, 130px 380px #fff, 160px 10px #fff, 190px 60px #fff, 220px 110px #fff, 250px 160px #fff, 280px 210px #fff,
+                5px 300px #fff, 35px 350px #fff, 65px 400px #fff, 95px 15px #fff, 125px 65px #fff, 155px 115px #fff, 185px 165px #fff, 215px 215px #fff, 245px 265px #fff, 275px 315px #fff,
+                2px 25px #fff, 32px 75px #fff, 62px 125px #fff, 92px 175px #fff, 122px 225px #fff, 152px 275px #fff, 182px 325px #fff, 212px 375px #fff, 242px 15px #fff, 272px 65px #fff,
+                110px 110px #fff, 140px 160px #fff, 170px 210px #fff, 200px 260px #fff, 230px 310px #fff, 260px 360px #fff, 290px 410px #fff, 120px 360px #fff, 150px 410px #fff !important;
+            animation: cosmic-movement-3 80s linear infinite !important;
+            opacity: 0.6 !important;
+        }
+
+        @keyframes cosmic-movement-1 {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to { transform: translate(-100px, -100px) rotate(360deg); }
+        }
+
+        @keyframes cosmic-movement-2 {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to { transform: translate(100px, 100px) rotate(360deg); }
+        }
+
+        @keyframes cosmic-movement-3 {
+            from { transform: translate(0, 0); }
+            to { transform: translate(-50px, 100px); }
+        }
+
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
