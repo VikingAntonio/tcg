@@ -3812,7 +3812,7 @@ function getCoverHtml(style, title, color) {
     if (styleClass === "style-standard") {
         return `
             <div class="textured-cover style-standard">
-                <h2 style="margin:0;">${displayTitle}</h2>
+                <h2>${displayTitle}</h2>
             </div>
         `;
     }
