@@ -2069,8 +2069,8 @@ function renderDeckCardsLocal(scrollPos = null) {
         });
 
         $cardItem.click((e) => {
-            e.preventDefault();
             if ($(e.target).closest('.btn-delete-deck-card, .switch-searching').length) return;
+            e.preventDefault();
             editDeckCard(card);
         });
 
