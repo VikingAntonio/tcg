@@ -196,144 +196,7 @@
                 margin-bottom: 15px;
             }
         }
-
-        /* --- PROFESSIONAL ALBUM COVERS ANIMATIONS (ADMIN ONLY) --- */
-
-        /* Safety Containment for all professional styles */
-        .style-cosmic, .style-holographic, .style-luxury, .style-marble, .style-velvet,
-        .preview-box.style-cosmic, .preview-box.style-holographic, .preview-box.style-luxury,
-        .preview-box.style-marble, .preview-box.style-velvet {
-            position: relative !important;
-            overflow: hidden !important;
-        }
-
-        /* Ensure Titles stay visible and on top */
-        .textured-cover h2, .preview-box .preview-title {
-            position: relative !important;
-            z-index: 10 !important;
-        }
-
-        /* 1. ULTIMATE LIQUID ANIMATION (Holographic, Luxury, Marble, Velvet) */
-        .style-holographic::before, .style-luxury::before, .style-marble::before, .style-velvet::before,
-        .preview-box.style-holographic::before, .preview-box.style-luxury::before, .preview-box.style-marble::before, .preview-box.style-velvet::before {
-            content: '' !important;
-            position: absolute !important;
-            top: -100% !important;
-            left: -100% !important;
-            width: 300% !important;
-            height: 300% !important;
-            filter: blur(40px) !important;
-            opacity: 0.9 !important;
-            z-index: 1 !important;
-            animation: liquid-swirl 20s ease-in-out infinite alternate !important;
-            pointer-events: none !important;
-        }
-
-        .style-holographic::after, .style-luxury::after, .style-marble::after, .style-velvet::after,
-        .preview-box.style-holographic::after, .preview-box.style-luxury::after, .preview-box.style-marble::after, .preview-box.style-velvet::after {
-            content: '' !important;
-            position: absolute !important;
-            top: -75% !important;
-            left: -75% !important;
-            width: 250% !important;
-            height: 250% !important;
-            filter: blur(30px) !important;
-            opacity: 0.8 !important;
-            z-index: 2 !important;
-            animation: liquid-swirl 15s ease-in-out infinite alternate-reverse !important;
-            mix-blend-mode: overlay !important;
-            pointer-events: none !important;
-        }
-
-        /* Specific Liquid Colors & Textures */
-        .style-holographic, .preview-box.style-holographic { background: linear-gradient(135deg, #fff 0%, #e2d1c3 100%) !important; }
-        .style-holographic::before, .preview-box.style-holographic::before {
-            background: radial-gradient(circle at 20% 20%, #00d2ff 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, #ff0080 0%, transparent 50%),
-                        radial-gradient(circle at 50% 50%, #f7ef8a 0%, transparent 50%) !important;
-        }
-        .style-holographic::after, .preview-box.style-holographic::after {
-            background: radial-gradient(circle at 30% 70%, #00ffff 0%, transparent 40%),
-                        radial-gradient(circle at 70% 30%, #ff00ff 0%, transparent 40%) !important;
-        }
-
-        .style-luxury, .preview-box.style-luxury { background: #000 !important; }
-        .style-luxury::before, .preview-box.style-luxury::before {
-            background: radial-gradient(circle at 20% 20%, #bf953f 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, #b38728 0%, transparent 50%),
-                        radial-gradient(circle at 50% 20%, #f7ef8a 0%, transparent 50%) !important;
-        }
-        .style-luxury::after, .preview-box.style-luxury::after {
-            background: radial-gradient(circle at 40% 40%, #d4af37 0%, transparent 40%),
-                        radial-gradient(circle at 90% 10%, #aa771c 0%, transparent 40%) !important;
-        }
-
-        .style-marble, .preview-box.style-marble { background: #f0f0f0 !important; }
-        .style-marble::before, .preview-box.style-marble::before {
-            background: radial-gradient(circle at 15% 15%, #333 0%, transparent 40%),
-                        radial-gradient(circle at 85% 85%, #666 0%, transparent 40%),
-                        radial-gradient(circle at 50% 50%, #999 0%, transparent 40%) !important;
-            opacity: 0.6 !important;
-        }
-        .style-marble::after, .preview-box.style-marble::after {
-            background: radial-gradient(circle at 35% 65%, #222 0%, transparent 35%),
-                        radial-gradient(circle at 65% 35%, #444 0%, transparent 35%) !important;
-            opacity: 0.5 !important;
-        }
-
-        .style-velvet, .preview-box.style-velvet { background: #300 !important; }
-        .style-velvet::before, .preview-box.style-velvet::before {
-            background: radial-gradient(circle at 25% 25%, #f00 0%, transparent 50%),
-                        radial-gradient(circle at 75% 75%, #800 0%, transparent 50%),
-                        radial-gradient(circle at 50% 10%, #ff4d4d 0%, transparent 50%) !important;
-        }
-        .style-velvet::after, .preview-box.style-velvet::after {
-            background: radial-gradient(circle at 45% 55%, #600 0%, transparent 45%),
-                        radial-gradient(circle at 55% 45%, #b00 0%, transparent 45%) !important;
-        }
-
-        @keyframes liquid-swirl {
-            0% { transform: translate(-5%, -5%) rotate(0deg) scale(1); }
-            50% { transform: translate(5%, 5%) rotate(180deg) scale(1.15); }
-            100% { transform: translate(-5%, 5%) rotate(360deg) scale(1); }
-        }
-
-        /* 2. ULTIMATE COSMIC GALAXY (Moving Particles) */
-        .style-cosmic::before, .style-cosmic::after, .style-cosmic h2::before, .style-cosmic h2::after,
-        .preview-box.style-cosmic::before, .preview-box.style-cosmic::after,
-        .preview-box.style-cosmic .preview-title::before, .preview-box.style-cosmic .preview-title::after {
-            content: '' !important;
-            position: absolute !important;
-            width: 2px !important;
-            height: 2px !important;
-            border-radius: 50% !important;
-            z-index: 1 !important;
-            pointer-events: none !important;
-        }
-
-        .style-cosmic::before, .preview-box.style-cosmic::before { animation: cosmic-drift-1 120s linear infinite !important; }
-        .style-cosmic::after, .preview-box.style-cosmic::after { animation: cosmic-drift-2 80s linear infinite alternate !important; }
-        .style-cosmic h2::before, .preview-box.style-cosmic .preview-title::before { animation: cosmic-drift-3 100s linear infinite !important; }
-        .style-cosmic h2::after, .preview-box.style-cosmic .preview-title::after { animation: cosmic-drift-1 90s linear infinite reverse !important; }
-/* DENSE COSMIC STARS */
-.admin-section .style-cosmic::before, .preview-box.style-cosmic::before { box-shadow: 92px 113px #fff, 28px 117px #fff, 55px 36px #fff, 45px 100px #fff, 104px 80px #fff, 2px 135px #fff, 18px 55px #fff, 22px 159px #fff, 8px 60px #fff, 103px 149px #fff, 65px 50px #fff, 101px 109px #fff, 101px 82px #fff, 59px 81px #fff, 93px 72px #fff, 103px 109px #fff, 28px 76px #fff, 38px 57px #fff, 93px 61px #fff, 24px 15px #fff, 33px 86px #fff, 31px 135px #fff, 6px 46px #fff, 19px 67px #fff, 39px 109px #fff, 22px 124px #fff, 22px 159px #fff, 117px 54px #fff, 44px 32px #fff, 20px 43px #fff, 67px 80px #fff, 114px 83px #fff, 23px 107px #fff, 99px 45px #fff, 26px 63px #fff, 88px 89px #fff, 66px 119px #fff, 58px 150px #fff, 58px 120px #fff, 108px 37px #fff, 47px 31px #fff, 63px 16px #fff, 5px 143px #fff, 41px 56px #fff, 26px 113px #fff, 61px 155px #fff, 17px 31px #fff, 110px 45px #fff, 33px 114px #fff, 74px 121px #fff, 6px 140px #fff, 0px 151px #fff, 116px 68px #fff, 75px 96px #fff, 1px 70px #fff, 113px 144px #fff, 18px 138px #fff, 22px 98px #fff, 87px 25px #fff, 1px 145px #fff, 8px 151px #fff, 115px 90px #fff, 52px 130px #fff, 23px 35px #fff, 71px 157px #fff, 2px 132px #fff, 68px 122px #fff, 24px 0px #fff, 15px 149px #fff, 43px 109px #fff, 111px 38px #fff, 47px 40px #fff, 66px 48px #fff, 62px 74px #fff, 75px 80px #fff, 35px 127px #fff, 40px 113px #fff, 52px 59px #fff, 64px 62px #fff, 93px 38px #fff, 45px 27px #fff, 107px 150px #fff, 45px 147px #fff, 57px 58px #fff, 18px 137px #fff, 35px 47px #fff, 62px 134px #fff, 25px 83px #fff, 69px 84px #fff, 105px 139px #fff, 9px 35px #fff, 48px 34px #fff, 24px 26px #fff, 79px 38px #fff, 11px 23px #fff, 49px 25px #fff, 100px 42px #fff, 19px 155px #fff, 38px 18px #fff, 10px 105px #fff, 102px 33px #fff, 28px 49px #fff, 53px 48px #fff, 91px 152px #fff, 84px 79px #fff, 87px 104px #fff, 94px 140px #fff, 61px 115px #fff, 47px 78px #fff, 97px 113px #fff, 103px 117px #fff, 81px 67px #fff, 108px 79px #fff, 76px 146px #fff, 88px 93px #fff, 54px 42px #fff, 46px 152px #fff, 95px 71px #fff, 64px 89px #fff, 34px 111px #fff, 4px 67px #fff, 82px 21px #fff, 89px 42px #fff, 106px 39px #fff, 27px 124px #fff, 105px 67px #fff, 6px 35px #fff, 36px 48px #fff, 109px 22px #fff, 114px 83px #fff, 14px 46px #fff, 80px 18px #fff, 64px 100px #fff, 107px 113px #fff, 47px 34px #fff, 1px 95px #fff, 24px 30px #fff, 55px 152px #fff, 113px 31px #fff, 61px 30px #fff, 67px 125px #fff, 15px 67px #fff, 99px 81px #fff, 26px 132px #fff, 100px 11px #fff, 3px 108px #fff, 46px 35px #fff, 23px 39px #fff, 98px 106px #fff, 67px 88px #fff, 14px 6px #fff, 86px 60px #fff, 99px 19px #fff, 93px 18px #fff, 57px 140px #fff, 108px 72px #fff, 13px 58px #fff, 86px 54px #fff, 65px 86px #fff, 119px 96px #fff, 57px 69px #fff, 78px 45px #fff, 33px 56px #fff, 2px 129px #fff, 5px 78px #fff, 90px 33px #fff, 99px 149px #fff, 39px 35px #fff, 67px 54px #fff, 10px 66px #fff, 73px 96px #fff, 90px 95px #fff, 120px 11px #fff, 83px 77px #fff, 57px 10px #fff, 94px 3px #fff, 115px 111px #fff, 90px 105px #fff, 115px 145px #fff, 23px 41px #fff, 33px 150px #fff, 28px 105px #fff, 63px 89px #fff, 98px 156px #fff, 73px 149px #fff, 60px 149px #fff, 87px 2px #fff, 84px 16px #fff, 19px 135px #fff, 29px 135px #fff, 42px 112px #fff, 6px 115px #fff, 69px 97px #fff, 61px 131px #fff, 119px 132px #fff, 58px 114px #fff, 2px 141px #fff, 74px 4px #fff, 0px 55px #fff, 17px 153px #fff, 41px 83px #fff, 113px 82px #fff, 68px 21px #fff, 26px 12px #fff, 15px 110px #fff, 84px 123px #fff, 49px 68px #fff, 16px 149px #fff, 72px 30px #fff, 29px 22px #fff, 53px 38px #fff, 86px 130px #fff, 116px 128px #fff, 113px 89px #fff, 9px 72px #fff, 118px 106px #fff, 113px 13px #fff, 3px 38px #fff, 20px 93px #fff, 109px 22px #fff, 6px 105px #fff, 84px 74px #fff, 39px 84px #fff, 29px 50px #fff, 45px 80px #fff, 97px 56px #fff, 89px 112px #fff, 41px 4px #fff, 60px 62px #fff, 37px 102px #fff, 52px 70px #fff, 96px 85px #fff, 80px 64px #fff, 50px 125px #fff, 99px 128px #fff, 56px 101px #fff, 84px 107px #fff, 29px 125px #fff, 52px 4px #fff, 51px 158px #fff, 90px 123px #fff, 13px 158px #fff, 115px 119px #fff, 25px 135px #fff, 43px 61px #fff, 18px 153px #fff, 113px 50px #fff, 11px 116px #fff, 71px 152px #fff, 35px 124px #fff, 55px 85px #fff, 13px 135px #fff, 16px 36px #fff, 69px 22px #fff, 116px 77px #fff, 112px 61px #fff, 69px 17px #fff, 117px 61px #fff, 91px 110px #fff, 8px 48px #fff, 77px 71px #fff, 80px 116px #fff, 35px 83px #fff, 28px 105px #fff, 53px 27px #fff, 93px 27px #fff, 1px 24px #fff, 93px 119px #fff, 120px 66px #fff, 44px 159px #fff, 4px 40px #fff, 30px 118px #fff, 16px 31px #fff, 90px 67px #fff, 75px 89px #fff, 31px 148px #fff, 62px 143px #fff, 13px 48px #fff, 76px 84px #fff, 77px 92px #fff, 114px 131px #fff, 44px 29px #fff, 34px 105px #fff, 55px 59px #fff, 33px 149px #fff, 57px 91px #fff, 43px 4px #fff, 39px 18px #fff, 67px 68px #fff, 58px 106px #fff, 107px 150px #fff, 113px 1px #fff, 72px 74px #fff, 40px 8px #fff, 82px 117px #fff, 58px 130px #fff, 12px 142px #fff, 17px 93px #fff, 32px 130px #fff, 63px 109px #fff, 67px 70px #fff, 72px 113px #fff, 5px 102px #fff, 29px 68px #fff, 91px 152px #fff, 34px 56px #fff, 49px 145px #fff, 46px 144px #fff, 63px 158px #fff, 50px 1px #fff, 95px 118px #fff, 57px 41px #fff, 19px 40px #fff, 93px 142px #fff, 23px 34px #fff, 52px 90px #fff, 17px 112px #fff, 18px 87px #fff, 7px 130px #fff, 23px 149px #fff, 42px 65px #fff, 38px 155px #fff, 34px 59px #fff, 53px 3px #fff, 116px 114px #fff, 76px 86px #fff, 17px 145px #fff, 14px 38px #fff, 33px 10px #fff, 91px 118px #fff, 46px 66px #fff, 14px 58px #fff, 75px 66px #fff, 76px 7px #fff, 37px 104px #fff, 70px 14px #fff, 18px 68px #fff, 25px 33px #fff, 39px 24px #fff, 24px 54px #fff, 119px 60px #fff, 42px 127px #fff, 113px 108px #fff, 66px 129px #fff, 3px 44px #fff, 118px 132px #fff, 87px 5px #fff, 24px 78px #fff, 89px 135px #fff, 75px 49px #fff, 41px 44px #fff, 88px 82px #fff, 24px 102px #fff, 29px 83px #fff, 37px 130px #fff, 42px 52px #fff, 89px 111px #fff, 24px 159px #fff, 28px 75px #fff, 3px 108px #fff, 99px 81px #fff, 97px 157px #fff, 104px 159px #fff, 2px 130px #fff, 91px 67px #fff, 42px 103px #fff, 37px 150px #fff, 86px 149px #fff, 8px 159px #fff, 81px 146px #fff, 71px 18px #fff, 72px 5px #fff, 27px 41px #fff, 47px 56px #fff, 40px 112px #fff, 100px 95px #fff, 39px 11px #fff, 28px 120px #fff, 72px 7px #fff, 33px 137px #fff, 92px 80px #fff, 112px 132px #fff, 30px 65px #fff, 36px 159px #fff, 62px 155px #fff, 61px 37px #fff, 64px 118px #fff, 76px 0px #fff, 107px 147px #fff, 69px 87px #fff, 24px 118px #fff, 75px 44px #fff, 91px 119px #fff, 82px 52px #fff, 33px 15px #fff, 15px 70px #fff, 43px 106px #fff, 96px 25px #fff, 12px 73px #fff, 64px 109px #fff !important; }
-.admin-section .style-cosmic::after, .preview-box.style-cosmic::after { box-shadow: 52px 101px #ff4d4d, 114px 38px #ff4d4d, 70px 41px #ff4d4d, 101px 52px #ff4d4d, 20px 21px #ff4d4d, 46px 146px #ff4d4d, 105px 52px #ff4d4d, 45px 78px #ff4d4d, 41px 140px #ff4d4d, 0px 30px #ff4d4d, 93px 54px #ff4d4d, 5px 113px #ff4d4d, 25px 104px #ff4d4d, 104px 67px #ff4d4d, 46px 10px #ff4d4d, 95px 140px #ff4d4d, 55px 41px #ff4d4d, 2px 64px #ff4d4d, 30px 119px #ff4d4d, 79px 64px #ff4d4d, 1px 21px #ff4d4d, 102px 139px #ff4d4d, 50px 94px #ff4d4d, 1px 108px #ff4d4d, 64px 68px #ff4d4d, 59px 136px #ff4d4d, 6px 36px #ff4d4d, 12px 66px #ff4d4d, 58px 125px #ff4d4d, 8px 14px #ff4d4d, 71px 69px #ff4d4d, 39px 41px #ff4d4d, 10px 85px #ff4d4d, 112px 32px #ff4d4d, 103px 123px #ff4d4d, 86px 40px #ff4d4d, 12px 88px #ff4d4d, 22px 91px #ff4d4d, 83px 116px #ff4d4d, 85px 48px #ff4d4d, 44px 135px #ff4d4d, 119px 139px #ff4d4d, 0px 12px #ff4d4d, 115px 22px #ff4d4d, 85px 120px #ff4d4d, 43px 145px #ff4d4d, 6px 61px #ff4d4d, 49px 155px #ff4d4d, 111px 31px #ff4d4d, 62px 12px #ff4d4d, 119px 10px #ff4d4d, 71px 130px #ff4d4d, 38px 96px #ff4d4d, 107px 7px #ff4d4d, 57px 159px #ff4d4d, 76px 17px #ff4d4d, 91px 33px #ff4d4d, 9px 132px #ff4d4d, 38px 82px #ff4d4d, 64px 102px #ff4d4d, 77px 54px #ff4d4d, 3px 77px #ff4d4d, 55px 142px #ff4d4d, 54px 52px #ff4d4d, 100px 68px #ff4d4d, 83px 81px #ff4d4d, 37px 99px #ff4d4d, 50px 122px #ff4d4d, 63px 123px #ff4d4d, 36px 130px #ff4d4d, 51px 24px #ff4d4d, 16px 84px #ff4d4d, 47px 76px #ff4d4d, 9px 94px #ff4d4d, 12px 43px #ff4d4d, 47px 135px #ff4d4d, 50px 46px #ff4d4d, 43px 62px #ff4d4d, 91px 91px #ff4d4d, 38px 22px #ff4d4d, 75px 31px #ff4d4d, 45px 27px #ff4d4d, 111px 137px #ff4d4d, 60px 38px #ff4d4d, 25px 67px #ff4d4d, 74px 73px #ff4d4d, 86px 134px #ff4d4d, 75px 115px #ff4d4d, 83px 97px #ff4d4d, 70px 123px #ff4d4d, 51px 19px #ff4d4d, 31px 101px #ff4d4d, 101px 89px #ff4d4d, 53px 107px #ff4d4d, 111px 134px #ff4d4d, 118px 145px #ff4d4d, 40px 106px #ff4d4d, 98px 93px #ff4d4d, 54px 136px #ff4d4d, 2px 4px #ff4d4d, 72px 86px #ff4d4d, 71px 65px #ff4d4d, 91px 5px #ff4d4d, 40px 145px #ff4d4d, 53px 117px #ff4d4d, 57px 145px #ff4d4d, 99px 125px #ff4d4d, 13px 22px #ff4d4d, 35px 149px #ff4d4d, 97px 54px #ff4d4d, 81px 145px #ff4d4d, 75px 25px #ff4d4d, 106px 29px #ff4d4d, 8px 108px #ff4d4d, 93px 144px #ff4d4d, 41px 12px #ff4d4d, 57px 75px #ff4d4d, 35px 151px #ff4d4d, 28px 90px #ff4d4d, 53px 37px #ff4d4d, 101px 81px #ff4d4d, 90px 45px #ff4d4d, 11px 57px #ff4d4d, 120px 104px #ff4d4d, 64px 13px #ff4d4d, 86px 92px #ff4d4d, 32px 88px #ff4d4d, 112px 99px #ff4d4d, 96px 77px #ff4d4d, 58px 95px #ff4d4d, 10px 15px #ff4d4d, 107px 123px #ff4d4d, 118px 80px #ff4d4d, 100px 127px #ff4d4d, 21px 110px #ff4d4d, 62px 107px #ff4d4d, 80px 93px #ff4d4d, 57px 10px #ff4d4d, 78px 36px #ff4d4d, 106px 134px #ff4d4d, 70px 86px #ff4d4d, 95px 1px #ff4d4d, 8px 34px #ff4d4d, 117px 111px #ff4d4d, 44px 66px #ff4d4d, 48px 157px #ff4d4d, 94px 51px #ff4d4d, 103px 18px #ff4d4d, 4px 21px #ff4d4d, 112px 6px #ff4d4d !important; }
-.admin-section .style-cosmic h2::before, .preview-box.style-cosmic .preview-title::before { box-shadow: 57px 59px #4d94ff, 84px 120px #4d94ff, 30px 53px #4d94ff, 56px 110px #4d94ff, 55px 24px #4d94ff, 19px 142px #4d94ff, 18px 118px #4d94ff, 58px 108px #4d94ff, 75px 27px #4d94ff, 107px 22px #4d94ff, 35px 79px #4d94ff, 87px 48px #4d94ff, 76px 49px #4d94ff, 36px 20px #4d94ff, 82px 116px #4d94ff, 80px 132px #4d94ff, 45px 96px #4d94ff, 53px 118px #4d94ff, 9px 114px #4d94ff, 118px 85px #4d94ff, 113px 42px #4d94ff, 60px 49px #4d94ff, 2px 10px #4d94ff, 14px 141px #4d94ff, 5px 126px #4d94ff, 2px 70px #4d94ff, 33px 158px #4d94ff, 3px 86px #4d94ff, 105px 117px #4d94ff, 119px 142px #4d94ff, 64px 14px #4d94ff, 60px 147px #4d94ff, 73px 48px #4d94ff, 102px 56px #4d94ff, 93px 114px #4d94ff, 7px 51px #4d94ff, 5px 20px #4d94ff, 104px 13px #4d94ff, 39px 47px #4d94ff, 83px 43px #4d94ff, 23px 44px #4d94ff, 15px 99px #4d94ff, 10px 84px #4d94ff, 20px 54px #4d94ff, 78px 115px #4d94ff, 61px 6px #4d94ff, 68px 20px #4d94ff, 45px 12px #4d94ff, 70px 22px #4d94ff, 76px 19px #4d94ff, 50px 96px #4d94ff, 71px 77px #4d94ff, 115px 123px #4d94ff, 60px 26px #4d94ff, 114px 140px #4d94ff, 106px 67px #4d94ff, 117px 71px #4d94ff, 18px 78px #4d94ff, 105px 48px #4d94ff, 86px 90px #4d94ff, 76px 109px #4d94ff, 31px 52px #4d94ff, 1px 24px #4d94ff, 84px 157px #4d94ff, 14px 117px #4d94ff, 12px 22px #4d94ff, 95px 28px #4d94ff, 54px 32px #4d94ff, 102px 80px #4d94ff, 9px 45px #4d94ff, 75px 20px #4d94ff, 83px 153px #4d94ff, 40px 39px #4d94ff, 84px 34px #4d94ff, 98px 45px #4d94ff, 69px 134px #4d94ff, 49px 102px #4d94ff, 104px 2px #4d94ff, 15px 76px #4d94ff, 111px 65px #4d94ff, 4px 56px #4d94ff, 29px 11px #4d94ff, 12px 1px #4d94ff, 48px 123px #4d94ff, 28px 34px #4d94ff, 17px 135px #4d94ff, 13px 148px #4d94ff, 56px 20px #4d94ff, 56px 35px #4d94ff, 62px 139px #4d94ff, 67px 75px #4d94ff, 42px 98px #4d94ff, 46px 143px #4d94ff, 64px 132px #4d94ff, 25px 127px #4d94ff, 28px 121px #4d94ff, 98px 41px #4d94ff, 86px 113px #4d94ff, 63px 56px #4d94ff, 70px 57px #4d94ff, 57px 6px #4d94ff, 100px 56px #4d94ff, 101px 20px #4d94ff, 44px 54px #4d94ff, 57px 19px #4d94ff, 32px 105px #4d94ff, 32px 74px #4d94ff, 70px 148px #4d94ff, 14px 53px #4d94ff, 103px 49px #4d94ff, 52px 99px #4d94ff, 26px 47px #4d94ff, 29px 60px #4d94ff, 64px 13px #4d94ff, 117px 142px #4d94ff, 60px 39px #4d94ff, 85px 74px #4d94ff, 36px 30px #4d94ff, 105px 92px #4d94ff, 78px 108px #4d94ff, 110px 98px #4d94ff, 96px 33px #4d94ff, 120px 158px #4d94ff, 30px 53px #4d94ff, 85px 143px #4d94ff, 90px 112px #4d94ff, 91px 53px #4d94ff, 15px 136px #4d94ff, 79px 58px #4d94ff, 35px 67px #4d94ff, 96px 46px #4d94ff, 58px 41px #4d94ff, 118px 121px #4d94ff, 64px 86px #4d94ff, 67px 42px #4d94ff, 73px 61px #4d94ff, 56px 96px #4d94ff, 42px 87px #4d94ff, 89px 33px #4d94ff, 82px 100px #4d94ff, 66px 157px #4d94ff, 103px 34px #4d94ff, 80px 133px #4d94ff, 18px 24px #4d94ff, 64px 151px #4d94ff, 4px 72px #4d94ff, 109px 20px #4d94ff, 104px 126px #4d94ff, 108px 13px #4d94ff, 29px 105px #4d94ff !important; }
-.admin-section .style-cosmic h2::after, .preview-box.style-cosmic .preview-title::after { box-shadow: 24px 17px #00ffff, 31px 76px #00ffff, 53px 153px #00ffff, 78px 125px #00ffff, 15px 140px #00ffff, 12px 104px #00ffff, 111px 142px #00ffff, 77px 43px #00ffff, 40px 2px #00ffff, 39px 10px #00ffff, 110px 89px #00ffff, 102px 0px #00ffff, 43px 12px #00ffff, 70px 156px #00ffff, 58px 146px #00ffff, 109px 6px #00ffff, 54px 48px #00ffff, 5px 20px #00ffff, 107px 77px #00ffff, 11px 46px #00ffff, 82px 141px #00ffff, 6px 157px #00ffff, 86px 131px #00ffff, 75px 146px #00ffff, 8px 87px #00ffff, 109px 89px #00ffff, 84px 159px #00ffff, 42px 144px #00ffff, 110px 68px #00ffff, 95px 31px #00ffff, 49px 16px #00ffff, 118px 121px #00ffff, 56px 39px #00ffff, 19px 54px #00ffff, 117px 96px #00ffff, 54px 155px #00ffff, 9px 20px #00ffff, 31px 80px #00ffff, 15px 41px #00ffff, 81px 62px #00ffff, 18px 128px #00ffff, 120px 39px #00ffff, 119px 147px #00ffff, 15px 76px #00ffff, 120px 63px #00ffff, 104px 60px #00ffff, 10px 14px #00ffff, 37px 25px #00ffff, 65px 111px #00ffff, 113px 34px #00ffff, 119px 115px #00ffff, 89px 53px #00ffff, 32px 44px #00ffff, 41px 123px #00ffff, 17px 68px #00ffff, 110px 40px #00ffff, 80px 150px #00ffff, 120px 2px #00ffff, 43px 39px #00ffff, 99px 109px #00ffff, 68px 46px #00ffff, 21px 147px #00ffff, 56px 59px #00ffff, 72px 37px #00ffff, 45px 83px #00ffff, 50px 1px #00ffff, 114px 25px #00ffff, 64px 140px #00ffff, 43px 18px #00ffff, 115px 59px #00ffff, 116px 109px #00ffff, 81px 142px #00ffff, 65px 145px #00ffff, 20px 155px #00ffff, 25px 10px #00ffff, 98px 82px #00ffff, 42px 17px #00ffff, 7px 9px #00ffff, 101px 15px #00ffff, 68px 11px #00ffff, 56px 76px #00ffff, 45px 34px #00ffff, 22px 44px #00ffff, 70px 101px #00ffff, 62px 2px #00ffff, 19px 11px #00ffff, 66px 159px #00ffff, 26px 56px #00ffff, 117px 18px #00ffff, 68px 109px #00ffff, 32px 143px #00ffff, 71px 36px #00ffff, 28px 152px #00ffff, 120px 54px #00ffff, 100px 18px #00ffff, 87px 128px #00ffff, 35px 148px #00ffff, 14px 95px #00ffff, 98px 31px #00ffff, 106px 97px #00ffff !important; }
-
-        @keyframes cosmic-drift-1 {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(-20px, -20px) rotate(360deg); }
-        }
-        @keyframes cosmic-drift-2 {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(15px, 20px) scale(1.1); }
-        }
-        @keyframes cosmic-drift-3 {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(20px, -15px) rotate(-360deg); }
-        }
-</style>
+    </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1221,34 +1084,33 @@
                 <div id="album-tab-designs" class="slot-tab-content active">
                     <div class="cover-previews-grid">
                         <div class="cover-preview-item active" data-style="style-standard">
-                            <div class="preview-box style-standard" style="background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                <div class="preview-title" style="font-size: 10px; font-weight: 900; letter-spacing: -0.04em; color: #fff; text-transform: uppercase;">TÍTULO</div>
-                                <div style="font-size: 3px; letter-spacing: 0.2em; color: rgba(255,255,255,0.5); margin-top: 4px; font-weight: 800; text-transform: uppercase;">Portfolio Management</div>
+                            <div class="preview-box style-standard">
+                                <div class="preview-title">TÍTULO</div>
                             </div>
                         </div>
                         <div class="cover-preview-item" data-style="style-cosmic">
                             <div class="preview-box style-cosmic">
-                                <div class="preview-title" style="font-size: 8px;">TÍTULO</div>
+                                <div class="preview-title">TÍTULO</div>
                             </div>
                         </div>
                         <div class="cover-preview-item" data-style="style-holographic">
                             <div class="preview-box style-holographic">
-                                <div class="preview-title" style="font-size: 8px;">TÍTULO</div>
+                                <div class="preview-title">TÍTULO</div>
                             </div>
                         </div>
                         <div class="cover-preview-item" data-style="style-luxury">
                             <div class="preview-box style-luxury">
-                                <div class="preview-title" style="font-size: 8px;">TÍTULO</div>
+                                <div class="preview-title">TÍTULO</div>
                             </div>
                         </div>
                         <div class="cover-preview-item" data-style="style-marble">
                             <div class="preview-box style-marble">
-                                <div class="preview-title" style="font-size: 8px;">TÍTULO</div>
+                                <div class="preview-title">TÍTULO</div>
                             </div>
                         </div>
                         <div class="cover-preview-item" data-style="style-velvet">
                             <div class="preview-box style-velvet">
-                                <div class="preview-title" style="font-size: 8px;">TÍTULO</div>
+                                <div class="preview-title">TÍTULO</div>
                             </div>
                         </div>
                     </div>
