@@ -3537,8 +3537,8 @@ async function handleClaimAction(claimId) {
     }
 }
 
-$('#close-claim-modal-public, #claim-detail-modal').click(function(e) {
-    if (e.target === this || $(this).attr('id') === 'close-claim-modal-public') {
+$(document).on('click', '#close-claim-modal-public, #claim-detail-modal', function(e) {
+    if (e.target === this || $(e.target).closest('#close-claim-modal-public').length > 0) {
         $('#claim-detail-modal').removeClass('active');
         $('body').removeClass('modal-open');
         window.currentClaimId = null;
