@@ -67,7 +67,7 @@
                 <button class="modal-tab-btn" data-tab="tab-claim-config" style="flex: 1;">Fecha</button>
             </div>
 
-            <div class="modal-tabs-content">
+            <div class="modal-tabs-content" style="max-height: 50vh; overflow-y: auto;">
                 <!-- Tab 1: Info & Images -->
                 <div id="tab-claim-info" class="modal-tab-pane active">
                     <div class="modal-grid-layout" style="display: block;">
@@ -90,16 +90,16 @@
                     <div class="modal-grid-layout" style="overflow: hidden;">
                         <div class="modal-grid-col">
                             <div class="form-group">
-                                <label style="color: #ffffff !important; font-weight: 800;">FECHA INICIO</label>
-                                <input type="datetime-local" id="claim-start-date" style="background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: white;">
-                                <small style="color: #ffffff; font-weight: 600;">Aplica a todos los productos de esta tanda.</small>
+                                <label class="viking-label-bright">FECHA INICIO</label>
+                                <input type="datetime-local" id="claim-start-date" class="datepicker-viking">
+                                <small class="viking-small-bright">Aplica a todos los productos de esta tanda.</small>
                             </div>
                         </div>
                         <div class="modal-grid-col">
                             <div class="form-group">
-                                <label style="color: #ffffff !important; font-weight: 800;">FECHA FIN</label>
-                                <input type="datetime-local" id="claim-end-date" style="background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: white;">
-                                <small style="color: #ffffff; font-weight: 600;">Aplica a todos los productos de esta tanda.</small>
+                                <label class="viking-label-bright">FECHA FIN</label>
+                                <input type="datetime-local" id="claim-end-date" class="datepicker-viking">
+                                <small class="viking-small-bright">Aplica a todos los productos de esta tanda.</small>
                             </div>
                         </div>
                     </div>

@@ -356,6 +356,56 @@
     justify-content: center;
 }
 
+.datepicker-viking {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid var(--primary-color) !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+}
+
+.datepicker-viking::placeholder {
+    color: rgba(255,255,255,0.4) !important;
+}
+
+.viking-label-bright {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.viking-small-bright {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    display: block;
+    margin-top: 5px;
+}
+
+.modal-tabs-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Custom scrollbar for admin modal content */
+.modal-tabs-content::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-tabs-content::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+}
+.modal-tabs-content::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+}
+
 /* Mobile Optimization for Public Claim Detail Modal */
 @media (max-width: 768px) {
     #claim-detail-modal .overlay-content {
@@ -455,14 +505,19 @@
         padding-bottom: 20px;
         flex-shrink: 0;
         order: 11;
+        width: 100%;
     }
 
     #btn-claim-now {
         height: 55px !important;
+        width: 100% !important;
         font-size: 1.3rem !important;
         margin-top: 0 !important;
         border-radius: 15px !important;
         box-shadow: 0 5px 20px rgba(0, 255, 136, 0.3);
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     #claim-winner-display {
