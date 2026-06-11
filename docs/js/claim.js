@@ -43,6 +43,7 @@ $(document).ready(async function() {
     });
 
 
+
     // Drop zones
     $('#drop-zone-claim').on('dragover dragenter', function(e) {
         e.preventDefault(); e.stopPropagation();

@@ -611,9 +611,13 @@ $(document).ready(async function() {
     });
 
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
-        if (e.target === this || $(this).attr('id') === 'close-btn') {
+        if (e.target === this || $(this).attr('id') === 'close-btn' || $(e.target).closest('#close-btn').length > 0) {
             $("#image-overlay").removeClass("active");
-            $("body").removeClass("modal-open");
+
+            // If claim modal is still open, keep modal-open class
+            if (!$('#claim-detail-modal').hasClass('active')) {
+                $("body").removeClass("modal-open");
+            }
 
             // Clean up 3D effects
             if (window.sharedCard3D) {
@@ -1150,6 +1154,10 @@ async function openCardModal($slot) {
         messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
     };
 
+    // Restore visibility of elements that might have been hidden by zoom logic
+    $('#card-3d-container').show();
+    $('#visitor-card-info').show();
+    $('#btn-add-to-cart').show();
     $('#btn-share-card-modal').hide();
 
     $("#image-overlay").addClass("active");
@@ -3538,11 +3546,30 @@ async function handleClaimAction(claimId) {
 }
 
 $(document).on('click', '#close-claim-modal-public, #claim-detail-modal', function(e) {
-    if (e.target === this || $(e.target).attr('id') === 'close-claim-modal-public' || $(e.target).closest('#close-claim-modal-public').length > 0) {
+    // Check if clicked element is the background overlay, the "X" button, or an element within the "X" button
+    const isCloseBtn = $(e.target).attr('id') === 'close-claim-modal-public' || $(e.target).closest('#close-claim-modal-public').length > 0;
+    const isOverlay = e.target === this;
+
+    if (isCloseBtn || isOverlay) {
         $('#claim-detail-modal').removeClass('active');
         $('body').removeClass('modal-open');
         window.currentClaimId = null;
     }
+});
+
+// Image zoom for public claim modal
+$(document).on('click', '#claim-modal-images-container img', function() {
+    const src = $(this).attr('src');
+    if (!src) return;
+
+    // Reuse existing image-overlay logic for zoom
+    $('#expanded-image').attr('src', src);
+    $('#card-3d-container').hide(); // Hide 3D container for simple image zoom
+    $('#expanded-image').show();
+    $('#visitor-card-info').hide();
+    $('#btn-share-card-modal, #btn-add-to-cart, #wishlist-contact-buttons').hide();
+
+    $('#image-overlay').addClass('active');
 });
 
 async function showGeneralEventDetails(id) {
