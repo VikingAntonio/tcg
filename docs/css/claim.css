@@ -90,6 +90,16 @@
     font-size: 1.1rem;
 }
 
+.form-group label {
+    display: block;
+    color: #ffffff !important;
+    margin-bottom: 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 800;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
 /* Form Tabs */
 .modal-tabs-header {
     display: flex;
@@ -103,11 +113,11 @@
 .modal-tab-btn {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
-    color: #888;
+    color: #ffffff;
     padding: 12px 20px;
     border-radius: 12px;
     cursor: pointer;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 0.85rem;
     white-space: nowrap;
     transition: all 0.3s;
@@ -349,7 +359,7 @@
 /* Mobile Optimization for Public Claim Detail Modal */
 @media (max-width: 768px) {
     #claim-detail-modal .overlay-content {
-        padding: 15px !important;
+        padding: 20px 15px !important;
         height: 100dvh !important;
         max-height: 100dvh !important;
         width: 100% !important;
@@ -358,14 +368,15 @@
         flex-direction: column;
         justify-content: flex-start;
         overflow: hidden !important;
+        background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%) !important;
     }
 
     #claim-detail-modal .bidding-layout {
         display: flex;
         flex-direction: column;
-        gap: 10px;
         height: 100%;
         overflow: hidden;
+        gap: 0;
     }
 
     #claim-detail-modal .auction-media {
@@ -373,18 +384,22 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        margin-top: 10px; /* Space from the top/X button */
     }
 
     #claim-modal-images-swiper {
-        height: 180px !important; /* Reduced for mobile fit */
-        margin-bottom: 5px;
+        height: 240px !important; /* Larger image as requested */
+        width: 100% !important;
+        margin-bottom: 10px;
     }
 
     #claim-modal-timer {
-        margin-top: 5px !important;
-        font-size: 1.1rem !important;
-        padding: 8px 15px !important;
+        margin: 5px 0 !important;
+        font-size: 1rem !important;
+        padding: 5px 12px !important;
         height: auto !important;
+        background: rgba(0,0,0,0.5);
+        border-radius: 50px;
     }
 
     #claim-detail-modal .auction-bidding-area {
@@ -392,57 +407,78 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        padding-top: 10px;
     }
 
     #claim-detail-modal #claim-modal-title {
-        font-size: 1.2rem;
-        margin: 5px 0 !important;
+        font-size: 1.4rem;
+        margin: 0 0 5px 0 !important;
         text-align: center;
         flex-shrink: 0;
+        font-weight: 900;
+        color: var(--primary-color);
     }
 
     #claim-modal-desc {
-        font-size: 0.85rem !important;
-        margin-bottom: 10px !important;
-        max-height: 100px; /* Limit height */
-        overflow-y: auto !important; /* Enable scroll */
+        font-size: 0.9rem !important;
+        margin-bottom: 15px !important;
+        flex: 1; /* Take available space */
+        overflow-y: auto !important; /* Invisible scroll */
         padding: 0 5px;
         scrollbar-width: none;
         -ms-overflow-style: none;
+        line-height: 1.4;
+        color: #ddd;
     }
 
     #claim-modal-desc::-webkit-scrollbar {
         display: none;
     }
 
+    /* Price at the bottom */
     #claim-detail-modal .auction-bid-info {
         padding: 10px !important;
         margin-bottom: 10px !important;
         flex-shrink: 0;
+        background: rgba(255,255,255,0.05);
+        border-radius: 15px;
+        order: 10;
     }
 
     #claim-modal-price {
-        font-size: 2rem !important;
+        font-size: 2.2rem !important;
+        font-weight: 900;
     }
 
     #claim-action-container {
-        margin-top: auto;
-        padding-bottom: 10px;
+        margin-top: 0;
+        padding-bottom: 20px;
         flex-shrink: 0;
+        order: 11;
     }
 
     #btn-claim-now {
-        height: 50px !important;
-        font-size: 1.2rem !important;
+        height: 55px !important;
+        font-size: 1.3rem !important;
         margin-top: 0 !important;
+        border-radius: 15px !important;
+        box-shadow: 0 5px 20px rgba(0, 255, 136, 0.3);
     }
 
     #claim-winner-display {
         padding: 15px !important;
         margin-top: auto;
+        order: 12;
     }
 
     #claim-winner-name {
         font-size: 1.5rem !important;
+    }
+
+    #close-claim-modal-public {
+        top: 10px;
+        right: 15px;
+        font-size: 35px;
+        z-index: 100;
     }
 }
