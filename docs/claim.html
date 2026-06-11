@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/claim.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
@@ -46,7 +45,7 @@
     <div id="authenticated-content" style="width: 100%; max-width: 1200px; margin: 0 auto; padding: 100px 20px;">
         <div class="admin-header">
             <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 10px;">CLAIMS</h1>
-            <p style="color: #ccc; margin-bottom: 30px;">Crea productos que el primero en reclamar se lleva.</p>
+            <p style="color: #ffffff; margin-bottom: 30px; font-weight: 700; text-shadow: 0 0 10px rgba(0,0,0,0.5);">Crea productos que el primero en reclamar se lleva.</p>
             <button id="btn-open-create-claim" class="btn" style="background: var(--viking-gradient);"><i class="fas fa-plus"></i> NUEVO CLAIM</button>
         </div>
 
@@ -91,16 +90,16 @@
                     <div class="modal-grid-layout" style="overflow: hidden;">
                         <div class="modal-grid-col">
                             <div class="form-group">
-                                <label>FECHA INICIO</label>
-                                <input type="text" id="claim-start-date" placeholder="Inmediato si se deja vacío">
-                                <small style="color: #fff;">Aplica a todos los productos de esta tanda.</small>
+                                <label style="color: #ffffff !important; font-weight: 800;">FECHA INICIO</label>
+                                <input type="datetime-local" id="claim-start-date" style="background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: white;">
+                                <small style="color: #ffffff; font-weight: 600;">Aplica a todos los productos de esta tanda.</small>
                             </div>
                         </div>
                         <div class="modal-grid-col">
                             <div class="form-group">
-                                <label>FECHA FIN</label>
-                                <input type="text" id="claim-end-date" placeholder="Sin límite si se deja vacío">
-                                <small style="color: #fff;">Aplica a todos los productos de esta tanda.</small>
+                                <label style="color: #ffffff !important; font-weight: 800;">FECHA FIN</label>
+                                <input type="datetime-local" id="claim-end-date" style="background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: white;">
+                                <small style="color: #ffffff; font-weight: 600;">Aplica a todos los productos de esta tanda.</small>
                             </div>
                         </div>
                     </div>
@@ -150,7 +149,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/cloudinary-upload.js"></script>
     <div class="bottom-nav">

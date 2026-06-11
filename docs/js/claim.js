@@ -42,13 +42,6 @@ $(document).ready(async function() {
         $(`#${tabId}`).addClass('active');
     });
 
-    // Flatpickr initialization
-    flatpickr("#claim-start-date, #claim-end-date", {
-        enableTime: true,
-        dateFormat: "Y-m-d h:i A",
-        time_24hr: false,
-        disableMobile: true
-    });
 
     // Drop zones
     $('#drop-zone-claim').on('dragover dragenter', function(e) {
@@ -194,11 +187,11 @@ function renderClaimEntries(entries) {
                     <div class="claim-entry-image"><img src="${entry.url}"></div>
                     <div class="claim-entry-inputs">
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <label style="font-size: 0.7rem; color: #888; white-space: nowrap; font-weight: 800;">PRECIO ($):</label>
-                            <input type="text" class="entry-price" placeholder="Ej: 25.00" value="${entry.price || ''}" style="flex:1;">
+                            <label style="font-size: 0.7rem; color: #ffffff !important; white-space: nowrap; font-weight: 800;">PRECIO ($):</label>
+                            <input type="text" class="entry-price" placeholder="Ej: 25.00" value="${entry.price || ''}" style="flex:1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
                         </div>
-                        <label style="font-size: 0.7rem; color: #888; margin-top: 5px; display:block; font-weight: 800;">REGLAS / DESCRIPCIÓN:</label>
-                        <textarea class="entry-desc" placeholder="Detalles específicos..." rows="2" style="width:100%; resize: none;">${entry.description || ''}</textarea>
+                        <label style="font-size: 0.7rem; color: #ffffff !important; margin-top: 5px; display:block; font-weight: 800;">REGLAS / DESCRIPCIÓN:</label>
+                        <textarea class="entry-desc" placeholder="Detalles específicos..." rows="2" style="width:100%; resize: none; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff;">${entry.description || ''}</textarea>
                     </div>
                 </div>
             `);
@@ -264,8 +257,11 @@ function resetClaimModal() {
 async function handleSaveClaim() {
     const entries = $('#preview-grid-claim').data('entries') || [];
     if (entries.length === 0) return Swal.fire('Atención', 'Debes cargar al menos una imagen.', 'warning');
-    const start = document.querySelector("#claim-start-date")._flatpickr.selectedDates[0];
-    const end = document.querySelector("#claim-end-date")._flatpickr.selectedDates[0];
+
+    const startVal = document.querySelector("#claim-start-date").value;
+    const endVal = document.querySelector("#claim-end-date").value;
+    const start = startVal ? new Date(startVal) : null;
+    const end = endVal ? new Date(endVal) : null;
     const editingId = $('#claim-modal').data('editing-id');
     Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     try {
@@ -303,8 +299,20 @@ async function editClaim(id) {
     if (error) return;
     resetClaimModal(); $('#claim-modal').data('editing-id', id).addClass('active');
     $('#claim-modal-title').text('EDITAR CLAIM');
-    if (claim.start_date) document.querySelector("#claim-start-date")._flatpickr.setDate(new Date(claim.start_date));
-    if (claim.end_date) document.querySelector("#claim-end-date")._flatpickr.setDate(new Date(claim.end_date));
+
+    if (claim.start_date) {
+        const d = new Date(claim.start_date);
+        const offset = d.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(d - offset)).toISOString().slice(0, 16);
+        document.querySelector("#claim-start-date").value = localISOTime;
+    }
+    if (claim.end_date) {
+        const d = new Date(claim.end_date);
+        const offset = d.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(d - offset)).toISOString().slice(0, 16);
+        document.querySelector("#claim-end-date").value = localISOTime;
+    }
+
     renderClaimEntries([{ url: claim.image_urls[0], price: claim.price, description: claim.description }]);
 }
 
