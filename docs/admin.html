@@ -404,6 +404,31 @@
                 border: 1px solid white;
             }
             .nexus-card:hover .nexus-card-remove { display: flex; }
+
+            /* Switch searching adjustment for nexus cards */
+            .nexus-card .switch-searching {
+                top: 2px;
+                left: 2px;
+                z-index: 10;
+                opacity: 0.3;
+                transition: opacity 0.2s;
+            }
+            .nexus-card:hover .switch-searching {
+                opacity: 1;
+            }
+            .nexus-card .switch-mini {
+                width: 24px !important;
+                height: 14px !important;
+            }
+            .nexus-card .switch-mini .slider:before {
+                height: 10px !important;
+                width: 10px !important;
+                left: 2px !important;
+                bottom: 2px !important;
+            }
+            .nexus-card .switch-mini input:checked + .slider:before {
+                transform: translateX(10px) !important;
+            }
         }
 
         @media (max-width: 1023px) {

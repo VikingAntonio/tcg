@@ -966,7 +966,8 @@ $(document).ready(async function() {
                         rarity: c.rarity || '',
                         expansion: c.expansion || '',
                         condition: c.condition || 'M',
-                        price: c.price || ''
+                        price: c.price || '',
+                        obtained: c.obtained !== false
                     };
                     return card;
                 });
@@ -3803,6 +3804,7 @@ function addCardToNexusDeck(card, section = 'Main') {
         name: card.name,
         quantity: 1,
         section: section,
+        obtained: true,
         position: localDeckCards.length
     };
     localDeckCards.push(newCard);
@@ -3849,6 +3851,7 @@ function initNexusSortables() {
                         name: cardData.name,
                         quantity: 1,
                         section: section,
+                        obtained: true,
                         position: evt.newIndex
                     };
 
@@ -3880,6 +3883,9 @@ function syncNexusCardsFromDOM() {
             if (existingCard) {
                 existingCard.section = section;
                 existingCard.position = index;
+                // Capture obtained state from the toggle
+                const isSearching = $(this).find('.toggle-card-obtained').is(':checked');
+                existingCard.obtained = !isSearching;
                 updatedCards.push(existingCard);
             }
         });
@@ -3912,16 +3918,32 @@ function renderNexusDeck() {
         for (let i = 0; i < totalSlots; i++) {
             const card = sectionCards[i];
             if (card) {
+                const isObtained = card.obtained !== false;
                 const $item = $( `
                     <div class="nexus-card"
                          data-id="${card.id || ''}"
                          data-local-id="${card.localId || ''}"
+                         data-obtained="${isObtained}"
                          title="${card.name}">
+                        <div class="switch-searching">
+                            <label class="switch switch-mini">
+                                <input type="checkbox" class="toggle-card-obtained" ${!isObtained ? 'checked' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                         <div class="nexus-card-remove"><i class="fas fa-times"></i></div>
                         <img src="${card.image_url}" loading="lazy">
                         ${card.quantity > 1 ? `<div class="nexus-card-qty">x${card.quantity}</div>` : ''}
+                        ${!isObtained ? '<div class="label-buscando" style="position:absolute; bottom:2px; left:2px; background:rgba(255,68,68,0.9); color:white; font-size:8px; padding:1px 3px; border-radius:3px; font-weight:bold; pointer-events:none; z-index:5;">FALTANTE</div>' : ''}
                     </div>
                 `);
+
+                $item.find('.toggle-card-obtained').on('change', function(e) {
+                    e.stopPropagation();
+                    const searching = $(this).is(':checked');
+                    card.obtained = !searching;
+                    renderNexusDeck();
+                });
 
                 $item.on('mouseenter', () => nexusUpdatePreview({
                     name: card.name,
