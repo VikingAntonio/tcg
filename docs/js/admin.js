@@ -966,9 +966,7 @@ $(document).ready(async function() {
                         rarity: c.rarity || '',
                         expansion: c.expansion || '',
                         condition: c.condition || 'M',
-                        price: c.price || '',
-                        obtained: c.obtained !== false,
-                        show_foil_in_list: c.show_foil_in_list || false
+                        price: c.price || ''
                     };
                     return card;
                 });
