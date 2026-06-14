@@ -694,6 +694,7 @@ $(document).ready(async function() {
             $('#slot-modal').removeClass('active');
             window.card3dActive = false;
             renderDeckCardsLocal();
+            renderNexusDeck();
         }
     });
 
@@ -857,6 +858,7 @@ $(document).ready(async function() {
                 showConfirmButton: false
             });
             renderDeckCardsLocal();
+            renderNexusDeck();
         });
     });
 
@@ -915,6 +917,11 @@ $(document).ready(async function() {
         const show_foil_in_list = $('#input-deck-show-foil').is(':checked');
 
         let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list };
+
+        // Sync Nexus layout before saving if PC
+        if ($('#deck-editor-pc-layout').is(':visible')) {
+            syncNexusCardsFromDOM();
+        }
 
         try {
             // 1. Save Deck Metadata
@@ -2026,6 +2033,8 @@ async function loadDeckCards(deckId, fetchCards = true) {
     }
 
     renderDeckCardsLocal(scrollPos);
+    renderNexusDeck();
+    initNexusSortables();
 }
 
 function renderDeckCardsLocal(scrollPos = null) {
@@ -2157,6 +2166,7 @@ async function updateCardOrder(cardIds) {
 
     // Re-render local UI with new order
     renderDeckCardsLocal();
+    renderNexusDeck();
 }
 
 function editDeckCard(card) {
@@ -3698,3 +3708,211 @@ window.hideWonAuctionGroup = function(ids) {
     Swal.fire({ icon: 'success', title: 'Grupo Oculto', text: added + ' subastas han sido ocultadas.', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
     loadWonAuctionsList();
 }
+
+// --- Nexus Deck Builder Real-time Search ---
+let nexusSearchTimeout = null;
+$(document).on('input', '#nexus-search-input', function() {
+    clearTimeout(nexusSearchTimeout);
+    const query = $(this).val().trim();
+    if (query.length < 3) {
+        $('#nexus-search-results').empty();
+        return;
+    }
+
+    nexusSearchTimeout = setTimeout(() => {
+        window.searchExternalCard('#nexus-search-input', '#nexus-search-results', function(card) {
+            // This callback is for clicks, but Nexus uses Drag & Drop or Click to Add
+            addCardToNexusDeck(card);
+        });
+    }, 400); // 400ms debounce
+});
+
+// Override display results for Nexus PC layout to use its own card style
+const originalDisplayExternalResults = window.displayExternalResults;
+window.displayExternalResults = function(results, resultsSelector, onSelectCallback) {
+    if (resultsSelector !== '#nexus-search-results') {
+        return originalDisplayExternalResults(results, resultsSelector, onSelectCallback);
+    }
+
+    const $container = $(resultsSelector);
+    $container.empty();
+
+    results.forEach(card => {
+        const $item = $( `
+            <div class="nexus-card" title="${card.name}" data-name="${card.name}" data-image="${card.high_res || card.image}">
+                <img src="${card.image}" loading="lazy">
+            </div>
+        `);
+
+        $item.on('mouseenter', () => nexusUpdatePreview(card));
+        $item.on('click', () => addCardToNexusDeck(card));
+
+        $container.append($item);
+    });
+};
+
+function nexusUpdatePreview(card) {
+    $('#nexus-preview-img').attr('src', card.high_res || card.image);
+    $('#nexus-preview-name').text(card.name);
+    $('#nexus-preview-desc').text(card.set || card.rarity || 'Detalles no disponibles');
+}
+
+function addCardToNexusDeck(card, section = 'Main') {
+    const newCard = {
+        localId: 'new_' + Date.now() + Math.random(),
+        deck_id: currentDeckId,
+        image_url: card.high_res || card.image,
+        name: card.name,
+        quantity: 1,
+        section: section,
+        position: localDeckCards.length
+    };
+    localDeckCards.push(newCard);
+    renderNexusDeck();
+}
+
+function initNexusSortables() {
+    if (!window.Sortable) return;
+
+    // Search Results -> Deck sections (Clone)
+    const searchResultsEl = document.getElementById('nexus-search-results');
+    if (searchResultsEl) {
+        Sortable.create(searchResultsEl, {
+            group: {
+                name: 'nexus-cards',
+                pull: 'clone',
+                put: false
+            },
+            sort: false,
+            animation: 150
+        });
+    }
+
+    // Deck sections reordering and moving between them
+    ['nexus-grid-main', 'nexus-grid-extra', 'nexus-grid-side'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        Sortable.create(el, {
+            group: 'nexus-cards',
+            animation: 150,
+            onAdd: function(evt) {
+                if (evt.from.id === 'nexus-search-results') {
+                    const itemEl = evt.item;
+                    const cardData = {
+                        name: itemEl.getAttribute('data-name'),
+                        image: itemEl.getAttribute('data-image')
+                    };
+                    const section = el.getAttribute('data-section');
+
+                    const newCard = {
+                        localId: 'new_' + Date.now() + Math.random(),
+                        deck_id: currentDeckId,
+                        image_url: cardData.image,
+                        name: cardData.name,
+                        quantity: 1,
+                        section: section,
+                        position: evt.newIndex
+                    };
+
+                    localDeckCards.push(newCard);
+                    renderNexusDeck();
+                } else {
+                    syncNexusCardsFromDOM();
+                }
+            },
+            onUpdate: function() {
+                syncNexusCardsFromDOM();
+            }
+        });
+    });
+}
+
+function syncNexusCardsFromDOM() {
+    const updatedCards = [];
+    ['Main', 'Extra', 'Side'].forEach(section => {
+        const gridId = 'nexus-grid-' + section.toLowerCase();
+        const el = document.getElementById(gridId);
+        if (!el) return;
+
+        $(el).find('.nexus-card').each(function(index) {
+            const id = $(this).attr('data-id');
+            const localId = $(this).attr('data-local-id');
+            const existingCard = localDeckCards.find(c => (id && c.id == id) || (localId && c.localId == localId));
+
+            if (existingCard) {
+                existingCard.section = section;
+                existingCard.position = index;
+                updatedCards.push(existingCard);
+            }
+        });
+    });
+    localDeckCards = updatedCards;
+    updateNexusCounts();
+}
+
+function updateNexusCounts() {
+    ['Main', 'Extra', 'Side'].forEach(s => {
+        const count = localDeckCards.filter(c => (c.section || 'Main') === s).length;
+        $('#nexus-count-' + s.toLowerCase()).text(count);
+    });
+}
+
+function renderNexusDeck() {
+    ['Main', 'Extra', 'Side'].forEach(section => {
+        const $grid = $('#nexus-grid-' + section.toLowerCase());
+        if (!$grid.length) return;
+        $grid.empty();
+
+        const sectionCards = localDeckCards
+            .filter(c => (c.section || 'Main') === section)
+            .sort((a, b) => (a.position || 0) - (b.position || 0));
+
+        sectionCards.forEach(card => {
+            const $item = $( `
+                <div class="nexus-card"
+                     data-id="${card.id || ''}"
+                     data-local-id="${card.localId || ''}"
+                     title="${card.name}">
+                    <div class="nexus-card-remove"><i class="fas fa-times"></i></div>
+                    <img src="${card.image_url}" loading="lazy">
+                    ${card.quantity > 1 ? `<div class="nexus-card-qty">x${card.quantity}</div>` : ''}
+                </div>
+            `);
+
+            $item.on('mouseenter', () => nexusUpdatePreview({
+                name: card.name,
+                high_res: card.image_url,
+                image: card.image_url,
+                set: card.expansion,
+                rarity: card.rarity
+            }));
+
+            $item.on('click', (e) => {
+                if ($(e.target).closest('.nexus-card-remove').length) {
+                    removeCardFromNexusDeck(card);
+                    return;
+                }
+                editDeckCard(card);
+            });
+
+            $grid.append($item);
+        });
+    });
+    updateNexusCounts();
+}
+
+function removeCardFromNexusDeck(card) {
+    if (card.id) {
+        deckCardsToDelete.push(card.id);
+    }
+    localDeckCards = localDeckCards.filter(c => c !== card);
+    renderNexusDeck();
+}
+
+// Sync Nexus meta inputs with legacy inputs
+$(document).on('input', '.nexus-input-sync', function() {
+    $($(this).data('target')).val($(this).val());
+});
+$(document).on('change', '.nexus-check-sync', function() {
+    $($(this).data('target')).prop('checked', $(this).is(':checked'));
+});

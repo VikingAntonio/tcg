@@ -477,73 +477,139 @@
                 </div>
             </div>
 
-            <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
-                <div class="form-group">
-                    <label>Nombre del Deck</label>
-                    <input type="text" id="input-deck-name" placeholder="Nuevo Deck">
+            <!-- PC Nexus Layout -->
+            <div id="deck-editor-pc-layout" class="nexus-layout">
+                <!-- Column 1: Preview -->
+                <div class="nexus-col nexus-preview-col">
+                    <div class="nexus-preview-sticky">
+                        <div class="nexus-preview-card">
+                            <img id="nexus-preview-img" src="https://via.placeholder.com/400x600?text=Hover+a+card" alt="Preview">
+                        </div>
+                        <div class="nexus-preview-info">
+                            <h3 id="nexus-preview-name">Nombre de la carta</h3>
+                            <p id="nexus-preview-desc">Detalles y descripción aparecerán aquí al pasar el cursor.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <label class="switch">
-                        <input type="checkbox" id="input-deck-public" checked>
-                        <span class="slider"></span>
+
+                <!-- Column 2: Deck Sections -->
+                <div class="nexus-col nexus-deck-col">
+                    <div class="nexus-deck-container">
+                        <div class="nexus-section-header">
+                            <span>MAIN DECK</span>
+                            <span class="nexus-count" id="nexus-count-main">0</span>
+                        </div>
+                        <div id="nexus-grid-main" class="nexus-grid" data-section="Main"></div>
+
+                        <div class="nexus-section-header">
+                            <span>EXTRA DECK</span>
+                            <span class="nexus-count" id="nexus-count-extra">0</span>
+                        </div>
+                        <div id="nexus-grid-extra" class="nexus-grid" data-section="Extra"></div>
+
+                        <div class="nexus-section-header">
+                            <span>SIDE DECK</span>
+                            <span class="nexus-count" id="nexus-count-side">0</span>
+                        </div>
+                        <div id="nexus-grid-side" class="nexus-grid" data-section="Side"></div>
+                    </div>
+                </div>
+
+                <!-- Column 3: Search & Tools -->
+                <div class="nexus-col nexus-search-col">
+                    <div class="nexus-search-box">
+                        <div class="nexus-search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="nexus-search-input" placeholder="Escribe el nombre de la carta...">
+                        </div>
+                        <div id="nexus-search-results" class="nexus-search-grid"></div>
+                    </div>
+
+                    <div class="nexus-meta-box">
+                        <div class="form-group">
+                            <label>Nombre del Deck</label>
+                            <input type="text" class="nexus-input-sync" data-target="#input-deck-name">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <label class="nexus-checkbox">
+                                <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-public" checked>
+                                <span>Público</span>
+                            </label>
+                            <label class="nexus-checkbox">
+                                <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-show-foil">
+                                <span>Foil</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Legacy Layout -->
+            <div id="deck-editor-mobile-layout">
+                <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
+                    <div class="form-group">
+                        <label>Nombre del Deck</label>
+                        <input type="text" id="input-deck-name" placeholder="Nuevo Deck">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <label class="switch">
+                            <input type="checkbox" id="input-deck-public" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-public">Deck Público (Visible en el link)</label>
+                    </div>
+                    <div class="form-group" id="deck-total-price-display" style="margin-top: 10px; color: #00d2ff; font-weight: bold; padding: 0 15px;">
+                        Precio Total (Suma): <span id="deck-total-sum">$0.00</span>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <label class="switch">
+                            <input type="checkbox" id="input-deck-use-special">
+                            <span class="slider"></span>
+                        </label>
+                        <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-use-special">Habilitar Precio Especial</label>
+                    </div>
+                    <div class="form-group" id="special-price-container" style="display: none; padding: 0 15px;">
+                        <label>Precio Especial</label>
+                        <input type="text" id="input-deck-special-price" placeholder="Ej: $100.00">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <label class="switch">
+                            <input type="checkbox" id="input-deck-show-foil">
+                            <span class="slider"></span>
+                        </label>
+                        <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-show-foil">Aplicar Foil</label>
+                    </div>
+                </div>
+
+                <div class="admin-header">
+                    <h2><i class="fas fa-images"></i> Imágenes del Deck</h2>
+                </div>
+
+                <!-- External Card Search for Decks -->
+                <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    <label><i class="fas fa-search"></i> Buscar y Añadir al Deck</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="deck-external-search-input" placeholder="Nombre o código de la carta..." style="flex: 1;">
+                        <button id="btn-deck-external-search" class="btn"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div id="deck-external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto; padding: 5px; border-top: 1px solid #333;">
+                        <!-- Results will appear here -->
+                    </div>
+                </div>
+
+                <div class="form-group" style="max-width: 600px; margin: 20px auto;">
+                    <label>Añadir Imagen Directa (Drag & Drop)</label>
+                    <label class="file-drop-zone" id="drop-zone-deck" for="input-deck-file" style="display: block;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Arrastra una imagen aquí para añadirla al deck</p>
+                        <input type="file" id="input-deck-file" accept="image/*" style="display: none;">
+                        <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
                     </label>
-                    <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-public">Deck Público (Visible en el link)</label>
                 </div>
-                <div class="form-group" id="deck-total-price-display" style="margin-top: 10px; color: #00d2ff; font-weight: bold; padding: 0 15px;">
-                    Precio Total (Suma): <span id="deck-total-sum">$0.00</span>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <label class="switch">
-                        <input type="checkbox" id="input-deck-use-special">
-                        <span class="slider"></span>
-                    </label>
-                    <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-use-special">Habilitar Precio Especial</label>
-                </div>
-                <div class="form-group" id="special-price-container" style="display: none; padding: 0 15px;">
-                    <label>Precio Especial</label>
-                    <input type="text" id="input-deck-special-price" placeholder="Ej: $100.00">
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <label class="switch">
-                        <input type="checkbox" id="input-deck-show-foil">
-                        <span class="slider"></span>
-                    </label>
-                    <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-show-foil">Aplicar Foil</label>
-                </div>
-            </div>
 
-            <div class="admin-header">
-                <h2><i class="fas fa-images"></i> Imágenes del Deck</h2>
-            </div>
-
-            <!-- External Card Search for Decks -->
-            <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px; max-width: 600px; margin-left: auto; margin-right: auto;">
-                <label><i class="fas fa-search"></i> Buscar y Añadir al Deck</label>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <input type="text" id="deck-external-search-input" placeholder="Nombre o código de la carta..." style="flex: 1;">
-                    <button id="btn-deck-external-search" class="btn"><i class="fas fa-search"></i></button>
+                <div id="deck-card-list" class="album-list">
+                    <!-- Deck cards will be loaded here -->
                 </div>
-                <div id="deck-external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto; padding: 5px; border-top: 1px solid #333;">
-                    <!-- Results will appear here -->
-                </div>
-            </div>
-
-            <div class="form-group" style="max-width: 600px; margin: 20px auto;">
-                <label>Añadir Imagen Directa (Drag & Drop)</label>
-                <label class="file-drop-zone" id="drop-zone-deck" for="input-deck-file" style="display: block;">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <p>Arrastra una imagen aquí para añadirla al deck</p>
-                    <input type="file" id="input-deck-file" accept="image/*" style="display: none;">
-                    <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                </label>
-            </div>
-
-            <div class="deck-editor-controls">
-                <button onclick="showView('decks'); loadDecks();" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</button>
-            </div>
-
-            <div id="deck-card-list" class="album-list">
-                <!-- Deck cards will be loaded here -->
             </div>
         </div>
 
