@@ -903,6 +903,23 @@ $(document).ready(async function() {
     $('#btn-save-deck-meta').click(async function(e) {
         e.preventDefault();
 
+        // Sync Nexus layout before saving if PC
+        if ($('#deck-editor-pc-layout').is(':visible')) {
+            syncNexusCardsFromDOM();
+        }
+
+        if (localDeckCards.length === 0) {
+            const confirm = await Swal.fire({
+                title: '¿Guardar deck vacío?',
+                text: "No hay cartas en el deck actualmente.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, guardar vacío',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!confirm.isConfirmed) return;
+        }
+
         Swal.fire({
             title: 'Guardando cambios...',
             text: 'Estamos procesando todas las cartas de tu deck.',
@@ -918,48 +935,53 @@ $(document).ready(async function() {
 
         let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list };
 
-        // Sync Nexus layout before saving if PC
-        if ($('#deck-editor-pc-layout').is(':visible')) {
-            syncNexusCardsFromDOM();
-        }
-
         try {
-            // 1. Save Deck Metadata
-            let { error: deckErr } = await _supabase
+            // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
+            const deckUpdatePromise = _supabase
                 .from('decks')
                 .update(updateData)
                 .eq('id', currentDeckId);
 
-            if (deckErr && deckErr.code === '42703') {
-                const basicData = { name, is_public };
-                const retry = await _supabase.from('decks').update(basicData).eq('id', currentDeckId);
-                deckErr = retry.error;
-            }
-            if (deckErr) throw deckErr;
-
             // 2. Clear all existing cards for this deck
-            const { error: delErr } = await _supabase
+            const delErr = await _supabase
                 .from('deck_cards')
                 .delete()
                 .eq('deck_id', currentDeckId);
-            if (delErr) throw delErr;
+
+            if (delErr.error) throw delErr.error;
 
             // 3. Perform Batch Insert for all current cards
+            let insPromise = Promise.resolve({ error: null });
             if (localDeckCards.length > 0) {
                 const cardsToInsert = localDeckCards.map((c, index) => {
-                    const card = { ...c };
-                    // Ensure we don't send old IDs or local IDs to trigger serial generation
-                    delete card.id;
-                    if (card.localId) delete card.localId;
-                    card.deck_id = currentDeckId; // Ensure correct association
-                    card.position = index; // Persist current order
+                    const card = {
+                        deck_id: currentDeckId,
+                        image_url: c.image_url,
+                        name: c.name,
+                        quantity: c.quantity || 1,
+                        position: index,
+                        section: c.section || 'Main',
+                        holo_effect: c.holo_effect || '',
+                        custom_mask_url: c.custom_mask_url || '',
+                        rarity: c.rarity || '',
+                        expansion: c.expansion || '',
+                        condition: c.condition || 'M',
+                        price: c.price || '',
+                        obtained: c.obtained !== false,
+                        show_foil_in_list: c.show_foil_in_list || false
+                    };
                     return card;
                 });
-                const { error: insErr } = await _supabase
-                    .from('deck_cards')
-                    .insert(cardsToInsert);
-                if (insErr) throw insErr;
+                insPromise = _supabase.from('deck_cards').insert(cardsToInsert);
             }
+
+            const [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
+
+            if (deckRes.error && deckRes.error.code === '42703') {
+                await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
+            } else if (deckRes.error) throw deckRes.error;
+
+            if (insRes.error) throw insRes.error;
 
             // 4. Batch Save to VikingData
             if (localVikingData.length > 0) {
@@ -3712,30 +3734,48 @@ window.hideWonAuctionGroup = function(ids) {
 // --- Nexus Deck Builder Real-time Search ---
 let nexusSearchTimeout = null;
 $(document).on('input', '#nexus-search-input', function() {
+    triggerNexusSearch();
+});
+
+$(document).on('change', '.nexus-filter-input', function() {
+    triggerNexusSearch();
+});
+
+function triggerNexusSearch() {
     clearTimeout(nexusSearchTimeout);
-    const query = $(this).val().trim();
-    if (query.length < 3) {
+    const query = $('#nexus-search-input').val().trim();
+
+    const filters = {
+        cardType: $('#nexus-filter-card-type').val(),
+        attribute: $('#nexus-filter-attribute').val(),
+        level: $('#nexus-filter-level').val(),
+        monsterType: $('#nexus-filter-monster-type').val()
+    };
+
+    const hasFilters = Object.values(filters).some(v => v !== '');
+
+    if (query.length < 1 && !hasFilters) {
         $('#nexus-search-results').empty();
         return;
     }
 
     nexusSearchTimeout = setTimeout(() => {
+        filters.displayFn = displayNexusSearchResults;
         window.searchExternalCard('#nexus-search-input', '#nexus-search-results', function(card) {
-            // This callback is for clicks, but Nexus uses Drag & Drop or Click to Add
             addCardToNexusDeck(card);
-        });
-    }, 400); // 400ms debounce
-});
+        }, filters);
+    }, 400);
+}
 
-// Override display results for Nexus PC layout to use its own card style
-const originalDisplayExternalResults = window.displayExternalResults;
-window.displayExternalResults = function(results, resultsSelector, onSelectCallback) {
-    if (resultsSelector !== '#nexus-search-results') {
-        return originalDisplayExternalResults(results, resultsSelector, onSelectCallback);
-    }
-
-    const $container = $(resultsSelector);
+// Nexus layout uses dedicated display function to avoid global monkey-patching
+function displayNexusSearchResults(results) {
+    const $container = $('#nexus-search-results');
     $container.empty();
+
+    if (results.length === 0) {
+        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">No results</div>');
+        return;
+    }
 
     results.forEach(card => {
         const $item = $( `
@@ -3749,7 +3789,7 @@ window.displayExternalResults = function(results, resultsSelector, onSelectCallb
 
         $container.append($item);
     });
-};
+}
 
 function nexusUpdatePreview(card) {
     $('#nexus-preview-img').attr('src', card.high_res || card.image);
@@ -3867,36 +3907,46 @@ function renderNexusDeck() {
             .filter(c => (c.section || 'Main') === section)
             .sort((a, b) => (a.position || 0) - (b.position || 0));
 
-        sectionCards.forEach(card => {
-            const $item = $( `
-                <div class="nexus-card"
-                     data-id="${card.id || ''}"
-                     data-local-id="${card.localId || ''}"
-                     title="${card.name}">
-                    <div class="nexus-card-remove"><i class="fas fa-times"></i></div>
-                    <img src="${card.image_url}" loading="lazy">
-                    ${card.quantity > 1 ? `<div class="nexus-card-qty">x${card.quantity}</div>` : ''}
-                </div>
-            `);
+        // In Nexus layout, we fill empty slots to maintain the grid structure
+        const minSlots = section === 'Main' ? 40 : 15;
+        const totalSlots = Math.max(minSlots, Math.ceil(sectionCards.length / 10) * 10);
 
-            $item.on('mouseenter', () => nexusUpdatePreview({
-                name: card.name,
-                high_res: card.image_url,
-                image: card.image_url,
-                set: card.expansion,
-                rarity: card.rarity
-            }));
+        for (let i = 0; i < totalSlots; i++) {
+            const card = sectionCards[i];
+            if (card) {
+                const $item = $( `
+                    <div class="nexus-card"
+                         data-id="${card.id || ''}"
+                         data-local-id="${card.localId || ''}"
+                         title="${card.name}">
+                        <div class="nexus-card-remove"><i class="fas fa-times"></i></div>
+                        <img src="${card.image_url}" loading="lazy">
+                        ${card.quantity > 1 ? `<div class="nexus-card-qty">x${card.quantity}</div>` : ''}
+                    </div>
+                `);
 
-            $item.on('click', (e) => {
-                if ($(e.target).closest('.nexus-card-remove').length) {
-                    removeCardFromNexusDeck(card);
-                    return;
-                }
-                editDeckCard(card);
-            });
+                $item.on('mouseenter', () => nexusUpdatePreview({
+                    name: card.name,
+                    high_res: card.image_url,
+                    image: card.image_url,
+                    set: card.expansion,
+                    rarity: card.rarity
+                }));
 
-            $grid.append($item);
-        });
+                $item.on('click', (e) => {
+                    if ($(e.target).closest('.nexus-card-remove').length) {
+                        removeCardFromNexusDeck(card);
+                        return;
+                    }
+                    editDeckCard(card);
+                });
+
+                $grid.append($item);
+            } else {
+                // Empty slot
+                $grid.append('<div class="nexus-card empty" style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.05); cursor: default;"></div>');
+            }
+        }
     });
     updateNexusCounts();
 }
