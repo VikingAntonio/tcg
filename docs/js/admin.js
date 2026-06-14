@@ -3762,7 +3762,7 @@ function triggerNexusSearch() {
         window.searchExternalCard('#nexus-search-input', '#nexus-search-results', function(card) {
             addCardToNexusDeck(card);
         }, filters);
-    }, 400);
+    }, 250);
 }
 
 // Nexus layout uses dedicated display function to avoid global monkey-patching
