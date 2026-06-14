@@ -3958,6 +3958,9 @@ function renderNexusDeck() {
                         removeCardFromNexusDeck(card);
                         return;
                     }
+                    if ($(e.target).closest('.switch-searching').length) {
+                        return;
+                    }
                     editDeckCard(card);
                 });
 
