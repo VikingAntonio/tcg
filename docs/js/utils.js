@@ -263,19 +263,37 @@ window.getYgoSets = async function() {
     return ygoSetsCache;
 };
 
-window.searchExternalCard = async function(inputSelector, resultsSelector, onSelectCallback) {
+window.searchExternalCard = async function(inputSelector, resultsSelector, onSelectCallback, filters = {}) {
     const query = $(inputSelector).val().trim();
 
-    if (query.length < 3) {
-        Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
+    // Support search from 1 character as requested for Nexus-style real-time search
+    if (query.length < 1 && !Object.values(filters).some(v => v !== '')) {
+        // Only skip if no name AND no filters
         return;
     }
 
     $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #666;">Buscando...</div>');
 
     try {
+        // Build YGO URL with filters
+        let ygoUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?`;
+        let ygoParams = [];
+        if (query.length >= 1) ygoParams.push(`fname=${encodeURIComponent(query)}`);
+
+        if (filters.cardType) {
+            if (filters.cardType === 'monster') ygoParams.push(`type=Monster`);
+            else if (filters.cardType === 'spell') ygoParams.push(`type=Spell Card`);
+            else if (filters.cardType === 'trap') ygoParams.push(`type=Trap Card`);
+        }
+        if (filters.attribute) ygoParams.push(`attribute=${filters.attribute}`);
+        if (filters.level) ygoParams.push(`level=${filters.level}`);
+        if (filters.monsterType) ygoParams.push(`race=${filters.monsterType}`);
+
+        const finalYgoUrl = ygoUrl + ygoParams.join('&');
+
         // Special YGO search logic for passcodes and set codes
         const ygoSpecialSearch = async () => {
+            if (query.length < 1) return [];
             const q = query.toUpperCase();
             // Passcode (Numeric 5-10 digits)
             if (/^\d{5,10}$/.test(q)) {
@@ -301,7 +319,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
 
         // TCGAPI.dev Search (Multi-game)
         const searchTCGAPI = async (q, game) => {
-            if (!window.TCG_API_KEY) return [];
+            if (!window.TCG_API_KEY || q.length < 1) return [];
             try {
                 const response = await fetch(`${window.TCG_API_BASE}/search?q=${encodeURIComponent(q)}&game=${game}`, {
                     headers: { 'X-API-Key': window.TCG_API_KEY }
@@ -324,22 +342,30 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
 
         // Concurrent search across all databases
         const searchPromises = [
-            // Yu-Gi-Oh! Name Search
-            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            // Yu-Gi-Oh! Name Search (Optimized with filters)
+            ygoParams.length > 0 ? fetch(finalYgoUrl).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
+
             // Yu-Gi-Oh! Code/Set Search
-            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+            query.length >= 1 ? fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
+
             // Special YGO Search
             ygoSpecialSearch(),
+
             // Pokémon TCGdex - English
-            fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+
             // Pokémon TCGdex - Spanish
-            fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+
             // Pokémon TCGdex - Japanese
-            fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+
             // Lorcana Search
-            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
+            query.length >= 1 ? fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+
             // Viking Search
-            (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])),
+            query.length >= 1 ? (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])) : Promise.resolve([]),
+
             // TCGAPI.dev (Top games)
             searchTCGAPI(query, 'pokemon'),
             searchTCGAPI(query, 'yugioh'),
@@ -413,7 +439,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
         if (uniqueResults.length === 0) {
             $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">No se encontraron cartas en ninguna base de datos.</div>');
         } else {
-            window.displayExternalResults(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
+            const displayFn = filters.displayFn || window.displayExternalResults;
+            displayFn(uniqueResults.slice(0, 50), resultsSelector, onSelectCallback);
         }
 
     } catch (err) {

@@ -173,6 +173,209 @@
             width: 100%;
             overflow: visible !important;
         }
+
+        /* Nexus PC Deck Editor Layout */
+        @media (min-width: 1024px) {
+            #deck-editor-mobile-layout { display: none; }
+            .nexus-layout {
+                display: grid;
+                grid-template-columns: 280px 1fr 320px;
+                gap: 20px;
+                width: 100%;
+                height: calc(100vh - 180px);
+                min-height: 700px;
+                padding: 10px;
+            }
+            .nexus-col {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                overflow: hidden;
+            }
+            /* Column 1: Preview */
+            .nexus-preview-sticky {
+                position: sticky;
+                top: 0;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                padding: 15px;
+                backdrop-filter: blur(10px);
+            }
+            .nexus-preview-card {
+                width: 100%;
+                aspect-ratio: 2.5/3.5;
+                background: #000;
+                border-radius: 8px;
+                overflow: hidden;
+                margin-bottom: 15px;
+                border: 1px solid #333;
+            }
+            .nexus-preview-card img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+            .nexus-preview-info h3 {
+                font-size: 1.1rem;
+                color: var(--primary-color);
+                margin: 0 0 10px 0;
+            }
+            .nexus-preview-info p {
+                font-size: 0.85rem;
+                line-height: 1.4;
+                color: #ccc;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+
+            /* Column 2: Grids */
+            .nexus-deck-container {
+                flex: 1;
+                overflow-y: auto;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 16px;
+                padding: 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                scrollbar-width: thin;
+            }
+            .nexus-section-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 8px 15px;
+                border-radius: 8px;
+                font-weight: 800;
+                font-size: 0.8rem;
+                letter-spacing: 1px;
+                color: var(--primary-color);
+            }
+            .nexus-count {
+                background: var(--primary-color);
+                color: #000;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 0.75rem;
+            }
+            .nexus-grid {
+                display: grid;
+                grid-template-columns: repeat(10, 1fr);
+                gap: 5px;
+                min-height: 100px;
+            }
+            #nexus-grid-main { min-height: 300px; }
+
+            /* Column 3: Search & Filters */
+            .nexus-search-col {
+                order: 3;
+            }
+            .nexus-search-box {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                padding: 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                flex: 1;
+                overflow: hidden;
+            }
+            .nexus-search-input-wrapper {
+                position: relative;
+            }
+            .nexus-search-input-wrapper i {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #666;
+            }
+            .nexus-search-input-wrapper input {
+                padding-left: 35px !important;
+            }
+            .nexus-filters-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .nexus-filter-group label {
+                font-size: 9px;
+                text-transform: uppercase;
+                color: #888;
+                font-weight: 800;
+                margin-bottom: 4px;
+                display: block;
+            }
+            .nexus-filter-group select {
+                padding: 6px !important;
+                font-size: 11px !important;
+                background: rgba(0,0,0,0.3) !important;
+            }
+            .nexus-search-results-container {
+                flex: 1;
+                overflow-y: auto;
+                background: rgba(0,0,0,0.2);
+                border-radius: 8px;
+                padding: 5px;
+            }
+            .nexus-search-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 5px;
+            }
+
+            /* Shared Card Styles */
+            .nexus-card {
+                width: 100%;
+                aspect-ratio: 2.5/3.5;
+                background: #111;
+                border-radius: 4px;
+                position: relative;
+                cursor: grab;
+                transition: transform 0.2s;
+                border: 1px solid rgba(255,255,255,0.05);
+            }
+            .nexus-card:hover { transform: scale(1.05); z-index: 10; border-color: var(--primary-color); }
+            .nexus-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 3px; }
+            .nexus-card-qty {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+                background: rgba(0,0,0,0.8);
+                color: #fff;
+                font-size: 10px;
+                font-weight: 800;
+                padding: 1px 4px;
+                border-radius: 4px;
+                border: 1px solid var(--primary-color);
+            }
+            .nexus-card-remove {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 18px;
+                height: 18px;
+                background: #ff4757;
+                color: white;
+                border-radius: 50%;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                cursor: pointer;
+                z-index: 11;
+                border: 1px solid white;
+            }
+            .nexus-card:hover .nexus-card-remove { display: flex; }
+        }
+
+        @media (max-width: 1023px) {
+            #deck-editor-pc-layout { display: none; }
+        }
+
         @media (max-width: 640px) {
             .slot-tabs-body {
                 min-height: 450px;
@@ -479,7 +682,7 @@
 
             <!-- PC Nexus Layout -->
             <div id="deck-editor-pc-layout" class="nexus-layout">
-                <!-- Column 1: Preview -->
+                <!-- Column 1: Preview & Meta (Left) -->
                 <div class="nexus-col nexus-preview-col">
                     <div class="nexus-preview-sticky">
                         <div class="nexus-preview-card">
@@ -490,9 +693,26 @@
                             <p id="nexus-preview-desc">Detalles y descripción aparecerán aquí al pasar el cursor.</p>
                         </div>
                     </div>
+
+                    <div class="nexus-meta-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 15px;">
+                        <div class="form-group">
+                            <label>Nombre del Deck</label>
+                            <input type="text" class="nexus-input-sync" data-target="#input-deck-name">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <label class="nexus-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
+                                <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-public" checked>
+                                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Público</span>
+                            </label>
+                            <label class="nexus-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
+                                <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-show-foil">
+                                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Foil</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Column 2: Deck Sections -->
+                <!-- Column 2: Deck Sections (Center) -->
                 <div class="nexus-col nexus-deck-col">
                     <div class="nexus-deck-container">
                         <div class="nexus-section-header">
@@ -515,30 +735,82 @@
                     </div>
                 </div>
 
-                <!-- Column 3: Search & Tools -->
+                <!-- Column 3: Search & Results (Right) -->
                 <div class="nexus-col nexus-search-col">
                     <div class="nexus-search-box">
                         <div class="nexus-search-input-wrapper">
                             <i class="fas fa-search"></i>
-                            <input type="text" id="nexus-search-input" placeholder="Escribe el nombre de la carta...">
+                            <input type="text" id="nexus-search-input" placeholder="Nombre de la carta...">
                         </div>
-                        <div id="nexus-search-results" class="nexus-search-grid"></div>
-                    </div>
 
-                    <div class="nexus-meta-box">
-                        <div class="form-group">
-                            <label>Nombre del Deck</label>
-                            <input type="text" class="nexus-input-sync" data-target="#input-deck-name">
+                        <!-- Nexus Style Filters -->
+                        <div class="nexus-filters-grid">
+                            <div class="nexus-filter-group">
+                                <label>Tipo de Carta</label>
+                                <select id="nexus-filter-card-type" class="nexus-filter-input">
+                                    <option value="">Todos</option>
+                                    <option value="monster">Monstruo</option>
+                                    <option value="spell">Mágica</option>
+                                    <option value="trap">Trampa</option>
+                                </select>
+                            </div>
+                            <div class="nexus-filter-group">
+                                <label>Atributo</label>
+                                <select id="nexus-filter-attribute" class="nexus-filter-input">
+                                    <option value="">Todos</option>
+                                    <option value="dark">OSCURIDAD</option>
+                                    <option value="light">LUZ</option>
+                                    <option value="earth">TIERRA</option>
+                                    <option value="water">AGUA</option>
+                                    <option value="fire">FUEGO</option>
+                                    <option value="wind">VIENTO</option>
+                                    <option value="divine">DIVINIDAD</option>
+                                </select>
+                            </div>
+                            <div class="nexus-filter-group">
+                                <label>Nivel/Rango</label>
+                                <select id="nexus-filter-level" class="nexus-filter-input">
+                                    <option value="">Cualquiera</option>
+                                    <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                    <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                                    <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                                    <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                                </select>
+                            </div>
+                            <div class="nexus-filter-group">
+                                <label>Tipo Monstruo</label>
+                                <select id="nexus-filter-monster-type" class="nexus-filter-input">
+                                    <option value="">Todos</option>
+                                    <option value="aqua">Aqua</option>
+                                    <option value="beast">Beast</option>
+                                    <option value="beast-warrior">Beast-Warrior</option>
+                                    <option value="cyberse">Cyberse</option>
+                                    <option value="dinosaur">Dinosaur</option>
+                                    <option value="divine-beast">Divine-Beast</option>
+                                    <option value="dragon">Dragon</option>
+                                    <option value="fairy">Fairy</option>
+                                    <option value="fiend">Fiend</option>
+                                    <option value="fish">Fish</option>
+                                    <option value="insect">Insect</option>
+                                    <option value="machine">Machine</option>
+                                    <option value="plant">Plant</option>
+                                    <option value="psychic">Psychic</option>
+                                    <option value="pyro">Pyro</option>
+                                    <option value="reptile">Reptile</option>
+                                    <option value="rock">Rock</option>
+                                    <option value="sea serpent">Sea Serpent</option>
+                                    <option value="spellcaster">Spellcaster</option>
+                                    <option value="thunder">Thunder</option>
+                                    <option value="warrior">Warrior</option>
+                                    <option value="winged beast">Winged Beast</option>
+                                    <option value="wyrm">Wyrm</option>
+                                    <option value="zombie">Zombie</option>
+                                </select>
+                            </div>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <label class="nexus-checkbox">
-                                <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-public" checked>
-                                <span>Público</span>
-                            </label>
-                            <label class="nexus-checkbox">
-                                <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-show-foil">
-                                <span>Foil</span>
-                            </label>
+
+                        <div class="nexus-search-results-container">
+                            <div id="nexus-search-results" class="nexus-search-grid"></div>
                         </div>
                     </div>
                 </div>
