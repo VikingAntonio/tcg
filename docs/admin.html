@@ -181,28 +181,30 @@
                 transition: max-width 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
             }
             body:has(#view-deck-editor.active) #authenticated-content {
-                max-width: 1800px !important;
+                max-width: 1920px;
             }
 
             #deck-editor-mobile-layout { display: none; }
-            .nexus-layout {
+            #view-deck-editor .nexus-layout {
                 display: grid;
-                grid-template-columns: 300px 1fr 350px;
+                grid-template-columns: 300px 950px 550px;
+                justify-content: center;
                 gap: 40px;
                 width: 100%;
+                max-width: 1920px;
                 height: calc(100vh - 180px);
                 min-height: 700px;
                 padding: 20px;
                 margin: 0 auto;
             }
-            .nexus-col {
+            #view-deck-editor .nexus-col {
                 display: flex;
                 flex-direction: column;
                 gap: 15px;
                 overflow: hidden;
             }
             /* Column 1: Preview */
-            .nexus-preview-sticky {
+            #view-deck-editor .nexus-preview-sticky {
                 position: sticky;
                 top: 0;
                 background: rgba(255, 255, 255, 0.03);
@@ -211,7 +213,7 @@
                 padding: 15px;
                 backdrop-filter: blur(10px);
             }
-            .nexus-preview-card {
+            #view-deck-editor .nexus-preview-card {
                 width: 100%;
                 aspect-ratio: 2.5/3.5;
                 background: #000;
@@ -220,17 +222,17 @@
                 margin-bottom: 15px;
                 border: 1px solid #333;
             }
-            .nexus-preview-card img {
+            #view-deck-editor .nexus-preview-card img {
                 width: 100%;
                 height: 100%;
                 object-fit: contain;
             }
-            .nexus-preview-info h3 {
+            #view-deck-editor .nexus-preview-info h3 {
                 font-size: 1.1rem;
                 color: var(--primary-color);
                 margin: 0 0 10px 0;
             }
-            .nexus-preview-info p {
+            #view-deck-editor .nexus-preview-info p {
                 font-size: 0.85rem;
                 line-height: 1.4;
                 color: #ccc;
@@ -239,7 +241,7 @@
             }
 
             /* Column 2: Grids */
-            .nexus-deck-container {
+            #view-deck-editor .nexus-deck-container {
                 flex: 1;
                 overflow-y: auto;
                 background: rgba(0, 0, 0, 0.2);
@@ -250,10 +252,10 @@
                 gap: 20px;
                 scrollbar-width: none;
             }
-            .nexus-deck-container::-webkit-scrollbar {
+            #view-deck-editor .nexus-deck-container::-webkit-scrollbar {
                 display: none;
             }
-            .nexus-section-header {
+            #view-deck-editor .nexus-section-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -265,26 +267,26 @@
                 letter-spacing: 1px;
                 color: var(--primary-color);
             }
-            .nexus-count {
+            #view-deck-editor .nexus-count {
                 background: var(--primary-color);
                 color: #000;
                 padding: 2px 8px;
                 border-radius: 10px;
                 font-size: 0.75rem;
             }
-            .nexus-grid {
+            #view-deck-editor .nexus-grid {
                 display: grid;
                 grid-template-columns: repeat(10, 1fr);
                 gap: 8px;
                 min-height: 100px;
             }
-            #nexus-grid-main { min-height: 300px; }
+            #view-deck-editor #nexus-grid-main { min-height: 300px; }
 
             /* Column 3: Search & Filters */
-            .nexus-search-col {
+            #view-deck-editor .nexus-search-col {
                 order: 3;
             }
-            .nexus-search-box {
+            #view-deck-editor .nexus-search-box {
                 background: rgba(255, 255, 255, 0.03);
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 16px;
@@ -295,17 +297,18 @@
                 flex: 1;
                 overflow: hidden;
             }
-            .nexus-search-input-wrapper {
+            #view-deck-editor .nexus-search-input-wrapper {
                 position: relative;
             }
-            .nexus-search-input-wrapper i {
+            #view-deck-editor .nexus-search-input-wrapper i {
                 position: absolute;
                 left: 12px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #666;
             }
-            .nexus-search-input-wrapper input {
+            #view-deck-editor .nexus-search-input-wrapper input {
+                width: 100% !important;
                 padding-left: 35px !important;
                 border-radius: 30px !important;
                 background: rgba(255, 255, 255, 0.05) !important;
@@ -313,32 +316,32 @@
                 color: var(--text-color) !important;
                 transition: all 0.3s ease;
             }
-            .nexus-search-input-wrapper input:focus {
+            #view-deck-editor .nexus-search-input-wrapper input:focus {
                 background: rgba(255, 255, 255, 0.1) !important;
                 border-color: var(--primary-color) !important;
                 box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
             }
-            body.theme-light .nexus-search-input-wrapper input {
+            body.theme-light #view-deck-editor .nexus-search-input-wrapper input {
                 background: rgba(0, 0, 0, 0.05) !important;
                 border-color: rgba(0, 0, 0, 0.1) !important;
             }
-            body.theme-light .nexus-filter-group select {
+            body.theme-light #view-deck-editor .nexus-filter-group select {
                 background: rgba(255, 255, 255, 0.8) !important;
                 color: #333 !important;
             }
-            .theme-light .nexus-filter-group select {
+            .theme-light #view-deck-editor .nexus-filter-group select {
                 background: rgba(255, 255, 255, 0.8) !important;
                 color: #333 !important;
             }
-            body.theme-light .nexus-search-results-container {
+            body.theme-light #view-deck-editor .nexus-search-results-container {
                 background: rgba(0, 0, 0, 0.03);
             }
-            .nexus-filters-grid {
+            #view-deck-editor .nexus-filters-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
             }
-            .nexus-filter-group label {
+            #view-deck-editor .nexus-filter-group label {
                 font-size: 10px;
                 text-transform: uppercase;
                 color: var(--text-color);
@@ -347,13 +350,13 @@
                 display: block;
                 opacity: 0.9;
             }
-            .nexus-filter-group select {
+            #view-deck-editor .nexus-filter-group select {
                 padding: 6px !important;
                 font-size: 11px !important;
                 background: rgba(0,0,0,0.3) !important;
                 color: white !important;
             }
-            .nexus-search-results-container {
+            #view-deck-editor .nexus-search-results-container {
                 flex: 1;
                 overflow-y: auto;
                 background: rgba(0,0,0,0.2);
@@ -361,17 +364,17 @@
                 padding: 5px;
                 scrollbar-width: none;
             }
-            .nexus-search-results-container::-webkit-scrollbar {
+            #view-deck-editor .nexus-search-results-container::-webkit-scrollbar {
                 display: none;
             }
-            .nexus-search-grid {
+            #view-deck-editor .nexus-search-grid {
                 display: grid;
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(6, 1fr);
                 gap: 5px;
             }
 
             /* Shared Card Styles */
-            .nexus-card {
+            #view-deck-editor .nexus-card {
                 width: 100%;
                 aspect-ratio: 2.5/3.5;
                 background: #111;
@@ -381,9 +384,9 @@
                 transition: transform 0.2s;
                 border: 1px solid rgba(255,255,255,0.05);
             }
-            .nexus-card:hover { transform: scale(1.05); z-index: 10; border-color: var(--primary-color); }
-            .nexus-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 3px; }
-            .nexus-card-qty {
+            #view-deck-editor .nexus-card:hover { transform: scale(1.05); z-index: 10; border-color: var(--primary-color); }
+            #view-deck-editor .nexus-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 3px; }
+            #view-deck-editor .nexus-card-qty {
                 position: absolute;
                 bottom: 2px;
                 right: 2px;
@@ -395,7 +398,7 @@
                 border-radius: 4px;
                 border: 1px solid var(--primary-color);
             }
-            .nexus-card-remove {
+            #view-deck-editor .nexus-card-remove {
                 position: absolute;
                 top: -5px;
                 right: -5px;
@@ -412,30 +415,30 @@
                 z-index: 11;
                 border: 1px solid white;
             }
-            .nexus-card:hover .nexus-card-remove { display: flex; }
+            #view-deck-editor .nexus-card:hover .nexus-card-remove { display: flex; }
 
             /* Switch searching adjustment for nexus cards */
-            .nexus-card .switch-searching {
+            #view-deck-editor .nexus-card .switch-searching {
                 top: 2px;
                 left: 2px;
                 z-index: 10;
                 opacity: 0.3;
                 transition: opacity 0.2s;
             }
-            .nexus-card:hover .switch-searching {
+            #view-deck-editor .nexus-card:hover .switch-searching {
                 opacity: 1;
             }
-            .nexus-card .switch-mini {
+            #view-deck-editor .nexus-card .switch-mini {
                 width: 24px !important;
                 height: 14px !important;
             }
-            .nexus-card .switch-mini .slider:before {
+            #view-deck-editor .nexus-card .switch-mini .slider:before {
                 height: 10px !important;
                 width: 10px !important;
                 left: 2px !important;
                 bottom: 2px !important;
             }
-            .nexus-card .switch-mini input:checked + .slider:before {
+            #view-deck-editor .nexus-card .switch-mini input:checked + .slider:before {
                 transform: translateX(10px) !important;
             }
         }
