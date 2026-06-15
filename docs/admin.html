@@ -185,13 +185,16 @@
                 display: flex !important;
                 flex-direction: column;
                 align-items: center;
+                padding-left: 0;
+                padding-right: 0;
             }
             #view-deck-editor.admin-section {
-                max-width: 2200px;
+                max-width: none !important;
                 width: 100%;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                justify-content: center;
             }
 
             #deck-editor-mobile-layout { display: none; }
@@ -199,13 +202,14 @@
                 display: grid;
                 grid-template-columns: 300px 920px 600px;
                 justify-content: center;
-                gap: 40px;
-                width: fit-content !important;
-                max-width: none !important;
+                gap: 20px;
+                width: 100% !important;
+                max-width: 2000px !important;
                 height: calc(100vh - 180px);
-                min-height: 750px;
-                padding: 20px;
+                min-height: 800px;
+                padding: 10px 20px;
                 margin: 0 auto;
+                box-sizing: border-box;
             }
             #view-deck-editor .nexus-col {
                 display: flex;
@@ -259,7 +263,7 @@
                 padding: 20px;
                 display: flex;
                 flex-direction: column;
-                gap: 50px;
+                gap: 60px;
                 scrollbar-width: none;
             }
             #view-deck-editor .nexus-deck-container::-webkit-scrollbar {
@@ -292,7 +296,7 @@
                 min-height: 150px;
                 justify-content: center;
             }
-            #view-deck-editor #nexus-grid-main { min-height: 300px; }
+            #view-deck-editor #nexus-grid-main { min-height: 750px; }
 
             /* Column 3: Search & Filters */
             #view-deck-editor .nexus-search-col {
