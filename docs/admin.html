@@ -189,12 +189,15 @@
             #view-deck-editor.admin-section {
                 max-width: 2200px;
                 width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
             }
 
             #deck-editor-mobile-layout { display: none; }
             #view-deck-editor .nexus-layout {
                 display: grid;
-                grid-template-columns: 300px 960px 580px;
+                grid-template-columns: 300px 960px 600px;
                 justify-content: center;
                 gap: 20px;
                 width: fit-content !important;
@@ -256,7 +259,7 @@
                 padding: 10px;
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 30px;
                 scrollbar-width: none;
             }
             #view-deck-editor .nexus-deck-container::-webkit-scrollbar {
@@ -286,7 +289,7 @@
                 grid-template-columns: repeat(10, 85px);
                 gap: 10px;
                 min-height: 100px;
-                justify-content: center;
+                justify-content: flex-start;
             }
             #view-deck-editor #nexus-grid-main { min-height: 300px; }
 
@@ -317,8 +320,8 @@
                 z-index: 5;
             }
             #view-deck-editor .nexus-search-input-wrapper input {
-                width: 100% !important;
-                margin: 0 !important;
+                width: calc(100% - 20px) !important;
+                margin: 0 10px !important;
                 padding-left: 45px !important;
                 border-radius: 30px !important;
                 background: rgba(255, 255, 255, 0.05) !important;
@@ -381,7 +384,7 @@
                 display: grid;
                 grid-template-columns: repeat(6, 85px);
                 gap: 8px;
-                justify-content: center;
+                justify-content: flex-start;
             }
 
             /* Shared Card Styles */
