@@ -194,13 +194,13 @@
             #deck-editor-mobile-layout { display: none; }
             #view-deck-editor .nexus-layout {
                 display: grid;
-                grid-template-columns: 300px 900px 550px;
+                grid-template-columns: 300px 960px 580px;
                 justify-content: center;
-                gap: 30px;
-                width: auto !important;
+                gap: 20px;
+                width: fit-content !important;
                 max-width: none !important;
                 height: calc(100vh - 180px);
-                min-height: 700px;
+                min-height: 750px;
                 padding: 20px;
                 margin: 0 auto;
             }
@@ -253,7 +253,7 @@
                 overflow-y: auto;
                 background: rgba(0, 0, 0, 0.2);
                 border-radius: 16px;
-                padding: 15px;
+                padding: 10px;
                 display: flex;
                 flex-direction: column;
                 gap: 20px;
@@ -283,9 +283,10 @@
             }
             #view-deck-editor .nexus-grid {
                 display: grid;
-                grid-template-columns: repeat(10, 1fr);
-                gap: 8px;
+                grid-template-columns: repeat(10, 85px);
+                gap: 10px;
                 min-height: 100px;
+                justify-content: center;
             }
             #view-deck-editor #nexus-grid-main { min-height: 300px; }
 
@@ -309,15 +310,15 @@
             }
             #view-deck-editor .nexus-search-input-wrapper i {
                 position: absolute;
-                left: 25px;
+                left: 15px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #666;
                 z-index: 5;
             }
             #view-deck-editor .nexus-search-input-wrapper input {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px;
+                width: 100% !important;
+                margin: 0 !important;
                 padding-left: 45px !important;
                 border-radius: 30px !important;
                 background: rgba(255, 255, 255, 0.05) !important;
@@ -378,13 +379,14 @@
             }
             #view-deck-editor .nexus-search-grid {
                 display: grid;
-                grid-template-columns: repeat(6, 1fr);
-                gap: 5px;
+                grid-template-columns: repeat(6, 85px);
+                gap: 8px;
+                justify-content: center;
             }
 
             /* Shared Card Styles */
             #view-deck-editor .nexus-card {
-                width: 100%;
+                width: 85px;
                 aspect-ratio: 2.5/3.5;
                 background: #111;
                 border-radius: 4px;
