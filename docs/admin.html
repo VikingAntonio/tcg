@@ -197,9 +197,9 @@
             #deck-editor-mobile-layout { display: none; }
             #view-deck-editor .nexus-layout {
                 display: grid;
-                grid-template-columns: 300px 860px 560px;
+                grid-template-columns: 300px 920px 600px;
                 justify-content: center;
-                gap: 30px;
+                gap: 40px;
                 width: fit-content !important;
                 max-width: none !important;
                 height: calc(100vh - 180px);
@@ -256,10 +256,10 @@
                 overflow-y: auto;
                 background: rgba(0, 0, 0, 0.2);
                 border-radius: 16px;
-                padding: 10px;
+                padding: 20px;
                 display: flex;
                 flex-direction: column;
-                gap: 30px;
+                gap: 50px;
                 scrollbar-width: none;
             }
             #view-deck-editor .nexus-deck-container::-webkit-scrollbar {
@@ -276,6 +276,7 @@
                 font-size: 0.8rem;
                 letter-spacing: 1px;
                 color: var(--primary-color);
+                margin-bottom: 15px;
             }
             #view-deck-editor .nexus-count {
                 background: var(--primary-color);
@@ -287,8 +288,8 @@
             #view-deck-editor .nexus-grid {
                 display: grid;
                 grid-template-columns: repeat(10, 75px);
-                gap: 10px;
-                min-height: 100px;
+                gap: 12px;
+                min-height: 150px;
                 justify-content: center;
             }
             #view-deck-editor #nexus-grid-main { min-height: 300px; }
@@ -320,8 +321,8 @@
                 z-index: 5;
             }
             #view-deck-editor .nexus-search-input-wrapper input {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px !important;
+                width: calc(100% - 10px) !important;
+                margin: 0 5px !important;
                 padding-left: 45px !important;
                 border-radius: 30px !important;
                 background: rgba(255, 255, 255, 0.05) !important;
@@ -374,7 +375,7 @@
                 overflow-y: auto;
                 background: rgba(0,0,0,0.2);
                 border-radius: 8px;
-                padding: 5px;
+                padding: 10px;
                 scrollbar-width: none;
             }
             #view-deck-editor .nexus-search-results-container::-webkit-scrollbar {
@@ -383,7 +384,7 @@
             #view-deck-editor .nexus-search-grid {
                 display: grid;
                 grid-template-columns: repeat(6, 75px);
-                gap: 10px;
+                gap: 12px;
                 justify-content: center;
             }
 
