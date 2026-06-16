@@ -2745,15 +2745,17 @@ $(document).on('click', '.deck-filter-tab', function() {
     $(this).addClass('active');
 
     if (filter === 'all') {
-        $('#deck-grid-container .grid-card-item').show();
+        $('#deck-grid-container .grid-card-item').each(function() {
+            this.style.removeProperty('display');
+        });
     } else {
         $('#deck-grid-container .grid-card-item').each(function() {
             // Use .attr() to be explicit about the string comparison
             const obtained = $(this).attr('data-obtained');
             if (obtained === 'false') {
-                $(this).show();
+                this.style.removeProperty('display');
             } else {
-                $(this).hide();
+                this.style.setProperty('display', 'none', 'important');
             }
         });
     }
