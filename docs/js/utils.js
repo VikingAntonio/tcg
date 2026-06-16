@@ -2,6 +2,13 @@
 window.TCG_API_KEY = 'tcg_live_830032ddb812433fc16a783454caaa5353708266';
 window.TCG_API_BASE = 'https://api.tcgapi.dev/v1';
 
+window.optimizeCloudinaryUrl = function(url, width = 500, height = 500) {
+    if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return url;
+    if (url.includes('/upload/w_') || url.includes('/upload/c_limit')) return url;
+
+    return url.replace('/upload/', `/upload/w_${width},h_${height},c_limit,q_auto,f_auto/`);
+};
+
 // parseDateSafe.js - Shared date parsing utility
 function parseDateSafe(dateStr) {
     if (!dateStr) return null;
