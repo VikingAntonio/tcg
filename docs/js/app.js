@@ -891,6 +891,10 @@ function filterContent(query) {
             if (anyCardMatches && firstMatchIndex !== -1) {
                 const swiperEl = $deckEl.find('.swiper')[0];
                 if (swiperEl && swiperEl.swiper) {
+                    // Asegurar que la carta esté cargada antes de deslizar
+                    if (typeof loadDeckBatch === 'function') {
+                        loadDeckBatch(swiperEl.swiper, deckData, firstMatchIndex, 5);
+                    }
                     // Solo slideTo si es necesario para evitar parpadeo
                     if (swiperEl.swiper.activeIndex !== firstMatchIndex) {
                         swiperEl.swiper.slideTo(firstMatchIndex);
@@ -1805,6 +1809,48 @@ function setupDeckObserver() {
     }
 }
 
+function populateDeckSlide($slide, card) {
+    if ($slide.hasClass('is-populated')) return;
+
+    const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
+    const isMissing = card.obtained === false || card.obtained === 'false';
+
+    $slide.html(`
+        <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
+        ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+    `);
+
+    // Re-bind click handler for the newly rendered zoom button
+    $slide.find('.zoom-btn').on('click', function(e) {
+        e.stopPropagation();
+        openCardModal($(this).closest('.card-slot'));
+    });
+
+    // Apply Foil if enabled
+    if (card.show_foil_in_list && card.holo_effect && typeof applyFoilToElement === 'function') {
+        applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
+    }
+
+    $slide.addClass('is-populated');
+}
+
+function loadDeckBatch(swiper, deck, targetIndex, bufferSize = 5) {
+    if (!deck || !deck.deck_cards || !swiper) return;
+
+    // Cargar también cartas anteriores por si el usuario retrocede
+    const start = Math.max(0, targetIndex - 2);
+    const end = Math.min(deck.deck_cards.length, targetIndex + bufferSize);
+
+    for (let i = start; i < end; i++) {
+        const card = deck.deck_cards[i];
+        const $slide = $(swiper.slides[i]);
+        if (card && $slide.length) {
+            populateDeckSlide($slide, card);
+        }
+    }
+}
+
 function renderDeckCards(deckId) {
     const deck = (window.allPublicDecks || []).find(d => d.id == deckId);
     if (!deck || deck.isRendered) return;
@@ -1817,6 +1863,7 @@ function renderDeckCards(deckId) {
         deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
     }
 
+    // Render shells only to improve initial performance
     const cardsHtml = (deck.deck_cards || []).map(card => `
         <div class="swiper-slide card-slot"
              data-name="${card.name || ''}"
@@ -1830,41 +1877,36 @@ function renderDeckCards(deckId) {
              data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
              data-show-foil="${card.show_foil_in_list || false}"
              data-full-img="${card.image_url}">
-            <img src="${window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url}"
-                 alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
-            ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-            <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+             <div class="loading-cards" style="padding: 100px 0; color: #666; font-style: italic; text-align: center; width: 100%;">
+                <i class="fas fa-spinner fa-spin"></i>
+             </div>
         </div>
     `).join('');
 
     $wrapper.html(cardsHtml);
 
-    // Re-bind click handlers for the newly rendered cards
-    $wrapper.find('.zoom-btn').on('click', function(e) {
-        e.stopPropagation();
-        openCardModal($(this).closest('.card-slot'));
-    });
-
-    // Apply Foil to swiper slides if enabled
-    $wrapper.find('.swiper-slide').each(function(idx) {
-        const card = deck.deck_cards[idx];
-        if (card && card.show_foil_in_list && card.holo_effect) {
-            applyFoilToElement($(this), card.holo_effect, card.custom_mask_url);
-        }
-    });
-
-    // Initialize Swiper for this specific deck
-    new Swiper(`.${swiperClass}`, {
+    // Initialize Swiper for this specific deck with progressive loading
+    const swiper = new Swiper(`.${swiperClass}`, {
         effect: "cards",
         grabCursor: true,
         perSlideOffset: 8,
         perSlideRotate: 2,
         rotate: true,
         slideShadows: true,
-        lazy: true,
         watchSlidesProgress: true,
         preventClicksPropagation: false,
+        observer: true,
+        observeParents: true,
+        updateOnWindowResize: true,
         on: {
+            init: function() {
+                // Initial batch: first 3 cards
+                loadDeckBatch(this, deck, 0, 3);
+            },
+            slideChange: function() {
+                // Load next 5 cards from current index
+                loadDeckBatch(this, deck, this.activeIndex, 5);
+            },
             click: function(s, e) {
                 if (!isDragging) {
                     const $slot = $(e.target).closest('.card-slot');
@@ -1877,8 +1919,13 @@ function renderDeckCards(deckId) {
         }
     });
 
+    // Final force update to ensure first cards are visible
+    setTimeout(() => {
+        swiper.update();
+    }, 100);
+
     deck.isRendered = true;
-    console.log(`Deck ${deckId} rendered via observer.`);
+    console.log(`Deck ${deckId} rendered with progressive loading via observer.`);
 }
 
 function renderDeckShell(deck) {
