@@ -1439,6 +1439,23 @@ input:checked + .slider:before {
     pointer-events: auto;
 }
 
+.deck-carousel-container {
+    margin: 20px auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible; /* Allows Swiper cards effect depth to be visible */
+    min-height: 380px;
+}
+
+.swiperyg .card-slot {
+    aspect-ratio: 2/3;
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: none;
+}
+
 .sealed-product-item {
     justify-content: space-between;
     height: 100%;
