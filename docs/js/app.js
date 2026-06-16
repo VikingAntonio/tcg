@@ -926,7 +926,7 @@ window.set3DTarget = function(rx, ry) {
 };
 
 async function openCardModal($slot) {
-    const imgSrc = $slot.find("img").attr("src");
+    let imgSrc = $slot.data("full-img") || $slot.find("img").attr("src");
 
     if (!imgSrc || imgSrc.includes('placeholder')) return;
 
@@ -1901,8 +1901,9 @@ function loadPublicDecks() {
                                          data-quantity="${card.quantity || '1'}"
                                          data-price="${card.price || ''}"
                                          data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
-                                         data-show-foil="${card.show_foil_in_list || false}">
-                                        <img src="${card.image_url}" alt="${card.name || 'Carta'}" />
+                                         data-show-foil="${card.show_foil_in_list || false}"
+                                         data-full-img="${card.image_url}">
+                                        <img src="${window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url}" alt="${card.name || 'Carta'}" loading="lazy" />
                                         ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
                                         <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
                                     </div>
@@ -2652,8 +2653,9 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
                  data-condition="${$slide.data('condition') || ''}"
                  data-quantity="${$slide.data('quantity') || '1'}"
                  data-price="${$slide.data('price') || ''}"
-                 data-show-foil="${showFoil}">
-                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name') || 'Carta'}" />
+                 data-show-foil="${showFoil}"
+                 data-full-img="${$slide.data('full-img') || ''}">
+                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name') || 'Carta'}" loading="lazy" />
                 ${obtained === 'false' ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
             </div>
         `);
