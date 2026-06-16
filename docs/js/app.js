@@ -887,27 +887,32 @@ function filterContent(query) {
             $deckEl.show();
             anyVisible = true;
 
+            // Ensure Swiper layout is updated after being hidden
+            if (deckData.swiperInstance) {
+                deckData.swiperInstance.update();
+            }
+
             // Si hay coincidencia de cartas y el deck ya está renderizado (tiene swiper)
             if (anyCardMatches && firstMatchIndex !== -1) {
-                const swiperEl = $deckEl.find('.swiper')[0];
-                if (swiperEl && swiperEl.swiper) {
+                const swiper = deckData.swiperInstance;
+                if (swiper) {
                     const card = deckData.deck_cards[firstMatchIndex];
-                    const $slide = $(swiperEl.swiper.slides[firstMatchIndex]);
+                    const $slide = $(swiper.slides[firstMatchIndex]);
 
                     // Priorizar la carga de la carta encontrada antes del slideTo
                     if (card && $slide.length && !$slide.hasClass('is-populated')) {
                         populateDeckSlide($slide, card).then(() => {
-                            if (swiperEl.swiper.activeIndex !== firstMatchIndex) {
-                                swiperEl.swiper.slideTo(firstMatchIndex);
+                            if (swiper.activeIndex !== firstMatchIndex) {
+                                swiper.slideTo(firstMatchIndex);
                             }
                         });
-                    } else if (swiperEl.swiper.activeIndex !== firstMatchIndex) {
-                        swiperEl.swiper.slideTo(firstMatchIndex);
+                    } else if (swiper.activeIndex !== firstMatchIndex) {
+                        swiper.slideTo(firstMatchIndex);
                     }
 
                     // Cargar el resto del batch en segundo plano
                     if (typeof loadDeckBatch === 'function') {
-                        loadDeckBatch(swiperEl.swiper, deckData, firstMatchIndex, 5);
+                        loadDeckBatch(swiper, deckData, firstMatchIndex, 8);
                     }
                     // Resaltar en el DOM
                     $deckEl.find(`.swiper-slide:eq(${firstMatchIndex})`).addClass('search-highlight');
@@ -1832,26 +1837,36 @@ async function populateDeckSlide($slide, card) {
     img.alt = card.name || 'Carta';
     img.loading = 'lazy';
     img.decoding = 'async';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
 
     try {
         if (img.decode) {
             await img.decode();
         }
     } catch (e) {
-        console.warn("Decoding failed for image:", imgSrc, e);
+        // Fallback
     }
 
-    $slide.empty().append(img);
-    $slide.append(`
-        ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
-    `);
+    // Double check to avoid race conditions
+    if ($slide.hasClass('is-populated')) {
+        $slide.removeClass('is-loading');
+        return;
+    }
 
-    // Re-bind click handler for the newly rendered zoom button
-    $slide.find('.zoom-btn').on('click', function(e) {
+    // Perform DOM update in a batch
+    const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
+    $zoomBtn.on('click', function(e) {
         e.stopPropagation();
         openCardModal($(this).closest('.card-slot'));
     });
+
+    $slide.empty().append(img);
+    if (isMissing) {
+        $slide.append('<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>');
+    }
+    $slide.append($zoomBtn);
 
     // Apply Foil if enabled
     if (card.show_foil_in_list && card.holo_effect && typeof applyFoilToElement === 'function') {
@@ -1864,19 +1879,27 @@ async function populateDeckSlide($slide, card) {
 function loadDeckBatch(swiper, deck, targetIndex, bufferSize = 5) {
     if (!deck || !deck.deck_cards || !swiper) return;
 
-    const start = Math.max(0, targetIndex - 2);
+    // Load a window around the target index
+    const start = Math.max(0, targetIndex - 1);
     const end = Math.min(deck.deck_cards.length, targetIndex + bufferSize);
 
-    // Stagger loading to keep main thread responsive
+    let loadPromises = [];
+
     for (let i = start; i < end; i++) {
         const card = deck.deck_cards[i];
         const $slide = $(swiper.slides[i]);
         if (card && $slide.length && !$slide.hasClass('is-populated') && !$slide.hasClass('is-loading')) {
-            // Using requestAnimationFrame to stagger across frames
-            requestAnimationFrame(() => {
-                populateDeckSlide($slide, card);
-            });
+            loadPromises.push(populateDeckSlide($slide, card));
         }
+    }
+
+    // After a batch is loaded, ensure swiper recalculates correctly
+    if (loadPromises.length > 0) {
+        Promise.all(loadPromises).then(() => {
+            requestAnimationFrame(() => {
+                if (swiper && !swiper.destroyed) swiper.update();
+            });
+        });
     }
 }
 
@@ -1892,33 +1915,55 @@ function renderDeckCards(deckId) {
         deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
     }
 
-    // Render shells only to improve initial performance
-    const cardsHtml = (deck.deck_cards || []).map(card => `
-        <div class="swiper-slide card-slot"
-             data-name="${card.name || ''}"
-             data-rarity="${card.rarity || ''}"
-             data-holo="${card.holo_effect || ''}"
-             data-mask="${card.custom_mask_url || ''}"
-             data-expansion="${card.expansion || ''}"
-             data-condition="${card.condition || ''}"
-             data-quantity="${card.quantity || '1'}"
-             data-price="${card.price || ''}"
-             data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
-             data-show-foil="${card.show_foil_in_list || false}"
-             data-full-img="${card.image_url}">
-             <div class="loading-cards" style="padding: 100px 0; color: #666; font-style: italic; text-align: center; width: 100%;">
-                <i class="fas fa-spinner fa-spin"></i>
-             </div>
-        </div>
-    `).join('');
+    // Render shells. The first card (index 0) is rendered immediately to ensure instant visibility.
+    const cardsHtml = (deck.deck_cards || []).map((card, index) => {
+        const isFirst = index === 0;
+        let content = '';
+        let populatedClass = '';
+
+        if (isFirst) {
+            const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
+            const isMissing = card.obtained === false || card.obtained === 'false';
+            // Added explicit dimensions and object-fit to prevent layout shift
+            content = `<img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="eager" decoding="async" style="width: 100%; height: 100%; object-fit: contain;">`;
+            content += isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : '';
+            content += '<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>';
+            populatedClass = 'is-populated';
+        }
+
+        return `
+            <div class="swiper-slide card-slot ${populatedClass}"
+                 data-name="${card.name || ''}"
+                 data-rarity="${card.rarity || ''}"
+                 data-holo="${card.holo_effect || ''}"
+                 data-mask="${card.custom_mask_url || ''}"
+                 data-expansion="${card.expansion || ''}"
+                 data-condition="${card.condition || ''}"
+                 data-quantity="${card.quantity || '1'}"
+                 data-price="${card.price || ''}"
+                 data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
+                 data-show-foil="${card.show_foil_in_list || false}"
+                 data-full-img="${card.image_url}">
+                 ${content}
+            </div>
+        `;
+    }).join('');
 
     $wrapper.html(cardsHtml);
+
+    // Apply foil to first card if needed
+    if (deck.deck_cards && deck.deck_cards[0]) {
+        const firstCard = deck.deck_cards[0];
+        if (firstCard.show_foil_in_list && firstCard.holo_effect && typeof applyFoilToElement === 'function') {
+            applyFoilToElement($wrapper.find('.card-slot:first'), firstCard.holo_effect, firstCard.custom_mask_url);
+        }
+    }
 
     // Initialize Swiper for this specific deck with progressive loading
     const swiper = new Swiper(`.${swiperClass}`, {
         effect: "cards",
         grabCursor: true,
-        perSlideOffset: 8,
+        perSlideOffset: 10, // Slightly increased for better visual stacking
         perSlideRotate: 2,
         rotate: true,
         slideShadows: true,
@@ -1927,17 +1972,22 @@ function renderDeckCards(deckId) {
         observer: true,
         observeParents: true,
         updateOnWindowResize: true,
-        nested: true, // Prevent interference if multiple swipers are present
+        nested: true,
         resistance: true,
-        resistanceRatio: 0, // Solid edges for the deck
+        resistanceRatio: 0,
         on: {
             init: function() {
-                // Initial batch: first 3 cards
-                loadDeckBatch(this, deck, 0, 3);
+                const s = this;
+                // Force a layout recalculation after a frame to fix potential invisible slide issues
+                requestAnimationFrame(() => {
+                    s.update();
+                    // Initial buffer: first 5 cards
+                    loadDeckBatch(s, deck, 0, 5);
+                });
             },
             slideChange: function() {
-                // Load next 5 cards from current index
-                loadDeckBatch(this, deck, this.activeIndex, 5);
+                // Load next 8 cards for smoother swiping ahead
+                loadDeckBatch(this, deck, this.activeIndex, 8);
             },
             click: function(s, e) {
                 if (!isDragging) {
@@ -1951,13 +2001,8 @@ function renderDeckCards(deckId) {
         }
     });
 
-    // Final force update to ensure first cards are visible
-    setTimeout(() => {
-        swiper.update();
-    }, 100);
-
     deck.isRendered = true;
-    console.log(`Deck ${deckId} rendered with progressive loading via observer.`);
+    deck.swiperInstance = swiper; // Keep reference for search updates
 }
 
 function renderDeckShell(deck) {
@@ -1995,9 +2040,6 @@ function renderDeckShell(deck) {
                 <div class="swiper swiperyg ${swiperClass}">
                     <div class="swiper-wrapper">
                         <!-- Cards will be lazy-rendered here -->
-                        <div class="loading-cards" style="padding: 100px 0; color: #666; font-style: italic;">
-                            <i class="fas fa-spinner fa-spin"></i> Cargando cartas...
-                        </div>
                     </div>
                 </div>
             </div>
