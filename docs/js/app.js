@@ -887,12 +887,15 @@ function filterContent(query) {
             $deckEl.show();
             anyVisible = true;
 
+
             // Ensure Swiper layout is updated after being hidden
             if (deckData.swiperInstance) {
-                deckData.swiperInstance.update();
+                requestAnimationFrame(() => {
+                    deckData.swiperInstance.update();
+                });
             }
 
-            // Si hay coincidencia de cartas y el deck ya está renderizado (tiene swiper)
+            // Si hay coincidencia de cartas y el deck está renderizado
             if (anyCardMatches && firstMatchIndex !== -1) {
                 const swiper = deckData.swiperInstance;
                 if (swiper) {
@@ -1805,57 +1808,30 @@ function loadPublicAlbums(userId) {
 }
 
 window.allPublicDecks = [];
-window.deckObserver = null;
-
-function setupDeckObserver() {
-    if (!window.deckObserver) {
-        window.deckObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const deckId = $(entry.target).data('deck-id');
-                    renderDeckCards(deckId);
-                    window.deckObserver.unobserve(entry.target);
-                }
-            });
-        }, {
-            rootMargin: '300px 0px', // Cargar con antelación
-            threshold: 0.01
-        });
-    }
-}
 
 async function populateDeckSlide($slide, card) {
-    if ($slide.hasClass('is-populated') || $slide.hasClass('is-loading')) return;
-    $slide.addClass('is-loading');
+    if ($slide.hasClass('is-populated') || $slide.hasClass('is-populating')) return;
+    $slide.addClass('is-populating');
 
     const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
     const isMissing = card.obtained === false || card.obtained === 'false';
 
-    // Pre-decode image to prevent flicker
     const img = new Image();
     img.src = imgSrc;
     img.alt = card.name || 'Carta';
     img.loading = 'lazy';
     img.decoding = 'async';
-    img.style.width = '100%';
-    img.style.height = '100%';
-    img.style.objectFit = 'contain';
+    img.className = 'tcg-card';
 
     try {
-        if (img.decode) {
-            await img.decode();
-        }
-    } catch (e) {
-        // Fallback
-    }
+        if (img.decode) await img.decode();
+    } catch (e) {}
 
-    // Double check to avoid race conditions
     if ($slide.hasClass('is-populated')) {
-        $slide.removeClass('is-loading');
+        $slide.removeClass('is-populating');
         return;
     }
 
-    // Perform DOM update in a batch
     const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
     $zoomBtn.on('click', function(e) {
         e.stopPropagation();
@@ -1868,54 +1844,63 @@ async function populateDeckSlide($slide, card) {
     }
     $slide.append($zoomBtn);
 
-    // Apply Foil if enabled
     if (card.show_foil_in_list && card.holo_effect && typeof applyFoilToElement === 'function') {
         applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
     }
 
-    $slide.removeClass('is-loading').addClass('is-populated');
+    $slide.removeClass('is-populating').addClass('is-populated');
 }
 
-function loadDeckBatch(swiper, deck, targetIndex, bufferSize = 5) {
+async function loadDeckBatch(swiper, deck, startIndex, count) {
     if (!deck || !deck.deck_cards || !swiper) return;
 
-    // Load a window around the target index
-    const start = Math.max(0, targetIndex - 1);
-    const end = Math.min(deck.deck_cards.length, targetIndex + bufferSize);
+    const end = Math.min(deck.deck_cards.length, startIndex + count);
+    const promises = [];
 
-    let loadPromises = [];
-
-    for (let i = start; i < end; i++) {
+    for (let i = startIndex; i < end; i++) {
         const card = deck.deck_cards[i];
         const $slide = $(swiper.slides[i]);
-        if (card && $slide.length && !$slide.hasClass('is-populated') && !$slide.hasClass('is-loading')) {
-            loadPromises.push(populateDeckSlide($slide, card));
+        if (card && $slide.length && !$slide.hasClass('is-populated') && !$slide.hasClass('is-populating')) {
+            promises.push(populateDeckSlide($slide, card));
         }
     }
 
-    // After a batch is loaded, ensure swiper recalculates correctly
-    if (loadPromises.length > 0) {
-        Promise.all(loadPromises).then(() => {
-            requestAnimationFrame(() => {
-                if (swiper && !swiper.destroyed) swiper.update();
-            });
+    if (promises.length > 0) {
+        await Promise.all(promises);
+        requestAnimationFrame(() => {
+            if (swiper && !swiper.destroyed) swiper.update();
         });
     }
 }
 
-function renderDeckCards(deckId) {
-    const deck = (window.allPublicDecks || []).find(d => d.id == deckId);
-    if (!deck || deck.isRendered) return;
+function renderFullDeck(deck) {
+    if (!deck) return;
 
-    const $deckItem = $(`#deck-item-${deckId}`);
-    const $wrapper = $deckItem.find('.swiper-wrapper');
-    const swiperClass = `deck-swiper-${deckId}`;
+    // Calculate Total Sum
+    const totalSum = (deck.deck_cards || []).reduce((sum, card) => {
+        const priceStr = card.price || '0';
+        const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+        const qty = parseInt(card.quantity) || 1;
+        return sum + (price * qty);
+    }, 0);
+
+    const hasSpecialPrice = deck.use_special_price && deck.special_price;
+    const priceDisplay = hasSpecialPrice
+        ? `<div class="deck-price-container">
+            <span class="price-total price-strikethrough">$${totalSum.toFixed(2)}</span>
+            <span class="price-special">${deck.special_price}</span>
+           </div>`
+        : `<div class="deck-price-container">
+            <span class="price-total">$${totalSum.toFixed(2)}</span>
+           </div>`;
+
+    const swiperClass = `deck-swiper-${deck.id}`;
 
     if (deck.deck_cards) {
         deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
     }
 
-    // Render shells. The first card (index 0) is rendered immediately to ensure instant visibility.
+    // Render shells. The first card (index 0) is rendered immediately.
     const cardsHtml = (deck.deck_cards || []).map((card, index) => {
         const isFirst = index === 0;
         let content = '';
@@ -1924,8 +1909,7 @@ function renderDeckCards(deckId) {
         if (isFirst) {
             const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
             const isMissing = card.obtained === false || card.obtained === 'false';
-            // Added explicit dimensions and object-fit to prevent layout shift
-            content = `<img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="eager" decoding="async" style="width: 100%; height: 100%; object-fit: contain;">`;
+            content = `<img src="${imgSrc}" alt="${card.name || 'Carta'}" class="tcg-card">`;
             content += isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : '';
             content += '<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>';
             populatedClass = 'is-populated';
@@ -1949,83 +1933,6 @@ function renderDeckCards(deckId) {
         `;
     }).join('');
 
-    $wrapper.html(cardsHtml);
-
-    // Apply foil to first card if needed
-    if (deck.deck_cards && deck.deck_cards[0]) {
-        const firstCard = deck.deck_cards[0];
-        if (firstCard.show_foil_in_list && firstCard.holo_effect && typeof applyFoilToElement === 'function') {
-            applyFoilToElement($wrapper.find('.card-slot:first'), firstCard.holo_effect, firstCard.custom_mask_url);
-        }
-    }
-
-    // Initialize Swiper for this specific deck with progressive loading
-    const swiper = new Swiper(`.${swiperClass}`, {
-        effect: "cards",
-        grabCursor: true,
-        perSlideOffset: 10, // Slightly increased for better visual stacking
-        perSlideRotate: 2,
-        rotate: true,
-        slideShadows: true,
-        watchSlidesProgress: true,
-        preventClicksPropagation: false,
-        observer: true,
-        observeParents: true,
-        updateOnWindowResize: true,
-        nested: true,
-        resistance: true,
-        resistanceRatio: 0,
-        on: {
-            init: function() {
-                const s = this;
-                // Force a layout recalculation after a frame to fix potential invisible slide issues
-                requestAnimationFrame(() => {
-                    s.update();
-                    // Initial buffer: first 5 cards
-                    loadDeckBatch(s, deck, 0, 5);
-                });
-            },
-            slideChange: function() {
-                // Load next 8 cards for smoother swiping ahead
-                loadDeckBatch(this, deck, this.activeIndex, 8);
-            },
-            click: function(s, e) {
-                if (!isDragging) {
-                    const $slot = $(e.target).closest('.card-slot');
-                    if ($slot.length) {
-                        if (s.clickedIndex !== s.activeIndex) return;
-                        openCardModal($slot);
-                    }
-                }
-            }
-        }
-    });
-
-    deck.isRendered = true;
-    deck.swiperInstance = swiper; // Keep reference for search updates
-}
-
-function renderDeckShell(deck) {
-    const swiperClass = `deck-swiper-${deck.id}`;
-
-    // Calculate Total Sum
-    const totalSum = (deck.deck_cards || []).reduce((sum, card) => {
-        const priceStr = card.price || '0';
-        const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
-        const qty = parseInt(card.quantity) || 1;
-        return sum + (price * qty);
-    }, 0);
-
-    const hasSpecialPrice = deck.use_special_price && deck.special_price;
-    const priceDisplay = hasSpecialPrice
-        ? `<div class="deck-price-container">
-            <span class="price-total price-strikethrough">$${totalSum.toFixed(2)}</span>
-            <span class="price-special">${deck.special_price}</span>
-           </div>`
-        : `<div class="deck-price-container">
-            <span class="price-total">$${totalSum.toFixed(2)}</span>
-           </div>`;
-
     const $deckItem = $(`
         <div class="deck-public-item" id="deck-item-${deck.id}" data-deck-id="${deck.id}">
             <div class="deck-header-info">
@@ -2039,7 +1946,7 @@ function renderDeckShell(deck) {
             <div class="container deck-carousel-container">
                 <div class="swiper swiperyg ${swiperClass}">
                     <div class="swiper-wrapper">
-                        <!-- Cards will be lazy-rendered here -->
+                        ${cardsHtml}
                     </div>
                 </div>
             </div>
@@ -2054,10 +1961,66 @@ function renderDeckShell(deck) {
 
     $('#decks-container').append($deckItem);
 
-    // Observe this shell
-    if (window.deckObserver) {
-        window.deckObserver.observe($deckItem[0]);
+    // Apply foil to first card if needed
+    if (deck.deck_cards && deck.deck_cards[0]) {
+        const firstCard = deck.deck_cards[0];
+        if (firstCard.show_foil_in_list && firstCard.holo_effect && typeof applyFoilToElement === 'function') {
+            applyFoilToElement($deckItem.find('.card-slot:first'), firstCard.holo_effect, firstCard.custom_mask_url);
+        }
     }
+
+    // Initialize Swiper for this specific deck with progressive loading
+    const swiper = new Swiper(`.${swiperClass}`, {
+        effect: "cards",
+        grabCursor: true,
+        perSlideOffset: 10,
+        perSlideRotate: 2,
+        rotate: true,
+        slideShadows: true,
+        watchSlidesProgress: true,
+        preventClicksPropagation: false,
+        observer: true,
+        observeParents: true,
+        updateOnWindowResize: true,
+        nested: true,
+        resistance: true,
+        resistanceRatio: 0,
+        on: {
+            init: function() {
+                const s = this;
+                requestAnimationFrame(() => {
+                    s.update();
+                });
+            },
+            slideChange: function() {
+                const s = this;
+                const idx = s.activeIndex;
+
+                // Cargar primeras 5 que siguen al hacer el primer swipe (llegar a índice 1)
+                if (idx === 1) {
+                    loadDeckBatch(s, deck, 1, 5);
+                }
+
+                // Al llegar a la 4ta carta (índice 3), cargar las siguientes 5 (6-10)
+                // Y así sucesivamente cada 5 (índice 8, 13, etc.)
+                if (idx >= 3 && (idx - 3) % 5 === 0) {
+                    loadDeckBatch(s, deck, idx + 3, 5);
+                }
+            },
+            click: function(s, e) {
+                if (!isDragging) {
+                    const $slot = $(e.target).closest('.card-slot');
+                    if ($slot.length) {
+                        if (s.clickedIndex !== s.activeIndex) return;
+                        openCardModal($slot);
+                    }
+                }
+            }
+        }
+    });
+
+    deck.isRendered = true;
+    deck.swiperInstance = swiper;
 }
 
 function loadPublicDecks() {
@@ -2136,11 +2099,8 @@ function loadPublicDecks() {
             return;
         }
 
-        // Initialize observer before rendering shells
-        setupDeckObserver();
-
         decks.forEach(deck => {
-            renderDeckShell(deck);
+            renderFullDeck(deck);
         });
     } catch (e) {
         console.error("Error in loadPublicDecks:", e);
