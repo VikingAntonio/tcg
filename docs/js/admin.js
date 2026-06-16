@@ -24,6 +24,7 @@ function restoreScroll(pos) {
 
 
 let currentDeckCardId = null; // New for deck card editing
+let activeNexusSection = 'Main';
 let currentSlotIndex = null;
 let currentPageId = null;
 let currentUser = null;
@@ -1983,6 +1984,9 @@ async function updateDeckOrder(ids) {
 async function editDeck(deck) {
     // Reset local state
     localDeckCards = [];
+    activeNexusSection = 'Main';
+    $('.nexus-section-header').removeClass('active');
+    $('.nexus-section-header:contains("MAIN DECK")').addClass('active');
     deckCardsToDelete = [];
     localVikingData = [];
 
@@ -3796,16 +3800,24 @@ function nexusUpdatePreview(card) {
     $('#nexus-preview-desc').text(card.set || card.rarity || 'Detalles no disponibles');
 }
 
-function addCardToNexusDeck(card, section = 'Main') {
+function addCardToNexusDeck(card, section = null) {
+    const targetSection = section || activeNexusSection || 'Main';
+
+    // Calculate position: end of the target section
+    const sectionCards = localDeckCards.filter(c => (c.section || 'Main') === targetSection);
+    const maxPos = sectionCards.length > 0
+        ? Math.max(...sectionCards.map(c => c.position || 0))
+        : -1;
+
     const newCard = {
         localId: 'new_' + Date.now() + Math.random(),
         deck_id: currentDeckId,
         image_url: card.high_res || card.image,
         name: card.name,
         quantity: 1,
-        section: section,
+        section: targetSection,
         obtained: true,
-        position: localDeckCards.length
+        position: maxPos + 1
     };
     localDeckCards.push(newCard);
     renderNexusDeck();
@@ -3844,19 +3856,11 @@ function initNexusSortables() {
                     };
                     const section = el.getAttribute('data-section');
 
-                    const newCard = {
-                        localId: 'new_' + Date.now() + Math.random(),
-                        deck_id: currentDeckId,
-                        image_url: cardData.image,
-                        name: cardData.name,
-                        quantity: 1,
-                        section: section,
-                        obtained: true,
-                        position: evt.newIndex
-                    };
-
-                    localDeckCards.push(newCard);
-                    renderNexusDeck();
+                    addCardToNexusDeck(cardData, section);
+                    // Remove the item SortableJS added to the DOM because renderNexusDeck will re-render
+                    if (evt.item && evt.item.parentNode) {
+                        evt.item.parentNode.removeChild(evt.item);
+                    }
                 } else {
                     syncNexusCardsFromDOM();
                 }
@@ -3988,4 +3992,12 @@ $(document).on('input', '.nexus-input-sync', function() {
 });
 $(document).on('change', '.nexus-check-sync', function() {
     $($(this).data('target')).prop('checked', $(this).is(':checked'));
+});
+
+$(document).on('click', '.nexus-section-header', function() {
+    $('.nexus-section-header').removeClass('active');
+    $(this).addClass('active');
+    activeNexusSection = $(this).find('span:first-child').text().replace(' DECK', '').trim();
+    // Convert to Capital Case (Main, Extra, Side)
+    activeNexusSection = activeNexusSection.charAt(0).toUpperCase() + activeNexusSection.slice(1).toLowerCase();
 });

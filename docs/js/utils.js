@@ -263,8 +263,18 @@ window.getYgoSets = async function() {
     return ygoSetsCache;
 };
 
+window.searchAbortControllers = window.searchAbortControllers || {};
+
 window.searchExternalCard = async function(inputSelector, resultsSelector, onSelectCallback, filters = {}) {
     const query = $(inputSelector).val().trim();
+
+    // Abort previous request for this specific input
+    if (window.searchAbortControllers[inputSelector]) {
+        window.searchAbortControllers[inputSelector].abort();
+    }
+    const controller = new AbortController();
+    window.searchAbortControllers[inputSelector] = controller;
+    const signal = controller.signal;
 
     // Support search from 1 character as requested for Nexus-style real-time search
     if (query.length < 1 && !Object.values(filters).some(v => v !== '')) {
@@ -297,7 +307,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             const q = query.toUpperCase();
             // Passcode (Numeric 5-10 digits)
             if (/^\d{5,10}$/.test(q)) {
-                const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`).then(res => res.json()).catch(() => ({data:[]}));
+                const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`, { signal }).then(res => res.json()).catch(() => ({data:[]}));
                 return r.data || [];
             }
             // Set Code (Format XXX-123 or XXX-EN123)
@@ -307,7 +317,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                 const sets = await window.getYgoSets();
                 const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
                 if (setObj) {
-                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`).then(res => res.json()).catch(() => ({data:[]}));
+                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`, { signal }).then(res => res.json()).catch(() => ({data:[]}));
                     if (r.data) {
                         // Filter for the exact set code
                         return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
@@ -322,7 +332,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             if (!window.TCG_API_KEY || q.length < 1) return [];
             try {
                 const response = await fetch(`${window.TCG_API_BASE}/search?q=${encodeURIComponent(q)}&game=${game}`, {
-                    headers: { 'X-API-Key': window.TCG_API_KEY }
+                    headers: { 'X-API-Key': window.TCG_API_KEY },
+                    signal
                 });
                 if (!response.ok) return [];
                 const data = await response.json();
@@ -343,25 +354,25 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
         // Concurrent search across all databases
         const searchPromises = [
             // Yu-Gi-Oh! Name Search (Optimized with filters)
-            ygoParams.length > 0 ? fetch(finalYgoUrl).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
+            ygoParams.length > 0 ? fetch(finalYgoUrl, { signal }).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
 
             // Yu-Gi-Oh! Code/Set Search
-            query.length >= 1 ? fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
+            query.length >= 1 ? fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
 
             // Special YGO Search
             ygoSpecialSearch(),
 
             // Pokémon TCGdex - English
-            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Pokémon TCGdex - Spanish
-            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Pokémon TCGdex - Japanese
-            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Lorcana Search
-            query.length >= 1 ? fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            query.length >= 1 ? fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Viking Search
             query.length >= 1 ? (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])) : Promise.resolve([]),
@@ -444,6 +455,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
         }
 
     } catch (err) {
+        if (err.name === 'AbortError') return;
         console.error(err);
         $(resultsSelector).html('<div style="grid-column: 1/-1; text-align: center; padding: 10px; color: #ff4757;">Error al buscar. Inténtalo de nuevo.</div>');
     }

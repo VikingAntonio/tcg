@@ -2636,7 +2636,7 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
 
     $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
         const $slide = $(this);
-        const obtained = $slide.attr('data-obtained');
+        const obtained = $slide.attr('data-obtained') || 'true';
         const showFoil = $slide.data('show-foil');
         const holo = $slide.data('holo');
         const mask = $slide.data('mask');
@@ -2644,18 +2644,17 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
         const $card = $(`
             <div class="grid-card-item card-slot"
                  data-obtained="${obtained}"
-                 data-name="${$slide.data('name')}"
-                 data-rarity="${$slide.data('rarity')}"
-                 data-holo="${$slide.data('holo')}"
-                 data-mask="${$slide.data('mask')}"
-                 data-expansion="${$slide.data('expansion')}"
-                 data-condition="${$slide.data('condition')}"
-                 data-quantity="${$slide.data('quantity')}"
-                 data-price="${$slide.data('price')}"
-                 data-obtained="${obtained}"
+                 data-name="${$slide.data('name') || ''}"
+                 data-rarity="${$slide.data('rarity') || ''}"
+                 data-holo="${$slide.data('holo') || ''}"
+                 data-mask="${$slide.data('mask') || ''}"
+                 data-expansion="${$slide.data('expansion') || ''}"
+                 data-condition="${$slide.data('condition') || ''}"
+                 data-quantity="${$slide.data('quantity') || '1'}"
+                 data-price="${$slide.data('price') || ''}"
                  data-show-foil="${showFoil}">
-                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name')}" />
-                ${(obtained === 'false' || obtained === false) ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name') || 'Carta'}" />
+                ${obtained === 'false' ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
             </div>
         `);
 
@@ -2683,10 +2682,13 @@ $(document).on('click', '.deck-filter-tab', function() {
         $('#deck-grid-container .grid-card-item').show();
     } else {
         $('#deck-grid-container .grid-card-item').each(function() {
-            const obtained = $(this).data('obtained');
-            // If it's a string from data-obtained, check against "false"
-            if (obtained === false || obtained === "false") $(this).show();
-            else $(this).hide();
+            // Use .attr() to be explicit about the string comparison
+            const obtained = $(this).attr('data-obtained');
+            if (obtained === 'false') {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
         });
     }
 });
