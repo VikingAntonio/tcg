@@ -303,6 +303,7 @@ body {
 
 .card-slot {
     background: var(--slot-bg);
+    background-image: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 70%);
     border-radius: 4px;
     overflow: hidden;
     cursor: pointer;
@@ -4266,6 +4267,7 @@ body.focus-mode-active .event-card {
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     background: rgba(255,255,255,0.03);
+    background-image: radial-gradient(circle at center, rgba(255,255,255,0.02) 0%, transparent 70%);
     border-radius: 8px;
     padding: 4px;
     border: 1px solid rgba(255,255,255,0.05);

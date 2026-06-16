@@ -861,38 +861,46 @@ function filterContent(query) {
         }
     });
 
-    // Filtrar decks
+    // Filtrar decks usando window.allPublicDecks para mayor rendimiento
     $('.deck-public-item').each(function() {
-        const $deck = $(this);
-        const deckName = $deck.find('h3').text().toLowerCase();
+        const $deckEl = $(this);
+        const deckId = $deckEl.data('deck-id');
+        const deckData = (window.allPublicDecks || []).find(d => d.id == deckId);
 
+        if (!deckData) return;
+
+        const deckName = (deckData.name || '').toLowerCase();
         let deckNameMatch = keywords.every(k => deckName.includes(k));
         let anyCardMatches = false;
         let firstMatchIndex = -1;
 
-        $deck.find('.swiper-slide').each(function(index) {
-            const $slot = $(this);
-            const cardName = ($slot.attr('data-name') || '').toLowerCase();
-            const cardMatch = cardName && keywords.every(k => cardName.includes(k));
-
+        (deckData.deck_cards || []).forEach((card, index) => {
+            const cardName = (card.name || '').toLowerCase();
+            const cardMatch = keywords.every(k => cardName.includes(k));
             if (cardMatch) {
                 anyCardMatches = true;
-                $slot.addClass('search-highlight');
                 if (firstMatchIndex === -1) firstMatchIndex = index;
             }
         });
 
         if (deckNameMatch || anyCardMatches) {
-            $deck.show();
+            $deckEl.show();
             anyVisible = true;
+
+            // Si hay coincidencia de cartas y el deck ya está renderizado (tiene swiper)
             if (anyCardMatches && firstMatchIndex !== -1) {
-                const swiperEl = $deck.find('.swiper')[0];
+                const swiperEl = $deckEl.find('.swiper')[0];
                 if (swiperEl && swiperEl.swiper) {
-                    swiperEl.swiper.slideTo(firstMatchIndex);
+                    // Solo slideTo si es necesario para evitar parpadeo
+                    if (swiperEl.swiper.activeIndex !== firstMatchIndex) {
+                        swiperEl.swiper.slideTo(firstMatchIndex);
+                    }
+                    // Resaltar en el DOM si ya existe el elemento
+                    $deckEl.find(`.swiper-slide:eq(${firstMatchIndex})`).addClass('search-highlight');
                 }
             }
         } else {
-            $deck.hide();
+            $deckEl.hide();
         }
     });
 
@@ -1777,6 +1785,160 @@ function loadPublicAlbums(userId) {
     });
 }
 
+window.allPublicDecks = [];
+window.deckObserver = null;
+
+function setupDeckObserver() {
+    if (!window.deckObserver) {
+        window.deckObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const deckId = $(entry.target).data('deck-id');
+                    renderDeckCards(deckId);
+                    window.deckObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            rootMargin: '300px 0px', // Cargar con antelación
+            threshold: 0.01
+        });
+    }
+}
+
+function renderDeckCards(deckId) {
+    const deck = (window.allPublicDecks || []).find(d => d.id == deckId);
+    if (!deck || deck.isRendered) return;
+
+    const $deckItem = $(`#deck-item-${deckId}`);
+    const $wrapper = $deckItem.find('.swiper-wrapper');
+    const swiperClass = `deck-swiper-${deckId}`;
+
+    if (deck.deck_cards) {
+        deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
+    }
+
+    const cardsHtml = (deck.deck_cards || []).map(card => `
+        <div class="swiper-slide card-slot"
+             data-name="${card.name || ''}"
+             data-rarity="${card.rarity || ''}"
+             data-holo="${card.holo_effect || ''}"
+             data-mask="${card.custom_mask_url || ''}"
+             data-expansion="${card.expansion || ''}"
+             data-condition="${card.condition || ''}"
+             data-quantity="${card.quantity || '1'}"
+             data-price="${card.price || ''}"
+             data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
+             data-show-foil="${card.show_foil_in_list || false}"
+             data-full-img="${card.image_url}">
+            <img src="${window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url}"
+                 alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
+            ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+            <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+        </div>
+    `).join('');
+
+    $wrapper.html(cardsHtml);
+
+    // Re-bind click handlers for the newly rendered cards
+    $wrapper.find('.zoom-btn').on('click', function(e) {
+        e.stopPropagation();
+        openCardModal($(this).closest('.card-slot'));
+    });
+
+    // Apply Foil to swiper slides if enabled
+    $wrapper.find('.swiper-slide').each(function(idx) {
+        const card = deck.deck_cards[idx];
+        if (card && card.show_foil_in_list && card.holo_effect) {
+            applyFoilToElement($(this), card.holo_effect, card.custom_mask_url);
+        }
+    });
+
+    // Initialize Swiper for this specific deck
+    new Swiper(`.${swiperClass}`, {
+        effect: "cards",
+        grabCursor: true,
+        perSlideOffset: 8,
+        perSlideRotate: 2,
+        rotate: true,
+        slideShadows: true,
+        lazy: true,
+        watchSlidesProgress: true,
+        preventClicksPropagation: false,
+        on: {
+            click: function(s, e) {
+                if (!isDragging) {
+                    const $slot = $(e.target).closest('.card-slot');
+                    if ($slot.length) {
+                        if (s.clickedIndex !== s.activeIndex) return;
+                        openCardModal($slot);
+                    }
+                }
+            }
+        }
+    });
+
+    deck.isRendered = true;
+    console.log(`Deck ${deckId} rendered via observer.`);
+}
+
+function renderDeckShell(deck) {
+    const swiperClass = `deck-swiper-${deck.id}`;
+
+    // Calculate Total Sum
+    const totalSum = (deck.deck_cards || []).reduce((sum, card) => {
+        const priceStr = card.price || '0';
+        const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+        const qty = parseInt(card.quantity) || 1;
+        return sum + (price * qty);
+    }, 0);
+
+    const hasSpecialPrice = deck.use_special_price && deck.special_price;
+    const priceDisplay = hasSpecialPrice
+        ? `<div class="deck-price-container">
+            <span class="price-total price-strikethrough">$${totalSum.toFixed(2)}</span>
+            <span class="price-special">${deck.special_price}</span>
+           </div>`
+        : `<div class="deck-price-container">
+            <span class="price-total">$${totalSum.toFixed(2)}</span>
+           </div>`;
+
+    const $deckItem = $(`
+        <div class="deck-public-item" id="deck-item-${deck.id}" data-deck-id="${deck.id}">
+            <div class="deck-header-info">
+                <h3 style="margin-bottom: 5px;">${deck.name}</h3>
+                ${priceDisplay}
+            </div>
+            <button class="btn-share-item btn-share-floating" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" title="Compartir Deck">
+                <i class="fas fa-share-alt"></i>
+            </button>
+
+            <div class="container deck-carousel-container">
+                <div class="swiper swiperyg ${swiperClass}">
+                    <div class="swiper-wrapper">
+                        <!-- Cards will be lazy-rendered here -->
+                        <div class="loading-cards" style="padding: 100px 0; color: #666; font-style: italic;">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando cartas...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="deck-toggle-container">
+                <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Ver Lista">
+                    <i class="fas fa-th"></i> Modo Lista
+                </button>
+            </div>
+        </div>
+    `);
+
+    $('#decks-container').append($deckItem);
+
+    // Observe this shell
+    if (window.deckObserver) {
+        window.deckObserver.observe($deckItem[0]);
+    }
+}
+
 function loadPublicDecks() {
     return new Promise(async (resolve) => {
     const identifier = window.currentStoreIdentifier;
@@ -1836,6 +1998,7 @@ function loadPublicDecks() {
         if (decks) {
             // Filtrar en JS para tratar null como público (true)
             decks = decks.filter(d => d.is_public !== false);
+            window.allPublicDecks = decks;
         }
 
         if (error || !decks) {
@@ -1852,113 +2015,11 @@ function loadPublicDecks() {
             return;
         }
 
+        // Initialize observer before rendering shells
+        setupDeckObserver();
+
         decks.forEach(deck => {
-            // Ensure cards are sorted by position locally as a fallback
-            if (deck.deck_cards) {
-                deck.deck_cards.sort((a, b) => (a.position || 0) - (b.position || 0));
-            }
-            const deckId = `deck-swiper-${deck.id}`;
-
-            // Calculate Total Sum
-            const totalSum = (deck.deck_cards || []).reduce((sum, card) => {
-                const priceStr = card.price || '0';
-                const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
-                const qty = parseInt(card.quantity) || 1;
-                return sum + (price * qty);
-            }, 0);
-
-            const hasSpecialPrice = deck.use_special_price && deck.special_price;
-            const priceDisplay = hasSpecialPrice
-                ? `<div class="deck-price-container">
-                    <span class="price-total price-strikethrough">$${totalSum.toFixed(2)}</span>
-                    <span class="price-special">${deck.special_price}</span>
-                   </div>`
-                : `<div class="deck-price-container">
-                    <span class="price-total">$${totalSum.toFixed(2)}</span>
-                   </div>`;
-
-            const $deckItem = $(`
-                <div class="deck-public-item" id="deck-item-${deck.id}">
-                    <div class="deck-header-info">
-                        <h3 style="margin-bottom: 5px;">${deck.name}</h3>
-                        ${priceDisplay}
-                    </div>
-                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" title="Compartir Deck">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-
-                    <div class="container deck-carousel-container">
-                        <div class="swiper swiperyg ${deckId}">
-                            <div class="swiper-wrapper">
-                                ${deck.deck_cards.map(card => `
-                                    <div class="swiper-slide card-slot"
-                                         data-name="${card.name || ''}"
-                                         data-rarity="${card.rarity || ''}"
-                                         data-holo="${card.holo_effect || ''}"
-                                         data-mask="${card.custom_mask_url || ''}"
-                                         data-expansion="${card.expansion || ''}"
-                                         data-condition="${card.condition || ''}"
-                                         data-quantity="${card.quantity || '1'}"
-                                         data-price="${card.price || ''}"
-                                         data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
-                                         data-show-foil="${card.show_foil_in_list || false}"
-                                         data-full-img="${card.image_url}">
-                                        <img src="${window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url}" alt="${card.name || 'Carta'}" loading="lazy" />
-                                        ${(card.obtained === false || card.obtained === 'false') ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-                                        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="deck-toggle-container">
-                        <button class="btn btn-sm btn-toggle-deck-view" data-deck-id="${deck.id}" title="Ver Lista">
-                            <i class="fas fa-th"></i> Modo Lista
-                        </button>
-                    </div>
-                </div>
-            `);
-
-            $('#decks-container').append($deckItem);
-
-            // Apply Foil to swiper slides if enabled
-            $deckItem.find('.swiper-slide').each(function(idx) {
-                const card = deck.deck_cards[idx];
-                if (card && card.show_foil_in_list && card.holo_effect) {
-                    applyFoilToElement($(this), card.holo_effect, card.custom_mask_url);
-                }
-            });
-
-            // El manejo de clics se mantiene normal, la prioridad táctil
-            // ya se maneja con el listener global en fase de captura.
-            $deckItem.find('.zoom-btn').on('click', function(e) {
-                e.stopPropagation();
-                openCardModal($(this).closest('.card-slot'));
-            });
-
-            new Swiper(`.${deckId}`, {
-                effect: "cards",
-                grabCursor: true,
-                perSlideOffset: 8,
-                perSlideRotate: 2,
-                rotate: true,
-                slideShadows: true,
-                preventClicksPropagation: false,
-                on: {
-                    click: function(s, e) {
-                        if (!isDragging) {
-                            const $slot = $(e.target).closest('.card-slot');
-                            if ($slot.length) {
-                                // Popup fix: Only open if it's the active slide
-                                if (s.clickedIndex !== s.activeIndex) return;
-
-                                openCardModal($slot);
-                            }
-                        }
-                    }
-                }
-            });
+            renderDeckShell(deck);
         });
     } catch (e) {
         console.error("Error in loadPublicDecks:", e);
@@ -2097,6 +2158,7 @@ function loadPageImages($album, page) {
         const $img = $(this);
         const src = $img.attr('data-src');
         if (src) {
+            $img.attr('decoding', 'async');
             $img.attr('src', src);
             $img.removeAttr('data-src');
         }
@@ -2176,7 +2238,7 @@ function renderAlbum(album) {
                 });
                 if (slotData.image_url) {
                     const cardAlt = slotData.name || 'Carta';
-                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}">`);
+                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
                     const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
 
                     // Prioridad para móvil: el listener global captura el touchstart.
@@ -2627,35 +2689,37 @@ function loadPublicWishlist() {
 
 $(document).on('click', '.btn-toggle-deck-view', function() {
     const deckId = $(this).data('deck-id');
-    const $deckItem = $(`#deck-item-${deckId}`);
-    const deckName = $deckItem.find('h3').text();
+    const deck = (window.allPublicDecks || []).find(d => d.id == deckId);
+    if (!deck) return;
 
-    // Fill modal with cards from Swiper slides
+    const deckName = deck.name || "Deck";
+
+    // Fill modal with cards from deck data for better performance
     const $container = $('#deck-grid-container');
     $container.empty();
     $('#deck-list-title').text(deckName);
 
-    $deckItem.find('.swiper-slide:not(.swiper-slide-duplicate)').each(function() {
-        const $slide = $(this);
-        const obtained = $slide.attr('data-obtained') || 'true';
-        const showFoil = $slide.data('show-foil');
-        const holo = $slide.data('holo');
-        const mask = $slide.data('mask');
+    (deck.deck_cards || []).forEach(card => {
+        const obtained = card.obtained === false || card.obtained === 'false' ? 'false' : 'true';
+        const showFoil = card.show_foil_in_list || false;
+        const holo = card.holo_effect || '';
+        const mask = card.custom_mask_url || '';
+        const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 400, 400) : card.image_url;
 
         const $card = $(`
             <div class="grid-card-item card-slot"
                  data-obtained="${obtained}"
-                 data-name="${$slide.data('name') || ''}"
-                 data-rarity="${$slide.data('rarity') || ''}"
-                 data-holo="${$slide.data('holo') || ''}"
-                 data-mask="${$slide.data('mask') || ''}"
-                 data-expansion="${$slide.data('expansion') || ''}"
-                 data-condition="${$slide.data('condition') || ''}"
-                 data-quantity="${$slide.data('quantity') || '1'}"
-                 data-price="${$slide.data('price') || ''}"
+                 data-name="${card.name || ''}"
+                 data-rarity="${card.rarity || ''}"
+                 data-holo="${holo}"
+                 data-mask="${mask}"
+                 data-expansion="${card.expansion || ''}"
+                 data-condition="${card.condition || ''}"
+                 data-quantity="${card.quantity || '1'}"
+                 data-price="${card.price || ''}"
                  data-show-foil="${showFoil}"
-                 data-full-img="${$slide.data('full-img') || ''}">
-                <img src="${$slide.find('img').attr('src')}" alt="${$slide.data('name') || 'Carta'}" loading="lazy" />
+                 data-full-img="${card.image_url}">
+                <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
                 ${obtained === 'false' ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
             </div>
         `);
