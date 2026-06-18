@@ -165,8 +165,22 @@
         </div>
 
         <div id="decks-view" class="view-section">
-            <div id="decks-container" class="decks-grid">
-                <!-- Decks will be loaded here -->
+            <div id="deck-menu-container" class="deck-menu-grid">
+                <!-- Deck selection menu will be loaded here -->
+            </div>
+
+            <div id="selected-deck-view" style="display: none; width: 100%;">
+                <div class="selected-deck-header">
+                    <button class="btn-back-decks" onclick="window.showDeckMenu()">
+                        <i class="fas fa-arrow-left"></i> Volver al Menú
+                    </button>
+                    <div id="selected-deck-title-area" style="text-align: right;">
+                        <!-- Title and price will be updated here -->
+                    </div>
+                </div>
+                <div id="decks-container" class="decks-grid" style="margin-top: 0;">
+                    <!-- Single deck will be loaded here -->
+                </div>
             </div>
         </div>
 
