@@ -666,10 +666,11 @@ window.sharedCard3D = {
         requestAnimationFrame(() => window.sharedCard3D.updateRotation(cardId, overlayId));
     },
 
-    init: function(containerId = 'card-3d-container', cardId = 'card-3d', zTextId = '#z-text-container') {
+    init: function(containerId = 'card-3d-container', cardId = 'card-3d', zTextId = '#z-text-container', options = {}) {
         const $container = $(`#${containerId}`);
         const $card = $(`#${cardId}`);
         const $zContainer = $(zTextId);
+        const useGyro = options.useGyro !== false;
 
         if (!$zContainer.length) return;
 
@@ -731,11 +732,13 @@ window.sharedCard3D = {
             window.sharedCard3D.targetRY = 0;
         });
 
-        if (window.DeviceOrientationEvent) {
-            if (window.sharedCard3D.orientationHandler) {
-                window.removeEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
-            }
+        // Always cleanup existing listener before potentially starting a new one
+        if (window.sharedCard3D.orientationHandler) {
+            window.removeEventListener('deviceorientation', window.sharedCard3D.orientationHandler);
+            window.sharedCard3D.orientationHandler = null;
+        }
 
+        if (useGyro && window.DeviceOrientationEvent) {
             window.sharedCard3D.orientationHandler = (e) => {
                 if (!window.sharedCard3D.active) return;
                 if (e.gamma !== null && e.beta !== null) {
