@@ -4309,14 +4309,14 @@ body.focus-mode-active .event-card {
 }
 
 .btn-toggle-deck-view {
-    background: rgba(0, 210, 255, 0.2) !important;
-    border: 1px solid rgba(0, 210, 255, 0.5) !important;
-    color: var(--primary-color) !important;
+    background: var(--primary-color) !important;
+    border: 1px solid var(--primary-color) !important;
+    color: #000 !important;
     border-radius: 50px !important;
     padding: 8px 20px !important;
     font-size: 0.9rem !important;
     opacity: 1 !important;
-    backdrop-filter: blur(5px);
+    font-weight: 800 !important;
 }
 
 .btn-toggle-deck-view:hover {
@@ -5545,6 +5545,7 @@ body.focus-mode-active .event-card {
 /* Selected Deck View Styles */
 #selected-deck-view {
     padding-top: 100px;
+    padding-bottom: 150px;
     width: 100%;
 }
 
