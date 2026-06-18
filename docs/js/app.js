@@ -2048,7 +2048,7 @@ function loadPublicDecks() {
             if (filterId) {
                 const selectedDeck = decks.find(d => d.id == filterId);
                 if (selectedDeck) {
-                    await selectDeck(filterId);
+                    await selectDeck(filterId, true); // skipPush=true because URL already has the ID
                 } else {
                     renderDeckMenuUI(decks);
                 }
@@ -2090,7 +2090,7 @@ function renderDeckMenuUI(decks) {
     });
 }
 
-async function selectDeck(deckId) {
+async function selectDeck(deckId, skipPush = false) {
     const deck = (window.allPublicDecks || []).find(d => d.id == deckId);
     if (!deck) return;
 
@@ -2100,9 +2100,11 @@ async function selectDeck(deckId) {
     $('#selected-deck-view').show();
 
     // Update URL without full reload
-    const url = new URL(window.location);
-    url.searchParams.set('deckId', deckId);
-    window.history.pushState({ deckId }, '', url);
+    if (!skipPush) {
+        const url = new URL(window.location);
+        url.searchParams.set('deckId', deckId);
+        window.history.pushState({ deckId }, '', url);
+    }
 
     // Update Title Area
     // Calculate Total Sum (duplicated logic from renderDeckShell for consistency)

@@ -4309,12 +4309,14 @@ body.focus-mode-active .event-card {
 }
 
 .btn-toggle-deck-view {
-    background: rgba(0, 210, 255, 0.1) !important;
-    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+    background: rgba(0, 210, 255, 0.2) !important;
+    border: 1px solid rgba(0, 210, 255, 0.5) !important;
     color: var(--primary-color) !important;
     border-radius: 50px !important;
     padding: 8px 20px !important;
     font-size: 0.9rem !important;
+    opacity: 1 !important;
+    backdrop-filter: blur(5px);
 }
 
 .btn-toggle-deck-view:hover {
@@ -5454,8 +5456,10 @@ body.focus-mode-active .event-card {
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
     width: 100%;
-    margin-top: 30px;
+    max-width: 1200px;
+    margin: 30px auto 0;
     padding: 0 10px;
+    justify-content: center;
 }
 
 .deck-menu-item {
@@ -5524,16 +5528,26 @@ body.focus-mode-active .event-card {
     }
 
     .deck-menu-item h3 {
-        font-size: 0.95rem;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
     }
 
     .deck-menu-stats {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         gap: 5px;
+    }
+
+    .deck-menu-stats span {
+        padding: 3px 6px;
     }
 }
 
 /* Selected Deck View Styles */
+#selected-deck-view {
+    padding-top: 100px;
+    width: 100%;
+}
+
 .selected-deck-header {
     width: 100%;
     display: flex;
