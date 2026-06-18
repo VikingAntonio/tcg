@@ -862,15 +862,19 @@ function filterContent(query) {
     });
 
     // Filtrar decks usando window.allPublicDecks para mayor rendimiento
-    $('.deck-public-item').each(function() {
+    $('.deck-public-item, .deck-menu-item').each(function() {
         const $deckEl = $(this);
-        const deckId = $deckEl.data('deck-id');
-        const deckData = (window.allPublicDecks || []).find(d => d.id == deckId);
+        let deckName = "";
 
-        if (!deckData) return;
+        if ($deckEl.hasClass('deck-public-item')) {
+            const deckId = $deckEl.data('deck-id');
+            const deckData = (window.allPublicDecks || []).find(d => d.id == deckId);
+            if (deckData) deckName = (deckData.name || '').toLowerCase();
+        } else {
+            deckName = $deckEl.find('h3').text().toLowerCase();
+        }
 
-        const deckName = (deckData.name || '').toLowerCase();
-        let deckNameMatch = keywords.every(k => deckName.includes(k));
+        let deckNameMatch = deckName && keywords.every(k => deckName.includes(k));
 
         if (deckNameMatch) {
             $deckEl.show();
@@ -888,7 +892,7 @@ function filterContent(query) {
 }
 
 function resetFilter() {
-    $('.public-album-item, .deck-public-item').show();
+    $('.public-album-item, .deck-public-item, .deck-menu-item').show();
     $('.search-highlight').removeClass('search-highlight');
     $('#no-results').hide();
 }
@@ -935,8 +939,8 @@ async function openCardModal($slot) {
     // Force 3D for wishlist items to ensure gyroscope works in the modal
     if (isWishlist) use3d = true;
 
-    // Disable gyro for decks as requested for better performance
-    const useGyro = !isDeckCard;
+    // Gyroscope enabled for decks as performance is now optimized by loading one deck at a time
+    const useGyro = true;
 
     const notes = $slot.data("notes") || "";
     const obtained = $slot.data("obtained") === true || $slot.data("obtained") === "true";
@@ -1350,6 +1354,13 @@ async function switchView(view, skipPush = false) {
         } catch (e) {
             console.error("Error checking build mode:", e);
         }
+    }
+
+    // Ensure deck menu visibility is reset when entering from main nav
+    if (view === 'decks') {
+        $('#deck-menu-container').show();
+        $('#selected-deck-view').hide();
+        $('#decks-container').empty();
     }
 
     // View-specific data loading
@@ -1978,94 +1989,189 @@ function renderDeckShell(deck) {
 
 function loadPublicDecks() {
     return new Promise(async (resolve) => {
-    const identifier = window.currentStoreIdentifier;
-    if (!identifier) { resolve(); return; }
+        const identifier = window.currentStoreIdentifier;
+        if (!identifier) { resolve(); return; }
 
-    $('#decks-container').html('<div class="loading">Cargando decks...</div>');
+        const params = new URLSearchParams(window.location.search);
+        const filterId = params.get('deckId');
 
-    const params = new URLSearchParams(window.location.search);
-    const filterId = params.get('deckId');
+        try {
+            let user;
+            if (window.currentStoreId) {
+                user = { id: window.currentStoreId };
+            } else {
+                user = await resolveUser(identifier);
+                if (user) window.currentStoreId = user.id;
+            }
 
-    try {
-        let user;
-        if (window.currentStoreId) {
-            user = { id: window.currentStoreId };
-        } else {
-            user = await resolveUser(identifier);
-            if (user) window.currentStoreId = user.id;
-        }
+            if (!user) { resolve(); return; }
 
-        if (!user) {
-            resolve();
-            return;
-        }
+            // Fetch metadata for all decks (to build menu)
+            // Including counts by section requires cards or a separate query.
+            // Fetching all cards for all decks might be what caused performance issues.
+            // Let's fetch only metadata first, then maybe cards for counts if not too many.
 
-        let deckQuery = _supabase
-            .from('decks')
-            .select(`
-                *,
-                deck_cards (*)
-            `)
-            .eq('user_id', user.id)
-            .order('position', { ascending: true })
-            .order('position', { foreignTable: 'deck_cards', ascending: true });
-
-        if (filterId) {
-            deckQuery = deckQuery.eq('id', filterId);
-        }
-
-        let { data: decks, error } = await deckQuery;
-
-        // Fallback if query failed
-        if (error) {
-            console.warn("Error al cargar decks, intentando consulta básica.");
-            const retry = await _supabase
+            let deckQuery = _supabase
                 .from('decks')
                 .select(`
                     *,
-                    deck_cards (*)
+                    deck_cards (section)
                 `)
                 .eq('user_id', user.id)
-                .order('position', { ascending: true })
-                .order('position', { foreignTable: 'deck_cards', ascending: true });
-            decks = retry.data;
-            error = retry.error;
-        }
+                .order('position', { ascending: true });
 
-        if (decks) {
-            // Filtrar en JS para tratar null como público (true)
-            decks = decks.filter(d => d.is_public !== false);
-            window.allPublicDecks = decks;
-        }
+            let { data: decks, error } = await deckQuery;
 
-        if (error || !decks) {
-            $('#decks-container').html('<div class="error">No se pudieron cargar los decks.</div>');
-            return;
-        }
+            if (error) {
+                console.warn("Error loading decks metadata:", error);
+                const retry = await _supabase.from('decks').select('*, deck_cards(section)').eq('user_id', user.id).order('position', { ascending: true });
+                decks = retry.data;
+                error = retry.error;
+            }
 
-        $('#decks-container').empty();
-        if (filterId && decks && decks.length > 0) {
-            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Decks</button></div>').appendTo('#decks-container');
-        }
-        if (decks.length === 0) {
-            $('#decks-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
-            return;
-        }
+            if (decks) {
+                decks = decks.filter(d => d.is_public !== false);
+                window.allPublicDecks = decks;
+            }
 
-        // Initialize observer before rendering shells
-        setupDeckObserver();
+            if (error || !decks) {
+                $('#deck-menu-container').html('<div class="error">No se pudieron cargar los decks.</div>');
+                return;
+            }
 
-        decks.forEach(deck => {
-            renderDeckShell(deck);
-        });
-    } catch (e) {
-        console.error("Error in loadPublicDecks:", e);
-        $('#decks-container').html('<div class="error">Error al cargar los decks.</div>');
-    } finally {
-        resolve();
-    }
+            if (decks.length === 0) {
+                $('#deck-menu-container').html('<div class="empty">Esta tienda aún no tiene decks públicos.</div>');
+                return;
+            }
+
+            // Decide what to show
+            if (filterId) {
+                const selectedDeck = decks.find(d => d.id == filterId);
+                if (selectedDeck) {
+                    await selectDeck(filterId);
+                } else {
+                    renderDeckMenuUI(decks);
+                }
+            } else {
+                renderDeckMenuUI(decks);
+            }
+
+        } catch (e) {
+            console.error("Error in loadPublicDecks:", e);
+        } finally {
+            resolve();
+        }
     });
 }
+
+function renderDeckMenuUI(decks) {
+    const $container = $('#deck-menu-container');
+    $container.empty().show();
+    $('#selected-deck-view').hide();
+    $('#decks-container').empty();
+
+    decks.forEach(deck => {
+        const cards = deck.deck_cards || [];
+        const mainCount = cards.filter(c => !c.section || c.section === 'Main').length;
+        const extraCount = cards.filter(c => c.section === 'Extra').length;
+        const sideCount = cards.filter(c => c.section === 'Side').length;
+
+        const $item = $(`
+            <div class="deck-menu-item" onclick="window.selectDeck('${deck.id}')">
+                <h3>${deck.name}</h3>
+                <div class="deck-menu-stats">
+                    <span>Main: ${mainCount}</span>
+                    <span>Extra: ${extraCount}</span>
+                    <span>Side: ${sideCount}</span>
+                </div>
+            </div>
+        `);
+        $container.append($item);
+    });
+}
+
+async function selectDeck(deckId) {
+    const deck = (window.allPublicDecks || []).find(d => d.id == deckId);
+    if (!deck) return;
+
+    // Show loading for the specific deck
+    $('#decks-container').html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando deck...</div>');
+    $('#deck-menu-container').hide();
+    $('#selected-deck-view').show();
+
+    // Update URL without full reload
+    const url = new URL(window.location);
+    url.searchParams.set('deckId', deckId);
+    window.history.pushState({ deckId }, '', url);
+
+    // Update Title Area
+    // Calculate Total Sum (duplicated logic from renderDeckShell for consistency)
+    // We need the full cards to calculate price, but metadata only has sections
+    // So we fetch full cards for this specific deck now
+    try {
+        const { data: cards, error } = await _supabase
+            .from('deck_cards')
+            .select('*')
+            .eq('deck_id', deckId)
+            .order('position', { ascending: true });
+
+        if (error) throw error;
+        deck.deck_cards = cards;
+
+        const totalSum = (cards || []).reduce((sum, card) => {
+            const priceStr = card.price || '0';
+            const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+            const qty = parseInt(card.quantity) || 1;
+            return sum + (price * qty);
+        }, 0);
+
+        const hasSpecialPrice = deck.use_special_price && deck.special_price;
+        const priceHtml = hasSpecialPrice
+            ? `<div class="deck-price-container" style="align-items: flex-end; margin-bottom: 0;">
+                <span class="price-total price-strikethrough" style="font-size: 0.8rem;">$${totalSum.toFixed(2)}</span>
+                <span class="price-special" style="font-size: 1.2rem;">${deck.special_price}</span>
+               </div>`
+            : `<div class="deck-price-container" style="align-items: flex-end; margin-bottom: 0;">
+                <span class="price-total" style="font-size: 1.2rem;">$${totalSum.toFixed(2)}</span>
+               </div>`;
+
+        $('#selected-deck-title-area').html(`
+            <h2 style="margin: 0; font-size: 1.4rem; color: var(--primary-color);">${deck.name}</h2>
+            ${priceHtml}
+        `);
+
+        // Render the deck
+        $('#decks-container').empty();
+        setupDeckObserver();
+        renderDeckShell(deck);
+
+        // Force immediate render since it's only one deck
+        renderDeckCards(deckId);
+
+    } catch (e) {
+        console.error("Error loading selected deck cards:", e);
+        $('#decks-container').html('<div class="error">Error al cargar las cartas del deck.</div>');
+    }
+}
+
+window.selectDeck = selectDeck;
+
+window.showDeckMenu = function() {
+    const url = new URL(window.location);
+    url.searchParams.delete('deckId');
+    window.history.pushState({}, '', url);
+
+    $('#selected-deck-view').hide();
+    $('#deck-menu-container').show();
+    $('#decks-container').empty();
+
+    // Refresh menu if we have cached decks
+    if (window.allPublicDecks && window.allPublicDecks.length > 0) {
+        renderDeckMenuUI(window.allPublicDecks);
+    } else {
+        loadPublicDecks();
+    }
+};
 
 function initTheme() {
     const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
