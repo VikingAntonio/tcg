@@ -871,38 +871,10 @@ function filterContent(query) {
 
         const deckName = (deckData.name || '').toLowerCase();
         let deckNameMatch = keywords.every(k => deckName.includes(k));
-        let anyCardMatches = false;
-        let firstMatchIndex = -1;
 
-        (deckData.deck_cards || []).forEach((card, index) => {
-            const cardName = (card.name || '').toLowerCase();
-            const cardMatch = keywords.every(k => cardName.includes(k));
-            if (cardMatch) {
-                anyCardMatches = true;
-                if (firstMatchIndex === -1) firstMatchIndex = index;
-            }
-        });
-
-        if (deckNameMatch || anyCardMatches) {
+        if (deckNameMatch) {
             $deckEl.show();
             anyVisible = true;
-
-            // Si hay coincidencia de cartas y el deck ya está renderizado (tiene swiper)
-            if (anyCardMatches && firstMatchIndex !== -1) {
-                const swiperEl = $deckEl.find('.swiper')[0];
-                if (swiperEl && swiperEl.swiper) {
-                    // Asegurar que la carta esté cargada antes de deslizar
-                    if (typeof loadDeckBatch === 'function') {
-                        loadDeckBatch(swiperEl.swiper, deckData, firstMatchIndex, 5);
-                    }
-                    // Solo slideTo si es necesario para evitar parpadeo
-                    if (swiperEl.swiper.activeIndex !== firstMatchIndex) {
-                        swiperEl.swiper.slideTo(firstMatchIndex);
-                    }
-                    // Resaltar en el DOM si ya existe el elemento
-                    $deckEl.find(`.swiper-slide:eq(${firstMatchIndex})`).addClass('search-highlight');
-                }
-            }
         } else {
             $deckEl.hide();
         }
@@ -942,6 +914,11 @@ async function openCardModal($slot) {
 
     if (!imgSrc || imgSrc.includes('placeholder')) return;
 
+    // Optimize image for modal view
+    if (window.optimizeCloudinaryUrl) {
+        imgSrc = window.optimizeCloudinaryUrl(imgSrc, 700, 700);
+    }
+
     const id = $slot.data("id");
     const name = $slot.data("name") || "Carta de Colección";
     const rarity = $slot.data("rarity") || "-";
@@ -953,9 +930,13 @@ async function openCardModal($slot) {
     const quantity = $slot.data("quantity") || "1";
     const price = $slot.data("price") || "-";
     const isWishlist = $slot.hasClass('wishlist-card-item');
+    const isDeckCard = $slot.closest('.deck-public-item').length > 0 || $slot.hasClass('grid-card-item');
 
     // Force 3D for wishlist items to ensure gyroscope works in the modal
     if (isWishlist) use3d = true;
+
+    // Disable gyro for decks as requested for better performance
+    const useGyro = !isDeckCard;
 
     const notes = $slot.data("notes") || "";
     const obtained = $slot.data("obtained") === true || $slot.data("obtained") === "true";
@@ -963,18 +944,19 @@ async function openCardModal($slot) {
     // Detect if owner
     const isOwner = window.currentUserId === window.currentStoreId;
 
-    // Reset the card container
-    $("#card-3d").html(`
+    // Reset the card container and force class reset to avoid inheriting grid styles (like opacity 0.5)
+    const $card = $("#card-3d");
+    $card[0].className = "card-3d";
+    $card.html(`
         <div id="z-text-container">
             <img id="expanded-image" src="${imgSrc}" alt="${name}" class="card__front">
         </div>
         <div class="holo-layer"></div>
         <div class="card__shine"></div>
         <div class="card__glare"></div>
-    `).addClass("card-3d");
+    `);
 
     const $card3d = $("#card-3d-container");
-    const $card = $("#card-3d");
 
     // Cleanup Pokemon styles
     $card.removeClass("card masked interacting");
@@ -1175,13 +1157,21 @@ async function openCardModal($slot) {
     $("#image-overlay").addClass("active");
     $("body").addClass("modal-open");
 
-    setTimeout(() => {
-        applyVisualsToModal(holo, mask, use3d);
+    // Use image onload instead of timeout for better responsiveness and accuracy
+    const $expandedImg = $("#expanded-image");
+    const initializeVisuals = () => {
+        applyVisualsToModal(holo, mask, use3d, { useGyro });
         $card3d.addClass("active");
-    }, 150);
+    };
+
+    if ($expandedImg[0].complete) {
+        initializeVisuals();
+    } else {
+        $expandedImg.on('load', initializeVisuals);
+    }
 }
 
-function applyVisualsToModal(holo, mask, use3d) {
+function applyVisualsToModal(holo, mask, use3d, options = {}) {
     const $card3d = $("#card-3d-container");
     const $card = $("#card-3d");
 
@@ -1230,7 +1220,7 @@ function applyVisualsToModal(holo, mask, use3d) {
     }
 
     if (use3d) {
-        init3DCard();
+        window.sharedCard3D.init('card-3d-container', 'card-3d', '#z-text-container', options);
     } else {
         $card.css('transform', 'none');
         if (window.sharedCard3D) {
