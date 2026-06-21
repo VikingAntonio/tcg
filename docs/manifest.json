@@ -2,10 +2,11 @@
   "name": "Vikingdev TCG",
   "short_name": "Vikingdev",
   "description": "Organiza. Muestra. Comparte. Todo lo que necesitas para gestionar tus colecciones con estilo.",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#00d2ff",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "favi.png",
@@ -24,6 +25,22 @@
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Álbumes",
+      "short_name": "Álbumes",
+      "description": "Ver mis álbumes",
+      "url": "./admin.html?view=dashboard",
+      "icons": [{ "src": "favi.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Decks",
+      "short_name": "Decks",
+      "description": "Ver mis decks",
+      "url": "./admin.html?view=decks",
+      "icons": [{ "src": "favi.png", "sizes": "192x192" }]
     }
   ]
 }

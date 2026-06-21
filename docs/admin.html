@@ -4,6 +4,7 @@
     <meta charset="UTF-8">    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="manifest" href="manifest.json">
     <title>Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animacionesdeseos.css">
@@ -2378,6 +2379,15 @@
     <script src="js/subastas_v2.js"></script>
     <script type="text/javascript" src="js/turn.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado', reg))
+                    .catch(err => console.warn('Error al registrar Service Worker', err));
+            });
+        }
+    </script>
 
     <!-- Floating Companion Wrapper -->
     <div id="companion-wrapper">
