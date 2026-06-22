@@ -145,17 +145,10 @@ self.addEventListener('fetch', event => {
 
   // 2. Strategy: Supabase Data Handling
   if (url.hostname.includes('supabase.co')) {
-    // If it's a mutation (POST, PUT, DELETE, PATCH), clear data cache and fetch from network
+    // If it's a mutation (POST, PUT, DELETE, PATCH), fetch from network.
+    // We no longer clear DATA_CACHE here to ensure offline availability of previously fetched data.
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(event.request.method)) {
-      event.respondWith(
-        fetch(event.request).then(async response => {
-          if (response.ok) {
-            console.log('[Service Worker] Mutation successful, clearing DATA_CACHE');
-            await caches.delete(DATA_CACHE);
-          }
-          return response;
-        })
-      );
+      event.respondWith(fetch(event.request));
       return;
     }
 
