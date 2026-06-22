@@ -3826,6 +3826,13 @@ function addCardToNexusDeck(card, section = null) {
 function initNexusSortables() {
     if (!window.Sortable) return;
 
+    // Tablet check: Disable Drag & Drop on devices like Huion Slate 10 (medium screens + touch)
+    const isTablet = window.innerWidth <= 1440 && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    if (isTablet) {
+        console.log("Tablet detected: Nexus SortableJS initialization skipped (Drag & Drop disabled)");
+        return;
+    }
+
     // Search Results -> Deck sections (Clone)
     const searchResultsEl = document.getElementById('nexus-search-results');
     if (searchResultsEl) {

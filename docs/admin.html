@@ -479,6 +479,56 @@
             }
         }
 
+        /* Tablet optimization for Huion Slate 10 and similar devices (1024px to 1440px) */
+        @media (min-width: 1024px) and (max-width: 1440px) {
+            #view-deck-editor .nexus-layout {
+                grid-template-columns: 240px 1fr 400px !important;
+                gap: 15px !important;
+                padding: 10px !important;
+            }
+
+            #view-deck-editor .nexus-col {
+                padding: 10px !important;
+                gap: 10px !important;
+            }
+
+            #view-deck-editor .nexus-grid {
+                grid-template-columns: repeat(auto-fill, 75px) !important;
+                justify-content: center !important;
+                gap: 4px !important;
+            }
+
+            #view-deck-editor .nexus-search-grid {
+                grid-template-columns: repeat(auto-fill, 75px) !important;
+                justify-content: center !important;
+                gap: 4px !important;
+            }
+
+            #view-deck-editor .nexus-preview-info h3 {
+                font-size: 0.95rem !important;
+            }
+
+            #view-deck-editor .nexus-preview-info p {
+                font-size: 0.75rem !important;
+                max-height: 150px !important;
+            }
+
+            #view-deck-editor .nexus-section-header {
+                font-size: 0.7rem !important;
+                margin-top: 40px !important;
+                padding: 6px 12px !important;
+            }
+
+            #view-deck-editor .nexus-meta-box {
+                padding: 10px !important;
+            }
+
+            #view-deck-editor .nexus-search-box {
+                padding: 10px !important;
+                gap: 8px !important;
+            }
+        }
+
         @media (max-width: 1023px) {
             #deck-editor-pc-layout { display: none; }
         }
