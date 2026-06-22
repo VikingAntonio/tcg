@@ -1655,21 +1655,34 @@ function editSpirit(spirit) {
 
 // Auth Functions
 async function checkSession() {
-    const { data: { session } } = await _supabase.auth.getSession();
-    if (session) {
-        const { data: user } = await _supabase
-            .from('usuarios')
-            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, auction_reset_date, monthly_created_count, monthly_bid_count')
-            .eq('id', session.user.id)
-            .single();
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) {
+            const { data: user, error } = await _supabase
+                .from('usuarios')
+                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, selected_spirit_id, max_albums, max_pages, max_decks, max_cards_per_deck, allowed_spirit_ids, has_tracking, has_clients, has_auctions, has_events, max_events, auction_reset_date, monthly_created_count, monthly_bid_count')
+                .eq('id', session.user.id)
+                .single();
 
-        if (user) {
-            currentUser = user;
-            localStorage.setItem('tcg_session', JSON.stringify(user));
-            showAuthenticatedContent();
-        } else {
-            showLoginView();
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('tcg_session', JSON.stringify(user));
+                showAuthenticatedContent();
+                return;
+            } else if (error) {
+                console.warn("Error fetching user, checking cache...", error);
+            }
         }
+    } catch (e) {
+        console.error("Session check failed:", e);
+    }
+
+    // Fallback to localStorage for offline access
+    const cachedUser = localStorage.getItem('tcg_session');
+    if (cachedUser) {
+        currentUser = JSON.parse(cachedUser);
+        console.log("Using cached session for offline access");
+        showAuthenticatedContent();
     } else {
         showLoginView();
     }
@@ -1857,7 +1870,9 @@ async function showAuthenticatedContent() {
     // Fetch additional data for CompanionBot
     const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
         _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true),
-        _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1)
+        _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1),
+        // Data priming: Fetch decks to ensure they are in Service Worker cache
+        _supabase.from('decks').select('*').eq('user_id', currentUser.id).order('position', { ascending: true })
     ]);
 
     window.currentStoreDataForBot = {
@@ -1894,18 +1909,24 @@ async function loadDecks() {
         $('#deck-list').html('<div class="loading">Cargando decks...</div>');
     }
 
-    const { data: decks, error } = await _supabase
+    let { data: decks, error } = await _supabase
         .from('decks')
         .select('*')
         .eq('user_id', currentUser.id)
         .order('position', { ascending: true });
 
     if (error) {
-        $('#deck-list').html('<div class="error">Error al cargar decks.</div>');
-        return;
+        console.warn("Supabase error loading decks, trying to continue...", error);
+        // If we have an error (like offline), we might still get data from the Service Worker cache
+        // But the SDK 'error' object will be populated if the fetch actually failed.
+        // If 'decks' is null or undefined, we truly have no data.
+        if (!decks) {
+            $('#deck-list').html('<div class="error">Error al cargar decks. Revisa tu conexión.</div>');
+            return;
+        }
     }
 
-    if (decks.length === 0) {
+    if (!decks || decks.length === 0) {
         $('#deck-list').html('<div class="empty">No tienes decks. Crea uno para empezar.</div>');
         return;
     }
@@ -1991,11 +2012,17 @@ async function editDeck(deck) {
     localVikingData = [];
 
     // Re-fetch para evitar datos obsoletos del cierre
-    const { data: latestDeck } = await _supabase
-        .from('decks')
-        .select('*')
-        .eq('id', deck.id)
-        .single();
+    let latestDeck = null;
+    try {
+        const { data } = await _supabase
+            .from('decks')
+            .select('*')
+            .eq('id', deck.id)
+            .single();
+        latestDeck = data;
+    } catch (e) {
+        console.warn("Error re-fetching deck, using provided data", e);
+    }
 
     const target = latestDeck || deck;
 
@@ -2044,15 +2071,18 @@ async function loadDeckCards(deckId, fetchCards = true) {
         if ($('#deck-card-list').children().length === 0) {
             $('#deck-card-list').html('<div class="loading">Cargando cartas...</div>');
         }
-        const { data: cards, error } = await _supabase
+        let { data: cards, error } = await _supabase
             .from('deck_cards')
             .select('*')
             .eq('deck_id', deckId)
             .order(deckSortOrder, { ascending: true });
 
         if (error) {
-            $('#deck-card-list').html('<div class="error">Error al cargar imágenes.</div>');
-            return;
+            console.warn("Supabase error loading deck cards, trying to continue...", error);
+            if (!cards) {
+                $('#deck-card-list').html('<div class="error">Error al cargar cartas. Revisa tu conexión.</div>');
+                return;
+            }
         }
         localDeckCards = cards || [];
     }
