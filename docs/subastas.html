@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="manifest" href="manifest.json">
     <title>Subastas - Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/subastas_v2.css">
@@ -599,6 +600,15 @@
         }
 
         function showView(view) { $('.admin-section').hide().removeClass('active'); $(`#view-${view}`).show().addClass('active'); }
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./sw.js")
+                    .then(reg => console.log("Service Worker registrado", reg))
+                    .catch(err => console.warn("Error al registrar Service Worker", err));
+            });
+        }
     </script>
 </body>
 </html>

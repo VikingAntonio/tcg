@@ -1,0 +1,27 @@
+SÍ, ES POSIBLE PONER TU PROYECTO OFFLINE (COMO PWA)
+
+He revisado tu proyecto y aquí tienes la explicación de cómo podemos hacerlo y qué partes se pueden cubrir:
+
+1. ¿Se puede poner offline el link público y el admin?
+   - Sí, ambos. Mediante el uso de un "Service Worker" (que ya tienes iniciado pero muy básico en `sw.js`), podemos hacer que el navegador guarde los archivos necesarios (HTML, CSS, JS) para que la página cargue incluso sin internet.
+
+2. ¿Se pueden mostrar las imágenes offline?
+   - Sí. Podemos configurar el Service Worker para que detecte cuando el navegador descarga una imagen de Cloudinary o TCGPlayer y guarde una copia local en el caché del navegador.
+   - La próxima vez que intentes ver esa imagen sin internet, el Service Worker la servirá desde la memoria local.
+
+3. ¿Cómo funcionaría para Álbumes, Decks y Wishlist?
+   - Datos: Cuando el usuario entra a ver sus álbumes o decks mientras tiene internet, el Service Worker guardará las respuestas de la base de datos (Supabase).
+   - Imágenes: Al ir navegando y viendo las cartas, estas se irán guardando automáticamente.
+   - Resultado: Si te quedas sin internet, podrás abrir la web y ver todo lo que ya habías consultado previamente porque estará "cacheado".
+
+4. Consideraciones técnicas:
+   - No necesitamos librerías locales pesadas ni modificar tu diseño. Todo se hace "por detrás" en el código del Service Worker.
+   - El modo Admin también funcionará para ver, pero para "guardar" cambios nuevos obviamente se necesitará internet para sincronizar con la base de datos (aunque se podría implementar un sistema que guarde los cambios y los mande cuando vuelva la conexión, pero es más complejo).
+   - Para que todo esté disponible offline la primera vez, es recomendable que el usuario navegue un poco por las secciones que quiere tener disponibles mientras aún tiene conexión.
+
+MI PROPUESTA DE ACCIÓN:
+1. Mejorar el archivo `sw.js` para que cachee no solo los archivos del sitio, sino también las peticiones a la base de datos e imágenes.
+2. Registrar correctamente este Service Worker en todos tus archivos principales (`index.html`, `admin.html`, `public.html`, etc.) ya que actualmente no se está activando.
+3. Actualizar el `manifest.json` para que la experiencia de "Instalar App" sea perfecta.
+
+¿Procedo con estos cambios?
