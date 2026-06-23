@@ -175,7 +175,8 @@ self.addEventListener('fetch', event => {
   if (event.request.mode === 'navigate' && url.origin === self.location.origin) {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return caches.match('./public.html') || caches.match('./index.html');
+        // Priority for admin.html to support PWA offline admin usage
+        return caches.match('./admin.html') || caches.match('./public.html') || caches.match('./index.html');
       })
     );
     return;

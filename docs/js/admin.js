@@ -1731,7 +1731,8 @@ async function handleLogin() {
 
         currentUser = profile;
         localStorage.setItem('tcg_session', JSON.stringify(profile));
-        window.location.href = 'https://vikingtcg.xyz/admin.html';
+        // Use relative path for better offline/local support
+        window.location.href = './admin.html';
     }
 }
 

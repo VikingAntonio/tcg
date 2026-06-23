@@ -2,7 +2,7 @@
   "name": "Vikingdev TCG",
   "short_name": "Vikingdev",
   "description": "Organiza. Muestra. Comparte. Todo lo que necesitas para gestionar tus colecciones con estilo.",
-  "start_url": "./index.html",
+  "start_url": "./admin.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#00d2ff",
