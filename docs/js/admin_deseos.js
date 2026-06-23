@@ -195,7 +195,7 @@ async function loadWishlistAdmin() {
 
         $card.find('.btn-delete-wishlist').click(function(e) {
             e.stopPropagation();
-            deleteWishlistItemAdmin(item.id);
+            deleteWishlistItemAdmin(item.id, $card);
         });
 
         $card.find('.btn-edit-wishlist').click(function(e) {
@@ -409,7 +409,7 @@ async function saveWishlistSlotName(index, name) {
     }
 }
 
-async function deleteWishlistItemAdmin(id) {
+async function deleteWishlistItemAdmin(id, $element = null) {
     const result = await Swal.fire({
         title: '¿Eliminar de la lista?',
         icon: 'warning',
@@ -423,7 +423,17 @@ async function deleteWishlistItemAdmin(id) {
         if (error) {
             Swal.fire('Error', 'No se pudo eliminar', 'error');
         } else {
-            loadWishlistAdmin();
+            if ($element) {
+                $element.fadeOut(300, function() {
+                    $(this).remove();
+                    const $container = $('#wishlist-list-admin');
+                    if ($container.children('.wishlist-item').length === 0) {
+                        $container.html('<div class="empty">No tienes cartas en tu Wishlist. ¡Busca una arriba para empezar!</div>');
+                    }
+                });
+            } else {
+                loadWishlistAdmin();
+            }
         }
     }
 }
