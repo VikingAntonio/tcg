@@ -2018,13 +2018,14 @@ function loadPublicDecks() {
                     deck_cards (section)
                 `)
                 .eq('user_id', user.id)
-                .order('position', { ascending: true });
+                .order('position', { ascending: true })
+                .order('id', { ascending: true });
 
             let { data: decks, error } = await deckQuery;
 
             if (error) {
                 console.warn("Error loading decks metadata:", error);
-                const retry = await _supabase.from('decks').select('*, deck_cards(section)').eq('user_id', user.id).order('position', { ascending: true });
+                const retry = await _supabase.from('decks').select('*, deck_cards(section)').eq('user_id', user.id).order('position', { ascending: true }).order('id', { ascending: true });
                 decks = retry.data;
                 error = retry.error;
             }
