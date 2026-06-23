@@ -999,7 +999,13 @@ $(document).ready(async function() {
                 if (vikErr) console.warn("Error saving to viking_data:", vikErr);
             }
 
-            Swal.fire('¡Éxito!', 'Todos los cambios del deck se han guardado correctamente', 'success');
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: 'Todos los cambios del deck se han guardado correctamente',
+                timer: 1500,
+                showConfirmButton: false
+            });
 
             // Refrescar para ver el orden guardado
             loadDeckCards(currentDeckId, true);
