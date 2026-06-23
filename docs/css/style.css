@@ -1513,6 +1513,19 @@ input:checked + .slider:before {
     margin-right: 15px;
 }
 
+.deck-carousel-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+}
+
+.swiperyg {
+    margin: 0 auto !important;
+}
+
 /* Responsividad */
 @media (max-width: 768px) {
     /* Disable hover/active interaction animations on mobile to prevent flickering and "jumping" on touch */

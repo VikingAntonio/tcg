@@ -887,9 +887,19 @@ $(document).ready(async function() {
             return;
         }
 
+        // Get max position to append
+        const { data: posData } = await _supabase
+            .from('decks')
+            .select('position')
+            .eq('user_id', currentUser.id)
+            .order('position', { ascending: false })
+            .limit(1);
+
+        const nextPos = (posData && posData.length > 0) ? (posData[0].position + 1) : 0;
+
         const { data, error } = await _supabase
             .from('decks')
-            .insert([{ name: 'Nuevo Deck', user_id: currentUser.id }])
+            .insert([{ name: 'Nuevo Deck', user_id: currentUser.id, position: nextPos }])
             .select();
 
         if (error) {
@@ -1879,7 +1889,7 @@ async function showAuthenticatedContent() {
         _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true),
         _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1),
         // Data priming: Fetch decks to ensure they are in Service Worker cache
-        _supabase.from('decks').select('*').eq('user_id', currentUser.id).order('position', { ascending: true })
+        _supabase.from('decks').select('*').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true })
     ]);
 
     window.currentStoreDataForBot = {
@@ -1920,7 +1930,8 @@ async function loadDecks() {
         .from('decks')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('position', { ascending: true });
+        .order('position', { ascending: true })
+        .order('id', { ascending: true });
 
     if (error) {
         console.warn("Supabase error loading decks, trying to continue...", error);
@@ -3602,7 +3613,7 @@ async function openOrganizeModal(type) {
         const { data } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
         items = data || [];
     } else if (type === 'decks') {
-        const { data } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id).order('position', { ascending: true });
+        const { data } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
         items = data || [];
     } else if (type === 'cards') {
         // Use localDeckCards for current deck editing session
