@@ -5589,3 +5589,42 @@ body.focus-mode-active .event-card {
     background: rgba(255, 255, 255, 0.1);
     transform: translateX(-5px);
 }
+
+/* Multi-Texture Rendering Support */
+.multi-texture-mode .holo-layer-multi {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 101; /* Stacked above single holo-layer */
+    opacity: 0;
+    transition: opacity 0.3s;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+.multi-texture-mode.active .holo-layer-multi {
+    opacity: 1;
+}
+
+.layer-chan-r {
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    filter: url(#extract-red);
+}
+
+.layer-chan-g {
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    filter: url(#extract-green);
+}
+
+.layer-chan-b {
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    filter: url(#extract-blue);
+}
