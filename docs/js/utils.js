@@ -72,14 +72,45 @@ window.getAlbumSize = function($albumContainer) {
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
 
-    const POKEMON_FOILS = window.POKEMON_FOILS;
+    // Remove existing multi-layers if any
+    $el.find('.holo-layer-multi').remove();
 
+    if (holo.startsWith('custom-textures|')) {
+        // Multi-Texture Logic
+        $el.addClass('active foil-loop multi-texture-mode');
+        if (mask) {
+            $el.addClass('masked').css({'--mask-url': `url(${mask})`});
+        }
+
+        const config = holo.split('|')[1];
+        const channels = config.split(','); // R:tex,G:tex,B:tex
+
+        channels.forEach(chanStr => {
+            const [chan, tex] = chanStr.split(':');
+            const $layer = $('<div class="holo-layer holo-layer-multi"></div>');
+            $layer.addClass(`layer-chan-${chan.toLowerCase()}`);
+
+            // Apply texture to layer
+            window.applyTextureToLayer($layer, tex);
+            $el.append($layer);
+        });
+
+        $el.css({'--mx': 0.5, '--my': 0.5, '--angle': '135deg', '--card-opacity': 1});
+        return;
+    }
+
+    // Standard single texture logic
+    const POKEMON_FOILS = window.POKEMON_FOILS;
     let baseHolo = holo;
     let isCustomFoil = false;
+
     if (holo.startsWith('custom-foil|')) {
         isCustomFoil = true;
         baseHolo = holo.split('|')[1] || 'foil';
     }
+
+    // Cleanup previous multi-texture classes
+    $el.removeClass('multi-texture-mode');
 
     if (POKEMON_FOILS[baseHolo]) {
         let rarityVal = POKEMON_FOILS[baseHolo];
@@ -102,13 +133,26 @@ window.applyFoilToElement = function($el, holo, mask) {
         $el.css({'--mx': 0.5, '--my': 0.5});
     }
 
-    $el.css({
-        '--angle': '135deg',
-        '--card-opacity': 1
-    });
+    $el.css({'--angle': '135deg', '--card-opacity': 1});
 
-    if ($el.find('.holo-layer').length === 0) $el.append('<div class="holo-layer"></div>');
+    if ($el.find('.holo-layer:not(.holo-layer-multi)').length === 0) {
+        $el.append('<div class="holo-layer"></div>');
+    }
     $el.addClass('active foil-loop');
+};
+
+window.applyTextureToLayer = function($layer, tex) {
+    const POKEMON_FOILS = window.POKEMON_FOILS;
+    if (POKEMON_FOILS[tex]) {
+        let rarityVal = POKEMON_FOILS[tex];
+        if (rarityVal.includes('trainer gallery')) { $layer.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+        if (rarityVal.includes('supporter')) { $layer.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+        if (rarityVal.includes('pokemon')) { $layer.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+        $layer.attr("data-rarity", rarityVal.trim());
+        $layer.addClass('card');
+    } else {
+        $layer.addClass(tex);
+    }
 };
 
 // --- Global Navigation ---
@@ -118,8 +162,17 @@ window.maskCtx = null;
 window.isPainting = false;
 window.currentBrushSize = 10;
 window.currentTool = 'brush'; // 'brush' or 'eraser'
+window.maskEditorMode = 'simple'; // 'simple' or 'multi'
+window.selectedChannel = 'R'; // 'R', 'G', 'B' for multi mode
 window.maskHistory = [];
 const MAX_MASK_HISTORY = 20;
+
+// Default textures for Multi-Mode
+window.multiTextures = {
+    R: 'pk-rare-holo-cosmos',
+    G: 'starlight-rare',
+    B: 'secret-rare'
+};
 
 // Zoom/Pan State
 window.maskZoom = 1;
@@ -140,6 +193,42 @@ window.initMaskEditor = function() {
     window.maskCanvas = document.getElementById('mask-canvas');
     if (!window.maskCanvas) return;
     window.maskCtx = window.maskCanvas.getContext('2d');
+
+    // UI Mode Switching
+    $('#btn-mode-simple').off('click').on('click', function() {
+        window.maskEditorMode = 'simple';
+        $(this).addClass('active').siblings().removeClass('active');
+        $('#simple-texture-picker').show();
+        $('#multi-texture-picker').hide();
+        $('#mask-instruction-text').text('Dibuja en blanco donde quieras aplicar el efecto foil.');
+    });
+
+    $('#btn-mode-multi').off('click').on('click', function() {
+        window.maskEditorMode = 'multi';
+        $(this).addClass('active').siblings().removeClass('active');
+        $('#simple-texture-picker').hide();
+        $('#multi-texture-picker').css('display', 'flex');
+        $('#mask-instruction-text').text('Pinta con colores (R, G, B) para aplicar diferentes texturas.');
+    });
+
+    // Channel Selection
+    $('.btn-channel').off('click').on('click', function() {
+        window.selectedChannel = $(this).data('channel');
+        $('.btn-channel').removeClass('active').css('border', 'none');
+        $(this).addClass('active').css('border', '2px solid white');
+        window.currentTool = 'brush';
+        $('#tool-brush').addClass('active').siblings().removeClass('active');
+    });
+
+    // Texture Select Change
+    $('#select-simple-texture').off('change').on('change', function() {
+        // No immediate action needed, will be used on Save
+    });
+
+    $('.multi-tex-select').off('change').on('change', function() {
+        const channel = $(this).data('channel');
+        window.multiTextures[channel] = $(this).val();
+    });
 
     $(window.maskCanvas).off('mousedown touchstart').on('mousedown touchstart', function(e) {
         if (window.currentTool === 'pan') {
@@ -264,15 +353,42 @@ window.initMaskEditor = function() {
     $('#btn-save-mask').off('click').on('click', function() {
         const dataUrl = window.maskCanvas.toDataURL('image/png');
 
+        let finalHolo = '';
+        if (window.maskEditorMode === 'simple') {
+            const tex = $('#select-simple-texture').val();
+            finalHolo = `custom-foil|${tex}`;
+        } else {
+            const r = $('#select-multi-r').val();
+            const g = $('#select-multi-g').val();
+            const b = $('#select-multi-b').val();
+            finalHolo = `custom-textures|R:${r},G:${g},B:${b}`;
+        }
+
         // Use explicit target if set, otherwise fallback to standard IDs
         if (window.maskTargetInput) {
             $(window.maskTargetInput).val(dataUrl).trigger('change');
+            // Try to find the corresponding holo effect select
+            let holoTarget = window.maskTargetInput.replace('custom-mask', 'holo-effect').replace('mask', 'holo-effect');
+            if (window.maskTargetInput === '#input-card-custom-mask') holoTarget = '#input-card-holo-effect';
+
+            if ($(holoTarget).length) {
+                if (!$(holoTarget + ` option[value="${finalHolo}"]`).length) {
+                    $(holoTarget).append(`<option value="${finalHolo}">Custom: ${window.maskEditorMode === 'simple' ? 'Foil' : 'Multi'}</option>`);
+                }
+                $(holoTarget).val(finalHolo).trigger('change');
+            }
         } else {
-            $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #bdd-custom-mask').val(dataUrl).trigger('change');
+            $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #bdd-custom-mask, #input-card-custom-mask, #inv-card-custom-mask').val(dataUrl).trigger('change');
+            $('#slot-holo-effect, #modal-holo-effect, #owner-card-holo, #bdd-holo-effect, #input-card-holo-effect, #inv-card-holo-effect').each(function() {
+                if (!$(this).find(`option[value="${finalHolo}"]`).length) {
+                    $(this).append(`<option value="${finalHolo}">Custom: ${window.maskEditorMode === 'simple' ? 'Foil' : 'Multi'}</option>`);
+                }
+                $(this).val(finalHolo).trigger('change');
+            });
         }
 
         $('#mask-editor-overlay').removeClass('active');
-        Swal.fire('Guardado', 'La máscara se ha generado correctamente.', 'success');
+        Swal.fire('Guardado', 'La máscara y textura se han generado correctamente.', 'success');
     });
 };
 
@@ -283,8 +399,45 @@ window.initMaskCanvas = function() {
     window.maskPanY = 0;
     window.updateMaskTransform();
 
+    // Support simple mode by default
+    $('#btn-mode-simple').trigger('click');
+
     // Supports all integrated form input IDs
-    const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
+    const currentMask = $(window.maskTargetInput || '#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask, #input-card-custom-mask').val();
+    let currentHolo = '';
+    if (window.maskTargetInput) {
+        let holoTarget = window.maskTargetInput.replace('custom-mask', 'holo-effect').replace('mask', 'holo-effect');
+        if (window.maskTargetInput === '#input-card-custom-mask') holoTarget = '#input-card-holo-effect';
+        currentHolo = $(holoTarget).val() || '';
+    } else {
+        currentHolo = $('#slot-holo-effect, #modal-holo-effect, #owner-card-holo, #inv-card-holo-effect, #bdd-holo-effect, #input-card-holo-effect').val() || '';
+    }
+
+    // Set Background Image to Editor
+    let currentImg = '';
+    if (window.maskTargetInput) {
+        let imgTarget = window.maskTargetInput.replace('custom-mask', 'image-url').replace('mask', 'image-url');
+        if (window.maskTargetInput === '#input-card-custom-mask') imgTarget = '#input-card-image';
+        currentImg = $(imgTarget).val() || '';
+    } else {
+        currentImg = $('#slot-image-url, #modal-wishlist-image, #owner-card-img, #bdd-image-url, #input-card-image').filter(function() { return $(this).val(); }).first().val() || '';
+    }
+    $('#mask-canvas-wrapper').css('background-image', currentImg ? `url(${currentImg})` : 'none');
+
+    // Initialize values from current holo string
+    if (currentHolo.startsWith('custom-textures|')) {
+        $('#btn-mode-multi').trigger('click');
+        const parts = currentHolo.split('|')[1].split(',');
+        parts.forEach(p => {
+            const [chan, tex] = p.split(':');
+            if (chan === 'R') { $('#select-multi-r').val(tex); window.multiTextures.R = tex; }
+            if (chan === 'G') { $('#select-multi-g').val(tex); window.multiTextures.G = tex; }
+            if (chan === 'B') { $('#select-multi-b').val(tex); window.multiTextures.B = tex; }
+        });
+    } else if (currentHolo.startsWith('custom-foil|')) {
+        const tex = currentHolo.split('|')[1];
+        $('#select-simple-texture').val(tex);
+    }
 
     window.maskCtx.fillStyle = 'black';
     window.maskCtx.fillRect(0, 0, window.maskCanvas.width, window.maskCanvas.height);
@@ -327,7 +480,18 @@ window.drawMask = function(e) {
     window.maskCtx.lineWidth = window.currentBrushSize;
     window.maskCtx.lineCap = 'round';
     window.maskCtx.lineJoin = 'round';
-    window.maskCtx.strokeStyle = window.currentTool === 'brush' ? 'white' : 'black';
+
+    if (window.currentTool === 'eraser') {
+        window.maskCtx.strokeStyle = 'black';
+    } else {
+        if (window.maskEditorMode === 'simple') {
+            window.maskCtx.strokeStyle = 'white';
+        } else {
+            if (window.selectedChannel === 'R') window.maskCtx.strokeStyle = '#ff0000';
+            else if (window.selectedChannel === 'G') window.maskCtx.strokeStyle = '#00ff00';
+            else if (window.selectedChannel === 'B') window.maskCtx.strokeStyle = '#0000ff';
+        }
+    }
 
     window.maskCtx.lineTo(x, y);
     window.maskCtx.stroke();
@@ -577,6 +741,19 @@ window.displayExternalResults = function(results, resultsSelector, onSelectCallb
 };
 
 $(document).ready(function() {
+    // Inject SVG Filters for RGB Masking
+    if ($('#rgb-mask-filters').length === 0) {
+        const svgFilters = `
+        <svg id="rgb-mask-filters" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="extract-red"><feColorMatrix type="matrix" values="0 0 0 0 1, 0 0 0 0 1, 0 0 0 0 1, 1 0 0 0 0"/></filter>
+            <filter id="extract-green"><feColorMatrix type="matrix" values="0 0 0 0 1, 0 0 0 0 1, 0 0 0 0 1, 0 1 0 0 0"/></filter>
+            <filter id="extract-blue"><feColorMatrix type="matrix" values="0 0 0 0 1, 0 0 0 0 1, 0 0 0 0 1, 0 0 1 0 0"/></filter>
+          </defs>
+        </svg>`;
+        $('body').append(svgFilters);
+    }
+
     window.initMaskEditor();
 
     // Isolated navigation for public.html if it's there
@@ -635,14 +812,72 @@ $(document).ready(function() {
 // Dynamic Mask Editor Injection
 $(document).ready(function() {
     if ($('#mask-editor-overlay').length === 0) {
+        const foilOptions = `
+            <optgroup label="Pokemon TCG Foils">
+                <option value="pk-rare-holo">PK: Rare Holo</option>
+                <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
+                <option value="pk-rare-holo-v">PK: Rare Holo V</option>
+                <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
+                <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
+                <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
+                <option value="pk-rare-secret">PK: Rare Secret</option>
+                <option value="pk-amazing-rare">PK: Amazing Rare</option>
+                <option value="pk-radiant-rare">PK: Radiant Rare</option>
+                <option value="pk-reverse-holo">PK: Reverse Holo</option>
+            </optgroup>
+            <optgroup label="Efectos Genéricos">
+                <option value="foil">Foil Standard</option>
+                <option value="super-rare">Super Rare (Brillo)</option>
+                <option value="secret-rare">Secret Rare (Rayas)</option>
+                <option value="ghost-rare">Ghost Rare (3D)</option>
+                <option value="starlight-rare">Starlight Rare (Diamantina)</option>
+                <option value="rainbow">Rainbow (Arcoíris)</option>
+                <option value="custom-texture">Textura 3D</option>
+            </optgroup>
+        `;
+
         const maskEditorHTML = `
         <div id="mask-editor-overlay" class="overlay">
             <div class="overlay-content" style="max-width: 800px; width: 95%;">
                 <span id="close-mask-editor" class="close-btn">&times;</span>
                 <h2>Editor de Máscara</h2>
-                <p style="font-size: 11px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil. Usa la rueda o botones para zoom.</p>
+                <p id="mask-instruction-text" style="font-size: 11px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil. Usa la rueda o botones para zoom.</p>
 
-                <div id="mask-viewport" style="position: relative; width: 100%; height: 50vh; min-height: 350px; background: #111; overflow: hidden; border: 2px solid #333; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; touch-action: none;">
+                <div id="mask-mode-controls" style="display: flex; gap: 15px; margin-bottom: 15px; width: 100%;">
+                    <button id="btn-mode-simple" class="btn btn-secondary active" style="flex: 1; font-size: 11px; padding: 10px;">FOIL SIMPLE</button>
+                    <button id="btn-mode-multi" class="btn btn-secondary" style="flex: 1; font-size: 11px; padding: 10px;">MULTI-TEXTURA (RGB)</button>
+                </div>
+
+                <div id="simple-texture-picker" style="width: 100%; margin-bottom: 15px;">
+                    <label style="font-size: 10px; text-transform: uppercase; color: #666; font-weight: 800; display: block; margin-bottom: 5px;">Elegir Textura:</label>
+                    <select id="select-simple-texture" style="width: 100%; background: #252525; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 12px;">
+                        ${foilOptions}
+                    </select>
+                </div>
+
+                <div id="multi-texture-picker" style="width: 100%; margin-bottom: 15px; display: none; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 10px; text-transform: uppercase; color: #666; font-weight: 800; display: block; margin-bottom: 5px;">Asignar Texturas por Canal:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn-channel active" data-channel="R" style="width: 30px; height: 30px; background: #ff4757; color: white; border: 2px solid white; border-radius: 5px; cursor: pointer; font-weight: 800;">R</button>
+                        <select id="select-multi-r" data-channel="R" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
+                            ${foilOptions}
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn-channel" data-channel="G" style="width: 30px; height: 30px; background: #2ed573; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 800;">G</button>
+                        <select id="select-multi-g" data-channel="G" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
+                            ${foilOptions}
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn-channel" data-channel="B" style="width: 30px; height: 30px; background: #1e90ff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 800;">B</button>
+                        <select id="select-multi-b" data-channel="B" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
+                            ${foilOptions}
+                        </select>
+                    </div>
+                </div>
+
+                <div id="mask-viewport" style="position: relative; width: 100%; height: 40vh; min-height: 300px; background: #111; overflow: hidden; border: 2px solid #333; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; touch-action: none;">
                     <div id="mask-zoom-container" style="position: relative; transform-origin: center; transition: transform 0.1s ease-out;">
                         <div id="mask-canvas-wrapper" style="position: relative; border: 1px solid #444; width: 168px; height: 244px; background-size: cover; background-position: center;">
                             <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
@@ -686,6 +921,13 @@ $(document).ready(function() {
     });
 
     $(document).on('click', '#btn-open-mask-editor', function() {
+        window.maskTargetInput = null;
+        $('#mask-editor-overlay').addClass('active');
+        window.initMaskCanvas();
+    });
+
+    $(document).on('click', '.btn-edit-mask-nexus', function() {
+        window.maskTargetInput = '#input-card-custom-mask';
         $('#mask-editor-overlay').addClass('active');
         window.initMaskCanvas();
     });
