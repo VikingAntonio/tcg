@@ -595,9 +595,69 @@
                 $('#dropdown-user-name').text(currentUser.username);
             }
 
+            // Load current spirit for floating companion
+            if (currentUser.selected_spirit_id) {
+                const { data: spiritData } = await _supabase
+                    .from('spirits')
+                    .select('*')
+                    .eq('id', currentUser.selected_spirit_id)
+                    .single();
+                if (spiritData) {
+                    window.currentSpirit = spiritData;
+                    initFloatingCompanion();
+                }
+            }
+
             showView('investments');
             if (typeof loadInvestmentCategories === 'function') {
                 loadInvestmentCategories();
+            }
+        }
+
+        async function initFloatingCompanion() {
+            if (!window.currentSpirit) return;
+
+            // Update chatbot greeting with spirit name
+            if (window.currentSpirit && window.currentSpirit.name) {
+                const $greeting = $('#chat-messages .msg-bot').first();
+                if ($greeting.length) {
+                    let text = $greeting.text();
+                    text = text.replace('Vikingo', window.currentSpirit.name);
+                    $greeting.text(text);
+                }
+            }
+
+            const $container = $('#floating-companion-container');
+            if (!$container.length) return;
+
+            if (typeof makeCompanionDraggable === 'function') setTimeout(makeCompanionDraggable, 1000);
+            $container.html(`
+                <model-viewer
+                    src="${window.currentSpirit.gltf_url}"
+                    auto-rotate camera-controls rotation="0deg 0deg 0deg" shadow-intensity="1" environment-image="neutral" exposure="1" interaction-prompt="none" oncontextmenu="return false;">
+                </model-viewer>
+            `);
+
+            $container.on('click', function(e) {
+                if (window.isCompanionDragging) return;
+                e.stopPropagation();
+                $('#companion-menu').toggleClass('active');
+            });
+
+            $('#menu-item-chat').on('click', function(e) {
+                e.stopPropagation();
+                $('#chatbot-container').addClass('active');
+                $('#companion-menu').removeClass('active');
+            });
+
+            if (typeof CompanionBot === 'function') {
+                const bot = new CompanionBot({
+                    supabase: _supabase,
+                    userId: currentUser.id,
+                    userType: 'admin'
+                });
+                bot.init();
+                window.botInstance = bot;
             }
         }
 
@@ -697,7 +757,7 @@
     <!-- Chatbot Container -->
     <div id="chatbot-container">
         <div class="chatbot-header">
-            <h3><i class="fas fa-robot"></i> Viking Assistant</h3>
+            <h3><i class="fas fa-robot"></i> Vikingdev Assistant</h3>
             <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
         </div>
         <div class="chatbot-messages" id="chat-messages">
