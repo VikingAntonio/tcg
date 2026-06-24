@@ -121,24 +121,88 @@ window.currentTool = 'brush'; // 'brush' or 'eraser'
 window.maskHistory = [];
 const MAX_MASK_HISTORY = 20;
 
+// Zoom/Pan State
+window.maskZoom = 1;
+window.maskPanX = 0;
+window.maskPanY = 0;
+window.isPanning = false;
+window.lastPanX = 0;
+window.lastPanY = 0;
+
+window.updateMaskTransform = function() {
+    const $container = $('#mask-zoom-container');
+    if (!$container.length) return;
+    $container.css('transform', `translate(${window.maskPanX}px, ${window.maskPanY}px) scale(${window.maskZoom})`);
+    $('#mask-zoom-val').text(Math.round(window.maskZoom * 100) + '%');
+};
+
 window.initMaskEditor = function() {
     window.maskCanvas = document.getElementById('mask-canvas');
     if (!window.maskCanvas) return;
     window.maskCtx = window.maskCanvas.getContext('2d');
 
     $(window.maskCanvas).off('mousedown touchstart').on('mousedown touchstart', function(e) {
+        if (window.currentTool === 'pan') {
+            window.isPanning = true;
+            const ev = e.type.includes('touch') ? e.originalEvent.touches[0] : e;
+            window.lastPanX = ev.clientX;
+            window.lastPanY = ev.clientY;
+            return;
+        }
         window.isPainting = true;
         window.saveMaskHistory();
         window.drawMask(e);
     });
 
     $(window).off('mousemove touchmove').on('mousemove touchmove', function(e) {
+        if (window.isPanning) {
+            const ev = e.type.includes('touch') ? e.originalEvent.touches[0] : e;
+            const dx = ev.clientX - window.lastPanX;
+            const dy = ev.clientY - window.lastPanY;
+            window.maskPanX += dx;
+            window.maskPanY += dy;
+            window.lastPanX = ev.clientX;
+            window.lastPanY = ev.clientY;
+            window.updateMaskTransform();
+            return;
+        }
         if (window.isPainting) window.drawMask(e);
     });
 
     $(window).off('mouseup touchend').on('mouseup touchend', function() {
         window.isPainting = false;
+        window.isPanning = false;
         if (window.maskCtx) window.maskCtx.beginPath();
+    });
+
+    // Mouse Wheel Zoom
+    $('#mask-viewport').off('wheel').on('wheel', function(e) {
+        e.preventDefault();
+        const delta = e.originalEvent.deltaY;
+        const zoomStep = 0.15;
+        if (delta < 0) {
+            window.maskZoom = Math.min(8, window.maskZoom + zoomStep);
+        } else {
+            window.maskZoom = Math.max(0.2, window.maskZoom - zoomStep);
+        }
+        window.updateMaskTransform();
+    });
+
+    $('#btn-zoom-in-mask').off('click').on('click', () => {
+        window.maskZoom = Math.min(8, window.maskZoom + 0.5);
+        window.updateMaskTransform();
+    });
+
+    $('#btn-zoom-out-mask').off('click').on('click', () => {
+        window.maskZoom = Math.max(0.2, window.maskZoom - 0.5);
+        window.updateMaskTransform();
+    });
+
+    $('#btn-zoom-reset-mask').off('click').on('click', () => {
+        window.maskZoom = 1;
+        window.maskPanX = 0;
+        window.maskPanY = 0;
+        window.updateMaskTransform();
     });
 
     $('#brush-size').off('input').on('input', function() {
@@ -150,12 +214,21 @@ window.initMaskEditor = function() {
         window.currentTool = 'brush';
         $('.editor-controls .btn-secondary').removeClass('active');
         $(this).addClass('active');
+        $('#mask-viewport').css('cursor', 'crosshair');
     });
 
     $('#tool-eraser').off('click').on('click', function() {
         window.currentTool = 'eraser';
         $('.editor-controls .btn-secondary').removeClass('active');
         $(this).addClass('active');
+        $('#mask-viewport').css('cursor', 'crosshair');
+    });
+
+    $('#tool-pan').off('click').on('click', function() {
+        window.currentTool = 'pan';
+        $('.editor-controls .btn-secondary').removeClass('active');
+        $(this).addClass('active');
+        $('#mask-viewport').css('cursor', 'grab');
     });
 
     $('#btn-clear-mask').off('click').on('click', function() {
@@ -204,6 +277,12 @@ window.initMaskEditor = function() {
 };
 
 window.initMaskCanvas = function() {
+    // Reset Zoom/Pan
+    window.maskZoom = 1;
+    window.maskPanX = 0;
+    window.maskPanY = 0;
+    window.updateMaskTransform();
+
     // Supports all integrated form input IDs
     const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
 
@@ -558,30 +637,43 @@ $(document).ready(function() {
     if ($('#mask-editor-overlay').length === 0) {
         const maskEditorHTML = `
         <div id="mask-editor-overlay" class="overlay">
-            <div class="overlay-content" style="max-width: 600px;">
+            <div class="overlay-content" style="max-width: 800px; width: 95%;">
                 <span id="close-mask-editor" class="close-btn">&times;</span>
                 <h2>Editor de Máscara</h2>
-                <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
+                <p style="font-size: 11px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil. Usa la rueda o botones para zoom.</p>
 
-                <div id="mask-canvas-wrapper" style="position: relative; margin-bottom: 20px; border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 168px; height: 244px;">
-                    <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
+                <div id="mask-viewport" style="position: relative; width: 100%; height: 50vh; min-height: 350px; background: #111; overflow: hidden; border: 2px solid #333; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; touch-action: none;">
+                    <div id="mask-zoom-container" style="position: relative; transform-origin: center; transition: transform 0.1s ease-out;">
+                        <div id="mask-canvas-wrapper" style="position: relative; border: 1px solid #444; width: 168px; height: 244px; background-size: cover; background-position: center;">
+                            <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="editor-controls" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <label style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño:</label>
-                        <input type="range" id="brush-size" min="1" max="50" value="10" style="flex: 1;">
-                        <span id="brush-size-val" style="font-size: 14px; width: 30px;">10</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="font-size: 11px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño:</label>
+                            <input type="range" id="brush-size" min="1" max="50" value="10" style="flex: 1;">
+                            <span id="brush-size-val" style="font-size: 13px; width: 25px;">10</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="font-size: 11px; text-transform: uppercase; color: #666; font-weight: 700;">Zoom:</label>
+                            <button id="btn-zoom-out-mask" class="btn btn-secondary btn-sm" style="padding: 5px 10px;"><i class="fas fa-search-minus"></i></button>
+                            <span id="mask-zoom-val" style="font-size: 13px; width: 40px; text-align: center;">100%</span>
+                            <button id="btn-zoom-in-mask" class="btn btn-secondary btn-sm" style="padding: 5px 10px;"><i class="fas fa-search-plus"></i></button>
+                            <button id="btn-zoom-reset-mask" class="btn btn-secondary btn-sm" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
+                        </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                         <button id="tool-brush" class="btn btn-secondary active"><i class="fas fa-paint-brush"></i> Pincel</button>
                         <button id="tool-eraser" class="btn btn-secondary"><i class="fas fa-eraser"></i> Borrador</button>
+                        <button id="tool-pan" class="btn btn-secondary"><i class="fas fa-arrows-alt"></i> Mover</button>
                         <button id="btn-undo-mask" class="btn btn-secondary"><i class="fas fa-undo"></i> Deshacer</button>
-                        <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar Todo</button>
+                        <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar</button>
+                        <button id="btn-save-mask" class="btn" style="background: var(--primary-color); color: #000;"><i class="fas fa-save"></i> Guardar</button>
                     </div>
-
-                    <button id="btn-save-mask" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Máscara</button>
                 </div>
             </div>
         </div>`;

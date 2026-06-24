@@ -1,0 +1,17 @@
+Diferencia entre Custom Foil y Custom Texture:
+
+1. Custom Foil:
+   - Es una combinación de un patrón de brillo estándar (como Rare Holo, Cosmos, Secret Rare, etc.) y una máscara personalizada.
+   - Te permite elegir qué "tipo" de brillo quieres (el sub-tipo) y luego dibujar con el pincel exactamente en qué partes de la carta se debe ver ese brillo.
+   - Es ideal para resaltar partes específicas de la carta usando efectos de brillo ya conocidos.
+
+2. Custom Texture:
+   - Es un efecto único que utiliza un degradado de colores tipo arcoíris (Rainbow) con un modo de mezcla especial (Color Dodge) definido en el CSS.
+   - A diferencia del Custom Foil, no se elige el tipo de brillo, ya que la "textura" es el diseño arcoíris predefinido.
+   - Se utiliza para dar un acabado Premium tipo "Rainbow Rare" o "Full Art" personalizado donde todo el color de la carta brilla con ese degradado.
+
+Sobre la idea de "Custom Texturas" (Múltiples texturas en una misma carta):
+Es totalmente posible técnicamente y es una gran idea.
+- Viabilidad: Es viable. Se podría implementar usando una máscara que reconozca colores (por ejemplo: Rojo = Textura 1, Verde = Textura 2, Azul = Textura 3).
+- Rendimiento: No debería ralentizar significativamente la imagen si se limita a 2 o 3 texturas por carta. El proceso ocupa un poco más de memoria gráfica por las capas adicionales, pero los dispositivos modernos (PC, Tablet y Móviles de gama media) lo manejarán bien.
+- Implementación futura: Requeriría que el editor permita elegir "pinceles de textura" y que el sistema de visualización renderice múltiples capas de brillo superpuestas, cada una filtrada por el color correspondiente de la máscara.
