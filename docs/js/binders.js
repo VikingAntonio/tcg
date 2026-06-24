@@ -334,6 +334,16 @@ async function deletePage(id) {
 }
 
 async function initFloatingCompanion() {
+    // Update chatbot greeting with spirit name
+    if (window.currentSpirit && window.currentSpirit.name) {
+        const $greeting = $('#chat-messages .msg-bot').first();
+        if ($greeting.length) {
+            let text = $greeting.text();
+            text = text.replace('Vikingo', window.currentSpirit.name);
+            $greeting.text(text);
+        }
+    }
+
     if (typeof CompanionBot === 'function') {
         window.botInstance = new CompanionBot({ supabase: _supabase, userId: currentUser.id, userType: 'admin' });
         window.botInstance.init();

@@ -87,6 +87,17 @@ async function initFloatingCompanion() {
     $container.html(`<model-viewer src="${window.currentSpirit.gltf_url}" auto-rotate camera-controls rotation="0deg 0deg 0deg" shadow-intensity="1" environment-image="neutral" exposure="1" interaction-prompt="none" oncontextmenu="return false;"></model-viewer>`);
     $container.on('click', function(e) { if (!window.isCompanionDragging) { e.stopPropagation(); $('#companion-menu').toggleClass('active'); } });
     $('#menu-item-chat').on('click', function(e) { e.stopPropagation(); $('#chatbot-container').addClass('active'); $('#companion-menu').removeClass('active'); });
+
+    // Update chatbot greeting with spirit name
+    if (window.currentSpirit && window.currentSpirit.name) {
+        const $greeting = $('#chat-messages .msg-bot').first();
+        if ($greeting.length) {
+            let text = $greeting.text();
+            text = text.replace('Vikingo', window.currentSpirit.name);
+            $greeting.text(text);
+        }
+    }
+
     if (typeof CompanionBot === 'function') {
         const bot = new CompanionBot({ supabase: _supabase, userId: adminClaimUser.id, userType: 'admin', customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : [] });
         bot.init(); window.botInstance = bot;
