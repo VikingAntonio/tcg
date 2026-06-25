@@ -64,8 +64,8 @@ function initAdminWishlistListeners() {
     $('#close-wishlist-modal-admin').click(() => $('#wishlist-modal-admin').removeClass('active'));
 
     $('#modal-wishlist-holo-effect').on('change', function() {
-        const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil') {
+        const val = $(this).val() || '';
+        if (val.startsWith('custom-')) {
             $('#modal-wishlist-mask-container').show();
         } else {
             $('#modal-wishlist-mask-container').hide();
@@ -220,13 +220,19 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-card-name').text(item.name);
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
-    $('#modal-wishlist-holo-effect').val(item.holo_effect || '');
+
+    const holo = item.holo_effect || '';
+    if (holo && !$('#modal-wishlist-holo-effect option[value="' + holo + '"]').length) {
+        $('#modal-wishlist-holo-effect').append(`<option value="${holo}">Custom: ${holo.includes('textures|') ? 'Multi' : 'Foil'}</option>`);
+    }
+    $('#modal-wishlist-holo-effect').val(holo);
+
     $('#modal-wishlist-custom-mask').val(item.custom_mask_url || '');
     $('#modal-wishlist-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (item.holo_effect === 'custom-texture' || item.holo_effect === 'custom-foil') {
+    if (holo && holo.startsWith('custom-')) {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();

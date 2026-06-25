@@ -734,14 +734,14 @@ $(document).ready(async function() {
     });
 
     $('#slot-holo-effect').change(function() {
-        const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil') {
+        const val = $(this).val() || '';
+        if (val.startsWith('custom-')) {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
         }
 
-        if (val === 'custom-foil') {
+        if (val === 'custom-foil' || val.startsWith('custom-foil|')) {
             $('#custom-foil-type-container').show();
         } else {
             $('#custom-foil-type-container').hide();
@@ -978,7 +978,8 @@ $(document).ready(async function() {
                         expansion: c.expansion || '',
                         condition: c.condition || 'M',
                         price: c.price || '',
-                        obtained: c.obtained !== false
+                        obtained: c.obtained !== false,
+                        show_foil_in_list: c.show_foil_in_list === true
                     };
                     return card;
                 });
@@ -2264,9 +2265,12 @@ function editDeckCard(card) {
         $('#custom-foil-type-container').show();
         $('#custom-mask-container').show();
     } else {
+        if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
+            $('#slot-holo-effect').append(`<option value="${holo}">Custom: ${holo.includes('textures|') ? 'Multi' : 'Foil'}</option>`);
+        }
         $('#slot-holo-effect').val(holo);
         $('#custom-foil-type-container').hide();
-        if (holo === 'custom-texture') {
+        if (holo && holo.startsWith('custom-')) {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -3058,9 +3062,12 @@ async function loadSlotData(pageId, slotIndex) {
             $('#custom-foil-type-container').show();
             $('#custom-mask-container').show();
         } else {
+            if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
+                $('#slot-holo-effect').append(`<option value="${holo}">Custom: ${holo.includes('textures|') ? 'Multi' : 'Foil'}</option>`);
+            }
             $('#slot-holo-effect').val(holo);
             $('#custom-foil-type-container').hide();
-            if (holo === 'custom-texture') {
+            if (holo && holo.startsWith('custom-')) {
                 $('#custom-mask-container').show();
             } else {
                 $('#custom-mask-container').hide();

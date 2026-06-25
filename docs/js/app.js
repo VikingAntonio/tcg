@@ -571,7 +571,8 @@ $(document).ready(async function() {
     $(document).on("touchmove mousemove", ".card-slot, .auction-public-card", function(e) {
         if (startX === undefined || startY === undefined) return;
         const ev = e.type.startsWith('touch') ? e.originalEvent.touches[0] : e;
-        if (Math.abs(ev.pageX - startX) > 5 || Math.abs(ev.pageY - startY) > 5) {
+        // Increased threshold for tablets and high-sensitivity screens
+        if (Math.abs(ev.pageX - startX) > 10 || Math.abs(ev.pageY - startY) > 10) {
             isDragging = true;
         }
     });
@@ -1180,45 +1181,69 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     const $card = $("#card-3d");
 
     // Cleanup all possible holo classes and styles
-    $card.removeClass("card masked interacting foil-loop");
+    $card.removeClass("card masked interacting foil-loop multi-texture-mode");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
-    $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
+    $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': '', '--angle': '135deg'});
     $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
-    $card3d.find('.holo-layer').css('--mask-url', '');
+    $card.find('.holo-layer-multi').remove();
+    $card.find('.holo-layer').css('--mask-url', '').show();
 
-    let baseHolo = holo;
-    let isCustomFoil = false;
-    if (holo && holo.startsWith('custom-foil|')) {
-        isCustomFoil = true;
-        baseHolo = holo.split('|')[1] || 'foil';
-    }
+    if (holo && holo.startsWith('custom-textures|')) {
+        // Multi-Texture Logic for Modal
+        $card.addClass('active foil-loop multi-texture-mode');
+        if (mask) {
+            $card.addClass('masked').css({'--mask-url': `url(${mask})`, '--mask': `url(${mask})`});
+        }
 
-    const POKEMON_FOILS = window.POKEMON_FOILS || {};
+        const config = holo.split('|')[1];
+        const channels = config.split(','); // R:tex,G:tex,B:tex
 
-    if (baseHolo) {
-        if (POKEMON_FOILS[baseHolo]) {
-            let rarityVal = POKEMON_FOILS[baseHolo];
-            $card.addClass("card");
-            if (rarityVal.includes('trainer gallery')) { $card.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-            if (rarityVal.includes('supporter')) { $card.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-            if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-            $card.attr("data-rarity", rarityVal.trim());
-
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-                $card.addClass("masked");
-                const maskVal = `url(${mask})`;
-                $card.css("--mask", maskVal);
-                $card.css("--mask-url", maskVal);
+        channels.forEach(chanStr => {
+            const [chan, tex] = chanStr.split(':');
+            const $layer = $('<div class="holo-layer holo-layer-multi"></div>');
+            $layer.addClass(`layer-chan-${chan.toLowerCase()}`);
+            if (typeof window.applyTextureToLayer === 'function') {
+                window.applyTextureToLayer($layer, tex);
             }
-            const rx = Math.random(), ry = Math.random();
-            $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
-        } else {
-            $card3d.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-                $card.addClass("masked");
-                const maskVal = `url(${mask})`;
-                $card.css("--mask", maskVal);
-                $card.css("--mask-url", maskVal);
+            $card.append($layer);
+        });
+        $card.find('.holo-layer:not(.holo-layer-multi)').hide();
+        $card.css({'--mx': 0.5, '--my': 0.5});
+    } else {
+        let baseHolo = holo;
+        let isCustomFoil = false;
+        if (holo && holo.startsWith('custom-foil|')) {
+            isCustomFoil = true;
+            baseHolo = holo.split('|')[1] || 'foil';
+        }
+
+        const POKEMON_FOILS = window.POKEMON_FOILS || {};
+
+        if (baseHolo) {
+            if (POKEMON_FOILS[baseHolo]) {
+                let rarityVal = POKEMON_FOILS[baseHolo];
+                $card.addClass("card");
+                if (rarityVal.includes('trainer gallery')) { $card.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+                if (rarityVal.includes('supporter')) { $card.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+                if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+                $card.attr("data-rarity", rarityVal.trim());
+
+                if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                    $card.addClass("masked");
+                    const maskVal = `url(${mask})`;
+                    $card.css("--mask", maskVal);
+                    $card.css("--mask-url", maskVal);
+                }
+                const rx = Math.random(), ry = Math.random();
+                $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+            } else {
+                $card3d.addClass(baseHolo);
+                if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+                    $card.addClass("masked");
+                    const maskVal = `url(${mask})`;
+                    $card.css("--mask", maskVal);
+                    $card.css("--mask-url", maskVal);
+                }
             }
         }
     }
@@ -1906,7 +1931,7 @@ function renderDeckCards(deckId) {
         rotate: true,
         slideShadows: true,
         watchSlidesProgress: true,
-        preventClicksPropagation: false,
+        preventClicksPropagation: true,
         observer: true,
         observeParents: true,
         updateOnWindowResize: true,
@@ -1924,6 +1949,8 @@ function renderDeckCards(deckId) {
                     const $slot = $(e.target).closest('.card-slot');
                     if ($slot.length) {
                         if (s.clickedIndex !== s.activeIndex) return;
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
                         openCardModal($slot);
                     }
                 }
