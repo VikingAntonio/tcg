@@ -190,10 +190,16 @@ $(document).ready(async function() {
     $('#btn-save-wishlist-modal').click(async function() {
         if (!currentEditingId) return;
 
+        let holo = $('#modal-holo-effect').val() || '';
+        const showInList = $('#modal-show-foil-list').is(':checked');
+        if (showInList && holo && !holo.startsWith('L:')) {
+            holo = 'L:' + holo;
+        }
+
         const data = {
             rarity: $('#modal-rarity').val(),
             quantity: parseInt($('#modal-quantity').val()) || 1,
-            holo_effect: $('#modal-holo-effect').val(),
+            holo_effect: holo,
             custom_mask_url: $('#modal-custom-mask').val(),
             use_3d: $('#modal-use-3d').is(':checked'),
             notes: $('#modal-notes').val()
@@ -435,7 +441,13 @@ function openEditModal(item) {
     $('#modal-card-name').text(item.name);
     $('#modal-rarity').val(item.rarity || '');
     $('#modal-quantity').val(item.quantity || 1);
-    $('#modal-holo-effect').val(item.holo_effect || '');
+
+    let holo = item.holo_effect || '';
+    const showInList = holo.startsWith('L:');
+    if (showInList) holo = holo.substring(2);
+    $('#modal-show-foil-list').prop('checked', showInList);
+
+    $('#modal-holo-effect').val(holo);
     $('#modal-custom-mask').val(item.custom_mask_url || '');
     $('#modal-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-notes').val(item.notes || '');

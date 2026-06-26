@@ -614,7 +614,10 @@ $(document).ready(async function() {
 
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
         // Prevent accidental closing on tablets/mobile immediately after opening
-        if (Date.now() - window.lastModalOpenTime < 400) return;
+        if (Date.now() - window.lastModalOpenTime < 800) {
+            e.stopImmediatePropagation();
+            return;
+        }
 
         if (e.target === this || $(this).attr('id') === 'close-btn' || $(e.target).closest('#close-btn').length > 0) {
             $("#image-overlay").removeClass("active");
@@ -984,6 +987,7 @@ async function openCardModal($slot) {
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
     if (baseHolo) {
+        if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
         if (POKEMON_FOILS[baseHolo]) {
             let rarityVal = POKEMON_FOILS[baseHolo];
             $card.addClass("card");
@@ -1193,7 +1197,10 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     $card.find('.holo-layer-multi').remove();
     $card.find('.holo-layer').css('--mask-url', '').show();
 
-    if (holo && holo.startsWith('custom-textures|')) {
+    let actualHolo = holo || '';
+    if (actualHolo.startsWith('L:')) actualHolo = actualHolo.substring(2);
+
+    if (actualHolo && actualHolo.startsWith('custom-textures|')) {
         // Multi-Texture Logic for Modal
         $card.addClass('active foil-loop multi-texture-mode');
         if (mask) {
@@ -1215,11 +1222,11 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
         $card.find('.holo-layer:not(.holo-layer-multi)').hide();
         $card.css({'--mx': 0.5, '--my': 0.5});
     } else {
-        let baseHolo = holo;
+        let baseHolo = actualHolo;
         let isCustomFoil = false;
-        if (holo && holo.startsWith('custom-foil|')) {
+        if (actualHolo && actualHolo.startsWith('custom-foil|')) {
             isCustomFoil = true;
-            baseHolo = holo.split('|')[1] || 'foil';
+            baseHolo = actualHolo.split('|')[1] || 'foil';
         }
 
         const POKEMON_FOILS = window.POKEMON_FOILS || {};

@@ -635,6 +635,11 @@ $(document).ready(async function() {
             holoEffect = `custom-foil|${subType}`;
         }
 
+        const showInList = $('#slot-show-foil-list').is(':checked');
+        if (showInList && holoEffect && !holoEffect.startsWith('L:')) {
+            holoEffect = 'L:' + holoEffect;
+        }
+
         const cardData = {
             image_url: imageUrl,
             name: $('#slot-name').val() || '',
@@ -940,10 +945,18 @@ $(document).ready(async function() {
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
+        const show_foil = $('#input-deck-show-foil-legacy').is(':checked');
 
-        let updateData = { name, is_public, use_special_price, special_price };
+        let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list: show_foil };
 
         try {
+            // 0. Verify if show_foil_in_list exists in decks table
+            const { error: colCheck } = await _supabase.from('decks').select('show_foil_in_list').limit(1);
+            if (colCheck) {
+                console.warn("Column show_foil_in_list missing, falling back...");
+                delete updateData.show_foil_in_list;
+            }
+
             // 1. Verify schema compatibility before deleting anything
             const { error: testErr } = await _supabase
                 .from('deck_cards')
@@ -962,21 +975,31 @@ $(document).ready(async function() {
 
             // 3. Perform Batch Insert for all current cards
             if (localDeckCards.length > 0) {
-                const cardsToInsert = localDeckCards.map((c, index) => ({
-                    deck_id: currentDeckId,
-                    image_url: c.image_url,
-                    name: c.name,
-                    quantity: c.quantity || 1,
-                    position: index,
-                    section: c.section || 'Main',
-                    holo_effect: c.holo_effect || '',
-                    custom_mask_url: c.custom_mask_url || '',
-                    rarity: c.rarity || '',
-                    expansion: c.expansion || '',
-                    condition: c.condition || 'M',
-                    price: c.price || '',
-                    obtained: c.obtained !== false
-                }));
+                const cardsToInsert = localDeckCards.map((c, index) => {
+                    let holo = c.holo_effect || '';
+                    // Propagate deck-level foil toggle to cards via prefix if column is missing
+                    if (show_foil && holo && !holo.startsWith('L:')) {
+                        holo = 'L:' + holo;
+                    } else if (!show_foil && holo.startsWith('L:')) {
+                        holo = holo.substring(2);
+                    }
+
+                    return {
+                        deck_id: currentDeckId,
+                        image_url: c.image_url,
+                        name: c.name,
+                        quantity: c.quantity || 1,
+                        position: index,
+                        section: c.section || 'Main',
+                        holo_effect: holo,
+                        custom_mask_url: c.custom_mask_url || '',
+                        rarity: c.rarity || '',
+                        expansion: c.expansion || '',
+                        condition: c.condition || 'M',
+                        price: c.price || '',
+                        obtained: c.obtained !== false
+                    };
+                });
                 const { error: insErr } = await _supabase.from('deck_cards').insert(cardsToInsert);
                 if (insErr) throw insErr;
             }
@@ -2044,6 +2067,8 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
+    $('#input-deck-show-foil-legacy').prop('checked', target.show_foil_in_list === true);
+    $('#view-deck-editor .nexus-check-sync[data-target="#input-deck-show-foil"]').prop('checked', target.show_foil_in_list === true);
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -3046,6 +3071,7 @@ async function loadSlotData(pageId, slotIndex) {
     $('#custom-foil-type-container').hide();
     $('#slot-custom-mask').val('');
     $('#custom-mask-container').hide();
+    $('#slot-show-foil-list').prop('checked', false);
     $('#slot-foil-list-container').hide();
     $('#slot-rarity').val('');
     $('#slot-expansion').val('');
@@ -3059,6 +3085,10 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-name').val(data.name || '');
 
         let holo = data.holo_effect || '';
+        const showInList = holo.startsWith('L:');
+        if (showInList) holo = holo.substring(2);
+
+        $('#slot-show-foil-list').prop('checked', showInList);
         if (holo.startsWith('custom-foil|')) {
             const parts = holo.split('|');
             $('#slot-holo-effect').val('custom-foil');
@@ -4079,7 +4109,9 @@ $(document).on('input', '.nexus-input-sync', function() {
     $($(this).data('target')).val($(this).val());
 });
 $(document).on('change', '.nexus-check-sync', function() {
-    $($(this).data('target')).prop('checked', $(this).is(':checked'));
+    let target = $(this).data('target');
+    if (target === '#input-deck-show-foil') target = '#input-deck-show-foil-legacy';
+    $(target).prop('checked', $(this).is(':checked'));
 });
 
 $(document).on('click', '.nexus-section-header', function() {
