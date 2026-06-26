@@ -98,7 +98,6 @@ function initAdminWishlistListeners() {
             holo_effect: $('#modal-wishlist-holo-effect').val(),
             custom_mask_url: $('#modal-wishlist-custom-mask').val(),
             use_3d: $('#modal-wishlist-use-3d').is(':checked'),
-            show_foil_in_list: $('#modal-wishlist-show-foil-list').is(':checked'),
             notes: $('#modal-wishlist-notes').val()
         };
 
@@ -203,7 +202,7 @@ async function loadWishlistAdmin() {
             openEditWishlistModalAdmin(item);
         });
 
-        if (item.show_foil_in_list && item.holo_effect) {
+        if (item.holo_effect) {
             const $foilTarget = $card.find('.wishlist-img-container');
             if (typeof window.applyFoilToElement === 'function') {
                 window.applyFoilToElement($foilTarget, item.holo_effect, item.custom_mask_url);
@@ -230,7 +229,6 @@ function openEditWishlistModalAdmin(item) {
 
     $('#modal-wishlist-custom-mask').val(item.custom_mask_url || '');
     $('#modal-wishlist-use-3d').prop('checked', item.use_3d !== false);
-    $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
     if (holo && holo.startsWith('custom-')) {

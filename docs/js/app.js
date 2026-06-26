@@ -1850,7 +1850,7 @@ function setupDeckObserver() {
     }
 }
 
-function populateDeckSlide($slide, card, deckFoil = false) {
+function populateDeckSlide($slide, card) {
     if ($slide.hasClass('is-populated')) return;
 
     const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
@@ -1868,9 +1868,8 @@ function populateDeckSlide($slide, card, deckFoil = false) {
         openCardModal($(this).closest('.card-slot'));
     });
 
-    // Apply Foil if enabled at deck level OR card level
-    const showFoil = deckFoil || card.show_foil_in_list;
-    if (showFoil && card.holo_effect && typeof applyFoilToElement === 'function') {
+    // Apply Foil if enabled
+    if (card.holo_effect && typeof applyFoilToElement === 'function') {
         applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
     }
 
@@ -1888,7 +1887,7 @@ function loadDeckBatch(swiper, deck, targetIndex, bufferSize = 5) {
         const card = deck.deck_cards[i];
         const $slide = $(swiper.slides[i]);
         if (card && $slide.length) {
-            populateDeckSlide($slide, card, deck.show_foil_in_list);
+            populateDeckSlide($slide, card);
         }
     }
 }
@@ -1917,7 +1916,6 @@ function renderDeckCards(deckId) {
              data-quantity="${card.quantity || '1'}"
              data-price="${card.price || ''}"
              data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
-             data-show-foil="${card.show_foil_in_list || false}"
              data-full-img="${card.image_url}">
              <div class="loading-cards" style="padding: 100px 0; color: #666; font-style: italic; text-align: center; width: 100%;">
                 <i class="fas fa-spinner fa-spin"></i>
@@ -2850,8 +2848,7 @@ function loadPublicWishlist() {
                      data-obtained="${item.obtained}"
                      data-holo="${item.holo_effect || ''}"
                      data-mask="${item.custom_mask_url || ''}"
-                     data-3d="${item.use_3d !== false}"
-                     data-show-foil="${item.show_foil_in_list || false}">
+                     data-3d="${item.use_3d !== false}">
                     <h3>${item.name}</h3>
                     <div class="wishlist-image-container">
                         <img src="${item.image_url}" alt="${item.name}">
@@ -2861,7 +2858,7 @@ function loadPublicWishlist() {
                 </div>
             `);
 
-            if (item.show_foil_in_list && item.holo_effect) {
+            if (item.holo_effect) {
                 applyFoilToElement($el.find('.wishlist-image-container'), item.holo_effect, item.custom_mask_url);
             }
 
@@ -2882,7 +2879,6 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
     if (!deck) return;
 
     const deckName = deck.name || "Deck";
-    const deckFoil = deck.show_foil_in_list || false;
 
     // Fill modal with cards from deck data for better performance
     const $container = $('#deck-grid-container');
@@ -2891,7 +2887,6 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
 
     (deck.deck_cards || []).forEach(card => {
         const obtained = card.obtained === false || card.obtained === 'false' ? 'false' : 'true';
-        const showFoil = deckFoil || card.show_foil_in_list || false;
         const holo = card.holo_effect || '';
         const mask = card.custom_mask_url || '';
         const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 400, 400) : card.image_url;
@@ -2907,14 +2902,13 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
                  data-condition="${card.condition || ''}"
                  data-quantity="${card.quantity || '1'}"
                  data-price="${card.price || ''}"
-                 data-show-foil="${showFoil}"
                  data-full-img="${card.image_url}">
                 <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
                 ${obtained === 'false' ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
             </div>
         `);
 
-        if (showFoil && holo) {
+        if (holo) {
             applyFoilToElement($card, holo, mask);
         }
 

@@ -153,8 +153,7 @@ $(document).ready(async function() {
             custom_mask_url: $('#slot-custom-mask').val() || '', rarity: $('#slot-rarity').val() || '',
             expansion: $('#slot-expansion').val() || '', condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1, price: $('#slot-price').val() || '',
-            obtained: $('#slot-modal').data('current-obtained') !== false,
-            show_foil_in_list: $('#slot-show-foil-list').is(':checked')
+            obtained: $('#slot-modal').data('current-obtained') !== false
         };
 
         const slotData = { ...cardData, page_id: currentPageId, slot_index: currentSlotIndex };

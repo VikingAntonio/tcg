@@ -196,7 +196,6 @@ $(document).ready(async function() {
             holo_effect: $('#modal-holo-effect').val(),
             custom_mask_url: $('#modal-custom-mask').val(),
             use_3d: $('#modal-use-3d').is(':checked'),
-            show_foil_in_list: $('#modal-show-foil-list').is(':checked'),
             notes: $('#modal-notes').val()
         };
 
@@ -418,9 +417,11 @@ async function loadWishlist() {
             openEditModal(item);
         });
 
-        if (item.show_foil_in_list && item.holo_effect) {
+        if (item.holo_effect) {
             const $foilTarget = $card.find('.wishlist-img-container');
-            window.applyFoilToElement($foilTarget, item.holo_effect, item.custom_mask_url);
+            if (typeof window.applyFoilToElement === 'function') {
+                window.applyFoilToElement($foilTarget, item.holo_effect, item.custom_mask_url);
+            }
         }
 
         $container.append($card);
@@ -437,7 +438,6 @@ function openEditModal(item) {
     $('#modal-holo-effect').val(item.holo_effect || '');
     $('#modal-custom-mask').val(item.custom_mask_url || '');
     $('#modal-use-3d').prop('checked', item.use_3d !== false);
-    $('#modal-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-notes').val(item.notes || '');
 
     if (item.holo_effect === 'custom-texture' || item.holo_effect === 'custom-foil') {
