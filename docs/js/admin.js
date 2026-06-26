@@ -633,6 +633,8 @@ $(document).ready(async function() {
         if (holoEffect === 'custom-foil') {
             const subType = $('#slot-custom-foil-type').val() || 'foil';
             holoEffect = `custom-foil|${subType}`;
+        } else if (holoEffect === 'custom-textures') {
+            holoEffect = $('#slot-holo-effect').data('complex-val') || 'custom-textures|R:pk-rare-holo-cosmos,G:starlight-rare,B:secret-rare';
         }
 
         const showInList = $('#slot-show-foil-list').is(':checked');
@@ -778,8 +780,8 @@ $(document).ready(async function() {
     });
 
     $('#bdd-holo-effect').change(function() {
-        const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil') {
+        const val = $(this).val() || '';
+        if (val.startsWith('custom-')) {
             $('#bdd-mask-container').show();
         } else {
             $('#bdd-mask-container').hide();
@@ -2277,6 +2279,16 @@ function editDeckCard(card) {
     $('#slot-name').val(card.name || '');
 
     let holo = card.holo_effect || '';
+    const showInList = holo.startsWith('L:');
+    if (showInList) holo = holo.substring(2);
+
+    $('#slot-show-foil-list').prop('checked', showInList);
+    if (holo) {
+        $('#slot-foil-list-container').show();
+    } else {
+        $('#slot-foil-list-container').hide();
+    }
+
     if (holo.startsWith('custom-foil|')) {
         const parts = holo.split('|');
         $('#slot-holo-effect').val('custom-foil');
@@ -2284,16 +2296,16 @@ function editDeckCard(card) {
         $('#custom-foil-type-container').show();
         $('#custom-mask-container').show();
     } else if (holo.startsWith('custom-textures|')) {
-        // Multi-texture persistence fix for decks
-        if (!$('#slot-holo-effect option[value="' + holo + '"]').length) {
-            $('#slot-holo-effect').append(`<option value="${holo}">Personalizado (Multi)</option>`);
+        if (!$('#slot-holo-effect option[value="custom-textures"]').length) {
+            $('#slot-holo-effect').append('<option value="custom-textures">Custom: Multi-Texturas (RGB)</option>');
         }
-        $('#slot-holo-effect').val(holo);
+        $('#slot-holo-effect').val('custom-textures');
+        $('#slot-holo-effect').data('complex-val', holo);
         $('#custom-foil-type-container').hide();
         $('#custom-mask-container').show();
     } else {
         if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
-            $('#slot-holo-effect').append(`<option value="${holo}">Personalizado</option>`);
+            $('#slot-holo-effect').append(`<option value="${holo}">${holo}</option>`);
         }
         $('#slot-holo-effect').val(holo);
         $('#custom-foil-type-container').hide();
@@ -3089,37 +3101,41 @@ async function loadSlotData(pageId, slotIndex) {
         if (showInList) holo = holo.substring(2);
 
         $('#slot-show-foil-list').prop('checked', showInList);
+
         if (holo.startsWith('custom-foil|')) {
             const parts = holo.split('|');
             $('#slot-holo-effect').val('custom-foil');
             $('#slot-custom-foil-type').val(parts[1] || 'foil');
             $('#custom-foil-type-container').show();
             $('#custom-mask-container').show();
+            $('#slot-foil-list-container').show();
         } else if (holo.startsWith('custom-textures|')) {
-            // Multi-texture persistence fix
-            if (!$('#slot-holo-effect option[value="' + holo + '"]').length) {
-                $('#slot-holo-effect').append(`<option value="${holo}">Personalizado (Multi)</option>`);
+            if (!$('#slot-holo-effect option[value="custom-textures"]').length) {
+                $('#slot-holo-effect').append('<option value="custom-textures">Custom: Multi-Texturas (RGB)</option>');
             }
-            $('#slot-holo-effect').val(holo);
+            $('#slot-holo-effect').val('custom-textures');
+            // We store the actual complex string in a data attribute for retrieval if needed,
+            // but the UI only needs to show 'Custom: Multi'
+            $('#slot-holo-effect').data('complex-val', holo);
             $('#custom-foil-type-container').hide();
             $('#custom-mask-container').show();
+            $('#slot-foil-list-container').show();
         } else {
+            // Check if it exists in list, if not, it might be a custom type
             if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
-                $('#slot-holo-effect').append(`<option value="${holo}">Personalizado</option>`);
+                $('#slot-holo-effect').append(`<option value="${holo}">${holo}</option>`);
             }
             $('#slot-holo-effect').val(holo);
             $('#custom-foil-type-container').hide();
-            if (holo && holo.startsWith('custom-')) {
-                $('#custom-mask-container').show();
+
+            if (holo) {
+                $('#slot-foil-list-container').show();
+                if (holo.startsWith('custom-')) $('#custom-mask-container').show();
+                else $('#custom-mask-container').hide();
             } else {
+                $('#slot-foil-list-container').hide();
                 $('#custom-mask-container').hide();
             }
-        }
-
-        if (holo) {
-            $('#slot-foil-list-container').show();
-        } else {
-            $('#slot-foil-list-container').hide();
         }
 
         $('#slot-custom-mask').val(data.custom_mask_url || '');

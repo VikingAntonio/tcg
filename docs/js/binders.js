@@ -146,7 +146,16 @@ $(document).ready(async function() {
         if (!imageUrl) { Swal.fire('Error', 'URL requerida', 'warning'); return; }
 
         let holoEffect = $('#slot-holo-effect').val() || '';
-        if (holoEffect === 'custom-foil') holoEffect = `custom-foil|${$('#slot-custom-foil-type').val() || 'foil'}`;
+        if (holoEffect === 'custom-foil') {
+            holoEffect = `custom-foil|${$('#slot-custom-foil-type').val() || 'foil'}`;
+        } else if (holoEffect === 'custom-textures') {
+            holoEffect = $('#slot-holo-effect').data('complex-val') || 'custom-textures|R:pk-rare-holo-cosmos,G:starlight-rare,B:secret-rare';
+        }
+
+        const showInList = $('#slot-show-foil-list').is(':checked');
+        if (showInList && holoEffect && !holoEffect.startsWith('L:')) {
+            holoEffect = 'L:' + holoEffect;
+        }
 
         const cardData = {
             image_url: imageUrl, name: $('#slot-name').val() || '', holo_effect: holoEffect,
@@ -188,6 +197,14 @@ $(document).ready(async function() {
         const tabId = $(this).data('tab');
         $('.slot-tab-btn').removeClass('active'); $(this).addClass('active');
         $('.slot-tab-content').removeClass('active'); $(`#${tabId}`).addClass('active');
+    });
+
+    $('#slot-holo-effect').change(function() {
+        if ($(this).val() === 'custom-foil') {
+            $('#slot-custom-foil-container').show();
+        } else {
+            $('#slot-custom-foil-container').hide();
+        }
     });
 
     $(document).on('click', '#btn-open-mask-editor', function(e) {
@@ -352,7 +369,10 @@ async function initFloatingCompanion() {
 async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
     $('#slot-image-url, #slot-name, #slot-custom-mask, #slot-rarity, #slot-expansion, #slot-condition, #slot-quantity, #slot-price').val('');
-    $('#slot-holo-effect').val('');
+    $('#slot-holo-effect').val('').removeData('complex-val');
+    $('#slot-custom-foil-container').hide();
+    $('#slot-show-foil-list').prop('checked', false);
+
     if (data) {
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
@@ -361,6 +381,30 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-condition').val(data.condition || '');
         $('#slot-quantity').val(data.quantity || '');
         $('#slot-price').val(data.price || '');
+        $('#slot-custom-mask').val(data.custom_mask_url || '');
+
+        let holo = data.holo_effect || '';
+        const showInList = holo.startsWith('L:');
+        if (showInList) holo = holo.substring(2);
+        $('#slot-show-foil-list').prop('checked', showInList);
+
+        if (holo.startsWith('custom-foil|')) {
+            $('#slot-holo-effect').val('custom-foil');
+            $('#slot-custom-foil-type').val(holo.split('|')[1]);
+            $('#slot-custom-foil-container').show();
+        } else if (holo.startsWith('custom-textures|')) {
+            if (!$('#slot-holo-effect option[value="custom-textures"]').length) {
+                $('#slot-holo-effect').append('<option value="custom-textures">Custom: Multi-Texturas (RGB)</option>');
+            }
+            $('#slot-holo-effect').val('custom-textures');
+            $('#slot-holo-effect').data('complex-val', holo);
+        } else {
+            // Check if the value exists in dropdown, if not add it (to handle unknown effects)
+            if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
+                $('#slot-holo-effect').append(`<option value="${holo}">${holo}</option>`);
+            }
+            $('#slot-holo-effect').val(holo);
+        }
     }
     $('#slot-modal').addClass('active');
 }

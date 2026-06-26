@@ -614,7 +614,10 @@ $(document).ready(async function() {
 
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
         // Prevent accidental closing on tablets/mobile immediately after opening
-        if (Date.now() - window.lastModalOpenTime < 800) {
+        const elapsed = Date.now() - (window.lastModalOpenTime || 0);
+        if (elapsed < 1000) {
+            console.log("Modal closure blocked (safety guard):", elapsed, "ms");
+            e.preventDefault();
             e.stopImmediatePropagation();
             return;
         }
@@ -1207,7 +1210,7 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
             $card.addClass('masked').css({'--mask-url': `url(${mask})`, '--mask': `url(${mask})`});
         }
 
-        const config = holo.split('|')[1];
+        const config = actualHolo.split('|')[1];
         const channels = config.split(','); // R:tex,G:tex,B:tex
 
         channels.forEach(chanStr => {

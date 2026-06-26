@@ -1,0 +1,9 @@
+Explicación de desviaciones:
+
+Se modificó el diseño del Editor de Máscaras en una iteración previa para intentar mejorar la usabilidad con zoom y pan, pero el usuario solicitó revertirlo al diseño original. Se ha procedido a restaurar la interfaz original basada en un overlay centrado, manteniendo las herramientas de zoom en una ubicación no obstructiva dentro del viewport.
+
+Se intentó implementar una columna 'show_foil_in_list' en la tabla de decks que no existía en el esquema de Supabase, lo que causó errores al guardar. Se ha corregido esto eliminando las referencias a dicha columna y utilizando en su lugar la convención del prefijo 'L:' dentro del campo 'holo_effect' para indicar si el efecto debe mostrarse en las vistas de lista.
+
+Se han ajustado las etiquetas de "Efecto Foil" para eliminar cualquier mención innecesaria de "popup" según lo solicitado.
+
+Se ha incrementado el tiempo de guarda para el cierre de modales en tablets para evitar cierres accidentales.
