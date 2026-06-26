@@ -645,8 +645,7 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
-            obtained: $('#slot-modal').data('current-obtained') !== false,
-            show_foil_in_list: $('#slot-show-foil-list').is(':checked')
+            obtained: $('#slot-modal').data('current-obtained') !== false
         };
 
         // Queue to VikingData (Shared Database)
@@ -751,7 +750,6 @@ $(document).ready(async function() {
             $('#slot-foil-list-container').show();
         } else {
             $('#slot-foil-list-container').hide();
-            $('#slot-show-foil-list').prop('checked', false);
         }
     });
 
@@ -942,57 +940,54 @@ $(document).ready(async function() {
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
-        const show_foil_in_list = $('#input-deck-show-foil').is(':checked');
 
-        let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list };
+        let updateData = { name, is_public, use_special_price, special_price };
 
         try {
-            // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
-            const deckUpdatePromise = _supabase
-                .from('decks')
-                .update(updateData)
-                .eq('id', currentDeckId);
+            // 1. Verify schema compatibility before deleting anything
+            const { error: testErr } = await _supabase
+                .from('deck_cards')
+                .select('id')
+                .limit(1);
+
+            if (testErr) throw testErr;
 
             // 2. Clear all existing cards for this deck
-            const delErr = await _supabase
+            const { error: delErr } = await _supabase
                 .from('deck_cards')
                 .delete()
                 .eq('deck_id', currentDeckId);
 
-            if (delErr.error) throw delErr.error;
+            if (delErr) throw delErr;
 
             // 3. Perform Batch Insert for all current cards
-            let insPromise = Promise.resolve({ error: null });
             if (localDeckCards.length > 0) {
-                const cardsToInsert = localDeckCards.map((c, index) => {
-                    const card = {
-                        deck_id: currentDeckId,
-                        image_url: c.image_url,
-                        name: c.name,
-                        quantity: c.quantity || 1,
-                        position: index,
-                        section: c.section || 'Main',
-                        holo_effect: c.holo_effect || '',
-                        custom_mask_url: c.custom_mask_url || '',
-                        rarity: c.rarity || '',
-                        expansion: c.expansion || '',
-                        condition: c.condition || 'M',
-                        price: c.price || '',
-                        obtained: c.obtained !== false,
-                        show_foil_in_list: c.show_foil_in_list === true
-                    };
-                    return card;
-                });
-                insPromise = _supabase.from('deck_cards').insert(cardsToInsert);
+                const cardsToInsert = localDeckCards.map((c, index) => ({
+                    deck_id: currentDeckId,
+                    image_url: c.image_url,
+                    name: c.name,
+                    quantity: c.quantity || 1,
+                    position: index,
+                    section: c.section || 'Main',
+                    holo_effect: c.holo_effect || '',
+                    custom_mask_url: c.custom_mask_url || '',
+                    rarity: c.rarity || '',
+                    expansion: c.expansion || '',
+                    condition: c.condition || 'M',
+                    price: c.price || '',
+                    obtained: c.obtained !== false
+                }));
+                const { error: insErr } = await _supabase.from('deck_cards').insert(cardsToInsert);
+                if (insErr) throw insErr;
             }
 
-            const [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
+            // 4. Save Deck Metadata
+            const { error: deckErr } = await _supabase
+                .from('decks')
+                .update(updateData)
+                .eq('id', currentDeckId);
 
-            if (deckRes.error && deckRes.error.code === '42703') {
-                await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
-            } else if (deckRes.error) throw deckRes.error;
-
-            if (insRes.error) throw insRes.error;
+            if (deckErr) throw deckErr;
 
             // 4. Batch Save to VikingData
             if (localVikingData.length > 0) {
@@ -2049,7 +2044,6 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
-    $('#input-deck-show-foil').prop('checked', target.show_foil_in_list === true);
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -2186,7 +2180,7 @@ function renderDeckCardsLocal(scrollPos = null) {
     // Apply foil loop if enabled
     $('#deck-card-list .deck-card-item').each(function(idx) {
         const card = localDeckCards[idx];
-        if (card && card.show_foil_in_list && card.holo_effect) {
+        if (card && card.holo_effect) {
             const $img = $(this).find('img');
             // We need a wrapper for foil to work correctly with existing logic
             if (!$img.parent().hasClass('foil-wrapper')) {
@@ -2600,7 +2594,7 @@ function renderAlbumPagesLocal(pages, scrollPos) {
                 const isObtained = slotData.obtained !== false;
                 $slot.append(`<img src="${slotData.image_url}" class="tcg-card">`);
 
-                if (slotData.show_foil_in_list && slotData.holo_effect && typeof applyFoilToElement === 'function') {
+                if (slotData.holo_effect && typeof applyFoilToElement === 'function') {
                     applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
                 }
 
@@ -3052,7 +3046,6 @@ async function loadSlotData(pageId, slotIndex) {
     $('#custom-foil-type-container').hide();
     $('#slot-custom-mask').val('');
     $('#custom-mask-container').hide();
-    $('#slot-show-foil-list').prop('checked', false);
     $('#slot-foil-list-container').hide();
     $('#slot-rarity').val('');
     $('#slot-expansion').val('');
@@ -3064,7 +3057,6 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
-        $('#slot-show-foil-list').prop('checked', data.show_foil_in_list === true);
 
         let holo = data.holo_effect || '';
         if (holo.startsWith('custom-foil|')) {
@@ -4034,7 +4026,7 @@ function renderNexusDeck() {
                     </div>
                 `);
 
-                if (card.show_foil_in_list && card.holo_effect && typeof applyFoilToElement === 'function') {
+                if (card.holo_effect && typeof applyFoilToElement === 'function') {
                     applyFoilToElement($item, card.holo_effect, card.custom_mask_url);
                 }
 
