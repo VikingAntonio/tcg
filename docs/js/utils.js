@@ -72,17 +72,30 @@ window.getAlbumSize = function($albumContainer) {
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
 
+    // Check for "List View" prefix L:
+    // If not present and not in admin, we don't apply the effect to list items
+    const isPublic = !window.location.pathname.includes('admin.html') && !window.location.pathname.includes('deseos.html') && !window.location.pathname.includes('binders.html');
+
+    let actualHolo = holo;
+    if (holo.startsWith('L:')) {
+        actualHolo = holo.substring(2);
+    } else if (isPublic) {
+        // Skip rendering if not explicitly enabled for lists and we are in a public list view
+        // Note: Modal/Popup uses applyVisualsToModal which doesn't have this check
+        return;
+    }
+
     // Remove existing multi-layers if any
     $el.find('.holo-layer-multi').remove();
 
-    if (holo.startsWith('custom-textures|')) {
+    if (actualHolo.startsWith('custom-textures|')) {
         // Multi-Texture Logic
         $el.addClass('active foil-loop multi-texture-mode');
         if (mask) {
             $el.addClass('masked').css({'--mask-url': `url(${mask})`, '--mask': `url(${mask})`});
         }
 
-        const parts = holo.split('|');
+        const parts = actualHolo.split('|');
         if (parts.length > 1) {
             const config = parts[1];
             const channels = config.split(','); // R:tex,G:tex,B:tex
@@ -108,12 +121,12 @@ window.applyFoilToElement = function($el, holo, mask) {
 
     // Standard single texture logic
     const POKEMON_FOILS = window.POKEMON_FOILS;
-    let baseHolo = holo;
+    let baseHolo = actualHolo;
     let isCustomFoil = false;
 
-    if (holo.startsWith('custom-foil|')) {
+    if (actualHolo.startsWith('custom-foil|')) {
         isCustomFoil = true;
-        const parts = holo.split('|');
+        const parts = actualHolo.split('|');
         baseHolo = parts.length > 1 ? parts[1] : 'foil';
     }
 
@@ -191,9 +204,9 @@ window.lastPanX = 0;
 window.lastPanY = 0;
 
 window.updateMaskTransform = function() {
-    const $container = $('#mask-zoom-container');
-    if (!$container.length) return;
-    $container.css('transform', `translate(${window.maskPanX}px, ${window.maskPanY}px) scale(${window.maskZoom})`);
+    const $wrapper = $('#mask-canvas-wrapper');
+    if (!$wrapper.length) return;
+    $wrapper.css('transform', `translate(${window.maskPanX}px, ${window.maskPanY}px) scale(${window.maskZoom})`);
     $('#mask-zoom-val').text(Math.round(window.maskZoom * 100) + '%');
 };
 
@@ -482,6 +495,8 @@ window.drawMask = function(e) {
         y = e.clientY - rect.top;
     }
 
+    // Enhanced coordinate mapping with Zoom and Pan support
+    // Standard coordinate mapping (the canvas element is what gets transformed)
     x = x * (window.maskCanvas.width / rect.width);
     y = y * (window.maskCanvas.height / rect.height);
 
@@ -845,77 +860,112 @@ $(document).ready(function() {
         `;
 
         const maskEditorHTML = `
+        <style>
+            #mask-editor-overlay .overlay-content {
+                background: #111;
+                border: 1px solid #333;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            }
+            @media (max-width: 768px) {
+                .mask-editor-main-layout { flex-direction: column !important; overflow-y: auto !important; }
+                .mask-sidebar { width: 100% !important; order: 2; height: auto !important; overflow: visible !important; }
+                #mask-viewport { height: 40vh !important; min-height: 250px !important; order: 1; flex: none !important; }
+            }
+        </style>
         <div id="mask-editor-overlay" class="overlay">
-            <div class="overlay-content" style="max-width: 800px; width: 95%;">
+            <div class="overlay-content" style="max-width: 900px; width: 98%; height: 95vh; display: flex; flex-direction: column; padding: 20px;">
                 <span id="close-mask-editor" class="close-btn">&times;</span>
-                <h2>Editor de Máscara</h2>
-                <p id="mask-instruction-text" style="font-size: 11px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil. Usa la rueda o botones para zoom.</p>
-
-                <div id="mask-mode-controls" style="display: flex; gap: 15px; margin-bottom: 15px; width: 100%;">
-                    <button id="btn-mode-simple" class="btn btn-secondary active" style="flex: 1; font-size: 11px; padding: 10px;">FOIL SIMPLE</button>
-                    <button id="btn-mode-multi" class="btn btn-secondary" style="flex: 1; font-size: 11px; padding: 10px;">MULTI-TEXTURA (RGB)</button>
-                </div>
-
-                <div id="simple-texture-picker" style="width: 100%; margin-bottom: 15px;">
-                    <label style="font-size: 10px; text-transform: uppercase; color: #666; font-weight: 800; display: block; margin-bottom: 5px;">Elegir Textura:</label>
-                    <select id="select-simple-texture" style="width: 100%; background: #252525; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 12px;">
-                        ${foilOptions}
-                    </select>
-                </div>
-
-                <div id="multi-texture-picker" style="width: 100%; margin-bottom: 15px; display: none; flex-direction: column; gap: 8px;">
-                    <label style="font-size: 10px; text-transform: uppercase; color: #666; font-weight: 800; display: block; margin-bottom: 5px;">Asignar Texturas por Canal:</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="btn-channel active" data-channel="R" style="width: 30px; height: 30px; background: #ff4757; color: white; border: 2px solid white; border-radius: 5px; cursor: pointer; font-weight: 800;">R</button>
-                        <select id="select-multi-r" data-channel="R" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
-                            ${foilOptions}
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="btn-channel" data-channel="G" style="width: 30px; height: 30px; background: #2ed573; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 800;">G</button>
-                        <select id="select-multi-g" data-channel="G" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
-                            ${foilOptions}
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="btn-channel" data-channel="B" style="width: 30px; height: 30px; background: #1e90ff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 800;">B</button>
-                        <select id="select-multi-b" data-channel="B" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
-                            ${foilOptions}
-                        </select>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">Editor de Foil</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-undo-mask" class="btn btn-secondary btn-sm" title="Deshacer"><i class="fas fa-undo"></i></button>
+                        <button id="btn-clear-mask" class="btn btn-danger btn-sm" title="Limpiar Todo"><i class="fas fa-trash"></i></button>
+                        <button id="btn-save-mask" class="btn btn-sm" style="background: var(--primary-color); color: #000; font-weight: 800;"><i class="fas fa-save"></i> GUARDAR</button>
                     </div>
                 </div>
 
-                <div id="mask-viewport" style="position: relative; width: 100%; height: 40vh; min-height: 300px; background: #111; overflow: hidden; border: 2px solid #333; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; touch-action: none;">
-                    <div id="mask-zoom-container" style="position: relative; transform-origin: center; transition: transform 0.1s ease-out;">
-                        <div id="mask-canvas-wrapper" style="position: relative; border: 1px solid #444; width: 168px; height: 244px; background-size: cover; background-position: center;">
-                            <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
+                <div class="mask-editor-main-layout" style="display: flex; gap: 20px; flex: 1; min-height: 0;">
+                    <!-- Sidebar Controls -->
+                    <div class="mask-sidebar" style="width: 280px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 10px;">
+                        <div class="mask-control-group">
+                            <label style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase;">Modo de Edición</label>
+                            <div style="display: flex; gap: 5px; margin-top: 8px;">
+                                <button id="btn-mode-simple" class="btn btn-secondary active" style="flex: 1; font-size: 10px; padding: 8px;">SIMPLE</button>
+                                <button id="btn-mode-multi" class="btn btn-secondary" style="flex: 1; font-size: 10px; padding: 8px;">MULTI</button>
+                            </div>
+                        </div>
+
+                        <div id="simple-texture-picker">
+                            <label style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase;">Textura Foil</label>
+                            <select id="select-simple-texture" style="width: 100%; margin-top: 8px; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; font-size: 12px;">
+                                ${foilOptions}
+                            </select>
+                        </div>
+
+                        <div id="multi-texture-picker" style="display: none; flex-direction: column; gap: 12px;">
+                            <label style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase;">Canales RGB</label>
+                            <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="btn-channel active" data-channel="R" style="width: 24px; height: 24px; background: #ff4757; border: 2px solid white; border-radius: 4px; cursor: pointer; flex-shrink: 0;"></button>
+                                    <select id="select-multi-r" data-channel="R" class="multi-tex-select" style="flex: 1; background: #1a1a1a; color: white; border: 1px solid #333; padding: 5px; border-radius: 4px; font-size: 11px;">
+                                        ${foilOptions}
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="btn-channel" data-channel="G" style="width: 24px; height: 24px; background: #2ed573; border: none; border-radius: 4px; cursor: pointer; flex-shrink: 0;"></button>
+                                    <select id="select-multi-g" data-channel="G" class="multi-tex-select" style="flex: 1; background: #1a1a1a; color: white; border: 1px solid #333; padding: 5px; border-radius: 4px; font-size: 11px;">
+                                        ${foilOptions}
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="btn-channel" data-channel="B" style="width: 24px; height: 24px; background: #1e90ff; border: none; border-radius: 4px; cursor: pointer; flex-shrink: 0;"></button>
+                                    <select id="select-multi-b" data-channel="B" class="multi-tex-select" style="flex: 1; background: #1a1a1a; color: white; border: 1px solid #333; padding: 5px; border-radius: 4px; font-size: 11px;">
+                                        ${foilOptions}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mask-control-group">
+                            <label style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase;">Herramientas</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 8px;">
+                                <button id="tool-brush" class="btn btn-secondary active btn-sm"><i class="fas fa-paint-brush"></i> Pincel</button>
+                                <button id="tool-eraser" class="btn btn-secondary btn-sm"><i class="fas fa-eraser"></i> Borrador</button>
+                                <button id="tool-pan" class="btn btn-secondary btn-sm" style="grid-column: span 2;"><i class="fas fa-arrows-alt"></i> Mover / Pan</button>
+                            </div>
+                        </div>
+
+                        <div class="mask-control-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase;">Tamaño Pincel</label>
+                                <span id="brush-size-val" style="font-weight: 800; color: var(--primary-color);">10</span>
+                            </div>
+                            <input type="range" id="brush-size" min="1" max="50" value="10" style="width: 100%; margin-top: 10px;">
+                        </div>
+
+                        <div class="mask-control-group" style="margin-top: auto; background: rgba(0,210,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(0,210,255,0.1);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <label style="font-size: 11px; font-weight: 800; color: var(--primary-color); text-transform: uppercase;">Zoom Viewport</label>
+                                <span id="mask-zoom-val" style="font-weight: 800; color: #fff;">100%</span>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <button id="btn-zoom-out-mask" class="btn btn-secondary btn-sm" style="flex: 1;"><i class="fas fa-search-minus"></i></button>
+                                <button id="btn-zoom-reset-mask" class="btn btn-secondary btn-sm" style="flex: 1;"><i class="fas fa-sync-alt"></i></button>
+                                <button id="btn-zoom-in-mask" class="btn btn-secondary btn-sm" style="flex: 1;"><i class="fas fa-search-plus"></i></button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="editor-controls" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <label style="font-size: 11px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño:</label>
-                            <input type="range" id="brush-size" min="1" max="50" value="10" style="flex: 1;">
-                            <span id="brush-size-val" style="font-size: 13px; width: 25px;">10</span>
+                    <!-- Viewport Area -->
+                    <div id="mask-viewport" style="flex: 1; background: #0a0a0a; overflow: hidden; border: 1px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; touch-action: none; position: relative;">
+                        <div id="mask-zoom-container" style="position: relative; transform-origin: center; transition: transform 0.1s ease-out; pointer-events: none;">
+                            <div id="mask-canvas-wrapper" style="position: relative; border: 1px solid #444; width: 168px; height: 244px; background-size: cover; background-position: center; pointer-events: auto;">
+                                <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
+                            </div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <label style="font-size: 11px; text-transform: uppercase; color: #666; font-weight: 700;">Zoom:</label>
-                            <button id="btn-zoom-out-mask" class="btn btn-secondary btn-sm" style="padding: 5px 10px;"><i class="fas fa-search-minus"></i></button>
-                            <span id="mask-zoom-val" style="font-size: 13px; width: 40px; text-align: center;">100%</span>
-                            <button id="btn-zoom-in-mask" class="btn btn-secondary btn-sm" style="padding: 5px 10px;"><i class="fas fa-search-plus"></i></button>
-                            <button id="btn-zoom-reset-mask" class="btn btn-secondary btn-sm" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
+                        <div style="position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px; font-size: 11px; color: #eee; pointer-events: none;">
+                            <i class="fas fa-mouse"></i> Rueda para Zoom | <i class="fas fa-hand-pointer"></i> Espacio + Arrastrar para Mover
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                        <button id="tool-brush" class="btn btn-secondary active"><i class="fas fa-paint-brush"></i> Pincel</button>
-                        <button id="tool-eraser" class="btn btn-secondary"><i class="fas fa-eraser"></i> Borrador</button>
-                        <button id="tool-pan" class="btn btn-secondary"><i class="fas fa-arrows-alt"></i> Mover</button>
-                        <button id="btn-undo-mask" class="btn btn-secondary"><i class="fas fa-undo"></i> Deshacer</button>
-                        <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar</button>
-                        <button id="btn-save-mask" class="btn" style="background: var(--primary-color); color: #000;"><i class="fas fa-save"></i> Guardar</button>
                     </div>
                 </div>
             </div>

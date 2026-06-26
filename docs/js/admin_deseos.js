@@ -92,10 +92,16 @@ function initAdminWishlistListeners() {
     $('#btn-save-wishlist-modal-admin').click(async function() {
         if (!currentEditingWishlistId) return;
 
+        let holo = $('#modal-wishlist-holo-effect').val() || '';
+        const showInList = $('#modal-wishlist-show-foil-list').is(':checked');
+        if (showInList && holo && !holo.startsWith('L:')) {
+            holo = 'L:' + holo;
+        }
+
         const data = {
             rarity: $('#modal-wishlist-rarity').val(),
             quantity: parseInt($('#modal-wishlist-quantity').val()) || 1,
-            holo_effect: $('#modal-wishlist-holo-effect').val(),
+            holo_effect: holo,
             custom_mask_url: $('#modal-wishlist-custom-mask').val(),
             use_3d: $('#modal-wishlist-use-3d').is(':checked'),
             notes: $('#modal-wishlist-notes').val()
@@ -220,7 +226,11 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
 
-    const holo = item.holo_effect || '';
+    let holo = item.holo_effect || '';
+    const showInList = holo.startsWith('L:');
+    if (showInList) holo = holo.substring(2);
+    $('#modal-wishlist-show-foil-list').prop('checked', showInList);
+
     if (holo && !$('#modal-wishlist-holo-effect option[value="' + holo + '"]').length) {
         const label = holo.startsWith('custom-textures|') ? 'Personalizado (Multi)' : 'Personalizado';
         $('#modal-wishlist-holo-effect').append(`<option value="${holo}">${label}</option>`);
