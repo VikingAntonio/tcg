@@ -7,6 +7,7 @@ let startX, startY;
 
 // --- Loading Screen Functions ---
 window.isLoading = false;
+window.lastModalOpenTime = 0;
 window.loadingMessage = '';
 
 window.showLoading = function(message) {
@@ -612,6 +613,9 @@ $(document).ready(async function() {
     });
 
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
+        // Prevent accidental closing on tablets/mobile immediately after opening
+        if (Date.now() - window.lastModalOpenTime < 400) return;
+
         if (e.target === this || $(this).attr('id') === 'close-btn' || $(e.target).closest('#close-btn').length > 0) {
             $("#image-overlay").removeClass("active");
 
@@ -1159,6 +1163,7 @@ async function openCardModal($slot) {
     $('#btn-add-to-cart').show();
     $('#btn-share-card-modal').hide();
 
+    window.lastModalOpenTime = Date.now();
     $("#image-overlay").addClass("active");
     $("body").addClass("modal-open");
 

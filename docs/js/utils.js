@@ -79,21 +79,28 @@ window.applyFoilToElement = function($el, holo, mask) {
         // Multi-Texture Logic
         $el.addClass('active foil-loop multi-texture-mode');
         if (mask) {
-            $el.addClass('masked').css({'--mask-url': `url(${mask})`});
+            $el.addClass('masked').css({'--mask-url': `url(${mask})`, '--mask': `url(${mask})`});
         }
 
-        const config = holo.split('|')[1];
-        const channels = config.split(','); // R:tex,G:tex,B:tex
+        const parts = holo.split('|');
+        if (parts.length > 1) {
+            const config = parts[1];
+            const channels = config.split(','); // R:tex,G:tex,B:tex
 
-        channels.forEach(chanStr => {
-            const [chan, tex] = chanStr.split(':');
-            const $layer = $('<div class="holo-layer holo-layer-multi"></div>');
-            $layer.addClass(`layer-chan-${chan.toLowerCase()}`);
+            channels.forEach(chanStr => {
+                const chanParts = chanStr.split(':');
+                if (chanParts.length > 1) {
+                    const chan = chanParts[0];
+                    const tex = chanParts[1];
+                    const $layer = $('<div class="holo-layer holo-layer-multi"></div>');
+                    $layer.addClass(`layer-chan-${chan.toLowerCase()}`);
 
-            // Apply texture to layer
-            window.applyTextureToLayer($layer, tex);
-            $el.append($layer);
-        });
+                    // Apply texture to layer
+                    window.applyTextureToLayer($layer, tex);
+                    $el.append($layer);
+                }
+            });
+        }
 
         $el.css({'--mx': 0.5, '--my': 0.5, '--angle': '135deg', '--card-opacity': 1});
         return;
@@ -106,7 +113,8 @@ window.applyFoilToElement = function($el, holo, mask) {
 
     if (holo.startsWith('custom-foil|')) {
         isCustomFoil = true;
-        baseHolo = holo.split('|')[1] || 'foil';
+        const parts = holo.split('|');
+        baseHolo = parts.length > 1 ? parts[1] : 'foil';
     }
 
     // Cleanup previous multi-texture classes

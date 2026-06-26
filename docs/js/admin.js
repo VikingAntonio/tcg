@@ -2264,9 +2264,17 @@ function editDeckCard(card) {
         $('#slot-custom-foil-type').val(parts[1] || 'foil');
         $('#custom-foil-type-container').show();
         $('#custom-mask-container').show();
+    } else if (holo.startsWith('custom-textures|')) {
+        // Multi-texture persistence fix for decks
+        if (!$('#slot-holo-effect option[value="' + holo + '"]').length) {
+            $('#slot-holo-effect').append(`<option value="${holo}">Personalizado (Multi)</option>`);
+        }
+        $('#slot-holo-effect').val(holo);
+        $('#custom-foil-type-container').hide();
+        $('#custom-mask-container').show();
     } else {
         if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
-            $('#slot-holo-effect').append(`<option value="${holo}">Custom: ${holo.includes('textures|') ? 'Multi' : 'Foil'}</option>`);
+            $('#slot-holo-effect').append(`<option value="${holo}">Personalizado</option>`);
         }
         $('#slot-holo-effect').val(holo);
         $('#custom-foil-type-container').hide();
@@ -2591,6 +2599,10 @@ function renderAlbumPagesLocal(pages, scrollPos) {
             if (slotData && slotData.image_url) {
                 const isObtained = slotData.obtained !== false;
                 $slot.append(`<img src="${slotData.image_url}" class="tcg-card">`);
+
+                if (slotData.show_foil_in_list && slotData.holo_effect && typeof applyFoilToElement === 'function') {
+                    applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
+                }
 
                 if (!isObtained) {
                     $slot.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
@@ -3061,9 +3073,17 @@ async function loadSlotData(pageId, slotIndex) {
             $('#slot-custom-foil-type').val(parts[1] || 'foil');
             $('#custom-foil-type-container').show();
             $('#custom-mask-container').show();
+        } else if (holo.startsWith('custom-textures|')) {
+            // Multi-texture persistence fix
+            if (!$('#slot-holo-effect option[value="' + holo + '"]').length) {
+                $('#slot-holo-effect').append(`<option value="${holo}">Personalizado (Multi)</option>`);
+            }
+            $('#slot-holo-effect').val(holo);
+            $('#custom-foil-type-container').hide();
+            $('#custom-mask-container').show();
         } else {
             if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
-                $('#slot-holo-effect').append(`<option value="${holo}">Custom: ${holo.includes('textures|') ? 'Multi' : 'Foil'}</option>`);
+                $('#slot-holo-effect').append(`<option value="${holo}">Personalizado</option>`);
             }
             $('#slot-holo-effect').val(holo);
             $('#custom-foil-type-container').hide();
@@ -4013,6 +4033,10 @@ function renderNexusDeck() {
                         ${!isObtained ? '<div class="label-buscando" style="position:absolute; bottom:2px; left:2px; background:rgba(255,68,68,0.9); color:white; font-size:8px; padding:1px 3px; border-radius:3px; font-weight:bold; pointer-events:none; z-index:5;">FALTANTE</div>' : ''}
                     </div>
                 `);
+
+                if (card.show_foil_in_list && card.holo_effect && typeof applyFoilToElement === 'function') {
+                    applyFoilToElement($item, card.holo_effect, card.custom_mask_url);
+                }
 
                 $item.find('.toggle-card-obtained').on('change', function(e) {
                     e.stopPropagation();

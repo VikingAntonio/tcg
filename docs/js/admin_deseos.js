@@ -223,7 +223,8 @@ function openEditWishlistModalAdmin(item) {
 
     const holo = item.holo_effect || '';
     if (holo && !$('#modal-wishlist-holo-effect option[value="' + holo + '"]').length) {
-        $('#modal-wishlist-holo-effect').append(`<option value="${holo}">Custom: ${holo.includes('textures|') ? 'Multi' : 'Foil'}</option>`);
+        const label = holo.startsWith('custom-textures|') ? 'Personalizado (Multi)' : 'Personalizado';
+        $('#modal-wishlist-holo-effect').append(`<option value="${holo}">${label}</option>`);
     }
     $('#modal-wishlist-holo-effect').val(holo);
 
