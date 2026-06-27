@@ -140,16 +140,6 @@ async function initFloatingCompanion() {
         $('#companion-menu').toggleClass('active');
     });
 
-    // Update chatbot greeting with spirit name
-    if (window.currentSpirit && window.currentSpirit.name) {
-        const $greeting = $('#chat-messages .msg-bot').first();
-        if ($greeting.length) {
-            let text = $greeting.text();
-            text = text.replace('Vikingo', window.currentSpirit.name);
-            $greeting.text(text);
-        }
-    }
-
     $('#menu-item-chat').on('click', function(e) {
         e.stopPropagation();
         $('#chatbot-container').addClass('active');
