@@ -92,51 +92,6 @@
                 <div class="form-group"><label>Buscar Carta</label><div style="display: flex; gap: 10px;"><input type="text" id="external-search-input" style="flex: 1;"><button id="btn-external-search" class="btn">Buscar</button></div><div id="external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto;"></div></div>
                 <div class="form-group"><label>URL Imagen</label><input type="text" id="slot-image-url"></div>
                 <div class="form-group"><label>Nombre</label><input type="text" id="slot-name"></div>
-
-                <div class="form-group">
-                    <label>Efecto Foil</label>
-                    <select id="slot-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
-                        <option value="">Ninguno</option>
-                        <option value="super-rare">Super Rare (Foil Suave)</option>
-                        <option value="ultra-rare">Ultra Rare (Foil Rayado)</option>
-                        <option value="secret-rare">Secret Rare (Foil Diamante)</option>
-                        <option value="starlight-rare">Starlight Rare (Estrellas)</option>
-                        <option value="prismatic-rare">Prismatic Rare (Prisma)</option>
-                        <option value="gold-rare">Gold Rare (Dorado)</option>
-                        <option value="parallel-rare">Parallel Rare (Lineal)</option>
-                        <option value="ghost-rare">Ghost Rare (Transparente)</option>
-                        <option value="ultimate-rare">Ultimate Rare (Grabado)</option>
-                        <option value="collector-rare">Collector Rare (Especial)</option>
-                        <option value="shatterfoil">Shatterfoil (Roto)</option>
-                        <option value="mosaic-rare">Mosaic Rare (Mosaico)</option>
-                        <option value="starfoil">Starfoil (Estrellitas)</option>
-                        <option value="custom-foil">Personalizado: Máscara</option>
-                    </select>
-                </div>
-                <div id="slot-custom-foil-container" style="display: none; margin-top: 10px;">
-                    <label>Tipo de Brillo Personalizado</label>
-                    <select id="slot-custom-foil-type" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
-                        <option value="foil">Brillo Normal</option>
-                        <option value="cosmos">Cosmos (Puntos)</option>
-                        <option value="stars">Estrellas</option>
-                        <option value="lines">Líneas</option>
-                        <option value="diamonds">Diamantes</option>
-                    </select>
-                </div>
-                <div class="form-group" style="margin-top: 10px;">
-                    <label>URL Máscara Foil (Opcional)</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="slot-custom-mask" style="flex: 1;">
-                        <button id="btn-open-mask-editor" class="btn btn-secondary">Dibujar</button>
-                    </div>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                    <label class="switch switch-mini">
-                        <input type="checkbox" id="slot-show-foil-list">
-                        <span class="slider"></span>
-                    </label>
-                    <label style="font-size: 12px; cursor: pointer;" for="slot-show-foil-list">Mostrar Foil en Vista Lista</label>
-                </div>
             </div>
             <button id="btn-save-slot" class="btn" style="width: 100%; margin-top: 15px;">Guardar Carta</button>
         </div>

@@ -856,14 +856,10 @@
                             <label>Nombre del Deck</label>
                             <input type="text" class="nexus-input-sync" data-target="#input-deck-name">
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
                             <label class="nexus-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
                                 <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-public" checked>
                                 <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Público</span>
-                            </label>
-                            <label class="nexus-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
-                                <input type="checkbox" id="input-deck-show-foil">
-                                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Foil</span>
                             </label>
                         </div>
                     </div>
@@ -1003,10 +999,10 @@
                     </div>
                     <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                         <label class="switch">
-                            <input type="checkbox" id="input-deck-show-foil-legacy">
+                            <input type="checkbox" id="input-deck-show-foil">
                             <span class="slider"></span>
                         </label>
-                        <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-show-foil-legacy">Aplicar Foil</label>
+                        <label style="margin-bottom: 0; cursor: pointer;" for="input-deck-show-foil">Aplicar Foil</label>
                     </div>
                 </div>
 
@@ -1192,12 +1188,11 @@
                                 <input type="text" id="bdd-price" placeholder="Ej: $25.00">
                             </div>
                             <div class="form-group">
-                                <label>Efecto Foil</label>
+                                <label>Efecto Holo</label>
                                 <select id="bdd-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
                                     <option value="">Ninguno</option>
                                     <option value="foil">Foil</option>
                                     <option value="custom-texture">CustomTexture</option>
-                                    <option value="custom-textures">Custom: Multi-Texturas (RGB)</option>
                                     <option value="custom-foil">CustomFoil</option>
                                     <option value="pk-rare-holo">PK: Rare Holo</option>
                                     <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
@@ -1954,12 +1949,11 @@
                             <input type="text" id="slot-name">
                         </div>
                         <div class="form-group">
-                            <label>Efecto Foil</label>
+                            <label>Efecto Holo (Popup)</label>
                             <select id="slot-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
                                 <option value="" style="background: #252525;">Ninguno</option>
                                 <option value="foil" style="background: #252525;">Foil</option>
                                 <option value="custom-texture" style="background: #252525;">CustomTexture</option>
-                                <option value="custom-textures" style="background: #252525;">Custom: Multi-Texturas (RGB)</option>
                                 <option value="custom-foil" style="background: #252525;">CustomFoil</option>
                                 <option value="pk-rare-holo" style="background: #252525;">PK: Rare Holo</option>
                                 <option value="pk-rare-holo-cosmos" style="background: #252525;">PK: Cosmos Holo</option>
@@ -2087,12 +2081,11 @@
             </div>
 
             <div class="form-group">
-                <label>Efecto Foil</label>
+                <label>Efecto Holo</label>
                 <select id="modal-wishlist-holo-effect" class="wishlist-field" style="padding: 10px;">
                     <option value="">Ninguno</option>
                     <option value="foil">Foil</option>
                     <option value="custom-texture">CustomTexture</option>
-                    <option value="custom-textures">Custom: Multi-Texturas (RGB)</option>
                     <option value="custom-foil">CustomFoil</option>
                     <option value="pk-rare-holo">PK: Rare Holo</option>
                     <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
@@ -2143,7 +2136,6 @@
                 </label>
                 <label style="margin-bottom: 0; cursor: pointer;" for="modal-wishlist-show-foil-list">Aplicar Foil</label>
             </div>
-
 
             <div class="form-group" style="margin-top: 20px;">
                 <label>Notas</label>
@@ -2474,7 +2466,7 @@
     <!-- Chatbot Container -->
     <div id="chatbot-container">
         <div class="chatbot-header">
-            <h3><i class="fas fa-robot"></i> Vikingdev Assistant</h3>
+            <h3><i class="fas fa-robot"></i> Viking Assistant</h3>
             <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
         </div>
         <div class="chatbot-messages" id="chat-messages">
