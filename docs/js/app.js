@@ -2468,9 +2468,11 @@ function renderAlbum(album) {
                     $(this).removeClass('is-turning');
                     // Forzamos el re-ajuste y centrado para asegurar que la hoja quede bien anclada
                     const $el = $(this);
+                    const $container = $el.closest('.public-album-item');
+                    const { width, height } = getAlbumSize($container);
                     setTimeout(() => {
-                        $el.turn('stop').turn('resize').turn('center');
-                    }, 0);
+                        $el.turn('stop').turn('size', width, height).turn('center');
+                    }, 50);
                 }
             }
         });
