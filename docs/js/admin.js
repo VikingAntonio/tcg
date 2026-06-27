@@ -633,13 +633,6 @@ $(document).ready(async function() {
         if (holoEffect === 'custom-foil') {
             const subType = $('#slot-custom-foil-type').val() || 'foil';
             holoEffect = `custom-foil|${subType}`;
-        } else if (holoEffect === 'custom-textures') {
-            holoEffect = $('#slot-holo-effect').data('complex-val') || 'custom-textures|R:pk-rare-holo-cosmos,G:starlight-rare,B:secret-rare';
-        }
-
-        const showInList = $('#slot-show-foil-list').is(':checked');
-        if (showInList && holoEffect && !holoEffect.startsWith('L:')) {
-            holoEffect = 'L:' + holoEffect;
         }
 
         const cardData = {
@@ -652,7 +645,8 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
-            obtained: $('#slot-modal').data('current-obtained') !== false
+            obtained: $('#slot-modal').data('current-obtained') !== false,
+            show_foil_in_list: $('#slot-show-foil-list').is(':checked')
         };
 
         // Queue to VikingData (Shared Database)
@@ -740,14 +734,14 @@ $(document).ready(async function() {
     });
 
     $('#slot-holo-effect').change(function() {
-        const val = $(this).val() || '';
-        if (val.startsWith('custom-')) {
+        const val = $(this).val();
+        if (val === 'custom-texture' || val === 'custom-foil') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
         }
 
-        if (val === 'custom-foil' || val.startsWith('custom-foil|')) {
+        if (val === 'custom-foil') {
             $('#custom-foil-type-container').show();
         } else {
             $('#custom-foil-type-container').hide();
@@ -757,6 +751,7 @@ $(document).ready(async function() {
             $('#slot-foil-list-container').show();
         } else {
             $('#slot-foil-list-container').hide();
+            $('#slot-show-foil-list').prop('checked', false);
         }
     });
 
@@ -780,8 +775,8 @@ $(document).ready(async function() {
     });
 
     $('#bdd-holo-effect').change(function() {
-        const val = $(this).val() || '';
-        if (val.startsWith('custom-')) {
+        const val = $(this).val();
+        if (val === 'custom-texture' || val === 'custom-foil') {
             $('#bdd-mask-container').show();
         } else {
             $('#bdd-mask-container').hide();
@@ -947,53 +942,37 @@ $(document).ready(async function() {
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
-        const show_foil = $('#input-deck-show-foil-legacy').is(':checked');
+        const show_foil_in_list = $('#input-deck-show-foil').is(':checked');
 
-        let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list: show_foil };
+        let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list };
 
         try {
-            // 0. Verify if show_foil_in_list exists in decks table
-            const { error: colCheck } = await _supabase.from('decks').select('show_foil_in_list').limit(1);
-            if (colCheck) {
-                console.warn("Column show_foil_in_list missing, falling back...");
-                delete updateData.show_foil_in_list;
-            }
-
-            // 1. Verify schema compatibility before deleting anything
-            const { error: testErr } = await _supabase
-                .from('deck_cards')
-                .select('id')
-                .limit(1);
-
-            if (testErr) throw testErr;
+            // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
+            const deckUpdatePromise = _supabase
+                .from('decks')
+                .update(updateData)
+                .eq('id', currentDeckId);
 
             // 2. Clear all existing cards for this deck
-            const { error: delErr } = await _supabase
+            const delErr = await _supabase
                 .from('deck_cards')
                 .delete()
                 .eq('deck_id', currentDeckId);
 
-            if (delErr) throw delErr;
+            if (delErr.error) throw delErr.error;
 
             // 3. Perform Batch Insert for all current cards
+            let insPromise = Promise.resolve({ error: null });
             if (localDeckCards.length > 0) {
                 const cardsToInsert = localDeckCards.map((c, index) => {
-                    let holo = c.holo_effect || '';
-                    // Propagate deck-level foil toggle to cards via prefix if column is missing
-                    if (show_foil && holo && !holo.startsWith('L:')) {
-                        holo = 'L:' + holo;
-                    } else if (!show_foil && holo.startsWith('L:')) {
-                        holo = holo.substring(2);
-                    }
-
-                    return {
+                    const card = {
                         deck_id: currentDeckId,
                         image_url: c.image_url,
                         name: c.name,
                         quantity: c.quantity || 1,
                         position: index,
                         section: c.section || 'Main',
-                        holo_effect: holo,
+                        holo_effect: c.holo_effect || '',
                         custom_mask_url: c.custom_mask_url || '',
                         rarity: c.rarity || '',
                         expansion: c.expansion || '',
@@ -1001,18 +980,18 @@ $(document).ready(async function() {
                         price: c.price || '',
                         obtained: c.obtained !== false
                     };
+                    return card;
                 });
-                const { error: insErr } = await _supabase.from('deck_cards').insert(cardsToInsert);
-                if (insErr) throw insErr;
+                insPromise = _supabase.from('deck_cards').insert(cardsToInsert);
             }
 
-            // 4. Save Deck Metadata
-            const { error: deckErr } = await _supabase
-                .from('decks')
-                .update(updateData)
-                .eq('id', currentDeckId);
+            const [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
 
-            if (deckErr) throw deckErr;
+            if (deckRes.error && deckRes.error.code === '42703') {
+                await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
+            } else if (deckRes.error) throw deckRes.error;
+
+            if (insRes.error) throw insRes.error;
 
             // 4. Batch Save to VikingData
             if (localVikingData.length > 0) {
@@ -2069,8 +2048,7 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
-    $('#input-deck-show-foil-legacy').prop('checked', target.show_foil_in_list === true);
-    $('#view-deck-editor .nexus-check-sync[data-target="#input-deck-show-foil"]').prop('checked', target.show_foil_in_list === true);
+    $('#input-deck-show-foil').prop('checked', target.show_foil_in_list === true);
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -2207,7 +2185,7 @@ function renderDeckCardsLocal(scrollPos = null) {
     // Apply foil loop if enabled
     $('#deck-card-list .deck-card-item').each(function(idx) {
         const card = localDeckCards[idx];
-        if (card && card.holo_effect) {
+        if (card && card.show_foil_in_list && card.holo_effect) {
             const $img = $(this).find('img');
             // We need a wrapper for foil to work correctly with existing logic
             if (!$img.parent().hasClass('foil-wrapper')) {
@@ -2279,37 +2257,16 @@ function editDeckCard(card) {
     $('#slot-name').val(card.name || '');
 
     let holo = card.holo_effect || '';
-    const showInList = holo.startsWith('L:');
-    if (showInList) holo = holo.substring(2);
-
-    $('#slot-show-foil-list').prop('checked', showInList);
-    if (holo) {
-        $('#slot-foil-list-container').show();
-    } else {
-        $('#slot-foil-list-container').hide();
-    }
-
     if (holo.startsWith('custom-foil|')) {
         const parts = holo.split('|');
         $('#slot-holo-effect').val('custom-foil');
         $('#slot-custom-foil-type').val(parts[1] || 'foil');
         $('#custom-foil-type-container').show();
         $('#custom-mask-container').show();
-    } else if (holo.startsWith('custom-textures|')) {
-        if (!$('#slot-holo-effect option[value="custom-textures"]').length) {
-            $('#slot-holo-effect').append('<option value="custom-textures">Custom: Multi-Texturas (RGB)</option>');
-        }
-        $('#slot-holo-effect').val('custom-textures');
-        $('#slot-holo-effect').data('complex-val', holo);
-        $('#custom-foil-type-container').hide();
-        $('#custom-mask-container').show();
     } else {
-        if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
-            $('#slot-holo-effect').append(`<option value="${holo}">${holo}</option>`);
-        }
         $('#slot-holo-effect').val(holo);
         $('#custom-foil-type-container').hide();
-        if (holo && holo.startsWith('custom-')) {
+        if (holo === 'custom-texture') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -2631,10 +2588,6 @@ function renderAlbumPagesLocal(pages, scrollPos) {
                 const isObtained = slotData.obtained !== false;
                 $slot.append(`<img src="${slotData.image_url}" class="tcg-card">`);
 
-                if (slotData.holo_effect && typeof applyFoilToElement === 'function') {
-                    applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
-                }
-
                 if (!isObtained) {
                     $slot.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
                 }
@@ -2898,16 +2851,6 @@ async function initFloatingCompanion() {
         $('#companion-menu').toggleClass('active');
     });
 
-    // Update chatbot greeting with spirit name
-    if (window.currentSpirit && window.currentSpirit.name) {
-        const $greeting = $('#chat-messages .msg-bot').first();
-        if ($greeting.length) {
-            let text = $greeting.text();
-            text = text.replace('Vikingo', window.currentSpirit.name);
-            $greeting.text(text);
-        }
-    }
-
     // --- Interaction Menu Actions ---
     $('#menu-item-chat').off('click').on('click', function(e) {
         e.stopPropagation();
@@ -3095,47 +3038,29 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
+        $('#slot-show-foil-list').prop('checked', data.show_foil_in_list === true);
 
         let holo = data.holo_effect || '';
-        const showInList = holo.startsWith('L:');
-        if (showInList) holo = holo.substring(2);
-
-        $('#slot-show-foil-list').prop('checked', showInList);
-
         if (holo.startsWith('custom-foil|')) {
             const parts = holo.split('|');
             $('#slot-holo-effect').val('custom-foil');
             $('#slot-custom-foil-type').val(parts[1] || 'foil');
             $('#custom-foil-type-container').show();
             $('#custom-mask-container').show();
-            $('#slot-foil-list-container').show();
-        } else if (holo.startsWith('custom-textures|')) {
-            if (!$('#slot-holo-effect option[value="custom-textures"]').length) {
-                $('#slot-holo-effect').append('<option value="custom-textures">Custom: Multi-Texturas (RGB)</option>');
-            }
-            $('#slot-holo-effect').val('custom-textures');
-            // We store the actual complex string in a data attribute for retrieval if needed,
-            // but the UI only needs to show 'Custom: Multi'
-            $('#slot-holo-effect').data('complex-val', holo);
-            $('#custom-foil-type-container').hide();
-            $('#custom-mask-container').show();
-            $('#slot-foil-list-container').show();
         } else {
-            // Check if it exists in list, if not, it might be a custom type
-            if (holo && !$('#slot-holo-effect option[value="' + holo + '"]').length) {
-                $('#slot-holo-effect').append(`<option value="${holo}">${holo}</option>`);
-            }
             $('#slot-holo-effect').val(holo);
             $('#custom-foil-type-container').hide();
-
-            if (holo) {
-                $('#slot-foil-list-container').show();
-                if (holo.startsWith('custom-')) $('#custom-mask-container').show();
-                else $('#custom-mask-container').hide();
+            if (holo === 'custom-texture') {
+                $('#custom-mask-container').show();
             } else {
-                $('#slot-foil-list-container').hide();
                 $('#custom-mask-container').hide();
             }
+        }
+
+        if (holo) {
+            $('#slot-foil-list-container').show();
+        } else {
+            $('#slot-foil-list-container').hide();
         }
 
         $('#slot-custom-mask').val(data.custom_mask_url || '');
@@ -4072,10 +3997,6 @@ function renderNexusDeck() {
                     </div>
                 `);
 
-                if (card.holo_effect && typeof applyFoilToElement === 'function') {
-                    applyFoilToElement($item, card.holo_effect, card.custom_mask_url);
-                }
-
                 $item.find('.toggle-card-obtained').on('change', function(e) {
                     e.stopPropagation();
                     const searching = $(this).is(':checked');
@@ -4125,9 +4046,7 @@ $(document).on('input', '.nexus-input-sync', function() {
     $($(this).data('target')).val($(this).val());
 });
 $(document).on('change', '.nexus-check-sync', function() {
-    let target = $(this).data('target');
-    if (target === '#input-deck-show-foil') target = '#input-deck-show-foil-legacy';
-    $(target).prop('checked', $(this).is(':checked'));
+    $($(this).data('target')).prop('checked', $(this).is(':checked'));
 });
 
 $(document).on('click', '.nexus-section-header', function() {

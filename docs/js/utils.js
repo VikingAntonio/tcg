@@ -72,66 +72,14 @@ window.getAlbumSize = function($albumContainer) {
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
 
-    // Check for "List View" prefix L:
-    // If not present and not in admin, we don't apply the effect to list items
-    const isPublic = !window.location.pathname.includes('admin.html') && !window.location.pathname.includes('deseos.html') && !window.location.pathname.includes('binders.html');
-
-    let actualHolo = holo;
-    if (holo.startsWith('L:')) {
-        actualHolo = holo.substring(2);
-    } else if (isPublic) {
-        // Skip rendering if not explicitly enabled for lists and we are in a public list view
-        // Note: Modal/Popup uses applyVisualsToModal which doesn't have this check
-        return;
-    }
-
-    // Remove existing multi-layers if any
-    $el.find('.holo-layer-multi').remove();
-
-    if (actualHolo.startsWith('custom-textures|')) {
-        // Multi-Texture Logic
-        $el.addClass('active foil-loop multi-texture-mode');
-        if (mask) {
-            $el.addClass('masked').css({'--mask-url': `url(${mask})`, '--mask': `url(${mask})`});
-        }
-
-        const parts = actualHolo.split('|');
-        if (parts.length > 1) {
-            const config = parts[1];
-            const channels = config.split(','); // R:tex,G:tex,B:tex
-
-            channels.forEach(chanStr => {
-                const chanParts = chanStr.split(':');
-                if (chanParts.length > 1) {
-                    const chan = chanParts[0];
-                    const tex = chanParts[1];
-                    const $layer = $('<div class="holo-layer holo-layer-multi"></div>');
-                    $layer.addClass(`layer-chan-${chan.toLowerCase()}`);
-
-                    // Apply texture to layer
-                    window.applyTextureToLayer($layer, tex);
-                    $el.append($layer);
-                }
-            });
-        }
-
-        $el.css({'--mx': 0.5, '--my': 0.5, '--angle': '135deg', '--card-opacity': 1});
-        return;
-    }
-
-    // Standard single texture logic
     const POKEMON_FOILS = window.POKEMON_FOILS;
-    let baseHolo = actualHolo;
+
+    let baseHolo = holo;
     let isCustomFoil = false;
-
-    if (actualHolo.startsWith('custom-foil|')) {
+    if (holo.startsWith('custom-foil|')) {
         isCustomFoil = true;
-        const parts = actualHolo.split('|');
-        baseHolo = parts.length > 1 ? parts[1] : 'foil';
+        baseHolo = holo.split('|')[1] || 'foil';
     }
-
-    // Cleanup previous multi-texture classes
-    $el.removeClass('multi-texture-mode');
 
     if (POKEMON_FOILS[baseHolo]) {
         let rarityVal = POKEMON_FOILS[baseHolo];
@@ -154,26 +102,13 @@ window.applyFoilToElement = function($el, holo, mask) {
         $el.css({'--mx': 0.5, '--my': 0.5});
     }
 
-    $el.css({'--angle': '135deg', '--card-opacity': 1});
+    $el.css({
+        '--angle': '135deg',
+        '--card-opacity': 1
+    });
 
-    if ($el.find('.holo-layer:not(.holo-layer-multi)').length === 0) {
-        $el.append('<div class="holo-layer"></div>');
-    }
+    if ($el.find('.holo-layer').length === 0) $el.append('<div class="holo-layer"></div>');
     $el.addClass('active foil-loop');
-};
-
-window.applyTextureToLayer = function($layer, tex) {
-    const POKEMON_FOILS = window.POKEMON_FOILS;
-    if (POKEMON_FOILS[tex]) {
-        let rarityVal = POKEMON_FOILS[tex];
-        if (rarityVal.includes('trainer gallery')) { $layer.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-        if (rarityVal.includes('supporter')) { $layer.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-        if (rarityVal.includes('pokemon')) { $layer.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-        $layer.attr("data-rarity", rarityVal.trim());
-        $layer.addClass('card');
-    } else {
-        $layer.addClass(tex);
-    }
 };
 
 // --- Global Navigation ---
@@ -183,136 +118,27 @@ window.maskCtx = null;
 window.isPainting = false;
 window.currentBrushSize = 10;
 window.currentTool = 'brush'; // 'brush' or 'eraser'
-window.maskEditorMode = 'simple'; // 'simple' or 'multi'
-window.selectedChannel = 'R'; // 'R', 'G', 'B' for multi mode
 window.maskHistory = [];
 const MAX_MASK_HISTORY = 20;
-
-// Default textures for Multi-Mode
-window.multiTextures = {
-    R: 'pk-rare-holo-cosmos',
-    G: 'starlight-rare',
-    B: 'secret-rare'
-};
-
-// Zoom/Pan State
-window.maskZoom = 1;
-window.maskPanX = 0;
-window.maskPanY = 0;
-window.isPanning = false;
-window.lastPanX = 0;
-window.lastPanY = 0;
-
-window.updateMaskTransform = function() {
-    const $wrapper = $('#mask-canvas-wrapper');
-    if (!$wrapper.length) return;
-    $wrapper.css('transform', `translate(${window.maskPanX}px, ${window.maskPanY}px) scale(${window.maskZoom})`);
-    $('#mask-zoom-val').text(Math.round(window.maskZoom * 100) + '%');
-};
 
 window.initMaskEditor = function() {
     window.maskCanvas = document.getElementById('mask-canvas');
     if (!window.maskCanvas) return;
     window.maskCtx = window.maskCanvas.getContext('2d');
 
-    // UI Mode Switching
-    $('#btn-mode-simple').off('click').on('click', function() {
-        window.maskEditorMode = 'simple';
-        $(this).addClass('active').siblings().removeClass('active');
-        $('#simple-texture-picker').show();
-        $('#multi-texture-picker').hide();
-        $('#mask-instruction-text').text('Dibuja en blanco donde quieras aplicar el efecto foil.');
-    });
-
-    $('#btn-mode-multi').off('click').on('click', function() {
-        window.maskEditorMode = 'multi';
-        $(this).addClass('active').siblings().removeClass('active');
-        $('#simple-texture-picker').hide();
-        $('#multi-texture-picker').css('display', 'flex');
-        $('#mask-instruction-text').text('Pinta con colores (R, G, B) para aplicar diferentes texturas.');
-    });
-
-    // Channel Selection
-    $('.btn-channel').off('click').on('click', function() {
-        window.selectedChannel = $(this).data('channel');
-        $('.btn-channel').removeClass('active').css('border', 'none');
-        $(this).addClass('active').css('border', '2px solid white');
-        window.currentTool = 'brush';
-        $('#tool-brush').addClass('active').siblings().removeClass('active');
-    });
-
-    // Texture Select Change
-    $('#select-simple-texture').off('change').on('change', function() {
-        // No immediate action needed, will be used on Save
-    });
-
-    $('.multi-tex-select').off('change').on('change', function() {
-        const channel = $(this).data('channel');
-        window.multiTextures[channel] = $(this).val();
-    });
-
     $(window.maskCanvas).off('mousedown touchstart').on('mousedown touchstart', function(e) {
-        if (window.currentTool === 'pan') {
-            window.isPanning = true;
-            const ev = e.type.includes('touch') ? e.originalEvent.touches[0] : e;
-            window.lastPanX = ev.clientX;
-            window.lastPanY = ev.clientY;
-            return;
-        }
         window.isPainting = true;
         window.saveMaskHistory();
         window.drawMask(e);
     });
 
     $(window).off('mousemove touchmove').on('mousemove touchmove', function(e) {
-        if (window.isPanning) {
-            const ev = e.type.includes('touch') ? e.originalEvent.touches[0] : e;
-            const dx = ev.clientX - window.lastPanX;
-            const dy = ev.clientY - window.lastPanY;
-            window.maskPanX += dx;
-            window.maskPanY += dy;
-            window.lastPanX = ev.clientX;
-            window.lastPanY = ev.clientY;
-            window.updateMaskTransform();
-            return;
-        }
         if (window.isPainting) window.drawMask(e);
     });
 
     $(window).off('mouseup touchend').on('mouseup touchend', function() {
         window.isPainting = false;
-        window.isPanning = false;
         if (window.maskCtx) window.maskCtx.beginPath();
-    });
-
-    // Mouse Wheel Zoom
-    $('#mask-viewport').off('wheel').on('wheel', function(e) {
-        e.preventDefault();
-        const delta = e.originalEvent.deltaY;
-        const zoomStep = 0.15;
-        if (delta < 0) {
-            window.maskZoom = Math.min(8, window.maskZoom + zoomStep);
-        } else {
-            window.maskZoom = Math.max(0.2, window.maskZoom - zoomStep);
-        }
-        window.updateMaskTransform();
-    });
-
-    $('#btn-zoom-in-mask').off('click').on('click', () => {
-        window.maskZoom = Math.min(8, window.maskZoom + 0.5);
-        window.updateMaskTransform();
-    });
-
-    $('#btn-zoom-out-mask').off('click').on('click', () => {
-        window.maskZoom = Math.max(0.2, window.maskZoom - 0.5);
-        window.updateMaskTransform();
-    });
-
-    $('#btn-zoom-reset-mask').off('click').on('click', () => {
-        window.maskZoom = 1;
-        window.maskPanX = 0;
-        window.maskPanY = 0;
-        window.updateMaskTransform();
     });
 
     $('#brush-size').off('input').on('input', function() {
@@ -324,21 +150,12 @@ window.initMaskEditor = function() {
         window.currentTool = 'brush';
         $('.editor-controls .btn-secondary').removeClass('active');
         $(this).addClass('active');
-        $('#mask-viewport').css('cursor', 'crosshair');
     });
 
     $('#tool-eraser').off('click').on('click', function() {
         window.currentTool = 'eraser';
         $('.editor-controls .btn-secondary').removeClass('active');
         $(this).addClass('active');
-        $('#mask-viewport').css('cursor', 'crosshair');
-    });
-
-    $('#tool-pan').off('click').on('click', function() {
-        window.currentTool = 'pan';
-        $('.editor-controls .btn-secondary').removeClass('active');
-        $(this).addClass('active');
-        $('#mask-viewport').css('cursor', 'grab');
     });
 
     $('#btn-clear-mask').off('click').on('click', function() {
@@ -374,91 +191,21 @@ window.initMaskEditor = function() {
     $('#btn-save-mask').off('click').on('click', function() {
         const dataUrl = window.maskCanvas.toDataURL('image/png');
 
-        let finalHolo = '';
-        if (window.maskEditorMode === 'simple') {
-            const tex = $('#select-simple-texture').val();
-            finalHolo = `custom-foil|${tex}`;
-        } else {
-            const r = $('#select-multi-r').val();
-            const g = $('#select-multi-g').val();
-            const b = $('#select-multi-b').val();
-            finalHolo = `custom-textures|R:${r},G:${g},B:${b}`;
-        }
-
         // Use explicit target if set, otherwise fallback to standard IDs
         if (window.maskTargetInput) {
             $(window.maskTargetInput).val(dataUrl).trigger('change');
-            // Try to find the corresponding holo effect select
-            let holoTarget = window.maskTargetInput.replace('custom-mask', 'holo-effect').replace('mask', 'holo-effect');
-            if (window.maskTargetInput === '#input-card-custom-mask') holoTarget = '#input-card-holo-effect';
-
-            if ($(holoTarget).length) {
-                if (!$(holoTarget + ` option[value="${finalHolo}"]`).length) {
-                    $(holoTarget).append(`<option value="${finalHolo}">Custom: ${window.maskEditorMode === 'simple' ? 'Foil' : 'Multi'}</option>`);
-                }
-                $(holoTarget).val(finalHolo).trigger('change');
-            }
         } else {
-            $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #bdd-custom-mask, #input-card-custom-mask, #inv-card-custom-mask').val(dataUrl).trigger('change');
-            $('#slot-holo-effect, #modal-holo-effect, #owner-card-holo, #bdd-holo-effect, #input-card-holo-effect, #inv-card-holo-effect').each(function() {
-                if (!$(this).find(`option[value="${finalHolo}"]`).length) {
-                    $(this).append(`<option value="${finalHolo}">Custom: ${window.maskEditorMode === 'simple' ? 'Foil' : 'Multi'}</option>`);
-                }
-                $(this).val(finalHolo).trigger('change');
-            });
+            $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #bdd-custom-mask').val(dataUrl).trigger('change');
         }
 
         $('#mask-editor-overlay').removeClass('active');
-        Swal.fire('Guardado', 'La máscara y textura se han generado correctamente.', 'success');
+        Swal.fire('Guardado', 'La máscara se ha generado correctamente.', 'success');
     });
 };
 
 window.initMaskCanvas = function() {
-    // Reset Zoom/Pan
-    window.maskZoom = 1;
-    window.maskPanX = 0;
-    window.maskPanY = 0;
-    window.updateMaskTransform();
-
-    // Support simple mode by default
-    $('#btn-mode-simple').trigger('click');
-
     // Supports all integrated form input IDs
-    const currentMask = $(window.maskTargetInput || '#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask, #input-card-custom-mask').val();
-    let currentHolo = '';
-    if (window.maskTargetInput) {
-        let holoTarget = window.maskTargetInput.replace('custom-mask', 'holo-effect').replace('mask', 'holo-effect');
-        if (window.maskTargetInput === '#input-card-custom-mask') holoTarget = '#input-card-holo-effect';
-        currentHolo = $(holoTarget).val() || '';
-    } else {
-        currentHolo = $('#slot-holo-effect, #modal-holo-effect, #owner-card-holo, #inv-card-holo-effect, #bdd-holo-effect, #input-card-holo-effect').val() || '';
-    }
-
-    // Set Background Image to Editor
-    let currentImg = '';
-    if (window.maskTargetInput) {
-        let imgTarget = window.maskTargetInput.replace('custom-mask', 'image-url').replace('mask', 'image-url');
-        if (window.maskTargetInput === '#input-card-custom-mask') imgTarget = '#input-card-image';
-        currentImg = $(imgTarget).val() || '';
-    } else {
-        currentImg = $('#slot-image-url, #modal-wishlist-image, #owner-card-img, #bdd-image-url, #input-card-image').filter(function() { return $(this).val(); }).first().val() || '';
-    }
-    $('#mask-canvas-wrapper').css('background-image', currentImg ? `url(${currentImg})` : 'none');
-
-    // Initialize values from current holo string
-    if (currentHolo.startsWith('custom-textures|')) {
-        $('#btn-mode-multi').trigger('click');
-        const parts = currentHolo.split('|')[1].split(',');
-        parts.forEach(p => {
-            const [chan, tex] = p.split(':');
-            if (chan === 'R') { $('#select-multi-r').val(tex); window.multiTextures.R = tex; }
-            if (chan === 'G') { $('#select-multi-g').val(tex); window.multiTextures.G = tex; }
-            if (chan === 'B') { $('#select-multi-b').val(tex); window.multiTextures.B = tex; }
-        });
-    } else if (currentHolo.startsWith('custom-foil|')) {
-        const tex = currentHolo.split('|')[1];
-        $('#select-simple-texture').val(tex);
-    }
+    const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
 
     window.maskCtx.fillStyle = 'black';
     window.maskCtx.fillRect(0, 0, window.maskCanvas.width, window.maskCanvas.height);
@@ -495,26 +242,13 @@ window.drawMask = function(e) {
         y = e.clientY - rect.top;
     }
 
-    // Enhanced coordinate mapping with Zoom and Pan support
-    // Standard coordinate mapping (the canvas element is what gets transformed)
     x = x * (window.maskCanvas.width / rect.width);
     y = y * (window.maskCanvas.height / rect.height);
 
     window.maskCtx.lineWidth = window.currentBrushSize;
     window.maskCtx.lineCap = 'round';
     window.maskCtx.lineJoin = 'round';
-
-    if (window.currentTool === 'eraser') {
-        window.maskCtx.strokeStyle = 'black';
-    } else {
-        if (window.maskEditorMode === 'simple') {
-            window.maskCtx.strokeStyle = 'white';
-        } else {
-            if (window.selectedChannel === 'R') window.maskCtx.strokeStyle = '#ff0000';
-            else if (window.selectedChannel === 'G') window.maskCtx.strokeStyle = '#00ff00';
-            else if (window.selectedChannel === 'B') window.maskCtx.strokeStyle = '#0000ff';
-        }
-    }
+    window.maskCtx.strokeStyle = window.currentTool === 'brush' ? 'white' : 'black';
 
     window.maskCtx.lineTo(x, y);
     window.maskCtx.stroke();
@@ -764,19 +498,6 @@ window.displayExternalResults = function(results, resultsSelector, onSelectCallb
 };
 
 $(document).ready(function() {
-    // Inject SVG Filters for RGB Masking
-    if ($('#rgb-mask-filters').length === 0) {
-        const svgFilters = `
-        <svg id="rgb-mask-filters" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="extract-red"><feColorMatrix type="matrix" values="0 0 0 0 1, 0 0 0 0 1, 0 0 0 0 1, 1 0 0 0 0"/></filter>
-            <filter id="extract-green"><feColorMatrix type="matrix" values="0 0 0 0 1, 0 0 0 0 1, 0 0 0 0 1, 0 1 0 0 0"/></filter>
-            <filter id="extract-blue"><feColorMatrix type="matrix" values="0 0 0 0 1, 0 0 0 0 1, 0 0 0 0 1, 0 0 1 0 0"/></filter>
-          </defs>
-        </svg>`;
-        $('body').append(svgFilters);
-    }
-
     window.initMaskEditor();
 
     // Isolated navigation for public.html if it's there
@@ -835,103 +556,32 @@ $(document).ready(function() {
 // Dynamic Mask Editor Injection
 $(document).ready(function() {
     if ($('#mask-editor-overlay').length === 0) {
-        const foilOptions = `
-            <optgroup label="Pokemon TCG Foils">
-                <option value="pk-rare-holo">PK: Rare Holo</option>
-                <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
-                <option value="pk-rare-holo-v">PK: Rare Holo V</option>
-                <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
-                <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
-                <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
-                <option value="pk-rare-secret">PK: Rare Secret</option>
-                <option value="pk-amazing-rare">PK: Amazing Rare</option>
-                <option value="pk-radiant-rare">PK: Radiant Rare</option>
-                <option value="pk-reverse-holo">PK: Reverse Holo</option>
-            </optgroup>
-            <optgroup label="Efectos Genéricos">
-                <option value="foil">Foil Standard</option>
-                <option value="super-rare">Super Rare (Brillo)</option>
-                <option value="secret-rare">Secret Rare (Rayas)</option>
-                <option value="ghost-rare">Ghost Rare (3D)</option>
-                <option value="starlight-rare">Starlight Rare (Diamantina)</option>
-                <option value="rainbow">Rainbow (Arcoíris)</option>
-                <option value="custom-texture">Textura 3D</option>
-            </optgroup>
-        `;
-
         const maskEditorHTML = `
         <div id="mask-editor-overlay" class="overlay">
-            <div class="overlay-content" style="max-width: 800px; width: 95%;">
+            <div class="overlay-content" style="max-width: 600px;">
                 <span id="close-mask-editor" class="close-btn">&times;</span>
                 <h2>Editor de Máscara</h2>
-                <p id="mask-instruction-text" style="font-size: 11px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil. Usa la rueda o botones para zoom.</p>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
 
-                <div id="mask-mode-controls" style="display: flex; gap: 15px; margin-bottom: 15px; width: 100%;">
-                    <button id="btn-mode-simple" class="btn btn-secondary active" style="flex: 1; font-size: 11px; padding: 10px;">FOIL SIMPLE</button>
-                    <button id="btn-mode-multi" class="btn btn-secondary" style="flex: 1; font-size: 11px; padding: 10px;">MULTI-TEXTURA (RGB)</button>
-                </div>
-
-                <div id="simple-texture-picker" style="width: 100%; margin-bottom: 15px;">
-                    <label style="font-size: 10px; text-transform: uppercase; color: #666; font-weight: 800; display: block; margin-bottom: 5px;">Elegir Textura:</label>
-                    <select id="select-simple-texture" style="width: 100%; background: #252525; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 12px;">
-                        ${foilOptions}
-                    </select>
-                </div>
-
-                <div id="multi-texture-picker" style="width: 100%; margin-bottom: 15px; display: none; flex-direction: column; gap: 8px;">
-                    <label style="font-size: 10px; text-transform: uppercase; color: #666; font-weight: 800; display: block; margin-bottom: 5px;">Asignar Texturas por Canal:</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="btn-channel active" data-channel="R" style="width: 30px; height: 30px; background: #ff4757; color: white; border: 2px solid white; border-radius: 5px; cursor: pointer; font-weight: 800;">R</button>
-                        <select id="select-multi-r" data-channel="R" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
-                            ${foilOptions}
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="btn-channel" data-channel="G" style="width: 30px; height: 30px; background: #2ed573; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 800;">G</button>
-                        <select id="select-multi-g" data-channel="G" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
-                            ${foilOptions}
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="btn-channel" data-channel="B" style="width: 30px; height: 30px; background: #1e90ff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 800;">B</button>
-                        <select id="select-multi-b" data-channel="B" class="multi-tex-select" style="flex: 1; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 11px;">
-                            ${foilOptions}
-                        </select>
-                    </div>
-                </div>
-
-                <div id="mask-viewport" style="position: relative; width: 100%; height: 40vh; min-height: 300px; background: #111; overflow: hidden; border: 2px solid #333; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; touch-action: none;">
-                    <div id="mask-zoom-container" style="position: relative; transform-origin: center; transition: transform 0.1s ease-out;">
-                        <div id="mask-canvas-wrapper" style="position: relative; border: 1px solid #444; width: 168px; height: 244px; background-size: cover; background-position: center;">
-                            <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
-                        </div>
-                    </div>
-                    <!-- Zoom Controls Floating -->
-                    <div style="position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 10;">
-                        <button id="btn-zoom-in-mask" class="btn btn-secondary btn-sm" style="width: 30px; height: 30px; padding: 0;"><i class="fas fa-plus"></i></button>
-                        <button id="btn-zoom-reset-mask" class="btn btn-secondary btn-sm" style="width: 30px; height: 30px; padding: 0;"><i class="fas fa-sync-alt"></i></button>
-                        <button id="btn-zoom-out-mask" class="btn btn-secondary btn-sm" style="width: 30px; height: 30px; padding: 0;"><i class="fas fa-minus"></i></button>
-                    </div>
-                    <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; font-size: 10px; color: #fff; pointer-events: none;">
-                        Zoom: <span id="mask-zoom-val">100%</span>
-                    </div>
+                <div id="mask-canvas-wrapper" style="position: relative; margin-bottom: 20px; border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 168px; height: 244px;">
+                    <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
                 </div>
 
                 <div class="editor-controls" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label style="font-size: 11px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño Pincel:</label>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <label style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: 700;">Tamaño:</label>
                         <input type="range" id="brush-size" min="1" max="50" value="10" style="flex: 1;">
-                        <span id="brush-size-val" style="font-size: 13px; width: 25px;">10</span>
+                        <span id="brush-size-val" style="font-size: 14px; width: 30px;">10</span>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                         <button id="tool-brush" class="btn btn-secondary active"><i class="fas fa-paint-brush"></i> Pincel</button>
                         <button id="tool-eraser" class="btn btn-secondary"><i class="fas fa-eraser"></i> Borrador</button>
-                        <button id="tool-pan" class="btn btn-secondary"><i class="fas fa-arrows-alt"></i> Mover</button>
                         <button id="btn-undo-mask" class="btn btn-secondary"><i class="fas fa-undo"></i> Deshacer</button>
-                        <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar</button>
-                        <button id="btn-save-mask" class="btn" style="background: var(--primary-color); color: #000;"><i class="fas fa-save"></i> Guardar</button>
+                        <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar Todo</button>
                     </div>
+
+                    <button id="btn-save-mask" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Máscara</button>
                 </div>
             </div>
         </div>`;
@@ -944,13 +594,6 @@ $(document).ready(function() {
     });
 
     $(document).on('click', '#btn-open-mask-editor', function() {
-        window.maskTargetInput = null;
-        $('#mask-editor-overlay').addClass('active');
-        window.initMaskCanvas();
-    });
-
-    $(document).on('click', '.btn-edit-mask-nexus', function() {
-        window.maskTargetInput = '#input-card-custom-mask';
         $('#mask-editor-overlay').addClass('active');
         window.initMaskCanvas();
     });

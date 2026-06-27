@@ -64,8 +64,8 @@ function initAdminWishlistListeners() {
     $('#close-wishlist-modal-admin').click(() => $('#wishlist-modal-admin').removeClass('active'));
 
     $('#modal-wishlist-holo-effect').on('change', function() {
-        const val = $(this).val() || '';
-        if (val.startsWith('custom-')) {
+        const val = $(this).val();
+        if (val === 'custom-texture' || val === 'custom-foil') {
             $('#modal-wishlist-mask-container').show();
         } else {
             $('#modal-wishlist-mask-container').hide();
@@ -92,22 +92,13 @@ function initAdminWishlistListeners() {
     $('#btn-save-wishlist-modal-admin').click(async function() {
         if (!currentEditingWishlistId) return;
 
-        let holo = $('#modal-wishlist-holo-effect').val() || '';
-        if (holo === 'custom-textures') {
-            holo = $('#modal-wishlist-holo-effect').data('complex-val') || 'custom-textures|R:pk-rare-holo-cosmos,G:starlight-rare,B:secret-rare';
-        }
-
-        const showInList = $('#modal-wishlist-show-foil-list').is(':checked');
-        if (showInList && holo && !holo.startsWith('L:')) {
-            holo = 'L:' + holo;
-        }
-
         const data = {
             rarity: $('#modal-wishlist-rarity').val(),
             quantity: parseInt($('#modal-wishlist-quantity').val()) || 1,
-            holo_effect: holo,
+            holo_effect: $('#modal-wishlist-holo-effect').val(),
             custom_mask_url: $('#modal-wishlist-custom-mask').val(),
             use_3d: $('#modal-wishlist-use-3d').is(':checked'),
+            show_foil_in_list: $('#modal-wishlist-show-foil-list').is(':checked'),
             notes: $('#modal-wishlist-notes').val()
         };
 
@@ -212,7 +203,7 @@ async function loadWishlistAdmin() {
             openEditWishlistModalAdmin(item);
         });
 
-        if (item.holo_effect) {
+        if (item.show_foil_in_list && item.holo_effect) {
             const $foilTarget = $card.find('.wishlist-img-container');
             if (typeof window.applyFoilToElement === 'function') {
                 window.applyFoilToElement($foilTarget, item.holo_effect, item.custom_mask_url);
@@ -229,30 +220,13 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-card-name').text(item.name);
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
-
-    let holo = item.holo_effect || '';
-    const showInList = holo.startsWith('L:');
-    if (showInList) holo = holo.substring(2);
-    $('#modal-wishlist-show-foil-list').prop('checked', showInList);
-
-    if (holo.startsWith('custom-textures|')) {
-        if (!$('#modal-wishlist-holo-effect option[value="custom-textures"]').length) {
-            $('#modal-wishlist-holo-effect').append('<option value="custom-textures">Custom: Multi-Texturas (RGB)</option>');
-        }
-        $('#modal-wishlist-holo-effect').val('custom-textures');
-        $('#modal-wishlist-holo-effect').data('complex-val', holo);
-    } else {
-        if (holo && !$('#modal-wishlist-holo-effect option[value="' + holo + '"]').length) {
-            $('#modal-wishlist-holo-effect').append(`<option value="${holo}">${holo}</option>`);
-        }
-        $('#modal-wishlist-holo-effect').val(holo);
-    }
-
+    $('#modal-wishlist-holo-effect').val(item.holo_effect || '');
     $('#modal-wishlist-custom-mask').val(item.custom_mask_url || '');
     $('#modal-wishlist-use-3d').prop('checked', item.use_3d !== false);
+    $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (holo && holo.startsWith('custom-')) {
+    if (item.holo_effect === 'custom-texture' || item.holo_effect === 'custom-foil') {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();
