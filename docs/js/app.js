@@ -1835,7 +1835,7 @@ function populateDeckSlide($slide, card) {
     });
 
     // Apply Foil if enabled
-    if (card.show_foil_in_list && card.holo_effect && typeof applyFoilToElement === 'function') {
+    if ((card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect && typeof applyFoilToElement === 'function') {
         applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
     }
 
@@ -2401,6 +2401,13 @@ function renderAlbum(album) {
                     });
 
                     $slot.append($zoomBtn);
+
+                    // Apply foil if enabled via L: prefix
+                    if (slotData.holo_effect && slotData.holo_effect.startsWith('L:')) {
+                        if (typeof applyFoilToElement === 'function') {
+                            applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
+                        }
+                    }
                 }
             }
             $grid.append($slot);

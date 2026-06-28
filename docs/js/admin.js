@@ -642,9 +642,12 @@ $(document).ready(async function() {
             holoEffect = `custom-textures|rainbow`;
         }
 
-        // Apply L: prefix if it was there and isn't a custom-foil/textures (which handle their own list visibility usually)
-        if (complexBase.startsWith('L:') && !holoEffect.startsWith('L:') && !holoEffect.includes('|')) {
+        // Apply L: prefix if checkbox is checked
+        const shouldShowInList = $('#slot-show-foil-list').is(':checked');
+        if (shouldShowInList && !holoEffect.startsWith('L:')) {
             holoEffect = 'L:' + holoEffect;
+        } else if (!shouldShowInList && holoEffect.startsWith('L:')) {
+            holoEffect = holoEffect.substring(2);
         }
 
         const cardData = {
@@ -657,8 +660,7 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
-            obtained: $('#slot-modal').data('current-obtained') !== false,
-            show_foil_in_list: $('#slot-show-foil-list').is(':checked')
+            obtained: $('#slot-modal').data('current-obtained') !== false
         };
 
         // Queue to VikingData (Shared Database)
@@ -954,9 +956,8 @@ $(document).ready(async function() {
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
-        const show_foil_in_list = $('#input-deck-show-foil').is(':checked');
 
-        let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list };
+        let updateData = { name, is_public, use_special_price, special_price };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -2060,7 +2061,8 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
-    $('#input-deck-show-foil').prop('checked', target.show_foil_in_list === true);
+    $('#input-deck-show-foil').hide();
+    $('[for="input-deck-show-foil"]').hide();
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -2197,7 +2199,7 @@ function renderDeckCardsLocal(scrollPos = null) {
     // Apply foil loop if enabled
     $('#deck-card-list .deck-card-item').each(function(idx) {
         const card = localDeckCards[idx];
-        if (card && card.show_foil_in_list && card.holo_effect) {
+        if (card && card.holo_effect && card.holo_effect.startsWith('L:')) {
             const $img = $(this).find('img');
             // We need a wrapper for foil to work correctly with existing logic
             if (!$img.parent().hasClass('foil-wrapper')) {
@@ -2270,6 +2272,7 @@ function editDeckCard(card) {
 
     let holo = card.holo_effect || '';
     $('#slot-modal').attr('data-complex-val', holo);
+    $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
     let baseHolo = holo;
     if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
@@ -2611,6 +2614,13 @@ function renderAlbumPagesLocal(pages, scrollPos) {
 
                 if (!isObtained) {
                     $slot.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
+                }
+
+                // Apply foil if enabled via L: prefix
+                if (slotData.holo_effect && slotData.holo_effect.startsWith('L:')) {
+                    if (typeof applyFoilToElement === 'function') {
+                        applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
+                    }
                 }
 
                 // Add mini switch for obtained status
@@ -3059,10 +3069,10 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
-        $('#slot-show-foil-list').prop('checked', data.show_foil_in_list === true);
 
         let holo = data.holo_effect || '';
         $('#slot-modal').attr('data-complex-val', holo);
+        $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
         let baseHolo = holo;
         if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
