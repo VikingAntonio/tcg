@@ -1879,22 +1879,30 @@ async function showAuthenticatedContent() {
 
     showView('main-dashboard');
     $('#nav-btn-auctions-won').attr('style', 'display: flex !important');
-    loadWonAuctions();
+    try {
+        await loadWonAuctions();
+    } catch (e) {
+        console.warn("Error loading won auctions:", e);
+    }
 
     // Load store contact data
     $('#store-whatsapp').val(currentUser.whatsapp_link || '');
     $('#store-messenger').val(currentUser.messenger_link || '');
 
     // Load current spirit for floating companion
-    if (currentUser.selected_spirit_id) {
-        const { data: spiritData } = await _supabase
-            .from('spirits')
-            .select('*')
-            .eq('id', currentUser.selected_spirit_id)
-            .single();
-        if (spiritData) {
-            window.currentSpirit = spiritData;
+    try {
+        if (currentUser.selected_spirit_id) {
+            const { data: spiritData } = await _supabase
+                .from('spirits')
+                .select('*')
+                .eq('id', currentUser.selected_spirit_id)
+                .single();
+            if (spiritData) {
+                window.currentSpirit = spiritData;
+            }
         }
+    } catch (e) {
+        console.warn("Companion: Error fetching selected spirit", e);
     }
 
     // Fetch additional data for CompanionBot
