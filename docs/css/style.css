@@ -2089,35 +2089,39 @@ input:checked + .slider:before {
     opacity: 0.7; /* Allows seeing the card background behind the black mask */
 }
 
-/* Lateral Zoom Slider Styles */
-#mask-zoom-slider {
-    cursor: ns-resize;
+/* Mask Editor Zoom Controls */
+.zoom-controls-lateral .btn-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.6) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: white !important;
+}
+
+.zoom-controls-lateral .btn-sm:hover {
+    background: var(--primary-color) !important;
+    transform: scale(1.1);
 }
 
 /* Responsive adjustments for Mask Editor Zoom */
 @media screen and (max-width: 640px) {
-    .mask-editor-main-container {
-        flex-direction: row !important; /* Keep it lateral even on mobile if possible, or adjust */
-        gap: 10px !important;
-    }
-
     #mask-viewport {
-        width: 140px !important;
-        height: 203px !important;
+        height: 280px !important;
     }
 
-    #mask-canvas-wrapper {
-        width: 140px !important;
-        height: 203px !important;
+    .zoom-controls-lateral {
+        right: 5px !important;
     }
 
-    #mask-canvas {
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .zoom-controls-lateral input {
-        height: 120px !important;
+    .zoom-controls-lateral .btn-sm {
+        width: 35px;
+        height: 35px;
+        padding: 5px !important;
     }
 }
 
