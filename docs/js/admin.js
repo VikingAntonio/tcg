@@ -630,9 +630,21 @@ $(document).ready(async function() {
         }
 
         let holoEffect = $('#slot-holo-effect').val() || '';
-        if (holoEffect === 'custom-foil') {
+        const complexBase = $('#slot-modal').attr('data-complex-val') || '';
+
+        // Preserve prefixes if base effect hasn't changed
+        if (complexBase && (complexBase.endsWith('|' + holoEffect) || complexBase.endsWith(':' + holoEffect) || complexBase === holoEffect)) {
+            holoEffect = complexBase;
+        } else if (holoEffect === 'custom-foil') {
             const subType = $('#slot-custom-foil-type').val() || 'foil';
             holoEffect = `custom-foil|${subType}`;
+        } else if (holoEffect === 'custom-textures') {
+            holoEffect = `custom-textures|rainbow`;
+        }
+
+        // Apply L: prefix if it was there and isn't a custom-foil/textures (which handle their own list visibility usually)
+        if (complexBase.startsWith('L:') && !holoEffect.startsWith('L:') && !holoEffect.includes('|')) {
+            holoEffect = 'L:' + holoEffect;
         }
 
         const cardData = {
@@ -735,7 +747,7 @@ $(document).ready(async function() {
 
     $('#slot-holo-effect').change(function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil') {
+        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -2257,16 +2269,25 @@ function editDeckCard(card) {
     $('#slot-name').val(card.name || '');
 
     let holo = card.holo_effect || '';
-    if (holo.startsWith('custom-foil|')) {
-        const parts = holo.split('|');
+    $('#slot-modal').attr('data-complex-val', holo);
+
+    let baseHolo = holo;
+    if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
+
+    if (baseHolo.startsWith('custom-foil|')) {
+        const parts = baseHolo.split('|');
         $('#slot-holo-effect').val('custom-foil');
         $('#slot-custom-foil-type').val(parts[1] || 'foil');
         $('#custom-foil-type-container').show();
         $('#custom-mask-container').show();
-    } else {
-        $('#slot-holo-effect').val(holo);
+    } else if (baseHolo.startsWith('custom-textures|')) {
+        $('#slot-holo-effect').val('custom-textures');
         $('#custom-foil-type-container').hide();
-        if (holo === 'custom-texture') {
+        $('#custom-mask-container').show();
+    } else {
+        $('#slot-holo-effect').val(baseHolo);
+        $('#custom-foil-type-container').hide();
+        if (baseHolo === 'custom-texture') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -3041,16 +3062,25 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-show-foil-list').prop('checked', data.show_foil_in_list === true);
 
         let holo = data.holo_effect || '';
-        if (holo.startsWith('custom-foil|')) {
-            const parts = holo.split('|');
+        $('#slot-modal').attr('data-complex-val', holo);
+
+        let baseHolo = holo;
+        if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
+
+        if (baseHolo.startsWith('custom-foil|')) {
+            const parts = baseHolo.split('|');
             $('#slot-holo-effect').val('custom-foil');
             $('#slot-custom-foil-type').val(parts[1] || 'foil');
             $('#custom-foil-type-container').show();
             $('#custom-mask-container').show();
-        } else {
-            $('#slot-holo-effect').val(holo);
+        } else if (baseHolo.startsWith('custom-textures|')) {
+            $('#slot-holo-effect').val('custom-textures');
             $('#custom-foil-type-container').hide();
-            if (holo === 'custom-texture') {
+            $('#custom-mask-container').show();
+        } else {
+            $('#slot-holo-effect').val(baseHolo);
+            $('#custom-foil-type-container').hide();
+            if (baseHolo === 'custom-texture') {
                 $('#custom-mask-container').show();
             } else {
                 $('#custom-mask-container').hide();
