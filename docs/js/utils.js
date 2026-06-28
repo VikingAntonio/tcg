@@ -164,6 +164,24 @@ window.initMaskEditor = function() {
         $(this).addClass('active');
     });
 
+    $('#mask-zoom-slider').off('input').on('input', function() {
+        const zoom = $(this).val();
+        const baseW = 168;
+        const baseH = 244;
+        $('#mask-canvas-wrapper').css({
+            width: (baseW * zoom) + 'px',
+            height: (baseH * zoom) + 'px'
+        });
+        $('#mask-canvas').css({
+            width: (baseW * zoom) + 'px',
+            height: (baseH * zoom) + 'px'
+        });
+    });
+
+    $('#btn-reset-zoom').off('click').on('click', function() {
+        $('#mask-zoom-slider').val(1).trigger('input');
+    });
+
     $('#btn-clear-mask').off('click').on('click', function() {
         Swal.fire({
             title: '¿Limpiar todo?',
@@ -569,8 +587,19 @@ $(document).ready(function() {
                 <h2>Editor de Máscara</h2>
                 <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
 
-                <div id="mask-canvas-wrapper" style="position: relative; margin-bottom: 20px; border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 168px; height: 244px;">
-                    <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block;"></canvas>
+                <div class="mask-editor-main-container" style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-bottom: 20px; position: relative;">
+                    <div id="mask-viewport" style="width: 180px; height: 260px; overflow: auto; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: flex-start; justify-content: flex-start;">
+                        <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0;">
+                            <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block; width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="zoom-controls-lateral" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <i class="fas fa-search-plus" style="font-size: 12px; color: #666;"></i>
+                        <input type="range" id="mask-zoom-slider" min="1" max="4" step="0.1" value="1" style="appearance: slider-vertical; -webkit-appearance: slider-vertical; width: 10px; height: 180px;">
+                        <i class="fas fa-search-minus" style="font-size: 12px; color: #666;"></i>
+                        <button id="btn-reset-zoom" class="btn btn-secondary btn-sm" title="Reset Zoom" style="padding: 5px 8px;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
                 </div>
 
                 <div class="editor-controls" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">

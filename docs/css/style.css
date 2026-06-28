@@ -2089,6 +2089,38 @@ input:checked + .slider:before {
     opacity: 0.7; /* Allows seeing the card background behind the black mask */
 }
 
+/* Lateral Zoom Slider Styles */
+#mask-zoom-slider {
+    cursor: ns-resize;
+}
+
+/* Responsive adjustments for Mask Editor Zoom */
+@media screen and (max-width: 640px) {
+    .mask-editor-main-container {
+        flex-direction: row !important; /* Keep it lateral even on mobile if possible, or adjust */
+        gap: 10px !important;
+    }
+
+    #mask-viewport {
+        width: 140px !important;
+        height: 203px !important;
+    }
+
+    #mask-canvas-wrapper {
+        width: 140px !important;
+        height: 203px !important;
+    }
+
+    #mask-canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .zoom-controls-lateral input {
+        height: 120px !important;
+    }
+}
+
 .editor-controls .btn-secondary.active {
     background: #00a8ff !important;
     color: white !important;
