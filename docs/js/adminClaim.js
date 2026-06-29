@@ -75,7 +75,7 @@ async function checkAdminClaimSession() {
     } else { window.location.href = 'admin.html'; }
 }
 
-async function initFloatingCompanion() {
+async function initFloatingCompanionLegacy() {
     if (!window.currentSpirit) {
         const { data: publicSpirits } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1);
         if (publicSpirits && publicSpirits.length > 0) window.currentSpirit = publicSpirits[0];
