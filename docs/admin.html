@@ -533,24 +533,9 @@
             #deck-editor-pc-layout { display: none; }
         }
 
-        .modal-scrollable-body {
-            flex: 1;
-            overflow-y: auto;
-            width: 100%;
-            padding-right: 5px;
-            margin-bottom: 10px;
-        }
-        .modal-fixed-footer {
-            width: 100%;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            background: var(--card-bg);
-            z-index: 10;
-        }
-
         @media (max-width: 640px) {
             .slot-tabs-body {
-                min-height: 350px;
+                min-height: 450px;
             }
             .slot-tabs-body .form-group {
                 margin-bottom: 12px;
@@ -1923,55 +1908,53 @@
 
     <!-- Card Slot Modal -->
     <div id="slot-modal" class="overlay">
-        <div class="overlay-content" style="max-height: 95vh; display: flex; flex-direction: column;">
+        <div class="overlay-content">
             <span id="close-slot-modal" class="close-btn">&times;</span>
             <h2 style="margin-bottom: 20px;">Editar Espacio</h2>
 
-            <div class="modal-scrollable-body">
-                <!-- Tabs Header -->
-                <div class="slot-modal-tabs">
-                    <button class="slot-tab-btn active" data-tab="slot-tab-info">Información</button>
-                    <button class="slot-tab-btn" data-tab="slot-tab-details">Detalles</button>
-                </div>
+            <!-- Tabs Header -->
+            <div class="slot-modal-tabs">
+                <button class="slot-tab-btn active" data-tab="slot-tab-info">Información</button>
+                <button class="slot-tab-btn" data-tab="slot-tab-details">Detalles</button>
+            </div>
 
-                <div class="slot-tabs-body">
-                    <!-- Tab 1: Info & Search -->
-                    <div id="slot-tab-info" class="slot-tab-content active">
-                        <!-- External Card Search -->
-                        <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="external-search-input" placeholder="Nombre o código de la carta..." style="flex: 1;">
-                                <button id="btn-external-search" class="btn"><i class="fas fa-search"></i></button>
-                            </div>
-                            <div id="external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto; padding: 5px; border-top: 1px solid #333;">
-                                <!-- Results will appear here -->
-                            </div>
+            <div class="slot-tabs-body">
+                <!-- Tab 1: Info & Search -->
+                <div id="slot-tab-info" class="slot-tab-content active">
+                    <!-- External Card Search -->
+                    <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="external-search-input" placeholder="Nombre o código de la carta..." style="flex: 1;">
+                            <button id="btn-external-search" class="btn"><i class="fas fa-search"></i></button>
                         </div>
+                        <div id="external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto; padding: 5px; border-top: 1px solid #333;">
+                            <!-- Results will appear here -->
+                        </div>
+                    </div>
 
+                    <div class="form-group">
+                        <label>URL de la Imagen</label>
+                        <label class="file-drop-zone" id="drop-zone-slot" for="input-slot-file" style="display: block;">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Arrastra una imagen aquí o haz clic para subir la imagen</p>
+                            <input type="file" id="input-slot-file" accept="image/*" style="display: none;">
+                            <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                        </label>
+                        <input type="text" id="slot-image-url" placeholder="midominio.com/carta.png">
+                    </div>
+
+                    <div class="info-grid">
                         <div class="form-group">
-                            <label>URL de la Imagen</label>
-                            <label class="file-drop-zone" id="drop-zone-slot" for="input-slot-file" style="display: block;">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <p>Arrastra una imagen aquí o haz clic para subir la imagen</p>
-                                <input type="file" id="input-slot-file" accept="image/*" style="display: none;">
-                                <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                            </label>
-                            <input type="text" id="slot-image-url" placeholder="midominio.com/carta.png">
+                            <label>Nombre de la Carta</label>
+                            <input type="text" id="slot-name">
                         </div>
-
-                        <div class="info-grid">
-                            <div class="form-group">
-                                <label>Nombre de la Carta</label>
-                                <input type="text" id="slot-name">
-                            </div>
-                            <div class="form-group">
-                                <label>Efecto Holo (Popup)</label>
-                                <select id="slot-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
-                                    <option value="" style="background: #252525;">Ninguno</option>
-                                    <option value="foil" style="background: #252525;">Foil</option>
-                                    <option value="custom-texture" style="background: #252525;">CustomTexture</option>
-                                    <option value="custom-textures" style="background: #252525;">CustomTextures</option>
-                                    <option value="custom-foil" style="background: #252525;">CustomFoil</option>
+                        <div class="form-group">
+                            <label>Efecto Holo (Popup)</label>
+                            <select id="slot-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                <option value="" style="background: #252525;">Ninguno</option>
+                                <option value="foil" style="background: #252525;">Foil</option>
+                                <option value="custom-texture" style="background: #252525;">CustomTexture</option>
+                                <option value="custom-foil" style="background: #252525;">CustomFoil</option>
                                 <option value="pk-rare-holo" style="background: #252525;">PK: Rare Holo</option>
                                 <option value="pk-rare-holo-cosmos" style="background: #252525;">PK: Cosmos Holo</option>
                                 <option value="pk-rare-holo-v" style="background: #252525;">PK: Rare Holo V</option>
@@ -2058,22 +2041,20 @@
                         <label>Precio</label>
                         <input type="text" id="slot-price">
                     </div>
-                        <div class="form-group" id="slot-foil-list-container" style="display: none; grid-column: span 2;">
-                            <label class="switch-searching" style="position: relative; top: 0; left: 0;">
-                                <label class="switch switch-mini">
-                                    <input type="checkbox" id="slot-show-foil-list">
-                                    <span class="slider"></span>
-                                </label>
-                                <span style="margin-left: 10px; font-size: 0.85rem; color: #aaa;">Aplicar Foil</span>
+                    <div class="form-group" id="slot-foil-list-container" style="display: none; grid-column: span 2;">
+                        <label class="switch-searching" style="position: relative; top: 0; left: 0;">
+                            <label class="switch switch-mini">
+                                <input type="checkbox" id="slot-show-foil-list">
+                                <span class="slider"></span>
                             </label>
-                        </div>
+                            <span style="margin-left: 10px; font-size: 0.85rem; color: #aaa;">Aplicar Foil</span>
+                        </label>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="modal-fixed-footer">
-                <button id="btn-save-slot" class="btn" style="width: 100%;"><i class="fas fa-check-circle"></i> Guardar Carta</button>
-            </div>
+        <button id="btn-save-slot" class="btn" style="width: 100%; margin-top: 15px;"><i class="fas fa-check-circle"></i> Guardar Carta</button>
         </div>
     </div>
 
