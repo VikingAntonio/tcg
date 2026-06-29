@@ -1183,14 +1183,20 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     $card.removeClass("card masked interacting foil-loop");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active foil-loop");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
+    // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
     let baseHolo = holo;
+    if (baseHolo && baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
+
     let isCustomFoil = false;
-    if (holo && holo.startsWith('custom-foil|')) {
+    if (baseHolo && baseHolo.startsWith('custom-foil|')) {
         isCustomFoil = true;
-        baseHolo = holo.split('|')[1] || 'foil';
+        baseHolo = baseHolo.split('|')[1] || 'foil';
+    }
+    if (baseHolo && baseHolo.startsWith('custom-textures|')) {
+        baseHolo = 'custom-textures';
     }
 
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
@@ -1204,7 +1210,7 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
             if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
             $card.attr("data-rarity", rarityVal.trim());
 
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
                 $card.addClass("masked");
                 const maskVal = `url(${mask})`;
                 $card.css("--mask", maskVal);
@@ -1214,7 +1220,7 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
             $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
         } else {
             $card3d.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
                 $card.addClass("masked");
                 const maskVal = `url(${mask})`;
                 $card.css("--mask", maskVal);
@@ -1829,7 +1835,7 @@ function populateDeckSlide($slide, card) {
     });
 
     // Apply Foil if enabled
-    if (card.show_foil_in_list && card.holo_effect && typeof applyFoilToElement === 'function') {
+    if ((card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect && typeof applyFoilToElement === 'function') {
         applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
     }
 
@@ -2395,6 +2401,13 @@ function renderAlbum(album) {
                     });
 
                     $slot.append($zoomBtn);
+
+                    // Apply foil if enabled via L: prefix
+                    if (slotData.holo_effect && slotData.holo_effect.startsWith('L:')) {
+                        if (typeof applyFoilToElement === 'function') {
+                            applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
+                        }
+                    }
                 }
             }
             $grid.append($slot);
@@ -2468,9 +2481,11 @@ function renderAlbum(album) {
                     $(this).removeClass('is-turning');
                     // Forzamos el re-ajuste y centrado para asegurar que la hoja quede bien anclada
                     const $el = $(this);
+                    const $container = $el.closest('.public-album-item');
+                    const { width, height } = getAlbumSize($container);
                     setTimeout(() => {
-                        $el.turn('stop').turn('resize').turn('center');
-                    }, 0);
+                        $el.turn('stop').turn('size', width, height).turn('center');
+                    }, 50);
                 }
             }
         });
