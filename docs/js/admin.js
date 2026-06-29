@@ -279,12 +279,6 @@ $(document).ready(async function() {
         }
     });
 
-    // --- Companion Menu Logic ---
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('#floating-companion-container, #companion-menu').length) {
-            $('#companion-menu').removeClass('active');
-        }
-    });
 
 
     $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
@@ -1878,57 +1872,71 @@ async function showAuthenticatedContent() {
     $('#store-link-container').html(linkHtml);
 
     showView('main-dashboard');
+
+    // Initialize companion early so it doesn't wait for all other data
+    initFloatingCompanion().catch(err => console.error("Error initializing companion:", err));
+
     $('#nav-btn-auctions-won').attr('style', 'display: flex !important');
-    try {
-        await loadWonAuctions();
-    } catch (e) {
-        console.warn("Error loading won auctions:", e);
-    }
 
-    // Load store contact data
-    $('#store-whatsapp').val(currentUser.whatsapp_link || '');
-    $('#store-messenger').val(currentUser.messenger_link || '');
-
-    // Load current spirit for floating companion
-    try {
-        if (currentUser.selected_spirit_id) {
-            const { data: spiritData } = await _supabase
-                .from('spirits')
-                .select('*')
-                .eq('id', currentUser.selected_spirit_id)
-                .single();
-            if (spiritData) {
-                window.currentSpirit = spiritData;
-            }
+    // Wrap other initialization tasks in their own blocks to prevent blocking the companion or UI
+    (async () => {
+        try {
+            await loadWonAuctions();
+        } catch (e) {
+            console.warn("Error loading won auctions:", e);
         }
-    } catch (e) {
-        console.warn("Companion: Error fetching selected spirit", e);
-    }
 
-    // Fetch additional data for CompanionBot
-    try {
-        const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
-            _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true),
-            _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1),
-            // Data priming: Fetch decks to ensure they are in Service Worker cache
-            _supabase.from('decks').select('*').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true })
-        ]);
+        // Load store contact data
+        $('#store-whatsapp').val(currentUser.whatsapp_link || '');
+        $('#store-messenger').val(currentUser.messenger_link || '');
 
-        window.currentStoreDataForBot = {
-            user: currentUser,
-            customMessages: botMessages || [],
-            hasSealed: sealedProducts && sealedProducts.length > 0
-        };
-    } catch (e) {
-        console.warn("Error fetching data for CompanionBot:", e);
-        window.currentStoreDataForBot = {
-            user: currentUser,
-            customMessages: [],
-            hasSealed: false
-        };
-    }
+        // Load current spirit for floating companion (refresh if needed)
+        try {
+            if (currentUser.selected_spirit_id) {
+                const { data: spiritData } = await _supabase
+                    .from('spirits')
+                    .select('*')
+                    .eq('id', currentUser.selected_spirit_id)
+                    .single();
+                if (spiritData) {
+                    window.currentSpirit = spiritData;
+                    // Re-init if it was already showing with a fallback
+                    initFloatingCompanion();
+                }
+            }
+        } catch (e) {
+            console.warn("Companion: Error fetching selected spirit", e);
+        }
 
-    initFloatingCompanion();
+        // Fetch additional data for CompanionBot
+        try {
+            const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
+                _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true),
+                _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1),
+                // Data priming: Fetch decks to ensure they are in Service Worker cache
+                _supabase.from('decks').select('*').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true })
+            ]);
+
+            window.currentStoreDataForBot = {
+                user: currentUser,
+                customMessages: botMessages || [],
+                hasSealed: sealedProducts && sealedProducts.length > 0
+            };
+
+            // If the companion is already initialized, we might need to tell the bot instance about new messages
+            if (window.botInstance && botMessages) {
+                window.botInstance.allMessages = [...window.botInstance.allMessages, ...botMessages];
+                window.botInstance.setContext('main-dashboard');
+            }
+        } catch (e) {
+            console.warn("Error fetching data for CompanionBot:", e);
+            window.currentStoreDataForBot = {
+                user: currentUser,
+                customMessages: [],
+                hasSealed: false
+            };
+        }
+    })();
 }
 
 function copyPublicLink() {
@@ -2854,94 +2862,6 @@ async function loadSpirits() {
 
         $grid.append($card);
     });
-}
-
-async function initFloatingCompanion() {
-    // If no spirit selected, try to get a public one from DB
-    if (!window.currentSpirit) {
-        try {
-            const { data: publicSpirits } = await _supabase
-                .from('spirits')
-                .select('*')
-                .eq('is_public', true)
-                .limit(1);
-            if (publicSpirits && publicSpirits.length > 0) {
-                window.currentSpirit = publicSpirits[0];
-            }
-        } catch (e) {
-            console.warn("Could not fetch fallback public spirit", e);
-        }
-    }
-
-    if (!window.currentSpirit) return;
-
-    const $container = $('#floating-companion-container');
-    if (!$container.length) return;
-
-    setTimeout(makeCompanionDraggable, 1000);
-    $container.html(`
-        <model-viewer
-            src="${window.currentSpirit.gltf_url}"
-            auto-rotate
-            camera-controls
-            rotation="0deg 0deg 0deg"
-            shadow-intensity="1"
-            environment-image="neutral"
-            exposure="1"
-            interaction-prompt="none"
-            oncontextmenu="return false;">
-        </model-viewer>
-    `);
-
-    $container.off('click').on('click', function(e) {
-        if (window.isCompanionDragging) return;
-        e.stopPropagation();
-        $('#companion-menu').toggleClass('active');
-    });
-
-    // --- Interaction Menu Actions ---
-    $('#menu-item-chat').off('click').on('click', function(e) {
-        e.stopPropagation();
-        $('#chatbot-container').addClass('active');
-        $('#companion-menu').removeClass('active');
-    });
-
-    $('#menu-item-play').off('click').on('click', function(e) {
-        e.stopPropagation();
-        window.location.href = 'play.html';
-    });
-
-    $('#menu-item-details').off('click').on('click', function(e) {
-        e.stopPropagation();
-        if (window.currentSpirit) {
-            $('#expanded-gltf-viewer').attr('src', window.currentSpirit.gltf_url);
-            $('#expanded-gltf-viewer').attr('poster', window.currentSpirit.poster_url || '');
-            $('#expanded-gltf-name').text(window.currentSpirit.name);
-            $('#gltf-overlay').addClass('active');
-            $('body').addClass('modal-open');
-        }
-        $('#companion-menu').removeClass('active');
-    });
-
-    // Initialize CompanionBot Tips
-    if (typeof CompanionBot === 'function') {
-        const bot = new CompanionBot({
-            supabase: _supabase,
-            userId: currentUser.id,
-            userType: 'admin',
-            customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : [],
-            onAction: (msg) => {
-                if (msg.type === 'album_link') {
-                    showView('dashboard');
-                    loadAlbums();
-                } else if (msg.redirect_url && msg.redirect_url.startsWith('http')) {
-                    window.open(msg.redirect_url, '_blank');
-                }
-            }
-        });
-        bot.init();
-        window.botInstance = bot;
-    }
 }
 
 async function deleteSpirit(id, gltfUrl) {
