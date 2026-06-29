@@ -571,59 +571,6 @@
                 margin-bottom: 15px;
             }
         }
-
-        /* Album UI Refinement - Simplify Covers */
-        .textured-cover h2,
-        .preview-box .preview-title,
-        .style-subtitle,
-        .preview-subtitle {
-            display: none !important;
-        }
-
-        .album-item h3 {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: var(--primary-color) !important;
-            margin-top: 5px !important;
-        }
-
-        #input-album-cover-color {
-            cursor: pointer;
-            border-radius: 8px;
-            height: 45px;
-            width: 100%;
-            border: 2px solid rgba(255,255,255,0.1);
-            background: #252525;
-        }
-
-        .cover-preview-item span {
-            display: block;
-            margin-top: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #aaa;
-            text-transform: uppercase;
-        }
-        .cover-preview-item.active span {
-            color: var(--primary-color);
-        }
-
-        /* Ensure admin list covers look consistent */
-        .album-item .textured-cover {
-            width: 100%;
-            height: 150px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 10px;
-        }
-
-        /* Override style.css black background to allow custom color */
-        .textured-cover.style-standard,
-        .preview-box.style-standard {
-            background-color: var(--custom-cover-bg, #1a1a1a) !important;
-            background-image: none !important;
-            border: 2px solid rgba(255,255,255,0.1) !important;
-        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
@@ -1641,21 +1588,40 @@
 
                 <!-- Tab: Designs (Visual Previews) -->
                 <div id="album-tab-designs" class="slot-tab-content active">
-                    <div class="cover-previews-grid" style="grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 400px; margin: 0 auto;">
+                    <div class="cover-previews-grid">
                         <div class="cover-preview-item active" data-style="style-standard">
-                            <div class="preview-box style-standard" id="preview-color-box" style="width: 100%; aspect-ratio: 1/1; border-radius: 12px;"></div>
-                            <span>Color Plano</span>
+                            <div class="preview-box style-standard">
+                                <div class="preview-title">TÍTULO</div>
+                            </div>
                         </div>
                         <div class="cover-preview-item" data-style="style-cosmic">
-                            <div class="preview-box style-cosmic" style="width: 100%; aspect-ratio: 1/1; border-radius: 12px;"></div>
-                            <span>Espacial</span>
+                            <div class="preview-box style-cosmic">
+                                <div class="preview-title">TÍTULO</div>
+                            </div>
+                        </div>
+                        <div class="cover-preview-item" data-style="style-holographic">
+                            <div class="preview-box style-holographic">
+                                <div class="preview-title">TÍTULO</div>
+                            </div>
+                        </div>
+                        <div class="cover-preview-item" data-style="style-luxury">
+                            <div class="preview-box style-luxury">
+                                <div class="preview-title">TÍTULO</div>
+                            </div>
+                        </div>
+                        <div class="cover-preview-item" data-style="style-marble">
+                            <div class="preview-box style-marble">
+                                <div class="preview-title">TÍTULO</div>
+                            </div>
+                        </div>
+                        <div class="cover-preview-item" data-style="style-velvet">
+                            <div class="preview-box style-velvet">
+                                <div class="preview-title">TÍTULO</div>
+                            </div>
                         </div>
                     </div>
                     <input type="hidden" id="input-album-cover-style" value="style-standard">
-                    <div class="form-group" style="margin-top: 30px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
-                        <label><i class="fas fa-palette"></i> Elegir Color de Portada (Para Color Plano)</label>
-                        <input type="color" id="input-album-cover-color" value="#1a1a1a">
-                    </div>
+                    <input type="hidden" id="input-album-cover-color" value="#1a1a1a">
                 </div>
 
                 <!-- Tab: Upload (Custom Images) -->
@@ -2004,6 +1970,7 @@
                                     <option value="" style="background: #252525;">Ninguno</option>
                                     <option value="foil" style="background: #252525;">Foil</option>
                                     <option value="custom-texture" style="background: #252525;">CustomTexture</option>
+                                    <option value="custom-textures" style="background: #252525;">CustomTextures</option>
                                     <option value="custom-foil" style="background: #252525;">CustomFoil</option>
                                 <option value="pk-rare-holo" style="background: #252525;">PK: Rare Holo</option>
                                 <option value="pk-rare-holo-cosmos" style="background: #252525;">PK: Cosmos Holo</option>
@@ -2475,7 +2442,6 @@
     <script src="js/companion-bot.js"></script>
     <script src="js/ztext.js"></script>
     <script src="js/utils.js" id="utils-js"></script>
-    <script src="js/migltf.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/inversiones.js"></script>
     <script src="js/admin_deseos.js"></script>
@@ -2538,66 +2504,5 @@
             </div>
         </div>
     </div>
-
-    <!-- Album Cover Enhancement Logic -->
-    <script>
-        $(document).ready(function() {
-            // Real-time color preview in the editor
-            $(document).on('input', '#input-album-cover-color', function() {
-                const color = $(this).val();
-                $('#preview-color-box').css('--custom-cover-bg', color);
-            });
-
-            // Decorate loadAlbums to show CSS-based covers in the admin list
-            const _originalLoadAlbums = window.loadAlbums;
-            window.loadAlbums = async function() {
-                // Call original logic first to handle Supabase fetch and base rendering
-                if (_originalLoadAlbums) await _originalLoadAlbums();
-
-                // Now, surgically enhance the rendered items if they are using CSS covers
-                // We fetch all columns to avoid missing data, although we mostly care about styling
-                const { data: albums } = await _supabase
-                    .from('albums')
-                    .select('*')
-                    .eq('user_id', currentUser.id);
-
-                if (!albums) return;
-
-                albums.forEach(album => {
-                    const $item = $(`.album-item[data-id="${album.id}"]`);
-                    if ($item.length) {
-                        // Replace title text if needed or ensure visibility
-                        const $h3 = $item.find('h3');
-                        if ($h3.length) $h3.text(album.title);
-
-                        // If it's using a CSS cover (no image_url or placeholder)
-                        if (!album.cover_image_url || album.cover_image_url.includes('placeholder')) {
-                            const $img = $item.find('img');
-                            if ($img.length) {
-                                const style = album.cover_style || 'style-standard';
-                                const color = album.cover_color || '#1a1a1a';
-                                $img.replaceWith(`<div class="textured-cover ${style}" style="--custom-cover-bg: ${color}"></div>`);
-                            }
-                        }
-                    }
-                });
-            };
-
-            // Enhance editAlbum to update our custom color picker and box
-            const _originalEditAlbum = window.editAlbum;
-            window.editAlbum = async function(album) {
-                if (_originalEditAlbum) await _originalEditAlbum(album);
-
-                // Update the color picker and the preview box with the loaded data
-                const color = $('#input-album-cover-color').val() || '#1a1a1a';
-                $('#preview-color-box').css('--custom-cover-bg', color);
-
-                // Ensure the style items show active state correctly
-                const style = $('#input-album-cover-style').val();
-                $('.cover-preview-item').removeClass('active');
-                $(`.cover-preview-item[data-style="${style}"]`).addClass('active');
-            };
-        });
-    </script>
 </body>
 </html>
