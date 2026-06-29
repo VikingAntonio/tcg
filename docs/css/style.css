@@ -207,7 +207,6 @@ body {
 /* Ensure internal turn.js pages are properly positioned */
 .album .turn-page {
     position: absolute !important;
-    z-index: 10;
 }
 
 .page {
