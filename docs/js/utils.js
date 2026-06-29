@@ -74,17 +74,11 @@ window.applyFoilToElement = function($el, holo, mask) {
 
     const POKEMON_FOILS = window.POKEMON_FOILS;
 
-    // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
     let baseHolo = holo;
-    if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
-
     let isCustomFoil = false;
-    if (baseHolo.startsWith('custom-foil|')) {
+    if (holo.startsWith('custom-foil|')) {
         isCustomFoil = true;
-        baseHolo = baseHolo.split('|')[1] || 'foil';
-    }
-    if (baseHolo.startsWith('custom-textures|')) {
-        baseHolo = 'custom-textures';
+        baseHolo = holo.split('|')[1] || 'foil';
     }
 
     if (POKEMON_FOILS[baseHolo]) {
@@ -95,14 +89,14 @@ window.applyFoilToElement = function($el, holo, mask) {
         if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
         $el.attr("data-rarity", rarityVal.trim());
 
-        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+        if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
             $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
         const rx = 0.5, ry = 0.5;
         $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
     } else {
         $el.addClass(baseHolo);
-        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+        if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
             $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
         $el.css({'--mx': 0.5, '--my': 0.5});

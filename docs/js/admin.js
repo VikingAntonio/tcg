@@ -630,24 +630,9 @@ $(document).ready(async function() {
         }
 
         let holoEffect = $('#slot-holo-effect').val() || '';
-        const complexBase = $('#slot-modal').attr('data-complex-val') || '';
-
-        // Preserve prefixes if base effect hasn't changed
-        if (complexBase && (complexBase.endsWith('|' + holoEffect) || complexBase.endsWith(':' + holoEffect) || complexBase === holoEffect)) {
-            holoEffect = complexBase;
-        } else if (holoEffect === 'custom-foil') {
+        if (holoEffect === 'custom-foil') {
             const subType = $('#slot-custom-foil-type').val() || 'foil';
             holoEffect = `custom-foil|${subType}`;
-        } else if (holoEffect === 'custom-textures') {
-            holoEffect = `custom-textures|rainbow`;
-        }
-
-        // Apply L: prefix if checkbox is checked
-        const shouldShowInList = $('#slot-show-foil-list').is(':checked');
-        if (shouldShowInList && !holoEffect.startsWith('L:')) {
-            holoEffect = 'L:' + holoEffect;
-        } else if (!shouldShowInList && holoEffect.startsWith('L:')) {
-            holoEffect = holoEffect.substring(2);
         }
 
         const cardData = {
@@ -660,7 +645,8 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
-            obtained: $('#slot-modal').data('current-obtained') !== false
+            obtained: $('#slot-modal').data('current-obtained') !== false,
+            show_foil_in_list: $('#slot-show-foil-list').is(':checked')
         };
 
         // Queue to VikingData (Shared Database)
@@ -749,7 +735,7 @@ $(document).ready(async function() {
 
     $('#slot-holo-effect').change(function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures') {
+        if (val === 'custom-texture' || val === 'custom-foil') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -956,8 +942,9 @@ $(document).ready(async function() {
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
+        const show_foil_in_list = $('#input-deck-show-foil').is(':checked');
 
-        let updateData = { name, is_public, use_special_price, special_price };
+        let updateData = { name, is_public, use_special_price, special_price, show_foil_in_list };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -2061,8 +2048,7 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
-    $('#input-deck-show-foil').hide();
-    $('[for="input-deck-show-foil"]').hide();
+    $('#input-deck-show-foil').prop('checked', target.show_foil_in_list === true);
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -2199,7 +2185,7 @@ function renderDeckCardsLocal(scrollPos = null) {
     // Apply foil loop if enabled
     $('#deck-card-list .deck-card-item').each(function(idx) {
         const card = localDeckCards[idx];
-        if (card && card.holo_effect && card.holo_effect.startsWith('L:')) {
+        if (card && card.show_foil_in_list && card.holo_effect) {
             const $img = $(this).find('img');
             // We need a wrapper for foil to work correctly with existing logic
             if (!$img.parent().hasClass('foil-wrapper')) {
@@ -2271,26 +2257,16 @@ function editDeckCard(card) {
     $('#slot-name').val(card.name || '');
 
     let holo = card.holo_effect || '';
-    $('#slot-modal').attr('data-complex-val', holo);
-    $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
-
-    let baseHolo = holo;
-    if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
-
-    if (baseHolo.startsWith('custom-foil|')) {
-        const parts = baseHolo.split('|');
+    if (holo.startsWith('custom-foil|')) {
+        const parts = holo.split('|');
         $('#slot-holo-effect').val('custom-foil');
         $('#slot-custom-foil-type').val(parts[1] || 'foil');
         $('#custom-foil-type-container').show();
         $('#custom-mask-container').show();
-    } else if (baseHolo.startsWith('custom-textures|')) {
-        $('#slot-holo-effect').val('custom-textures');
-        $('#custom-foil-type-container').hide();
-        $('#custom-mask-container').show();
     } else {
-        $('#slot-holo-effect').val(baseHolo);
+        $('#slot-holo-effect').val(holo);
         $('#custom-foil-type-container').hide();
-        if (baseHolo === 'custom-texture') {
+        if (holo === 'custom-texture') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -2614,13 +2590,6 @@ function renderAlbumPagesLocal(pages, scrollPos) {
 
                 if (!isObtained) {
                     $slot.append('<div class="label-buscando" style="position:absolute; bottom:5px; left:5px; background:rgba(255,68,68,0.9); color:white; font-size:9px; padding:2px 5px; border-radius:4px; font-weight:bold;">BUSCANDO</div>');
-                }
-
-                // Apply foil if enabled via L: prefix
-                if (slotData.holo_effect && slotData.holo_effect.startsWith('L:')) {
-                    if (typeof applyFoilToElement === 'function') {
-                        applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
-                    }
                 }
 
                 // Add mini switch for obtained status
@@ -3069,28 +3038,19 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
+        $('#slot-show-foil-list').prop('checked', data.show_foil_in_list === true);
 
         let holo = data.holo_effect || '';
-        $('#slot-modal').attr('data-complex-val', holo);
-        $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
-
-        let baseHolo = holo;
-        if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
-
-        if (baseHolo.startsWith('custom-foil|')) {
-            const parts = baseHolo.split('|');
+        if (holo.startsWith('custom-foil|')) {
+            const parts = holo.split('|');
             $('#slot-holo-effect').val('custom-foil');
             $('#slot-custom-foil-type').val(parts[1] || 'foil');
             $('#custom-foil-type-container').show();
             $('#custom-mask-container').show();
-        } else if (baseHolo.startsWith('custom-textures|')) {
-            $('#slot-holo-effect').val('custom-textures');
-            $('#custom-foil-type-container').hide();
-            $('#custom-mask-container').show();
         } else {
-            $('#slot-holo-effect').val(baseHolo);
+            $('#slot-holo-effect').val(holo);
             $('#custom-foil-type-container').hide();
-            if (baseHolo === 'custom-texture') {
+            if (holo === 'custom-texture') {
                 $('#custom-mask-container').show();
             } else {
                 $('#custom-mask-container').hide();
