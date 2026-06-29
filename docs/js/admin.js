@@ -1898,18 +1898,27 @@ async function showAuthenticatedContent() {
     }
 
     // Fetch additional data for CompanionBot
-    const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
-        _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true),
-        _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1),
-        // Data priming: Fetch decks to ensure they are in Service Worker cache
-        _supabase.from('decks').select('*').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true })
-    ]);
+    try {
+        const [{ data: botMessages }, { data: sealedProducts }] = await Promise.all([
+            _supabase.from('bot_messages').select('*').eq('user_id', currentUser.id).eq('is_active', true),
+            _supabase.from('sealed_products').select('id').eq('user_id', currentUser.id).limit(1),
+            // Data priming: Fetch decks to ensure they are in Service Worker cache
+            _supabase.from('decks').select('*').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true })
+        ]);
 
-    window.currentStoreDataForBot = {
-        user: currentUser,
-        customMessages: botMessages,
-        hasSealed: sealedProducts && sealedProducts.length > 0
-    };
+        window.currentStoreDataForBot = {
+            user: currentUser,
+            customMessages: botMessages || [],
+            hasSealed: sealedProducts && sealedProducts.length > 0
+        };
+    } catch (e) {
+        console.warn("Error fetching data for CompanionBot:", e);
+        window.currentStoreDataForBot = {
+            user: currentUser,
+            customMessages: [],
+            hasSealed: false
+        };
+    }
 
     initFloatingCompanion();
 }
