@@ -2089,42 +2089,6 @@ input:checked + .slider:before {
     opacity: 0.7; /* Allows seeing the card background behind the black mask */
 }
 
-/* Mask Editor Zoom Controls */
-.zoom-controls-lateral .btn-sm {
-    width: 40px;
-    height: 40px;
-    border-radius: 50% !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    background: rgba(0,0,0,0.6) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    color: white !important;
-}
-
-.zoom-controls-lateral .btn-sm:hover {
-    background: var(--primary-color) !important;
-    transform: scale(1.1);
-}
-
-/* Responsive adjustments for Mask Editor Zoom */
-@media screen and (max-width: 640px) {
-    #mask-viewport {
-        height: 280px !important;
-    }
-
-    .zoom-controls-lateral {
-        right: 5px !important;
-    }
-
-    .zoom-controls-lateral .btn-sm {
-        width: 35px;
-        height: 35px;
-        padding: 5px !important;
-    }
-}
-
 .editor-controls .btn-secondary.active {
     background: #00a8ff !important;
     color: white !important;
@@ -2768,7 +2732,7 @@ input:checked + .slider:before {
     left: 20px;
     width: 120px;
     height: 120px;
-    z-index: 3000000;
+    z-index: 1500000;
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -2839,7 +2803,7 @@ input:checked + .slider:before {
     display: none;
     flex-direction: column;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    z-index: 3000002;
+    z-index: 9001;
     backdrop-filter: blur(10px);
     animation: slide-up 0.3s ease-out;
 }
@@ -2880,7 +2844,7 @@ input:checked + .slider:before {
     display: none;
     flex-direction: column;
     box-shadow: 0 15px 50px rgba(0,0,0,0.6);
-    z-index: 3000001;
+    z-index: 1500000;
     overflow: hidden;
     animation: slide-up 0.3s ease-out;
 }
