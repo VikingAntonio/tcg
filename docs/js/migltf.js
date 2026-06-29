@@ -49,6 +49,16 @@ async function initFloatingCompanion() {
     const $container = $('#floating-companion-container');
     if (!$container.length) return;
 
+    // Update chatbot greeting with spirit name
+    if (window.currentSpirit && window.currentSpirit.name) {
+        const $greeting = $('#chat-messages .msg-bot').first();
+        if ($greeting.length && $greeting.text().includes('Vikingo')) {
+            let text = $greeting.text();
+            text = text.replace('Vikingo', window.currentSpirit.name);
+            $greeting.text(text);
+        }
+    }
+
     // Avoid redundant model reloading
     if ($container.find('model-viewer').attr('src') !== window.currentSpirit.gltf_url) {
         $container.html(`
