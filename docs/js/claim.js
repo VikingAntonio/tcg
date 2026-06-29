@@ -114,7 +114,7 @@ async function checkClaimSession() {
     }
 }
 
-async function initFloatingCompanion() {
+async function initFloatingCompanionLegacy() {
     if (!window.currentSpirit) {
         try {
             const { data: publicSpirits } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1);
