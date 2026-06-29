@@ -2848,7 +2848,7 @@ async function loadSpirits() {
     });
 }
 
-async function initFloatingCompanionLegacy() {
+async function initFloatingCompanion() {
     // If no spirit selected, try to get a public one from DB
     if (!window.currentSpirit) {
         try {

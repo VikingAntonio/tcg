@@ -333,7 +333,7 @@ async function deletePage(id) {
     if (res.isConfirmed) { await _supabase.from('pages').delete().eq('id', id); loadAlbumPages(currentAlbumId, false); }
 }
 
-async function initFloatingCompanionLegacy() {
+async function initFloatingCompanion() {
     if (typeof CompanionBot === 'function') {
         window.botInstance = new CompanionBot({ supabase: _supabase, userId: currentUser.id, userType: 'admin' });
         window.botInstance.init();
