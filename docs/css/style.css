@@ -2768,7 +2768,7 @@ input:checked + .slider:before {
     left: 20px;
     width: 120px;
     height: 120px;
-    z-index: 1500000;
+    z-index: 3000000;
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -2839,7 +2839,7 @@ input:checked + .slider:before {
     display: none;
     flex-direction: column;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    z-index: 9001;
+    z-index: 3000002;
     backdrop-filter: blur(10px);
     animation: slide-up 0.3s ease-out;
 }
@@ -2880,7 +2880,7 @@ input:checked + .slider:before {
     display: none;
     flex-direction: column;
     box-shadow: 0 15px 50px rgba(0,0,0,0.6);
-    z-index: 1500000;
+    z-index: 3000001;
     overflow: hidden;
     animation: slide-up 0.3s ease-out;
 }

@@ -97,6 +97,9 @@ let droppedGltfFile = null;
 let droppedExtraFiles = [];
 
 $(document).ready(async function() {
+    // Start companion early while checking session
+    initFloatingCompanion().catch(err => console.error("Error initializing companion early:", err));
+
     await checkSession();
     initTheme();
 
