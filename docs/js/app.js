@@ -205,9 +205,6 @@ window.handleDeepLinking = function(retries = 10) {
 };
 
 $(document).ready(async function() {
-    // Start companion early
-    initFloatingCompanion();
-
     // --- Share Modal Close & Actions ---
     $(document).on('click', '#btn-share-card-modal', function() {
         if (!window.currentCardData || !window.currentCardData.id) return;
@@ -405,6 +402,7 @@ $(document).ready(async function() {
 
         // Load store data first as it's required for view initialization
         await loadStoreData();
+        initFloatingCompanion();
 
         // Initial view load (skipPush=true as the URL already contains the state)
         await switchView(initialView, true);
@@ -1529,7 +1527,7 @@ async function loadStoreData() {
         };
 
         // Initialize companion bot
-        initFloatingCompanion(true);
+        initFloatingCompanion();
     } catch (e) {
         console.error("Error in loadStoreData:", e);
     }
@@ -1634,7 +1632,7 @@ function loadPublicPreorders() {
     });
 }
 
-async function initFloatingCompanionLegacy() {
+async function initFloatingCompanion() {
     // If no spirit selected, try to get a public one from DB
     if (!window.currentSpirit) {
         try {
