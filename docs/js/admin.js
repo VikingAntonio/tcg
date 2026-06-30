@@ -2024,8 +2024,12 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
-    $('#input-deck-show-foil').prop('checked', target.show_foil === true).show();
-    $('[for="input-deck-show-foil"]').show();
+    $('#input-deck-show-foil').prop('checked', target.show_foil === true);
+
+    // Sync Nexus PC Checkboxes if they exist
+    $('.nexus-check-sync[data-target="#input-deck-public"]').prop('checked', target.is_public !== false);
+    $('.nexus-check-sync[data-target="#input-deck-show-foil"]').prop('checked', target.show_foil === true);
+    $('.nexus-input-sync[data-target="#input-deck-name"]').val(target.name);
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);

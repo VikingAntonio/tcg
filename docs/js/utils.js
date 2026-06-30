@@ -127,24 +127,30 @@ window.currentTool = 'brush'; // 'brush' or 'eraser'
 window.maskHistory = [];
 const MAX_MASK_HISTORY = 20;
 
+window.maskPanX = 0;
+window.maskPanY = 0;
+
 window.initMaskEditor = function() {
     window.maskCanvas = document.getElementById('mask-canvas');
     if (!window.maskCanvas) return;
     window.maskCtx = window.maskCanvas.getContext('2d');
 
     let isPanning = false;
-    let startPanX, startPanY, startScrollLeft, startScrollTop;
+    let startMouseX, startMouseY, initialPanX, initialPanY;
+
+    const updatePanTransform = () => {
+        $('#mask-canvas-wrapper').css('transform', `translate(${window.maskPanX}px, ${window.maskPanY}px)`);
+    };
 
     $(window.maskCanvas).off('mousedown touchstart').on('mousedown touchstart', function(e) {
         if (window.currentTool === 'move') {
             isPanning = true;
             $('#mask-canvas').css('cursor', 'grabbing');
-            const viewport = document.getElementById('mask-viewport');
             const event = e.type.includes('touch') ? (e.originalEvent.touches[0] || e.originalEvent.changedTouches[0]) : e;
-            startPanX = event.pageX - viewport.offsetLeft;
-            startPanY = event.pageY - viewport.offsetTop;
-            startScrollLeft = viewport.scrollLeft;
-            startScrollTop = viewport.scrollTop;
+            startMouseX = event.clientX;
+            startMouseY = event.clientY;
+            initialPanX = window.maskPanX;
+            initialPanY = window.maskPanY;
             return;
         }
         window.isPainting = true;
@@ -154,14 +160,12 @@ window.initMaskEditor = function() {
 
     $(window).off('mousemove touchmove').on('mousemove touchmove', function(e) {
         if (isPanning) {
-            const viewport = document.getElementById('mask-viewport');
             const event = e.type.includes('touch') ? (e.originalEvent.touches[0] || e.originalEvent.changedTouches[0]) : e;
-            const x = event.pageX - viewport.offsetLeft;
-            const y = event.pageY - viewport.offsetTop;
-            const walkX = (x - startPanX);
-            const walkY = (y - startPanY);
-            viewport.scrollLeft = startScrollLeft - walkX;
-            viewport.scrollTop = startScrollTop - walkY;
+            const dx = event.clientX - startMouseX;
+            const dy = event.clientY - startMouseY;
+            window.maskPanX = initialPanX + dx;
+            window.maskPanY = initialPanY + dy;
+            updatePanTransform();
             e.preventDefault();
             return;
         }
@@ -233,7 +237,10 @@ window.initMaskEditor = function() {
 
     $('#btn-reset-zoom').off('click').on('click', function() {
         window.maskZoom = 1;
+        window.maskPanX = 0;
+        window.maskPanY = 0;
         updateMaskZoom();
+        updatePanTransform();
     });
 
     $('#btn-clear-mask').off('click').on('click', function() {
@@ -282,6 +289,10 @@ window.initMaskEditor = function() {
 };
 
 window.initMaskCanvas = function() {
+    window.maskPanX = 0;
+    window.maskPanY = 0;
+    $('#mask-canvas-wrapper').css('transform', 'translate(0,0)');
+
     // Supports all integrated form input IDs
     const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
 
@@ -639,10 +650,9 @@ $(document).ready(function() {
             <div class="overlay-content" style="max-width: 600px;">
                 <span id="close-mask-editor" class="close-btn">&times;</span>
                 <h2>Editor de Máscara</h2>
-                <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
 
                 <div class="mask-editor-main-container" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; position: relative; width: 100%;">
-                    <div id="mask-viewport" style="width: 100%; height: 350px; overflow: auto; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                    <div id="mask-viewport" style="width: 100%; height: 350px; overflow: hidden; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center; padding: 500px;">
                         <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center;">
                             <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block; width: 100%; height: 100%;"></canvas>
                         </div>
