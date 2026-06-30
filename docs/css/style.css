@@ -1525,6 +1525,9 @@ input:checked + .slider:before {
 
 .swiperyg {
     margin: 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
 }
 
 /* Responsividad */

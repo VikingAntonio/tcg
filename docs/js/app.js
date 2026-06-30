@@ -611,6 +611,11 @@ $(document).ready(async function() {
     });
 
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
+        // Prevent accidental closure on tablets/mobile due to click propagation from Swiper open
+        if (window.lastModalOpenTime && (Date.now() - window.lastModalOpenTime < 500)) {
+            return;
+        }
+
         if (e.target === this || $(this).attr('id') === 'close-btn' || $(e.target).closest('#close-btn').length > 0) {
             $("#image-overlay").removeClass("active");
 
@@ -872,6 +877,7 @@ window.set3DTarget = function(rx, ry) {
 };
 
 async function openCardModal($slot) {
+    window.lastModalOpenTime = Date.now();
     let imgSrc = $slot.data("full-img") || $slot.find("img").attr("src");
 
     if (!imgSrc || imgSrc.includes('placeholder')) return;
@@ -1677,17 +1683,39 @@ function setupDeckObserver() {
     }
 }
 
-function populateDeckSlide($slide, card) {
+function populateDeckSlide($slide, card, deck = null) {
     if ($slide.hasClass('is-populated')) return;
 
     const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
     const isMissing = card.obtained === false || card.obtained === 'false';
 
-    $slide.html(`
-        <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
-        ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
-    `);
+    const useZtext = deck && deck.show_foil === true && typeof Ztextify !== 'undefined';
+
+    if (useZtext) {
+        $slide.html(`
+            <div class="z-text-card" style="width:100%; height:100%;">
+                <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover;" />
+            </div>
+            ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+            <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+        `);
+        try {
+            new Ztextify($slide.find('.z-text-card')[0], {
+               depth: "10px",
+               layers: 8,
+               fade: true,
+               direction: "backwards",
+               event: "pointer",
+               perspective: "500px"
+            });
+        } catch(e) { console.error("Ztext init error on slide:", e); }
+    } else {
+        $slide.html(`
+            <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
+            ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+            <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+        `);
+    }
 
     // Re-bind click handler for the newly rendered zoom button
     $slide.find('.zoom-btn').on('click', function(e) {
@@ -1714,7 +1742,7 @@ function loadDeckBatch(swiper, deck, targetIndex, bufferSize = 5) {
         const card = deck.deck_cards[i];
         const $slide = $(swiper.slides[i]);
         if (card && $slide.length) {
-            populateDeckSlide($slide, card);
+            populateDeckSlide($slide, card, deck);
         }
     }
 }
