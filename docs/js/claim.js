@@ -104,7 +104,7 @@ async function checkClaimSession() {
             const { data: botMessages } = await _supabase.from('bot_messages').select('*').eq('user_id', user.id).eq('is_active', true);
             window.currentStoreDataForBot = { user: user, customMessages: botMessages };
 
-            initFloatingCompanion();
+            initMichatbot(true);
             loadClaims();
         } else {
             window.location.href = 'admin.html';
@@ -114,55 +114,7 @@ async function checkClaimSession() {
     }
 }
 
-async function initFloatingCompanionLegacy() {
-    if (!window.currentSpirit) {
-        try {
-            const { data: publicSpirits } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1);
-            if (publicSpirits && publicSpirits.length > 0) window.currentSpirit = publicSpirits[0];
-        } catch (e) {}
-    }
-    if (!window.currentSpirit) return;
 
-    const $container = $('#floating-companion-container');
-    if (!$container.length) return;
-
-    if (typeof makeCompanionDraggable === 'function') setTimeout(makeCompanionDraggable, 1000);
-    $container.html(`
-        <model-viewer
-            src="${window.currentSpirit.gltf_url}"
-            auto-rotate camera-controls rotation="0deg 0deg 0deg" shadow-intensity="1" environment-image="neutral" exposure="1" interaction-prompt="none" oncontextmenu="return false;">
-        </model-viewer>
-    `);
-
-    $container.on('click', function(e) {
-        if (window.isCompanionDragging) return;
-        e.stopPropagation();
-        $('#companion-menu').toggleClass('active');
-    });
-
-    $('#menu-item-chat').on('click', function(e) {
-        e.stopPropagation();
-        $('#chatbot-container').addClass('active');
-        $('#companion-menu').removeClass('active');
-    });
-
-    $('#menu-item-details').on('click', function(e) {
-        e.stopPropagation();
-        Swal.fire({ title: window.currentSpirit.name, text: 'Tu fiel compañero de aventuras.', imageUrl: window.currentSpirit.poster_url, imageWidth: 200 });
-        $('#companion-menu').removeClass('active');
-    });
-
-    if (typeof CompanionBot === 'function') {
-        const bot = new CompanionBot({
-            supabase: _supabase,
-            userId: claimUser.id,
-            userType: 'admin',
-            customMessages: window.currentStoreDataForBot ? window.currentStoreDataForBot.customMessages : []
-        });
-        bot.init();
-        window.botInstance = bot;
-    }
-}
 
 async function handleClaimUpload(fileList) {
     try {

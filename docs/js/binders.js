@@ -250,7 +250,7 @@ async function showAuthenticatedContent() {
     $('#dropdown-user-name').text(currentUser.username);
     showView('dashboard');
     loadAlbums();
-    initFloatingCompanion();
+    initMichatbot(true);
 }
 
 function showLoginView() { $('#login-modal').addClass('active'); $('#authenticated-content, #top-panel').hide(); }
@@ -333,12 +333,7 @@ async function deletePage(id) {
     if (res.isConfirmed) { await _supabase.from('pages').delete().eq('id', id); loadAlbumPages(currentAlbumId, false); }
 }
 
-async function initFloatingCompanion() {
-    if (typeof CompanionBot === 'function') {
-        window.botInstance = new CompanionBot({ supabase: _supabase, userId: currentUser.id, userType: 'admin' });
-        window.botInstance.init();
-    }
-}
+
 
 async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);

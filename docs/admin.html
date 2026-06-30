@@ -2472,7 +2472,8 @@
     <script src="js/cart.js"></script>
     <script src="js/viking-data.js"></script>
     <script src="js/supabase-config.js"></script>
-    <script src="js/companion-bot.js"></script>
+    <script src="js/michatbot.js"></script>
+
     <script src="js/ztext.js"></script>
     <script src="js/utils.js" id="utils-js"></script>
     <script src="js/admin.js"></script>
@@ -2491,52 +2492,9 @@
         }
     </script>
 
-    <!-- Floating Companion Wrapper -->
-    <div id="companion-wrapper">
-        <div class="companion-drag-handle" id="companion-drag-handle">
-            <i class="fas fa-arrows-alt"></i>
-        </div>
-        <div class="companion-bubble" id="companion-bubble"></div>
-        <div id="floating-companion-container">
-            <!-- <model-viewer> injected via JS -->
-        </div>
 
-        <!-- Companion Interaction Menu -->
-        <div class="companion-menu-popup" id="companion-menu">
-            <div class="companion-menu-item" id="menu-item-chat">
-                <i class="fas fa-comment-dots"></i> Chatear
-            </div>
-            <div class="companion-menu-item" id="menu-item-play">
-                <i class="fas fa-gamepad"></i> Jugar
-            </div>
-            <div class="companion-menu-item" id="menu-item-details">
-                <i class="fas fa-search-plus"></i> Ver Detalle
-            </div>
-        </div>
-    </div>
 
-    <!-- Chatbot Container -->
-    <div id="chatbot-container">
-        <div class="chatbot-header">
-            <h3><i class="fas fa-robot"></i> Viking Assistant</h3>
-            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;">&times;</span>
-        </div>
-        <div class="chatbot-messages" id="chat-messages">
-            <div class="chat-msg msg-bot">¡Hola! Soy tu asistente Vikingo. ¿En qué puedo ayudarte hoy?</div>
-        </div>
-        <div class="chatbot-input-area">
-            <div class="faq-buttons">
-                <button class="faq-btn" data-faq="album">Álbumes</button>
-                <button class="faq-btn" data-faq="scanner">Scanner</button>
-                <button class="faq-btn" data-faq="theme">Temas</button>
-                <button class="faq-btn" data-faq="spirit">Compañero</button>
-            </div>
-            <div class="chat-input-wrapper">
-                <input type="text" id="chat-input" placeholder="Escribe tu duda...">
-                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Album Cover Enhancement Logic -->
     <script>
