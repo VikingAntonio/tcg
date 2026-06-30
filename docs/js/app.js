@@ -612,7 +612,7 @@ $(document).ready(async function() {
 
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
         // Prevent accidental closure on tablets/mobile due to click propagation from Swiper open
-        if (window.lastModalOpenTime && (Date.now() - window.lastModalOpenTime < 500)) {
+        if (window.lastModalOpenTime && (Date.now() - window.lastModalOpenTime < 800)) {
             return;
         }
 
