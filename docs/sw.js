@@ -48,7 +48,7 @@ const URLS_TO_CACHE = [
   './js/cart.js',
   './js/turn.js',
   './js/ztext.js',
-  './js/companion-bot.js',
+  './js/michatbot.js',
   './js/inversiones.js',
   './js/admin_deseos.js',
   './js/animacionesdeseos.js',

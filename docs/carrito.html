@@ -8,7 +8,7 @@
     <title>Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
     <script type="importmap">
         {
@@ -23,6 +23,7 @@
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/michatbot.js"></script>
     <style>
         .cart-page-container {
             max-width: 1000px;
@@ -167,11 +168,6 @@
                 justify-content: center;
             }
         }
-        #floating-companion-container model-viewer {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
     </style>
 </head>
 <body class="public-body">
@@ -215,7 +211,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script src="js/companion-bot.js"></script>
     <script src="js/cart.js"></script>
     <script>
         let storeOwnerLinks = {
@@ -231,8 +226,6 @@
 
             renderCart();
             await loadStoreContact();
-            initCompanionBot();
-            initFloatingCompanion();
 
             $('#btn-clear-cart').click(function() {
                 Swal.fire({
@@ -244,15 +237,7 @@
                     confirmButtonText: 'Sí, vaciar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                                                Cart.clear();
-                        if (window.botInstance) {
-                            window.botInstance.saySequence([
-                                "¡Oh, veo que has vaciado tu carrito!",
-                                "Qué pena, tenía muchas ganas de ver esas cartas en tus manos.",
-                                "Ojalá pronto encuentres algo que te ilusione de nuevo.",
-                                "¡Estaré aquí esperando para ayudarte con tus próximas elecciones!"
-                            ]);
-                        }
+                        Cart.clear();
                         renderCart();
                     }
                 });
@@ -301,36 +286,7 @@
             $('#cart-total-display').text('$' + Cart.getTotal().toFixed(2));
         }
 
-                async function initCompanionBot() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const storeName = urlParams.get('store') || urlParams.get('user');
-
-            // Resolve store ID for bot config
-            let storeId = null;
-            if (storeName) {
-                const { data } = await _supabase.from('usuarios').select('id').or(`store_name.eq."${storeName}",username.eq."${storeName}"`).maybeSingle();
-                if (data) storeId = data.id;
-            }
-
-            const bot = new CompanionBot({
-                supabase: _supabase,
-                userId: storeId,
-                userType: 'public',
-                onAction: (msg) => {
-                    if (msg.redirect_url && msg.redirect_url.startsWith('http')) window.open(msg.redirect_url, '_blank');
-                }
-            });
-            await bot.init();
-            window.botInstance = bot;
-            bot.setContext('cart');
-        }
-
         window.removeItem = function(id) {
-            const items = Cart.getAll();
-            const item = items.find(i => i.cart_id === id);
-            if (item && window.botInstance) {
-                window.botInstance.say(`¡Oh no! Has quitado ${item.name}. Espero que encuentres otra carta que te guste más.`, { duration: 6 });
-            }
             Cart.remove(id);
             renderCart();
         };
@@ -357,125 +313,10 @@
             }
         }
 
-        async function initFloatingCompanion() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const storeName = urlParams.get('store') || urlParams.get('user');
-
-            try {
-                let userData = null;
-                if (storeName) {
-                    const { data } = await _supabase
-                        .from('usuarios')
-                        .select('selected_spirit_id')
-                        .or(`store_name.eq."${storeName}",username.eq."${storeName}"`)
-                        .maybeSingle();
-                    userData = data;
-                }
-
-                let spiritId = userData ? userData.selected_spirit_id : null;
-
-                // Fallback to local storage or first spirit if none selected
-                if (!spiritId) {
-                    const localSpirit = localStorage.getItem('selected_spirit');
-                    if (localSpirit) spiritId = JSON.parse(localSpirit).id;
-                }
-
-                if (!spiritId) {
-                   const { data: firstSpirit } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
-                   if (firstSpirit) spiritId = firstSpirit.id;
-                }
-
-                if (!spiritId) return;
-
-                const { data: spiritData } = await _supabase
-                    .from('spirits')
-                    .select('*')
-                    .eq('id', spiritId)
-                    .single();
-
-                if (!spiritData) return;
-
-                window.currentSpirit = spiritData;
-
-                // Update chatbot greeting with spirit name
-                if (window.currentSpirit && window.currentSpirit.name) {
-                    const $greeting = $('#chat-messages .msg-bot').first();
-                    if ($greeting.length) {
-                        let text = $greeting.text();
-                        text = text.replace('Vikingo', window.currentSpirit.name);
-                        $greeting.text(text);
-                    }
-                }
-
-                const $container = $('#floating-companion-container');
-                $container.html(`
-                    <model-viewer
-                        src="${spiritData.gltf_url}"
-                        auto-rotate
-                        camera-controls
-                        rotation="0deg 0deg 0deg"
-                        shadow-intensity="1"
-                        environment-image="neutral"
-                        exposure="1.2"
-                        interaction-prompt="none"
-                        style="width: 100%; height: 100%;">
-                    </model-viewer>
-                `);
-
-                $container.on('click', function(e) {
-                    if (window.isCompanionDragging) return;
-                    e.stopPropagation();
-                    $('#chatbot-container').toggleClass('active');
-                });
-
-                setTimeout(makeCompanionDraggable, 1000);
-            } catch (e) {
-                console.error("Error initFloatingCompanion:", e);
-            }
-        }
-
-        function makeCompanionDraggable() {
-            const wrapper = document.getElementById('companion-wrapper');
-            const handle = document.querySelector('.companion-drag-handle');
-            if (!wrapper || !handle) return;
-
-            let isDragging = false;
-            let startX, startY, initialX, initialY;
-
-            handle.addEventListener('pointerdown', (e) => {
-                isDragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
-                const rect = wrapper.getBoundingClientRect();
-                initialX = rect.left;
-                initialY = rect.top;
-                handle.setPointerCapture(e.pointerId);
-                e.stopPropagation();
-            });
-
-            window.addEventListener('pointermove', (e) => {
-                if (!isDragging) return;
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                let newX = initialX + dx;
-                let newY = initialY + dy;
-                newX = Math.max(0, Math.min(window.innerWidth - wrapper.offsetWidth, newX));
-                newY = Math.max(0, Math.min(window.innerHeight - wrapper.offsetHeight, newY));
-                wrapper.style.left = newX + 'px';
-                wrapper.style.top = newY + 'px';
-                wrapper.style.bottom = 'auto';
-                wrapper.style.right = 'auto';
-                wrapper.style.margin = '0';
-            });
-
-            window.addEventListener('pointerup', () => { isDragging = false; });
-        }
-
         function sendMessage(platform) {
             const items = Cart.getAll();
             if (items.length === 0) return;
 
-            // Try to get links from the first item if not loaded from URL
             const firstItem = items[0];
             let whatsapp = storeOwnerLinks.whatsapp;
             let messenger = storeOwnerLinks.messenger;
@@ -513,34 +354,6 @@
         }
     </script>
 
-    <!-- Chatbot Window -->
-    <div id="chatbot-container">
-        <div class="chatbot-header">
-            <h3><i class="fas fa-robot"></i> Vikingdev Assistant</h3>
-            <span id="close-chatbot" style="cursor:pointer; font-size: 1.5rem;" onclick="$('#chatbot-container').removeClass('active')">&times;</span>
-        </div>
-        <div class="chatbot-messages" id="chat-messages">
-            <div class="chat-msg msg-bot">¡Hola! Soy tu asistente. ¿En qué puedo ayudarte con tu pedido?</div>
-        </div>
-        <div class="chatbot-input-area">
-            <div class="chat-input-wrapper">
-                <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
-                <button id="send-chat" class="btn btn-sm"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Floating Companion -->
-    <div id="companion-wrapper">
-        <div class="companion-drag-handle"><i class="fas fa-arrows-alt"></i></div>
-        <div id="floating-companion-container"></div>
-        <div id="companion-bubble" class="companion-bubble"></div>
-    </div>
-
-    <!-- Floating Bottom App Navigation -->
-    </div>
-
-    </div>
     <div class="bottom-nav">
         <div class="nav-item" id="btn-nav-home" title="Ir al Home">
             <i class="fas fa-home"></i>
@@ -558,6 +371,5 @@
             });
         }
     </script>
-<script src="js/migltf.js"></script>
 </body>
 </html>
