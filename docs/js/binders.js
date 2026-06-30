@@ -73,7 +73,6 @@ $(document).ready(async function() {
 
     $("#btn-login").click(function(e) { e.preventDefault(); handleLogin(); });
     $(document).on("click", "#btn-back-to-web", function(e) { e.preventDefault(); window.location.href = "index.html"; });
-    $("#close-chatbot").click(function() { $("#chatbot-container").removeClass("active"); });
     $("#send-chat").click(function() {
         const text = $("#chat-input").val().trim();
         if (!text) return;

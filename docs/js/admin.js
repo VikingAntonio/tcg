@@ -221,54 +221,7 @@ $(document).ready(async function() {
         $("#input-album-cover-style").val(style);
     });
 
-    // --- Chatbot Logic ---
-    const faqResponses = {
-        'album': 'Para crear un álbum, haz clic en "Crear Nuevo Álbum" en esta misma pantalla. Luego puedes entrar a "Editar" para añadir páginas y cartas.',
-        'add_card': 'Para añadir cartas, entra en "Mis Álbumes", selecciona "Editar" y haz clic en cualquier espacio vacío para abrir el buscador.',
-        'scanner': 'El scanner te permite añadir cartas rápidamente usando la cámara de tu móvil. Escanea el código de la carta y se añadirá automáticamente a tu álbum o deck.',
-        'notifications': 'En la sección "Mi Perfil", puedes configurar tus enlaces de WhatsApp y Messenger. Esto permitirá que los pedidos de tus clientes lleguen directamente a tu chat.',
-        'foil': 'Al editar una carta, selecciona el efecto "CustomTexture". Luego haz clic en "Editar Máscara" para dibujar exactamente qué partes de la carta tendrán el brillo foil.',
-        'wishlist_faq': 'La sección "Wishlist" te permite listar cartas que estás buscando. Tus clientes podrán ver esta lista y contactarte si tienen alguna de ellas.',
-        'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
-        'spirit': 'El compañero es tu asistente virtual que acompaña a tus clientes mientras navegan. Sirve para mostrar mensajes automáticos sobre próximas preventas, horarios, noticias de la tienda y ubicación, además de funcionar como una guía interactiva para navegar por tu web.',
-        'deck_prices': 'Ahora puedes gestionar los precios de tus Decks. El sistema suma automáticamente el precio de cada carta para mostrar un "Precio Total". Si lo deseas, puedes habilitar un "Precio Especial" (por ejemplo, un descuento por el deck completo) que se mostrará como el precio principal, tachando el total automático.'
-    };
 
-    window.addChatMessage = function(sender, text) {
-        const $container = $('#chat-messages');
-        const $msg = $(`<div class="chat-msg msg-${sender}"></div>`).text(text);
-        $container.append($msg);
-        $container.scrollTop($container[0].scrollHeight);
-    };
-
-    $('#send-chat').click(function() {
-        const text = $('#chat-input').val().trim();
-        if (!text) return;
-        addChatMessage('user', text);
-        $('#chat-input').val('');
-        setTimeout(() => {
-            addChatMessage('bot', 'Aún estoy aprendiendo a responder mensajes libres. Por favor, usa los botones de preguntas frecuentes para obtener ayuda inmediata.');
-        }, 800);
-    });
-
-    $('#chat-input').keypress(function(e) {
-        if (e.which == 13) $('#send-chat').click();
-    });
-
-    $('.faq-btn').click(function() {
-        const faq = $(this).data('faq');
-        const question = $(this).text();
-        const answer = faqResponses[faq];
-
-        addChatMessage('user', question);
-        setTimeout(() => {
-            addChatMessage('bot', answer);
-        }, 500);
-    });
-
-    $('#close-chatbot').click(function() {
-        $('#chatbot-container').removeClass('active');
-    });
 
     $('#close-gltf-overlay').click(function() {
         $('#gltf-overlay').removeClass('active');
