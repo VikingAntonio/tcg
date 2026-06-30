@@ -907,10 +907,11 @@ $(document).ready(async function() {
 
         const name = $('#input-deck-name').val();
         const is_public = $('#input-deck-public').is(':checked');
+        const show_foil = $('#input-deck-show-foil').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
 
-        let updateData = { name, is_public, use_special_price, special_price };
+        let updateData = { name, is_public, show_foil, use_special_price, special_price };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -2023,8 +2024,8 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
-    $('#input-deck-show-foil').hide();
-    $('[for="input-deck-show-foil"]').hide();
+    $('#input-deck-show-foil').prop('checked', target.show_foil === true).show();
+    $('[for="input-deck-show-foil"]').show();
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
