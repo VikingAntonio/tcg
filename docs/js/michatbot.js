@@ -1,6 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
+ * V3.1 - Estética refinada, fuente elegante y fijación de interacciones.
  */
 
 // Global bot instance for access from other scripts
@@ -28,7 +29,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V2...");
+    console.log("Iniciando Michatbot V3.1...");
 
     // 1. Limpiar elementos antiguos si existen para evitar conflictos
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
@@ -42,6 +43,8 @@ async function initMichatbot(forceRefresh = false) {
     if (!$('#michatbot-styles').length) {
         $('head').append(`
             <style id="michatbot-styles">
+                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400&display=swap');
+
                 #companion-wrapper {
                     position: fixed;
                     bottom: 20px;
@@ -52,44 +55,56 @@ async function initMichatbot(forceRefresh = false) {
                     touch-action: none;
                     transition: width 0.2s, height 0.2s;
                 }
+
+                /* Prevención de selección de texto al arrastrar */
+                .michatbot-dragging-active {
+                    user-select: none !important;
+                    -webkit-user-select: none !important;
+                }
+
                 #michatbot-drag-handle {
                     position: absolute;
-                    top: -10px;
-                    right: -10px;
-                    background: var(--primary-color, #00d2ff);
-                    color: black;
-                    width: 24px;
-                    height: 24px;
+                    top: -5px;
+                    left: -15px; /* Movido a la izquierda */
+                    background: #000;
+                    color: #fff;
+                    width: 32px;
+                    height: 32px;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: grab;
-                    z-index: 10;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                    z-index: 20;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
                     opacity: 0.7;
-                    transition: opacity 0.2s;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    border: 1px solid rgba(255,255,255,0.3);
                 }
-                #companion-wrapper:hover #michatbot-drag-handle { opacity: 1; }
+                #michatbot-drag-handle:hover { opacity: 1; transform: scale(1.1) rotate(90deg); }
 
                 #michatbot-bubble {
                     position: absolute;
-                    bottom: 110%;
+                    bottom: 105%;
                     left: 50%;
                     transform: translateX(-50%);
-                    background: white;
-                    color: black;
-                    padding: 10px 15px;
-                    border-radius: 15px;
-                    font-family: sans-serif;
-                    font-size: 0.9rem;
-                    font-weight: 600;
-                    min-width: 120px;
+                    background: #000;
+                    color: #fff;
+                    padding: 8px 25px; /* Menos alto, más ancho */
+                    border-radius: 50px; /* Estilo píldora más elegante */
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 0.85rem;
+                    font-weight: 300; /* Más elegante */
+                    min-width: 200px;
+                    max-width: 350px;
                     text-align: center;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
                     display: none;
                     pointer-events: none;
-                    z-index: 11;
+                    z-index: 15;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    line-height: 1.4;
+                    letter-spacing: 0.5px;
                 }
                 #michatbot-bubble::after {
                     content: '';
@@ -97,9 +112,9 @@ async function initMichatbot(forceRefresh = false) {
                     top: 100%;
                     left: 50%;
                     transform: translateX(-50%);
-                    border-width: 8px;
+                    border-width: 6px;
                     border-style: solid;
-                    border-color: white transparent transparent transparent;
+                    border-color: #000 transparent transparent transparent;
                 }
 
                 #michatbot-menu {
@@ -107,40 +122,68 @@ async function initMichatbot(forceRefresh = false) {
                     position: absolute;
                     bottom: 100%;
                     left: 0;
-                    background: rgba(0,0,0,0.9);
-                    border-radius: 12px;
-                    padding: 10px;
-                    min-width: 160px;
-                    border: 1px solid var(--primary-color, #00d2ff);
+                    background: #000;
+                    border-radius: 15px;
+                    padding: 6px; /* Menos alto */
+                    min-width: 200px;
+                    border: 1px solid rgba(255,255,255,0.25);
                     margin-bottom: 20px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                    box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+                    z-index: 10;
                 }
                 .michatbot-menu-item {
-                    color: white;
-                    padding: 10px;
+                    color: #fff;
+                    padding: 8px 18px; /* Reducido verticalmente */
                     cursor: pointer;
-                    border-bottom: 1px solid #333;
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
                     display: flex;
                     align-items: center;
-                    gap: 10px;
-                    font-family: sans-serif;
-                    font-size: 0.9rem;
-                    transition: background 0.2s;
+                    gap: 12px;
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 0.8rem;
+                    transition: all 0.2s ease;
+                    font-weight: 300;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
                 }
-                .michatbot-menu-item:hover { background: rgba(255,255,255,0.1); }
-                .michatbot-menu-item:last-child { border-bottom: none; }
+                .michatbot-menu-item:hover {
+                    background: rgba(255,255,255,0.1);
+                    padding-left: 22px;
+                }
+                .michatbot-menu-item:last-of-type { border-bottom: none; }
 
                 #michatbot-resize-control {
-                    padding: 8px 10px;
-                    border-top: 1px solid #333;
+                    padding: 10px 18px;
+                    border-top: 1px solid rgba(255,255,255,0.1);
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 12px;
                 }
                 #michatbot-resize-control input {
                     flex: 1;
-                    accent-color: var(--primary-color, #00d2ff);
+                    accent-color: #fff;
                     cursor: pointer;
+                    height: 2px;
+                    background: rgba(255,255,255,0.2);
+                }
+
+                .michatbot-faq-btn {
+                    background: transparent;
+                    border: 1px solid rgba(255,255,255,0.15);
+                    color: #fff;
+                    padding: 12px 15px;
+                    text-align: left;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 0.8rem;
+                    transition: all 0.3s ease;
+                    font-weight: 300;
+                }
+                .michatbot-faq-btn:hover {
+                    background: rgba(255,255,255,0.08);
+                    border-color: rgba(255,255,255,0.4);
+                    transform: translateX(5px);
                 }
             </style>
         `);
@@ -159,9 +202,9 @@ async function initMichatbot(forceRefresh = false) {
                     <div class="michatbot-menu-item" id="michatbot-opt-play"><i class="fas fa-bolt"></i> Hora del duelo</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-detail"><i class="fas fa-search-plus"></i> Ver Detalle</div>
                     <div id="michatbot-resize-control">
-                        <i class="fas fa-compress-alt" style="color: #888; font-size: 0.8rem;"></i>
+                        <i class="fas fa-compress-alt" style="color: #555; font-size: 0.8rem;"></i>
                         <input type="range" id="michatbot-scale-slider" min="0.5" max="2.5" step="0.1" value="1.0">
-                        <i class="fas fa-expand-alt" style="color: #888; font-size: 0.8rem;"></i>
+                        <i class="fas fa-expand-alt" style="color: #555; font-size: 0.8rem;"></i>
                     </div>
                 </div>
             </div>
@@ -171,27 +214,28 @@ async function initMichatbot(forceRefresh = false) {
     // FAQ y Detail Containers
     if (!$('#michatbot-faq-container').length) {
         $('body').append(`
-            <div id="michatbot-faq-container" style="display: none; position: fixed; bottom: 180px; left: 20px; z-index: 999999999; background: #1a1a1a; border-radius: 15px; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 20px; color: white; border: 1px solid #333; font-family: sans-serif;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">
-                    <h3 style="margin: 0; font-size: 1.1rem; color: #00d2ff;">Vikingdev Assistant</h3>
-                    <span id="close-michatbot-faq" style="cursor: pointer; font-size: 1.5rem; color: #888;">&times;</span>
+            <div id="michatbot-faq-container" style="display: none; position: fixed; bottom: 180px; left: 20px; z-index: 999999999; background: #000; border-radius: 20px; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.9); padding: 30px; color: white; border: 1px solid rgba(255,255,255,0.2); font-family: 'Montserrat', sans-serif;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 25px;">
+                    <h3 style="margin: 0; font-size: 0.9rem; letter-spacing: 2px; font-weight: 400; text-transform: uppercase;">ASSISTANT</h3>
+                    <span id="close-michatbot-faq" style="cursor: pointer; font-size: 1.5rem; color: #555; transition: color 0.2s;">&times;</span>
                 </div>
-                <div id="michatbot-faq-list" style="display: flex; flex-direction: column; gap: 10px;">
+                <div id="michatbot-faq-list" style="display: flex; flex-direction: column; gap: 12px;">
                     <button class="michatbot-faq-btn" data-ans="Puedes usar el scanner en la sección de Scanner del menú principal para identificar tus cartas rápidamente.">¿Cómo uso el scanner?</button>
                     <button class="michatbot-faq-btn" data-ans="Tus decks están en la sección 'Mis Decks'. Puedes editarlos, ponerles precio y compartirlos.">¿Dónde veo mis decks?</button>
                     <button class="michatbot-faq-btn" data-ans="En tus álbumes, haz clic en cualquier espacio vacío para abrir el buscador y añadir la carta que desees.">¿Cómo añado cartas?</button>
                 </div>
-                <div id="michatbot-faq-answer" style="margin-top: 20px; font-size: 0.95rem; color: #ccc; line-height: 1.4; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border-left: 3px solid #00d2ff; display: none;"></div>
+                <div id="michatbot-faq-answer" style="margin-top: 30px; font-size: 0.85rem; color: #bbb; line-height: 1.8; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border-left: 1px solid rgba(255,255,255,0.5); display: none; font-weight: 200; letter-spacing: 0.5px;"></div>
             </div>
         `);
+        $('#close-michatbot-faq').hover(function() { $(this).css('color', '#fff'); }, function() { $(this).css('color', '#555'); });
     }
 
     if (!$('#michatbot-detail-overlay').length) {
         $('body').append(`
-            <div id="michatbot-detail-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000000000; align-items: center; justify-content: center; flex-direction: column; font-family: sans-serif;">
-                <span id="close-michatbot-detail" style="position: absolute; top: 20px; right: 30px; font-size: 3rem; color: white; cursor: pointer;">&times;</span>
-                <div id="michatbot-detail-viewer-container" style="width: 80%; height: 70%; max-width: 800px;"></div>
-                <h2 id="michatbot-detail-name" style="color: white; margin-top: 20px; font-size: 2rem; font-family: 'Montserrat', sans-serif;">Nombre del Compañero</h2>
+            <div id="michatbot-detail-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000000000; align-items: center; justify-content: center; flex-direction: column; font-family: 'Montserrat', sans-serif;">
+                <span id="close-michatbot-detail" style="position: absolute; top: 20px; right: 30px; font-size: 3rem; color: white; cursor: pointer; font-weight: 100;">&times;</span>
+                <div id="michatbot-detail-viewer-container" style="width: 85%; height: 75%; max-width: 900px;"></div>
+                <h2 id="michatbot-detail-name" style="color: white; margin-top: 30px; font-size: 2.2rem; font-weight: 200; letter-spacing: 5px; text-transform: uppercase;">Nombre del Compañero</h2>
             </div>
         `);
     }
@@ -261,21 +305,49 @@ async function initMichatbot(forceRefresh = false) {
     }
 
     // 7. Eventos
-    $('#michatbot-model-container').off('click').on('click', function(e) {
-        e.stopPropagation();
-        $('#michatbot-menu').fadeToggle(200);
-    });
+    const viewer = document.getElementById('michatbot-viewer');
+    let touchStartTime = 0;
+    let startX_click, startY_click;
+    let isInteractingWithModel = false;
+
+    if (viewer) {
+        viewer.addEventListener('pointerdown', (e) => {
+            touchStartTime = Date.now();
+            startX_click = e.clientX;
+            startY_click = e.clientY;
+            isInteractingWithModel = false;
+        });
+
+        viewer.addEventListener('pointermove', (e) => {
+            if (startX_click === undefined) return;
+            const dist = Math.sqrt(Math.pow(e.clientX - startX_click, 2) + Math.pow(e.clientY - startY_click, 2));
+            if (dist > 10) {
+                isInteractingWithModel = true;
+            }
+        });
+
+        viewer.addEventListener('click', (e) => {
+            const touchDuration = Date.now() - touchStartTime;
+            // Solo abrir menú si fue un click rápido (no drag para girar) y no hubo movimiento significativo
+            if (touchDuration < 300 && !isInteractingWithModel) {
+                e.stopPropagation();
+                $('#michatbot-menu').fadeToggle(250);
+            }
+            startX_click = undefined;
+            startY_click = undefined;
+        });
+    }
 
     $(document).off('click.michatbot').on('click.michatbot', function(e) {
         if (!$(e.target).closest('#companion-wrapper').length && !$(e.target).closest('#michatbot-faq-container').length) {
-            $('#michatbot-menu').fadeOut(200);
+            $('#michatbot-menu').fadeOut(250);
         }
     });
 
     $('#michatbot-opt-chat').off('click').on('click', function(e) {
         e.stopPropagation();
-        $('#michatbot-faq-container').fadeToggle(200);
-        $('#michatbot-menu').fadeOut(200);
+        $('#michatbot-faq-container').fadeToggle(300);
+        $('#michatbot-menu').fadeOut(250);
     });
 
     $('#michatbot-opt-play').off('click').on('click', function(e) {
@@ -297,8 +369,8 @@ async function initMichatbot(forceRefresh = false) {
             </model-viewer>
         `);
         $('#michatbot-detail-name').text(window.currentSpirit.name);
-        $('#michatbot-detail-overlay').css('display', 'flex').hide().fadeIn(300);
-        $('#michatbot-menu').fadeOut(200);
+        $('#michatbot-detail-overlay').css('display', 'flex').hide().fadeIn(400);
+        $('#michatbot-menu').fadeOut(250);
     });
 
     $('#michatbot-scale-slider').off('input').on('input', function() {
@@ -309,17 +381,17 @@ async function initMichatbot(forceRefresh = false) {
     $('.michatbot-faq-btn').off('click').on('click', function(e) {
         e.stopPropagation();
         const ans = $(this).data('ans');
-        $('#michatbot-faq-answer').text(ans).fadeIn();
+        $('#michatbot-faq-answer').text(ans).fadeIn(400);
     });
 
     $('#close-michatbot-faq').off('click').on('click', function(e) {
         e.stopPropagation();
-        $('#michatbot-faq-container').fadeOut(200);
+        $('#michatbot-faq-container').fadeOut(250);
     });
 
     $('#close-michatbot-detail').off('click').on('click', function(e) {
         e.stopPropagation();
-        $('#michatbot-detail-overlay').fadeOut(300);
+        $('#michatbot-detail-overlay').fadeOut(400);
     });
 
     // 8. Integración con Base de Datos y Realtime
@@ -348,6 +420,9 @@ function makeMichatbotDraggable() {
         initialY = rect.top;
         wrapper.setPointerCapture(e.pointerId);
         handle.style.cursor = 'grabbing';
+
+        // Evitar selección de texto
+        $('body').addClass('michatbot-dragging-active');
     });
 
     window.addEventListener('pointermove', (e) => {
@@ -372,6 +447,7 @@ function makeMichatbotDraggable() {
         if (!isDragging) return;
         isDragging = false;
         handle.style.cursor = 'grab';
+        $('body').removeClass('michatbot-dragging-active');
     });
 }
 
