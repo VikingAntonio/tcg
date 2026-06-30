@@ -649,49 +649,7 @@ $(document).ready(async function() {
         resetFilter();
     });
 
-    // --- Chatbot Logic ---
-    const faqResponses = {
-        'album': 'Para crear un álbum, ve al Panel de Control, inicia sesión y haz clic en "Crear Nuevo Álbum". Luego puedes añadir páginas y cartas.',
-        'scanner': 'El scanner te permite añadir cartas rápidamente usando la cámara de tu móvil. Escanea el código de la carta y se añadirá automáticamente a tu álbum o deck.',
-        'theme': 'Puedes cambiar el tema (Claro, Medio, Oscuro) usando los iconos en la esquina superior izquierda de la pantalla.',
-        'spirit': 'Elige a tu Compañero ideal, quien te guiará y acompañará a través de toda la web en tu aventura coleccionista.'
-    };
 
-    window.addChatMessage = function(sender, text) {
-        const $container = $('#chat-messages');
-        const $msg = $(`<div class="chat-msg msg-${sender}"></div>`).text(text);
-        $container.append($msg);
-        $container.scrollTop($container[0].scrollHeight);
-    };
-
-    $('#send-chat').click(function() {
-        const text = $('#chat-input').val().trim();
-        if (!text) return;
-        addChatMessage('user', text);
-        $('#chat-input').val('');
-        setTimeout(() => {
-            addChatMessage('bot', 'Aún estoy aprendiendo a responder mensajes libres. Por favor, usa los botones de preguntas frecuentes para obtener ayuda inmediata.');
-        }, 800);
-    });
-
-    $('#chat-input').keypress(function(e) {
-        if (e.which == 13) $('#send-chat').click();
-    });
-
-    $('.faq-btn').click(function() {
-        const faq = $(this).data('faq');
-        const question = $(this).text();
-        const answer = faqResponses[faq];
-
-        addChatMessage('user', question);
-        setTimeout(() => {
-            addChatMessage('bot', answer);
-        }, 500);
-    });
-
-    $('#close-chatbot').click(function() {
-        $('#chatbot-container').removeClass('active');
-    });
 
     $(document).on('click', '#events-container .deck-public-item', function(e) {
         if ($(e.target).closest('button').length) return;
