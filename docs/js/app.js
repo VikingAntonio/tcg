@@ -1689,7 +1689,7 @@ function populateDeckSlide($slide, card, deck = null) {
     const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
     const isMissing = card.obtained === false || card.obtained === 'false';
 
-    const useZtext = deck && deck.show_foil === true && typeof Ztextify !== 'undefined';
+    const useZtext = typeof Ztextify !== 'undefined';
 
     if (useZtext) {
         $slide.html(`

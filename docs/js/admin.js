@@ -907,11 +907,7 @@ $(document).ready(async function() {
 
         const name = $('#input-deck-name').val();
         const is_public = $('#input-deck-public').is(':checked');
-        const show_foil = $('#input-deck-show-foil').is(':checked');
-        const use_special_price = $('#input-deck-use-special').is(':checked');
-        const special_price = $('#input-deck-special-price').val();
-
-        let updateData = { name, is_public, show_foil, use_special_price, special_price };
+        let updateData = { name, is_public };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -954,9 +950,7 @@ $(document).ready(async function() {
 
             const [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
 
-            if (deckRes.error && deckRes.error.code === '42703') {
-                await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
-            } else if (deckRes.error) throw deckRes.error;
+            if (deckRes.error) throw deckRes.error;
 
             if (insRes.error) throw insRes.error;
 
