@@ -5,6 +5,54 @@ let startX, startY;
 
 // applyFoilToElement is now globally defined in utils.js
 
+// --- Global Orientation Listener for Swiper Cards ---
+if (window.DeviceOrientationEvent) {
+    const handleGlobalOrientation = (e) => {
+        if (e.gamma === null || e.beta === null) return;
+
+        // Calculate rotation and foil parameters
+        // Normalizing tilt: typical range -20 to 20 degrees
+        let ry = Math.max(-20, Math.min(20, e.gamma));
+        let rx = Math.max(-20, Math.min(20, e.beta - 45));
+
+        const mx = (ry + 20) / 40;
+        const my = (rx + 20) / 40;
+        const angle = (Math.atan2(rx, ry) * 180 / Math.PI) + 135;
+
+        // Apply to all populated slides in any swiper
+        requestAnimationFrame(() => {
+            const $activeCards = $('.swiper-slide.card-slot.is-populated');
+            if ($activeCards.length === 0) return;
+
+            // Update Foil CSS variables for all slides that have them
+            $activeCards.css({
+                '--mx': mx.toFixed(3),
+                '--my': my.toFixed(3),
+                '--angle': angle.toFixed(2) + 'deg'
+            });
+
+            // Update rotation for the internal containers to avoid breaking Swiper's own slide transforms
+            $activeCards.find('.tilt-container, .z-text').css({
+                'transform': `rotateX(${-rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`
+            });
+        });
+    };
+
+    // Permission handling for iOS
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        $(document).one('click touchstart', function() {
+            DeviceOrientationEvent.requestPermission()
+                .then(state => {
+                    if (state === 'granted') {
+                        window.addEventListener('deviceorientation', handleGlobalOrientation);
+                    }
+                }).catch(console.error);
+        });
+    } else {
+        window.addEventListener('deviceorientation', handleGlobalOrientation);
+    }
+}
+
 // --- Loading Screen Functions ---
 window.isLoading = false;
 window.loadingMessage = '';
@@ -611,6 +659,11 @@ $(document).ready(async function() {
     });
 
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
+        // Prevent accidental closure on tablets/mobile due to click propagation from Swiper open
+        if (window.lastModalOpenTime && (Date.now() - window.lastModalOpenTime < 800)) {
+            return;
+        }
+
         if (e.target === this || $(this).attr('id') === 'close-btn' || $(e.target).closest('#close-btn').length > 0) {
             $("#image-overlay").removeClass("active");
 
@@ -872,6 +925,7 @@ window.set3DTarget = function(rx, ry) {
 };
 
 async function openCardModal($slot) {
+    window.lastModalOpenTime = Date.now();
     let imgSrc = $slot.data("full-img") || $slot.find("img").attr("src");
 
     if (!imgSrc || imgSrc.includes('placeholder')) return;
@@ -1677,17 +1731,49 @@ function setupDeckObserver() {
     }
 }
 
-function populateDeckSlide($slide, card) {
+function populateDeckSlide($slide, card, deck = null) {
     if ($slide.hasClass('is-populated')) return;
 
     const imgSrc = window.optimizeCloudinaryUrl ? window.optimizeCloudinaryUrl(card.image_url, 500, 500) : card.image_url;
     const isMissing = card.obtained === false || card.obtained === 'false';
 
-    $slide.html(`
-        <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
+    const useFoil3D = deck && (deck.show_foil === true || deck.show_foil === 'true');
+    const useZtext = typeof Ztextify !== 'undefined' && useFoil3D;
+
+    let html = '';
+    if (useZtext) {
+        html = `
+            <div class="z-text-card tilt-container" style="width:100%; height:100%; transform-style: preserve-3d;">
+                <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover;" />
+            </div>
+        `;
+    } else {
+        html = `
+            <div class="tilt-wrapper tilt-container" style="width:100%; height:100%; transform-style: preserve-3d;">
+                <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover;" />
+            </div>
+        `;
+    }
+
+    html += `
         ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
         <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
-    `);
+    `;
+
+    $slide.html(html);
+
+    if (useZtext) {
+        try {
+            new Ztextify($slide.find('.z-text-card')[0], {
+               depth: "10px",
+               layers: 8,
+               fade: true,
+               direction: "backwards",
+               event: "none",
+               perspective: "500px"
+            });
+        } catch(e) { console.error("Ztext init error on slide:", e); }
+    }
 
     // Re-bind click handler for the newly rendered zoom button
     $slide.find('.zoom-btn').on('click', function(e) {
@@ -1696,8 +1782,10 @@ function populateDeckSlide($slide, card) {
     });
 
     // Apply Foil if enabled
-    if ((card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect && typeof applyFoilToElement === 'function') {
-        applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
+    const shouldShowFoil = card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:')) || useFoil3D;
+    if (shouldShowFoil && card.holo_effect && typeof applyFoilToElement === 'function') {
+        // Apply foil to the tilt container so it rotates with the card
+        applyFoilToElement($slide.find('.tilt-container'), card.holo_effect, card.custom_mask_url);
     }
 
     $slide.addClass('is-populated');
@@ -1714,7 +1802,7 @@ function loadDeckBatch(swiper, deck, targetIndex, bufferSize = 5) {
         const card = deck.deck_cards[i];
         const $slide = $(swiper.slides[i]);
         if (card && $slide.length) {
-            populateDeckSlide($slide, card);
+            populateDeckSlide($slide, card, deck);
         }
     }
 }

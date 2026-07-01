@@ -907,10 +907,7 @@ $(document).ready(async function() {
 
         const name = $('#input-deck-name').val();
         const is_public = $('#input-deck-public').is(':checked');
-        const use_special_price = $('#input-deck-use-special').is(':checked');
-        const special_price = $('#input-deck-special-price').val();
-
-        let updateData = { name, is_public, use_special_price, special_price };
+        let updateData = { name, is_public };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -920,15 +917,14 @@ $(document).ready(async function() {
                 .eq('id', currentDeckId);
 
             // 2. Clear all existing cards for this deck
-            const delErr = await _supabase
+            const { error: delErr } = await _supabase
                 .from('deck_cards')
                 .delete()
                 .eq('deck_id', currentDeckId);
 
-            if (delErr.error) throw delErr.error;
+            if (delErr) throw delErr;
 
             // 3. Perform Batch Insert for all current cards
-            let insPromise = Promise.resolve({ error: null });
             if (localDeckCards.length > 0) {
                 const cardsToInsert = localDeckCards.map((c, index) => {
                     const card = {
@@ -948,16 +944,9 @@ $(document).ready(async function() {
                     };
                     return card;
                 });
-                insPromise = _supabase.from('deck_cards').insert(cardsToInsert);
+                const { error: insErr } = await _supabase.from('deck_cards').insert(cardsToInsert);
+                if (insErr) throw insErr;
             }
-
-            const [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
-
-            if (deckRes.error && deckRes.error.code === '42703') {
-                await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
-            } else if (deckRes.error) throw deckRes.error;
-
-            if (insRes.error) throw insRes.error;
 
             // 4. Batch Save to VikingData
             if (localVikingData.length > 0) {
@@ -2023,8 +2012,12 @@ async function editDeck(deck) {
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
     $('#input-deck-public').prop('checked', target.is_public !== false);
-    $('#input-deck-show-foil').hide();
-    $('[for="input-deck-show-foil"]').hide();
+    $('#input-deck-show-foil').prop('checked', target.show_foil === true);
+
+    // Sync Nexus PC Checkboxes if they exist
+    $('.nexus-check-sync[data-target="#input-deck-public"]').prop('checked', target.is_public !== false);
+    $('.nexus-check-sync[data-target="#input-deck-show-foil"]').prop('checked', target.show_foil === true);
+    $('.nexus-input-sync[data-target="#input-deck-name"]').val(target.name);
 
     // Load pricing fields
     $('#input-deck-use-special').prop('checked', target.use_special_price === true);
@@ -3962,7 +3955,14 @@ $(document).on('input', '.nexus-input-sync', function() {
     $($(this).data('target')).val($(this).val());
 });
 $(document).on('change', '.nexus-check-sync', function() {
-    $($(this).data('target')).prop('checked', $(this).is(':checked'));
+    $($(this).data('target')).prop('checked', $(this).is(':checked')).trigger('change');
+});
+
+// Reciprocal sync: when a target of nexus-check-sync changes, update the nexus checkbox
+$(document).on('change', '#input-deck-public, #input-deck-show-foil', function() {
+    const isChecked = $(this).is(':checked');
+    const id = $(this).attr('id');
+    $(`.nexus-check-sync[data-target="#${id}"]`).prop('checked', isChecked);
 });
 
 $(document).on('click', '.nexus-section-header', function() {
