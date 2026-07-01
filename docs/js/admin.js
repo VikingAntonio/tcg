@@ -3961,7 +3961,14 @@ $(document).on('input', '.nexus-input-sync', function() {
     $($(this).data('target')).val($(this).val());
 });
 $(document).on('change', '.nexus-check-sync', function() {
-    $($(this).data('target')).prop('checked', $(this).is(':checked'));
+    $($(this).data('target')).prop('checked', $(this).is(':checked')).trigger('change');
+});
+
+// Reciprocal sync: when a target of nexus-check-sync changes, update the nexus checkbox
+$(document).on('change', '#input-deck-public, #input-deck-show-foil', function() {
+    const isChecked = $(this).is(':checked');
+    const id = $(this).attr('id');
+    $(`.nexus-check-sync[data-target="#${id}"]`).prop('checked', isChecked);
 });
 
 $(document).on('click', '.nexus-section-header', function() {
