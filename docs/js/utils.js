@@ -127,56 +127,22 @@ window.currentTool = 'brush'; // 'brush' or 'eraser'
 window.maskHistory = [];
 const MAX_MASK_HISTORY = 20;
 
-window.maskPanX = 0;
-window.maskPanY = 0;
-
 window.initMaskEditor = function() {
     window.maskCanvas = document.getElementById('mask-canvas');
     if (!window.maskCanvas) return;
     window.maskCtx = window.maskCanvas.getContext('2d');
 
-    let isPanning = false;
-    let startMouseX, startMouseY, initialPanX, initialPanY;
-
-    const updatePanTransform = () => {
-        $('#mask-canvas-wrapper').css('transform', `translate(${window.maskPanX}px, ${window.maskPanY}px)`);
-    };
-
     $(window.maskCanvas).off('mousedown touchstart').on('mousedown touchstart', function(e) {
-        if (window.currentTool === 'move') {
-            isPanning = true;
-            $('#mask-canvas').css('cursor', 'grabbing');
-            const event = e.type.includes('touch') ? (e.originalEvent.touches[0] || e.originalEvent.changedTouches[0]) : e;
-            startMouseX = event.clientX;
-            startMouseY = event.clientY;
-            initialPanX = window.maskPanX;
-            initialPanY = window.maskPanY;
-            return;
-        }
         window.isPainting = true;
         window.saveMaskHistory();
         window.drawMask(e);
     });
 
     $(window).off('mousemove touchmove').on('mousemove touchmove', function(e) {
-        if (isPanning) {
-            const event = e.type.includes('touch') ? (e.originalEvent.touches[0] || e.originalEvent.changedTouches[0]) : e;
-            const dx = event.clientX - startMouseX;
-            const dy = event.clientY - startMouseY;
-            window.maskPanX = initialPanX + dx;
-            window.maskPanY = initialPanY + dy;
-            updatePanTransform();
-            e.preventDefault();
-            return;
-        }
         if (window.isPainting) window.drawMask(e);
     });
 
     $(window).off('mouseup touchend').on('mouseup touchend', function() {
-        if (isPanning) {
-            isPanning = false;
-            $('#mask-canvas').css('cursor', 'grab');
-        }
         window.isPainting = false;
         if (window.maskCtx) window.maskCtx.beginPath();
     });
@@ -188,23 +154,14 @@ window.initMaskEditor = function() {
 
     $('#tool-brush').off('click').on('click', function() {
         window.currentTool = 'brush';
-        $('.editor-controls .btn-secondary, .zoom-controls-lateral .btn-secondary').removeClass('active');
+        $('.editor-controls .btn-secondary').removeClass('active');
         $(this).addClass('active');
-        $('#mask-canvas').css('cursor', 'crosshair');
     });
 
     $('#tool-eraser').off('click').on('click', function() {
         window.currentTool = 'eraser';
-        $('.editor-controls .btn-secondary, .zoom-controls-lateral .btn-secondary').removeClass('active');
+        $('.editor-controls .btn-secondary').removeClass('active');
         $(this).addClass('active');
-        $('#mask-canvas').css('cursor', 'crosshair');
-    });
-
-    $('#tool-move').off('click').on('click', function() {
-        window.currentTool = 'move';
-        $('.editor-controls .btn-secondary, .zoom-controls-lateral .btn-secondary').removeClass('active');
-        $(this).addClass('active');
-        $('#mask-canvas').css('cursor', 'grab');
     });
 
     window.maskZoom = 1;
@@ -237,10 +194,7 @@ window.initMaskEditor = function() {
 
     $('#btn-reset-zoom').off('click').on('click', function() {
         window.maskZoom = 1;
-        window.maskPanX = 0;
-        window.maskPanY = 0;
         updateMaskZoom();
-        updatePanTransform();
     });
 
     $('#btn-clear-mask').off('click').on('click', function() {
@@ -289,10 +243,6 @@ window.initMaskEditor = function() {
 };
 
 window.initMaskCanvas = function() {
-    window.maskPanX = 0;
-    window.maskPanY = 0;
-    $('#mask-canvas-wrapper').css('transform', 'translate(0,0)');
-
     // Supports all integrated form input IDs
     const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
 
@@ -650,10 +600,11 @@ $(document).ready(function() {
             <div class="overlay-content" style="max-width: 600px;">
                 <span id="close-mask-editor" class="close-btn">&times;</span>
                 <h2>Editor de Máscara</h2>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Dibuja en blanco donde quieras aplicar el efecto foil.</p>
 
                 <div class="mask-editor-main-container" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; position: relative; width: 100%;">
-                    <div id="mask-viewport" style="width: 100%; height: 350px; overflow: hidden; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center;">
-                        <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center; will-change: transform;">
+                    <div id="mask-viewport" style="width: 100%; height: 350px; overflow: auto; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                        <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center;">
                             <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block; width: 100%; height: 100%;"></canvas>
                         </div>
                     </div>
@@ -661,7 +612,7 @@ $(document).ready(function() {
                     <div class="zoom-controls-lateral" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10;">
                         <button id="btn-zoom-in" class="btn btn-secondary btn-sm" title="Zoom In" style="padding: 10px;"><i class="fas fa-plus"></i></button>
                         <button id="btn-zoom-out" class="btn btn-secondary btn-sm" title="Zoom Out" style="padding: 10px;"><i class="fas fa-minus"></i></button>
-                        <button id="tool-move" class="btn btn-secondary btn-sm" title="Mover Imagen" style="padding: 10px;"><i class="fas fa-arrows-alt"></i></button>
+                        <button id="btn-reset-zoom" class="btn btn-secondary btn-sm" title="Reset Zoom" style="padding: 10px;"><i class="fas fa-sync-alt"></i></button>
                     </div>
                 </div>
 
@@ -676,8 +627,7 @@ $(document).ready(function() {
                         <button id="tool-brush" class="btn btn-secondary active"><i class="fas fa-paint-brush"></i> Pincel</button>
                         <button id="tool-eraser" class="btn btn-secondary"><i class="fas fa-eraser"></i> Borrador</button>
                         <button id="btn-undo-mask" class="btn btn-secondary"><i class="fas fa-undo"></i> Deshacer</button>
-                        <button id="btn-reset-zoom" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Reset Zoom</button>
-                        <button id="btn-clear-mask" class="btn btn-danger btn-sm" style="grid-column: 1 / span 2;"><i class="fas fa-trash"></i> Limpiar Todo</button>
+                        <button id="btn-clear-mask" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Limpiar Todo</button>
                     </div>
 
                     <button id="btn-save-mask" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Guardar Máscara</button>
@@ -877,54 +827,3 @@ window.sharedCard3D = {
     }
 };
 
-function makeCompanionDraggable() {
-    const wrapper = document.getElementById('companion-wrapper');
-    const handle = document.getElementById('companion-drag-handle');
-    if (!wrapper || !handle) return;
-
-    let isDragging = false;
-    let startX, startY;
-    let initialX, initialY;
-    window.isCompanionDragging = false;
-
-    // Reset touchAction on the companion container to allow internal interactions
-    const companion = document.getElementById('floating-companion-container');
-    if (companion) companion.style.touchAction = 'auto';
-
-    handle.style.touchAction = 'none';
-
-    handle.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        window.isCompanionDragging = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = wrapper.getBoundingClientRect();
-        initialX = rect.left;
-        initialY = rect.top;
-        handle.setPointerCapture(e.pointerId);
-        e.stopPropagation();
-    });
-
-    window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) window.isCompanionDragging = true;
-        let newX = initialX + dx;
-        let newY = initialY + dy;
-        newX = Math.max(0, Math.min(window.innerWidth - wrapper.offsetWidth, newX));
-        newY = Math.max(0, Math.min(window.innerHeight - wrapper.offsetHeight, newY));
-
-        wrapper.style.left = newX + 'px';
-        wrapper.style.top = newY + 'px';
-        wrapper.style.bottom = 'auto';
-        wrapper.style.right = 'auto';
-        wrapper.style.margin = '0';
-    });
-
-    window.addEventListener('pointerup', (e) => {
-        if (!isDragging) return;
-        isDragging = false;
-        setTimeout(() => { window.isCompanionDragging = false; }, 100);
-    });
-}
