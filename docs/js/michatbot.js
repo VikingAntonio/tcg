@@ -18,11 +18,26 @@ window.botInstance = {
         }, duration);
     },
     setScale: function(scale) {
-        const $wrapper = $('#companion-wrapper');
-        if ($wrapper.length) {
-            $wrapper.css({
-                width: (150 * scale) + 'px',
-                height: (150 * scale) + 'px'
+        const $container = $('#michatbot-model-container');
+        const $bubble = $('#michatbot-bubble');
+        const $menu = $('#michatbot-menu');
+
+        if ($container.length) {
+            $container.css({
+                'transform': `scale(${scale})`,
+                'transform-origin': 'bottom center'
+            });
+        }
+        if ($bubble.length) {
+            $bubble.css({
+                'transform': `translateX(-50%) scale(${scale})`,
+                'transform-origin': 'bottom center'
+            });
+        }
+        if ($menu.length) {
+            $menu.css({
+                'transform': `scale(${scale})`,
+                'transform-origin': 'bottom left'
             });
         }
     }
@@ -199,6 +214,22 @@ async function initMichatbot(forceRefresh = false) {
                     text-shadow: 0 0 15px #3498db;
                 }
 
+                #michatbot-chat-container {
+                    position: fixed;
+                    bottom: 180px;
+                    left: 20px;
+                    z-index: 999999999;
+                    display: none;
+                }
+
+                @media (min-width: 641px) {
+                    #michatbot-chat-container {
+                        left: auto !important;
+                        right: 20px !important;
+                        bottom: 20px !important;
+                    }
+                }
+
                 .chatbot-msg {
                     padding: 12px 16px;
                     border-radius: 20px;
@@ -260,7 +291,7 @@ async function initMichatbot(forceRefresh = false) {
     // Chat y Detail Containers
     if (!$('#michatbot-chat-container').length) {
         $('body').append(`
-            <div id="michatbot-chat-container" style="display: none; position: fixed; bottom: 180px; left: 20px; z-index: 999999999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(15px); border-radius: 24px; width: 350px; box-shadow: 0 25px 70px rgba(0,0,0,0.9); padding: 25px; color: white; border: 1px solid #3498db; font-family: 'Quicksand', sans-serif; overflow: hidden;">
+            <div id="michatbot-chat-container" style="background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(15px); border-radius: 24px; width: 350px; box-shadow: 0 25px 70px rgba(0,0,0,0.9); padding: 25px; color: white; border: 1px solid #3498db; font-family: 'Quicksand', sans-serif; overflow: hidden;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div style="width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; box-shadow: 0 0 10px #2ecc71;"></div>
@@ -275,9 +306,7 @@ async function initMichatbot(forceRefresh = false) {
 
                 <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: #777; margin-bottom: 12px; font-weight: 700; font-family: 'Cinzel', serif;">Preguntas Frecuentes</div>
                 <div id="michatbot-faq-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-                    <button class="michatbot-faq-btn" data-q="¿Cómo uso el scanner?" data-ans="Puedes usar el scanner en la sección de Scanner del menú principal para identificar tus cartas rápidamente.">¿Cómo uso el scanner?</button>
-                    <button class="michatbot-faq-btn" data-q="¿Dónde veo mis decks?" data-ans="Tus decks están en la sección 'Mis Decks'. Puedes editarlos, ponerles precio y compartirlos.">¿Dónde veo mis decks?</button>
-                    <button class="michatbot-faq-btn" data-q="¿Cómo añado cartas?" data-ans="En tus álbumes, haz clic en cualquier espacio vacío para abrir el buscador y añadir la carta que desees.">¿Cómo añado cartas?</button>
+                    <!-- Se poblará dinámicamente según el contexto -->
                 </div>
 
                 <div style="position: relative; margin-top: 10px;">
@@ -346,7 +375,7 @@ async function initMichatbot(forceRefresh = false) {
                 src="${gltfUrl}"
                 auto-rotate
                 camera-controls
-                camera-target="0m 0.75m 0m"
+                field-of-view="25deg"
                 shadow-intensity="1"
                 environment-image="neutral"
                 exposure="1"
@@ -420,7 +449,6 @@ async function initMichatbot(forceRefresh = false) {
             <model-viewer
                 src="${window.currentSpirit.gltf_url}"
                 camera-controls
-                camera-target="0m 0.75m 0m"
                 auto-rotate
                 shadow-intensity="1"
                 environment-image="neutral"
@@ -489,7 +517,38 @@ async function initMichatbot(forceRefresh = false) {
         $('#michatbot-detail-overlay').fadeOut(400);
     });
 
-    // 8. Integración con Base de Datos y Realtime
+    // 8. Poblar FAQs según contexto
+    const $faqList = $('#michatbot-faq-list');
+    $faqList.empty();
+
+    const isAdmin = (typeof currentUser !== 'undefined' && currentUser);
+    const storeData = window.currentStoreDataForBot ? window.currentStoreDataForBot.user : null;
+    const storeName = storeData ? (storeData.store_name || storeData.username) : 'esta tienda';
+
+    if (isAdmin) {
+        // FAQs para el Admin
+        $faqList.append(`
+            <button class="michatbot-faq-btn" data-q="¿Cómo funcionan los slots del grid?" data-ans="Los slots del grid (Main, Extra y Side) te permiten organizar tu deck profesionalmente. Haz clic en un slot vacío para buscar y añadir una carta, o arrastra las existentes para reordenarlas.">¿Cómo funcionan los slots del grid?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo organizo mis cartas?" data-ans="Puedes usar la herramienta de 'Organizar' para reordenar tus álbumes y decks mediante drag-and-drop. No olvides guardar los cambios al finalizar.">¿Cómo organizo mis cartas?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo guardo los cambios?" data-ans="Para los decks, usa el botón 'Guardar Cambios' en el editor. Para los álbumes, los cambios en los slots se guardan automáticamente al seleccionar una carta.">¿Cómo guardo los cambios?</button>
+        `);
+    } else {
+        // FAQs para el Público
+        $faqList.append(`
+            <button class="michatbot-faq-btn" data-q="¿Qué es ${storeName}?" data-ans="Es el espacio de colección y venta de ${storeName}. Aquí puedes ver sus álbumes, decks y productos disponibles en VikingTCG.">¿Qué es ${storeName}?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo puedo comprar?" data-ans="Puedes añadir cartas al carrito y luego contactar al vendedor por WhatsApp o Messenger para finalizar la compra de forma segura.">¿Cómo puedo comprar?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo navego por la colección?" data-ans="Usa el menú inferior para moverte entre Álbumes, Decks, Preventas y más. Haz clic en las cartas para verlas en detalle y con efectos 3D.">¿Cómo navego por la colección?</button>
+        `);
+    }
+
+    $('.michatbot-faq-btn').off('click').on('click', function(e) {
+        e.stopPropagation();
+        const q = $(this).data('q');
+        const ans = $(this).data('ans');
+        handleBotChat(q, ans);
+    });
+
+    // 9. Integración con Base de Datos y Realtime
     initMichatbotIntegration();
 
     // Initial greeting
