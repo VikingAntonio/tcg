@@ -18,25 +18,37 @@ window.botInstance = {
         }, duration);
     },
     setScale: function(scale) {
-        const $container = $('#michatbot-model-container');
+        const $wrapper = $('#companion-wrapper');
         const $bubble = $('#michatbot-bubble');
+        const $handle = $('#michatbot-drag-handle');
         const $menu = $('#michatbot-menu');
 
-        if ($container.length) {
-            $container.css({
-                'transform': `scale(${scale})`,
-                'transform-origin': 'bottom center'
+        if ($wrapper.length) {
+            const baseSize = 150;
+            const newSize = baseSize * scale;
+            $wrapper.css({
+                'width': `${newSize}px`,
+                'height': `${newSize}px`
             });
         }
         if ($bubble.length) {
+            // Ajustamos la escala del bubble y su posición relativa
             $bubble.css({
                 'transform': `translateX(-50%) scale(${scale})`,
-                'transform-origin': 'bottom center'
+                'transform-origin': 'bottom center',
+                'margin-bottom': `${(scale - 1) * 20}px`
+            });
+        }
+        if ($handle.length) {
+            $handle.css({
+                'transform': `scale(${scale})`,
+                'transform-origin': 'center'
             });
         }
         if ($menu.length) {
+            // El menú NO debe crecer, se mantiene igual al original
             $menu.css({
-                'transform': `scale(${scale})`,
+                'transform': 'scale(1)',
                 'transform-origin': 'bottom left'
             });
         }
@@ -68,7 +80,7 @@ async function initMichatbot(forceRefresh = false) {
                     width: 150px;
                     height: 150px;
                     touch-action: none;
-                    transition: width 0.2s, height 0.2s;
+                    will-change: width, height;
                 }
 
                 /* Prevención de selección de texto al arrastrar */
@@ -79,8 +91,8 @@ async function initMichatbot(forceRefresh = false) {
 
                 #michatbot-drag-handle {
                     position: absolute;
-                    top: -5px;
-                    left: -15px; /* Movido a la izquierda */
+                    bottom: 40px;
+                    left: 10px;
                     background: #000;
                     color: #fff;
                     width: 32px;
@@ -375,7 +387,7 @@ async function initMichatbot(forceRefresh = false) {
                 src="${gltfUrl}"
                 auto-rotate
                 camera-controls
-                field-of-view="25deg"
+                field-of-view="20deg"
                 shadow-intensity="1"
                 environment-image="neutral"
                 exposure="1"
