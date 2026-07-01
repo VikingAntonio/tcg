@@ -938,15 +938,14 @@ $(document).ready(async function() {
             if (deckErr) throw deckErr;
 
             // 2. Clear all existing cards for this deck
-            const delErr = await _supabase
+            const { error: delErr } = await _supabase
                 .from('deck_cards')
                 .delete()
                 .eq('deck_id', currentDeckId);
 
-            if (delErr.error) throw delErr.error;
+            if (delErr) throw delErr;
 
             // 3. Perform Batch Insert for all current cards
-            let insPromise = Promise.resolve({ error: null });
             if (localDeckCards.length > 0) {
                 const cardsToInsert = localDeckCards.map((c, index) => {
                     const card = {
@@ -966,14 +965,9 @@ $(document).ready(async function() {
                     };
                     return card;
                 });
-                insPromise = _supabase.from('deck_cards').insert(cardsToInsert);
+                const { error: insErr } = await _supabase.from('deck_cards').insert(cardsToInsert);
+                if (insErr) throw insErr;
             }
-
-            const [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
-
-            if (deckRes.error) throw deckRes.error;
-
-            if (insRes.error) throw insRes.error;
 
             // 4. Batch Save to VikingData
             if (localVikingData.length > 0) {
