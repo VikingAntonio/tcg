@@ -312,7 +312,6 @@ body {
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease;
     position: relative;
     transform-style: preserve-3d;
-    perspective: 1000px;
 }
 
 .card-slot:hover {
@@ -320,14 +319,6 @@ body {
     z-index: 10;
     border-color: var(--primary-color);
     box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
-}
-
-.card-slot[data-show-foil="true"] {
-    transition: border-color 0.3s ease !important; /* Disable transform transition when interactive */
-}
-
-.card-slot[data-show-foil="true"]:hover {
-    transform: none !important; /* Use manual tilt instead of CSS hover scale */
 }
 
 .tcg-card {
