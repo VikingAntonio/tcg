@@ -652,8 +652,8 @@ $(document).ready(function() {
                 <h2>Editor de Máscara</h2>
 
                 <div class="mask-editor-main-container" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; position: relative; width: 100%;">
-                    <div id="mask-viewport" style="width: 100%; height: 350px; overflow: hidden; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center; padding: 500px;">
-                        <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center;">
+                    <div id="mask-viewport" style="width: 100%; height: 350px; overflow: hidden; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center;">
+                        <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center; will-change: transform;">
                             <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block; width: 100%; height: 100%;"></canvas>
                         </div>
                     </div>
