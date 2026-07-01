@@ -19,36 +19,19 @@ window.botInstance = {
     },
     setScale: function(scale) {
         const $wrapper = $('#companion-wrapper');
-        const $bubble = $('#michatbot-bubble');
-        const $handle = $('#michatbot-drag-handle');
         const $menu = $('#michatbot-menu');
 
         if ($wrapper.length) {
-            const baseSize = 150;
-            const newSize = baseSize * scale;
             $wrapper.css({
-                'width': `${newSize}px`,
-                'height': `${newSize}px`
-            });
-        }
-        if ($bubble.length) {
-            // Ajustamos la escala del bubble y su posición relativa
-            $bubble.css({
-                'transform': `translateX(-50%) scale(${scale})`,
-                'transform-origin': 'bottom center',
-                'margin-bottom': `${(scale - 1) * 20}px`
-            });
-        }
-        if ($handle.length) {
-            $handle.css({
                 'transform': `scale(${scale})`,
-                'transform-origin': 'center'
+                'transform-origin': 'bottom left'
             });
         }
         if ($menu.length) {
-            // El menú NO debe crecer, se mantiene igual al original
+            // Compensar la escala del wrapper en el menú para que no crezca
+            const invScale = 1 / scale;
             $menu.css({
-                'transform': 'scale(1)',
+                'transform': `scale(${invScale})`,
                 'transform-origin': 'bottom left'
             });
         }
@@ -80,7 +63,15 @@ async function initMichatbot(forceRefresh = false) {
                     width: 150px;
                     height: 150px;
                     touch-action: none;
-                    will-change: width, height;
+                    will-change: transform;
+                    pointer-events: none;
+                }
+
+                #michatbot-drag-handle,
+                #michatbot-bubble,
+                #michatbot-model-container,
+                #michatbot-menu {
+                    pointer-events: auto;
                 }
 
                 /* Prevención de selección de texto al arrastrar */
@@ -91,8 +82,8 @@ async function initMichatbot(forceRefresh = false) {
 
                 #michatbot-drag-handle {
                     position: absolute;
-                    bottom: 40px;
-                    left: 10px;
+                    top: -5px;
+                    left: -5px;
                     background: #000;
                     color: #fff;
                     width: 32px;
@@ -387,12 +378,13 @@ async function initMichatbot(forceRefresh = false) {
                 src="${gltfUrl}"
                 auto-rotate
                 camera-controls
-                field-of-view="20deg"
+                camera-orbit="0deg 75deg auto"
+                field-of-view="12deg"
                 shadow-intensity="1"
                 environment-image="neutral"
                 exposure="1"
                 interaction-prompt="none"
-                style="width: 100%; height: 100%;"
+                style="width: 100%; height: 100%; --poster-color: transparent;"
                 oncontextmenu="return false;">
             </model-viewer>
         `);
@@ -462,10 +454,12 @@ async function initMichatbot(forceRefresh = false) {
                 src="${window.currentSpirit.gltf_url}"
                 camera-controls
                 auto-rotate
+                camera-orbit="0deg 75deg auto"
+                field-of-view="12deg"
                 shadow-intensity="1"
                 environment-image="neutral"
                 exposure="1.2"
-                style="width: 100%; height: 100%;">
+                style="width: 100%; height: 100%; --poster-color: transparent;">
             </model-viewer>
         `);
         $('#michatbot-detail-name').text(window.currentSpirit.name);
@@ -538,18 +532,18 @@ async function initMichatbot(forceRefresh = false) {
     const storeName = storeData ? (storeData.store_name || storeData.username) : 'esta tienda';
 
     if (isAdmin) {
-        // FAQs para el Admin
+        // FAQs para el Admin - Actualizadas con info de slots
         $faqList.append(`
-            <button class="michatbot-faq-btn" data-q="¿Cómo funcionan los slots del grid?" data-ans="Los slots del grid (Main, Extra y Side) te permiten organizar tu deck profesionalmente. Haz clic en un slot vacío para buscar y añadir una carta, o arrastra las existentes para reordenarlas.">¿Cómo funcionan los slots del grid?</button>
-            <button class="michatbot-faq-btn" data-q="¿Cómo organizo mis cartas?" data-ans="Puedes usar la herramienta de 'Organizar' para reordenar tus álbumes y decks mediante drag-and-drop. No olvides guardar los cambios al finalizar.">¿Cómo organizo mis cartas?</button>
-            <button class="michatbot-faq-btn" data-q="¿Cómo guardo los cambios?" data-ans="Para los decks, usa el botón 'Guardar Cambios' en el editor. Para los álbumes, los cambios en los slots se guardan automáticamente al seleccionar una carta.">¿Cómo guardo los cambios?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo funcionan los slots del grid?" data-ans="Cada slot representa un espacio para una carta. El Main Deck (40-60 cartas), Extra Deck (15 cartas max) y Side Deck (15 cartas max) tienen sus propias reglas de juego. Haz clic en '+' para añadir.">¿Cómo funcionan cada slot del grid?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo organizo mis cartas?" data-ans="Usa el modo 'Organizar' para mover cartas entre slots. En el Admin puedes editar efectos foil y rarezas haciendo clic en el icono de edición de cada carta.">¿Cómo organizo mis cartas?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo guardo los cambios?" data-ans="En Decks, haz clic en el botón 'Guardar' (icono de disco) arriba a la derecha. En Álbumes, los cambios en los slots se sincronizan al instante al elegir la carta.">¿Cómo guardo los cambios?</button>
         `);
     } else {
-        // FAQs para el Público
+        // FAQs para el Público - Info de la tienda/usuario
         $faqList.append(`
-            <button class="michatbot-faq-btn" data-q="¿Qué es ${storeName}?" data-ans="Es el espacio de colección y venta de ${storeName}. Aquí puedes ver sus álbumes, decks y productos disponibles en VikingTCG.">¿Qué es ${storeName}?</button>
-            <button class="michatbot-faq-btn" data-q="¿Cómo puedo comprar?" data-ans="Puedes añadir cartas al carrito y luego contactar al vendedor por WhatsApp o Messenger para finalizar la compra de forma segura.">¿Cómo puedo comprar?</button>
-            <button class="michatbot-faq-btn" data-q="¿Cómo navego por la colección?" data-ans="Usa el menú inferior para moverte entre Álbumes, Decks, Preventas y más. Haz clic en las cartas para verlas en detalle y con efectos 3D.">¿Cómo navego por la colección?</button>
+            <button class="michatbot-faq-btn" data-q="¿Qué es ${storeName}?" data-ans="Bienvenido a ${storeName}. Aquí puedes explorar mi colección personal, ver mis decks competitivos y revisar los álbumes de cartas que tengo disponibles para intercambio o venta.">¿Qué es ${storeName}?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo contacto al vendedor?" data-ans="Puedes usar los botones de contacto (WhatsApp/Messenger) que aparecen al ver los detalles de una carta o en la sección de contacto de la tienda.">¿Cómo contacto al vendedor?</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo veo los efectos 3D?" data-ans="¡Muchas cartas tienen efectos holográficos personalizados! Haz clic en cualquier carta de la lista para abrir el visor 3D y muévela con el mouse o dedo para ver el brillo.">¿Cómo veo los efectos 3D?</button>
         `);
     }
 
@@ -606,8 +600,9 @@ function makeMichatbotDraggable() {
         let newX = initialX + dx;
         let newY = initialY + dy;
 
-        newX = Math.max(0, Math.min(window.innerWidth - wrapper.offsetWidth, newX));
-        newY = Math.max(0, Math.min(window.innerHeight - wrapper.offsetHeight, newY));
+        const rect = wrapper.getBoundingClientRect();
+        newX = Math.max(0, Math.min(window.innerWidth - rect.width, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - rect.height, newY));
 
         wrapper.style.left = newX + 'px';
         wrapper.style.top = newY + 'px';
