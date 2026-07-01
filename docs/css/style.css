@@ -306,12 +306,11 @@ body {
     background: var(--slot-bg);
     background-image: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 70%);
     border-radius: 4px;
-    overflow: visible; /* Changed to visible for 3D effects */
+    overflow: hidden;
     cursor: pointer;
     border: 1px solid var(--slot-border);
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease;
     position: relative;
-    transform-style: preserve-3d;
 }
 
 .card-slot:hover {
@@ -1414,18 +1413,9 @@ input:checked + .slider:before {
 .decks-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    justify-content: center;
-    align-items: start;
     gap: 30px;
     width: 100%;
     margin-top: 20px;
-}
-
-#decks-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
 }
 
 .deck-public-item {
@@ -1437,14 +1427,10 @@ input:checked + .slider:before {
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center children */
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     position: relative; /* Anchor for share button */
     pointer-events: none;
     -webkit-tap-highlight-color: transparent;
-    width: 100%;
-    max-width: 500px; /* Limit width to keep carousel centered */
-    margin: 0 auto;
 }
 
 .deck-public-item .btn-share-item,
@@ -1535,16 +1521,10 @@ input:checked + .slider:before {
     margin: 0 auto !important;
     width: 100% !important;
     overflow: visible !important;
-    min-height: 400px;
 }
 
 .swiperyg {
     margin: 0 auto !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    left: 0 !important;
-    right: 0 !important;
 }
 
 /* Responsividad */
@@ -1864,7 +1844,7 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
-    transform: translate3d(0,0,0) translateZ(5px) !important; /* Balanced for both Swiper cards and Modal */
+    transform: translate3d(0,0,0) translateZ(12px) !important; /* Increased significantly to eliminate Z-fighting with depth layers */
     will-change: transform;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
@@ -3857,7 +3837,6 @@ body.focus-mode-active .event-card {
 .wishlist-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    justify-content: center;
     gap: 15px;
     width: 100%;
     margin-top: 20px;
