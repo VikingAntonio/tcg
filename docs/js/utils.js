@@ -114,7 +114,7 @@ window.applyFoilToElement = function($el, holo, mask) {
     });
 
     if ($el.find('.holo-layer').length === 0) $el.append('<div class="holo-layer"></div>');
-    $el.addClass('active foil-loop').attr('data-show-foil', 'true');
+    $el.addClass('active foil-loop');
 };
 
 // --- Global Navigation ---
