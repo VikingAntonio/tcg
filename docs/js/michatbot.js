@@ -33,22 +33,15 @@ window.botInstance = {
             'height': `${newSize}px`
         });
 
-        // Escalar elementos UI para que crezcan proporcionalmente con el modelo
-        // según solicitado: "que también las demás cosas crezcan"
+        // Solo crece el GLTF/Container, los elementos UI (iconos, burbuja, menu) se mantienen igual
+        // pero ajustan su posicion relativa para acompañar al contenedor.
         $('#michatbot-drag-handle').css({
-            'transform': `scale(${scale})`,
-            'transform-origin': 'center'
+            'top': '-10px',
+            'left': '-10px'
         });
 
         $('#michatbot-bubble').css({
-            'transform': `translateX(-50%) scale(${scale})`,
-            'transform-origin': 'bottom center'
-        });
-
-        const menuScale = Math.min(scale, 1.3); // Escala moderada para el menú por usabilidad
-        $('#michatbot-menu').css({
-            'transform': `scale(${menuScale})`,
-            'transform-origin': 'bottom left'
+            'bottom': '105%'
         });
     }
 };
@@ -141,6 +134,16 @@ async function initMichatbot(forceRefresh = false) {
                     border: 1px solid #3498db !important;
                     line-height: 1.4;
                     animation: bubbleFloat 3s ease-in-out infinite;
+                }
+                #michatbot-bubble::after {
+                    content: '';
+                    position: absolute;
+                    top: 100%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    border-width: 10px;
+                    border-style: solid;
+                    border-color: rgba(0,0,0,0.8) transparent transparent transparent;
                 }
                 @keyframes bubbleFloat {
                     0%, 100% { margin-bottom: 0px; }
@@ -333,7 +336,7 @@ async function initMichatbot(forceRefresh = false) {
                 src="${gltfUrl}"
                 auto-rotate
                 camera-controls
-                camera-target="auto"
+                camera-target="0m 0.75m 0m"
                 camera-orbit="0deg 75deg auto"
                 field-of-view="18deg"
                 shadow-intensity="1"
@@ -394,12 +397,17 @@ async function initMichatbot(forceRefresh = false) {
         $('#michatbot-menu').fadeOut(200);
     });
 
+    $('#michatbot-opt-play').off('click').on('click', function(e) {
+        e.stopPropagation();
+        window.location.href = 'play.html';
+    });
+
     $('#michatbot-opt-detail').off('click').on('click', function(e) {
         e.stopPropagation();
         $('#michatbot-detail-viewer-container').html(`
             <model-viewer
                 src="${window.currentSpirit.gltf_url}"
-                camera-controls auto-rotate camera-target="auto" camera-orbit="0deg 75deg auto" field-of-view="18deg"
+                    camera-controls auto-rotate camera-target="0m 0.75m 0m" camera-orbit="0deg 75deg auto" field-of-view="18deg"
                 shadow-intensity="1" environment-image="neutral" exposure="1.2"
                 style="width: 100%; height: 100%; --poster-color: transparent;">
             </model-viewer>
@@ -425,13 +433,15 @@ async function initMichatbot(forceRefresh = false) {
 
     if (isEditing) {
         $faqList.append(`
-            <button class="michatbot-faq-btn" data-q="¿Slots del grid?" data-ans="El Main Deck (40-60), Extra (15) y Side (15) tienen sus reglas. Clic en + para añadir.">Grid Slots</button>
-            <button class="michatbot-faq-btn" data-q="¿Guardar cambios?" data-ans="Clic en el icono de disco arriba a la derecha.">Guardar</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo funciona cada slot del grid?" data-ans="Cada slot representa una carta. El Main Deck (40-60), Extra (15) y Side (15) tienen sus reglas. Clic en + para añadir cartas y clic en una carta para editarla.">Grid Slots</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo guardar cambios?" data-ans="Clic en el icono de disco azul arriba a la derecha para guardar todos los cambios del deck. Es importante guardar antes de salir.">Guardar Deck</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo funciona el editor?" data-ans="Puedes arrastrar cartas, cambiar su rareza y efectos foil directamente desde el menú de cada carta.">Uso Editor</button>
         `);
     } else {
         $faqList.append(`
-            <button class="michatbot-faq-btn" data-q="¿Qué es esto?" data-ans="Explora mi colección y decks.">Info Tienda</button>
-            <button class="michatbot-faq-btn" data-q="¿Efectos 3D?" data-ans="Clic en una carta para ver el brillo en 3D.">Efectos 3D</button>
+            <button class="michatbot-faq-btn" data-q="¿Qué es esta tienda?" data-ans="Es una plataforma de cartas TCG. Puedes ver decks públicos, colecciones y comprar cartas con efectos foil únicos.">Info Tienda</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo veo los decks?" data-ans="En la sección de Decks puedes navegar por las creaciones de otros usuarios y ver el detalle de cada carta.">Ver Decks</button>
+            <button class="michatbot-faq-btn" data-q="¿Efectos 3D?" data-ans="Nuestras cartas tienen efectos holográficos avanzados. Clic en cualquier carta para apreciarla en 3D.">Efectos Foil</button>
         `);
     }
 
