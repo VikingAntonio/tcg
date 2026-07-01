@@ -1,7 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V3.2 - Corrección de escalado, centrado y fluidez de movimiento.
+ * V3.2 - Corrección de escalado (SOLO GLTF), centrado y FAQs contextuales.
  */
 
 // Global bot instance for access from other scripts
@@ -19,29 +19,43 @@ window.botInstance = {
     },
     setScale: function(scale) {
         const $wrapper = $('#companion-wrapper');
-        if (!$wrapper.length) return;
-
+        const $container = $('#michatbot-model-container');
+        if (!$wrapper.length || !$container.length) return;
         window.michatbotCurrentScale = scale;
 
-        // Tamaño base de referencia
+        // El usuario pide que SOLO crezca el GLTF y su campo, pero las demás cosas NO.
+        // Cambiamos el tamaño del contenedor del modelo.
         const baseSize = 150;
         const newSize = baseSize * scale;
 
-        // Cambiamos width/height para evitar que el canvas se vea borroso (se redibuja a mayor resolución)
+        $container.css({
+            'width': `${newSize}px`,
+            'height': `${newSize}px`
+        });
+
+        // El wrapper debe ajustarse para contener el nuevo tamaño del modelo
         $wrapper.css({
             'width': `${newSize}px`,
             'height': `${newSize}px`
         });
 
-        // Solo crece el GLTF/Container, los elementos UI (iconos, burbuja, menu) se mantienen igual
-        // pero ajustan su posicion relativa para acompañar al contenedor.
+        // Reposicionamos los elementos UI para que sigan el borde del nuevo tamaño
+        // pero mantienen su tamaño original (32px, etc.)
         $('#michatbot-drag-handle').css({
             'top': '-10px',
             'left': '-10px'
         });
 
         $('#michatbot-bubble').css({
-            'bottom': '105%'
+            'bottom': '105%',
+            'left': '50%',
+            'transform': 'translateX(-50%)'
+        });
+
+        $('#michatbot-menu').css({
+            'bottom': '100%',
+            'left': '0',
+            'transform': 'none' // Aseguramos que no tenga escala
         });
     }
 };
@@ -92,8 +106,8 @@ async function initMichatbot(forceRefresh = false) {
 
                 #michatbot-drag-handle {
                     position: absolute;
-                    top: -5px;
-                    left: -5px;
+                    top: -10px;
+                    left: -10px;
                     background: #000;
                     color: #fff;
                     width: 32px;
@@ -116,8 +130,8 @@ async function initMichatbot(forceRefresh = false) {
                     bottom: 105%;
                     left: 50%;
                     transform: translateX(-50%);
-                    background: rgba(0, 0, 0, 0.8) !important;
-                    backdrop-filter: blur(8px);
+                    background: rgba(0, 0, 0, 0.85) !important;
+                    backdrop-filter: blur(10px);
                     color: #fff;
                     padding: 10px 20px;
                     border-radius: 50px;
@@ -141,9 +155,9 @@ async function initMichatbot(forceRefresh = false) {
                     top: 100%;
                     left: 50%;
                     transform: translateX(-50%);
-                    border-width: 10px;
+                    border-width: 8px;
                     border-style: solid;
-                    border-color: rgba(0,0,0,0.8) transparent transparent transparent;
+                    border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
                 }
                 @keyframes bubbleFloat {
                     0%, 100% { margin-bottom: 0px; }
@@ -336,9 +350,8 @@ async function initMichatbot(forceRefresh = false) {
                 src="${gltfUrl}"
                 auto-rotate
                 camera-controls
-                camera-target="0m 0.75m 0m"
-                camera-orbit="0deg 75deg auto"
-                field-of-view="18deg"
+                camera-target="auto auto auto"
+                field-of-view="14deg"
                 shadow-intensity="1"
                 environment-image="neutral"
                 exposure="1"
@@ -407,7 +420,7 @@ async function initMichatbot(forceRefresh = false) {
         $('#michatbot-detail-viewer-container').html(`
             <model-viewer
                 src="${window.currentSpirit.gltf_url}"
-                    camera-controls auto-rotate camera-target="0m 0.75m 0m" camera-orbit="0deg 75deg auto" field-of-view="18deg"
+                camera-controls auto-rotate camera-target="auto auto auto" field-of-view="14deg"
                 shadow-intensity="1" environment-image="neutral" exposure="1.2"
                 style="width: 100%; height: 100%; --poster-color: transparent;">
             </model-viewer>
@@ -426,22 +439,21 @@ async function initMichatbot(forceRefresh = false) {
     // FAQs Dinámicas
     const $faqList = $('#michatbot-faq-list');
     $faqList.empty();
-    // Detectar si estamos en una página de administración
     const isEditing = window.location.pathname.includes('admin') ||
                        window.location.pathname.includes('binders') ||
                        window.location.pathname.includes('perfil');
 
     if (isEditing) {
         $faqList.append(`
-            <button class="michatbot-faq-btn" data-q="¿Cómo funciona cada slot del grid?" data-ans="Cada slot representa una carta. El Main Deck (40-60), Extra (15) y Side (15) tienen sus reglas. Clic en + para añadir cartas y clic en una carta para editarla.">Grid Slots</button>
-            <button class="michatbot-faq-btn" data-q="¿Cómo guardar cambios?" data-ans="Clic en el icono de disco azul arriba a la derecha para guardar todos los cambios del deck. Es importante guardar antes de salir.">Guardar Deck</button>
-            <button class="michatbot-faq-btn" data-q="¿Cómo funciona el editor?" data-ans="Puedes arrastrar cartas, cambiar su rareza y efectos foil directamente desde el menú de cada carta.">Uso Editor</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo funciona cada slot del grid?" data-ans="Cada slot representa una carta en el grid. Main Deck (40-60), Extra (15) y Side (15) tienen sus respectivos espacios. Haz clic en el '+' para añadir y en la carta para editar metadatos.">Grid Slots</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo guardar cambios?" data-ans="Para guardar el deck completo, usa el icono de guardado azul en la barra superior. Asegúrate de guardar antes de salir para no perder los cambios.">Guardar Deck</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo funciona el editor?" data-ans="El editor permite arrastrar cartas para moverlas, cambiar rarezas y aplicar efectos foil avanzados directamente en cada carta.">Uso Editor</button>
         `);
     } else {
         $faqList.append(`
-            <button class="michatbot-faq-btn" data-q="¿Qué es esta tienda?" data-ans="Es una plataforma de cartas TCG. Puedes ver decks públicos, colecciones y comprar cartas con efectos foil únicos.">Info Tienda</button>
-            <button class="michatbot-faq-btn" data-q="¿Cómo veo los decks?" data-ans="En la sección de Decks puedes navegar por las creaciones de otros usuarios y ver el detalle de cada carta.">Ver Decks</button>
-            <button class="michatbot-faq-btn" data-q="¿Efectos 3D?" data-ans="Nuestras cartas tienen efectos holográficos avanzados. Clic en cualquier carta para apreciarla en 3D.">Efectos Foil</button>
+            <button class="michatbot-faq-btn" data-q="¿Qué es esta tienda?" data-ans="Es una plataforma TCG personalizada donde puedes ver colecciones, decks públicos y comprar cartas con efectos visuales únicos.">Info Tienda</button>
+            <button class="michatbot-faq-btn" data-q="¿Cómo veo los decks?" data-ans="Puedes explorar los decks públicos en la galería. Haz clic en 'Ver Detalle' para ver las cartas en 3D y apreciar sus efectos foil.">Ver Decks</button>
+            <button class="michatbot-faq-btn" data-q="¿Efectos 3D?" data-ans="Nuestras cartas utilizan tecnología GLTF para mostrar efectos holográficos realistas. Haz clic en cualquier carta para interactuar con ella.">Efectos Foil</button>
         `);
     }
 
@@ -452,16 +464,40 @@ async function initMichatbot(forceRefresh = false) {
         handleBotChat(q, ans);
     });
 
+    $('#michatbot-chat-input').off('keypress').on('keypress', function(e) {
+        if(e.which == 13) $('#michatbot-send-btn').click();
+    });
+
+    $('#michatbot-send-btn').off('click').on('click', function() {
+        const msg = $('#michatbot-chat-input').val().trim();
+        if(!msg) return;
+        $('#michatbot-chat-input').val('');
+        handleBotChat(msg, "¡Qué interesante! Estoy aprendiendo mucho, pero por ahora te sugiero usar las <b>Preguntas Frecuentes</b>.");
+    });
+
+    $('#close-michatbot-chat').off('click').on('click', function(e) {
+        e.stopPropagation();
+        $('#michatbot-chat-container').fadeOut(300);
+    });
+
     // Inicializar integración
     initMichatbotIntegration();
+
+    // Saludo inicial
+    setTimeout(() => {
+        const spiritName = window.currentSpirit ? window.currentSpirit.name : 'tu asistente';
+        window.botInstance.say(`¡Hola! Soy ${spiritName}, ¿en qué puedo ayudarte hoy?`);
+    }, 2000);
 }
 
 function handleBotChat(q, ans) {
     const $area = $('#michatbot-chat-area');
-    $area.append(`<div class="chatbot-msg user">${q}</div>`);
+    const $userMsg = $('<div class="chatbot-msg user"></div>').text(q);
+    $area.append($userMsg);
     $area.animate({ scrollTop: $area[0].scrollHeight }, 300);
     setTimeout(() => {
-        $area.append(`<div class="chatbot-msg bot">${ans}</div>`);
+        const $botMsg = $('<div class="chatbot-msg bot"></div>').html(ans);
+        $area.append($botMsg);
         $area.animate({ scrollTop: $area[0].scrollHeight }, 300);
     }, 600);
 }
@@ -478,12 +514,9 @@ function makeMichatbotDraggable() {
         isDragging = true;
         startX = e.clientX;
         startY = e.clientY;
-
-        // Obtenemos la posición actual respecto al viewport
         const rect = wrapper.getBoundingClientRect();
         initialX = rect.left;
         initialY = rect.top;
-
         wrapper.setPointerCapture(e.pointerId);
         handle.style.cursor = 'grabbing';
         $('body').addClass('michatbot-dragging-active');
@@ -493,14 +526,10 @@ function makeMichatbotDraggable() {
         if (!isDragging) return;
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
-
         let newX = initialX + dx;
         let newY = initialY + dy;
-
-        // Límites
         newX = Math.max(0, Math.min(window.innerWidth - wrapper.offsetWidth, newX));
         newY = Math.max(0, Math.min(window.innerHeight - wrapper.offsetHeight, newY));
-
         wrapper.style.left = newX + 'px';
         wrapper.style.top = newY + 'px';
         wrapper.style.bottom = 'auto';
@@ -531,6 +560,19 @@ async function initMichatbotIntegration() {
             }, 30000);
         }
     } catch (e) {}
+
+    // Restaurar subscripción de subastas
+    if (!window.botRealtimeSubscribed) {
+        const { data: activeAuctions } = await _supabase.from('subastas').select('id').eq('user_id', ownerId).eq('status', 'active');
+        const auctionIds = (activeAuctions || []).map(a => a.id);
+
+        _supabase.channel('bot-pujas').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subastas_pujas' }, payload => {
+            if (auctionIds.includes(payload.new.subasta_id)) {
+                window.botInstance.say(`¡Nueva puja detectada! Alguien ofreció $${payload.new.amount}.`);
+            }
+        }).subscribe();
+        window.botRealtimeSubscribed = true;
+    }
 }
 
 $(document).ready(() => initMichatbot());
