@@ -6,16 +6,45 @@
 
 // Global bot instance for access from other scripts
 window.botInstance = {
+    currentContext: 'home',
     say: function(text, duration = 4000) {
         const $bubble = $('#michatbot-bubble');
         if (!$bubble.length) return;
-        $bubble.find('.bubble-text').text(text);
+
+        // Render bot responses as HTML to support links/formatting
+        $bubble.find('.bubble-text').html(text);
         $bubble.stop(true, true).fadeIn(300);
 
         if (window.bubbleTimeout) clearTimeout(window.bubbleTimeout);
         window.bubbleTimeout = setTimeout(() => {
             $bubble.fadeOut(300);
         }, duration);
+    },
+    saySequence: async function(messages, interval = 5000) {
+        for (const msg of messages) {
+            this.say(msg, interval - 500);
+            await new Promise(r => setTimeout(r, interval));
+        }
+    },
+    setContext: function(context) {
+        console.log(`Michatbot Context: ${context}`);
+        this.currentContext = context;
+        // Optionally trigger immediate tip on context change
+        if (typeof initMichatbotIntegration === 'function') {
+            initMichatbotIntegration(true);
+        }
+    },
+    fetchDetailedCardInfo: async function(cardName) {
+        if (typeof _supabase === 'undefined') return null;
+        try {
+            const { data } = await _supabase
+                .from('viking_data')
+                .select('*')
+                .ilike('name', cardName)
+                .limit(1)
+                .maybeSingle();
+            return data;
+        } catch (e) { return null; }
     },
     setScale: function(scale) {
         const $wrapper = $('#companion-wrapper');
@@ -54,7 +83,6 @@ async function initMichatbot(forceRefresh = false) {
                     width: 180px; /* Aumentado de 150 a 180 */
                     height: 180px;
                     touch-action: none;
-                    transition: width 0.2s, height 0.2s;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -333,12 +361,13 @@ async function initMichatbot(forceRefresh = false) {
         viewer.addEventListener('pointermove', (e) => {
             if (startX_click === undefined) return;
             const dist = Math.sqrt(Math.pow(e.clientX - startX_click, 2) + Math.pow(e.clientY - startY_click, 2));
-            if (dist > 10) {
+            // Aumentamos el umbral a 15px para PC/Tablet para evitar que micro-movimientos accidentales bloqueen el menú
+            if (dist > 15) {
                 isInteractingWithModel = true;
             }
         });
 
-        viewer.addEventListener('click', (e) => {
+        viewer.addEventListener('pointerup', (e) => {
             const touchDuration = Date.now() - touchStartTime;
             // Solo abrir menú si fue un click rápido (no drag para girar) y no hubo movimiento significativo
             if (touchDuration < 300 && !isInteractingWithModel) {
@@ -385,9 +414,11 @@ async function initMichatbot(forceRefresh = false) {
         $('#michatbot-menu').fadeOut(250);
     });
 
-    $('#michatbot-scale-slider').off('input').on('input', function() {
+    $('#michatbot-scale-slider').off('input change').on('input', function() {
         const val = $(this).val();
         window.botInstance.setScale(val);
+    }).on('change', function() {
+        $('#michatbot-menu').fadeOut(250);
     });
 
     $('.michatbot-faq-btn').off('click').on('click', function(e) {
@@ -463,28 +494,72 @@ function makeMichatbotDraggable() {
     });
 }
 
-async function initMichatbotIntegration() {
+async function initMichatbotIntegration(forceTip = false) {
     if (typeof _supabase === 'undefined') return;
 
     const ownerId = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : window.currentStoreId;
     if (!ownerId) return;
 
-    // A. Mensajes periódicos desde 'bot_messages'
-    try {
-        const { data: messages } = await _supabase
-            .from('bot_messages')
-            .select('*')
-            .eq('user_id', ownerId)
-            .eq('is_active', true);
+    // A. Mensajes inteligentes basados en contexto y 'bot_messages'
+    if (window.botMessageInterval) clearInterval(window.botMessageInterval);
 
-        if (messages && messages.length > 0) {
-            if (window.botMessageInterval) clearInterval(window.botMessageInterval);
-            window.botMessageInterval = setInterval(() => {
-                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-                window.botInstance.say(randomMsg.content, (randomMsg.duration || 5) * 1000);
-            }, 30000);
+    const triggerMessage = async () => {
+        const context = window.botInstance.currentContext || 'home';
+        // Detectar si estamos en el panel administrativo basado en la URL
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('admin') || path.includes('binders') || path.includes('perfil') || path.includes('scanner') || path.includes('preventas') || path.includes('expansiones');
+
+        const adminTips = [
+            "¿Sabías que puedes crear texturas custom para tus cartas? ¡Dale un toque único a tu colección!",
+            "Crea carpetas de cartas fácilmente desde el panel de álbumes.",
+            "En el Deck Editor Nexus, puedes arrastrar y soltar cartas para organizar tu estrategia.",
+            "Usa el Scanner para identificar tus cartas físicas y añadirlas a tu inventario digital al instante.",
+            "Personaliza mis mensajes desde la sección 'Configuración Chatbot' en tu panel.",
+            "Puedes ajustar mi tamaño desde el menú que aparece al tocarme.",
+            "Recuerda guardar tus cambios antes de salir de los editores para no perder tu progreso."
+        ];
+
+        const publicTips = [
+            "¡Bienvenido! Explora nuestros álbumes para ver las mejores cartas de la colección.",
+            "Si buscas algo específico, usa la barra de búsqueda arriba.",
+            "¿Viste algo que te gusta? ¡Añádelo al carrito para consultar disponibilidad!",
+            "Recuerda que puedes contactar a la tienda directamente por WhatsApp o Messenger.",
+            "Tenemos nuevos álbumes disponibles, ¡échales un vistazo!",
+            "¡Hora del duelo! Si buscas un reto, ve a la sección de juego.",
+            "Puedes ver detalles 3D de cada compañero en la sección de espíritus."
+        ];
+
+        if (context === 'decks') {
+            publicTips.push("¡Estos decks son increíbles! Haz clic en una carta para ver sus detalles y efectos.");
+            publicTips.push("¿Sabías que puedes ver la lista completa de cartas de este deck? Usa el botón 'Modo Lista'.");
         }
-    } catch (e) { console.error("Michatbot: Error cargando mensajes", e); }
+
+        let pool = isAdmin ? adminTips : publicTips;
+
+        // Intentar obtener mensajes personalizados de la DB
+        try {
+            const { data: dbMessages } = await _supabase
+                .from('bot_messages')
+                .select('*')
+                .eq('user_id', ownerId)
+                .eq('is_active', true);
+
+            if (dbMessages && dbMessages.length > 0) {
+                // Filtrar mensajes de DB por contexto si aplica
+                const customPool = dbMessages.map(m => m.content);
+                pool = pool.concat(customPool);
+            }
+        } catch (e) { console.warn("Michatbot: Error cargando mensajes personalizados", e); }
+
+        const randomMsg = pool[Math.floor(Math.random() * pool.length)];
+        window.botInstance.say(randomMsg, 6000);
+    };
+
+    if (forceTip) {
+        triggerMessage();
+    }
+
+    window.botMessageInterval = setInterval(triggerMessage, 45000); // Cada 45 segundos
 
     // B. Realtime Subscriptions para Subastas (Filtradas por Store)
     if (!window.botRealtimeSubscribed) {
