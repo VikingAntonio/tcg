@@ -89,6 +89,37 @@ function initAdminWishlistListeners() {
         saveWishlistBatchAdmin();
     });
 
+    // Delegated listeners for wishlist items
+    $(document).on('click', '#wishlist-list-admin .btn-edit-wishlist', function(e) {
+        e.stopPropagation();
+        const item = $(this).closest('.wishlist-item').data('item');
+        if (item) openEditWishlistModalAdmin(item);
+    });
+
+    $(document).on('click', '#wishlist-list-admin .btn-delete-wishlist', function(e) {
+        e.stopPropagation();
+        const $card = $(this).closest('.wishlist-item');
+        const id = $card.data('id');
+        deleteWishlistItemAdmin(id, $card);
+    });
+
+    $(document).on('change', '#wishlist-list-admin .wishlist-toggle-obtained', function() {
+        const $card = $(this).closest('.wishlist-item');
+        const id = $card.data('id');
+        const obtained = $(this).is(':checked');
+        updateWishlistItemAdmin(id, { obtained });
+        $card.css('opacity', obtained ? '0.7' : '1');
+        $card.find('.wishlist-status-text').text(obtained ? '¡CONSEGUIDA!' : 'BUSCANDO');
+    });
+
+    $(document).on('change', '#wishlist-list-admin .wishlist-field', function() {
+        const $card = $(this).closest('.wishlist-item');
+        const id = $card.data('id');
+        const field = $(this).data('field');
+        const value = $(this).val();
+        updateWishlistItemAdmin(id, { [field]: value });
+    });
+
     $('#btn-save-wishlist-modal-admin').click(async function() {
         if (!currentEditingWishlistId) return;
 
@@ -142,7 +173,7 @@ async function loadWishlistAdmin() {
         const $card = $(`
             <div class="album-card wishlist-item" data-id="${item.id}" style="position: relative; padding: 15px; gap: 8px; ${item.obtained ? 'opacity: 0.7;' : ''}">
                 <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 20;">
-                    <div class="btn-delete-card-top btn-edit-wishlist" data-id="${item.id}" title="Efectos y Más" style="background: var(--primary-color) !important; position: static;"><i class="fas fa-magic"></i></div>
+                    <div class="btn-delete-card-top btn-edit-wishlist" data-id="${item.id}" title="Editar" style="background: var(--primary-color) !important; position: static;"><i class="fas fa-edit"></i></div>
                     <div class="btn-delete-card-top btn-delete-wishlist" data-id="${item.id}" title="Eliminar" style="position: static;"><i class="fas fa-times"></i></div>
                 </div>
 
@@ -179,29 +210,8 @@ async function loadWishlistAdmin() {
             </div>
         `);
 
-        // Listeners
-        $card.find('.wishlist-field').on('change', function() {
-            const field = $(this).data('field');
-            const value = $(this).val();
-            updateWishlistItemAdmin(item.id, { [field]: value });
-        });
-
-        $card.find('.wishlist-toggle-obtained').on('change', function() {
-            const obtained = $(this).is(':checked');
-            updateWishlistItemAdmin(item.id, { obtained });
-            $card.css('opacity', obtained ? '0.7' : '1');
-            $card.find('.wishlist-status-text').text(obtained ? '¡CONSEGUIDA!' : 'BUSCANDO');
-        });
-
-        $card.find('.btn-delete-wishlist').click(function(e) {
-            e.stopPropagation();
-            deleteWishlistItemAdmin(item.id, $card);
-        });
-
-        $card.find('.btn-edit-wishlist').click(function(e) {
-            e.stopPropagation();
-            openEditWishlistModalAdmin(item);
-        });
+        // Store full item data for delegated listeners
+        $card.data('item', item);
 
         if (item.show_foil_in_list && item.holo_effect) {
             const $foilTarget = $card.find('.wishlist-img-container');
