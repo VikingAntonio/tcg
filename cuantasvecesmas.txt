@@ -1,0 +1,5 @@
+Mis disculpas. Entendí mal las instrucciones anteriores al interpretar que "crecer las demás cosas" incluía escalar visualmente la interfaz de usuario (iconos, burbuja, menú).
+
+Ahora he corregido esto para que SOLO crezca el contenedor del GLTF y el modelo en sí, manteniendo los elementos de la interfaz en su tamaño estándar pero posicionados correctamente según el nuevo tamaño del chatbot, tal como solicitaste.
+
+También restauré las funcionalidades y detalles visuales que se habían perdido.
