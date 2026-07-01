@@ -5,53 +5,6 @@ let startX, startY;
 
 // applyFoilToElement is now globally defined in utils.js
 
-// --- Global Orientation Listener for Swiper Cards ---
-if (window.DeviceOrientationEvent) {
-    const handleGlobalOrientation = (e) => {
-        if (e.gamma === null || e.beta === null) return;
-
-        // Calculate rotation and foil parameters
-        // Normalizing tilt: typical range -20 to 20 degrees
-        let ry = Math.max(-20, Math.min(20, e.gamma));
-        let rx = Math.max(-20, Math.min(20, e.beta - 45));
-
-        const mx = (ry + 20) / 40;
-        const my = (rx + 20) / 40;
-        const angle = (Math.atan2(rx, ry) * 180 / Math.PI) + 135;
-
-        // Apply to all populated slides in any swiper
-        requestAnimationFrame(() => {
-            const $activeCards = $('.swiper-slide.card-slot.is-populated');
-            if ($activeCards.length === 0) return;
-
-            // Update Foil CSS variables for all slides that have them
-            $activeCards.css({
-                '--mx': mx.toFixed(3),
-                '--my': my.toFixed(3),
-                '--angle': angle.toFixed(2) + 'deg'
-            });
-
-            // Update rotation for the internal containers to avoid breaking Swiper's own slide transforms
-            $activeCards.find('.tilt-container, .z-text').css({
-                'transform': `rotateX(${-rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`
-            });
-        });
-    };
-
-    // Permission handling for iOS
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        $(document).one('click touchstart', function() {
-            DeviceOrientationEvent.requestPermission()
-                .then(state => {
-                    if (state === 'granted') {
-                        window.addEventListener('deviceorientation', handleGlobalOrientation);
-                    }
-                }).catch(console.error);
-        });
-    } else {
-        window.addEventListener('deviceorientation', handleGlobalOrientation);
-    }
-}
 
 // --- Loading Screen Functions ---
 window.isLoading = false;
@@ -314,27 +267,46 @@ $(document).ready(async function() {
         if (view) switchView(view);
     });
 
-    // --- Foil Shimmer Interaction in Lists ---
-    $(document).on('mousemove', '.card-slot[data-show-foil="true"]', function(e) {
+    // --- Foil Shimmer and Tilt Interaction ---
+    $(document).on('mousemove touchmove', '.card-slot[data-show-foil="true"], .swiper-slide[data-show-foil="true"]', function(e) {
         const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const ev = e.type.startsWith('touch') ? e.originalEvent.touches[0] : e;
+
+        const x = ev.clientX - rect.left;
+        const y = ev.clientY - rect.top;
+
+        if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+
         const mx = x / rect.width;
         const my = y / rect.height;
         const angle = (Math.atan2(my - 0.5, mx - 0.5) * 180 / Math.PI) + 135;
 
+        // Subtle tilt: -15 to 15 degrees
+        const rx = (0.5 - my) * 30;
+        const ry = (mx - 0.5) * 30;
+
         $(this).css({
-            '--mx': mx,
-            '--my': my,
-            '--angle': `${angle}deg`
+            '--mx': mx.toFixed(3),
+            '--my': my.toFixed(3),
+            '--angle': `${angle.toFixed(2)}deg`
+        });
+
+        // Apply tilt to the internal container
+        $(this).find('.tilt-container, .z-text').css({
+            'transform': `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`,
+            'transition': 'none'
         });
     });
 
-    $(document).on('mouseleave', '.card-slot[data-show-foil="true"]', function() {
+    $(document).on('mouseleave touchend', '.card-slot[data-show-foil="true"], .swiper-slide[data-show-foil="true"]', function() {
         $(this).css({
             '--mx': 0.5,
             '--my': 0.5,
             '--angle': '135deg'
+        });
+        $(this).find('.tilt-container, .z-text').css({
+            'transform': 'rotateX(0deg) rotateY(0deg)',
+            'transition': 'transform 0.5s ease'
         });
     });
 
@@ -1783,9 +1755,12 @@ function populateDeckSlide($slide, card, deck = null) {
 
     // Apply Foil if enabled
     const shouldShowFoil = card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:')) || useFoil3D;
-    if (shouldShowFoil && card.holo_effect && typeof applyFoilToElement === 'function') {
-        // Apply foil to the tilt container so it rotates with the card
-        applyFoilToElement($slide.find('.tilt-container'), card.holo_effect, card.custom_mask_url);
+    if (shouldShowFoil) {
+        $slide.attr('data-show-foil', 'true');
+        if (card.holo_effect && typeof applyFoilToElement === 'function') {
+            // Apply foil to the tilt container so it rotates with the card
+            applyFoilToElement($slide.find('.tilt-container'), card.holo_effect, card.custom_mask_url);
+        }
     }
 
     $slide.addClass('is-populated');

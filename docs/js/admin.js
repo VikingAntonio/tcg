@@ -907,14 +907,35 @@ $(document).ready(async function() {
 
         const name = $('#input-deck-name').val();
         const is_public = $('#input-deck-public').is(':checked');
-        let updateData = { name, is_public };
+        const show_foil = $('#input-deck-show-foil').is(':checked');
+        const use_special_price = $('#input-deck-use-special').is(':checked');
+        const special_price = $('#input-deck-special-price').val();
+
+        let updateData = {
+            name,
+            is_public,
+            show_foil,
+            use_special_price,
+            special_price
+        };
 
         try {
-            // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
-            const deckUpdatePromise = _supabase
+            // 1. Save Deck Metadata (with missing column fallback)
+            let { error: deckErr } = await _supabase
                 .from('decks')
                 .update(updateData)
                 .eq('id', currentDeckId);
+
+            // Fallback if 'show_foil' or pricing columns don't exist yet
+            if (deckErr && (deckErr.code === '42703' || (deckErr.message && deckErr.message.includes('show_foil')))) {
+                console.warn("Retrying save without show_foil column...");
+                const fallbackData = { ...updateData };
+                delete fallbackData.show_foil;
+                const retry = await _supabase.from('decks').update(fallbackData).eq('id', currentDeckId);
+                deckErr = retry.error;
+            }
+
+            if (deckErr) throw deckErr;
 
             // 2. Clear all existing cards for this deck
             const delErr = await _supabase
