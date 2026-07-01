@@ -20,9 +20,10 @@ window.botInstance = {
     setScale: function(scale) {
         const $wrapper = $('#companion-wrapper');
         if ($wrapper.length) {
+            const size = 180 * scale; // Aumentado base de 150 a 180
             $wrapper.css({
-                width: (150 * scale) + 'px',
-                height: (150 * scale) + 'px'
+                width: size + 'px',
+                height: size + 'px'
             });
         }
     }
@@ -50,10 +51,13 @@ async function initMichatbot(forceRefresh = false) {
                     bottom: 20px;
                     left: 20px;
                     z-index: 999999999;
-                    width: 150px;
-                    height: 150px;
+                    width: 180px; /* Aumentado de 150 a 180 */
+                    height: 180px;
                     touch-action: none;
                     transition: width 0.2s, height 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
 
                 /* Prevención de selección de texto al arrastrar */
@@ -64,8 +68,8 @@ async function initMichatbot(forceRefresh = false) {
 
                 #michatbot-drag-handle {
                     position: absolute;
-                    top: -5px;
-                    left: -15px; /* Movido a la izquierda */
+                    top: 10px;
+                    left: 0px; /* Ajustado para estar más pegado al modelo */
                     background: #000;
                     color: #fff;
                     width: 32px;
@@ -351,7 +355,16 @@ async function initMichatbot(forceRefresh = false) {
                 environment-image="neutral"
                 exposure="1"
                 interaction-prompt="none"
-                style="width: 100%; height: 100%;"
+                camera-orbit="auto 75deg auto"
+                field-of-view="20deg"
+                min-field-of-view="10deg"
+                max-field-of-view="45deg"
+                interpolation-decay="200"
+                bounds="tight"
+                camera-target="0m 0m 0m"
+                auto-rotate-delay="0"
+                rotation-speed="0.5"
+                style="width: 100%; height: 100%; background-color: transparent;"
                 oncontextmenu="return false;">
             </model-viewer>
         `);
