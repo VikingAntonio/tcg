@@ -1526,11 +1526,9 @@ $(document).ready(async function() {
 
     // --- Organize Modal Listeners ---
     $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('albums'); });
-    $(document).on('click', '#btn-organize-decks', function(e) { e.preventDefault(); e.stopPropagation(); openOrganizeModal('decks'); });
-    $(document).on('click', '#btn-organize-cards', function(e) { e.preventDefault(); e.stopPropagation(); openOrganizeModal('cards'); });
-    $(document).on('click', '#close-organize-modal, #btn-finish-organize', function() {
-        $('#organize-modal').removeClass('active');
-    });
+    $(document).on('click', '#btn-organize-decks', function(e) { e.preventDefault(); openOrganizeModal('decks'); });
+    $(document).on('click', '#btn-organize-cards', function(e) { e.preventDefault(); openOrganizeModal('cards'); });
+    $(document).on('click', '#close-organize-modal, #btn-finish-organize', function() { $('#organize-modal').removeClass('active'); });
 
     $(document).on('change', '.toggle-public', async function() {
         const id = $(this).data('id');
@@ -3521,8 +3519,23 @@ window.contactWinner = (name, whatsapp, auctionName, total, delivery) => {
     window.open(waUrl, '_blank');
 };
 
-function renderOrganizeGrid(type, items) {
+async function openOrganizeModal(type) {
     const $grid = $('#organize-grid');
+    $grid.html('<div class="loading">Cargando...</div>');
+    $('#organize-modal').addClass('active');
+
+    let items = [];
+    if (type === 'albums') {
+        const { data } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
+        items = data || [];
+    } else if (type === 'decks') {
+        const { data } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
+        items = data || [];
+    } else if (type === 'cards') {
+        // Use localDeckCards for current deck editing session
+        items = localDeckCards || [];
+    }
+
     $grid.empty();
     items.forEach(item => {
         const title = item.title || item.name || 'Sin nombre';
@@ -3545,32 +3558,6 @@ function renderOrganizeGrid(type, items) {
         `);
         $grid.append($el);
     });
-}
-
-async function openOrganizeModal(type) {
-    const $grid = $('#organize-grid');
-
-    // First, show the modal with a loading state synchronously
-    $('#organize-modal').addClass('active');
-    $grid.html('<div class="loading">Cargando...</div>');
-
-    let items = [];
-    if (type === 'cards') {
-        // For cards, we yield to the browser to ensure the modal and loading state are rendered
-        // before the heavy DOM processing of many cards starts.
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        items = localDeckCards || [];
-        renderOrganizeGrid('cards', items);
-    } else if (type === 'albums') {
-        const { data } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
-        items = data || [];
-        renderOrganizeGrid('albums', items);
-    } else if (type === 'decks') {
-        const { data } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
-        items = data || [];
-        renderOrganizeGrid('decks', items);
-    }
 
     if (window.Sortable) {
         if ($grid[0]._sortable) $grid[0]._sortable.destroy();

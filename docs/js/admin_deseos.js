@@ -89,37 +89,6 @@ function initAdminWishlistListeners() {
         saveWishlistBatchAdmin();
     });
 
-    // Delegated listeners for wishlist items
-    $(document).on('click', '#wishlist-list-admin .btn-edit-wishlist', function(e) {
-        e.stopPropagation();
-        const item = $(this).closest('.wishlist-item').data('item');
-        if (item) openEditWishlistModalAdmin(item);
-    });
-
-    $(document).on('click', '#wishlist-list-admin .btn-delete-wishlist', function(e) {
-        e.stopPropagation();
-        const $card = $(this).closest('.wishlist-item');
-        const id = $card.data('id');
-        deleteWishlistItemAdmin(id, $card);
-    });
-
-    $(document).on('change', '#wishlist-list-admin .wishlist-toggle-obtained', function() {
-        const $card = $(this).closest('.wishlist-item');
-        const id = $card.data('id');
-        const obtained = $(this).is(':checked');
-        updateWishlistItemAdmin(id, { obtained });
-        $card.css('opacity', obtained ? '0.7' : '1');
-        $card.find('.wishlist-status-text').text(obtained ? '¡CONSEGUIDA!' : 'BUSCANDO');
-    });
-
-    $(document).on('change', '#wishlist-list-admin .wishlist-field', function() {
-        const $card = $(this).closest('.wishlist-item');
-        const id = $card.data('id');
-        const field = $(this).data('field');
-        const value = $(this).val();
-        updateWishlistItemAdmin(id, { [field]: value });
-    });
-
     $('#btn-save-wishlist-modal-admin').click(async function() {
         if (!currentEditingWishlistId) return;
 
@@ -210,8 +179,29 @@ async function loadWishlistAdmin() {
             </div>
         `);
 
-        // Store full item data for delegated listeners
-        $card.data('item', item);
+        // Listeners
+        $card.find('.wishlist-field').on('change', function() {
+            const field = $(this).data('field');
+            const value = $(this).val();
+            updateWishlistItemAdmin(item.id, { [field]: value });
+        });
+
+        $card.find('.wishlist-toggle-obtained').on('change', function() {
+            const obtained = $(this).is(':checked');
+            updateWishlistItemAdmin(item.id, { obtained });
+            $card.css('opacity', obtained ? '0.7' : '1');
+            $card.find('.wishlist-status-text').text(obtained ? '¡CONSEGUIDA!' : 'BUSCANDO');
+        });
+
+        $card.find('.btn-delete-wishlist').click(function(e) {
+            e.stopPropagation();
+            deleteWishlistItemAdmin(item.id, $card);
+        });
+
+        $card.find('.btn-edit-wishlist').click(function(e) {
+            e.stopPropagation();
+            openEditWishlistModalAdmin(item);
+        });
 
         if (item.show_foil_in_list && item.holo_effect) {
             const $foilTarget = $card.find('.wishlist-img-container');
