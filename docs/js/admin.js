@@ -1525,7 +1525,7 @@ $(document).ready(async function() {
     });
 
     // --- Organize Modal Listeners ---
-    $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); e.stopPropagation(); openOrganizeModal('albums'); });
+    $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('albums'); });
     $(document).on('click', '#btn-organize-decks', function(e) { e.preventDefault(); e.stopPropagation(); openOrganizeModal('decks'); });
     $(document).on('click', '#btn-organize-cards', function(e) { e.preventDefault(); e.stopPropagation(); openOrganizeModal('cards'); });
     $(document).on('click', '#close-organize-modal, #btn-finish-organize', function() { $('#organize-modal').removeClass('active'); });
@@ -3548,27 +3548,22 @@ function renderOrganizeGrid(type, items) {
 async function openOrganizeModal(type) {
     const $grid = $('#organize-grid');
     $grid.html('<div class="loading">Cargando...</div>');
-    $('#organize-modal').addClass('active');
-
-    // For cards, we use the local state which is already loaded.
-    // We can populate immediately to avoid perceived lag.
-    if (type === 'cards') {
-        renderOrganizeGrid('cards', localDeckCards || []);
-    }
+    $('#organize-modal').addClass('active').show();
 
     let items = [];
-    if (type === 'albums') {
+    if (type === 'cards') {
+        // For cards, we use local state and can render immediately
+        items = localDeckCards || [];
+        renderOrganizeGrid('cards', items);
+    } else if (type === 'albums') {
         const { data } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
         items = data || [];
+        renderOrganizeGrid('albums', items);
     } else if (type === 'decks') {
         const { data } = await _supabase.from('decks').select('id, name').eq('user_id', currentUser.id).order('position', { ascending: true }).order('id', { ascending: true });
         items = data || [];
-    } else if (type === 'cards') {
-        // Use localDeckCards for current deck editing session
-        items = localDeckCards || [];
+        renderOrganizeGrid('decks', items);
     }
-
-    renderOrganizeGrid(type, items);
 
     if (window.Sortable) {
         if ($grid[0]._sortable) $grid[0]._sortable.destroy();
