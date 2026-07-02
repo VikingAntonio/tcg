@@ -1528,7 +1528,9 @@ $(document).ready(async function() {
     $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('albums'); });
     $(document).on('click', '#btn-organize-decks', function(e) { e.preventDefault(); e.stopPropagation(); openOrganizeModal('decks'); });
     $(document).on('click', '#btn-organize-cards', function(e) { e.preventDefault(); e.stopPropagation(); openOrganizeModal('cards'); });
-    $(document).on('click', '#close-organize-modal, #btn-finish-organize', function() { $('#organize-modal').removeClass('active'); });
+    $(document).on('click', '#close-organize-modal, #btn-finish-organize', function() {
+        $('#organize-modal').removeClass('active');
+    });
 
     $(document).on('change', '.toggle-public', async function() {
         const id = $(this).data('id');
@@ -3547,12 +3549,17 @@ function renderOrganizeGrid(type, items) {
 
 async function openOrganizeModal(type) {
     const $grid = $('#organize-grid');
+
+    // First, show the modal with a loading state synchronously
+    $('#organize-modal').addClass('active');
     $grid.html('<div class="loading">Cargando...</div>');
-    $('#organize-modal').addClass('active').show();
 
     let items = [];
     if (type === 'cards') {
-        // For cards, we use local state and can render immediately
+        // For cards, we yield to the browser to ensure the modal and loading state are rendered
+        // before the heavy DOM processing of many cards starts.
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         items = localDeckCards || [];
         renderOrganizeGrid('cards', items);
     } else if (type === 'albums') {

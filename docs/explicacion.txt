@@ -1,13 +1,14 @@
-Explicación del problema con los modelos GLTF en la pantalla de carga:
+Explicación de la solución: Botón "Organizar" en el Editor de Decks
 
-El problema por el cual los modelos no se muestran en las pantallas de carga, a pesar de que sí se ven correctamente en el panel de administración y en los enlaces públicos, se debe a la compresión de los archivos.
+1. El Problema:
+Anteriormente, al hacer clic en el botón "Organizar", el navegador intentaba procesar y renderizar todas las cartas del deck al mismo tiempo que intentaba mostrar el modal. Como el renderizado de muchas cartas es una tarea pesada para el procesador (bloquea el "hilo principal" de ejecución), el navegador posponía la visualización del modal hasta terminar de procesar las cartas o hasta recibir un nuevo evento (como otro clic). Esto causaba la sensación de que el botón no funcionaba a la primera.
 
-Al exportar los modelos desde Blender con compresión (como Draco o Meshopt), el cargador estándar de Three.js (GLTFLoader) no puede procesarlos por sí solo. Requiere decodificadores específicos para "descomprimir" el modelo antes de renderizarlo.
+2. La Solución:
+He aplicado un cambio técnico en el archivo `docs/js/admin.js` para separar estas dos acciones:
 
-Por otro lado, el componente <model-viewer> (usado en las tarjetas del álbum y en la administración) ya incluye estos decodificadores internamente, por lo que los modelos comprimidos funcionan allí sin configuración adicional.
+   - Mostrar el Modal de inmediato: Ahora, lo primero que hace el código es activar el modal y mostrar un mensaje de "Cargando..." de forma instantánea.
+   - Pausa Técnica (Yielding): He añadido una pausa imperceptible de 50 milisegundos justo después de mostrar el modal. Esto le da tiempo al navegador para "dibujar" el modal en la pantalla antes de pasar a la tarea pesada de cargar las cartas.
+   - Cierre Limpio: Se ha corregido la función de cierre para asegurar que el modal se oculte completamente de la vista al terminar.
 
-Para solucionar esto, he actualizado el archivo 'docs/js/loading3d.js' para:
-1. Importar los módulos DRACOLoader y MeshoptDecoder.
-2. Configurar el GLTFLoader para que utilice estos decodificadores automáticamente al cargar un modelo.
-
-Con estos cambios, los modelos comprimidos desde Blender deberían aparecer correctamente en las pantallas de carga.
+3. Resultado:
+Ahora, al pulsar "Organizar", la interfaz responde al instante mostrando el modal, y medio segundo después (o menos) aparecen las cartas listas para ser ordenadas, sin necesidad de clics adicionales.
