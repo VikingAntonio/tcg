@@ -1,7 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V3.2 - Posicionamiento a la derecha, estética profesional y tips dinámicos.
+ * V3.3 - Posicionamiento a la derecha, estética profesional y tips dinámicos.
  */
 
 // Global bot instance for access from other scripts
@@ -30,7 +30,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V3.2...");
+    console.log("Iniciando Michatbot V3.3...");
 
     // 1. Limpiar elementos antiguos si existen para evitar conflictos
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
