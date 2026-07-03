@@ -1,7 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V3.8 - FIXED INTERACTION, MUTE LOGIC, LEFT POSITION.
+ * V3.9 - FIXED INTERACTION, MUTE LOGIC, LEFT POSITION.
  */
 
 // Global bot instance
@@ -41,7 +41,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V3.8...");
+    console.log("Iniciando Michatbot V3.9...");
 
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
         $('#companion-wrapper').remove();

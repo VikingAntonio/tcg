@@ -11,4 +11,4 @@ Para bloquear el movimiento de lugar y el cambio de tamaño (zoom) pero permitir
 
 Si al dar click se nota un pequeño "salto" o movimiento, puede ser por los atributos `bounds="tight"` o `field-of-view="auto"`, ya que el componente intenta ajustar la cámara al modelo.
 
-En la versión V3.7 he añadido `disable-pan` y he ajustado los parámetros para que sea lo más estático posible al recibir clicks.
+En la versión V3.9 he añadido `disable-pan` y he ajustado los parámetros para que sea lo más estático posible al recibir clicks.
