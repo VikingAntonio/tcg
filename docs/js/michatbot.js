@@ -1,7 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V4.0 - Restaurado tamaño original (150px), interacción estable (No Pan/Zoom).
+ * V4.1 - Restauración total, interacción estable, drag arreglado.
  */
 
 // Global bot instance
@@ -22,7 +22,7 @@ window.botInstance = {
     setScale: function(scale) {
         const $wrapper = $('#companion-wrapper');
         if ($wrapper.length) {
-            const size = 150 * scale; // Base original de 150
+            const size = 150 * scale;
             $wrapper.css({ width: size + 'px', height: size + 'px' });
         }
     },
@@ -41,7 +41,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V4.0...");
+    console.log("Iniciando Michatbot V4.1...");
 
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
         $('#companion-wrapper').remove();
@@ -57,7 +57,7 @@ async function initMichatbot(forceRefresh = false) {
                     bottom: 20px;
                     left: 20px;
                     z-index: 999999999;
-                    width: 150px; /* Restaurado a 150 */
+                    width: 150px;
                     height: 150px;
                     touch-action: none;
                     display: flex;
@@ -67,8 +67,8 @@ async function initMichatbot(forceRefresh = false) {
 
                 #michatbot-drag-handle {
                     position: absolute;
-                    top: 15%;
-                    left: 0%;
+                    top: 10px;
+                    left: 0;
                     background: #000;
                     color: #fff;
                     width: 32px;
@@ -81,13 +81,12 @@ async function initMichatbot(forceRefresh = false) {
                     z-index: 20;
                     box-shadow: 0 4px 15px rgba(0,0,0,0.6);
                     opacity: 0.7;
-                    transition: all 0.3s ease;
                     border: 1px solid rgba(255,255,255,0.3);
                 }
 
                 #michatbot-bubble {
                     position: absolute;
-                    bottom: 85%;
+                    bottom: 90%;
                     left: 50%;
                     transform: translateX(-50%);
                     background: #000;
@@ -96,7 +95,6 @@ async function initMichatbot(forceRefresh = false) {
                     border-radius: 50px;
                     font-family: 'Montserrat', sans-serif;
                     font-size: 0.85rem;
-                    font-weight: 300;
                     min-width: 200px;
                     max-width: 350px;
                     text-align: center;
@@ -123,7 +121,7 @@ async function initMichatbot(forceRefresh = false) {
                 }
                 .michatbot-menu-item {
                     color: #fff;
-                    padding: 8px 18px;
+                    padding: 10px 18px;
                     cursor: pointer;
                     border-bottom: 1px solid rgba(255,255,255,0.08);
                     display: flex;
@@ -131,10 +129,9 @@ async function initMichatbot(forceRefresh = false) {
                     gap: 12px;
                     font-family: 'Montserrat', sans-serif;
                     font-size: 0.8rem;
-                    font-weight: 300;
                     text-transform: uppercase;
                 }
-                .michatbot-menu-item:hover { background: rgba(255,255,255,0.1); padding-left: 22px; }
+                .michatbot-menu-item:hover { background: rgba(255,255,255,0.1); }
 
                 #michatbot-chat-container {
                     display: none;
@@ -170,6 +167,7 @@ async function initMichatbot(forceRefresh = false) {
                     <div class="michatbot-menu-item" id="michatbot-opt-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-mute"></div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play"><i class="fas fa-bolt"></i> Hora del duelo</div>
+                    <div class="michatbot-menu-item" id="michatbot-opt-detail"><i class="fas fa-search-plus"></i> Ver Detalle</div>
                     <div id="michatbot-resize-control" style="padding: 10px 18px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px;">
                         <input type="range" id="michatbot-scale-slider" min="0.5" max="2.5" step="0.1" value="1.0" style="flex: 1; accent-color: #fff;">
                     </div>
@@ -194,6 +192,16 @@ async function initMichatbot(forceRefresh = false) {
                         <div class="chat-send-btn" id="michatbot-chat-send" style="width: 35px; height: 35px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-paper-plane"></i></div>
                     </div>
                 </div>
+            </div>
+        `);
+    }
+
+    if (!$('#michatbot-detail-overlay').length) {
+        $('body').append(`
+            <div id="michatbot-detail-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000000000; align-items: center; justify-content: center; flex-direction: column; font-family: 'Montserrat', sans-serif;">
+                <span id="close-michatbot-detail" style="position: absolute; top: 20px; right: 30px; font-size: 3rem; color: white; cursor: pointer; font-weight: 100;">&times;</span>
+                <div id="michatbot-detail-viewer-container" style="width: 85%; height: 75%; max-width: 900px;"></div>
+                <h2 id="michatbot-detail-name" style="color: white; margin-top: 30px; font-size: 2.2rem; font-weight: 200; letter-spacing: 5px; text-transform: uppercase;">Nombre</h2>
             </div>
         `);
     }
@@ -245,14 +253,17 @@ async function initMichatbot(forceRefresh = false) {
                 max-field-of-view="45deg"
                 disable-zoom
                 disable-pan
+                bounds="tight"
                 interpolation-decay="200"
                 auto-rotate-delay="0"
                 rotation-speed="0.5"
-                style="width: 120%; height: 120%; background-color: transparent; margin-left: -10%; margin-top: -10%;"
+                style="width: 100%; height: 100%; background-color: transparent;"
                 oncontextmenu="return false;">
             </model-viewer>
         `);
     }
+
+    if (!window.michatbotDraggableInit) { makeMichatbotDraggable(); window.michatbotDraggableInit = true; }
 
     const viewer = document.getElementById('michatbot-viewer');
     let touchStartTime = 0, startX_click, startY_click, isInteractingWithModel = false;
@@ -263,14 +274,25 @@ async function initMichatbot(forceRefresh = false) {
     }
 
     $(document).off('click.michatbot').on('click.michatbot', function(e) { if (!$(e.target).closest('#companion-wrapper').length) { $('#michatbot-menu').fadeOut(250); } });
+
     $('#michatbot-opt-chat').off('click').on('click', function(e) { e.stopPropagation(); $('#michatbot-chat-container').css('display', 'flex').hide().fadeIn(300); $('#michatbot-menu').fadeOut(250); if ($('#michatbot-chat-messages').is(':empty')) { addBotMessage(`¡Hola! Soy ${window.currentSpirit.name}, tu asistente.`); renderContextFAQs(); } });
     $('#michatbot-opt-mute').off('click').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleMute(); });
     $('#michatbot-opt-play').off('click').on('click', function(e) { e.stopPropagation(); window.location.href = 'play.html'; });
+
+    $('#michatbot-opt-detail').off('click').on('click', function(e) {
+        e.stopPropagation();
+        $('#michatbot-detail-viewer-container').html(`<model-viewer src="${window.currentSpirit.gltf_url}" camera-controls auto-rotate shadow-intensity="1" environment-image="neutral" exposure="1.2" style="width: 100%; height: 100%;"></model-viewer>`);
+        $('#michatbot-detail-name').text(window.currentSpirit.name);
+        $('#michatbot-detail-overlay').css('display', 'flex').hide().fadeIn(400);
+        $('#michatbot-menu').fadeOut(250);
+    });
+
     $('#michatbot-scale-slider').on('input', function() { window.botInstance.setScale($(this).val()); });
     $(document).off('click', '.chat-faq-pill').on('click', '.chat-faq-pill', function(e) { e.stopPropagation(); addUserMessage($(this).text()); const ans = $(this).data('ans'); setTimeout(() => addBotMessage(ans), 600); });
     $('#michatbot-chat-send').on('click', function() { const text = $('#michatbot-chat-input').val().trim(); if (!text) return; addUserMessage(text); $('#michatbot-chat-input').val(''); setTimeout(() => addBotMessage("Pronto seré más inteligente."), 800); });
     $('#michatbot-chat-input').on('keypress', (e) => { if (e.which === 13) $('#michatbot-chat-send').click(); });
     $('#close-michatbot-chat').on('click', () => $('#michatbot-chat-container').fadeOut(250));
+    $('#close-michatbot-detail').on('click', () => $('#michatbot-detail-overlay').fadeOut(400));
 
     initMichatbotIntegration();
     setTimeout(checkAuctionStatusOnLoad, 3000);
@@ -296,9 +318,28 @@ function makeMichatbotDraggable() {
     const h = document.getElementById('michatbot-drag-handle');
     if (!w || !h) return;
     let isDragging = false, startX, startY, initX, initY;
-    h.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX; startY = e.clientY; const rect = w.getBoundingClientRect(); initX = rect.left; initY = rect.top; w.setPointerCapture(e.pointerId); h.style.cursor = 'grabbing'; $('body').addClass('michatbot-dragging-active'); });
-    window.addEventListener('pointermove', (e) => { if (!isDragging) return; let nx = initX + (e.clientX - startX), ny = initY + (e.clientY - startY); nx = Math.max(0, Math.min(window.innerWidth - w.offsetWidth, nx)); ny = Math.max(0, Math.min(window.innerHeight - w.offsetHeight, ny)); w.style.left = nx + 'px'; w.style.top = ny + 'px'; w.style.bottom = 'auto'; w.style.right = 'auto'; w.style.margin = '0'; });
-    window.addEventListener('pointerup', () => { if (!isDragging) return; isDragging = false; h.style.cursor = 'grab'; $('body').removeClass('michatbot-dragging-active'); });
+    h.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const rect = w.getBoundingClientRect();
+        initX = rect.left; initY = rect.top;
+        w.setPointerCapture(e.pointerId);
+        h.style.cursor = 'grabbing';
+        $('body').addClass('michatbot-dragging-active');
+    });
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        let nx = initX + (e.clientX - startX), ny = initY + (e.clientY - startY);
+        nx = Math.max(0, Math.min(window.innerWidth - w.offsetWidth, nx));
+        ny = Math.max(0, Math.min(window.innerHeight - w.offsetHeight, ny));
+        w.style.left = nx + 'px'; w.style.top = ny + 'px';
+        w.style.bottom = 'auto'; w.style.right = 'auto'; w.style.margin = '0';
+    });
+    window.addEventListener('pointerup', () => {
+        if (!isDragging) return;
+        isDragging = false; h.style.cursor = 'grab';
+        $('body').removeClass('michatbot-dragging-active');
+    });
 }
 
 async function checkAuctionStatusOnLoad() {
