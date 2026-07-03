@@ -1,7 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V4.1 - Restauración total, interacción estable, drag arreglado.
+ * V4.3 - Final Drag Fix, No Pan/Zoom on click, Original Dimensions.
  */
 
 // Global bot instance
@@ -41,7 +41,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V4.1...");
+    console.log("Iniciando Michatbot V4.3...");
 
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
         $('#companion-wrapper').remove();
@@ -63,6 +63,7 @@ async function initMichatbot(forceRefresh = false) {
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    background: transparent;
                 }
 
                 #michatbot-drag-handle {
@@ -82,6 +83,7 @@ async function initMichatbot(forceRefresh = false) {
                     box-shadow: 0 4px 15px rgba(0,0,0,0.6);
                     opacity: 0.7;
                     border: 1px solid rgba(255,255,255,0.3);
+                    pointer-events: auto;
                 }
 
                 #michatbot-bubble {
@@ -152,6 +154,8 @@ async function initMichatbot(forceRefresh = false) {
                     font-family: 'Montserrat', sans-serif;
                 }
                 @media (max-width: 640px) { #michatbot-chat-container { bottom: 0; right: 0; width: 100vw; height: 100vh; border-radius: 0; } }
+
+                .michatbot-dragging-active { user-select: none !important; -webkit-user-select: none !important; }
             </style>
         `);
     }
@@ -159,7 +163,7 @@ async function initMichatbot(forceRefresh = false) {
     if (!$('#companion-wrapper').length) {
         $('body').append(`
             <div id="companion-wrapper">
-                <div id="michatbot-drag-handle"><i class="fas fa-arrows-alt"></i></div>
+                <div id="michatbot-drag-handle" title="Desplazar"><i class="fas fa-arrows-alt"></i></div>
                 <div id="michatbot-bubble"><span class="bubble-text">¡Hola!</span></div>
                 <div id="michatbot-model-container" style="width: 100%; height: 100%;"></div>
 
@@ -175,6 +179,7 @@ async function initMichatbot(forceRefresh = false) {
             </div>
         `);
         window.botInstance.updateMuteUI();
+        makeMichatbotDraggable();
     }
 
     if (!$('#michatbot-chat-container').length) {
@@ -263,8 +268,6 @@ async function initMichatbot(forceRefresh = false) {
         `);
     }
 
-    if (!window.michatbotDraggableInit) { makeMichatbotDraggable(); window.michatbotDraggableInit = true; }
-
     const viewer = document.getElementById('michatbot-viewer');
     let touchStartTime = 0, startX_click, startY_click, isInteractingWithModel = false;
     if (viewer) {
@@ -317,27 +320,44 @@ function makeMichatbotDraggable() {
     const w = document.getElementById('companion-wrapper');
     const h = document.getElementById('michatbot-drag-handle');
     if (!w || !h) return;
-    let isDragging = false, startX, startY, initX, initY;
+
+    let isDragging = false;
+    let startX, startY, initX, initY;
+
     h.addEventListener('pointerdown', (e) => {
         isDragging = true;
-        startX = e.clientX; startY = e.clientY;
+        startX = e.clientX;
+        startY = e.clientY;
         const rect = w.getBoundingClientRect();
-        initX = rect.left; initY = rect.top;
-        w.setPointerCapture(e.pointerId);
+        initX = rect.left;
+        initY = rect.top;
+        h.setPointerCapture(e.pointerId);
         h.style.cursor = 'grabbing';
         $('body').addClass('michatbot-dragging-active');
+        e.preventDefault();
     });
+
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
-        let nx = initX + (e.clientX - startX), ny = initY + (e.clientY - startY);
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        let nx = initX + dx;
+        let ny = initY + dy;
+
         nx = Math.max(0, Math.min(window.innerWidth - w.offsetWidth, nx));
         ny = Math.max(0, Math.min(window.innerHeight - w.offsetHeight, ny));
-        w.style.left = nx + 'px'; w.style.top = ny + 'px';
-        w.style.bottom = 'auto'; w.style.right = 'auto'; w.style.margin = '0';
+
+        w.style.left = nx + 'px';
+        w.style.top = ny + 'px';
+        w.style.bottom = 'auto';
+        w.style.right = 'auto';
+        w.style.margin = '0';
     });
-    window.addEventListener('pointerup', () => {
+
+    window.addEventListener('pointerup', (e) => {
         if (!isDragging) return;
-        isDragging = false; h.style.cursor = 'grab';
+        isDragging = false;
+        h.style.cursor = 'grab';
         $('body').removeClass('michatbot-dragging-active');
     });
 }
