@@ -1,7 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V3.3 - Posicionamiento a la derecha, estética profesional y tips dinámicos.
+ * V3.4 - Chatbot a la izquierda, Chat a la derecha, tips más rápidos.
  */
 
 // Global bot instance for access from other scripts
@@ -30,7 +30,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V3.3...");
+    console.log("Iniciando Michatbot V3.4...");
 
     // 1. Limpiar elementos antiguos si existen para evitar conflictos
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
@@ -49,8 +49,8 @@ async function initMichatbot(forceRefresh = false) {
                 #companion-wrapper {
                     position: fixed;
                     bottom: 20px;
-                    right: 20px; /* Cambiado de left a right por solicitud */
-                    left: auto;
+                    left: 20px; /* Chatbot a la izquierda */
+                    right: auto;
                     z-index: 999999999;
                     width: 180px;
                     height: 180px;
@@ -69,7 +69,7 @@ async function initMichatbot(forceRefresh = false) {
                 #michatbot-drag-handle {
                     position: absolute;
                     top: 15%;
-                    right: 0%; /* Ajustado para el lado derecho */
+                    left: 0%;
                     background: #000;
                     color: #fff;
                     width: 32px;
@@ -90,8 +90,8 @@ async function initMichatbot(forceRefresh = false) {
                 #michatbot-bubble {
                     position: absolute;
                     bottom: 85%;
-                    right: 50%;
-                    transform: translateX(50%);
+                    left: 50%;
+                    transform: translateX(-50%);
                     background: #000;
                     color: #fff;
                     padding: 8px 25px;
@@ -125,7 +125,7 @@ async function initMichatbot(forceRefresh = false) {
                     display: none;
                     position: absolute;
                     bottom: 100%;
-                    right: 0;
+                    left: 0;
                     background: #000;
                     border-radius: 15px;
                     padding: 6px;
@@ -152,7 +152,7 @@ async function initMichatbot(forceRefresh = false) {
                 }
                 .michatbot-menu-item:hover {
                     background: rgba(255,255,255,0.1);
-                    padding-right: 22px; /* Ajustado para el lado derecho */
+                    padding-left: 22px;
                 }
                 .michatbot-menu-item:last-of-type { border-bottom: none; }
 
@@ -171,7 +171,7 @@ async function initMichatbot(forceRefresh = false) {
                     background: rgba(255,255,255,0.2);
                 }
 
-                /* Chat Professional UI */
+                /* Chat Professional UI - SIEMPRE A LA DERECHA */
                 #michatbot-chat-container {
                     display: none;
                     position: fixed;
@@ -391,7 +391,7 @@ async function initMichatbot(forceRefresh = false) {
                 if (!window.currentSpirit && window.currentStoreId) {
                     const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
                     if (userRow && userRow.selected_spirit_id) {
-                        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', window.currentStoreId).maybeSingle();
                         if (spirit) window.currentSpirit = spirit;
                     }
                 }
@@ -648,17 +648,26 @@ async function initMichatbotIntegration() {
         tips.push("¡No olvides revisar nuestras subastas!");
     }
     if (window.botMessageInterval) clearInterval(window.botMessageInterval);
-    window.botMessageInterval = setInterval(async () => {
+
+    const showRandomTip = async () => {
         if (Math.random() > 0.5 || tips.length === 0) {
             try {
                 const { data: msgs } = await _supabase.from('bot_messages').select('*').eq('user_id', oid).eq('is_active', true);
                 if (msgs?.length) {
                     const m = msgs[Math.floor(Math.random() * msgs.length)];
                     window.botInstance.say(m.content, (m.duration || 5) * 1000);
-                } else if (tips.length) window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 5000);
+                } else if (tips.length) {
+                    window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 6000);
+                }
             } catch (e) {}
-        } else { window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 5000); }
-    }, 45000);
+        } else {
+            window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 6000);
+        }
+    };
+
+    setTimeout(showRandomTip, 5000);
+    window.botMessageInterval = setInterval(showRandomTip, 20000);
+
     if (!window.botRealtimeSubscribed) {
         const { data: act } = await _supabase.from('subastas').select('id').eq('user_id', oid).eq('status', 'active');
         const aids = (act || []).map(a => a.id);
