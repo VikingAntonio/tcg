@@ -1,7 +1,7 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V3.9 - FIXED INTERACTION, MUTE LOGIC, LEFT POSITION.
+ * V4.0 - Restaurado tamaño original (150px), interacción estable (No Pan/Zoom).
  */
 
 // Global bot instance
@@ -22,7 +22,7 @@ window.botInstance = {
     setScale: function(scale) {
         const $wrapper = $('#companion-wrapper');
         if ($wrapper.length) {
-            const size = 180 * scale;
+            const size = 150 * scale; // Base original de 150
             $wrapper.css({ width: size + 'px', height: size + 'px' });
         }
     },
@@ -41,7 +41,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V3.9...");
+    console.log("Iniciando Michatbot V4.0...");
 
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
         $('#companion-wrapper').remove();
@@ -55,11 +55,10 @@ async function initMichatbot(forceRefresh = false) {
                 #companion-wrapper {
                     position: fixed;
                     bottom: 20px;
-                    left: 20px; /* Chatbot a la izquierda */
-                    right: auto;
+                    left: 20px;
                     z-index: 999999999;
-                    width: 180px;
-                    height: 180px;
+                    width: 150px; /* Restaurado a 150 */
+                    height: 150px;
                     touch-action: none;
                     display: flex;
                     align-items: center;
@@ -141,7 +140,7 @@ async function initMichatbot(forceRefresh = false) {
                     display: none;
                     position: fixed;
                     bottom: 20px;
-                    right: 20px; /* Chat a la derecha */
+                    right: 20px;
                     width: 380px;
                     height: 600px;
                     max-height: 85vh;
@@ -240,10 +239,10 @@ async function initMichatbot(forceRefresh = false) {
                 environment-image="neutral"
                 exposure="1"
                 interaction-prompt="none"
-                camera-orbit="auto 75deg 2m"
-                field-of-view="30deg"
-                min-field-of-view="30deg"
-                max-field-of-view="30deg"
+                camera-orbit="auto 75deg auto"
+                field-of-view="auto"
+                min-field-of-view="5deg"
+                max-field-of-view="45deg"
                 disable-zoom
                 disable-pan
                 interpolation-decay="200"
