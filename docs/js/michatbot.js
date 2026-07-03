@@ -1,12 +1,14 @@
 /**
  * michatbot.js - Nuevo Chatbot GLTF Vikingdev
  * Centralizado para admin y público.
- * V3.4 - Chatbot a la izquierda, Chat a la derecha, tips más rápidos.
+ * V3.6 - XSS fixed, Robust Admin check, High frequency messages.
  */
 
 // Global bot instance for access from other scripts
 window.botInstance = {
+    isMuted: localStorage.getItem('michatbot_muted') === 'true',
     say: function(text, duration = 4000) {
+        if (this.isMuted) return;
         const $bubble = $('#michatbot-bubble');
         if (!$bubble.length) return;
         $bubble.find('.bubble-text').text(text);
@@ -21,26 +23,25 @@ window.botInstance = {
         const $wrapper = $('#companion-wrapper');
         if ($wrapper.length) {
             const size = 180 * scale;
-            $wrapper.css({
-                width: size + 'px',
-                height: size + 'px'
-            });
+            $wrapper.css({ width: size + 'px', height: size + 'px' });
         }
+    },
+    toggleMute: function() {
+        this.isMuted = !this.isMuted;
+        localStorage.setItem('michatbot_muted', this.isMuted);
+        const icon = this.isMuted ? 'fa-volume-mute' : 'fa-volume-up';
+        $('#michatbot-opt-mute i').attr('class', 'fas ' + icon);
+        if (this.isMuted) $('#michatbot-bubble').fadeOut(200);
     }
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V3.4...");
+    console.log("Iniciando Michatbot V3.6...");
 
-    // 1. Limpiar elementos antiguos si existen para evitar conflictos
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
         $('#companion-wrapper').remove();
     }
-    if ($('#chatbot-container').length) {
-        $('#chatbot-container').remove();
-    }
 
-    // 2. Inyectar Estilos Base
     if (!$('#michatbot-styles').length) {
         $('head').append(`
             <style id="michatbot-styles">
@@ -49,7 +50,7 @@ async function initMichatbot(forceRefresh = false) {
                 #companion-wrapper {
                     position: fixed;
                     bottom: 20px;
-                    left: 20px; /* Chatbot a la izquierda */
+                    left: 20px;
                     right: auto;
                     z-index: 999999999;
                     width: 180px;
@@ -171,7 +172,6 @@ async function initMichatbot(forceRefresh = false) {
                     background: rgba(255,255,255,0.2);
                 }
 
-                /* Chat Professional UI - SIEMPRE A LA DERECHA */
                 #michatbot-chat-container {
                     display: none;
                     position: fixed;
@@ -193,13 +193,8 @@ async function initMichatbot(forceRefresh = false) {
                 }
                 @media (max-width: 640px) {
                     #michatbot-chat-container {
-                        bottom: 0;
-                        right: 0;
-                        width: 100vw;
-                        height: 100vh;
-                        max-height: 100vh;
-                        border-radius: 0;
-                        z-index: 2147483647;
+                        bottom: 0; right: 0; width: 100vw; height: 100vh;
+                        border-radius: 0; z-index: 2147483647;
                     }
                 }
 
@@ -212,111 +207,48 @@ async function initMichatbot(forceRefresh = false) {
                     align-items: center;
                 }
                 .chat-header h3 {
-                    margin: 0;
-                    font-size: 0.85rem;
-                    letter-spacing: 3px;
-                    font-weight: 500;
-                    color: #fff;
-                    text-transform: uppercase;
+                    margin: 0; font-size: 0.85rem; letter-spacing: 3px; font-weight: 500;
+                    color: #fff; text-transform: uppercase;
                 }
                 .chat-messages {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 20px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 15px;
-                    scrollbar-width: none;
+                    flex: 1; overflow-y: auto; padding: 20px;
+                    display: flex; flex-direction: column; gap: 15px; scrollbar-width: none;
                 }
                 .chat-messages::-webkit-scrollbar { display: none; }
 
                 .msg-bot, .msg-user {
-                    max-width: 85%;
-                    padding: 12px 18px;
-                    border-radius: 18px;
-                    font-size: 0.85rem;
-                    line-height: 1.5;
-                    font-weight: 300;
+                    max-width: 85%; padding: 12px 18px; border-radius: 18px;
+                    font-size: 0.85rem; line-height: 1.5; font-weight: 300;
                 }
-                .msg-bot {
-                    align-self: flex-start;
-                    background: rgba(255,255,255,0.08);
-                    color: #eee;
-                    border-bottom-left-radius: 4px;
-                }
-                .msg-user {
-                    align-self: flex-end;
-                    background: #fff;
-                    color: #000;
-                    border-bottom-right-radius: 4px;
-                }
+                .msg-bot { align-self: flex-start; background: rgba(255,255,255,0.08); color: #eee; border-bottom-left-radius: 4px; }
+                .msg-user { align-self: flex-end; background: #fff; color: #000; border-bottom-right-radius: 4px; }
 
-                .chat-footer {
-                    padding: 20px;
-                    background: rgba(0,0,0,0.3);
-                    border-top: 1px solid rgba(255,255,255,0.1);
-                }
+                .chat-footer { padding: 20px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); }
                 .chat-input-wrapper {
-                    display: flex;
-                    background: rgba(255,255,255,0.05);
-                    border-radius: 50px;
-                    padding: 5px 5px 5px 20px;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    align-items: center;
+                    display: flex; background: rgba(255,255,255,0.05); border-radius: 50px;
+                    padding: 5px 5px 5px 20px; border: 1px solid rgba(255,255,255,0.1); align-items: center;
                 }
                 .chat-input-wrapper input {
-                    flex: 1;
-                    background: transparent;
-                    border: none;
-                    color: #fff;
-                    font-size: 0.85rem;
-                    font-family: 'Montserrat', sans-serif;
-                    outline: none;
+                    flex: 1; background: transparent; border: none; color: #fff;
+                    font-size: 0.85rem; font-family: 'Montserrat', sans-serif; outline: none;
                 }
                 .chat-send-btn {
-                    width: 35px;
-                    height: 35px;
-                    border-radius: 50%;
-                    background: #fff;
-                    color: #000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all 0.2s;
+                    width: 35px; height: 35px; border-radius: 50%; background: #fff; color: #000;
+                    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
                 }
                 .chat-send-btn:hover { transform: scale(1.1); }
 
-                .chat-faq-quick {
-                    display: flex;
-                    gap: 10px;
-                    overflow-x: auto;
-                    padding: 10px 0;
-                    scrollbar-width: none;
-                }
+                .chat-faq-quick { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
                 .chat-faq-pill {
-                    white-space: nowrap;
-                    background: rgba(255,255,255,0.05);
-                    border: 1px solid rgba(255,255,255,0.1);
-                    color: #aaa;
-                    padding: 6px 15px;
-                    border-radius: 50px;
-                    font-size: 0.7rem;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
+                    white-space: nowrap; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+                    color: #aaa; padding: 6px 15px; border-radius: 50px; font-size: 0.7rem;
+                    cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
                 }
-                .chat-faq-pill:hover {
-                    background: rgba(255,255,255,0.15);
-                    color: #fff;
-                    border-color: #fff;
-                }
+                .chat-faq-pill:hover { background: rgba(255,255,255,0.15); color: #fff; border-color: #fff; }
             </style>
         `);
     }
 
-    // 3. Inyectar HTML si no existe
     if (!$('#companion-wrapper').length) {
         $('body').append(`
             <div id="companion-wrapper">
@@ -326,6 +258,9 @@ async function initMichatbot(forceRefresh = false) {
 
                 <div id="michatbot-menu">
                     <div class="michatbot-menu-item" id="michatbot-opt-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
+                    <div class="michatbot-menu-item" id="michatbot-opt-mute">
+                        <i class="fas ${window.botInstance.isMuted ? 'fa-volume-mute' : 'fa-volume-up'}"></i> Silenciar
+                    </div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play"><i class="fas fa-bolt"></i> Hora del duelo</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-detail"><i class="fas fa-search-plus"></i> Ver Detalle</div>
                     <div id="michatbot-resize-control">
@@ -338,7 +273,6 @@ async function initMichatbot(forceRefresh = false) {
         `);
     }
 
-    // Chat y Detail Containers
     if (!$('#michatbot-chat-container').length) {
         $('body').append(`
             <div id="michatbot-chat-container">
@@ -360,17 +294,6 @@ async function initMichatbot(forceRefresh = false) {
         `);
     }
 
-    if (!$('#michatbot-detail-overlay').length) {
-        $('body').append(`
-            <div id="michatbot-detail-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000000000; align-items: center; justify-content: center; flex-direction: column; font-family: 'Montserrat', sans-serif;">
-                <span id="close-michatbot-detail" style="position: absolute; top: 20px; right: 30px; font-size: 3rem; color: white; cursor: pointer; font-weight: 100;">&times;</span>
-                <div id="michatbot-detail-viewer-container" style="width: 85%; height: 75%; max-width: 900px;"></div>
-                <h2 id="michatbot-detail-name" style="color: white; margin-top: 30px; font-size: 2.2rem; font-weight: 200; letter-spacing: 5px; text-transform: uppercase;">Nombre del Compañero</h2>
-            </div>
-        `);
-    }
-
-    // 4. Buscar espíritu actual
     if (forceRefresh || !window.currentSpirit) {
         if (typeof _supabase !== 'undefined') {
             try {
@@ -379,192 +302,83 @@ async function initMichatbot(forceRefresh = false) {
                     const stored = localStorage.getItem('tcg_session');
                     if (stored) sessionUser = JSON.parse(stored);
                 }
-
                 if (sessionUser) {
                     const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
-                    if (userRow && userRow.selected_spirit_id) {
+                    if (userRow?.selected_spirit_id) {
                         const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
                         if (spirit) window.currentSpirit = spirit;
                     }
                 }
-
                 if (!window.currentSpirit && window.currentStoreId) {
                     const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
-                    if (userRow && userRow.selected_spirit_id) {
-                        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', window.currentStoreId).maybeSingle();
+                    if (userRow?.selected_spirit_id) {
+                        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
                         if (spirit) window.currentSpirit = spirit;
                     }
                 }
-
                 if (!window.currentSpirit) {
                     const { data } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
                     if (data) window.currentSpirit = data;
                 }
             } catch (e) { console.warn("Michatbot: Error buscando spirit", e); }
         }
-
-        if (!window.currentSpirit) {
-            setTimeout(() => initMichatbot(), 2000);
-            return;
-        }
+        if (!window.currentSpirit) { setTimeout(() => initMichatbot(), 2000); return; }
     }
 
-    // 5. Renderizar Model Viewer
     const gltfUrl = window.currentSpirit.gltf_url;
     const $viewer = $('#michatbot-viewer');
-
     if (forceRefresh || !$viewer.length || $viewer.attr('src') !== gltfUrl) {
         $('#michatbot-model-container').html(`
-            <model-viewer
-                id="michatbot-viewer"
-                src="${gltfUrl}"
-                auto-rotate
-                camera-controls
-                shadow-intensity="1"
-                environment-image="neutral"
-                exposure="1"
-                interaction-prompt="none"
-                camera-orbit="auto 75deg auto"
-                field-of-view="auto"
-                min-field-of-view="5deg"
-                max-field-of-view="45deg"
-                disable-zoom
-                interpolation-decay="200"
-                bounds="tight"
-                auto-rotate-delay="0"
-                rotation-speed="0.5"
-                style="width: 120%; height: 120%; background-color: transparent; margin-left: -10%; margin-top: -10%;"
-                oncontextmenu="return false;">
-            </model-viewer>
+            <model-viewer id="michatbot-viewer" src="${gltfUrl}" auto-rotate camera-controls shadow-intensity="1" environment-image="neutral" exposure="1" interaction-prompt="none" camera-orbit="auto 75deg auto" field-of-view="auto" min-field-of-view="5deg" max-field-of-view="45deg" disable-zoom interpolation-decay="200" bounds="tight" auto-rotate-delay="0" rotation-speed="0.5" style="width: 120%; height: 120%; background-color: transparent; margin-left: -10%; margin-top: -10%;" oncontextmenu="return false;"></model-viewer>
         `);
     }
 
-    // 6. Implementar Drag and Drop
-    if (!window.michatbotDraggableInit) {
-        makeMichatbotDraggable();
-        window.michatbotDraggableInit = true;
-    }
+    if (!window.michatbotDraggableInit) { makeMichatbotDraggable(); window.michatbotDraggableInit = true; }
 
-    // 7. Eventos
     const viewer = document.getElementById('michatbot-viewer');
-    let touchStartTime = 0;
-    let startX_click, startY_click;
-    let isInteractingWithModel = false;
-
+    let touchStartTime = 0, startX_click, startY_click, isInteractingWithModel = false;
     if (viewer) {
-        viewer.addEventListener('pointerdown', (e) => {
-            touchStartTime = Date.now();
-            startX_click = e.clientX;
-            startY_click = e.clientY;
-            isInteractingWithModel = false;
-        });
-
-        viewer.addEventListener('pointermove', (e) => {
-            if (startX_click === undefined) return;
-            const dist = Math.sqrt(Math.pow(e.clientX - startX_click, 2) + Math.pow(e.clientY - startY_click, 2));
-            if (dist > 10) isInteractingWithModel = true;
-        });
-
-        viewer.addEventListener('click', (e) => {
-            const touchDuration = Date.now() - touchStartTime;
-            if (touchDuration < 300 && !isInteractingWithModel) {
-                e.stopPropagation();
-                $('#michatbot-menu').fadeToggle(250);
-            }
-        });
+        viewer.addEventListener('pointerdown', (e) => { touchStartTime = Date.now(); startX_click = e.clientX; startY_click = e.clientY; isInteractingWithModel = false; });
+        viewer.addEventListener('pointermove', (e) => { if (startX_click === undefined) return; const dist = Math.sqrt(Math.pow(e.clientX - startX_click, 2) + Math.pow(e.clientY - startY_click, 2)); if (dist > 10) isInteractingWithModel = true; });
+        viewer.addEventListener('click', (e) => { const touchDuration = Date.now() - touchStartTime; if (touchDuration < 300 && !isInteractingWithModel) { e.stopPropagation(); $('#michatbot-menu').fadeToggle(250); } });
     }
 
-    $(document).off('click.michatbot').on('click.michatbot', function(e) {
-        if (!$(e.target).closest('#companion-wrapper').length) {
-            $('#michatbot-menu').fadeOut(250);
-        }
-    });
-
-    $('#michatbot-opt-chat').off('click').on('click', function(e) {
-        e.stopPropagation();
-        $('#michatbot-chat-container').css('display', 'flex').hide().fadeIn(300);
-        $('#michatbot-menu').fadeOut(250);
-        if ($('#michatbot-chat-messages').is(':empty')) {
-            addBotMessage(`¡Hola! Soy ${window.currentSpirit.name}, tu asistente de Vikingdev. ¿En qué puedo ayudarte hoy?`);
-            renderContextFAQs();
-        }
-    });
-
-    $('#michatbot-opt-play').off('click').on('click', function(e) {
-        e.stopPropagation();
-        window.location.href = 'play.html';
-    });
-
-    $('#michatbot-opt-detail').off('click').on('click', function(e) {
-        e.stopPropagation();
-        $('#michatbot-detail-viewer-container').html(`
-            <model-viewer
-                src="${window.currentSpirit.gltf_url}"
-                camera-controls
-                auto-rotate
-                shadow-intensity="1"
-                environment-image="neutral"
-                exposure="1.2"
-                style="width: 100%; height: 100%;">
-            </model-viewer>
-        `);
-        $('#michatbot-detail-name').text(window.currentSpirit.name);
-        $('#michatbot-detail-overlay').css('display', 'flex').hide().fadeIn(400);
-        $('#michatbot-menu').fadeOut(250);
-    });
-
-    $('#michatbot-scale-slider').off('input').on('input', function() {
-        window.botInstance.setScale($(this).val());
-    });
-
-    $(document).off('click', '.chat-faq-pill').on('click', '.chat-faq-pill', function(e) {
-        e.stopPropagation();
-        addUserMessage($(this).text());
-        const ans = $(this).data('ans');
-        setTimeout(() => addBotMessage(ans), 600);
-    });
-
-    $('#michatbot-chat-send').off('click').on('click', function() {
-        const text = $('#michatbot-chat-input').val().trim();
-        if (!text) return;
-        addUserMessage(text);
-        $('#michatbot-chat-input').val('');
-        setTimeout(() => addBotMessage("Por ahora solo puedo responder a las preguntas frecuentes, pero pronto seré más inteligente."), 800);
-    });
-
+    $(document).off('click.michatbot').on('click.michatbot', function(e) { if (!$(e.target).closest('#companion-wrapper').length) { $('#michatbot-menu').fadeOut(250); } });
+    $('#michatbot-opt-chat').on('click', function(e) { e.stopPropagation(); $('#michatbot-chat-container').css('display', 'flex').hide().fadeIn(300); $('#michatbot-menu').fadeOut(250); if ($('#michatbot-chat-messages').is(':empty')) { addBotMessage(`¡Hola! Soy ${window.currentSpirit.name}, tu asistente. ¿En qué puedo ayudarte?`); renderContextFAQs(); } });
+    $('#michatbot-opt-mute').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleMute(); });
+    $('#michatbot-opt-play').on('click', function(e) { e.stopPropagation(); window.location.href = 'play.html'; });
+    $('#michatbot-scale-slider').on('input', function() { window.botInstance.setScale($(this).val()); });
+    $(document).off('click', '.chat-faq-pill').on('click', '.chat-faq-pill', function(e) { e.stopPropagation(); addUserMessage($(this).text()); const ans = $(this).data('ans'); setTimeout(() => addBotMessage(ans), 600); });
+    $('#michatbot-chat-send').on('click', function() { const text = $('#michatbot-chat-input').val().trim(); if (!text) return; addUserMessage(text); $('#michatbot-chat-input').val(''); setTimeout(() => addBotMessage("Pronto seré más inteligente. ¡Prueba las FAQs!"), 800); });
     $('#michatbot-chat-input').on('keypress', (e) => { if (e.which === 13) $('#michatbot-chat-send').click(); });
     $('#close-michatbot-chat').on('click', () => $('#michatbot-chat-container').fadeOut(250));
-    $('#close-michatbot-detail').on('click', () => $('#michatbot-detail-overlay').fadeOut(400));
 
     initMichatbotIntegration();
-    setTimeout(checkAuctionStatusOnLoad, 3000);
 }
 
 function addUserMessage(text) {
     const $c = $('#michatbot-chat-messages');
-    $c.append(`<div class="msg-user">${text}</div>`);
+    const $msg = $('<div class="msg-user"></div>').text(text);
+    $c.append($msg);
     $c.scrollTop($c[0].scrollHeight);
 }
-
 function addBotMessage(text) {
     const $c = $('#michatbot-chat-messages');
-    $c.append(`<div class="msg-bot">${text}</div>`);
+    const $msg = $('<div class="msg-bot"></div>').html(text);
+    $c.append($msg);
     $c.scrollTop($c[0].scrollHeight);
 }
 
 function renderContextFAQs() {
     const isAdmin = /admin|perfil|scanner|binders|inversiones|build|clientes|tracking/.test(window.location.pathname);
-    const $q = $('#michatbot-faq-quick');
-    $q.empty();
+    const $q = $('#michatbot-faq-quick'); $q.empty();
     let faqs = isAdmin ? [
-        { q: "¿Cómo uso el scanner?", a: "Usa la sección Scanner para identificar tus cartas rápidamente." },
-        { q: "¿Dónde veo mis decks?", a: "Tus decks están en 'Mis Decks'. Puedes editarlos y compartirlos." },
-        { q: "¿Cómo añado cartas?", a: "En tus álbumes, haz clic en espacios vacíos para buscar y añadir." },
-        { q: "¿Inversiones?", a: "Mira el valor de mercado de tus cartas en la sección Inversiones." }
+        { q: "¿Scanner?", a: "Usa Scanner para identificar tus cartas rápidamente." },
+        { q: "¿Decks?", a: "Gestiona y comparte tus decks en 'Mis Decks'." },
+        { q: "¿Inversiones?", a: "Mira el valor de tu colección en tiempo real." }
     ] : [
-        { q: "¿Cómo comprar?", a: "Añade cartas al carrito y contacta por WhatsApp para finalizar." },
-        { q: "¿Hacen envíos?", a: "Consulta el horario y ubicación de la tienda en mis mensajes dinámicos." },
-        { q: "¿Tienda física?", a: "Revisa la info de la tienda en la parte inferior o en mis tips." }
+        { q: "¿Cómo comprar?", a: "Añade al carrito y contacta por WhatsApp." },
+        { q: "¿Envíos?", a: "Consulta el horario y ubicación en mis tips." }
     ];
     faqs.forEach(f => $q.append(`<div class="chat-faq-pill" data-ans="${f.a}">${f.q}</div>`));
 }
@@ -574,28 +388,9 @@ function makeMichatbotDraggable() {
     const h = document.getElementById('michatbot-drag-handle');
     if (!w || !h) return;
     let isDragging = false, startX, startY, initX, initY;
-    h.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        startX = e.clientX; startY = e.clientY;
-        const rect = w.getBoundingClientRect();
-        initX = rect.left; initY = rect.top;
-        w.setPointerCapture(e.pointerId);
-        h.style.cursor = 'grabbing';
-        $('body').addClass('michatbot-dragging-active');
-    });
-    window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        let nx = initX + (e.clientX - startX), ny = initY + (e.clientY - startY);
-        nx = Math.max(0, Math.min(window.innerWidth - w.offsetWidth, nx));
-        ny = Math.max(0, Math.min(window.innerHeight - w.offsetHeight, ny));
-        w.style.left = nx + 'px'; w.style.top = ny + 'px';
-        w.style.bottom = 'auto'; w.style.right = 'auto'; w.style.margin = '0';
-    });
-    window.addEventListener('pointerup', () => {
-        if (!isDragging) return;
-        isDragging = false; h.style.cursor = 'grab';
-        $('body').removeClass('michatbot-dragging-active');
-    });
+    h.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX; startY = e.clientY; const rect = w.getBoundingClientRect(); initX = rect.left; initY = rect.top; w.setPointerCapture(e.pointerId); h.style.cursor = 'grabbing'; $('body').addClass('michatbot-dragging-active'); });
+    window.addEventListener('pointermove', (e) => { if (!isDragging) return; let nx = initX + (e.clientX - startX), ny = initY + (e.clientY - startY); nx = Math.max(0, Math.min(window.innerWidth - w.offsetWidth, nx)); ny = Math.max(0, Math.min(window.innerHeight - w.offsetHeight, ny)); w.style.left = nx + 'px'; w.style.top = ny + 'px'; w.style.bottom = 'auto'; w.style.right = 'auto'; w.style.margin = '0'; });
+    window.addEventListener('pointerup', () => { if (!isDragging) return; isDragging = false; h.style.cursor = 'grab'; $('body').removeClass('michatbot-dragging-active'); });
 }
 
 async function checkAuctionStatusOnLoad() {
@@ -613,12 +408,8 @@ async function checkAuctionStatusOnLoad() {
         if (!bids?.length) return;
         const topBids = {}; bids.forEach(b => { if(!topBids[b.subasta_id] || b.amount > topBids[b.subasta_id].amount) topBids[b.subasta_id] = b; });
         let win = 0, lose = 0;
-        for (const aid of Object.keys(topBids)) {
-            const { data: top } = await _supabase.from('subastas_pujas').select('amount').eq('subasta_id', aid).order('amount', { ascending: false }).limit(1).maybeSingle();
-            if (top && top.amount === topBids[aid].amount) win++; else lose++;
-        }
-        if (win > 0 && lose === 0) window.botInstance.say(`¡Vas ganando en ${win} subasta(s)!`);
-        else if (lose > 0) window.botInstance.say(`¡Atención! Te han superado en ${lose} subasta(s).`);
+        for (const aid of Object.keys(topBids)) { const { data: top } = await _supabase.from('subastas_pujas').select('amount').eq('subasta_id', aid).order('amount', { ascending: false }).limit(1).maybeSingle(); if (top?.amount === topBids[aid].amount) win++; else lose++; }
+        if (win > 0 && lose === 0) window.botInstance.say(`¡Vas ganando en ${win} subasta(s)!`); else if (lose > 0) window.botInstance.say(`¡Atención! Te han superado en ${lose} subasta(s).`);
     } catch (e) {}
 }
 
@@ -629,57 +420,49 @@ async function initMichatbotIntegration() {
     if (!oid) return;
     const isAdmin = /admin|perfil|scanner|binders|inversiones|build|clientes|tracking/.test(window.location.pathname);
     let tips = isAdmin ? [
-        "¡Mira cómo va el mercado de tus productos en Inversiones!",
-        "Puedes crear carpetas digitales para organizar tu colección.",
-        "¡Armar tu deck desde PC es mucho más cómodo!",
-        "Usa el scanner para subir tus cartas sin escribir.",
-        "Comparte tus álbumes con un solo link."
-    ] : [];
+        "¡Revisa el valor total de tu colección en la sección de Inversiones!",
+        "Organiza tus cartas en carpetas digitales para un control total.",
+        "Tip: Gestionar tu inventario y armar decks es mucho más ágil desde una PC.",
+        "¿Colección grande? El Scanner es tu mejor aliado para subir cartas rápido.",
+        "Puedes compartir tus álbumes con clientes usando tu link público.",
+        "Sigue el histórico de precios de tus cartas en el panel de Inversiones."
+    ] : [
+        "¡Haz clic en cualquier carta para ver su precio y disponibilidad!",
+        "Añade productos al carrito y envíanos tu pedido directamente por WhatsApp.",
+        "¡No te pierdas nuestras subastas! Puedes ganar cartas increíbles a buen precio.",
+        "Revisa la sección de 'Claims' para cazar ofertas antes que nadie."
+    ];
     if (!isAdmin) {
         try {
             const { data: store } = await _supabase.from('usuarios').select('horario, ubicacion, store_name').eq('id', oid).maybeSingle();
             if (store) {
-                if (store.horario) tips.push(`Nuestro horario: ${store.horario}`);
-                if (store.ubicacion) tips.push(`Nos encuentras en: ${store.ubicacion}`);
+                if (store.horario) tips.push(`Nuestro horario de atención: ${store.horario}`);
+                if (store.ubicacion) tips.push(`Visítanos en: ${store.ubicacion}`);
                 tips.push(`¡Bienvenido a ${store.store_name || 'nuestra tienda'}!`);
             }
         } catch (e) {}
-        tips.push("Si tienes dudas, mira el detalle de la carta en 3D.");
-        tips.push("¡No olvides revisar nuestras subastas!");
     }
     if (window.botMessageInterval) clearInterval(window.botMessageInterval);
-
     const showRandomTip = async () => {
-        if (Math.random() > 0.5 || tips.length === 0) {
-            try {
-                const { data: msgs } = await _supabase.from('bot_messages').select('*').eq('user_id', oid).eq('is_active', true);
-                if (msgs?.length) {
-                    const m = msgs[Math.floor(Math.random() * msgs.length)];
-                    window.botInstance.say(m.content, (m.duration || 5) * 1000);
-                } else if (tips.length) {
-                    window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 6000);
-                }
-            } catch (e) {}
-        } else {
-            window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 6000);
-        }
+        if (isAdmin || Math.random() > 0.5 || tips.length === 0) {
+            if (isAdmin) { window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 6000); }
+            else {
+                try {
+                    const { data: msgs } = await _supabase.from('bot_messages').select('*').eq('user_id', oid).eq('is_active', true);
+                    if (msgs?.length) { const m = msgs[Math.floor(Math.random() * msgs.length)]; window.botInstance.say(m.content, (m.duration || 5) * 1000); }
+                    else if (tips.length) window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 6000);
+                } catch (e) {}
+            }
+        } else { window.botInstance.say(tips[Math.floor(Math.random() * tips.length)], 6000); }
     };
-
-    setTimeout(showRandomTip, 5000);
-    window.botMessageInterval = setInterval(showRandomTip, 20000);
+    setTimeout(showRandomTip, 3000);
+    window.botMessageInterval = setInterval(showRandomTip, 12000);
 
     if (!window.botRealtimeSubscribed) {
         const { data: act } = await _supabase.from('subastas').select('id').eq('user_id', oid).eq('status', 'active');
         const aids = (act || []).map(a => a.id);
-        _supabase.channel('bot-pujas').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subastas_pujas' }, p => {
-            if (aids.includes(p.new.subasta_id)) {
-                const uid = currentUser?.id;
-                if (uid && String(p.new.bidder_id) === String(uid)) window.botInstance.say(`¡Puja registrada! $${p.new.amount}. ¡Vas ganando!`);
-                else window.botInstance.say(`¡Nueva puja! $${p.new.amount}. ¡No te quedes atrás!`);
-            }
-        }).subscribe();
+        _supabase.channel('bot-pujas').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subastas_pujas' }, p => { if (aids.includes(p.new.subasta_id)) { const uid = (typeof currentUser !== 'undefined') ? currentUser?.id : null; if (uid && String(p.new.bidder_id) === String(uid)) window.botInstance.say(`¡Puja registrada! $${p.new.amount}. ¡Vas ganando!`); else window.botInstance.say(`¡Nueva puja! $${p.new.amount}. ¡No te quedes atrás!`); } }).subscribe();
         window.botRealtimeSubscribed = true;
     }
 }
-
 $(document).ready(() => initMichatbot());
