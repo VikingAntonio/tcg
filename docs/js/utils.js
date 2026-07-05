@@ -123,7 +123,7 @@ window.maskCanvas = null;
 window.maskCtx = null;
 window.isPainting = false;
 window.currentBrushSize = 10;
-window.currentTool = 'brush'; // 'brush' or 'eraser'
+window.currentTool = 'brush'; // 'brush', 'eraser' or 'move'
 window.maskHistory = [];
 const MAX_MASK_HISTORY = 20;
 
@@ -132,17 +132,42 @@ window.initMaskEditor = function() {
     if (!window.maskCanvas) return;
     window.maskCtx = window.maskCanvas.getContext('2d');
 
+    window.maskPanX = 0;
+    window.maskPanY = 0;
+    window.isDraggingMask = false;
+    window.lastMaskX = 0;
+    window.lastMaskY = 0;
+
     $(window.maskCanvas).off('mousedown touchstart').on('mousedown touchstart', function(e) {
+        if (window.currentTool === 'move') {
+            window.isDraggingMask = true;
+            const pos = e.type.includes('touch') ? (e.originalEvent.touches[0] || e.originalEvent.changedTouches[0]) : e;
+            window.lastMaskX = pos.clientX;
+            window.lastMaskY = pos.clientY;
+            return;
+        }
         window.isPainting = true;
         window.saveMaskHistory();
         window.drawMask(e);
     });
 
     $(window).off('mousemove touchmove').on('mousemove touchmove', function(e) {
+        if (window.currentTool === 'move' && window.isDraggingMask) {
+            const pos = e.type.includes('touch') ? (e.originalEvent.touches[0] || e.originalEvent.changedTouches[0]) : e;
+            const dx = pos.clientX - window.lastMaskX;
+            const dy = pos.clientY - window.lastMaskY;
+            window.maskPanX += dx;
+            window.maskPanY += dy;
+            window.lastMaskX = pos.clientX;
+            window.lastMaskY = pos.clientY;
+            window.updateMaskZoom();
+            return;
+        }
         if (window.isPainting) window.drawMask(e);
     });
 
     $(window).off('mouseup touchend').on('mouseup touchend', function() {
+        window.isDraggingMask = false;
         window.isPainting = false;
         if (window.maskCtx) window.maskCtx.beginPath();
     });
@@ -155,22 +180,25 @@ window.initMaskEditor = function() {
     $('#tool-brush').off('click').on('click', function() {
         window.currentTool = 'brush';
         $('.editor-controls .btn-secondary').removeClass('active');
+        $('.zoom-controls-lateral .btn-secondary').removeClass('active');
         $(this).addClass('active');
     });
 
     $('#tool-eraser').off('click').on('click', function() {
         window.currentTool = 'eraser';
         $('.editor-controls .btn-secondary').removeClass('active');
+        $('.zoom-controls-lateral .btn-secondary').removeClass('active');
         $(this).addClass('active');
     });
 
     window.maskZoom = 1;
-    const updateMaskZoom = () => {
+    window.updateMaskZoom = () => {
         const baseW = 168;
         const baseH = 244;
         $('#mask-canvas-wrapper').css({
             width: (baseW * window.maskZoom) + 'px',
-            height: (baseH * window.maskZoom) + 'px'
+            height: (baseH * window.maskZoom) + 'px',
+            transform: `translate(${window.maskPanX}px, ${window.maskPanY}px)`
         });
         $('#mask-canvas').css({
             width: (baseW * window.maskZoom) + 'px',
@@ -193,8 +221,17 @@ window.initMaskEditor = function() {
     });
 
     $('#btn-reset-zoom').off('click').on('click', function() {
-        window.maskZoom = 1;
-        updateMaskZoom();
+        if (window.maskTargetInput === '#slot-custom-mask') {
+            window.currentTool = 'move';
+            $('.zoom-controls-lateral .btn-secondary').removeClass('active');
+            $(this).addClass('active');
+            $('.editor-controls .btn-secondary').removeClass('active');
+        } else {
+            window.maskZoom = 1;
+            window.maskPanX = 0;
+            window.maskPanY = 0;
+            window.updateMaskZoom();
+        }
     });
 
     $('#btn-clear-mask').off('click').on('click', function() {
@@ -245,6 +282,34 @@ window.initMaskEditor = function() {
 window.initMaskCanvas = function() {
     // Supports all integrated form input IDs
     const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
+
+    window.maskZoom = 1;
+    window.maskPanX = 0;
+    window.maskPanY = 0;
+
+    // Decks specific customizations
+    if (window.maskTargetInput === '#slot-custom-mask') {
+        $('#btn-reset-zoom').attr('title', 'Mover').find('i').attr('class', 'fas fa-hand-paper');
+        $('#mask-viewport').css({
+            'overflow': 'hidden',
+            'padding': '500px'
+        });
+        // Center the content initially in the huge space
+        const viewport = document.getElementById('mask-viewport');
+        if (viewport) {
+            viewport.scrollLeft = 500 - (viewport.clientWidth / 2) + 84;
+            viewport.scrollTop = 500 - (viewport.clientHeight / 2) + 122;
+        }
+    } else {
+        // Default behavior for other sections
+        $('#btn-reset-zoom').attr('title', 'Reset Zoom').find('i').attr('class', 'fas fa-sync-alt');
+        $('#mask-viewport').css({
+            'overflow': 'auto',
+            'padding': '20px'
+        });
+    }
+
+    window.updateMaskZoom();
 
     window.maskCtx.fillStyle = 'black';
     window.maskCtx.fillRect(0, 0, window.maskCanvas.width, window.maskCanvas.height);
