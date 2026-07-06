@@ -292,14 +292,8 @@ window.initMaskCanvas = function() {
         $('#btn-reset-zoom').attr('title', 'Mover').find('i').attr('class', 'fas fa-hand-paper');
         $('#mask-viewport').css({
             'overflow': 'hidden',
-            'padding': '500px'
+            'padding': '20px'
         });
-        // Center the content initially in the huge space
-        const viewport = document.getElementById('mask-viewport');
-        if (viewport) {
-            viewport.scrollLeft = 500 - (viewport.clientWidth / 2) + 84;
-            viewport.scrollTop = 500 - (viewport.clientHeight / 2) + 122;
-        }
     } else {
         // Default behavior for other sections
         $('#btn-reset-zoom').attr('title', 'Reset Zoom').find('i').attr('class', 'fas fa-sync-alt');
