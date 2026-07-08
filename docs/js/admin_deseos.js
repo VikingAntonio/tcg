@@ -110,6 +110,45 @@ function initAdminWishlistListeners() {
         $('#wishlist-modal-admin').removeClass('active');
         loadWishlistAdmin();
     });
+
+    // Event delegation on the #wishlist-list-admin container for robust interaction
+    $(document).on('change', '#wishlist-list-admin .wishlist-field', function() {
+        const $card = $(this).closest('.wishlist-item');
+        const item = $card.data('item');
+        if (!item) return;
+        const field = $(this).data('field');
+        const value = $(this).val();
+        updateWishlistItemAdmin(item.id, { [field]: value });
+    });
+
+    $(document).on('change', '#wishlist-list-admin .wishlist-toggle-obtained', function() {
+        const $card = $(this).closest('.wishlist-item');
+        const item = $card.data('item');
+        if (!item) return;
+        const obtained = $(this).is(':checked');
+        updateWishlistItemAdmin(item.id, { obtained });
+        $card.css('opacity', obtained ? '0.7' : '1');
+        $card.find('.wishlist-status-text').text(obtained ? '¡CONSEGUIDA!' : 'BUSCANDO');
+    });
+
+    $(document).on('click', '#wishlist-list-admin .btn-delete-wishlist', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $card = $(this).closest('.wishlist-item');
+        const item = $card.data('item');
+        if (!item) return;
+        deleteWishlistItemAdmin(item.id, $card);
+    });
+
+    $(document).on('click', '#wishlist-list-admin .btn-edit-wishlist', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $card = $(this).closest('.wishlist-item');
+        const item = $card.data('item');
+        if (item) {
+            openEditWishlistModalAdmin(item);
+        }
+    });
 }
 
 async function loadWishlistAdmin() {
@@ -179,29 +218,8 @@ async function loadWishlistAdmin() {
             </div>
         `);
 
-        // Listeners
-        $card.find('.wishlist-field').on('change', function() {
-            const field = $(this).data('field');
-            const value = $(this).val();
-            updateWishlistItemAdmin(item.id, { [field]: value });
-        });
-
-        $card.find('.wishlist-toggle-obtained').on('change', function() {
-            const obtained = $(this).is(':checked');
-            updateWishlistItemAdmin(item.id, { obtained });
-            $card.css('opacity', obtained ? '0.7' : '1');
-            $card.find('.wishlist-status-text').text(obtained ? '¡CONSEGUIDA!' : 'BUSCANDO');
-        });
-
-        $card.find('.btn-delete-wishlist').click(function(e) {
-            e.stopPropagation();
-            deleteWishlistItemAdmin(item.id, $card);
-        });
-
-        $card.find('.btn-edit-wishlist').click(function(e) {
-            e.stopPropagation();
-            openEditWishlistModalAdmin(item);
-        });
+        // Store item metadata
+        $card.data('item', item);
 
         if (item.show_foil_in_list && item.holo_effect) {
             const $foilTarget = $card.find('.wishlist-img-container');
