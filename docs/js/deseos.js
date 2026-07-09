@@ -569,44 +569,12 @@ async function searchExternalCard(inputSelector, resultsSelector, onSelectCallba
             // Lorcana Search
             fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
             // Viking Search
-            VikingData.search(query),
-
-            // Pokémon TCG API v2 - Cards Search
-            fetch(`https://api.pokemontcg.io/v2/cards?q=name:${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
-
-            // Pokémon TCG API v2 - Sets Search
-            fetch(`https://api.pokemontcg.io/v2/sets?q=name:${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]}))
+            VikingData.search(query)
         ];
 
-        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults, pkApiCards, pkApiSets] = await Promise.all(searchPromises);
+        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults] = await Promise.all(searchPromises);
 
         let combinedResults = [];
-
-        // Process Pokémon TCG API v2 Cards
-        if (pkApiCards && Array.isArray(pkApiCards.data)) {
-            pkApiCards.data.forEach(c => {
-                if (c.images && c.images.small) {
-                    combinedResults.push({
-                        name: c.name,
-                        image: c.images.small,
-                        high_res: c.images.large || c.images.small
-                    });
-                }
-            });
-        }
-
-        // Process Pokémon TCG API v2 Sets
-        if (pkApiSets && Array.isArray(pkApiSets.data)) {
-            pkApiSets.data.forEach(s => {
-                if (s.images && (s.images.logo || s.images.symbol)) {
-                    combinedResults.push({
-                        name: s.name + " (Set)",
-                        image: s.images.logo || s.images.symbol,
-                        high_res: s.images.logo || s.images.symbol
-                    });
-                }
-            });
-        }
 
         // Process VikingData
         if (Array.isArray(vikResults)) {

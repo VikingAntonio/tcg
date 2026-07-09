@@ -153,45 +153,12 @@ $(document).ready(function() {
                     fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
                     fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
                     fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`).then(r => r.ok ? r.json() : []).catch(() => []),
-                    VikingData.search(query),
-
-                    // Pokémon TCG API v2 - Cards Search
-                    fetch(`https://api.pokemontcg.io/v2/cards?q=name:${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
-
-                    // Pokémon TCG API v2 - Sets Search
-                    fetch(`https://api.pokemontcg.io/v2/sets?q=name:${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]}))
+                    VikingData.search(query)
                 ];
 
-                const [ygName, ygSpecial, pkEn, pkEs, lorResults, vikResults, pkApiCards, pkApiSets] = await Promise.all(searchPromises);
+                const [ygName, ygSpecial, pkEn, pkEs, lorResults, vikResults] = await Promise.all(searchPromises);
 
                 let localResults = [];
-
-                // Process Pokémon TCG API v2 Cards
-                if (pkApiCards && Array.isArray(pkApiCards.data)) {
-                    pkApiCards.data.forEach(c => {
-                        if (c.images && c.images.small) {
-                            localResults.push({
-                                name: c.name,
-                                image: c.images.small,
-                                high_res: c.images.large || c.images.small
-                            });
-                        }
-                    });
-                }
-
-                // Process Pokémon TCG API v2 Sets
-                if (pkApiSets && Array.isArray(pkApiSets.data)) {
-                    pkApiSets.data.forEach(s => {
-                        if (s.images && (s.images.logo || s.images.symbol)) {
-                            localResults.push({
-                                name: s.name + " (Set)",
-                                image: s.images.logo || s.images.symbol,
-                                high_res: s.images.logo || s.images.symbol
-                            });
-                        }
-                    });
-                }
-
                 if (Array.isArray(vikResults)) localResults.push(...vikResults);
 
                 (Array.isArray(lorResults) ? lorResults : []).forEach(c => {
