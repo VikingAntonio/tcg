@@ -487,12 +487,44 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             searchTCGAPI(query, 'yugioh'),
             searchTCGAPI(query, 'magic'),
             searchTCGAPI(query, 'onepiece'),
-            searchTCGAPI(query, 'lorcana')
+            searchTCGAPI(query, 'lorcana'),
+
+            // Pokémon TCG API v2 - Cards Search
+            query.length >= 1 ? fetch(`https://api.pokemontcg.io/v2/cards?q=name:${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
+
+            // Pokémon TCG API v2 - Sets Search
+            query.length >= 1 ? fetch(`https://api.pokemontcg.io/v2/sets?q=name:${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]})
         ];
 
-        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults, tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor] = await Promise.all(searchPromises);
+        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults, tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor, pkApiCards, pkApiSets] = await Promise.all(searchPromises);
 
         let combinedResults = [];
+
+        // Process Pokémon TCG API v2 Cards
+        if (pkApiCards && Array.isArray(pkApiCards.data)) {
+            pkApiCards.data.forEach(c => {
+                if (c.images && c.images.small) {
+                    combinedResults.push({
+                        name: c.name,
+                        image: c.images.small,
+                        high_res: c.images.large || c.images.small
+                    });
+                }
+            });
+        }
+
+        // Process Pokémon TCG API v2 Sets
+        if (pkApiSets && Array.isArray(pkApiSets.data)) {
+            pkApiSets.data.forEach(s => {
+                if (s.images && (s.images.logo || s.images.symbol)) {
+                    combinedResults.push({
+                        name: s.name + " (Set)",
+                        image: s.images.logo || s.images.symbol,
+                        high_res: s.images.logo || s.images.symbol
+                    });
+                }
+            });
+        }
 
         // Process VikingData
         if (Array.isArray(vikResults)) {

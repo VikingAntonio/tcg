@@ -242,12 +242,46 @@ async function searchExternalSets() {
             // Lorcana Cards
             fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image`).then(r => r.json()).catch(() => []),
             // Viking Search (internal)
-            (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([]))
+            (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])),
+
+            // Pokémon TCG API v2 - Cards Search
+            fetch(`https://api.pokemontcg.io/v2/cards?q=name:${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
+
+            // Pokémon TCG API v2 - Sets Search
+            fetch(`https://api.pokemontcg.io/v2/sets?q=name:${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]}))
         ];
 
-        const [ygoSets, ygoCards, pkSets, pkCards, lorSets, lorCards, vikResults] = await Promise.all(searchPromises);
+        const [ygoSets, ygoCards, pkSets, pkCards, lorSets, lorCards, vikResults, pkApiCards, pkApiSets] = await Promise.all(searchPromises);
 
         let combinedResults = [];
+
+        // Process Pokémon TCG API v2 Cards
+        if (pkApiCards && Array.isArray(pkApiCards.data)) {
+            pkApiCards.data.forEach(c => {
+                if (c.images && c.images.small) {
+                    combinedResults.push({
+                        name: c.name,
+                        image: c.images.small,
+                        tcg: 'pokemon',
+                        source: 'PKMCard_io'
+                    });
+                }
+            });
+        }
+
+        // Process Pokémon TCG API v2 Sets
+        if (pkApiSets && Array.isArray(pkApiSets.data)) {
+            pkApiSets.data.forEach(s => {
+                if (s.images && (s.images.logo || s.images.symbol)) {
+                    combinedResults.push({
+                        name: s.name + " (Set)",
+                        image: s.images.logo || s.images.symbol,
+                        tcg: 'pokemon',
+                        source: 'PKMSet_io'
+                    });
+                }
+            });
+        }
 
         // Process Viking
         if (Array.isArray(vikResults)) {
