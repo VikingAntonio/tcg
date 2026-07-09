@@ -37,6 +37,15 @@ window.botInstance = {
         const iconClass = this.isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
         const text = this.isMuted ? 'Activar Sonido' : 'Silenciar';
         $('#michatbot-opt-mute').html(`<i class="${iconClass}"></i> ${text}`);
+    },
+    setContext: function(view) {
+        console.log("Chatbot context set to:", view);
+    },
+    saySequence: function(messages) {
+        console.log("Chatbot saySequence called:", messages);
+    },
+    fetchDetailedCardInfo: function(name) {
+        console.log("Chatbot fetchDetailedCardInfo called for:", name);
     }
 };
 
