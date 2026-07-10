@@ -151,7 +151,7 @@ $(document).ready(async function() {
 
     $('#modal-holo-effect').on('change', function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil') {
+        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils') {
             $('#modal-mask-container').show();
         } else {
             $('#modal-mask-container').hide();
@@ -190,10 +190,15 @@ $(document).ready(async function() {
     $('#btn-save-wishlist-modal').click(async function() {
         if (!currentEditingId) return;
 
+        let holoEffect = $('#modal-holo-effect').val();
+        if (holoEffect === 'multiFoils') {
+            holoEffect = $('#modal-holo-effect').attr('data-complex-val') || 'multiFoils|clasico';
+        }
+
         const data = {
             rarity: $('#modal-rarity').val(),
             quantity: parseInt($('#modal-quantity').val()) || 1,
-            holo_effect: $('#modal-holo-effect').val(),
+            holo_effect: holoEffect,
             custom_mask_url: $('#modal-custom-mask').val(),
             use_3d: $('#modal-use-3d').is(':checked'),
             show_foil_in_list: $('#modal-show-foil-list').is(':checked'),
@@ -434,13 +439,21 @@ function openEditModal(item) {
     $('#modal-card-name').text(item.name);
     $('#modal-rarity').val(item.rarity || '');
     $('#modal-quantity').val(item.quantity || 1);
-    $('#modal-holo-effect').val(item.holo_effect || '');
+    const holo = item.holo_effect || '';
+    if (holo.startsWith('multiFoils|')) {
+        $('#modal-holo-effect').val('multiFoils');
+        if (window.MultiFoils) {
+            window.MultiFoils.syncState('#modal-holo-effect', 'wishlist-public-multi-foils-picker', holo);
+        }
+    } else {
+        $('#modal-holo-effect').val(holo);
+    }
     $('#modal-custom-mask').val(item.custom_mask_url || '');
     $('#modal-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-notes').val(item.notes || '');
 
-    if (item.holo_effect === 'custom-texture' || item.holo_effect === 'custom-foil') {
+    if (holo === 'custom-texture' || holo === 'custom-foil' || holo.startsWith('multiFoils|')) {
         $('#modal-mask-container').show();
     } else {
         $('#modal-mask-container').hide();

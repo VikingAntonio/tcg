@@ -593,6 +593,8 @@ $(document).ready(async function() {
             holoEffect = `custom-foil|${subType}`;
         } else if (holoEffect === 'custom-textures') {
             holoEffect = `custom-textures|rainbow`;
+        } else if (holoEffect === 'multiFoils') {
+            holoEffect = $('#slot-modal').attr('data-complex-val') || 'multiFoils|clasico';
         }
 
         // Apply L: prefix if checkbox is checked
@@ -702,7 +704,7 @@ $(document).ready(async function() {
 
     $('#slot-holo-effect').change(function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures') {
+        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures' || val === 'multiFoils') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -2249,6 +2251,13 @@ function editDeckCard(card) {
         $('#slot-holo-effect').val('custom-textures');
         $('#custom-foil-type-container').hide();
         $('#custom-mask-container').show();
+    } else if (baseHolo.startsWith('multiFoils|')) {
+        $('#slot-holo-effect').val('multiFoils');
+        $('#custom-foil-type-container').hide();
+        $('#custom-mask-container').show();
+        if (window.MultiFoils) {
+            window.MultiFoils.syncState('#slot-holo-effect', 'slot-multi-foils-picker', baseHolo);
+        }
     } else {
         $('#slot-holo-effect').val(baseHolo);
         $('#custom-foil-type-container').hide();
@@ -2963,6 +2972,13 @@ async function loadSlotData(pageId, slotIndex) {
             $('#slot-holo-effect').val('custom-textures');
             $('#custom-foil-type-container').hide();
             $('#custom-mask-container').show();
+        } else if (baseHolo.startsWith('multiFoils|')) {
+            $('#slot-holo-effect').val('multiFoils');
+            $('#custom-foil-type-container').hide();
+            $('#custom-mask-container').show();
+            if (window.MultiFoils) {
+                window.MultiFoils.syncState('#slot-holo-effect', 'slot-multi-foils-picker', baseHolo);
+            }
         } else {
             $('#slot-holo-effect').val(baseHolo);
             $('#custom-foil-type-container').hide();

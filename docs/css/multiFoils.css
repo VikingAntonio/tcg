@@ -1,0 +1,334 @@
+/* MultiFoils Shimmer Effects CSS */
+
+.multi-foils .holo-layer {
+    background-size: 200% 200%, 200% 200%;
+    background-position: calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
+    mix-blend-mode: color-dodge;
+    opacity: 0.9;
+    transition: opacity 0.3s;
+}
+
+/* Generic masking for multiFoils used with mask */
+.card-3d-container .card-3d.masked.multi-foils .holo-layer,
+.card-slot.masked.multi-foils .holo-layer,
+.wishlist-card-item.masked.multi-foils .holo-layer {
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mask-mode: luminance !important;
+    -webkit-mask-source-type: luminance !important;
+}
+
+/* 1. ROJO (Red) */
+.multi-foils-rojo .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 200, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 200, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 0, 0, 0.8) 0%,
+            rgba(180, 0, 0, 0.8) 50%,
+            rgba(255, 0, 0, 0.8) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 2. DORADO (Gold) */
+.multi-foils-dorado .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 235, 150, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 235, 150, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(212, 175, 55, 0.9) 0%,
+            rgba(170, 130, 30, 0.9) 50%,
+            rgba(212, 175, 55, 0.9) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 3. VERDE (Green) */
+.multi-foils-verde .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(200, 255, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(200, 255, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(0, 255, 100, 0.85) 0%,
+            rgba(0, 150, 40, 0.85) 50%,
+            rgba(0, 255, 100, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 4. AZUL (Blue) */
+.multi-foils-azul .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(200, 220, 255, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(200, 220, 255, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(0, 100, 255, 0.85) 0%,
+            rgba(0, 40, 180, 0.85) 50%,
+            rgba(0, 100, 255, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 5. CLASICO (Classic Holo) */
+.multi-foils-clasico .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.45) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 255, 0.45) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 0, 0, 0.4) 0%,
+            rgba(255, 255, 0, 0.4) 15%,
+            rgba(0, 255, 0, 0.4) 30%,
+            rgba(0, 255, 255, 0.4) 50%,
+            rgba(0, 0, 255, 0.4) 70%,
+            rgba(255, 0, 255, 0.4) 85%,
+            rgba(255, 0, 0, 0.4) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 6. AMARILLO (Yellow) */
+.multi-foils-amarillo .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 220, 0, 0.85) 0%,
+            rgba(180, 150, 0, 0.85) 50%,
+            rgba(255, 220, 0, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 7. NARANJA (Orange) */
+.multi-foils-naranja .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 220, 180, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 220, 180, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 120, 0, 0.85) 0%,
+            rgba(180, 60, 0, 0.85) 50%,
+            rgba(255, 120, 0, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 8. ROSA (Pink) */
+.multi-foils-rosa .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 200, 230, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 200, 230, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 50, 150, 0.85) 0%,
+            rgba(180, 20, 90, 0.85) 50%,
+            rgba(255, 50, 150, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 9. MORADO (Purple) */
+.multi-foils-morado .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(220, 200, 255, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(220, 200, 255, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(150, 50, 255, 0.85) 0%,
+            rgba(80, 20, 180, 0.85) 50%,
+            rgba(150, 50, 255, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 10. GUINDA (Burgundy/Cherry) */
+.multi-foils-guinda .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 180, 180, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 180, 180, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(128, 0, 32, 0.9) 0%,
+            rgba(70, 0, 15, 0.9) 50%,
+            rgba(128, 0, 32, 0.9) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 11. GRIS (Gray) */
+.multi-foils-gris .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(220, 220, 220, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(220, 220, 220, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(100, 100, 100, 0.8) 0%,
+            rgba(40, 40, 40, 0.8) 50%,
+            rgba(100, 100, 100, 0.8) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* 12. NEGRO (Black) */
+.multi-foils-negro .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(150, 150, 150, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(150, 150, 150, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(20, 20, 20, 0.9) 0%,
+            rgba(0, 0, 0, 0.95) 50%,
+            rgba(20, 20, 20, 0.9) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+}
+
+/* Color Selector UI Widget styling */
+.multi-foils-selector-container {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    animation: slideDownMF 0.25s ease-out;
+}
+
+@keyframes slideDownMF {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.multi-foils-selector-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #888;
+}
+
+.multi-foils-colors-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+}
+
+.multi-foils-color-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid #333;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.multi-foils-color-btn:hover {
+    transform: scale(1.15);
+}
+
+.multi-foils-color-btn.active {
+    border-color: #00d2ff;
+    transform: scale(1.1);
+}
+
+/* Color palettes representation in picker */
+.btn-mf-rojo { background: linear-gradient(135deg, #ff4d4d, #990000); }
+.btn-mf-dorado { background: linear-gradient(135deg, #ffd700, #aa8418); }
+.btn-mf-verde { background: linear-gradient(135deg, #00ff66, #006622); }
+.btn-mf-azul { background: linear-gradient(135deg, #0099ff, #002266); }
+.btn-mf-clasico { background: linear-gradient(135deg, #ff00ff, #00ffff); }
+.btn-mf-amarillo { background: linear-gradient(135deg, #ffff00, #888800); }
+.btn-mf-naranja { background: linear-gradient(135deg, #ff7700, #993300); }
+.btn-mf-rosa { background: linear-gradient(135deg, #ff66cc, #aa0066); }
+.btn-mf-morado { background: linear-gradient(135deg, #aa00ff, #440099); }
+.btn-mf-guinda { background: linear-gradient(135deg, #800020, #40000d); }
+.btn-mf-gris { background: linear-gradient(135deg, #aaaaaa, #444444); }
+.btn-mf-negro { background: linear-gradient(135deg, #222222, #000000); }

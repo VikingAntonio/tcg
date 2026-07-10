@@ -1141,7 +1141,7 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     $card.removeClass("card masked interacting foil-loop");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
@@ -1155,6 +1155,14 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     }
     if (baseHolo && baseHolo.startsWith('custom-textures|')) {
         baseHolo = 'custom-textures';
+    }
+
+    let isMultiFoils = false;
+    let multiFoilsColor = '';
+    if (baseHolo && baseHolo.startsWith('multiFoils|')) {
+        isMultiFoils = true;
+        multiFoilsColor = baseHolo.split('|')[1] || 'clasico';
+        baseHolo = 'multiFoils';
     }
 
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
@@ -1177,12 +1185,22 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
             const rx = Math.random(), ry = Math.random();
             $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
         } else {
-            $card3d.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
-                $card.addClass("masked");
-                const maskVal = `url(${mask})`;
-                $card.css("--mask", maskVal);
-                $card.css("--mask-url", maskVal);
+            if (isMultiFoils) {
+                $card3d.addClass('multi-foils').addClass(`multi-foils-${multiFoilsColor}`);
+                if (mask) {
+                    $card.addClass("masked");
+                    const maskVal = `url(${mask})`;
+                    $card.css("--mask", maskVal);
+                    $card.css("--mask-url", maskVal);
+                }
+            } else {
+                $card3d.addClass(baseHolo);
+                if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                    $card.addClass("masked");
+                    const maskVal = `url(${mask})`;
+                    $card.css("--mask", maskVal);
+                    $card.css("--mask-url", maskVal);
+                }
             }
         }
     }
