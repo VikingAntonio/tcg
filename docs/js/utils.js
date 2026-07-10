@@ -87,6 +87,14 @@ window.applyFoilToElement = function($el, holo, mask) {
         baseHolo = 'custom-textures';
     }
 
+    let isMultiFoils = false;
+    let multiFoilsColor = '';
+    if (baseHolo.startsWith('multiFoils|')) {
+        isMultiFoils = true;
+        multiFoilsColor = baseHolo.split('|')[1] || 'clasico';
+        baseHolo = 'multiFoils';
+    }
+
     if (POKEMON_FOILS[baseHolo]) {
         let rarityVal = POKEMON_FOILS[baseHolo];
         $el.addClass("card");
@@ -101,11 +109,19 @@ window.applyFoilToElement = function($el, holo, mask) {
         const rx = 0.5, ry = 0.5;
         $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
     } else {
-        $el.addClass(baseHolo);
-        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
-            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+        if (isMultiFoils) {
+            $el.addClass('multi-foils').addClass(`multi-foils-${multiFoilsColor}`);
+            if (mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            $el.css({'--mx': 0.5, '--my': 0.5});
+        } else {
+            $el.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            $el.css({'--mx': 0.5, '--my': 0.5});
         }
-        $el.css({'--mx': 0.5, '--my': 0.5});
     }
 
     $el.css({
