@@ -89,9 +89,11 @@ window.applyFoilToElement = function($el, holo, mask) {
 
     let isMultiFoils = false;
     let multiFoilsColor = '';
-    if (baseHolo.startsWith('multiFoils|')) {
+    if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
         isMultiFoils = true;
-        multiFoilsColor = baseHolo.split('|')[1] || 'clasico';
+        if (baseHolo.startsWith('multiFoils|')) {
+            multiFoilsColor = baseHolo.split('|')[1] || '';
+        }
         baseHolo = 'multiFoils';
     }
 
@@ -110,7 +112,10 @@ window.applyFoilToElement = function($el, holo, mask) {
         $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
     } else {
         if (isMultiFoils) {
-            $el.addClass('multi-foils').addClass(`multi-foils-${multiFoilsColor}`);
+            $el.addClass('multi-foils');
+            if (multiFoilsColor) {
+                $el.addClass(`multi-foils-${multiFoilsColor}`);
+            }
             if (mask) {
                 $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
@@ -293,6 +298,10 @@ window.initMaskEditor = function() {
         $('#mask-editor-overlay').removeClass('active');
         Swal.fire('Guardado', 'La máscara se ha generado correctamente.', 'success');
     });
+
+    if (window.MultiFoils && typeof window.MultiFoils.initFloatingPalette === 'function') {
+        window.MultiFoils.initFloatingPalette();
+    }
 };
 
 window.initMaskCanvas = function() {
@@ -362,7 +371,16 @@ window.drawMask = function(e) {
     window.maskCtx.lineWidth = window.currentBrushSize;
     window.maskCtx.lineCap = 'round';
     window.maskCtx.lineJoin = 'round';
-    window.maskCtx.strokeStyle = window.currentTool === 'brush' ? 'white' : 'black';
+
+    let strokeColor = 'black';
+    if (window.currentTool === 'brush') {
+        if (window.MultiFoils && typeof window.MultiFoils.getBrushHex === 'function') {
+            strokeColor = window.MultiFoils.getBrushHex();
+        } else {
+            strokeColor = 'white';
+        }
+    }
+    window.maskCtx.strokeStyle = strokeColor;
 
     window.maskCtx.lineTo(x, y);
     window.maskCtx.stroke();
@@ -682,6 +700,11 @@ $(document).ready(function() {
                         <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center;">
                             <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block; width: 100%; height: 100%;"></canvas>
                         </div>
+                    </div>
+
+                    <div class="multifoil-controls-lateral">
+                        <button id="btn-multifoil-active-color" class="btn-multifoil-trigger" title="Color Foil" style="background: linear-gradient(135deg, #ff00ff, #00ffff);"></button>
+                        <div id="multifoil-palette-dropdown" class="multifoil-palette-dropdown"></div>
                     </div>
 
                     <div class="zoom-controls-lateral" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10;">
