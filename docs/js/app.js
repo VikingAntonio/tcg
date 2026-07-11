@@ -924,14 +924,29 @@ async function openCardModal($slot) {
     $card.removeClass("card masked interacting");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0'});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-foil active");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     let baseHolo = holo;
+    if (baseHolo && baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
+
     let isCustomFoil = false;
-    if (holo.startsWith('custom-foil|')) {
+    if (baseHolo && baseHolo.startsWith('custom-foil|')) {
         isCustomFoil = true;
-        baseHolo = holo.split('|')[1] || 'foil';
+        baseHolo = baseHolo.split('|')[1] || 'foil';
+    }
+    if (baseHolo && baseHolo.startsWith('custom-textures|')) {
+        baseHolo = 'custom-textures';
+    }
+
+    let isMultiFoils = false;
+    let multiFoilsColor = '';
+    if (baseHolo && (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|'))) {
+        isMultiFoils = true;
+        if (baseHolo.startsWith('multiFoils|')) {
+            multiFoilsColor = baseHolo.split('|')[1] || '';
+        }
+        baseHolo = 'multiFoils';
     }
 
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
@@ -947,7 +962,7 @@ async function openCardModal($slot) {
             if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
             else { $card.removeAttr("data-supertype"); }
             $card.attr("data-rarity", rarityVal.trim());
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
                 $card.addClass("masked");
                 const maskVal = `url(${mask})`;
                 $card.css("--mask", maskVal);
@@ -956,12 +971,25 @@ async function openCardModal($slot) {
             const rx = Math.random(), ry = Math.random();
             $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
         } else {
-            $card3d.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture') && mask) {
-                $card.addClass("masked");
-                const maskVal = `url(${mask})`;
-                $card.css("--mask", maskVal);
-                $card.css("--mask-url", maskVal);
+            if (isMultiFoils) {
+                $card3d.addClass('multi-foils');
+                if (multiFoilsColor) {
+                    $card3d.addClass(`multi-foils-${multiFoilsColor}`);
+                }
+                if (mask) {
+                    $card.addClass("masked");
+                    const maskVal = `url(${mask})`;
+                    $card.css("--mask", maskVal);
+                    $card.css("--mask-url", maskVal);
+                }
+            } else {
+                $card3d.addClass(baseHolo);
+                if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                    $card.addClass("masked");
+                    const maskVal = `url(${mask})`;
+                    $card.css("--mask", maskVal);
+                    $card.css("--mask-url", maskVal);
+                }
             }
         }
     }
@@ -982,7 +1010,7 @@ async function openCardModal($slot) {
         $('#owner-card-mask').val(mask);
         $('#owner-card-3d').prop('checked', use3d);
 
-        if (holo === 'custom-texture' || holo === 'custom-foil') $('#owner-mask-container').show();
+        if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) $('#owner-mask-container').show();
         else $('#owner-mask-container').hide();
 
         // Setup real-time listeners for owner
@@ -995,7 +1023,7 @@ async function openCardModal($slot) {
             const updMask = $('#owner-card-mask').val();
             const upd3d = $('#owner-card-3d').is(':checked');
 
-            if (updHolo === 'custom-texture' || updHolo === 'custom-foil') $('#owner-mask-container').show();
+            if (updHolo === 'custom-texture' || updHolo === 'custom-foil' || updHolo === 'multiFoils' || updHolo.startsWith('multiFoils|')) $('#owner-mask-container').show();
             else $('#owner-mask-container').hide();
 
             $('#owner-obtained-label').text(updObtained ? 'CONSEGUIDA' : 'BUSCANDO');
