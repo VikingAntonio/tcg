@@ -1737,20 +1737,27 @@ function populateDeckSlide($slide, card) {
     const isMissing = card.obtained === false || card.obtained === 'false';
 
     $slide.html(`
-        <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
-        ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
-        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
+        <div class="swiper-card-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.15s ease-out;">
+            <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; backface-visibility: hidden;" />
+            ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto; z-index: 105;">FALTANTE</div>' : ''}
+            <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search-plus"></i></div>
+        </div>
     `);
 
+    const $inner = $slide.find('.swiper-card-inner');
+
     // Re-bind click handler for the newly rendered zoom button
-    $slide.find('.zoom-btn').on('click', function(e) {
+    $inner.find('.zoom-btn').on('click', function(e) {
         e.stopPropagation();
-        openCardModal($(this).closest('.card-slot'));
+        openCardModal($slide);
     });
 
     // Apply Foil if enabled
-    if ((card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect && typeof applyFoilToElement === 'function') {
-        applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
+    const hasFoil = (card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect;
+    if (hasFoil && typeof applyFoilToElement === 'function') {
+        $slide.attr('data-show-foil', 'true');
+        $inner.attr('data-show-foil', 'true');
+        applyFoilToElement($inner, card.holo_effect, card.custom_mask_url);
     }
 
     $slide.addClass('is-populated');
@@ -1796,7 +1803,7 @@ function renderDeckCards(deckId) {
              data-quantity="${card.quantity || '1'}"
              data-price="${card.price || ''}"
              data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
-             data-show-foil="${card.show_foil_in_list || false}"
+             data-show-foil="${card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:')) || false}"
              data-full-img="${card.image_url}">
              <div class="loading-cards" style="padding: 100px 0; color: #666; font-style: italic; text-align: center; width: 100%;">
                 <i class="fas fa-spinner fa-spin"></i>
