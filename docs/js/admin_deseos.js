@@ -93,9 +93,6 @@ function initAdminWishlistListeners() {
         if (!currentEditingWishlistId) return;
 
         let holoEffect = $('#modal-wishlist-holo-effect').val();
-        if (holoEffect === 'multiFoils') {
-            holoEffect = $('#modal-wishlist-holo-effect').attr('data-complex-val') || 'multiFoils|clasico';
-        }
 
         const data = {
             rarity: $('#modal-wishlist-rarity').val(),
@@ -244,11 +241,8 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
     const holo = item.holo_effect || '';
-    if (holo.startsWith('multiFoils|')) {
+    if (holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
         $('#modal-wishlist-holo-effect').val('multiFoils');
-        if (window.MultiFoils) {
-            window.MultiFoils.syncState('#modal-wishlist-holo-effect', 'wishlist-admin-multi-foils-picker', holo);
-        }
     } else {
         $('#modal-wishlist-holo-effect').val(holo);
     }
@@ -257,7 +251,7 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (holo === 'custom-texture' || holo === 'custom-foil' || holo.startsWith('multiFoils|')) {
+    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();

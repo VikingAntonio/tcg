@@ -1159,9 +1159,11 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
 
     let isMultiFoils = false;
     let multiFoilsColor = '';
-    if (baseHolo && baseHolo.startsWith('multiFoils|')) {
+    if (baseHolo && (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|'))) {
         isMultiFoils = true;
-        multiFoilsColor = baseHolo.split('|')[1] || 'clasico';
+        if (baseHolo.startsWith('multiFoils|')) {
+            multiFoilsColor = baseHolo.split('|')[1] || '';
+        }
         baseHolo = 'multiFoils';
     }
 
@@ -1186,7 +1188,10 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
             $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
         } else {
             if (isMultiFoils) {
-                $card3d.addClass('multi-foils').addClass(`multi-foils-${multiFoilsColor}`);
+                $card3d.addClass('multi-foils');
+                if (multiFoilsColor) {
+                    $card3d.addClass(`multi-foils-${multiFoilsColor}`);
+                }
                 if (mask) {
                     $card.addClass("masked");
                     const maskVal = `url(${mask})`;

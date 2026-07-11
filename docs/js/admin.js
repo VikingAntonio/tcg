@@ -594,7 +594,7 @@ $(document).ready(async function() {
         } else if (holoEffect === 'custom-textures') {
             holoEffect = `custom-textures|rainbow`;
         } else if (holoEffect === 'multiFoils') {
-            holoEffect = $('#slot-modal').attr('data-complex-val') || 'multiFoils|clasico';
+            holoEffect = 'multiFoils';
         }
 
         // Apply L: prefix if checkbox is checked
@@ -2251,13 +2251,10 @@ function editDeckCard(card) {
         $('#slot-holo-effect').val('custom-textures');
         $('#custom-foil-type-container').hide();
         $('#custom-mask-container').show();
-    } else if (baseHolo.startsWith('multiFoils|')) {
+    } else if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
         $('#slot-holo-effect').val('multiFoils');
         $('#custom-foil-type-container').hide();
         $('#custom-mask-container').show();
-        if (window.MultiFoils) {
-            window.MultiFoils.syncState('#slot-holo-effect', 'slot-multi-foils-picker', baseHolo);
-        }
     } else {
         $('#slot-holo-effect').val(baseHolo);
         $('#custom-foil-type-container').hide();
@@ -2972,13 +2969,10 @@ async function loadSlotData(pageId, slotIndex) {
             $('#slot-holo-effect').val('custom-textures');
             $('#custom-foil-type-container').hide();
             $('#custom-mask-container').show();
-        } else if (baseHolo.startsWith('multiFoils|')) {
+        } else if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
             $('#slot-holo-effect').val('multiFoils');
             $('#custom-foil-type-container').hide();
             $('#custom-mask-container').show();
-            if (window.MultiFoils) {
-                window.MultiFoils.syncState('#slot-holo-effect', 'slot-multi-foils-picker', baseHolo);
-            }
         } else {
             $('#slot-holo-effect').val(baseHolo);
             $('#custom-foil-type-container').hide();

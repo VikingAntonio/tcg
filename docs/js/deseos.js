@@ -191,9 +191,6 @@ $(document).ready(async function() {
         if (!currentEditingId) return;
 
         let holoEffect = $('#modal-holo-effect').val();
-        if (holoEffect === 'multiFoils') {
-            holoEffect = $('#modal-holo-effect').attr('data-complex-val') || 'multiFoils|clasico';
-        }
 
         const data = {
             rarity: $('#modal-rarity').val(),
@@ -440,11 +437,8 @@ function openEditModal(item) {
     $('#modal-rarity').val(item.rarity || '');
     $('#modal-quantity').val(item.quantity || 1);
     const holo = item.holo_effect || '';
-    if (holo.startsWith('multiFoils|')) {
+    if (holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
         $('#modal-holo-effect').val('multiFoils');
-        if (window.MultiFoils) {
-            window.MultiFoils.syncState('#modal-holo-effect', 'wishlist-public-multi-foils-picker', holo);
-        }
     } else {
         $('#modal-holo-effect').val(holo);
     }
@@ -453,7 +447,7 @@ function openEditModal(item) {
     $('#modal-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-notes').val(item.notes || '');
 
-    if (holo === 'custom-texture' || holo === 'custom-foil' || holo.startsWith('multiFoils|')) {
+    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
         $('#modal-mask-container').show();
     } else {
         $('#modal-mask-container').hide();

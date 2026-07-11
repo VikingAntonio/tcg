@@ -1,157 +1,89 @@
 /**
  * MultiFoils Manager
- * Handles the color foil floating palette selection within form editors.
+ * Handles the floating multi-color mask editor palette.
  */
 
 window.MultiFoils = {
     colors: [
-        { id: 'rojo', name: 'Rojo' },
-        { id: 'dorado', name: 'Dorado' },
-        { id: 'verde', name: 'Verde' },
-        { id: 'azul', name: 'Azul' },
-        { id: 'clasico', name: 'Clásico' },
-        { id: 'amarillo', name: 'Amarillo' },
-        { id: 'naranja', name: 'Naranja' },
-        { id: 'rosa', name: 'Rosa' },
-        { id: 'morado', name: 'Morado' },
-        { id: 'guinda', name: 'Guinda' },
-        { id: 'gris', name: 'Gris' },
-        { id: 'negro', name: 'Negro' }
+        { id: 'clasico', name: 'Clásico', hex: '#ffffff', gradient: 'linear-gradient(135deg, #ff00ff, #00ffff)' },
+        { id: 'rojo', name: 'Rojo', hex: '#ff4d4d', gradient: 'linear-gradient(135deg, #ff4d4d, #990000)' },
+        { id: 'dorado', name: 'Dorado', hex: '#ffd700', gradient: 'linear-gradient(135deg, #ffd700, #aa8418)' },
+        { id: 'verde', name: 'Verde', hex: '#00ff66', gradient: 'linear-gradient(135deg, #00ff66, #006622)' },
+        { id: 'azul', name: 'Azul', hex: '#0099ff', gradient: 'linear-gradient(135deg, #0099ff, #002266)' },
+        { id: 'amarillo', name: 'Amarillo', hex: '#ffff00', gradient: 'linear-gradient(135deg, #ffff00, #888800)' },
+        { id: 'naranja', name: 'Naranja', hex: '#ff7700', gradient: 'linear-gradient(135deg, #ff7700, #993300)' },
+        { id: 'rosa', name: 'Rosa', hex: '#ff66cc', gradient: 'linear-gradient(135deg, #ff66cc, #aa0066)' },
+        { id: 'morado', name: 'Morado', hex: '#aa00ff', gradient: 'linear-gradient(135deg, #aa00ff, #440099)' },
+        { id: 'guinda', name: 'Guinda', hex: '#800020', gradient: 'linear-gradient(135deg, #800020, #40000d)' },
+        { id: 'gris', name: 'Gris', hex: '#aaaaaa', gradient: 'linear-gradient(135deg, #aaaaaa, #444444)' },
+        { id: 'negro', name: 'Negro', hex: '#222222', gradient: 'linear-gradient(135deg, #222222, #000000)' }
     ],
+    currentColor: 'clasico',
 
-    // Generate HTML for the picker widget
-    generatePickerHTML: function(pickerId) {
-        const gridItems = this.colors.map(c =>
-            `<div class="multi-foils-color-btn btn-mf-${c.id}" data-color="${c.id}" title="${c.name}"></div>`
+    // Gets current brush color hex
+    getBrushHex: function() {
+        const colorObj = this.colors.find(c => c.id === this.currentColor);
+        return colorObj ? colorObj.hex : '#ffffff';
+    },
+
+    // Populate and initialize the floating palette
+    initFloatingPalette: function() {
+        const $palette = $('#multifoil-palette-dropdown');
+        if (!$palette.length) return;
+
+        // Generate color buttons
+        const btnHtml = this.colors.map(c =>
+            `<div class="multifoil-palette-color-btn btn-mf-${c.id}" data-color="${c.id}" title="${c.name}" style="background: ${c.gradient};"></div>`
         ).join('');
 
-        return `
-            <div id="${pickerId}" class="multi-foils-selector-container">
-                <div class="multi-foils-selector-title">Selecciona un Color Foil</div>
-                <div class="multi-foils-colors-grid">
-                    ${gridItems}
-                </div>
-            </div>
-        `;
-    },
+        $palette.html(btnHtml);
 
-    // Initialize picker on a target select element
-    setupPicker: function(selectSelector, pickerId, valueStoreSelector, onColorSelected) {
-        const $select = $(selectSelector);
-        if (!$select.length) return;
+        // Highlight active color initially
+        $palette.find('.multifoil-palette-color-btn').removeClass('active');
+        $palette.find(`.btn-mf-${this.currentColor}`).addClass('active');
 
-        // Inject picker HTML directly after the select element if not already present
-        if ($(`#${pickerId}`).length === 0) {
-            const html = this.generatePickerHTML(pickerId);
-            $select.parent().after(html);
+        // Set trigger background to current color
+        const activeColorObj = this.colors.find(c => c.id === this.currentColor);
+        if (activeColorObj) {
+            $('#btn-multifoil-active-color').css('background', activeColorObj.gradient);
         }
 
-        const $picker = $(`#${pickerId}`);
-
-        // Handle select change event
-        $select.on('change', function() {
-            if ($(this).val() === 'multiFoils') {
-                $picker.css('display', 'flex');
-                // Select first color by default if none is set
-                const currentVal = $(this).attr('data-complex-val') || '';
-                if (!currentVal.startsWith('multiFoils|')) {
-                    const defaultColor = 'clasico';
-                    $(this).attr('data-complex-val', `multiFoils|${defaultColor}`).trigger('change');
-                    $picker.find('.multi-foils-color-btn').removeClass('active');
-                    $picker.find(`.btn-mf-${defaultColor}`).addClass('active');
-                    if (onColorSelected) onColorSelected(defaultColor);
-                }
-            } else {
-                $picker.hide();
-                $(this).removeAttr('data-complex-val');
-            }
+        // Active color trigger click handler
+        $('#btn-multifoil-active-color').off('click').on('click', function(e) {
+            e.stopPropagation();
+            $palette.slideToggle(200);
         });
 
-        // Handle color button clicks
-        $picker.off('click', '.multi-foils-color-btn').on('click', '.multi-foils-color-btn', function(e) {
+        // Color buttons click handler
+        const self = this;
+        $palette.off('click', '.multifoil-palette-color-btn').on('click', '.multifoil-palette-color-btn', function(e) {
             e.stopPropagation();
-            const color = $(this).data('color');
-            $picker.find('.multi-foils-color-btn').removeClass('active');
+            const colorId = $(this).data('color');
+            self.currentColor = colorId;
+
+            // Highlight selected
+            $palette.find('.multifoil-palette-color-btn').removeClass('active');
             $(this).addClass('active');
 
-            // Save the value with multiFoils prefix on the select's data attribute
-            $select.attr('data-complex-val', `multiFoils|${color}`).trigger('change');
-
-            // Collapse picker on selection
-            $picker.fadeOut(200);
-
-            if (onColorSelected) {
-                onColorSelected(color);
+            // Update floating trigger button background
+            const colorObj = self.colors.find(c => c.id === colorId);
+            if (colorObj) {
+                $('#btn-multifoil-active-color').css('background', colorObj.gradient);
             }
+
+            // Set current brush tool automatically
+            window.currentTool = 'brush';
+            $('.editor-controls .btn-secondary').removeClass('active');
+            $('.zoom-controls-lateral .btn-secondary').removeClass('active');
+            $('#tool-brush').addClass('active');
+
+            // Collapse palette
+            $palette.slideUp(150);
         });
 
-        // Allow clicking the select or a button to toggle the picker back open if needed
-        $select.on('click', function() {
-            if ($(this).val() === 'multiFoils' && $picker.is(':hidden')) {
-                $picker.css('display', 'flex').hide().fadeIn(250);
-            }
+        // Hide palette when clicking outside
+        $(document).on('click', function() {
+            $palette.slideUp(150);
         });
-    },
-
-    // Sync state when loading a card into the modal
-    syncState: function(selectSelector, pickerId, fullHoloValue) {
-        const $select = $(selectSelector);
-        const $picker = $(`#${pickerId}`);
-        if (!$select.length || !$picker.length) return;
-
-        let baseHolo = fullHoloValue || '';
-        if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
-
-        if (baseHolo.startsWith('multiFoils|')) {
-            const color = baseHolo.split('|')[1] || 'clasico';
-            $select.val('multiFoils');
-            $select.attr('data-complex-val', baseHolo);
-            $picker.css('display', 'flex');
-            $picker.find('.multi-foils-color-btn').removeClass('active');
-            $picker.find(`.btn-mf-${color}`).addClass('active');
-        } else {
-            $picker.hide();
-            $select.removeAttr('data-complex-val');
-        }
     }
 };
-
-// Automatic document ready setup if elements are present
-$(document).ready(function() {
-    // 1. Setup in slot-modal (Albums and Decks context)
-    MultiFoils.setupPicker(
-        '#slot-holo-effect',
-        'slot-multi-foils-picker',
-        '#slot-holo-effect', // Store on the select's data-complex-val
-        function(color) {
-            // Also update any other custom places
-            $('#slot-modal').attr('data-complex-val', `multiFoils|${color}`);
-            // Force render preview in slot modal if active
-            if (typeof window.applyVisualsToModal === 'function') {
-                const mask = $('#slot-custom-mask').val() || '';
-                const use3d = $('#slot-modal').data('current-obtained') !== false; // or whatever represents 3D state
-                window.applyVisualsToModal(`multiFoils|${color}`, mask, use3d);
-            }
-        }
-    );
-
-    // 2. Setup in wishlist-modal-admin
-    MultiFoils.setupPicker(
-        '#modal-wishlist-holo-effect',
-        'wishlist-admin-multi-foils-picker',
-        '#modal-wishlist-holo-effect', // Store on the select's data-complex-val
-        function(color) {
-            // Callback to update modal visual preview if applicable
-        }
-    );
-
-    // 3. Setup in wishlist deseos.html
-    MultiFoils.setupPicker(
-        '#modal-holo-effect',
-        'wishlist-public-multi-foils-picker',
-        '#modal-holo-effect', // Store on the select's data-complex-val
-        function(color) {
-            // Callback
-        }
-    );
-});
