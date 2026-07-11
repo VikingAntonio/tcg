@@ -1166,7 +1166,7 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     const $card = $("#card-3d");
 
     // Cleanup all possible holo classes and styles
-    $card.removeClass("card masked interacting foil-loop");
+    $card.removeClass("card masked interacting foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
     $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro");
@@ -1217,8 +1217,10 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
         } else {
             if (isMultiFoils) {
                 $card3d.addClass('multi-foils');
+                $card.addClass('multi-foils');
                 if (multiFoilsColor) {
                     $card3d.addClass(`multi-foils-${multiFoilsColor}`);
+                    $card.addClass(`multi-foils-${multiFoilsColor}`);
                 }
                 if (mask) {
                     $card.addClass("masked");

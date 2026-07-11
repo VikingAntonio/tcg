@@ -312,6 +312,28 @@ window.initMaskCanvas = function() {
     window.maskPanX = 0;
     window.maskPanY = 0;
 
+    // Determine if multiFoils is active to show/hide palette
+    let isMultiFoilsActive = false;
+    const bddHolo = $('#bdd-holo-effect').val() || '';
+    const slotHolo = $('#slot-holo-effect').val() || '';
+    const wishlistHolo = $('#modal-wishlist-holo-effect').val() || '';
+    const clientHolo = $('#modal-holo-effect').val() || '';
+
+    if (bddHolo.startsWith('multiFoils') ||
+        slotHolo.startsWith('multiFoils') ||
+        wishlistHolo.startsWith('multiFoils') ||
+        clientHolo.startsWith('multiFoils')) {
+        isMultiFoilsActive = true;
+    }
+    window.isMultiFoilsActive = isMultiFoilsActive;
+
+    if (isMultiFoilsActive) {
+        $('.multifoil-controls-lateral').show();
+    } else {
+        $('.multifoil-controls-lateral').hide();
+        $('#multifoil-palette-dropdown').hide();
+    }
+
     // Decks specific customizations
     if (window.maskTargetInput === '#slot-custom-mask') {
         $('#btn-reset-zoom').attr('title', 'Mover').find('i').attr('class', 'fas fa-hand-paper');
@@ -374,7 +396,7 @@ window.drawMask = function(e) {
 
     let strokeColor = 'black';
     if (window.currentTool === 'brush') {
-        if (window.MultiFoils && typeof window.MultiFoils.getBrushHex === 'function') {
+        if (window.isMultiFoilsActive && window.MultiFoils && typeof window.MultiFoils.getBrushHex === 'function') {
             strokeColor = window.MultiFoils.getBrushHex();
         } else {
             strokeColor = 'white';
