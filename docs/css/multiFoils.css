@@ -1,131 +1,14 @@
 /* MultiFoils Shimmer Effects CSS */
 
-/* Base rule for multiFoils used without individual color classes:
-   This blends the mask itself with standard holographic gradients using multiply,
-   allowing multi-color drawing on the mask to reflect its actual colors! */
+/* ==========================================
+   1. BASE MULTI-FOILS RULES (NON-MASKED)
+   ========================================== */
+
+/* Clásico (Multi-color rainbow) */
 .card-3d-container .card-3d.multi-foils .holo-layer,
+.card-3d-container.multi-foils .card-3d .holo-layer,
 .card-slot.multi-foils .holo-layer,
-.wishlist-card-item.multi-foils .holo-layer {
-    background-image:
-        var(--mask-url),
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.45) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(255, 255, 255, 0.45) 55%,
-            rgba(255, 255, 255, 0) 100%
-        ),
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 0, 0, 0.4) 0%,
-            rgba(255, 255, 0, 0.4) 15%,
-            rgba(0, 255, 0, 0.4) 30%,
-            rgba(0, 255, 255, 0.4) 50%,
-            rgba(0, 0, 255, 0.4) 70%,
-            rgba(255, 0, 255, 0.4) 85%,
-            rgba(255, 0, 0, 0.4) 100%
-        );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
-    background-blend-mode: multiply;
-    mix-blend-mode: color-dodge;
-    opacity: 0.95;
-    transition: opacity 0.3s;
-}
-
-/* Generic masking for multiFoils used with mask */
-.card-3d-container .card-3d.masked.multi-foils .holo-layer,
-.card-slot.masked.multi-foils .holo-layer,
-.wishlist-card-item.masked.multi-foils .holo-layer {
-    -webkit-mask-image: var(--mask-url);
-    mask-image: var(--mask-url);
-    -webkit-mask-size: 100% 100%;
-    mask-size: 100% 100%;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    mask-mode: luminance !important;
-    -webkit-mask-source-type: luminance !important;
-}
-
-/* Backward compatibility for solid colors if needed */
-.multi-foils-rojo .holo-layer {
-    background-image:
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 200, 200, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(255, 200, 200, 0.4) 55%,
-            rgba(255, 255, 255, 0) 100%
-        ),
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 0, 0, 0.8) 0%,
-            rgba(180, 0, 0, 0.8) 50%,
-            rgba(255, 0, 0, 0.8) 100%
-        );
-    background-size: 200% 200%, 400% 400%;
-}
-
-.multi-foils-dorado .holo-layer {
-    background-image:
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 235, 150, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(255, 235, 150, 0.4) 55%,
-            rgba(255, 255, 255, 0) 100%
-        ),
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(212, 175, 55, 0.9) 0%,
-            rgba(170, 130, 30, 0.9) 50%,
-            rgba(212, 175, 55, 0.9) 100%
-        );
-    background-size: 200% 200%, 400% 400%;
-}
-
-.multi-foils-verde .holo-layer {
-    background-image:
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 255, 255, 0) 0%,
-            rgba(200, 255, 200, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(200, 255, 200, 0.4) 55%,
-            rgba(255, 255, 255, 0) 100%
-        ),
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(0, 255, 100, 0.85) 0%,
-            rgba(0, 150, 40, 0.85) 50%,
-            rgba(0, 255, 100, 0.85) 100%
-        );
-    background-size: 200% 200%, 400% 400%;
-}
-
-.multi-foils-azul .holo-layer {
-    background-image:
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(255, 255, 255, 0) 0%,
-            rgba(200, 220, 255, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(200, 220, 255, 0.4) 55%,
-            rgba(255, 255, 255, 0) 100%
-        ),
-        linear-gradient(
-            var(--angle, 135deg),
-            rgba(0, 100, 255, 0.85) 0%,
-            rgba(0, 40, 180, 0.85) 50%,
-            rgba(0, 100, 255, 0.85) 100%
-        );
-    background-size: 200% 200%, 400% 400%;
-}
-
+.wishlist-card-item.multi-foils .holo-layer,
 .multi-foils-clasico .holo-layer {
     background-image:
         linear-gradient(
@@ -147,8 +30,105 @@
             rgba(255, 0, 0, 0.4) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
+    transition: opacity 0.3s;
 }
 
+/* Rojo */
+.multi-foils-rojo .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 200, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 200, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 0, 0, 0.85) 0%,
+            rgba(180, 0, 0, 0.85) 50%,
+            rgba(255, 0, 0, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
+}
+
+/* Dorado */
+.multi-foils-dorado .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 235, 150, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 235, 150, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(212, 175, 55, 0.9) 0%,
+            rgba(170, 130, 30, 0.9) 50%,
+            rgba(212, 175, 55, 0.9) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
+}
+
+/* Verde */
+.multi-foils-verde .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(200, 255, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(200, 255, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(0, 255, 100, 0.85) 0%,
+            rgba(0, 150, 40, 0.85) 50%,
+            rgba(0, 255, 100, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
+}
+
+/* Azul */
+.multi-foils-azul .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(200, 220, 255, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(200, 220, 255, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(0, 100, 255, 0.85) 0%,
+            rgba(0, 40, 180, 0.85) 50%,
+            rgba(0, 100, 255, 0.85) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
+}
+
+/* Amarillo */
 .multi-foils-amarillo .holo-layer {
     background-image:
         linear-gradient(
@@ -166,8 +146,12 @@
             rgba(255, 220, 0, 0.85) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
 }
 
+/* Naranja */
 .multi-foils-naranja .holo-layer {
     background-image:
         linear-gradient(
@@ -185,8 +169,12 @@
             rgba(255, 120, 0, 0.85) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
 }
 
+/* Rosa */
 .multi-foils-rosa .holo-layer {
     background-image:
         linear-gradient(
@@ -204,8 +192,12 @@
             rgba(255, 50, 150, 0.85) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
 }
 
+/* Morado */
 .multi-foils-morado .holo-layer {
     background-image:
         linear-gradient(
@@ -223,8 +215,12 @@
             rgba(150, 50, 255, 0.85) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
 }
 
+/* Guinda */
 .multi-foils-guinda .holo-layer {
     background-image:
         linear-gradient(
@@ -242,8 +238,12 @@
             rgba(128, 0, 32, 0.9) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
 }
 
+/* Gris */
 .multi-foils-gris .holo-layer {
     background-image:
         linear-gradient(
@@ -261,8 +261,12 @@
             rgba(100, 100, 100, 0.8) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
 }
 
+/* Negro */
 .multi-foils-negro .holo-layer {
     background-image:
         linear-gradient(
@@ -280,9 +284,312 @@
             rgba(20, 20, 20, 0.9) 100%
         );
     background-size: 200% 200%, 400% 400%;
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+    opacity: 0.95;
 }
 
-/* Floating Palette Styles */
+
+/* ==========================================
+   2. MASKED MULTI-FOILS RULES (PREPEND MASK)
+   ========================================== */
+
+/* Masked Clásico (Takes painted colors from the mask itself!) */
+.card-3d-container .card-3d.masked.multi-foils .holo-layer,
+.card-3d-container.multi-foils .card-3d.masked .holo-layer,
+.card-slot.masked.multi-foils .holo-layer,
+.wishlist-card-item.masked.multi-foils .holo-layer,
+.masked.multi-foils-clasico .holo-layer,
+.multi-foils-clasico.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.45) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 255, 0.45) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 0, 0, 0.4) 0%,
+            rgba(255, 255, 0, 0.4) 15%,
+            rgba(0, 255, 0, 0.4) 30%,
+            rgba(0, 255, 255, 0.4) 50%,
+            rgba(0, 0, 255, 0.4) 70%,
+            rgba(255, 0, 255, 0.4) 85%,
+            rgba(255, 0, 0, 0.4) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Rojo */
+.masked.multi-foils-rojo .holo-layer,
+.multi-foils-rojo.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 200, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 200, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 0, 0, 0.85) 0%,
+            rgba(180, 0, 0, 0.85) 50%,
+            rgba(255, 0, 0, 0.85) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Dorado */
+.masked.multi-foils-dorado .holo-layer,
+.multi-foils-dorado.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 235, 150, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 235, 150, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(212, 175, 55, 0.9) 0%,
+            rgba(170, 130, 30, 0.9) 50%,
+            rgba(212, 175, 55, 0.9) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Verde */
+.masked.multi-foils-verde .holo-layer,
+.multi-foils-verde.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(200, 255, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(200, 255, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(0, 255, 100, 0.85) 0%,
+            rgba(0, 150, 40, 0.85) 50%,
+            rgba(0, 255, 100, 0.85) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Azul */
+.masked.multi-foils-azul .holo-layer,
+.multi-foils-azul.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(200, 220, 255, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(200, 220, 255, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(0, 100, 255, 0.85) 0%,
+            rgba(0, 40, 180, 0.85) 50%,
+            rgba(0, 100, 255, 0.85) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Amarillo */
+.masked.multi-foils-amarillo .holo-layer,
+.multi-foils-amarillo.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 200, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 200, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 220, 0, 0.85) 0%,
+            rgba(180, 150, 0, 0.85) 50%,
+            rgba(255, 220, 0, 0.85) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Naranja */
+.masked.multi-foils-naranja .holo-layer,
+.multi-foils-naranja.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 220, 180, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 220, 180, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 120, 0, 0.85) 0%,
+            rgba(180, 60, 0, 0.85) 50%,
+            rgba(255, 120, 0, 0.85) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Rosa */
+.masked.multi-foils-rosa .holo-layer,
+.multi-foils-rosa.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 200, 230, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 200, 230, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 50, 150, 0.85) 0%,
+            rgba(180, 20, 90, 0.85) 50%,
+            rgba(255, 50, 150, 0.85) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Morado */
+.masked.multi-foils-morado .holo-layer,
+.multi-foils-morado.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(220, 200, 255, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(220, 200, 255, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(150, 50, 255, 0.85) 0%,
+            rgba(80, 20, 180, 0.85) 50%,
+            rgba(150, 50, 255, 0.85) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Guinda */
+.masked.multi-foils-guinda .holo-layer,
+.multi-foils-guinda.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 180, 180, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 180, 180, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(128, 0, 32, 0.9) 0%,
+            rgba(70, 0, 15, 0.9) 50%,
+            rgba(128, 0, 32, 0.9) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Gris */
+.masked.multi-foils-gris .holo-layer,
+.multi-foils-gris.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(220, 220, 220, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(220, 220, 220, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(100, 100, 100, 0.8) 0%,
+            rgba(40, 40, 40, 0.8) 50%,
+            rgba(100, 100, 100, 0.8) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Negro */
+.masked.multi-foils-negro .holo-layer,
+.multi-foils-negro.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(150, 150, 150, 0.4) 45%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(150, 150, 150, 0.4) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(20, 20, 20, 0.9) 0%,
+            rgba(0, 0, 0, 0.95) 50%,
+            rgba(20, 20, 20, 0.9) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+
+/* ==========================================
+   3. CLIP MASKING SETUP
+   ========================================== */
+
+.card-3d-container .card-3d.masked.multi-foils .holo-layer,
+.card-3d-container.multi-foils .card-3d.masked .holo-layer,
+.card-slot.masked.multi-foils .holo-layer,
+.wishlist-card-item.masked.multi-foils .holo-layer {
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+
+/* ==========================================
+   4. FLOATING PALETTE STYLES
+   ========================================== */
+
 .multifoil-controls-lateral {
     position: absolute;
     left: 15px;

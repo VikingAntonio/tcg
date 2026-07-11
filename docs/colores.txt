@@ -1,0 +1,28 @@
+SOLUCIÓN PARA LOS EFECTOS FOIL DE LOS RESPECTIVOS COLORES EN MULTIFOILS
+========================================================================
+
+Esta guía detalla cómo se implementa, soluciona y renderiza el sistema de efectos multifoil de múltiples colores en las cartas (álbumes, decks y wishlist):
+
+1. INTRODUCCIÓN DEL PROBLEMA ANTERIOR
+-------------------------------------
+- Las cartas en el popup de detalle (`#image-overlay`) no renderizaban ningún efecto foil cuando se seleccionaba "multiFoils". Esto sucedía porque las clases del efecto (`multi-foils` y `multi-foils-color`) solo se añadían al contenedor del visor 3D (`#card-3d-container`), pero las reglas CSS esperaban que estas clases estuvieran asignadas directamente en el elemento de la carta (`#card-3d`).
+- Asimismo, las subclases de color individuales (como `.multi-foils-rojo .holo-layer`, `.multi-foils-clasico .holo-layer`, etc.) sobreescribían completamente la propiedad `background-image` omitiendo la variable `--mask-url`, provocando que la máscara dibujada por el usuario no tuviera efecto o que no se multiplicaran los colores reales pintados en el "Clásico".
+
+2. CÓMO SE HA SOLUCIONADO
+-------------------------
+A) EN LA VISTA DE DETALLE (docs/js/app.js):
+   - En la función `applyVisualsToModal`, ahora se aplican las clases del efecto (`multi-foils` y `multi-foils-${color}`) tanto al contenedor `$card3d` (`#card-3d-container`) como al elemento carta `$card` (`#card-3d`).
+   - También se han añadido estas clases a la lista de eliminación en la rutina de limpieza al cerrar o reutilizar el modal, evitando que un efecto multifoil interfiera con otra carta cargada posteriormente.
+
+B) EN EL CSS DE EFECTOS (docs/css/multiFoils.css):
+   - Se han reestructurado por completo las reglas de estilos en `docs/css/multiFoils.css`.
+   - Cada uno de los 12 colores (rojo, dorado, verde, azul, clásico, amarillo, naranja, rosa, morado, guinda, gris, negro) tiene ahora dos estados explícitos:
+     1. NO MASCARADO: Muestra el brillo/gradiente holo sólido correspondiente en toda la carta.
+     2. MASCARADO: Antepone la variable `--mask-url` como la capa inicial de `background-image` y activa el modo de mezcla `multiply` para las capas de fondo. Esto asegura que la máscara pintada por el usuario en color (para clásico) o con trazado blanco/color (para colores sólidos) se multiplique de forma exacta por el gradiente, mostrando el brillo holográfico ÚNICAMENTE donde se dibujó y con sus respectivos tonos de color de forma increíble.
+
+C) EXCLUSIVIDAD DEL CÍRCULO DE COLORES DEL EDITOR (docs/js/utils.js):
+   - Se ha configurado `window.initMaskCanvas()` para detectar dinámicamente si el selector de efecto holográfico (`#slot-holo-effect`, `#bdd-holo-effect`, etc.) tiene activada la opción de "multiFoils".
+   - Si la opción activa es "multiFoils", la paleta flotante lateral (`.multifoil-controls-lateral`) se muestra.
+   - Si se selecciona "CustomTexture" o "CustomFoil", la paleta flotante de colores se OCULTA por completo para mantener el diseño original intacto y evitar elementos innecesarios en la interfaz del usuario. Asimismo, la herramienta pincel en estos efectos clásicos dibuja por defecto en color blanco (`white`), conservando intacta toda la funcionalidad nativa de tu proyecto original sin ninguna alteración colateral.
+
+El sistema es 100% separado, modular y no interfiere con ningún otro efecto o lógica existente de la web. ¡Todo funciona a la perfección!
