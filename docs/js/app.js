@@ -266,8 +266,8 @@ $(document).ready(async function() {
         if (view) switchView(view);
     });
 
-    // --- Foil Shimmer Interaction in Lists ---
-    $(document).on('mousemove', '.card-slot[data-show-foil="true"]', function(e) {
+    // --- Foil Shimmer Interaction in Lists (excluding Swiper slides to prevent interference) ---
+    $(document).on('mousemove', '.card-slot[data-show-foil="true"]:not(.swiper-slide)', function(e) {
         const rect = this.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -282,13 +282,156 @@ $(document).ready(async function() {
         });
     });
 
-    $(document).on('mouseleave', '.card-slot[data-show-foil="true"]', function() {
+    $(document).on('mouseleave', '.card-slot[data-show-foil="true"]:not(.swiper-slide)', function() {
         $(this).css({
             '--mx': 0.5,
             '--my': 0.5,
             '--angle': '135deg'
         });
     });
+
+    // --- 3D Tilt and Shimmer on active Swiper Deck slide (Mouse hover) ---
+    window.isMouseInteracting = false;
+    window.lastMouseInteraction = 0;
+
+    $(document).on('mousemove', '.swiper-slide-active[data-show-foil="true"]', function(e) {
+        const $slide = $(this);
+        const $inner = $slide.find('.swiper-card-inner');
+        if (!$inner.length) return;
+
+        window.isMouseInteracting = true;
+        window.lastMouseInteraction = Date.now();
+
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Normalized coordinates [-0.5, 0.5]
+        const normX = (x / rect.width) - 0.5;
+        const normY = (y / rect.height) - 0.5;
+
+        // Comfortable tilt (max ±15 degrees)
+        const tiltX = -normY * 30;
+        const tiltY = normX * 30;
+
+        const mx = x / rect.width;
+        const my = y / rect.height;
+        const angle = (Math.atan2(my - 0.5, mx - 0.5) * 180 / Math.PI) + 135;
+
+        $inner.css({
+            'transform': `rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) scale(1.03)`,
+            '--mx': mx.toFixed(3),
+            '--my': my.toFixed(3),
+            '--angle': `${angle.toFixed(2)}deg`
+        });
+    });
+
+    $(document).on('mouseleave', '.swiper-slide[data-show-foil="true"]', function() {
+        const $inner = $(this).find('.swiper-card-inner');
+        if ($inner.length) {
+            $inner.css({
+                'transform': 'rotateX(0deg) rotateY(0deg) scale(1)',
+                '--mx': 0.5,
+                '--my': 0.5,
+                '--angle': '135deg'
+            });
+        }
+        window.isMouseInteracting = false;
+    });
+
+    // --- Mobile Gyroscope (Device Orientation) for active Swiper card ---
+    let gyroTargetX = 0;
+    let gyroTargetY = 0;
+    let gyroCurrentX = 0;
+    let gyroCurrentY = 0;
+    let gyroAnimationFrame = null;
+    let hasActiveGyro = false;
+
+    function updateGyroLoop() {
+        // Yield to modal if any is open
+        if ($('body').hasClass('modal-open')) {
+            gyroAnimationFrame = requestAnimationFrame(updateGyroLoop);
+            return;
+        }
+
+        // Yield to active mouse interaction on desktop
+        if (window.isMouseInteracting && (Date.now() - window.lastMouseInteraction < 1500)) {
+            gyroAnimationFrame = requestAnimationFrame(updateGyroLoop);
+            return;
+        }
+
+        // Only consume performance and modify DOM if active gyro measurements exist
+        if (!hasActiveGyro) {
+            gyroAnimationFrame = requestAnimationFrame(updateGyroLoop);
+            return;
+        }
+
+        const $activeInner = $('.swiper-slide-active[data-show-foil="true"] .swiper-card-inner');
+
+        // Butter-smooth Linear Interpolation (LERP)
+        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
+        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
+
+        if ($activeInner.length) {
+            const tiltX = gyroCurrentX;
+            const tiltY = gyroCurrentY;
+
+            // Map ±15 tilt to [0, 1] highlight ranges
+            const mx = 0.5 + (tiltY / 30);
+            const my = 0.5 - (tiltX / 30);
+            const angle = (Math.atan2(my - 0.5, mx - 0.5) * 180 / Math.PI) + 135;
+
+            $activeInner.css({
+                'transform': `rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) scale(1.02)`,
+                '--mx': mx.toFixed(3),
+                '--my': my.toFixed(3),
+                '--angle': `${angle.toFixed(2)}deg`
+            });
+        }
+
+        // Smoothly normalize any inactive slides that might have residual tilt
+        $('.swiper-slide:not(.swiper-slide-active) .swiper-card-inner').each(function() {
+            const style = this.style;
+            if (style.transform && style.transform !== 'rotateX(0deg) rotateY(0deg) scale(1)') {
+                $(this).css({
+                    'transform': 'rotateX(0deg) rotateY(0deg) scale(1)',
+                    '--mx': '0.5',
+                    '--my': '0.5',
+                    '--angle': '135deg'
+                });
+            }
+        });
+
+        gyroAnimationFrame = requestAnimationFrame(updateGyroLoop);
+    }
+
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', function(e) {
+            if (e.gamma !== null && e.beta !== null) {
+                hasActiveGyro = true;
+                // Standard comfortable mobile holding angle beta is around 45 degrees
+                let rawY = Math.max(-15, Math.min(15, e.gamma));
+                let rawX = Math.max(-15, Math.min(15, e.beta - 45));
+
+                gyroTargetY = rawY;
+                gyroTargetX = rawX;
+            }
+        });
+
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            $(document).one('click touchstart', function() {
+                DeviceOrientationEvent.requestPermission()
+                    .then(state => {
+                        if (state === 'granted') {
+                            if (!gyroAnimationFrame) updateGyroLoop();
+                        }
+                    })
+                    .catch(err => console.log("Gyro permission request denied:", err));
+            });
+        } else {
+            updateGyroLoop();
+        }
+    }
 
 
 
@@ -1834,6 +1977,14 @@ function renderDeckCards(deckId) {
             slideChange: function() {
                 // Load next 5 cards from current index
                 loadDeckBatch(this, deck, this.activeIndex, 5);
+
+                // Reset all inner card rotations upon slide change to ensure flawless transition
+                $(this.el).find('.swiper-card-inner').css({
+                    'transform': 'rotateX(0deg) rotateY(0deg) scale(1)',
+                    '--mx': '0.5',
+                    '--my': '0.5',
+                    '--angle': '135deg'
+                });
             },
             click: function(s, e) {
                 if (!isDragging) {
