@@ -165,6 +165,90 @@ async function initMichatbot(forceRefresh = false) {
                 @media (max-width: 640px) { #michatbot-chat-container { bottom: 0; right: 0; width: 100vw; height: 100vh; border-radius: 0; } }
 
                 .michatbot-dragging-active { user-select: none !important; -webkit-user-select: none !important; }
+
+                /* Ver Detalle Popup Responsive Styles */
+                #michatbot-detail-overlay {
+                    display: none;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.98);
+                    z-index: 1000000000;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                    font-family: 'Montserrat', sans-serif;
+                    box-sizing: border-box;
+                    padding: 20px;
+                }
+
+                #close-michatbot-detail {
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.15);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 2rem;
+                    line-height: 1;
+                    cursor: pointer;
+                    z-index: 1000000005;
+                    transition: background 0.3s ease, transform 0.2s ease;
+                    user-select: none;
+                    -webkit-tap-highlight-color: transparent;
+                }
+
+                #close-michatbot-detail:hover, #close-michatbot-detail:active {
+                    background: rgba(255, 255, 255, 0.3);
+                    transform: scale(1.05);
+                }
+
+                #michatbot-detail-viewer-container {
+                    width: 90%;
+                    height: 60%;
+                    max-width: 900px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto;
+                    position: relative;
+                }
+
+                #michatbot-detail-name {
+                    color: white;
+                    margin-top: 24px;
+                    font-size: clamp(1.4rem, 4vw, 2.2rem);
+                    font-weight: 300;
+                    letter-spacing: 3px;
+                    text-transform: uppercase;
+                    text-align: center;
+                    width: 100%;
+                    max-width: 90%;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    line-height: 1.3;
+                }
+
+                @media (max-width: 640px) {
+                    #michatbot-detail-viewer-container {
+                        height: 50%;
+                        width: 95%;
+                    }
+                    #close-michatbot-detail {
+                        top: 15px;
+                        right: 15px;
+                        width: 44px;
+                        height: 44px;
+                        font-size: 1.8rem;
+                    }
+                }
             </style>
         `);
     }
@@ -212,10 +296,10 @@ async function initMichatbot(forceRefresh = false) {
 
     if (!$('#michatbot-detail-overlay').length) {
         $('body').append(`
-            <div id="michatbot-detail-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000000000; align-items: center; justify-content: center; flex-direction: column; font-family: 'Montserrat', sans-serif;">
-                <span id="close-michatbot-detail" style="position: absolute; top: 20px; right: 30px; font-size: 3rem; color: white; cursor: pointer; font-weight: 100;">&times;</span>
-                <div id="michatbot-detail-viewer-container" style="width: 85%; height: 75%; max-width: 900px;"></div>
-                <h2 id="michatbot-detail-name" style="color: white; margin-top: 30px; font-size: 2.2rem; font-weight: 200; letter-spacing: 5px; text-transform: uppercase;">Nombre</h2>
+            <div id="michatbot-detail-overlay">
+                <span id="close-michatbot-detail">&times;</span>
+                <div id="michatbot-detail-viewer-container"></div>
+                <h2 id="michatbot-detail-name">Nombre</h2>
             </div>
         `);
     }
@@ -293,7 +377,29 @@ async function initMichatbot(forceRefresh = false) {
 
     $('#michatbot-opt-detail').off('click').on('click', function(e) {
         e.stopPropagation();
-        $('#michatbot-detail-viewer-container').html(`<model-viewer src="${window.currentSpirit.gltf_url}" camera-controls auto-rotate shadow-intensity="1" environment-image="neutral" exposure="1.2" style="width: 100%; height: 100%;"></model-viewer>`);
+        $('#michatbot-detail-viewer-container').html(`
+            <model-viewer
+                src="${window.currentSpirit.gltf_url}"
+                camera-controls
+                auto-rotate
+                shadow-intensity="1"
+                environment-image="neutral"
+                exposure="1.2"
+                interaction-prompt="none"
+                camera-orbit="auto 75deg auto"
+                field-of-view="auto"
+                min-field-of-view="5deg"
+                max-field-of-view="45deg"
+                disable-zoom
+                disable-pan
+                bounds="tight"
+                interpolation-decay="200"
+                auto-rotate-delay="0"
+                rotation-speed="0.5"
+                style="width: 100%; height: 100%; background-color: transparent;"
+                oncontextmenu="return false;">
+            </model-viewer>
+        `);
         $('#michatbot-detail-name').text(window.currentSpirit.name);
         $('#michatbot-detail-overlay').css('display', 'flex').hide().fadeIn(400);
         $('#michatbot-menu').fadeOut(250);
@@ -304,7 +410,11 @@ async function initMichatbot(forceRefresh = false) {
     $('#michatbot-chat-send').on('click', function() { const text = $('#michatbot-chat-input').val().trim(); if (!text) return; addUserMessage(text); $('#michatbot-chat-input').val(''); setTimeout(() => addBotMessage("Pronto seré más inteligente."), 800); });
     $('#michatbot-chat-input').on('keypress', (e) => { if (e.which === 13) $('#michatbot-chat-send').click(); });
     $('#close-michatbot-chat').on('click', () => $('#michatbot-chat-container').fadeOut(250));
-    $('#close-michatbot-detail').on('click', () => $('#michatbot-detail-overlay').fadeOut(400));
+    $('#close-michatbot-detail').on('click touchend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $('#michatbot-detail-overlay').fadeOut(400);
+    });
 
     initMichatbotIntegration();
     setTimeout(checkAuctionStatusOnLoad, 3000);
