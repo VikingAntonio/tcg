@@ -307,20 +307,23 @@ async function initMichatbot(forceRefresh = false) {
     if (forceRefresh || !window.currentSpirit) {
         if (typeof _supabase !== 'undefined') {
             try {
-                let sessionUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
-                if (!sessionUser) { const stored = localStorage.getItem('tcg_session'); if (stored) sessionUser = JSON.parse(stored); }
-                if (sessionUser) {
-                    const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
-                    if (userRow?.selected_spirit_id) {
-                        const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
-                        if (spirit) window.currentSpirit = spirit;
-                    }
-                }
-                if (!window.currentSpirit && window.currentStoreId) {
+                const isPublicSpace = window.location.pathname.includes('public.html') || !!window.currentStoreId;
+
+                if (isPublicSpace && window.currentStoreId) {
                     const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', window.currentStoreId).maybeSingle();
                     if (userRow?.selected_spirit_id) {
                         const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
                         if (spirit) window.currentSpirit = spirit;
+                    }
+                } else {
+                    let sessionUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+                    if (!sessionUser) { const stored = localStorage.getItem('tcg_session'); if (stored) sessionUser = JSON.parse(stored); }
+                    if (sessionUser) {
+                        const { data: userRow } = await _supabase.from('usuarios').select('selected_spirit_id').eq('id', sessionUser.id).maybeSingle();
+                        if (userRow?.selected_spirit_id) {
+                            const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', userRow.selected_spirit_id).maybeSingle();
+                            if (spirit) window.currentSpirit = spirit;
+                        }
                     }
                 }
                 if (!window.currentSpirit) {
@@ -488,7 +491,9 @@ async function checkAuctionStatusOnLoad() {
     const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : (localStorage.getItem('tcg_session') ? JSON.parse(localStorage.getItem('tcg_session')).id : null);
     if (!uid) return;
     try {
-        const oid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : window.currentStoreId;
+        const isPublicSpace = window.location.pathname.includes('public.html') || !!window.currentStoreId;
+        const oid = (isPublicSpace && window.currentStoreId) ? window.currentStoreId : ((typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : null);
+        if (!oid) return;
         const { data: auctions } = await _supabase.from('subastas').select('id').eq('user_id', oid).eq('status', 'active');
         if (!auctions?.length) return;
         const ids = auctions.map(a => a.id);
@@ -503,8 +508,14 @@ async function checkAuctionStatusOnLoad() {
 
 async function initMichatbotIntegration() {
     if (typeof _supabase === 'undefined') return;
-    let oid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : window.currentStoreId;
-    if (!oid) { const s = localStorage.getItem('tcg_session'); if (s) oid = JSON.parse(s).id; }
+    const isPublicSpace = window.location.pathname.includes('public.html') || !!window.currentStoreId;
+    let oid;
+    if (isPublicSpace && window.currentStoreId) {
+        oid = window.currentStoreId;
+    } else {
+        oid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : null;
+        if (!oid) { const s = localStorage.getItem('tcg_session'); if (s) oid = JSON.parse(s).id; }
+    }
     if (!oid) return;
     const isAdmin = /admin|perfil|scanner|binders|inversiones|build|clientes|tracking/.test(window.location.pathname);
     let tips = isAdmin ? [
