@@ -266,8 +266,8 @@ $(document).ready(async function() {
         if (view) switchView(view);
     });
 
-    // --- Foil Shimmer Interaction in Lists (excluding Swiper slides to prevent interference) ---
-    $(document).on('mousemove', '.card-slot[data-show-foil="true"]:not(.swiper-slide)', function(e) {
+    // --- Foil Shimmer Interaction in Lists ---
+    $(document).on('mousemove', '.card-slot[data-show-foil="true"]', function(e) {
         const rect = this.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -282,108 +282,13 @@ $(document).ready(async function() {
         });
     });
 
-    $(document).on('mouseleave', '.card-slot[data-show-foil="true"]:not(.swiper-slide)', function() {
+    $(document).on('mouseleave', '.card-slot[data-show-foil="true"]', function() {
         $(this).css({
             '--mx': 0.5,
             '--my': 0.5,
             '--angle': '135deg'
         });
     });
-
-    // --- 3D Tilt and Shimmer on active Swiper Deck slide (Mouse hover) ---
-    window.isMouseInteracting = false;
-    window.lastMouseInteraction = 0;
-
-    $(document).on('mousemove', '.swiper-slide-active[data-show-foil="true"]', function(e) {
-        const $slide = $(this);
-        const $inner = $slide.find('.swiper-card-inner');
-        if (!$inner.length) return;
-
-        window.isMouseInteracting = true;
-        window.lastMouseInteraction = Date.now();
-
-        const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // Normalized coordinates [-0.5, 0.5]
-        const normX = (x / rect.width) - 0.5;
-        const normY = (y / rect.height) - 0.5;
-
-        // Comfortable tilt (max ±15 degrees)
-        const tiltX = -normY * 30;
-        const tiltY = normX * 30;
-
-        const mx = x / rect.width;
-        const my = y / rect.height;
-        const angle = (Math.atan2(my - 0.5, mx - 0.5) * 180 / Math.PI) + 135;
-
-        $inner.css({
-            'transform': `rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) scale(1.03)`,
-            '--mx': mx.toFixed(3),
-            '--my': my.toFixed(3),
-            '--angle': `${angle.toFixed(2)}deg`
-        });
-    });
-
-    $(document).on('mouseleave', '.swiper-slide[data-show-foil="true"]', function() {
-        const $inner = $(this).find('.swiper-card-inner');
-        if ($inner.length) {
-            $inner.css({
-                'transform': 'rotateX(0deg) rotateY(0deg) scale(1)',
-                '--mx': 0.5,
-                '--my': 0.5,
-                '--angle': '135deg'
-            });
-        }
-        window.isMouseInteracting = false;
-    });
-
-    // --- Mobile Gyroscope (Device Orientation) for active Swiper card ---
-    if (window.DeviceOrientationEvent) {
-        const handleOrientation = function(e) {
-            // Yield to modal if any is open
-            if ($('body').hasClass('modal-open')) return;
-
-            // Yield to active mouse interaction on desktop
-            if (window.isMouseInteracting && (Date.now() - window.lastMouseInteraction < 1500)) return;
-
-            if (e.gamma !== null && e.beta !== null) {
-                const $activeInner = $('.swiper-slide-active[data-show-foil="true"] .swiper-card-inner');
-                if ($activeInner.length) {
-                    // Standard comfortable mobile holding angle beta is around 45 degrees
-                    const rawY = Math.max(-15, Math.min(15, e.gamma));
-                    const rawX = Math.max(-15, Math.min(15, e.beta - 45));
-
-                    // Map ±15 tilt to [0, 1] highlight ranges
-                    const mx = 0.5 + (rawY / 30);
-                    const my = 0.5 - (rawX / 30);
-                    const angle = (Math.atan2(my - 0.5, mx - 0.5) * 180 / Math.PI) + 135;
-
-                    $activeInner.css({
-                        'transform': `rotateX(${rawX.toFixed(2)}deg) rotateY(${rawY.toFixed(2)}deg) scale(1.02)`,
-                        '--mx': mx.toFixed(3),
-                        '--my': my.toFixed(3),
-                        '--angle': `${angle.toFixed(2)}deg`
-                    });
-                }
-            }
-        };
-
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            $(document).one('click touchstart', function() {
-                DeviceOrientationEvent.requestPermission()
-                    .then(state => {
-                        if (state === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        }
-                    })
-                    .catch(err => console.log("Gyro permission request denied:", err));
-            });
-        } else {
-            window.addEventListener('deviceorientation', handleOrientation);
-        }
-    }
 
 
 
@@ -1832,27 +1737,20 @@ function populateDeckSlide($slide, card) {
     const isMissing = card.obtained === false || card.obtained === 'false';
 
     $slide.html(`
-        <div class="swiper-card-inner" style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.15s ease-out;">
-            <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; backface-visibility: hidden;" />
-            ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto; z-index: 105;">FALTANTE</div>' : ''}
-            <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search-plus"></i></div>
-        </div>
+        <img src="${imgSrc}" alt="${card.name || 'Carta'}" loading="lazy" decoding="async" />
+        ${isMissing ? '<div class="event-type-badge" style="background: #ff4757; color: #fff; bottom: 5px; top: auto;">FALTANTE</div>' : ''}
+        <div class="zoom-btn"><i class="fas fa-search-plus"></i></div>
     `);
 
-    const $inner = $slide.find('.swiper-card-inner');
-
     // Re-bind click handler for the newly rendered zoom button
-    $inner.find('.zoom-btn').on('click', function(e) {
+    $slide.find('.zoom-btn').on('click', function(e) {
         e.stopPropagation();
-        openCardModal($slide);
+        openCardModal($(this).closest('.card-slot'));
     });
 
     // Apply Foil if enabled
-    const hasFoil = (card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect;
-    if (hasFoil && typeof applyFoilToElement === 'function') {
-        $slide.attr('data-show-foil', 'true');
-        $inner.attr('data-show-foil', 'true');
-        applyFoilToElement($inner, card.holo_effect, card.custom_mask_url);
+    if ((card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect && typeof applyFoilToElement === 'function') {
+        applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
     }
 
     $slide.addClass('is-populated');
@@ -1898,7 +1796,7 @@ function renderDeckCards(deckId) {
              data-quantity="${card.quantity || '1'}"
              data-price="${card.price || ''}"
              data-obtained="${card.obtained === false || card.obtained === 'false' ? 'false' : 'true'}"
-             data-show-foil="${card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:')) || false}"
+             data-show-foil="${card.show_foil_in_list || false}"
              data-full-img="${card.image_url}">
              <div class="loading-cards" style="padding: 100px 0; color: #666; font-style: italic; text-align: center; width: 100%;">
                 <i class="fas fa-spinner fa-spin"></i>
@@ -1929,14 +1827,6 @@ function renderDeckCards(deckId) {
             slideChange: function() {
                 // Load next 5 cards from current index
                 loadDeckBatch(this, deck, this.activeIndex, 5);
-
-                // Reset all inner card rotations upon slide change to ensure flawless transition
-                $(this.el).find('.swiper-card-inner').css({
-                    'transform': 'rotateX(0deg) rotateY(0deg) scale(1)',
-                    '--mx': '0.5',
-                    '--my': '0.5',
-                    '--angle': '135deg'
-                });
             },
             click: function(s, e) {
                 if (!isDragging) {
