@@ -131,10 +131,21 @@ window.applyFoilToElement = function($el, holo, mask) {
 
     $el.css({
         '--angle': '135deg',
-        '--card-opacity': 1
+        '--card-opacity': 1,
+        'will-change': 'transform, opacity'
     });
 
-    if ($el.find('.holo-layer').length === 0) $el.append('<div class="holo-layer"></div>');
+    if ($el.find('.holo-layer').length === 0) {
+        $el.append('<div class="holo-layer"></div>');
+    }
+
+    // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
+    $el.find('.holo-layer').css({
+        'will-change': 'transform, opacity',
+        'backface-visibility': 'hidden',
+        '-webkit-backface-visibility': 'hidden'
+    });
+
     $el.addClass('active foil-loop');
 };
 

@@ -1844,14 +1844,22 @@ input:checked + .slider:before {
     transition: opacity 0.3s;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
-    transform: translate3d(0,0,0) translateZ(12px) !important; /* Increased significantly to eliminate Z-fighting with depth layers */
-    will-change: transform;
+    transform: translate3d(0, 0, 0.1px) !important; /* Avoid overflow:hidden 3D clipping bugs in 2D cards on mobile */
+    will-change: transform, opacity;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
 }
 
+/* For the active 3D card in the detail modal overlay, we increase translateZ to stay above depth layers */
+.card-3d-container .card-3d .holo-layer,
+#card-3d .holo-layer {
+    transform: translate3d(0, 0, 12px) !important;
+}
+
+/* Ensure opacity: 1 only on active/popover cards. If inside a Swiper, only on the active slide */
 .card-3d-container.active .holo-layer,
-.card-slot.active .holo-layer {
+.card-slot.active:not(.swiper-slide) .holo-layer,
+.card-slot.active.swiper-slide-active .holo-layer {
     opacity: 1;
 }
 
@@ -1997,8 +2005,12 @@ input:checked + .slider:before {
     background-size: 200% 200%, 400% 400%;
     background-position: calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
     mix-blend-mode: color-dodge;
+    opacity: 0.9;
+    transition: opacity 0.3s;
+}
 
-    /* MASKING */
+/* MASKED CUSTOM TEXTURE FOIL */
+.custom-texture.masked .holo-layer {
     -webkit-mask-image: var(--mask-url);
     mask-image: var(--mask-url);
     -webkit-mask-size: 100% 100%;
@@ -2009,11 +2021,8 @@ input:checked + .slider:before {
     mask-repeat: no-repeat;
 
     /* Support for black and white masks (luminance) */
-    mask-mode: luminance;
-    -webkit-mask-source-type: luminance;
-
-    opacity: 0.9;
-    transition: opacity 0.3s;
+    mask-mode: luminance !important;
+    -webkit-mask-source-type: luminance !important;
 }
 
 /* STARLIGHT RARE */
