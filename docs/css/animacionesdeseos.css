@@ -42,8 +42,13 @@
     border-radius: 12px !important;
     padding: 5px !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-    transform: translateZ(0) !important;
-    -webkit-transform: translateZ(0) !important;
+    transform: translate3d(0, 0, 0) !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    will-change: transform !important;
+    -webkit-transform-style: preserve-3d !important;
+    transform-style: preserve-3d !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
 }
 
 .wishlist-image-container.card.foil-loop {
@@ -57,6 +62,13 @@
     display: grid !important;
     place-items: center !important;
     z-index: 4 !important;
+    will-change: transform, opacity, --mx, --my !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
+    -webkit-transform-style: preserve-3d !important;
+    transform-style: preserve-3d !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
 }
 
 /* 2. Style children of image container to handle Pokemon grid rules */
@@ -124,6 +136,11 @@
     opacity: 1 !important;
     border-radius: inherit !important;
     margin: 0 !important;
+    will-change: transform, opacity !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
 }
 
 /* 6. Syncing variables for all holographic engines on container */
