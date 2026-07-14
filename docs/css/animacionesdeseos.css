@@ -137,10 +137,21 @@
     border-radius: inherit !important;
     margin: 0 !important;
     will-change: transform, opacity !important;
-    -webkit-transform: translate3d(0, 0, 0) !important;
-    transform: translate3d(0, 0, 0) !important;
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
+}
+
+.wishlist-image-container.card.foil-loop .holo-layer {
+    transform: translate3d(0, 0, 0.1px) !important;
+    -webkit-transform: translate3d(0, 0, 0.1px) !important;
+}
+.wishlist-image-container.card.foil-loop .card__shine {
+    transform: translate3d(0, 0, 0.2px) !important;
+    -webkit-transform: translate3d(0, 0, 0.2px) !important;
+}
+.wishlist-image-container.card.foil-loop .card__glare {
+    transform: translate3d(0, 0, 0.3px) !important;
+    -webkit-transform: translate3d(0, 0, 0.3px) !important;
 }
 
 /* 6. Syncing variables for all holographic engines on container */

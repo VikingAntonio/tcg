@@ -1855,6 +1855,14 @@ input:checked + .slider:before {
 #card-3d .holo-layer {
     transform: translate3d(0, 0, 12px) !important;
 }
+.card-3d-container .card-3d .card__shine,
+#card-3d .card__shine {
+    transform: translate3d(0, 0, 11px) !important;
+}
+.card-3d-container .card-3d .card__glare,
+#card-3d .card__glare {
+    transform: translate3d(0, 0, 11.5px) !important;
+}
 
 /* Ensure opacity: 1 only on active/popover cards. If inside a Swiper, only on the active slide */
 .card-3d-container.active .holo-layer,
