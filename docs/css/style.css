@@ -1871,6 +1871,16 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
+/* Restrict card opacity and hide shine/glare on inactive Swiper slides to prevent Z-fighting and extreme GPU stalls */
+.card-slot.swiper-slide:not(.swiper-slide-active) {
+    --card-opacity: 0 !important;
+}
+.card-slot.swiper-slide:not(.swiper-slide-active) .card__shine,
+.card-slot.swiper-slide:not(.swiper-slide-active) .card__glare {
+    opacity: 0 !important;
+    display: none !important;
+}
+
 /* SUPER RARE */
 .super-rare .holo-layer {
     background-image: linear-gradient(
@@ -5448,17 +5458,31 @@ body.focus-mode-active .event-card {
    Mobile Performance & Zero-Flicker Optimizations for Foil Effects
    ========================================================================== */
 @media (max-width: 768px) {
-    /* 1. Disable transitions on foil-related elements to prevent WebKit blend-mode transition bugs (flicker) */
+    /* 1. Disable transitions & animations on all foil-related elements and pseudo-elements to prevent WebKit blending transition bugs (flicker) */
     .holo-layer,
     .card__shine,
-    .card__glare {
+    .card__glare,
+    .card__shine:before,
+    .card__shine:after,
+    .card__glare:before,
+    .card__glare:after {
         transition: none !important;
         transition-property: none !important;
+        animation: none !important;
     }
 
-    /* 2. Use hardware-accelerated "screen" blending instead of heavy CPU-rasterized "color-dodge" on mobile screens */
+    /* 2. Use hardware-accelerated "screen" blending instead of heavy CPU-rasterized blend modes on mobile screens */
     .holo-layer,
-    .card__shine {
+    .card__shine,
+    .card__shine:before,
+    .card__shine:after {
         mix-blend-mode: screen !important;
+    }
+
+    /* 3. Disable hover-triggered card transforms on mobile to avoid layout recalculation lags and scroll flashes */
+    .card-slot:hover,
+    .card:not(.interactive):hover {
+        transform: none !important;
+        box-shadow: none !important;
     }
 }
