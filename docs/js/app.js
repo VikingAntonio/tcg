@@ -1748,11 +1748,7 @@ function populateDeckSlide($slide, card) {
         openCardModal($(this).closest('.card-slot'));
     });
 
-    // Apply Foil if enabled
-    if ((card.show_foil_in_list || (card.holo_effect && card.holo_effect.startsWith('L:'))) && card.holo_effect && typeof applyFoilToElement === 'function') {
-        applyFoilToElement($slide, card.holo_effect, card.custom_mask_url);
-    }
-
+    // Foil is disabled in deck slides to avoid performance issues (only activated inside the card modal)
     $slide.addClass('is-populated');
 }
 
@@ -2799,10 +2795,7 @@ $(document).on('click', '.btn-toggle-deck-view', function() {
             </div>
         `);
 
-        if (showFoil && holo) {
-            applyFoilToElement($card, holo, mask);
-        }
-
+        // Foil is disabled in deck list/grid view to avoid performance issues (only activated inside the card modal)
         $container.append($card);
     });
 
