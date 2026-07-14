@@ -5435,3 +5435,22 @@ body.focus-mode-active .event-card {
     background: rgba(255, 255, 255, 0.1);
     transform: translateX(-5px);
 }
+
+/* ==========================================================================
+   Mobile Performance & Zero-Flicker Optimizations for Foil Effects
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Disable transitions on foil-related elements to prevent WebKit blend-mode transition bugs (flicker) */
+    .holo-layer,
+    .card__shine,
+    .card__glare {
+        transition: none !important;
+        transition-property: none !important;
+    }
+
+    /* 2. Use hardware-accelerated "screen" blending instead of heavy CPU-rasterized "color-dodge" on mobile screens */
+    .holo-layer,
+    .card__shine {
+        mix-blend-mode: screen !important;
+    }
+}

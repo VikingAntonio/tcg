@@ -152,3 +152,10 @@
     --angle: 135deg;
     --card-opacity: 1;
 }
+
+@media (max-width: 768px) {
+    /* Disable CPU-heavy custom properties infinite loop animation on mobile grid cards to eliminate repaint flicker */
+    .wishlist-image-container.card.foil-loop {
+        animation: none !important;
+    }
+}
