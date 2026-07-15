@@ -5421,8 +5421,8 @@ body.focus-mode-active .event-card {
 
 /* Selected Deck View Styles */
 #selected-deck-view {
-    padding-top: 100px;
-    padding-bottom: 150px;
+    padding-top: 2px;
+    padding-bottom: 15px;
     width: 100%;
 }
 
@@ -5431,7 +5431,7 @@ body.focus-mode-active .event-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     padding: 0 10px;
 }
 
@@ -5485,4 +5485,9 @@ body.focus-mode-active .event-card {
         transform: none !important;
         box-shadow: none !important;
     }
+}
+
+/* Optimize background rendering of 3D Swipers when modal is open to prevent flickering of foil effects in Decks */
+body.modal-open #decks-view.active {
+    visibility: hidden !important;
 }
