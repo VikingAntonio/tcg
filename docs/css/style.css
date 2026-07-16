@@ -5491,3 +5491,50 @@ body.focus-mode-active .event-card {
 body.modal-open #decks-view.active {
     visibility: hidden !important;
 }
+
+/* Optimize layout and spacing for single deck inside selected deck view */
+#selected-deck-view .decks-grid {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+}
+
+#selected-deck-view .deck-public-item {
+    max-width: 450px;
+    width: 100%;
+    margin: 0 auto !important;
+    padding: 12px 20px !important;
+    box-sizing: border-box !important;
+}
+
+#selected-deck-view .deck-public-item h3 {
+    margin-top: 0 !important;
+    margin-bottom: 5px !important;
+}
+
+#selected-deck-view .deck-public-item .deck-header-info {
+    margin-bottom: 5px !important;
+}
+
+#selected-deck-view .deck-public-item .deck-price-container {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+#selected-deck-view .deck-public-item .deck-carousel-container {
+    margin-top: 5px !important;
+    margin-bottom: 5px !important;
+}
+
+#selected-deck-view .deck-toggle-container {
+    margin-top: 5px !important;
+}
+
+@media (max-width: 640px) {
+    #selected-deck-view .deck-public-item {
+        padding: 8px 12px !important;
+    }
+}
