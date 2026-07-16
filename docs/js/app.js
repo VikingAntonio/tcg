@@ -113,10 +113,6 @@ window.handleDeepLinking = function(retries = 10) {
         targetEl = document.getElementById(`album-container-${params.get('albumId')}`);
         isDeepLink = true;
         shareType = 'album';
-    } else if (params.has('deckId')) {
-        targetEl = document.getElementById(`deck-item-${params.get('deckId')}`);
-        isDeepLink = true;
-        shareType = 'deck';
     } else if (params.has('productId')) {
         targetEl = document.getElementById(`product-item-${params.get('productId')}`);
         isDeepLink = true;
@@ -2636,6 +2632,16 @@ function loadPublicWishlist() {
 
     if (!userId) { resolve(); return; }
 
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('slot') && !window.wishlistTabInitializedFromUrl) {
+        window.currentWishlistTab = parseInt(params.get('slot')) || 0;
+        window.wishlistTabInitializedFromUrl = true;
+    }
+
+    // Set correct active tab initially in UI
+    $('.wishlist-tab').removeClass('active');
+    $(`.wishlist-tab[data-index="${window.currentWishlistTab || 0}"]`).addClass('active');
+
     // Show/Hide owner controls
     const isOwner = window.currentUserId === window.currentStoreId;
 
@@ -2650,6 +2656,9 @@ function loadPublicWishlist() {
     }
 
     if (isOwner) {
+        // Double check UI tab active class matches window.currentWishlistTab for owner too
+        $('.wishlist-tab').removeClass('active');
+        $(`.wishlist-tab[data-index="${window.currentWishlistTab || 0}"]`).addClass('active');
         $('#btn-owner-add-wishlist').show();
         // Owners see all tabs
         $('.wishlist-tab').show();
@@ -2678,6 +2687,10 @@ function loadPublicWishlist() {
                     $('.wishlist-tab').removeClass('active');
                     $(`.wishlist-tab[data-index="${firstSlot}"]`).addClass('active');
                 }
+            } else {
+                // Ensure UI active class matches current tab
+                $('.wishlist-tab').removeClass('active');
+                $(`.wishlist-tab[data-index="${window.currentWishlistTab || 0}"]`).addClass('active');
             }
         } catch(e) { console.warn(e); }
     }
@@ -2685,7 +2698,6 @@ function loadPublicWishlist() {
     $('#wishlist-container').removeClass('decks-grid').addClass('wishlist-grid');
     $('#wishlist-container').html('<div class="loading">Cargando lista de deseos...</div>');
 
-    const params = new URLSearchParams(window.location.search);
     const filterId = params.get('wishlistId');
 
     try {
