@@ -5479,6 +5479,13 @@ body.focus-mode-active .event-card {
         mix-blend-mode: screen !important;
     }
 
+    /* Restore high-quality official color-dodge blend mode specifically for official Pokemon foils (e.g. Cosmo Holo) */
+    .card .card__shine,
+    .card .card__shine:before,
+    .card .card__shine:after {
+        mix-blend-mode: color-dodge !important;
+    }
+
     /* 3. Disable hover-triggered card transforms on mobile to avoid layout recalculation lags and scroll flashes */
     .card-slot:hover,
     .card:not(.interactive):hover {
