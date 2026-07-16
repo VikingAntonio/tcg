@@ -1,0 +1,25 @@
+==========================================================================
+INFORMACIÓN DE CONFIGURACIÓN Y LÍNEAS QUE AFECTAN AL EFECTO COSMO HOLO
+==========================================================================
+
+El efecto Cosmo Holo (rareza oficial "rare holo cosmos" de Pokémon) se compone de los siguientes archivos y líneas en el proyecto:
+
+1. docs/css/cards/cosmos-holo.css (Líneas 1 a 180):
+   - Define el estilo específico para las capas de brillo de Cosmo Holo (.card[data-rarity="rare holo cosmos"] .card__shine).
+   - Aquí se cargan las imágenes oficiales del efecto cosmos:
+     * docs/img/cosmos-bottom.png (capa de fondo)
+     * docs/img/cosmos-middle-trans.png (capa intermedia)
+     * docs/img/cosmos-top-trans.png (capa superior con las caracolas cosmos)
+
+2. docs/css/cards/base.css (Líneas 250 a 320):
+   - Contiene los estilos básicos y el modo de fusión original para las capas .card__shine y .card__glare.
+   - Especifica por defecto `mix-blend-mode: color-dodge` en la línea 261, que es indispensable para que las caracolas cosmos se fusionen de forma vibrante y transparente con la ilustración de la carta.
+
+3. docs/css/style.css (Líneas 5472 a 5481):
+   - Dentro del bloque de optimizaciones para móviles `@media (max-width: 768px)`, una regla forzaba `mix-blend-mode: screen !important` en todos los elementos `.card__shine` y sus pseudo-elementos.
+   - Este cambio de modo de fusión de `color-dodge` a `screen` hacía que el efecto cosmos se viera como una capa foil brillante plana y blanquecina en móviles y tablets, perdiendo la transparencia y profundidad de las caracolas originales.
+
+==========================================================================
+SOLUCIÓN APLICADA:
+==========================================================================
+Hemos añadido una regla específica para restaurar el comportamiento original de fusión (`mix-blend-mode: color-dodge !important`) únicamente a los elementos de brillo de cartas oficiales de Pokémon (`.card`), garantizando que mantengan sus caracolas y efectos 100% fieles a su diseño original en cualquier dispositivo sin reintroducir parpadeos en los decks.
