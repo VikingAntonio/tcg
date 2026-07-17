@@ -8,13 +8,13 @@
 .card-slot.pokeball-rare .holo-layer,
 .wishlist-card-item.pokeball-rare .holo-layer,
 .pokeball-rare .holo-layer {
-    opacity: 0.95 !important;
+    opacity: 1 !important;
     transition: opacity 0.3s;
     background-color: transparent !important;
 }
 
 /* ==========================================
-   2. WHITE PARTS FOIL (Standard Custom Texture style)
+   2. WHITE PARTS FOIL (Vibrant Standard Custom Texture style)
    ========================================== */
 .card-3d-container .card-3d.pokeball-rare .holo-layer,
 .card-3d-container.pokeball-rare .card-3d .holo-layer,
@@ -25,20 +25,20 @@
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.45) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(255, 255, 255, 0.45) 55%,
+            rgba(255, 255, 255, 0.7) 40%,
+            rgba(255, 255, 255, 1.0) 50%,
+            rgba(255, 255, 255, 0.7) 60%,
             rgba(255, 255, 255, 0) 100%
         ),
         linear-gradient(
             var(--angle, 135deg),
-            rgba(255, 0, 0, 0.4) 0%,
-            rgba(255, 255, 0, 0.4) 15%,
-            rgba(0, 255, 0, 0.4) 30%,
-            rgba(0, 255, 255, 0.4) 50%,
-            rgba(0, 0, 255, 0.4) 70%,
-            rgba(255, 0, 255, 0.4) 85%,
-            rgba(255, 0, 0, 0.4) 100%
+            rgba(255, 0, 0, 0.95) 0%,
+            rgba(255, 255, 0, 0.95) 15%,
+            rgba(0, 255, 0, 0.95) 30%,
+            rgba(0, 255, 255, 0.95) 50%,
+            rgba(0, 0, 255, 0.95) 70%,
+            rgba(255, 0, 255, 0.95) 85%,
+            rgba(255, 0, 0, 0.95) 100%
         );
     background-size: 200% 200%, 400% 400%;
     background-position: calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
@@ -57,7 +57,7 @@
 }
 
 /* ==========================================
-   3. RED PARTS FOIL (Reddish Shimmer Style)
+   3. RED PARTS FOIL (Extremely Vibrant Reddish Shimmer Style)
    ========================================== */
 .card-3d-container .card-3d.pokeball-rare .holo-layer::after,
 .card-3d-container.pokeball-rare .card-3d .holo-layer::after,
@@ -75,23 +75,24 @@
     -webkit-backface-visibility: hidden !important;
     transform: translate3d(0, 0, 0.1px) !important;
     will-change: transform, opacity;
+    opacity: 1 !important;
 
     background-image:
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
-            rgba(255, 200, 200, 0.45) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(255, 200, 200, 0.45) 55%,
+            rgba(255, 200, 200, 0.7) 40%,
+            rgba(255, 255, 255, 1.0) 50%,
+            rgba(255, 200, 200, 0.7) 60%,
             rgba(255, 255, 255, 0) 100%
         ),
         linear-gradient(
             var(--angle, 135deg),
-            rgba(255, 0, 0, 0.9) 0%,
-            rgba(255, 80, 0, 0.9) 25%,
-            rgba(200, 0, 50, 0.9) 50%,
-            rgba(255, 0, 0, 0.9) 75%,
-            rgba(255, 0, 100, 0.9) 100%
+            rgba(255, 0, 0, 1.0) 0%,
+            rgba(255, 80, 0, 1.0) 25%,
+            rgba(220, 0, 70, 1.0) 50%,
+            rgba(255, 0, 0, 1.0) 75%,
+            rgba(255, 0, 120, 1.0) 100%
         );
     background-size: 200% 200%, 400% 400%;
     background-position: calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
