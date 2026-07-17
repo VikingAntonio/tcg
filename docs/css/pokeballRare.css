@@ -59,12 +59,11 @@
 /* ==========================================
    3. RED PARTS FOIL (Extremely Vibrant Reddish Shimmer Style)
    ========================================== */
-.card-3d-container .card-3d.pokeball-rare .holo-layer::after,
-.card-3d-container.pokeball-rare .card-3d .holo-layer::after,
-.card-slot.pokeball-rare .holo-layer::after,
-.wishlist-card-item.pokeball-rare .holo-layer::after,
-.pokeball-rare .holo-layer::after {
-    content: "";
+.card-3d-container .card-3d.pokeball-rare .holo-layer-red,
+.card-3d-container.pokeball-rare .card-3d .holo-layer-red,
+.card-slot.pokeball-rare .holo-layer-red,
+.wishlist-card-item.pokeball-rare .holo-layer-red,
+.pokeball-rare .holo-layer-red {
     position: absolute;
     top: 0;
     left: 0;
@@ -75,7 +74,8 @@
     -webkit-backface-visibility: hidden !important;
     transform: translate3d(0, 0, 0.1px) !important;
     will-change: transform, opacity;
-    opacity: 1 !important;
+    opacity: 0;
+    transition: opacity 0.3s;
 
     background-image:
         linear-gradient(
@@ -108,4 +108,26 @@
     mask-position: center;
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
+}
+
+/* Ensure the active opacity is correct */
+.card-3d-container .card-3d.pokeball-rare.active .holo-layer-red,
+.card-3d-container.pokeball-rare.active .card-3d .holo-layer-red,
+.card-slot.pokeball-rare.active .holo-layer-red,
+.wishlist-card-item.pokeball-rare.active .holo-layer-red,
+.pokeball-rare.active .holo-layer-red,
+.card-3d-container .card-3d.pokeball-rare.foil-loop .holo-layer-red,
+.card-3d-container.pokeball-rare.foil-loop .card-3d .holo-layer-red,
+.card-slot.pokeball-rare.foil-loop .holo-layer-red,
+.wishlist-card-item.pokeball-rare.foil-loop .holo-layer-red,
+.pokeball-rare.foil-loop .holo-layer-red,
+.active .holo-layer-red,
+.foil-loop .holo-layer-red {
+    opacity: 1 !important;
+}
+
+/* 3D container active states */
+.card-3d-container .card-3d .holo-layer-red,
+#card-3d .holo-layer-red {
+    transform: translate3d(0, 0, 12.1px) !important; /* Slightly offset Z to avoid Z-fighting/flickering with holo-layer */
 }
