@@ -138,9 +138,12 @@ window.applyFoilToElement = function($el, holo, mask) {
     if ($el.find('.holo-layer').length === 0) {
         $el.append('<div class="holo-layer"></div>');
     }
+    if (baseHolo === 'pokeball-rare' && $el.find('.holo-layer-red').length === 0) {
+        $el.append('<div class="holo-layer-red"></div>');
+    }
 
     // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
-    $el.find('.holo-layer').css({
+    $el.find('.holo-layer, .holo-layer-red').css({
         'will-change': 'transform, opacity',
         'backface-visibility': 'hidden',
         '-webkit-backface-visibility': 'hidden'

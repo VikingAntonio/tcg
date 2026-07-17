@@ -980,6 +980,9 @@ async function openCardModal($slot) {
                 }
             } else {
                 $card3d.addClass(baseHolo);
+                if (baseHolo === 'pokeball-rare' && $card.find('.holo-layer-red').length === 0) {
+                    $card.append('<div class="holo-layer-red"></div>');
+                }
                 if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
                     $card.addClass("masked");
                     const maskVal = `url(${mask})`;
@@ -1226,6 +1229,9 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
                 }
             } else {
                 $card3d.addClass(baseHolo);
+                if (baseHolo === 'pokeball-rare' && $card.find('.holo-layer-red').length === 0) {
+                    $card.append('<div class="holo-layer-red"></div>');
+                }
                 if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
                     $card.addClass("masked");
                     const maskVal = `url(${mask})`;
