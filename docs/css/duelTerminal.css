@@ -1,0 +1,57 @@
+/* Duel Terminal Shimmer Effect CSS */
+
+/* ==========================================
+   1. BASE CLASS STYLING
+   ========================================== */
+.card-3d-container .card-3d.duel-terminal .holo-layer,
+.card-3d-container.duel-terminal .card-3d .holo-layer,
+.card-slot.duel-terminal .holo-layer,
+.wishlist-card-item.duel-terminal .holo-layer,
+.duel-terminal .holo-layer {
+    opacity: 1 !important;
+    transition: opacity 0.3s;
+    background-color: transparent !important;
+}
+
+/* ==========================================
+   2. SHIMMER EFFECT (Vibrant Multicolor Custom Texture style)
+   ========================================== */
+.card-3d-container .card-3d.duel-terminal .holo-layer,
+.card-3d-container.duel-terminal .card-3d .holo-layer,
+.card-slot.duel-terminal .holo-layer,
+.wishlist-card-item.duel-terminal .holo-layer,
+.duel-terminal .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.75) 40%,
+            rgba(255, 255, 255, 1.0) 50%,
+            rgba(255, 255, 255, 0.75) 60%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 0, 0, 0.95) 0%,
+            rgba(255, 255, 0, 0.95) 15%,
+            rgba(0, 255, 0, 0.95) 30%,
+            rgba(0, 255, 255, 0.95) 50%,
+            rgba(0, 0, 255, 0.95) 70%,
+            rgba(255, 0, 255, 0.95) 85%,
+            rgba(255, 0, 0, 0.95) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+    background-position: calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
+    background-blend-mode: multiply;
+    mix-blend-mode: color-dodge;
+
+    /* Apply generated Duel Terminal white parts mask */
+    -webkit-mask-image: var(--duel-terminal-mask, none);
+    mask-image: var(--duel-terminal-mask, none);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
