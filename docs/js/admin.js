@@ -585,9 +585,12 @@ $(document).ready(async function() {
         let holoEffect = $('#slot-holo-effect').val() || '';
         const complexBase = $('#slot-modal').attr('data-complex-val') || '';
 
+        // Extract first effect if complex base contains multiple effects
+        const primaryComplexBase = complexBase.split(';')[0] || '';
+
         // Preserve prefixes if base effect hasn't changed
-        if (complexBase && (complexBase.endsWith('|' + holoEffect) || complexBase.endsWith(':' + holoEffect) || complexBase === holoEffect)) {
-            holoEffect = complexBase;
+        if (primaryComplexBase && (primaryComplexBase.endsWith('|' + holoEffect) || primaryComplexBase.endsWith(':' + holoEffect) || primaryComplexBase === holoEffect)) {
+            holoEffect = primaryComplexBase;
         } else if (holoEffect === 'custom-foil') {
             const subType = $('#slot-custom-foil-type').val() || 'foil';
             holoEffect = `custom-foil|${subType}`;
@@ -599,39 +602,32 @@ $(document).ready(async function() {
 
         // Apply L: prefix if checkbox is checked
         const shouldShowInList = $('#slot-show-foil-list').is(':checked');
-        if (shouldShowInList && !holoEffect.startsWith('L:')) {
+        if (shouldShowInList && holoEffect && !holoEffect.startsWith('L:')) {
             holoEffect = 'L:' + holoEffect;
-        } else if (!shouldShowInList && holoEffect.startsWith('L:')) {
+        } else if (!shouldShowInList && holoEffect && holoEffect.startsWith('L:')) {
             holoEffect = holoEffect.substring(2);
         }
 
-        // Compile additional layers if present
-        let finalHolo = holoEffect;
-        let finalMask = $('#slot-custom-mask').val() || '';
+        const effectsArr = [holoEffect];
+        const masksArr = [$('#slot-custom-mask').val() || ''];
 
-        const layerHolos = [];
-        const layerMasks = [];
-
-        $('#multifoil-layers-container .multifoil-layer-row').each(function() {
-            let rowHolo = $(this).find('.layer-holo-effect').val() || '';
-            const rowMask = $(this).find('.layer-custom-mask').val() || '';
-
-            if (rowHolo) {
-                layerHolos.push(rowHolo);
-                layerMasks.push(rowMask);
+        $('#additional-foils-container .foil-layer-row').each(function() {
+            const eff = $(this).find('.layer-effect-select').val() || '';
+            const msk = $(this).find('.layer-mask-input').val() || '';
+            if (eff) {
+                effectsArr.push(eff);
+                masksArr.push(msk);
             }
         });
 
-        if (layerHolos.length > 0) {
-            finalHolo = finalHolo + ';' + layerHolos.join(';');
-            finalMask = finalMask + ';' + layerMasks.join(';');
-        }
+        const finalHoloEffect = effectsArr.join(';');
+        const finalCustomMask = masksArr.join(';');
 
         const cardData = {
             image_url: imageUrl,
             name: $('#slot-name').val() || '',
-            holo_effect: finalHolo,
-            custom_mask_url: finalMask,
+            holo_effect: finalHoloEffect,
+            custom_mask_url: finalCustomMask,
             rarity: $('#slot-rarity').val() || '',
             expansion: $('#slot-expansion').val() || '',
             condition: $('#slot-condition').val() || 'M',
@@ -726,7 +722,7 @@ $(document).ready(async function() {
 
     $('#slot-holo-effect').change(function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures' || val === 'multiFoils') {
+        if (val !== '') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -746,28 +742,21 @@ $(document).ready(async function() {
         }
     });
 
-    $('#btn-add-foil-layer').click(function(e) {
+    $('#btn-upload-primary-mask').click(function(e) {
         e.preventDefault();
-        window.addFoilLayerRow('', '');
+        $('#slot-custom-mask-file').click();
     });
 
-    const $mainMaskFileInput = $('<input type="file" accept="image/*" style="display: none;">');
-    $('body').append($mainMaskFileInput);
-    $('#btn-upload-main-mask').on('click', function(e) {
-        e.preventDefault();
-        $mainMaskFileInput.click();
-    });
-    $mainMaskFileInput.on('change', async function() {
-        if (this.files.length > 0) {
-            Swal.fire({ title: 'Subiendo máscara...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            try {
-                const url = await CloudinaryUpload.uploadImage(this.files[0]);
-                $('#slot-custom-mask').val(url).trigger('change');
-                Swal.fire('¡Subida exitosa!', 'La máscara se ha cargado correctamente.', 'success');
-            } catch (err) {
-                Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
-            }
+    $('#slot-custom-mask-file').change(function() {
+        if (this.files && this.files[0]) {
+            handleCloudinaryUpload(this.files[0], '#slot-custom-mask', '#custom-mask-container label');
         }
+    });
+
+    $('#btn-add-foil-layer').click(function(e) {
+        e.preventDefault();
+        const index = $('#additional-foils-container').children('.foil-layer-row').length;
+        window.renderFoilLayerRow($('#additional-foils-container'), '', '', false, index, '#slot-image-url');
     });
 
     $('#btn-open-mask-editor').click(function(e) {
@@ -780,7 +769,6 @@ $(document).ready(async function() {
 
         // Set target input for the global save logic in utils.js
         window.maskTargetInput = '#slot-custom-mask';
-        window.isLayerMask = false;
         // Set card as background
         $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
 
@@ -2270,7 +2258,6 @@ async function updateCardOrder(cardIds) {
 function editDeckCard(card) {
     editingType = 'deck-card';
     currentDeckCardId = card.id || card.localId;
-    window.maskGuideUrl = null;
 
     // Reset Tabs
     $('.slot-tab-btn').removeClass('active');
@@ -2281,17 +2268,20 @@ function editDeckCard(card) {
     $('#slot-modal').data('current-obtained', card.obtained !== false);
     $('#slot-image-url').val(card.image_url || '');
     $('#slot-name').val(card.name || '');
-    $('#multifoil-layers-container').empty();
 
     let holo = card.holo_effect || '';
-    let baseHolo = holo;
-    if (holo.includes(';')) {
-        baseHolo = holo.split(';')[0];
-    }
+    $('#slot-modal').attr('data-complex-val', holo);
+    $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
-    $('#slot-modal').attr('data-complex-val', baseHolo);
-    $('#slot-show-foil-list').prop('checked', baseHolo.startsWith('L:'));
+    $('#additional-foils-container').empty();
 
+    let effects = holo.split(';');
+    let masks = (card.custom_mask_url || '').split(';');
+
+    let primaryHolo = effects[0] || '';
+    let primaryMask = masks[0] || '';
+
+    let baseHolo = primaryHolo;
     if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
     if (baseHolo.startsWith('custom-foil|')) {
@@ -2311,28 +2301,24 @@ function editDeckCard(card) {
     } else {
         $('#slot-holo-effect').val(baseHolo);
         $('#custom-foil-type-container').hide();
-        if (baseHolo === 'custom-texture') {
+        if (baseHolo) {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
         }
     }
 
-    let mask = card.custom_mask_url || '';
-    let baseMask = mask;
-    if (mask.includes(';')) {
-        baseMask = mask.split(';')[0];
+    $('#slot-custom-mask').val(primaryMask);
+
+    for (let i = 1; i < effects.length; i++) {
+        window.renderFoilLayerRow($('#additional-foils-container'), effects[i], masks[i] || '', false, i - 1, '#slot-image-url');
     }
-    $('#slot-custom-mask').val(baseMask || '');
 
     $('#slot-rarity').val(card.rarity || '');
     $('#slot-expansion').val(card.expansion || '');
     $('#slot-condition').val(card.condition || '');
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
-
-    // Populate additional layers
-    window.initFoilLayersUI(card.holo_effect || '', card.custom_mask_url || '');
 
     $('#slot-modal').addClass('active');
 }
@@ -2970,7 +2956,6 @@ async function loadBotMessages() {
 
 async function loadSlotData(pageId, slotIndex) {
     editingType = 'slot';
-    window.maskGuideUrl = null;
 
     // Prioritize local state
     let data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
@@ -3008,7 +2993,6 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-condition').val('');
     $('#slot-quantity').val('');
     $('#slot-price').val('');
-    $('#multifoil-layers-container').empty();
 
     if (data) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
@@ -3016,14 +3000,18 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-name').val(data.name || '');
 
         let holo = data.holo_effect || '';
-        let baseHolo = holo;
-        if (holo.includes(';')) {
-            baseHolo = holo.split(';')[0];
-        }
+        $('#slot-modal').attr('data-complex-val', holo);
+        $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
-        $('#slot-modal').attr('data-complex-val', baseHolo);
-        $('#slot-show-foil-list').prop('checked', baseHolo.startsWith('L:'));
+        $('#additional-foils-container').empty();
 
+        let effects = holo.split(';');
+        let masks = (data.custom_mask_url || '').split(';');
+
+        let primaryHolo = effects[0] || '';
+        let primaryMask = masks[0] || '';
+
+        let baseHolo = primaryHolo;
         if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
         if (baseHolo.startsWith('custom-foil|')) {
@@ -3043,25 +3031,24 @@ async function loadSlotData(pageId, slotIndex) {
         } else {
             $('#slot-holo-effect').val(baseHolo);
             $('#custom-foil-type-container').hide();
-            if (baseHolo === 'custom-texture') {
+            if (baseHolo) {
                 $('#custom-mask-container').show();
             } else {
                 $('#custom-mask-container').hide();
             }
         }
 
-        if (baseHolo) {
+        if (holo) {
             $('#slot-foil-list-container').show();
         } else {
             $('#slot-foil-list-container').hide();
         }
 
-        let mask = data.custom_mask_url || '';
-        let baseMask = mask;
-        if (mask.includes(';')) {
-            baseMask = mask.split(';')[0];
+        $('#slot-custom-mask').val(primaryMask);
+
+        for (let i = 1; i < effects.length; i++) {
+            window.renderFoilLayerRow($('#additional-foils-container'), effects[i], masks[i] || '', false, i - 1, '#slot-image-url');
         }
-        $('#slot-custom-mask').val(baseMask || '');
 
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');
@@ -3069,8 +3056,6 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-quantity').val(data.quantity || '');
         $('#slot-price').val(data.price || '');
 
-        // Populate additional layers
-        window.initFoilLayersUI(data.holo_effect || '', data.custom_mask_url || '');
     }
 
     $('#slot-modal').addClass('active');
@@ -4056,123 +4041,3 @@ $(document).on('click', '.nexus-section-header', function() {
     // Convert to Capital Case (Main, Extra, Side)
     activeNexusSection = activeNexusSection.charAt(0).toUpperCase() + activeNexusSection.slice(1).toLowerCase();
 });
-
-window.addFoilLayerRow = function(holoVal = '', maskVal = '') {
-    const $container = $('#multifoil-layers-container');
-    const rowIdx = $container.children().length;
-
-    let baseHolo = holoVal;
-    if (baseHolo.startsWith('L:')) {
-        baseHolo = baseHolo.substring(2);
-    }
-
-    // Copy options from main select dynamically
-    const optionsHtml = $('#slot-holo-effect').html();
-
-    const $row = $(`
-        <div class="multifoil-layer-row" style="display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 10px; align-items: end; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 10px; color: #888;">Efecto Foil / Capa</label>
-                <select class="layer-holo-effect" style="width: 100%; background: #252525; color: white; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; height: 42px;">
-                    ${optionsHtml}
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 10px; color: #888;">Máscara o Imagen de Capa</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" class="layer-custom-mask" placeholder="Sin máscara / URL" value="${maskVal}" style="padding: 10px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #1a1a1a; color: white; width: 100%; height: 42px;">
-                    <button type="button" class="btn btn-secondary btn-layer-upload-mask" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Subir Imagen"><i class="fas fa-upload"></i> Subir</button>
-                    <button type="button" class="btn btn-secondary btn-layer-edit-mask" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Editar Máscara"><i class="fas fa-paint-brush"></i> Editar</button>
-                </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px; height: 42px;">
-                <button type="button" class="btn btn-danger btn-remove-layer" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Eliminar Capa"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>
-    `);
-
-    // Set initial selected option
-    $row.find('.layer-holo-effect').val(baseHolo);
-
-    // Wire up remove button
-    $row.find('.btn-remove-layer').on('click', function() {
-        $row.remove();
-    });
-
-    // Wire up upload button
-    const $fileInput = $('<input type="file" accept="image/*" style="display: none;">');
-    $row.append($fileInput);
-    $row.find('.btn-layer-upload-mask').on('click', function(e) {
-        e.preventDefault();
-        $fileInput.click();
-    });
-    $fileInput.on('change', async function() {
-        if (this.files.length > 0) {
-            Swal.fire({ title: 'Subiendo capa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            try {
-                const url = await CloudinaryUpload.uploadImage(this.files[0]);
-                $row.find('.layer-custom-mask').val(url).trigger('change');
-                Swal.fire('¡Subida exitosa!', 'La imagen se ha cargado correctamente.', 'success');
-            } catch (err) {
-                Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
-            }
-        }
-    });
-
-    // Wire up edit mask button with guide logic
-    $row.find('.btn-layer-edit-mask').on('click', function(e) {
-        e.preventDefault();
-        const cardImgUrl = $('#slot-image-url').val();
-        if (!cardImgUrl) {
-            Swal.fire('Atención', 'Primero debes poner la URL de la imagen de la carta para usar de referencia.', 'warning');
-            return;
-        }
-
-        // Find other masks that could act as a guide
-        let guideUrl = $('#slot-custom-mask').val() || '';
-        if (!guideUrl) {
-            $('.layer-custom-mask').not($row.find('.layer-custom-mask')).each(function() {
-                const val = $(this).val();
-                if (val) {
-                    guideUrl = val;
-                    return false; // break
-                }
-            });
-        }
-
-        window.maskGuideUrl = guideUrl;
-
-        const $maskInput = $row.find('.layer-custom-mask');
-        // Generate a unique ID if it doesn't have one
-        let inputId = $maskInput.attr('id');
-        if (!inputId) {
-            inputId = 'layer-mask-input-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-            $maskInput.attr('id', inputId);
-        }
-
-        window.maskTargetInput = '#' + inputId;
-
-        // Set card as background
-        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-
-        window.initMaskCanvas();
-        $('#mask-editor-overlay').addClass('active');
-    });
-
-    $container.append($row);
-};
-
-window.initFoilLayersUI = function(holo, mask) {
-    $('#multifoil-layers-container').empty();
-    if (!holo) return;
-
-    if (holo.includes(';')) {
-        const effects = holo.split(';');
-        const masks = mask ? mask.split(';') : [];
-
-        // First effect goes to main UI. The rest are layer rows
-        for (let i = 1; i < effects.length; i++) {
-            window.addFoilLayerRow(effects[i], masks[i] || '');
-        }
-    }
-};

@@ -65,35 +65,28 @@ function initAdminWishlistListeners() {
 
     $('#modal-wishlist-holo-effect').on('change', function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils' || val === 'custom-image') {
+        if (val !== '') {
             $('#modal-wishlist-mask-container').show();
         } else {
             $('#modal-wishlist-mask-container').hide();
         }
     });
 
-    $('#btn-add-wishlist-foil-layer').click(function(e) {
+    $('#btn-upload-primary-mask-wishlist').click(function(e) {
         e.preventDefault();
-        window.addWishlistFoilLayerRow('', '');
+        $('#modal-wishlist-custom-mask-file').click();
     });
 
-    const $wishlistMaskFileInput = $('<input type="file" accept="image/*" style="display: none;">');
-    $('body').append($wishlistMaskFileInput);
-    $('#btn-upload-wishlist-mask').on('click', function(e) {
-        e.preventDefault();
-        $wishlistMaskFileInput.click();
-    });
-    $wishlistMaskFileInput.on('change', async function() {
-        if (this.files.length > 0) {
-            Swal.fire({ title: 'Subiendo máscara...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            try {
-                const url = await CloudinaryUpload.uploadImage(this.files[0]);
-                $('#modal-wishlist-custom-mask').val(url).trigger('change');
-                Swal.fire('¡Subida exitosa!', 'La máscara se ha cargado correctamente.', 'success');
-            } catch (err) {
-                Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
-            }
+    $('#modal-wishlist-custom-mask-file').change(function() {
+        if (this.files && this.files[0]) {
+            handleCloudinaryUpload(this.files[0], '#modal-wishlist-custom-mask', '#modal-wishlist-mask-container label');
         }
+    });
+
+    $('#btn-add-wishlist-foil-layer').click(function(e) {
+        e.preventDefault();
+        const index = $('#wishlist-additional-foils-container').children('.foil-layer-row').length;
+        window.renderFoilLayerRow($('#wishlist-additional-foils-container'), '', '', true, index, '#modal-wishlist-card-img');
     });
 
     $('#btn-open-mask-editor-wishlist').click(function(e) {
@@ -104,7 +97,6 @@ function initAdminWishlistListeners() {
             return;
         }
         window.maskTargetInput = '#modal-wishlist-custom-mask';
-        window.isLayerMask = false;
         $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
         window.initMaskCanvas();
         $('#mask-editor-overlay').addClass('active');
@@ -118,34 +110,28 @@ function initAdminWishlistListeners() {
         if (!currentEditingWishlistId) return;
 
         let holoEffect = $('#modal-wishlist-holo-effect').val() || '';
+        let customMask = $('#modal-wishlist-custom-mask').val() || '';
 
-        // Compile additional layers if present
-        let finalHolo = holoEffect;
-        let finalMask = $('#modal-wishlist-custom-mask').val() || '';
+        const effectsArr = [holoEffect];
+        const masksArr = [customMask];
 
-        const layerHolos = [];
-        const layerMasks = [];
-
-        $('#wishlist-layers-container .wishlist-layer-row').each(function() {
-            let rowHolo = $(this).find('.layer-holo-effect').val() || '';
-            const rowMask = $(this).find('.layer-custom-mask').val() || '';
-
-            if (rowHolo) {
-                layerHolos.push(rowHolo);
-                layerMasks.push(rowMask);
+        $('#wishlist-additional-foils-container .foil-layer-row').each(function() {
+            const eff = $(this).find('.layer-effect-select').val() || '';
+            const msk = $(this).find('.layer-mask-input').val() || '';
+            if (eff) {
+                effectsArr.push(eff);
+                masksArr.push(msk);
             }
         });
 
-        if (layerHolos.length > 0) {
-            finalHolo = finalHolo + ';' + layerHolos.join(';');
-            finalMask = finalMask + ';' + layerMasks.join(';');
-        }
+        const finalHoloEffect = effectsArr.join(';');
+        const finalCustomMask = masksArr.join(';');
 
         const data = {
             rarity: $('#modal-wishlist-rarity').val(),
             quantity: parseInt($('#modal-wishlist-quantity').val()) || 1,
-            holo_effect: finalHolo,
-            custom_mask_url: finalMask,
+            holo_effect: finalHoloEffect,
+            custom_mask_url: finalCustomMask,
             use_3d: $('#modal-wishlist-use-3d').is(':checked'),
             show_foil_in_list: $('#modal-wishlist-show-foil-list').is(':checked'),
             notes: $('#modal-wishlist-notes').val()
@@ -283,45 +269,39 @@ async function loadWishlistAdmin() {
 
 function openEditWishlistModalAdmin(item) {
     currentEditingWishlistId = item.id;
-    window.maskGuideUrl = null;
-
     $('#modal-wishlist-card-img').attr('src', item.image_url);
     $('#modal-wishlist-card-name').text(item.name);
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
-    $('#wishlist-layers-container').empty();
+
+    $('#wishlist-additional-foils-container').empty();
 
     const holo = item.holo_effect || '';
-    let baseHolo = holo;
-    if (holo.includes(';')) {
-        baseHolo = holo.split(';')[0];
-    }
+    const effects = holo.split(';');
+    const masks = (item.custom_mask_url || '').split(';');
 
-    if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
+    const primaryHolo = effects[0] || '';
+    const primaryMask = masks[0] || '';
+
+    if (primaryHolo === 'multiFoils' || primaryHolo.startsWith('multiFoils|')) {
         $('#modal-wishlist-holo-effect').val('multiFoils');
     } else {
-        $('#modal-wishlist-holo-effect').val(baseHolo);
+        $('#modal-wishlist-holo-effect').val(primaryHolo);
     }
-
-    let mask = item.custom_mask_url || '';
-    let baseMask = mask;
-    if (mask.includes(';')) {
-        baseMask = mask.split(';')[0];
-    }
-    $('#modal-wishlist-custom-mask').val(baseMask || '');
-
+    $('#modal-wishlist-custom-mask').val(primaryMask);
     $('#modal-wishlist-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (baseHolo === 'custom-texture' || baseHolo === 'custom-foil' || baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
+    if (primaryHolo !== '') {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();
     }
 
-    // Populate additional layers
-    window.initWishlistFoilLayersUI(item.holo_effect || '', item.custom_mask_url || '');
+    for (let i = 1; i < effects.length; i++) {
+        window.renderFoilLayerRow($('#wishlist-additional-foils-container'), effects[i], masks[i] || '', true, i - 1, '#modal-wishlist-card-img');
+    }
 
     $('#wishlist-modal-admin').addClass('active');
 }
@@ -528,111 +508,3 @@ async function deleteWishlistItemAdmin(id, $element = null) {
         }
     }
 }
-
-window.addWishlistFoilLayerRow = function(holoVal = '', maskVal = '') {
-    const $container = $('#wishlist-layers-container');
-    const optionsHtml = $('#modal-wishlist-holo-effect').html();
-
-    let baseHolo = holoVal;
-    if (baseHolo.startsWith('L:')) {
-        baseHolo = baseHolo.substring(2);
-    }
-
-    const $row = $(`
-        <div class="wishlist-layer-row" style="display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 10px; align-items: end; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 10px; color: #888;">Efecto Foil / Capa</label>
-                <select class="layer-holo-effect" style="width: 100%; background: #252525; color: white; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; height: 42px;">
-                    ${optionsHtml}
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 10px; color: #888;">Máscara o Imagen de Capa</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" class="layer-custom-mask" placeholder="Sin máscara / URL" value="${maskVal}" style="padding: 10px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #1a1a1a; color: white; width: 100%; height: 42px;">
-                    <button type="button" class="btn btn-secondary btn-layer-upload-mask-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Subir Imagen"><i class="fas fa-upload"></i> Subir</button>
-                    <button type="button" class="btn btn-secondary btn-layer-edit-mask-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Editar Máscara"><i class="fas fa-paint-brush"></i> Editar</button>
-                </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px; height: 42px;">
-                <button type="button" class="btn btn-danger btn-remove-layer-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Eliminar Capa"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>
-    `);
-
-    $row.find('.layer-holo-effect').val(baseHolo);
-
-    $row.find('.btn-remove-layer-wishlist').on('click', function() {
-        $row.remove();
-    });
-
-    // Wire up upload button
-    const $fileInput = $('<input type="file" accept="image/*" style="display: none;">');
-    $row.append($fileInput);
-    $row.find('.btn-layer-upload-mask-wishlist').on('click', function(e) {
-        e.preventDefault();
-        $fileInput.click();
-    });
-    $fileInput.on('change', async function() {
-        if (this.files.length > 0) {
-            Swal.fire({ title: 'Subiendo capa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            try {
-                const url = await CloudinaryUpload.uploadImage(this.files[0]);
-                $row.find('.layer-custom-mask').val(url).trigger('change');
-                Swal.fire('¡Subida exitosa!', 'La imagen se ha cargado correctamente.', 'success');
-            } catch (err) {
-                Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
-            }
-        }
-    });
-
-    $row.find('.btn-layer-edit-mask-wishlist').on('click', function(e) {
-        e.preventDefault();
-        const cardImgUrl = $('#modal-wishlist-card-img').attr('src');
-        if (!cardImgUrl) {
-            Swal.fire('Atención', 'No hay imagen de referencia.', 'warning');
-            return;
-        }
-
-        let guideUrl = $('#modal-wishlist-custom-mask').val() || '';
-        if (!guideUrl) {
-            $('.layer-custom-mask').not($row.find('.layer-custom-mask')).each(function() {
-                const val = $(this).val();
-                if (val) {
-                    guideUrl = val;
-                    return false;
-                }
-            });
-        }
-
-        window.maskGuideUrl = guideUrl;
-
-        const $maskInput = $row.find('.layer-custom-mask');
-        let inputId = $maskInput.attr('id');
-        if (!inputId) {
-            inputId = 'wishlist-layer-mask-input-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-            $maskInput.attr('id', inputId);
-        }
-
-        window.maskTargetInput = '#' + inputId;
-        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-        window.initMaskCanvas();
-        $('#mask-editor-overlay').addClass('active');
-    });
-
-    $container.append($row);
-};
-
-window.initWishlistFoilLayersUI = function(holo, mask) {
-    $('#wishlist-layers-container').empty();
-    if (!holo) return;
-
-    if (holo.includes(';')) {
-        const effects = holo.split(';');
-        const masks = mask ? mask.split(';') : [];
-
-        for (let i = 1; i < effects.length; i++) {
-            window.addWishlistFoilLayerRow(effects[i], masks[i] || '');
-        }
-    }
-};
