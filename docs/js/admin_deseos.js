@@ -72,6 +72,11 @@ function initAdminWishlistListeners() {
         }
     });
 
+    $('#btn-add-wishlist-foil-layer').click(function(e) {
+        e.preventDefault();
+        window.addWishlistFoilLayerRow('', '');
+    });
+
     $('#btn-open-mask-editor-wishlist').click(function(e) {
         e.preventDefault();
         const cardImgUrl = $('#modal-wishlist-card-img').attr('src');
@@ -92,13 +97,39 @@ function initAdminWishlistListeners() {
     $('#btn-save-wishlist-modal-admin').click(async function() {
         if (!currentEditingWishlistId) return;
 
-        let holoEffect = $('#modal-wishlist-holo-effect').val();
+        let holoEffect = $('#modal-wishlist-holo-effect').val() || '';
+
+        // Compile additional layers if present
+        let finalHolo = holoEffect;
+        let finalMask = $('#modal-wishlist-custom-mask').val() || '';
+
+        const layerHolos = [];
+        const layerMasks = [];
+
+        $('#wishlist-layers-container .wishlist-layer-row').each(function() {
+            let rowHolo = $(this).find('.layer-holo-effect').val() || '';
+            const rowMask = $(this).find('.layer-custom-mask').val() || '';
+            const rowShowFoil = $(this).find('.layer-show-foil-list').is(':checked');
+
+            if (rowHolo) {
+                if (rowShowFoil && !rowHolo.startsWith('L:')) {
+                    rowHolo = 'L:' + rowHolo;
+                }
+                layerHolos.push(rowHolo);
+                layerMasks.push(rowMask);
+            }
+        });
+
+        if (layerHolos.length > 0) {
+            finalHolo = finalHolo + ';' + layerHolos.join(';');
+            finalMask = finalMask + ';' + layerMasks.join(';');
+        }
 
         const data = {
             rarity: $('#modal-wishlist-rarity').val(),
             quantity: parseInt($('#modal-wishlist-quantity').val()) || 1,
-            holo_effect: holoEffect,
-            custom_mask_url: $('#modal-wishlist-custom-mask').val(),
+            holo_effect: finalHolo,
+            custom_mask_url: finalMask,
             use_3d: $('#modal-wishlist-use-3d').is(':checked'),
             show_foil_in_list: $('#modal-wishlist-show-foil-list').is(':checked'),
             notes: $('#modal-wishlist-notes').val()
@@ -236,26 +267,45 @@ async function loadWishlistAdmin() {
 
 function openEditWishlistModalAdmin(item) {
     currentEditingWishlistId = item.id;
+    window.maskGuideUrl = null;
+
     $('#modal-wishlist-card-img').attr('src', item.image_url);
     $('#modal-wishlist-card-name').text(item.name);
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
+    $('#wishlist-layers-container').empty();
+
     const holo = item.holo_effect || '';
-    if (holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+    let baseHolo = holo;
+    if (holo.includes(';')) {
+        baseHolo = holo.split(';')[0];
+    }
+
+    if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
         $('#modal-wishlist-holo-effect').val('multiFoils');
     } else {
-        $('#modal-wishlist-holo-effect').val(holo);
+        $('#modal-wishlist-holo-effect').val(baseHolo);
     }
-    $('#modal-wishlist-custom-mask').val(item.custom_mask_url || '');
+
+    let mask = item.custom_mask_url || '';
+    let baseMask = mask;
+    if (mask.includes(';')) {
+        baseMask = mask.split(';')[0];
+    }
+    $('#modal-wishlist-custom-mask').val(baseMask || '');
+
     $('#modal-wishlist-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+    if (baseHolo === 'custom-texture' || baseHolo === 'custom-foil' || baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();
     }
+
+    // Populate additional layers
+    window.initWishlistFoilLayersUI(item.holo_effect || '', item.custom_mask_url || '');
 
     $('#wishlist-modal-admin').addClass('active');
 }
@@ -462,3 +512,99 @@ async function deleteWishlistItemAdmin(id, $element = null) {
         }
     }
 }
+
+window.addWishlistFoilLayerRow = function(holoVal = '', maskVal = '') {
+    const $container = $('#wishlist-layers-container');
+    const optionsHtml = $('#modal-wishlist-holo-effect').html();
+
+    let isListFoil = false;
+    let baseHolo = holoVal;
+    if (baseHolo.startsWith('L:')) {
+        isListFoil = true;
+        baseHolo = baseHolo.substring(2);
+    }
+
+    const $row = $(`
+        <div class="wishlist-layer-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 10px; color: #888;">Efecto Foil</label>
+                <select class="layer-holo-effect" style="width: 100%; background: #252525; color: white; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; height: 42px;">
+                    ${optionsHtml}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 10px; color: #888;">Máscara (Base64/URL)</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" class="layer-custom-mask" placeholder="Sin máscara" value="${maskVal}" style="padding: 10px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #1a1a1a; color: white; width: 100%; height: 42px;">
+                    <button type="button" class="btn btn-secondary btn-layer-edit-mask-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Editar Máscara"><i class="fas fa-paint-brush"></i></button>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; height: 42px;">
+                <label style="display: flex; flex-direction: column; align-items: center; cursor: pointer; margin-bottom: 0; min-width: 45px;">
+                    <span style="font-size: 9px; color: #888; margin-bottom: 2px;">List Foil</span>
+                    <label class="switch switch-mini" style="transform: scale(0.85); margin-bottom: 0;">
+                        <input type="checkbox" class="layer-show-foil-list" ${isListFoil ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+                <button type="button" class="btn btn-danger btn-remove-layer-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Eliminar Capa"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `);
+
+    $row.find('.layer-holo-effect').val(baseHolo);
+
+    $row.find('.btn-remove-layer-wishlist').on('click', function() {
+        $row.remove();
+    });
+
+    $row.find('.btn-layer-edit-mask-wishlist').on('click', function(e) {
+        e.preventDefault();
+        const cardImgUrl = $('#modal-wishlist-card-img').attr('src');
+        if (!cardImgUrl) {
+            Swal.fire('Atención', 'No hay imagen de referencia.', 'warning');
+            return;
+        }
+
+        let guideUrl = $('#modal-wishlist-custom-mask').val() || '';
+        if (!guideUrl) {
+            $('.layer-custom-mask').not($row.find('.layer-custom-mask')).each(function() {
+                const val = $(this).val();
+                if (val) {
+                    guideUrl = val;
+                    return false;
+                }
+            });
+        }
+
+        window.maskGuideUrl = guideUrl;
+
+        const $maskInput = $row.find('.layer-custom-mask');
+        let inputId = $maskInput.attr('id');
+        if (!inputId) {
+            inputId = 'wishlist-layer-mask-input-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            $maskInput.attr('id', inputId);
+        }
+
+        window.maskTargetInput = '#' + inputId;
+        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
+        window.initMaskCanvas();
+        $('#mask-editor-overlay').addClass('active');
+    });
+
+    $container.append($row);
+};
+
+window.initWishlistFoilLayersUI = function(holo, mask) {
+    $('#wishlist-layers-container').empty();
+    if (!holo) return;
+
+    if (holo.includes(';')) {
+        const effects = holo.split(';');
+        const masks = mask ? mask.split(';') : [];
+
+        for (let i = 1; i < effects.length; i++) {
+            window.addWishlistFoilLayerRow(effects[i], masks[i] || '');
+        }
+    }
+};

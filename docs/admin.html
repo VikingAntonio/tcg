@@ -2071,6 +2071,15 @@
                                 <option value="pk-reverse-holo" style="background: #252525;">PK: Reverse Holo</option>
                             </select>
                         </div>
+                        <div class="form-group" id="multifoil-layers-section" style="grid-column: span 2; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+                            <label style="font-weight: bold; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span>Capas Foil Superpuestas</span>
+                                <button type="button" id="btn-add-foil-layer" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 10px; background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff;"><i class="fas fa-plus"></i> Añadir Capa</button>
+                            </label>
+                            <div id="multifoil-layers-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                                <!-- Dynamic layers row injected here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2197,6 +2206,16 @@
                     <span class="slider"></span>
                 </label>
                 <label style="margin-bottom: 0; cursor: pointer;" for="modal-wishlist-show-foil-list">Aplicar Foil</label>
+            </div>
+
+            <div class="form-group" id="wishlist-layers-section" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+                <label style="font-weight: bold; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span>Capas Foil Superpuestas</span>
+                    <button type="button" id="btn-add-wishlist-foil-layer" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 10px; background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff;"><i class="fas fa-plus"></i> Añadir Capa</button>
+                </label>
+                <div id="wishlist-layers-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                    <!-- Dynamic layers row injected here -->
+                </div>
             </div>
 
             <div class="form-group" style="margin-top: 20px;">
