@@ -2011,6 +2011,7 @@
                                     <option value="multiFoils" style="background: #252525;">MultiFoils</option>
                                     <option value="pokeball-rare" style="background: #252525;">Pokeball Rare</option>
                                     <option value="duel-terminal" style="background: #252525;">Duel Terminal</option>
+                                <option value="custom-image" style="background: #252525;">Imagen Personalizada (Capa)</option>
                                 <option value="pk-rare-holo" style="background: #252525;">PK: Rare Holo</option>
                                 <option value="pk-rare-holo-cosmos" style="background: #252525;">PK: Cosmos Holo</option>
                                 <option value="pk-rare-holo-v" style="background: #252525;">PK: Rare Holo V</option>
@@ -2035,9 +2036,12 @@
                             </select>
                         </div>
                         <div class="form-group" id="custom-mask-container" style="display: none; grid-column: span 2;">
-                            <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
+                            <label>URL de la Máscara (CustomTexture / CustomFoil / Imagen)</label>
                             <div style="display: flex; gap: 10px;">
                                 <input type="text" id="slot-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
+                                <button id="btn-upload-main-mask" type="button" class="btn btn-secondary" style="white-space: nowrap;">
+                                    <i class="fas fa-upload"></i> Subir
+                                </button>
                                 <button id="btn-open-mask-editor" class="btn btn-secondary" style="white-space: nowrap;">
                                     <i class="fas fa-paint-brush"></i> Editar
                                 </button>
@@ -2157,6 +2161,7 @@
                     <option value="custom-foil">CustomFoil</option>
                     <option value="multiFoils">MultiFoils</option>
                     <option value="pokeball-rare">Pokeball Rare</option>
+                    <option value="custom-image">Imagen Personalizada (Capa)</option>
                     <option value="duel-terminal">Duel Terminal</option>
                     <option value="pk-rare-holo">PK: Rare Holo</option>
                     <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
@@ -2183,9 +2188,12 @@
             </div>
 
             <div class="form-group" id="modal-wishlist-mask-container" style="display: none;">
-                <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
+                <label>URL de la Máscara (CustomTexture / CustomFoil / Imagen)</label>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="modal-wishlist-custom-mask" class="wishlist-field" placeholder="midominio.com/mascara.png" style="flex: 1;">
+                    <button id="btn-upload-wishlist-mask" type="button" class="btn btn-secondary" style="white-space: nowrap;">
+                        <i class="fas fa-upload"></i> Subir
+                    </button>
                     <button id="btn-open-mask-editor-wishlist" class="btn btn-secondary" style="white-space: nowrap;">
                         <i class="fas fa-paint-brush"></i> Editar
                     </button>

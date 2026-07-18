@@ -93,6 +93,20 @@ window.applySingleFoilLayer = function($layer, holo, mask) {
         baseHolo = 'multiFoils';
     }
 
+    // Custom Image Overlay Layer
+    if (baseHolo === 'custom-image') {
+        $layer.css({
+            'background-image': `url(${mask})`,
+            'background-size': '100% 100%',
+            'background-position': 'center',
+            'background-repeat': 'no-repeat',
+            'opacity': 1,
+            'will-change': 'transform, opacity'
+        });
+        $layer.addClass('active');
+        return;
+    }
+
     if (POKEMON_FOILS[baseHolo]) {
         let rarityVal = POKEMON_FOILS[baseHolo];
         $layer.addClass("card");
@@ -101,11 +115,11 @@ window.applySingleFoilLayer = function($layer, holo, mask) {
         if (rarityVal.includes('pokemon')) { $layer.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
         $layer.attr("data-rarity", rarityVal.trim());
 
-        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+        if (mask) {
             $layer.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
         const rx = 0.5, ry = 0.5;
-        $layer.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+        $layer.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
 
         if ($layer.find('.card__shine').length === 0) {
             $layer.append('<div class="card__shine"></div>');
@@ -122,18 +136,15 @@ window.applySingleFoilLayer = function($layer, holo, mask) {
             if (mask) {
                 $layer.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
-            $layer.css({'--mx': 0.5, '--my': 0.5});
         } else {
             $layer.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+            if (mask) {
                 $layer.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
-            $layer.css({'--mx': 0.5, '--my': 0.5});
         }
     }
 
     $layer.css({
-        '--angle': '135deg',
         '--card-opacity': 1,
         'will-change': 'transform, opacity'
     });
@@ -435,11 +446,16 @@ window.initMaskEditor = function() {
 
 window.initMaskCanvas = function() {
     // Supports all integrated form input IDs
-    const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
+    const currentMask = $(window.maskTargetInput || '#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
 
     window.maskZoom = 1;
     window.maskPanX = 0;
     window.maskPanY = 0;
+
+    window.isLayerMask = false;
+    if (window.maskTargetInput && (window.maskTargetInput.includes('layer-mask-input') || window.maskTargetInput.includes('layer-custom-mask'))) {
+        window.isLayerMask = true;
+    }
 
     // Determine if multiFoils is active to show/hide palette
     let isMultiFoilsActive = false;
@@ -481,7 +497,11 @@ window.initMaskCanvas = function() {
 
     window.updateMaskZoom();
 
-    window.maskCtx.fillStyle = 'black';
+    if (window.isLayerMask) {
+        window.maskCtx.fillStyle = 'white';
+    } else {
+        window.maskCtx.fillStyle = 'black';
+    }
     window.maskCtx.fillRect(0, 0, window.maskCanvas.width, window.maskCanvas.height);
 
     if (currentMask) {
@@ -535,10 +555,19 @@ window.drawMask = function(e) {
 
     let strokeColor = 'black';
     if (window.currentTool === 'brush') {
-        if (window.isMultiFoilsActive && window.MultiFoils && typeof window.MultiFoils.getBrushHex === 'function') {
+        if (window.isLayerMask) {
+            strokeColor = 'black';
+        } else if (window.isMultiFoilsActive && window.MultiFoils && typeof window.MultiFoils.getBrushHex === 'function') {
             strokeColor = window.MultiFoils.getBrushHex();
         } else {
             strokeColor = 'white';
+        }
+    } else {
+        // Eraser
+        if (window.isLayerMask) {
+            strokeColor = 'white';
+        } else {
+            strokeColor = 'black';
         }
     }
     window.maskCtx.strokeStyle = strokeColor;
