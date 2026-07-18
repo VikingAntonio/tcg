@@ -69,8 +69,123 @@ window.getAlbumSize = function($albumContainer) {
     return { width, height };
 };
 
+window.applySingleFoilLayer = function($layer, holo, mask) {
+    const POKEMON_FOILS = window.POKEMON_FOILS;
+    let baseHolo = holo;
+    if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
+
+    let isCustomFoil = false;
+    if (baseHolo.startsWith('custom-foil|')) {
+        isCustomFoil = true;
+        baseHolo = baseHolo.split('|')[1] || 'foil';
+    }
+    if (baseHolo.startsWith('custom-textures|')) {
+        baseHolo = 'custom-textures';
+    }
+
+    let isMultiFoils = false;
+    let multiFoilsColor = '';
+    if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
+        isMultiFoils = true;
+        if (baseHolo.startsWith('multiFoils|')) {
+            multiFoilsColor = baseHolo.split('|')[1] || '';
+        }
+        baseHolo = 'multiFoils';
+    }
+
+    if (POKEMON_FOILS[baseHolo]) {
+        let rarityVal = POKEMON_FOILS[baseHolo];
+        $layer.addClass("card");
+        if (rarityVal.includes('trainer gallery')) { $layer.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+        if (rarityVal.includes('supporter')) { $layer.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+        if (rarityVal.includes('pokemon')) { $layer.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+        $layer.attr("data-rarity", rarityVal.trim());
+
+        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+            $layer.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+        }
+        const rx = 0.5, ry = 0.5;
+        $layer.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+
+        if ($layer.find('.card__shine').length === 0) {
+            $layer.append('<div class="card__shine"></div>');
+        }
+        if ($layer.find('.card__glare').length === 0) {
+            $layer.append('<div class="card__glare"></div>');
+        }
+    } else {
+        if (isMultiFoils) {
+            $layer.addClass('multi-foils');
+            if (multiFoilsColor) {
+                $layer.addClass(`multi-foils-${multiFoilsColor}`);
+            }
+            if (mask) {
+                $layer.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            $layer.css({'--mx': 0.5, '--my': 0.5});
+        } else {
+            $layer.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                $layer.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            $layer.css({'--mx': 0.5, '--my': 0.5});
+        }
+    }
+
+    $layer.css({
+        '--angle': '135deg',
+        '--card-opacity': 1,
+        'will-change': 'transform, opacity'
+    });
+
+    if ($layer.find('.holo-layer').length === 0) {
+        $layer.append('<div class="holo-layer"></div>');
+    }
+    if (baseHolo === 'pokeball-rare' && $layer.find('.holo-layer-red').length === 0) {
+        $layer.append('<div class="holo-layer-red"></div>');
+    }
+
+    $layer.find('.holo-layer, .holo-layer-red, .card__shine, .card__glare').css({
+        'will-change': 'transform, opacity',
+        'backface-visibility': 'hidden',
+        '-webkit-backface-visibility': 'hidden'
+    });
+
+    $layer.addClass('active foil-loop');
+};
+
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
+
+    $el.find('.foil-effect-container').remove();
+
+    if (holo.includes(';')) {
+        const effects = holo.split(';');
+        const masks = mask ? mask.split(';') : [];
+
+        $el.find('.holo-layer, .holo-layer-red, .card__shine, .card__glare').remove();
+        $el.removeClass('active foil-loop');
+        $el.css({
+            '--angle': '135deg',
+            '--card-opacity': 1,
+            'will-change': 'transform, opacity'
+        });
+
+        effects.forEach((eff, idx) => {
+            const m = masks[idx] || '';
+            const $layer = $('<div class="foil-effect-container"></div>').css({
+                position: 'absolute',
+                top: 0, left: 0, width: '100%', height: '100%',
+                'border-radius': 'inherit', 'pointer-events': 'none', 'overflow': 'hidden',
+                'z-index': 10 + idx
+            });
+            $el.append($layer);
+            window.applySingleFoilLayer($layer, eff, m);
+        });
+
+        $el.addClass('active foil-loop');
+        return;
+    }
 
     const POKEMON_FOILS = window.POKEMON_FOILS;
 
@@ -378,6 +493,16 @@ window.initMaskCanvas = function() {
         img.src = currentMask;
     }
     window.maskHistory = [];
+
+    // Manage guide overlay
+    if (window.maskGuideUrl) {
+        $('#mask-guide-overlay').css({
+            'background-image': `url(${window.maskGuideUrl})`,
+            'display': 'block'
+        });
+    } else {
+        $('#mask-guide-overlay').css('display', 'none');
+    }
 };
 
 window.saveMaskHistory = function() {
@@ -735,6 +860,7 @@ $(document).ready(function() {
                     <div id="mask-viewport" style="width: 100%; height: 350px; overflow: auto; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center; padding: 20px;">
                         <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center;">
                             <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block; width: 100%; height: 100%;"></canvas>
+                            <div id="mask-guide-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.4; display: none; background-size: cover; background-position: center;"></div>
                         </div>
                     </div>
 

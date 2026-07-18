@@ -605,11 +605,37 @@ $(document).ready(async function() {
             holoEffect = holoEffect.substring(2);
         }
 
+        // Compile additional layers if present
+        let finalHolo = holoEffect;
+        let finalMask = $('#slot-custom-mask').val() || '';
+
+        const layerHolos = [];
+        const layerMasks = [];
+
+        $('#multifoil-layers-container .multifoil-layer-row').each(function() {
+            let rowHolo = $(this).find('.layer-holo-effect').val() || '';
+            const rowMask = $(this).find('.layer-custom-mask').val() || '';
+            const rowShowFoil = $(this).find('.layer-show-foil-list').is(':checked');
+
+            if (rowHolo) {
+                if (rowShowFoil && !rowHolo.startsWith('L:')) {
+                    rowHolo = 'L:' + rowHolo;
+                }
+                layerHolos.push(rowHolo);
+                layerMasks.push(rowMask);
+            }
+        });
+
+        if (layerHolos.length > 0) {
+            finalHolo = finalHolo + ';' + layerHolos.join(';');
+            finalMask = finalMask + ';' + layerMasks.join(';');
+        }
+
         const cardData = {
             image_url: imageUrl,
             name: $('#slot-name').val() || '',
-            holo_effect: holoEffect,
-            custom_mask_url: $('#slot-custom-mask').val() || '',
+            holo_effect: finalHolo,
+            custom_mask_url: finalMask,
             rarity: $('#slot-rarity').val() || '',
             expansion: $('#slot-expansion').val() || '',
             condition: $('#slot-condition').val() || 'M',
@@ -722,6 +748,11 @@ $(document).ready(async function() {
             $('#slot-foil-list-container').hide();
             $('#slot-show-foil-list').prop('checked', false);
         }
+    });
+
+    $('#btn-add-foil-layer').click(function(e) {
+        e.preventDefault();
+        window.addFoilLayerRow('', '');
     });
 
     $('#btn-open-mask-editor').click(function(e) {
@@ -2223,6 +2254,7 @@ async function updateCardOrder(cardIds) {
 function editDeckCard(card) {
     editingType = 'deck-card';
     currentDeckCardId = card.id || card.localId;
+    window.maskGuideUrl = null;
 
     // Reset Tabs
     $('.slot-tab-btn').removeClass('active');
@@ -2233,12 +2265,17 @@ function editDeckCard(card) {
     $('#slot-modal').data('current-obtained', card.obtained !== false);
     $('#slot-image-url').val(card.image_url || '');
     $('#slot-name').val(card.name || '');
+    $('#multifoil-layers-container').empty();
 
     let holo = card.holo_effect || '';
-    $('#slot-modal').attr('data-complex-val', holo);
-    $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
-
     let baseHolo = holo;
+    if (holo.includes(';')) {
+        baseHolo = holo.split(';')[0];
+    }
+
+    $('#slot-modal').attr('data-complex-val', baseHolo);
+    $('#slot-show-foil-list').prop('checked', baseHolo.startsWith('L:'));
+
     if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
     if (baseHolo.startsWith('custom-foil|')) {
@@ -2265,13 +2302,21 @@ function editDeckCard(card) {
         }
     }
 
-    $('#slot-custom-mask').val(card.custom_mask_url || '');
+    let mask = card.custom_mask_url || '';
+    let baseMask = mask;
+    if (mask.includes(';')) {
+        baseMask = mask.split(';')[0];
+    }
+    $('#slot-custom-mask').val(baseMask || '');
 
     $('#slot-rarity').val(card.rarity || '');
     $('#slot-expansion').val(card.expansion || '');
     $('#slot-condition').val(card.condition || '');
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
+
+    // Populate additional layers
+    window.initFoilLayersUI(card.holo_effect || '', card.custom_mask_url || '');
 
     $('#slot-modal').addClass('active');
 }
@@ -2909,6 +2954,7 @@ async function loadBotMessages() {
 
 async function loadSlotData(pageId, slotIndex) {
     editingType = 'slot';
+    window.maskGuideUrl = null;
 
     // Prioritize local state
     let data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
@@ -2946,6 +2992,7 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-condition').val('');
     $('#slot-quantity').val('');
     $('#slot-price').val('');
+    $('#multifoil-layers-container').empty();
 
     if (data) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
@@ -2953,10 +3000,14 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-name').val(data.name || '');
 
         let holo = data.holo_effect || '';
-        $('#slot-modal').attr('data-complex-val', holo);
-        $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
-
         let baseHolo = holo;
+        if (holo.includes(';')) {
+            baseHolo = holo.split(';')[0];
+        }
+
+        $('#slot-modal').attr('data-complex-val', baseHolo);
+        $('#slot-show-foil-list').prop('checked', baseHolo.startsWith('L:'));
+
         if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
         if (baseHolo.startsWith('custom-foil|')) {
@@ -2983,13 +3034,18 @@ async function loadSlotData(pageId, slotIndex) {
             }
         }
 
-        if (holo) {
+        if (baseHolo) {
             $('#slot-foil-list-container').show();
         } else {
             $('#slot-foil-list-container').hide();
         }
 
-        $('#slot-custom-mask').val(data.custom_mask_url || '');
+        let mask = data.custom_mask_url || '';
+        let baseMask = mask;
+        if (mask.includes(';')) {
+            baseMask = mask.split(';')[0];
+        }
+        $('#slot-custom-mask').val(baseMask || '');
 
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');
@@ -2997,6 +3053,8 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-quantity').val(data.quantity || '');
         $('#slot-price').val(data.price || '');
 
+        // Populate additional layers
+        window.initFoilLayersUI(data.holo_effect || '', data.custom_mask_url || '');
     }
 
     $('#slot-modal').addClass('active');
@@ -3982,3 +4040,112 @@ $(document).on('click', '.nexus-section-header', function() {
     // Convert to Capital Case (Main, Extra, Side)
     activeNexusSection = activeNexusSection.charAt(0).toUpperCase() + activeNexusSection.slice(1).toLowerCase();
 });
+
+window.addFoilLayerRow = function(holoVal = '', maskVal = '') {
+    const $container = $('#multifoil-layers-container');
+    const rowIdx = $container.children().length;
+
+    // Check if the holoVal starts with 'L:' (Apply Foil on list)
+    let isListFoil = false;
+    let baseHolo = holoVal;
+    if (baseHolo.startsWith('L:')) {
+        isListFoil = true;
+        baseHolo = baseHolo.substring(2);
+    }
+
+    // Copy options from main select dynamically
+    const optionsHtml = $('#slot-holo-effect').html();
+
+    const $row = $(`
+        <div class="multifoil-layer-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 10px; color: #888;">Efecto Foil</label>
+                <select class="layer-holo-effect" style="width: 100%; background: #252525; color: white; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; height: 42px;">
+                    ${optionsHtml}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 10px; color: #888;">Máscara (Base64/URL)</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" class="layer-custom-mask" placeholder="Sin máscara" value="${maskVal}" style="padding: 10px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #1a1a1a; color: white; width: 100%; height: 42px;">
+                    <button type="button" class="btn btn-secondary btn-layer-edit-mask" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Editar Máscara"><i class="fas fa-paint-brush"></i></button>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; height: 42px;">
+                <label style="display: flex; flex-direction: column; align-items: center; cursor: pointer; margin-bottom: 0; min-width: 45px;">
+                    <span style="font-size: 9px; color: #888; margin-bottom: 2px;">List Foil</span>
+                    <label class="switch switch-mini" style="transform: scale(0.85); margin-bottom: 0;">
+                        <input type="checkbox" class="layer-show-foil-list" ${isListFoil ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+                <button type="button" class="btn btn-danger btn-remove-layer" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Eliminar Capa"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `);
+
+    // Set initial selected option
+    $row.find('.layer-holo-effect').val(baseHolo);
+
+    // Wire up remove button
+    $row.find('.btn-remove-layer').on('click', function() {
+        $row.remove();
+    });
+
+    // Wire up edit mask button with guide logic
+    $row.find('.btn-layer-edit-mask').on('click', function(e) {
+        e.preventDefault();
+        const cardImgUrl = $('#slot-image-url').val();
+        if (!cardImgUrl) {
+            Swal.fire('Atención', 'Primero debes poner la URL de la imagen de la carta para usar de referencia.', 'warning');
+            return;
+        }
+
+        // Find other masks that could act as a guide
+        let guideUrl = $('#slot-custom-mask').val() || '';
+        if (!guideUrl) {
+            $('.layer-custom-mask').not($row.find('.layer-custom-mask')).each(function() {
+                const val = $(this).val();
+                if (val) {
+                    guideUrl = val;
+                    return false; // break
+                }
+            });
+        }
+
+        window.maskGuideUrl = guideUrl;
+
+        const $maskInput = $row.find('.layer-custom-mask');
+        // Generate a unique ID if it doesn't have one
+        let inputId = $maskInput.attr('id');
+        if (!inputId) {
+            inputId = 'layer-mask-input-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            $maskInput.attr('id', inputId);
+        }
+
+        window.maskTargetInput = '#' + inputId;
+
+        // Set card as background
+        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
+
+        window.initMaskCanvas();
+        $('#mask-editor-overlay').addClass('active');
+    });
+
+    $container.append($row);
+};
+
+window.initFoilLayersUI = function(holo, mask) {
+    $('#multifoil-layers-container').empty();
+    if (!holo) return;
+
+    if (holo.includes(';')) {
+        const effects = holo.split(';');
+        const masks = mask ? mask.split(';') : [];
+
+        // First effect goes to main UI. The rest are layer rows
+        for (let i = 1; i < effects.length; i++) {
+            window.addFoilLayerRow(effects[i], masks[i] || '');
+        }
+    }
+};
