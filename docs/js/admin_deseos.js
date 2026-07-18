@@ -65,7 +65,7 @@ function initAdminWishlistListeners() {
 
     $('#modal-wishlist-holo-effect').on('change', function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils') {
+        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils' || val === 'custom-image') {
             $('#modal-wishlist-mask-container').show();
         } else {
             $('#modal-wishlist-mask-container').hide();
@@ -77,6 +77,25 @@ function initAdminWishlistListeners() {
         window.addWishlistFoilLayerRow('', '');
     });
 
+    const $wishlistMaskFileInput = $('<input type="file" accept="image/*" style="display: none;">');
+    $('body').append($wishlistMaskFileInput);
+    $('#btn-upload-wishlist-mask').on('click', function(e) {
+        e.preventDefault();
+        $wishlistMaskFileInput.click();
+    });
+    $wishlistMaskFileInput.on('change', async function() {
+        if (this.files.length > 0) {
+            Swal.fire({ title: 'Subiendo máscara...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const url = await CloudinaryUpload.uploadImage(this.files[0]);
+                $('#modal-wishlist-custom-mask').val(url).trigger('change');
+                Swal.fire('¡Subida exitosa!', 'La máscara se ha cargado correctamente.', 'success');
+            } catch (err) {
+                Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
+            }
+        }
+    });
+
     $('#btn-open-mask-editor-wishlist').click(function(e) {
         e.preventDefault();
         const cardImgUrl = $('#modal-wishlist-card-img').attr('src');
@@ -85,6 +104,7 @@ function initAdminWishlistListeners() {
             return;
         }
         window.maskTargetInput = '#modal-wishlist-custom-mask';
+        window.isLayerMask = false;
         $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
         window.initMaskCanvas();
         $('#mask-editor-overlay').addClass('active');
@@ -109,12 +129,8 @@ function initAdminWishlistListeners() {
         $('#wishlist-layers-container .wishlist-layer-row').each(function() {
             let rowHolo = $(this).find('.layer-holo-effect').val() || '';
             const rowMask = $(this).find('.layer-custom-mask').val() || '';
-            const rowShowFoil = $(this).find('.layer-show-foil-list').is(':checked');
 
             if (rowHolo) {
-                if (rowShowFoil && !rowHolo.startsWith('L:')) {
-                    rowHolo = 'L:' + rowHolo;
-                }
                 layerHolos.push(rowHolo);
                 layerMasks.push(rowMask);
             }
@@ -517,36 +533,28 @@ window.addWishlistFoilLayerRow = function(holoVal = '', maskVal = '') {
     const $container = $('#wishlist-layers-container');
     const optionsHtml = $('#modal-wishlist-holo-effect').html();
 
-    let isListFoil = false;
     let baseHolo = holoVal;
     if (baseHolo.startsWith('L:')) {
-        isListFoil = true;
         baseHolo = baseHolo.substring(2);
     }
 
     const $row = $(`
-        <div class="wishlist-layer-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <div class="wishlist-layer-row" style="display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 10px; align-items: end; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
             <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 10px; color: #888;">Efecto Foil</label>
+                <label style="font-size: 10px; color: #888;">Efecto Foil / Capa</label>
                 <select class="layer-holo-effect" style="width: 100%; background: #252525; color: white; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; height: 42px;">
                     ${optionsHtml}
                 </select>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 10px; color: #888;">Máscara (Base64/URL)</label>
+                <label style="font-size: 10px; color: #888;">Máscara o Imagen de Capa</label>
                 <div style="display: flex; gap: 5px;">
-                    <input type="text" class="layer-custom-mask" placeholder="Sin máscara" value="${maskVal}" style="padding: 10px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #1a1a1a; color: white; width: 100%; height: 42px;">
-                    <button type="button" class="btn btn-secondary btn-layer-edit-mask-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Editar Máscara"><i class="fas fa-paint-brush"></i></button>
+                    <input type="text" class="layer-custom-mask" placeholder="Sin máscara / URL" value="${maskVal}" style="padding: 10px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #1a1a1a; color: white; width: 100%; height: 42px;">
+                    <button type="button" class="btn btn-secondary btn-layer-upload-mask-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Subir Imagen"><i class="fas fa-upload"></i> Subir</button>
+                    <button type="button" class="btn btn-secondary btn-layer-edit-mask-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Editar Máscara"><i class="fas fa-paint-brush"></i> Editar</button>
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; height: 42px;">
-                <label style="display: flex; flex-direction: column; align-items: center; cursor: pointer; margin-bottom: 0; min-width: 45px;">
-                    <span style="font-size: 9px; color: #888; margin-bottom: 2px;">List Foil</span>
-                    <label class="switch switch-mini" style="transform: scale(0.85); margin-bottom: 0;">
-                        <input type="checkbox" class="layer-show-foil-list" ${isListFoil ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                </label>
                 <button type="button" class="btn btn-danger btn-remove-layer-wishlist" style="padding: 10px 15px; font-size: 12px; border-radius: 8px; height: 42px;" title="Eliminar Capa"><i class="fas fa-trash"></i></button>
             </div>
         </div>
@@ -556,6 +564,26 @@ window.addWishlistFoilLayerRow = function(holoVal = '', maskVal = '') {
 
     $row.find('.btn-remove-layer-wishlist').on('click', function() {
         $row.remove();
+    });
+
+    // Wire up upload button
+    const $fileInput = $('<input type="file" accept="image/*" style="display: none;">');
+    $row.append($fileInput);
+    $row.find('.btn-layer-upload-mask-wishlist').on('click', function(e) {
+        e.preventDefault();
+        $fileInput.click();
+    });
+    $fileInput.on('change', async function() {
+        if (this.files.length > 0) {
+            Swal.fire({ title: 'Subiendo capa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const url = await CloudinaryUpload.uploadImage(this.files[0]);
+                $row.find('.layer-custom-mask').val(url).trigger('change');
+                Swal.fire('¡Subida exitosa!', 'La imagen se ha cargado correctamente.', 'success');
+            } catch (err) {
+                Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
+            }
+        }
     });
 
     $row.find('.btn-layer-edit-mask-wishlist').on('click', function(e) {
