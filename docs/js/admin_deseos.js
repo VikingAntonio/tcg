@@ -10,6 +10,9 @@ let pendingWishlistAdmin = [];
 $(document).ready(function() {
     initAdminWishlistListeners();
     loadWishlistSlotNames();
+    if (typeof window.setupMultiMaskField === 'function') {
+        window.setupMultiMaskField('#modal-wishlist-custom-mask', '#wishlist-multi-mask-rows-container', '#btn-wishlist-add-mask-row');
+    }
 });
 
 function initAdminWishlistListeners() {

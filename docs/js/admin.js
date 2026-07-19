@@ -100,6 +100,10 @@ $(document).ready(async function() {
     await checkSession();
     initTheme();
 
+    if (typeof window.setupMultiMaskField === 'function') {
+        window.setupMultiMaskField('#slot-custom-mask', '#slot-multi-mask-rows-container', '#btn-slot-add-mask-row');
+    }
+
     // --- Navigation (Dashboard Tiles) ---
     $(document).on('click', '#btn-show-albums', function(e) {
         e.preventDefault();

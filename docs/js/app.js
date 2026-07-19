@@ -1161,6 +1161,15 @@ async function openCardModal($slot) {
 }
 
 function applyVisualsToModal(holo, mask, use3d, options = {}) {
+    // Asynchronously resolve multiple masks if semicolon is present
+    const masks = window.parseMultipleMasks(mask);
+    if (masks.length > 1) {
+        window.resolveMaskUrl(mask).then(resolvedMask => {
+            applyVisualsToModal(holo, resolvedMask, use3d, options);
+        });
+        return;
+    }
+
     const $card3d = $("#card-3d-container");
     const $card = $("#card-3d");
 
@@ -1205,7 +1214,7 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
             if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
             $card.attr("data-rarity", rarityVal.trim());
 
-            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+            if (mask) {
                 $card.addClass("masked");
                 const maskVal = `url(${mask})`;
                 $card.css("--mask", maskVal);
@@ -1232,7 +1241,7 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
                 if (baseHolo === 'pokeball-rare' && $card.find('.holo-layer-red').length === 0) {
                     $card.append('<div class="holo-layer-red"></div>');
                 }
-                if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                if (mask) {
                     $card.addClass("masked");
                     const maskVal = `url(${mask})`;
                     $card.css("--mask", maskVal);

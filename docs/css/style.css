@@ -5545,3 +5545,34 @@ body.modal-open #decks-view.active {
         padding: 8px 12px !important;
     }
 }
+
+/* --- MULTI-MASK COMPOSITING FOR DUEL TERMINAL & POKEBALL RARE --- */
+.card-3d.masked.duel-terminal .holo-layer,
+.card-slot.masked.duel-terminal .holo-layer,
+.wishlist-card-item.masked.duel-terminal .holo-layer,
+.duel-terminal.masked .holo-layer {
+    -webkit-mask-image: var(--mask-url), var(--duel-terminal-mask, none) !important;
+    mask-image: var(--mask-url), var(--duel-terminal-mask, none) !important;
+    -webkit-mask-composite: source-in !important;
+    mask-composite: intersect !important;
+}
+
+.card-3d.masked.pokeball-rare .holo-layer,
+.card-slot.masked.pokeball-rare .holo-layer,
+.wishlist-card-item.masked.pokeball-rare .holo-layer,
+.pokeball-rare.masked .holo-layer {
+    -webkit-mask-image: var(--mask-url), var(--pokeball-white-mask, none) !important;
+    mask-image: var(--mask-url), var(--pokeball-white-mask, none) !important;
+    -webkit-mask-composite: source-in !important;
+    mask-composite: intersect !important;
+}
+
+.card-3d.masked.pokeball-rare .holo-layer-red,
+.card-slot.masked.pokeball-rare .holo-layer-red,
+.wishlist-card-item.masked.pokeball-rare .holo-layer-red,
+.pokeball-rare.masked .holo-layer-red {
+    -webkit-mask-image: var(--mask-url), var(--pokeball-red-mask, none) !important;
+    mask-image: var(--mask-url), var(--pokeball-red-mask, none) !important;
+    -webkit-mask-composite: source-in !important;
+    mask-composite: intersect !important;
+}
