@@ -1939,30 +1939,15 @@ input:checked + .slider:before {
 .card-3d-container .card-3d.masked .card__shine,
 .card-3d-container .card-3d.masked .card__shine:before,
 .card-3d-container .card-3d.masked .card__shine:after,
-.card-slot.masked .holo-layer,
-.card-slot.masked .card__shine,
-.card-slot.masked .card__shine:before,
-.card-slot.masked .card__shine:after,
-.wishlist-card-item.masked .holo-layer,
-.wishlist-card-item.masked .card__shine,
-.wishlist-card-item.masked .card__shine:before,
-.wishlist-card-item.masked .card__shine:after,
-.card.masked .holo-layer,
-.card.masked .card__shine,
-.card.masked .card__shine:before,
-.card.masked .card__shine:after,
-.masked .holo-layer,
-.masked .card__shine,
-.masked .card__shine:before,
-.masked .card__shine:after {
-    -webkit-mask-image: var(--mask-url) !important;
-    mask-image: var(--mask-url) !important;
-    -webkit-mask-size: 100% 100% !important;
-    mask-size: 100% 100% !important;
-    -webkit-mask-position: center !important;
-    mask-position: center !important;
-    -webkit-mask-repeat: no-repeat !important;
-    mask-repeat: no-repeat !important;
+.card-slot.masked .holo-layer {
+    -webkit-mask-image: var(--mask-url);
+    mask-image: var(--mask-url);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
     /* Force luminance mode for Black & White masks from the editor */
     mask-mode: luminance !important;
     -webkit-mask-source-type: luminance !important;
