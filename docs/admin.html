@@ -2008,7 +2008,6 @@
                                     <option value="foil" style="background: #252525;">Foil</option>
                                     <option value="custom-texture" style="background: #252525;">CustomTexture</option>
                                     <option value="custom-foil" style="background: #252525;">CustomFoil</option>
-                                    <option value="custom-image" style="background: #252525;">Imagen Personalizada (Capa)</option>
                                     <option value="multiFoils" style="background: #252525;">MultiFoils</option>
                                     <option value="pokeball-rare" style="background: #252525;">Pokeball Rare</option>
                                     <option value="duel-terminal" style="background: #252525;">Duel Terminal</option>
@@ -2036,16 +2035,12 @@
                             </select>
                         </div>
                         <div class="form-group" id="custom-mask-container" style="display: none; grid-column: span 2;">
-                            <label>URL de la Máscara o Capa</label>
+                            <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
                             <div style="display: flex; gap: 10px;">
                                 <input type="text" id="slot-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
-                                <button id="btn-open-mask-editor" class="btn btn-secondary" type="button" style="white-space: nowrap;">
+                                <button id="btn-open-mask-editor" class="btn btn-secondary" style="white-space: nowrap;">
                                     <i class="fas fa-paint-brush"></i> Editar
                                 </button>
-                                <button id="btn-upload-primary-mask" class="btn btn-primary" type="button" style="white-space: nowrap;">
-                                    <i class="fas fa-upload"></i> Subir
-                                </button>
-                                <input type="file" id="slot-custom-mask-file" accept="image/*" style="display: none;">
                             </div>
                         </div>
                         <div class="form-group" id="custom-foil-type-container" style="display: none; grid-column: span 2;">
@@ -2075,16 +2070,6 @@
                                 <option value="pk-rare-holo-v-full-art" style="background: #252525;">PK: V Full Art</option>
                                 <option value="pk-reverse-holo" style="background: #252525;">PK: Reverse Holo</option>
                             </select>
-                        </div>
-                        <!-- Multi-Foil Layers Container -->
-                        <div class="form-group" style="grid-column: span 2; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 15px;">
-                            <label style="font-weight: bold; color: #ff9f43; font-size: 1rem;"><i class="fas fa-layer-group"></i> Capas de Efectos Foils Adicionales</label>
-                            <div id="additional-foils-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                                <!-- Dynamically populated rows -->
-                            </div>
-                            <button id="btn-add-foil-layer" class="btn btn-secondary btn-sm" type="button" style="margin-top: 10px; width: 100%;">
-                                <i class="fas fa-plus-circle"></i> Agregar Capa de Foil
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -2161,7 +2146,6 @@
                     <option value="foil">Foil</option>
                     <option value="custom-texture">CustomTexture</option>
                     <option value="custom-foil">CustomFoil</option>
-                    <option value="custom-image">Imagen Personalizada (Capa)</option>
                     <option value="multiFoils">MultiFoils</option>
                     <option value="pokeball-rare">Pokeball Rare</option>
                     <option value="duel-terminal">Duel Terminal</option>
@@ -2190,28 +2174,13 @@
             </div>
 
             <div class="form-group" id="modal-wishlist-mask-container" style="display: none;">
-                <label>URL de la Máscara o Capa</label>
+                <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="modal-wishlist-custom-mask" class="wishlist-field" placeholder="midominio.com/mascara.png" style="flex: 1;">
-                    <button id="btn-open-mask-editor-wishlist" class="btn btn-secondary" type="button" style="white-space: nowrap;">
+                    <button id="btn-open-mask-editor-wishlist" class="btn btn-secondary" style="white-space: nowrap;">
                         <i class="fas fa-paint-brush"></i> Editar
                     </button>
-                    <button id="btn-upload-primary-mask-wishlist" class="btn btn-primary" type="button" style="white-space: nowrap;">
-                        <i class="fas fa-upload"></i> Subir
-                    </button>
-                    <input type="file" id="modal-wishlist-custom-mask-file" accept="image/*" style="display: none;">
                 </div>
-            </div>
-
-            <!-- Multi-Foil Layers Container for Wishlist Admin -->
-            <div class="form-group" id="wishlist-additional-foils-outer-container" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 15px;">
-                <label style="font-weight: bold; color: #ff9f43; font-size: 1rem;"><i class="fas fa-layer-group"></i> Capas de Efectos Foils Adicionales</label>
-                <div id="wishlist-additional-foils-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                    <!-- Dynamically populated rows -->
-                </div>
-                <button id="btn-add-wishlist-foil-layer" class="btn btn-secondary btn-sm" type="button" style="margin-top: 10px; width: 100%;">
-                    <i class="fas fa-plus-circle"></i> Agregar Capa de Foil
-                </button>
             </div>
 
             <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; margin-top: 10px;">
