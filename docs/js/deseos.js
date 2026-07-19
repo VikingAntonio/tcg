@@ -151,7 +151,7 @@ $(document).ready(async function() {
 
     $('#modal-holo-effect').on('change', function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils') {
+        if (val) {
             $('#modal-mask-container').show();
         } else {
             $('#modal-mask-container').hide();
@@ -447,7 +447,7 @@ function openEditModal(item) {
     $('#modal-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-notes').val(item.notes || '');
 
-    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+    if (holo) {
         $('#modal-mask-container').show();
     } else {
         $('#modal-mask-container').hide();

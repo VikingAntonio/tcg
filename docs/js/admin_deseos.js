@@ -65,7 +65,7 @@ function initAdminWishlistListeners() {
 
     $('#modal-wishlist-holo-effect').on('change', function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils') {
+        if (val) {
             $('#modal-wishlist-mask-container').show();
         } else {
             $('#modal-wishlist-mask-container').hide();
@@ -251,7 +251,7 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+    if (holo) {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();

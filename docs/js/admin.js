@@ -704,7 +704,7 @@ $(document).ready(async function() {
 
     $('#slot-holo-effect').change(function() {
         const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures' || val === 'multiFoils') {
+        if (val) {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -2246,23 +2246,21 @@ function editDeckCard(card) {
         $('#slot-holo-effect').val('custom-foil');
         $('#slot-custom-foil-type').val(parts[1] || 'foil');
         $('#custom-foil-type-container').show();
-        $('#custom-mask-container').show();
     } else if (baseHolo.startsWith('custom-textures|')) {
         $('#slot-holo-effect').val('custom-textures');
         $('#custom-foil-type-container').hide();
-        $('#custom-mask-container').show();
     } else if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
         $('#slot-holo-effect').val('multiFoils');
         $('#custom-foil-type-container').hide();
-        $('#custom-mask-container').show();
     } else {
         $('#slot-holo-effect').val(baseHolo);
         $('#custom-foil-type-container').hide();
-        if (baseHolo === 'custom-texture') {
-            $('#custom-mask-container').show();
-        } else {
-            $('#custom-mask-container').hide();
-        }
+    }
+
+    if (baseHolo) {
+        $('#custom-mask-container').show();
+    } else {
+        $('#custom-mask-container').hide();
     }
 
     $('#slot-custom-mask').val(card.custom_mask_url || '');
@@ -2964,23 +2962,21 @@ async function loadSlotData(pageId, slotIndex) {
             $('#slot-holo-effect').val('custom-foil');
             $('#slot-custom-foil-type').val(parts[1] || 'foil');
             $('#custom-foil-type-container').show();
-            $('#custom-mask-container').show();
         } else if (baseHolo.startsWith('custom-textures|')) {
             $('#slot-holo-effect').val('custom-textures');
             $('#custom-foil-type-container').hide();
-            $('#custom-mask-container').show();
         } else if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
             $('#slot-holo-effect').val('multiFoils');
             $('#custom-foil-type-container').hide();
-            $('#custom-mask-container').show();
         } else {
             $('#slot-holo-effect').val(baseHolo);
             $('#custom-foil-type-container').hide();
-            if (baseHolo === 'custom-texture') {
-                $('#custom-mask-container').show();
-            } else {
-                $('#custom-mask-container').hide();
-            }
+        }
+
+        if (baseHolo) {
+            $('#custom-mask-container').show();
+        } else {
+            $('#custom-mask-container').hide();
         }
 
         if (holo) {
