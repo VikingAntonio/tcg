@@ -1168,38 +1168,8 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     $card.removeClass("card masked interacting foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro pokeball-rare duel-terminal");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $card.find('.foil-effect-container, .holo-layer-red').remove();
     $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro pokeball-rare duel-terminal");
     $card3d.find('.holo-layer').css('--mask-url', '');
-
-    if (holo && holo.includes(';')) {
-        const effects = holo.split(';');
-        const masks = mask ? mask.split(';') : [];
-
-        effects.forEach((eff, idx) => {
-            const m = masks[idx] || '';
-            const $layer = $('<div class="foil-effect-container"></div>').css({
-                position: 'absolute',
-                top: 0, left: 0, width: '100%', height: '100%',
-                'border-radius': 'inherit', 'pointer-events': 'none', 'overflow': 'hidden',
-                'z-index': 10 + idx
-            });
-            $card.append($layer);
-            window.applySingleFoilLayer($layer, eff, m);
-        });
-
-        if (use3d) {
-            window.sharedCard3D.init('card-3d-container', 'card-3d', '#z-text-container', options);
-        } else {
-            $card.css('transform', 'none');
-            if (window.sharedCard3D) {
-                window.sharedCard3D.stop();
-            }
-        }
-
-        $card3d.addClass("active");
-        return;
-    }
 
     // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
     let baseHolo = holo;
