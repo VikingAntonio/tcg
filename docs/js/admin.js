@@ -585,12 +585,9 @@ $(document).ready(async function() {
         let holoEffect = $('#slot-holo-effect').val() || '';
         const complexBase = $('#slot-modal').attr('data-complex-val') || '';
 
-        // Extract first effect if complex base contains multiple effects
-        const primaryComplexBase = complexBase.split(';')[0] || '';
-
         // Preserve prefixes if base effect hasn't changed
-        if (primaryComplexBase && (primaryComplexBase.endsWith('|' + holoEffect) || primaryComplexBase.endsWith(':' + holoEffect) || primaryComplexBase === holoEffect)) {
-            holoEffect = primaryComplexBase;
+        if (complexBase && (complexBase.endsWith('|' + holoEffect) || complexBase.endsWith(':' + holoEffect) || complexBase === holoEffect)) {
+            holoEffect = complexBase;
         } else if (holoEffect === 'custom-foil') {
             const subType = $('#slot-custom-foil-type').val() || 'foil';
             holoEffect = `custom-foil|${subType}`;
@@ -602,32 +599,17 @@ $(document).ready(async function() {
 
         // Apply L: prefix if checkbox is checked
         const shouldShowInList = $('#slot-show-foil-list').is(':checked');
-        if (shouldShowInList && holoEffect && !holoEffect.startsWith('L:')) {
+        if (shouldShowInList && !holoEffect.startsWith('L:')) {
             holoEffect = 'L:' + holoEffect;
-        } else if (!shouldShowInList && holoEffect && holoEffect.startsWith('L:')) {
+        } else if (!shouldShowInList && holoEffect.startsWith('L:')) {
             holoEffect = holoEffect.substring(2);
         }
-
-        const effectsArr = [holoEffect];
-        const masksArr = [$('#slot-custom-mask').val() || ''];
-
-        $('#additional-foils-container .foil-layer-row').each(function() {
-            const eff = $(this).find('.layer-effect-select').val() || '';
-            const msk = $(this).find('.layer-mask-input').val() || '';
-            if (eff) {
-                effectsArr.push(eff);
-                masksArr.push(msk);
-            }
-        });
-
-        const finalHoloEffect = effectsArr.join(';');
-        const finalCustomMask = masksArr.join(';');
 
         const cardData = {
             image_url: imageUrl,
             name: $('#slot-name').val() || '',
-            holo_effect: finalHoloEffect,
-            custom_mask_url: finalCustomMask,
+            holo_effect: holoEffect,
+            custom_mask_url: $('#slot-custom-mask').val() || '',
             rarity: $('#slot-rarity').val() || '',
             expansion: $('#slot-expansion').val() || '',
             condition: $('#slot-condition').val() || 'M',
@@ -722,7 +704,7 @@ $(document).ready(async function() {
 
     $('#slot-holo-effect').change(function() {
         const val = $(this).val();
-        if (val !== '') {
+        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures' || val === 'multiFoils') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
@@ -740,23 +722,6 @@ $(document).ready(async function() {
             $('#slot-foil-list-container').hide();
             $('#slot-show-foil-list').prop('checked', false);
         }
-    });
-
-    $('#btn-upload-primary-mask').click(function(e) {
-        e.preventDefault();
-        $('#slot-custom-mask-file').click();
-    });
-
-    $('#slot-custom-mask-file').change(function() {
-        if (this.files && this.files[0]) {
-            handleCloudinaryUpload(this.files[0], '#slot-custom-mask', '#custom-mask-container label');
-        }
-    });
-
-    $('#btn-add-foil-layer').click(function(e) {
-        e.preventDefault();
-        const index = $('#additional-foils-container').children('.foil-layer-row').length;
-        window.renderFoilLayerRow($('#additional-foils-container'), '', '', false, index, '#slot-image-url');
     });
 
     $('#btn-open-mask-editor').click(function(e) {
@@ -2273,15 +2238,7 @@ function editDeckCard(card) {
     $('#slot-modal').attr('data-complex-val', holo);
     $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
-    $('#additional-foils-container').empty();
-
-    let effects = holo.split(';');
-    let masks = (card.custom_mask_url || '').split(';');
-
-    let primaryHolo = effects[0] || '';
-    let primaryMask = masks[0] || '';
-
-    let baseHolo = primaryHolo;
+    let baseHolo = holo;
     if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
     if (baseHolo.startsWith('custom-foil|')) {
@@ -2301,18 +2258,14 @@ function editDeckCard(card) {
     } else {
         $('#slot-holo-effect').val(baseHolo);
         $('#custom-foil-type-container').hide();
-        if (baseHolo) {
+        if (baseHolo === 'custom-texture') {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
         }
     }
 
-    $('#slot-custom-mask').val(primaryMask);
-
-    for (let i = 1; i < effects.length; i++) {
-        window.renderFoilLayerRow($('#additional-foils-container'), effects[i], masks[i] || '', false, i - 1, '#slot-image-url');
-    }
+    $('#slot-custom-mask').val(card.custom_mask_url || '');
 
     $('#slot-rarity').val(card.rarity || '');
     $('#slot-expansion').val(card.expansion || '');
@@ -3003,15 +2956,7 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-modal').attr('data-complex-val', holo);
         $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
-        $('#additional-foils-container').empty();
-
-        let effects = holo.split(';');
-        let masks = (data.custom_mask_url || '').split(';');
-
-        let primaryHolo = effects[0] || '';
-        let primaryMask = masks[0] || '';
-
-        let baseHolo = primaryHolo;
+        let baseHolo = holo;
         if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
         if (baseHolo.startsWith('custom-foil|')) {
@@ -3031,7 +2976,7 @@ async function loadSlotData(pageId, slotIndex) {
         } else {
             $('#slot-holo-effect').val(baseHolo);
             $('#custom-foil-type-container').hide();
-            if (baseHolo) {
+            if (baseHolo === 'custom-texture') {
                 $('#custom-mask-container').show();
             } else {
                 $('#custom-mask-container').hide();
@@ -3044,11 +2989,7 @@ async function loadSlotData(pageId, slotIndex) {
             $('#slot-foil-list-container').hide();
         }
 
-        $('#slot-custom-mask').val(primaryMask);
-
-        for (let i = 1; i < effects.length; i++) {
-            window.renderFoilLayerRow($('#additional-foils-container'), effects[i], masks[i] || '', false, i - 1, '#slot-image-url');
-        }
+        $('#slot-custom-mask').val(data.custom_mask_url || '');
 
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');

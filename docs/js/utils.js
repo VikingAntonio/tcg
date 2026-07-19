@@ -69,256 +69,8 @@ window.getAlbumSize = function($albumContainer) {
     return { width, height };
 };
 
-window.renderFoilLayerRow = function($container, effectVal, maskVal, isWishlist, index, cardImgUrlSelector) {
-    const rowId = `foil-layer-row-${index}`;
-    const selectId = `foil-layer-effect-${index}`;
-    const maskId = `foil-layer-mask-${index}`;
-    const fileId = `foil-layer-file-${index}`;
-
-    const $row = $(`
-        <div id="${rowId}" class="foil-layer-row" style="display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px; margin-bottom: 5px; position: relative;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 0.85rem; font-weight: bold; color: #ff9f43;"><i class="fas fa-layer-group"></i> Capa ${index + 1}</span>
-                <button class="btn btn-sm btn-danger btn-delete-layer" type="button" style="padding: 2px 8px; font-size: 0.8rem;"><i class="fas fa-trash-alt"></i></button>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
-                <div>
-                    <label style="font-size: 0.8rem; margin-bottom: 4px; display: block; color: #ccc;">Efecto Holo</label>
-                    <select id="${selectId}" class="form-control layer-effect-select" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
-                        <option value="">Seleccionar efecto...</option>
-                        <option value="foil">Foil</option>
-                        <option value="custom-texture">CustomTexture</option>
-                        <option value="custom-foil">CustomFoil</option>
-                        <option value="custom-image">Imagen Personalizada (Capa)</option>
-                        <option value="multiFoils">MultiFoils</option>
-                        <option value="pokeball-rare">Pokeball Rare</option>
-                        <option value="duel-terminal">Duel Terminal</option>
-                        <option value="pk-rare-holo">PK: Rare Holo</option>
-                        <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
-                        <option value="pk-rare-holo-v">PK: Rare Holo V</option>
-                        <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
-                        <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
-                        <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
-                        <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
-                        <option value="pk-rare-secret">PK: Rare Secret</option>
-                        <option value="pk-rare-shiny">PK: Rare Shiny</option>
-                        <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
-                        <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
-                        <option value="pk-amazing-rare">PK: Amazing Rare</option>
-                        <option value="pk-radiant-rare">PK: Radiant Rare</option>
-                        <option value="pk-rare-ultra">PK: Rare Ultra</option>
-                        <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
-                        <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
-                        <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
-                        <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
-                        <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
-                        <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
-                        <option value="pk-reverse-holo">PK: Reverse Holo</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label style="font-size: 0.8rem; margin-bottom: 4px; display: block; color: #ccc;">URL de la Máscara o Capa</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="${maskId}" class="form-control layer-mask-input" placeholder="URL o dibujo..." value="${maskVal}" style="flex: 1; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
-                        <button class="btn btn-secondary btn-edit-layer-mask" type="button" style="white-space: nowrap; padding: 0 10px; font-size: 0.85rem;"><i class="fas fa-paint-brush"></i> Editar</button>
-                        <button class="btn btn-primary btn-upload-layer-mask" type="button" style="white-space: nowrap; padding: 0 10px; font-size: 0.85rem;"><i class="fas fa-upload"></i> Subir</button>
-                        <input type="file" id="${fileId}" accept="image/*" style="display: none;">
-                    </div>
-                </div>
-            </div>
-        </div>
-    `);
-
-    $container.append($row);
-
-    // Set select value
-    $row.find('.layer-effect-select').val(effectVal);
-
-    // Delete row event
-    $row.find('.btn-delete-layer').click(function() {
-        $row.remove();
-        // Re-number labels
-        $container.children('.foil-layer-row').each(function(idx) {
-            $(this).find('span').html(`<i class="fas fa-layer-group"></i> Capa ${idx + 1}`);
-        });
-    });
-
-    // Edit mask canvas button
-    $row.find('.btn-edit-layer-mask').click(function(e) {
-        e.preventDefault();
-        // Resolve card image URL dynamically using the selector
-        let cardImgUrl = '';
-        if (cardImgUrlSelector.startsWith('#') || cardImgUrlSelector.startsWith('.')) {
-            const $imgEl = $(cardImgUrlSelector);
-            cardImgUrl = $imgEl.is('img') ? $imgEl.attr('src') : $imgEl.val();
-        } else {
-            cardImgUrl = cardImgUrlSelector;
-        }
-
-        if (!cardImgUrl) {
-            Swal.fire('Atención', 'Primero debes poner la URL de la imagen de la carta para usar de referencia.', 'warning');
-            return;
-        }
-
-        window.maskTargetInput = `#${maskId}`;
-        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-        window.initMaskCanvas();
-        $('#mask-editor-overlay').addClass('active');
-    });
-
-    // Upload layer mask button
-    $row.find('.btn-upload-layer-mask').click(function(e) {
-        e.preventDefault();
-        $(`#${fileId}`).click();
-    });
-
-    $row.find(`#${fileId}`).change(function() {
-        if (this.files && this.files[0]) {
-            handleCloudinaryUpload(this.files[0], `#${maskId}`, `#${rowId} label`);
-        }
-    });
-};
-
-window.applySingleFoilLayer = function($layer, holo, mask) {
-    const POKEMON_FOILS = window.POKEMON_FOILS;
-    let baseHolo = holo;
-    if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
-
-    let isCustomFoil = false;
-    if (baseHolo.startsWith('custom-foil|')) {
-        isCustomFoil = true;
-        baseHolo = baseHolo.split('|')[1] || 'foil';
-    }
-    if (baseHolo.startsWith('custom-textures|')) {
-        baseHolo = 'custom-textures';
-    }
-
-    let isMultiFoils = false;
-    let multiFoilsColor = '';
-    if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
-        isMultiFoils = true;
-        if (baseHolo.startsWith('multiFoils|')) {
-            multiFoilsColor = baseHolo.split('|')[1] || '';
-        }
-        baseHolo = 'multiFoils';
-    }
-
-    // Custom Image Overlay Layer
-    if (baseHolo === 'custom-image') {
-        $layer.css({
-            'background-image': `url(${mask})`,
-            'background-size': '100% 100%',
-            'background-position': 'center',
-            'background-repeat': 'no-repeat',
-            'opacity': 1,
-            'will-change': 'transform, opacity'
-        });
-        $layer.addClass('active');
-        return;
-    }
-
-    if (POKEMON_FOILS[baseHolo]) {
-        let rarityVal = POKEMON_FOILS[baseHolo];
-        $layer.addClass("card");
-        if (rarityVal.includes('trainer gallery')) { $layer.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-        if (rarityVal.includes('supporter')) { $layer.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-        if (rarityVal.includes('pokemon')) { $layer.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-        $layer.attr("data-rarity", rarityVal.trim());
-
-        const rx = 0.5, ry = 0.5;
-        $layer.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
-
-        if ($layer.find('.card__shine').length === 0) {
-            $layer.append('<div class="card__shine"></div>');
-        }
-        if ($layer.find('.card__glare').length === 0) {
-            $layer.append('<div class="card__glare"></div>');
-        }
-    } else {
-        if (isMultiFoils) {
-            $layer.addClass('multi-foils');
-            if (multiFoilsColor) {
-                $layer.addClass(`multi-foils-${multiFoilsColor}`);
-            }
-        } else {
-            $layer.addClass(baseHolo);
-        }
-    }
-
-    $layer.css({
-        '--card-opacity': 1,
-        'will-change': 'transform, opacity'
-    });
-
-    if ($layer.find('.holo-layer').length === 0) {
-        $layer.append('<div class="holo-layer"></div>');
-    }
-    if (baseHolo === 'pokeball-rare' && $layer.find('.holo-layer-red').length === 0) {
-        $layer.append('<div class="holo-layer-red"></div>');
-    }
-
-    $layer.find('.holo-layer, .holo-layer-red, .card__shine, .card__glare').css({
-        'will-change': 'transform, opacity',
-        'backface-visibility': 'hidden',
-        '-webkit-backface-visibility': 'hidden'
-    });
-
-    if (mask) {
-        const maskCss = {
-            '-webkit-mask-image': `url(${mask})`,
-            'mask-image': `url(${mask})`,
-            '-webkit-mask-size': '100% 100%',
-            'mask-size': '100% 100%',
-            '-webkit-mask-position': 'center',
-            'mask-position': 'center',
-            '-webkit-mask-repeat': 'no-repeat',
-            'mask-repeat': 'no-repeat',
-            'mask-mode': 'luminance',
-            '-webkit-mask-source-type': 'luminance',
-            '--mask': `url(${mask})`,
-            '--mask-url': `url(${mask})`
-        };
-        $layer.addClass("masked").css(maskCss);
-        $layer.find('.holo-layer, .holo-layer-red, .card__shine, .card__glare').css(maskCss);
-    }
-
-    $layer.addClass('active foil-loop');
-};
-
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
-
-    $el.find('.foil-effect-container').remove();
-
-    if (holo.includes(';')) {
-        const effects = holo.split(';');
-        const masks = mask ? mask.split(';') : [];
-
-        $el.find('.holo-layer, .holo-layer-red, .card__shine, .card__glare').remove();
-        $el.removeClass('active foil-loop');
-        $el.css({
-            '--angle': '135deg',
-            '--card-opacity': 1,
-            'will-change': 'transform, opacity'
-        });
-
-        effects.forEach((eff, idx) => {
-            const m = masks[idx] || '';
-            const $layer = $('<div class="foil-effect-container"></div>').css({
-                position: 'absolute',
-                top: 0, left: 0, width: '100%', height: '100%',
-                'border-radius': 'inherit', 'pointer-events': 'none', 'overflow': 'hidden',
-                'z-index': 10 + idx
-            });
-            $el.append($layer);
-            window.applySingleFoilLayer($layer, eff, m);
-        });
-
-        $el.addClass('active foil-loop');
-        return;
-    }
 
     const POKEMON_FOILS = window.POKEMON_FOILS;
 
@@ -353,6 +105,9 @@ window.applyFoilToElement = function($el, holo, mask) {
         if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
         $el.attr("data-rarity", rarityVal.trim());
 
+        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+        }
         const rx = 0.5, ry = 0.5;
         $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
     } else {
@@ -361,9 +116,15 @@ window.applyFoilToElement = function($el, holo, mask) {
             if (multiFoilsColor) {
                 $el.addClass(`multi-foils-${multiFoilsColor}`);
             }
+            if (mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
             $el.css({'--mx': 0.5, '--my': 0.5});
         } else {
             $el.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
             $el.css({'--mx': 0.5, '--my': 0.5});
         }
     }
@@ -387,25 +148,6 @@ window.applyFoilToElement = function($el, holo, mask) {
         'backface-visibility': 'hidden',
         '-webkit-backface-visibility': 'hidden'
     });
-
-    if (mask) {
-        const maskCss = {
-            '-webkit-mask-image': `url(${mask})`,
-            'mask-image': `url(${mask})`,
-            '-webkit-mask-size': '100% 100%',
-            'mask-size': '100% 100%',
-            '-webkit-mask-position': 'center',
-            'mask-position': 'center',
-            '-webkit-mask-repeat': 'no-repeat',
-            'mask-repeat': 'no-repeat',
-            'mask-mode': 'luminance',
-            '-webkit-mask-source-type': 'luminance',
-            '--mask': `url(${mask})`,
-            '--mask-url': `url(${mask})`
-        };
-        $el.addClass("masked").css(maskCss);
-        $el.find('.holo-layer, .holo-layer-red, .card__shine, .card__glare').css(maskCss);
-    }
 
     $el.addClass('active foil-loop');
 };
@@ -537,14 +279,10 @@ window.initMaskEditor = function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 window.saveMaskHistory();
-                const defaultFill = window.isLayerMask ? 'white' : 'black';
-                window.maskCtx.fillStyle = defaultFill;
+                window.maskCtx.fillStyle = 'black';
                 window.maskCtx.fillRect(0, 0, window.maskCanvas.width, window.maskCanvas.height);
-                if (window.maskTargetInput) {
-                    $(window.maskTargetInput).val('');
-                } else {
-                    $('#slot-custom-mask, #modal-custom-mask').val('');
-                }
+                // Also clear the input field in calling context if needed
+                $('#slot-custom-mask, #modal-custom-mask').val('');
             }
         });
     });
@@ -572,7 +310,6 @@ window.initMaskEditor = function() {
         }
 
         $('#mask-editor-overlay').removeClass('active');
-        window.maskTargetInput = null;
         Swal.fire('Guardado', 'La máscara se ha generado correctamente.', 'success');
     });
 
@@ -582,24 +319,12 @@ window.initMaskEditor = function() {
 };
 
 window.initMaskCanvas = function() {
-    // Supports all integrated form input IDs, fallback to target if set
-    let currentMask = '';
-    if (window.maskTargetInput) {
-        currentMask = $(window.maskTargetInput).val();
-    } else {
-        currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
-    }
+    // Supports all integrated form input IDs
+    const currentMask = $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #inv-card-custom-mask').val();
 
     window.maskZoom = 1;
     window.maskPanX = 0;
     window.maskPanY = 0;
-
-    // Determine if we are editing a layered/sub-foil mask
-    const isLayerMask = window.maskTargetInput && (
-        $(window.maskTargetInput).hasClass('layer-mask-input') ||
-        window.maskTargetInput.includes('layer-mask')
-    );
-    window.isLayerMask = !!isLayerMask;
 
     // Determine if multiFoils is active to show/hide palette
     let isMultiFoilsActive = false;
@@ -641,9 +366,7 @@ window.initMaskCanvas = function() {
 
     window.updateMaskZoom();
 
-    // Layers start with full white (100% visible) by default, standard custom mask with full black (0% visible)
-    const defaultFill = window.isLayerMask ? 'white' : 'black';
-    window.maskCtx.fillStyle = defaultFill;
+    window.maskCtx.fillStyle = 'black';
     window.maskCtx.fillRect(0, 0, window.maskCanvas.width, window.maskCanvas.height);
 
     if (currentMask) {
@@ -690,14 +413,8 @@ window.drawMask = function(e) {
         if (window.isMultiFoilsActive && window.MultiFoils && typeof window.MultiFoils.getBrushHex === 'function') {
             strokeColor = window.MultiFoils.getBrushHex();
         } else {
-            // For layer mask, brush (draw to hide foil) paints black.
-            // For standard mask, brush (draw to show foil) paints white.
-            strokeColor = window.isLayerMask ? 'black' : 'white';
+            strokeColor = 'white';
         }
-    } else if (window.currentTool === 'eraser') {
-        // For layer mask, eraser (restore background visibility) paints white.
-        // For standard mask, eraser paints black.
-        strokeColor = window.isLayerMask ? 'white' : 'black';
     }
     window.maskCtx.strokeStyle = strokeColor;
 
@@ -1057,7 +774,6 @@ $(document).ready(function() {
 
     $(document).on('click', '#close-mask-editor', function() {
         $('#mask-editor-overlay').removeClass('active');
-        window.maskTargetInput = null;
     });
 
     $(document).on('click', '#btn-open-mask-editor', function() {

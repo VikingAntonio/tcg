@@ -65,28 +65,11 @@ function initAdminWishlistListeners() {
 
     $('#modal-wishlist-holo-effect').on('change', function() {
         const val = $(this).val();
-        if (val !== '') {
+        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils') {
             $('#modal-wishlist-mask-container').show();
         } else {
             $('#modal-wishlist-mask-container').hide();
         }
-    });
-
-    $('#btn-upload-primary-mask-wishlist').click(function(e) {
-        e.preventDefault();
-        $('#modal-wishlist-custom-mask-file').click();
-    });
-
-    $('#modal-wishlist-custom-mask-file').change(function() {
-        if (this.files && this.files[0]) {
-            handleCloudinaryUpload(this.files[0], '#modal-wishlist-custom-mask', '#modal-wishlist-mask-container label');
-        }
-    });
-
-    $('#btn-add-wishlist-foil-layer').click(function(e) {
-        e.preventDefault();
-        const index = $('#wishlist-additional-foils-container').children('.foil-layer-row').length;
-        window.renderFoilLayerRow($('#wishlist-additional-foils-container'), '', '', true, index, '#modal-wishlist-card-img');
     });
 
     $('#btn-open-mask-editor-wishlist').click(function(e) {
@@ -109,29 +92,13 @@ function initAdminWishlistListeners() {
     $('#btn-save-wishlist-modal-admin').click(async function() {
         if (!currentEditingWishlistId) return;
 
-        let holoEffect = $('#modal-wishlist-holo-effect').val() || '';
-        let customMask = $('#modal-wishlist-custom-mask').val() || '';
-
-        const effectsArr = [holoEffect];
-        const masksArr = [customMask];
-
-        $('#wishlist-additional-foils-container .foil-layer-row').each(function() {
-            const eff = $(this).find('.layer-effect-select').val() || '';
-            const msk = $(this).find('.layer-mask-input').val() || '';
-            if (eff) {
-                effectsArr.push(eff);
-                masksArr.push(msk);
-            }
-        });
-
-        const finalHoloEffect = effectsArr.join(';');
-        const finalCustomMask = masksArr.join(';');
+        let holoEffect = $('#modal-wishlist-holo-effect').val();
 
         const data = {
             rarity: $('#modal-wishlist-rarity').val(),
             quantity: parseInt($('#modal-wishlist-quantity').val()) || 1,
-            holo_effect: finalHoloEffect,
-            custom_mask_url: finalCustomMask,
+            holo_effect: holoEffect,
+            custom_mask_url: $('#modal-wishlist-custom-mask').val(),
             use_3d: $('#modal-wishlist-use-3d').is(':checked'),
             show_foil_in_list: $('#modal-wishlist-show-foil-list').is(':checked'),
             notes: $('#modal-wishlist-notes').val()
@@ -273,34 +240,21 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-card-name').text(item.name);
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
-
-    $('#wishlist-additional-foils-container').empty();
-
     const holo = item.holo_effect || '';
-    const effects = holo.split(';');
-    const masks = (item.custom_mask_url || '').split(';');
-
-    const primaryHolo = effects[0] || '';
-    const primaryMask = masks[0] || '';
-
-    if (primaryHolo === 'multiFoils' || primaryHolo.startsWith('multiFoils|')) {
+    if (holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
         $('#modal-wishlist-holo-effect').val('multiFoils');
     } else {
-        $('#modal-wishlist-holo-effect').val(primaryHolo);
+        $('#modal-wishlist-holo-effect').val(holo);
     }
-    $('#modal-wishlist-custom-mask').val(primaryMask);
+    $('#modal-wishlist-custom-mask').val(item.custom_mask_url || '');
     $('#modal-wishlist-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (primaryHolo !== '') {
+    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();
-    }
-
-    for (let i = 1; i < effects.length; i++) {
-        window.renderFoilLayerRow($('#wishlist-additional-foils-container'), effects[i], masks[i] || '', true, i - 1, '#modal-wishlist-card-img');
     }
 
     $('#wishlist-modal-admin').addClass('active');
