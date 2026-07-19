@@ -72,86 +72,84 @@ window.getAlbumSize = function($albumContainer) {
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
 
-    window.resolveMaskUrl(mask, function(resolvedMask) {
-        const POKEMON_FOILS = window.POKEMON_FOILS;
+    const POKEMON_FOILS = window.POKEMON_FOILS;
 
-        // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
-        let baseHolo = holo;
-        if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
+    // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
+    let baseHolo = holo;
+    if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
-        let isCustomFoil = false;
-        if (baseHolo.startsWith('custom-foil|')) {
-            isCustomFoil = true;
-            baseHolo = baseHolo.split('|')[1] || 'foil';
+    let isCustomFoil = false;
+    if (baseHolo.startsWith('custom-foil|')) {
+        isCustomFoil = true;
+        baseHolo = baseHolo.split('|')[1] || 'foil';
+    }
+    if (baseHolo.startsWith('custom-textures|')) {
+        baseHolo = 'custom-textures';
+    }
+
+    let isMultiFoils = false;
+    let multiFoilsColor = '';
+    if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
+        isMultiFoils = true;
+        if (baseHolo.startsWith('multiFoils|')) {
+            multiFoilsColor = baseHolo.split('|')[1] || '';
         }
-        if (baseHolo.startsWith('custom-textures|')) {
-            baseHolo = 'custom-textures';
-        }
+        baseHolo = 'multiFoils';
+    }
 
-        let isMultiFoils = false;
-        let multiFoilsColor = '';
-        if (baseHolo === 'multiFoils' || baseHolo.startsWith('multiFoils|')) {
-            isMultiFoils = true;
-            if (baseHolo.startsWith('multiFoils|')) {
-                multiFoilsColor = baseHolo.split('|')[1] || '';
+    if (POKEMON_FOILS[baseHolo]) {
+        let rarityVal = POKEMON_FOILS[baseHolo];
+        $el.addClass("card");
+        if (rarityVal.includes('trainer gallery')) { $el.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+        if (rarityVal.includes('supporter')) { $el.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+        if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+        $el.attr("data-rarity", rarityVal.trim());
+
+        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+        }
+        const rx = 0.5, ry = 0.5;
+        $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+    } else {
+        if (isMultiFoils) {
+            $el.addClass('multi-foils');
+            if (multiFoilsColor) {
+                $el.addClass(`multi-foils-${multiFoilsColor}`);
             }
-            baseHolo = 'multiFoils';
-        }
-
-        if (POKEMON_FOILS[baseHolo]) {
-            let rarityVal = POKEMON_FOILS[baseHolo];
-            $el.addClass("card");
-            if (rarityVal.includes('trainer gallery')) { $el.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-            if (rarityVal.includes('supporter')) { $el.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-            if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-            $el.attr("data-rarity", rarityVal.trim());
-
-            if (resolvedMask) {
-                $el.addClass("masked").css({"--mask": `url(${resolvedMask})`, "--mask-url": `url(${resolvedMask})`});
+            if (mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
-            const rx = 0.5, ry = 0.5;
-            $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+            $el.css({'--mx': 0.5, '--my': 0.5});
         } else {
-            if (isMultiFoils) {
-                $el.addClass('multi-foils');
-                if (multiFoilsColor) {
-                    $el.addClass(`multi-foils-${multiFoilsColor}`);
-                }
-                if (resolvedMask) {
-                    $el.addClass("masked").css({"--mask": `url(${resolvedMask})`, "--mask-url": `url(${resolvedMask})`});
-                }
-                $el.css({'--mx': 0.5, '--my': 0.5});
-            } else {
-                $el.addClass(baseHolo);
-                if (resolvedMask) {
-                    $el.addClass("masked").css({"--mask": `url(${resolvedMask})`, "--mask-url": `url(${resolvedMask})`});
-                }
-                $el.css({'--mx': 0.5, '--my': 0.5});
+            $el.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
+            $el.css({'--mx': 0.5, '--my': 0.5});
         }
+    }
 
-        $el.css({
-            '--angle': '135deg',
-            '--card-opacity': 1,
-            'will-change': 'transform, opacity'
-        });
-
-        if ($el.find('.holo-layer').length === 0) {
-            $el.append('<div class="holo-layer"></div>');
-        }
-        if (baseHolo === 'pokeball-rare' && $el.find('.holo-layer-red').length === 0) {
-            $el.append('<div class="holo-layer-red"></div>');
-        }
-
-        // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
-        $el.find('.holo-layer, .holo-layer-red').css({
-            'will-change': 'transform, opacity',
-            'backface-visibility': 'hidden',
-            '-webkit-backface-visibility': 'hidden'
-        });
-
-        $el.addClass('active foil-loop');
+    $el.css({
+        '--angle': '135deg',
+        '--card-opacity': 1,
+        'will-change': 'transform, opacity'
     });
+
+    if ($el.find('.holo-layer').length === 0) {
+        $el.append('<div class="holo-layer"></div>');
+    }
+    if (baseHolo === 'pokeball-rare' && $el.find('.holo-layer-red').length === 0) {
+        $el.append('<div class="holo-layer-red"></div>');
+    }
+
+    // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
+    $el.find('.holo-layer, .holo-layer-red').css({
+        'will-change': 'transform, opacity',
+        'backface-visibility': 'hidden',
+        '-webkit-backface-visibility': 'hidden'
+    });
+
+    $el.addClass('active foil-loop');
 };
 
 // --- Global Navigation ---
@@ -670,13 +668,6 @@ window.displayExternalResults = function(results, resultsSelector, onSelectCallb
 $(document).ready(function() {
     window.initMaskEditor();
 
-    // Initialize dynamic multi-mask field managers
-    window.setupMultiMaskField('#custom-mask-container', '#slot-custom-mask', () => $('#slot-image-url').val() || '');
-    window.setupMultiMaskField('#bdd-mask-container', '#bdd-custom-mask', () => $('#bdd-image-url').val() || '');
-    window.setupMultiMaskField('#modal-wishlist-mask-container', '#modal-wishlist-custom-mask', () => $('#modal-wishlist-card-img').attr('src') || '');
-    window.setupMultiMaskField('#modal-mask-container', '#modal-custom-mask', () => $('#modal-card-img').attr('src') || '');
-    window.setupMultiMaskField('#owner-mask-container', '#owner-card-mask', () => $('#expanded-image').attr('src') || '');
-
     // Isolated navigation for public.html if it's there
     if (window.location.pathname.includes('public.html')) {
          // handle deep links etc if needed
@@ -970,210 +961,3 @@ window.sharedCard3D = {
     }
 };
 
-// --- MULTI-MASK MANAGER AND RESOLUTION ---
-
-(function() {
-    const originalVal = $.fn.val;
-    $.fn.val = function(value) {
-        if (arguments.length > 0) {
-            const result = originalVal.apply(this, arguments);
-            if (this.is('#slot-custom-mask, #bdd-custom-mask, #modal-wishlist-custom-mask, #modal-custom-mask, #owner-card-mask')) {
-                this.trigger('change');
-            }
-            return result;
-        }
-        return originalVal.apply(this, arguments);
-    };
-})();
-
-window.mergedMasksCache = window.mergedMasksCache || {};
-
-window.resolveMaskUrl = function(maskStr, callback) {
-    if (!maskStr) {
-        callback('');
-        return;
-    }
-    if (!maskStr.includes(';')) {
-        callback(maskStr);
-        return;
-    }
-    if (window.mergedMasksCache[maskStr]) {
-        callback(window.mergedMasksCache[maskStr]);
-        return;
-    }
-
-    const urls = maskStr.split(';').filter(Boolean);
-    if (urls.length === 0) {
-        callback('');
-        return;
-    }
-    if (urls.length === 1) {
-        callback(urls[0]);
-        return;
-    }
-
-    let loadedCount = 0;
-    const imgs = [];
-    const width = 168;
-    const height = 244;
-
-    const onImageLoaded = () => {
-        loadedCount++;
-        if (loadedCount === urls.length) {
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, width, height);
-
-            imgs.forEach((img, index) => {
-                if (index > 0) {
-                    ctx.globalCompositeOperation = 'screen';
-                } else {
-                    ctx.globalCompositeOperation = 'source-over';
-                }
-                ctx.drawImage(img, 0, 0, width, height);
-            });
-
-            const merged = canvas.toDataURL('image/png');
-            window.mergedMasksCache[maskStr] = merged;
-            callback(merged);
-        }
-    };
-
-    urls.forEach((url, index) => {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.onload = onImageLoaded;
-        img.onerror = onImageLoaded;
-        img.src = url;
-        imgs[index] = img;
-    });
-};
-
-window.setupMultiMaskField = function(containerId, inputId, getCardImgUrl) {
-    const $container = $(containerId);
-    const $input = $(inputId);
-    if (!$container.length || !$input.length) return;
-
-    $input.hide();
-    $input.siblings('button, .btn').hide();
-
-    let $manager = $container.find('.multi-masks-manager');
-    if ($manager.length === 0) {
-        $manager = $(`
-            <div class="multi-masks-manager" style="width: 100%; margin-top: 5px;">
-                <div class="multi-masks-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                <button type="button" class="btn btn-secondary btn-sm btn-add-mask" style="margin-top: 8px; width: 100%; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; background: #333; border: 1px solid rgba(255,255,255,0.15);">
-                    <i class="fas fa-plus"></i> Agregar otra máscara
-                </button>
-            </div>
-        `);
-        $container.append($manager);
-    }
-
-    const $list = $manager.find('.multi-masks-list');
-    const $btnAdd = $manager.find('.btn-add-mask');
-
-    let isSyncing = false;
-
-    function updateMainInput() {
-        if (isSyncing) return;
-        isSyncing = true;
-        const urls = [];
-        $list.find('.mask-row-url').each(function() {
-            const val = $(this).val().trim();
-            if (val) urls.push(val);
-        });
-        $input.val(urls.join(';'));
-        isSyncing = false;
-    }
-
-    function createRow(urlValue = '') {
-        const rowId = 'mask-row-' + Math.random().toString(36).substr(2, 9);
-        const $row = $(`
-            <div class="multi-mask-row" style="display: flex; gap: 8px; align-items: center; width: 100%;">
-                <input type="text" class="mask-row-url" id="${rowId}-input" value="${urlValue}" placeholder="URL de la máscara" style="flex: 1; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; font-size: 13px;">
-                <button type="button" class="btn btn-secondary btn-sm btn-row-upload" style="white-space: nowrap; padding: 10px; height: 38px; font-size: 13px; background: #333;" title="Subir archivo local">
-                    <i class="fas fa-upload"></i> Subir
-                </button>
-                <input type="file" class="mask-row-file-input" accept="image/*" style="display: none;">
-                <button type="button" class="btn btn-secondary btn-sm btn-row-edit" style="white-space: nowrap; padding: 10px; height: 38px; font-size: 13px; background: #333;" title="Editar esta máscara">
-                    <i class="fas fa-paint-brush"></i> Editar
-                </button>
-                <button type="button" class="btn btn-danger btn-sm btn-row-delete" style="white-space: nowrap; padding: 10px; height: 38px; font-size: 13px;" title="Eliminar">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `);
-
-        $row.find('.mask-row-url').on('input change', updateMainInput);
-
-        $row.find('.btn-row-upload').click(function() {
-            $row.find('.mask-row-file-input').click();
-        });
-
-        $row.find('.mask-row-file-input').change(async function() {
-            if (this.files.length === 0) return;
-            const file = this.files[0];
-            try {
-                Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const url = await CloudinaryUpload.uploadImage(file);
-                $row.find('.mask-row-url').val(url).trigger('change');
-                Swal.close();
-            } catch (err) {
-                Swal.fire('Error', 'No se pudo subir la imagen: ' + err.message, 'error');
-            }
-        });
-
-        $row.find('.btn-row-edit').click(function() {
-            const cardImgUrl = typeof getCardImgUrl === 'function' ? getCardImgUrl() : '';
-            if (!cardImgUrl) {
-                Swal.fire('Atención', 'No hay imagen de referencia de la carta.', 'warning');
-                return;
-            }
-            window.maskTargetInput = '#' + rowId + '-input';
-            $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-            window.initMaskCanvas();
-            $('#mask-editor-overlay').addClass('active');
-        });
-
-        $row.find('.btn-row-delete').click(function() {
-            $row.remove();
-            updateMainInput();
-            if ($list.find('.multi-mask-row').length === 0) {
-                $list.append(createRow(''));
-                updateMainInput();
-            }
-        });
-
-        return $row;
-    }
-
-    function rebuildRows() {
-        if (isSyncing) return;
-        isSyncing = true;
-        $list.empty();
-        const val = $input.val() || '';
-        const urls = val.split(';').filter(Boolean);
-        if (urls.length === 0) {
-            $list.append(createRow(''));
-        } else {
-            urls.forEach(url => {
-                $list.append(createRow(url));
-            });
-        }
-        isSyncing = false;
-    }
-
-    $input.off('change.multiMask').on('change.multiMask', rebuildRows);
-
-    $btnAdd.off('click').on('click', function() {
-        $list.append(createRow(''));
-        updateMainInput();
-    });
-
-    rebuildRows();
-};
