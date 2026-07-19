@@ -97,73 +97,59 @@ window.applyFoilToElement = function($el, holo, mask) {
         baseHolo = 'multiFoils';
     }
 
-    // Pre-clean classes and style attributes to avoid stacking multiple foils/masks
-    $el.removeClass("card masked active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro pokeball-rare duel-terminal custom-texture custom-textures");
-    $el.css({'--mx': '', '--my': '', '--seedx': '', '--seedy': '', '--cosmosbg': '', '--angle': '', '--card-opacity': '', '--mask': '', '--mask-url': '', 'will-change': ''});
+    if (POKEMON_FOILS[baseHolo]) {
+        let rarityVal = POKEMON_FOILS[baseHolo];
+        $el.addClass("card");
+        if (rarityVal.includes('trainer gallery')) { $el.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+        if (rarityVal.includes('supporter')) { $el.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+        if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+        $el.attr("data-rarity", rarityVal.trim());
 
-    function proceedWithFoil(resolvedMask) {
-        if (POKEMON_FOILS[baseHolo]) {
-            let rarityVal = POKEMON_FOILS[baseHolo];
-            $el.addClass("card");
-            if (rarityVal.includes('trainer gallery')) { $el.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-            if (rarityVal.includes('supporter')) { $el.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-            if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-            $el.attr("data-rarity", rarityVal.trim());
-
-            if (resolvedMask) {
-                $el.addClass("masked").css({"--mask": `url(${resolvedMask})`, "--mask-url": `url(${resolvedMask})`});
-            }
-            const rx = 0.5, ry = 0.5;
-            $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
-        } else {
-            if (isMultiFoils) {
-                $el.addClass('multi-foils');
-                if (multiFoilsColor) {
-                    $el.addClass(`multi-foils-${multiFoilsColor}`);
-                }
-                if (resolvedMask) {
-                    $el.addClass("masked").css({"--mask": `url(${resolvedMask})`, "--mask-url": `url(${resolvedMask})`});
-                }
-                $el.css({'--mx': 0.5, '--my': 0.5});
-            } else {
-                $el.addClass(baseHolo);
-                if (resolvedMask) {
-                    $el.addClass("masked").css({"--mask": `url(${resolvedMask})`, "--mask-url": `url(${resolvedMask})`});
-                }
-                $el.css({'--mx': 0.5, '--my': 0.5});
-            }
+        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+            $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
-
-        $el.css({
-            '--angle': '135deg',
-            '--card-opacity': 1,
-            'will-change': 'transform, opacity'
-        });
-
-        if ($el.find('.holo-layer').length === 0) {
-            $el.append('<div class="holo-layer"></div>');
-        }
-        if (baseHolo === 'pokeball-rare' && $el.find('.holo-layer-red').length === 0) {
-            $el.append('<div class="holo-layer-red"></div>');
-        }
-
-        // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
-        $el.find('.holo-layer, .holo-layer-red').css({
-            'will-change': 'transform, opacity',
-            'backface-visibility': 'hidden',
-            '-webkit-backface-visibility': 'hidden'
-        });
-
-        $el.addClass('active foil-loop');
-    }
-
-    if (mask) {
-        window.resolveMaskUrl(mask, function(resolvedMask) {
-            proceedWithFoil(resolvedMask);
-        });
+        const rx = 0.5, ry = 0.5;
+        $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
     } else {
-        proceedWithFoil('');
+        if (isMultiFoils) {
+            $el.addClass('multi-foils');
+            if (multiFoilsColor) {
+                $el.addClass(`multi-foils-${multiFoilsColor}`);
+            }
+            if (mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            $el.css({'--mx': 0.5, '--my': 0.5});
+        } else {
+            $el.addClass(baseHolo);
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
+            }
+            $el.css({'--mx': 0.5, '--my': 0.5});
+        }
     }
+
+    $el.css({
+        '--angle': '135deg',
+        '--card-opacity': 1,
+        'will-change': 'transform, opacity'
+    });
+
+    if ($el.find('.holo-layer').length === 0) {
+        $el.append('<div class="holo-layer"></div>');
+    }
+    if (baseHolo === 'pokeball-rare' && $el.find('.holo-layer-red').length === 0) {
+        $el.append('<div class="holo-layer-red"></div>');
+    }
+
+    // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
+    $el.find('.holo-layer, .holo-layer-red').css({
+        'will-change': 'transform, opacity',
+        'backface-visibility': 'hidden',
+        '-webkit-backface-visibility': 'hidden'
+    });
+
+    $el.addClass('active foil-loop');
 };
 
 // --- Global Navigation ---
@@ -679,225 +665,8 @@ window.displayExternalResults = function(results, resultsSelector, onSelectCallb
     });
 };
 
-// --- JQUERY .val() WRAPPER FOR programmatic CHANGE DISPATCHING ---
-(function() {
-    const origVal = $.fn.val;
-    $.fn.val = function(value) {
-        if (value !== undefined) {
-            const ret = origVal.apply(this, arguments);
-            if (this.is('#slot-custom-mask, #bdd-custom-mask, #modal-wishlist-custom-mask, #modal-custom-mask, #owner-card-mask')) {
-                this.trigger('change');
-            }
-            return ret;
-        }
-        return origVal.apply(this, arguments);
-    };
-})();
-
-// --- MULTI-MASK COMPOSITE RESOLVER ---
-window.maskCache = {};
-window.resolveMaskUrl = function(maskUrl, callback) {
-    if (!maskUrl) {
-        if (callback) callback('');
-        return Promise.resolve('');
-    }
-
-    const urls = maskUrl.split(';').map(u => u.trim()).filter(Boolean);
-    if (urls.length === 0) {
-        if (callback) callback('');
-        return Promise.resolve('');
-    }
-
-    if (urls.length === 1) {
-        if (callback) callback(urls[0]);
-        return Promise.resolve(urls[0]);
-    }
-
-    if (window.maskCache[maskUrl]) {
-        if (callback) callback(window.maskCache[maskUrl]);
-        return Promise.resolve(window.maskCache[maskUrl]);
-    }
-
-    return new Promise((resolve) => {
-        const images = [];
-        let loadedCount = 0;
-
-        const loadImg = (url) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                images.push(img);
-                loadedCount++;
-                if (loadedCount === urls.length) {
-                    composite();
-                }
-            };
-            img.onerror = () => {
-                loadedCount++;
-                if (loadedCount === urls.length) {
-                    composite();
-                }
-            };
-            img.src = url;
-        };
-
-        const composite = () => {
-            if (images.length === 0) {
-                if (callback) callback(urls[0]);
-                resolve(urls[0]);
-                return;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = images[0].width || 336;
-            canvas.height = images[0].height || 488;
-
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.globalCompositeOperation = 'screen';
-
-            for (let img of images) {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            }
-
-            try {
-                const base64 = canvas.toDataURL('image/png');
-                window.maskCache[maskUrl] = base64;
-                if (callback) callback(base64);
-                resolve(base64);
-            } catch (err) {
-                console.error('Error compositing masks:', err);
-                if (callback) callback(urls[0]);
-                resolve(urls[0]);
-            }
-        };
-
-        urls.forEach(loadImg);
-    });
-};
-
-// --- MULTI-MASK FIELD SETUP ---
-window.setupMultiMaskField = function(targetInputId, containerId) {
-    const $target = $(targetInputId);
-    const $container = $(containerId);
-    if ($target.length === 0 || $container.length === 0) return;
-
-    let isUpdating = false;
-
-    function rebuildRows() {
-        if (isUpdating) return;
-
-        const val = $target.val() || '';
-        const urls = val.split(';').map(u => u.trim()).filter(Boolean);
-
-        $container.html('');
-
-        const list = urls.length > 0 ? urls : [''];
-
-        list.forEach((url) => {
-            const rowHTML = `
-                <div class="multi-mask-row" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                    <input type="text" class="mask-url-input" value="${url}" placeholder="URL de la máscara o subir archivo" style="flex: 1; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
-                    <button type="button" class="btn btn-secondary btn-upload-mask" style="padding: 8px 12px; white-space: nowrap;">
-                        <i class="fas fa-cloud-upload-alt"></i> Subir
-                    </button>
-                    <button type="button" class="btn btn-danger btn-delete-mask" style="padding: 8px 12px; white-space: nowrap;">
-                        <i class="fas fa-trash"></i> Eliminar
-                    </button>
-                    <input type="file" class="mask-file-input" accept="image/*" style="display: none;">
-                </div>
-            `;
-            const $row = $(rowHTML);
-            $container.append($row);
-        });
-    }
-
-    function updateTarget() {
-        isUpdating = true;
-        const urls = [];
-        $container.find('.mask-url-input').each(function() {
-            const urlVal = $(this).val().trim();
-            if (urlVal) {
-                urls.push(urlVal);
-            }
-        });
-        $target.val(urls.join(';'));
-        isUpdating = false;
-    }
-
-    $target.on('change', function() {
-        if (!isUpdating) {
-            rebuildRows();
-        }
-    });
-
-    $container.on('input', '.mask-url-input', function() {
-        updateTarget();
-    });
-
-    $container.on('click', '.btn-delete-mask', function() {
-        const $row = $(this).closest('.multi-mask-row');
-        $row.remove();
-        updateTarget();
-        if ($container.find('.multi-mask-row').length === 0) {
-            rebuildRows();
-        }
-    });
-
-    $container.on('click', '.btn-upload-mask', function() {
-        const $row = $(this).closest('.multi-mask-row');
-        $row.find('.mask-file-input').click();
-    });
-
-    $container.on('change', '.mask-file-input', async function() {
-        const $row = $(this).closest('.multi-mask-row');
-        const file = this.files[0];
-        if (!file) return;
-
-        const $btn = $row.find('.btn-upload-mask');
-        const originalText = $btn.html();
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Subiendo...');
-
-        try {
-            const url = await CloudinaryUpload.uploadImage(file);
-            $row.find('.mask-url-input').val(url);
-            updateTarget();
-        } catch (err) {
-            alert('Error al subir archivo a Cloudinary: ' + err.message);
-        } finally {
-            $btn.prop('disabled', false).html(originalText);
-        }
-    });
-
-    // Add row button hook
-    $container.parent().find('.btn-add-mask-row').off('click').on('click', function() {
-        const rowHTML = `
-            <div class="multi-mask-row" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                <input type="text" class="mask-url-input" value="" placeholder="URL de la máscara o subir archivo" style="flex: 1; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
-                <button type="button" class="btn btn-secondary btn-upload-mask" style="padding: 8px 12px; white-space: nowrap;">
-                    <i class="fas fa-cloud-upload-alt"></i> Subir
-                </button>
-                <button type="button" class="btn btn-danger btn-delete-mask" style="padding: 8px 12px; white-space: nowrap;">
-                    <i class="fas fa-trash"></i> Eliminar
-                </button>
-                <input type="file" class="mask-file-input" accept="image/*" style="display: none;">
-            </div>
-        `;
-        $container.append(rowHTML);
-    });
-
-    rebuildRows();
-};
-
 $(document).ready(function() {
     window.initMaskEditor();
-
-    // Initialize the multi-mask fields
-    window.setupMultiMaskField('#slot-custom-mask', '#slot-multi-mask-rows-container');
-    window.setupMultiMaskField('#bdd-custom-mask', '#bdd-multi-mask-rows-container');
-    window.setupMultiMaskField('#modal-wishlist-custom-mask', '#wishlist-multi-mask-rows-container');
-    window.setupMultiMaskField('#modal-custom-mask', '#deseos-multi-mask-rows-container');
 
     // Isolated navigation for public.html if it's there
     if (window.location.pathname.includes('public.html')) {

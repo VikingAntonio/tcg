@@ -1196,72 +1196,62 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
 
     const POKEMON_FOILS = window.POKEMON_FOILS || {};
 
-    function proceedWithModalMask(resolvedMask) {
-        if (baseHolo) {
-            if (POKEMON_FOILS[baseHolo]) {
-                let rarityVal = POKEMON_FOILS[baseHolo];
-                $card.addClass("card");
-                if (rarityVal.includes('trainer gallery')) { $card.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
-                if (rarityVal.includes('supporter')) { $card.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
-                if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
-                $card.attr("data-rarity", rarityVal.trim());
+    if (baseHolo) {
+        if (POKEMON_FOILS[baseHolo]) {
+            let rarityVal = POKEMON_FOILS[baseHolo];
+            $card.addClass("card");
+            if (rarityVal.includes('trainer gallery')) { $card.attr("data-trainer-gallery", "true"); rarityVal = rarityVal.replace('trainer gallery', ''); }
+            if (rarityVal.includes('supporter')) { $card.attr("data-subtypes", "supporter"); rarityVal = rarityVal.replace('supporter', ''); }
+            if (rarityVal.includes('pokemon')) { $card.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
+            $card.attr("data-rarity", rarityVal.trim());
 
-                if (resolvedMask) {
+            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                $card.addClass("masked");
+                const maskVal = `url(${mask})`;
+                $card.css("--mask", maskVal);
+                $card.css("--mask-url", maskVal);
+            }
+            const rx = Math.random(), ry = Math.random();
+            $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+        } else {
+            if (isMultiFoils) {
+                $card3d.addClass('multi-foils');
+                $card.addClass('multi-foils');
+                if (multiFoilsColor) {
+                    $card3d.addClass(`multi-foils-${multiFoilsColor}`);
+                    $card.addClass(`multi-foils-${multiFoilsColor}`);
+                }
+                if (mask) {
                     $card.addClass("masked");
-                    const maskVal = `url(${resolvedMask})`;
+                    const maskVal = `url(${mask})`;
                     $card.css("--mask", maskVal);
                     $card.css("--mask-url", maskVal);
                 }
-                const rx = Math.random(), ry = Math.random();
-                $card.css({'--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
             } else {
-                if (isMultiFoils) {
-                    $card3d.addClass('multi-foils');
-                    $card.addClass('multi-foils');
-                    if (multiFoilsColor) {
-                        $card3d.addClass(`multi-foils-${multiFoilsColor}`);
-                        $card.addClass(`multi-foils-${multiFoilsColor}`);
-                    }
-                    if (resolvedMask) {
-                        $card.addClass("masked");
-                        const maskVal = `url(${resolvedMask})`;
-                        $card.css("--mask", maskVal);
-                        $card.css("--mask-url", maskVal);
-                    }
-                } else {
-                    $card3d.addClass(baseHolo);
-                    if (baseHolo === 'pokeball-rare' && $card.find('.holo-layer-red').length === 0) {
-                        $card.append('<div class="holo-layer-red"></div>');
-                    }
-                    if (resolvedMask) {
-                        $card.addClass("masked");
-                        const maskVal = `url(${resolvedMask})`;
-                        $card.css("--mask", maskVal);
-                        $card.css("--mask-url", maskVal);
-                    }
+                $card3d.addClass(baseHolo);
+                if (baseHolo === 'pokeball-rare' && $card.find('.holo-layer-red').length === 0) {
+                    $card.append('<div class="holo-layer-red"></div>');
+                }
+                if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+                    $card.addClass("masked");
+                    const maskVal = `url(${mask})`;
+                    $card.css("--mask", maskVal);
+                    $card.css("--mask-url", maskVal);
                 }
             }
         }
-
-        if (use3d) {
-            window.sharedCard3D.init('card-3d-container', 'card-3d', '#z-text-container', options);
-        } else {
-            $card.css('transform', 'none');
-            if (window.sharedCard3D) {
-                window.sharedCard3D.stop();
-            }
-        }
-
-        $card3d.addClass("active");
     }
 
-    if (mask) {
-        window.resolveMaskUrl(mask, function(resolvedMask) {
-            proceedWithModalMask(resolvedMask);
-        });
+    if (use3d) {
+        window.sharedCard3D.init('card-3d-container', 'card-3d', '#z-text-container', options);
     } else {
-        proceedWithModalMask('');
+        $card.css('transform', 'none');
+        if (window.sharedCard3D) {
+            window.sharedCard3D.stop();
+        }
     }
+
+    $card3d.addClass("active");
 }
 
 async function switchView(view, skipPush = false) {
