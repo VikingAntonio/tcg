@@ -111,6 +111,11 @@ $(document).ready(async function() {
         loadAlbums();
     });
 
+    $(document).on('change', '#input-album-grid-layout', function() {
+        window.currentAlbumGridLayout = $(this).val();
+        loadAlbumPages(currentAlbumId, false);
+    });
+
     $(document).on('click', '#btn-back-to-decks', function(e) {
         e.preventDefault();
         showView('decks');
@@ -446,6 +451,7 @@ $(document).ready(async function() {
         const backColor = $('#input-album-back-color').val();
         const coverStyle = $('#input-album-cover-style').val();
         const is_public = $('#input-album-public').is(':checked');
+        const grid_layout = $('#input-album-grid-layout').val() || '3x3';
 
         let updateData = {
             title,
@@ -454,7 +460,8 @@ $(document).ready(async function() {
             cover_color: coverColor,
             back_color: backColor,
             cover_style: coverStyle,
-            is_public
+            is_public,
+            grid_layout
         };
 
         try {
@@ -464,8 +471,9 @@ $(document).ready(async function() {
                 .update(updateData)
                 .eq('id', currentAlbumId);
 
-            if (albumErr && (albumErr.code === '42703' || (albumErr.message && albumErr.message.includes('is_public')))) {
+            if (albumErr && (albumErr.code === '42703' || (albumErr.message && (albumErr.message.includes('is_public') || albumErr.message.includes('grid_layout'))))) {
                 delete updateData.is_public;
+                delete updateData.grid_layout;
                 const retry = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
                 albumErr = retry.error;
             }
@@ -2475,6 +2483,10 @@ async function editAlbum(album) {
     $('.cover-preview-item').removeClass('active');
     $(`.cover-preview-item[data-style="${coverStyle}"]`).addClass('active');
 
+    const gridLayout = target.grid_layout || '3x3';
+    $('#input-album-grid-layout').val(gridLayout);
+    window.currentAlbumGridLayout = gridLayout;
+
     $('#input-album-public').prop('checked', target.is_public !== false);
     
     // Reset tabs to Designs
@@ -2577,7 +2589,15 @@ function renderAlbumPagesLocal(pages, scrollPos) {
         const $grid = $pageItem.find('.grid-container');
         const pageSlots = localAlbumSlots.filter(s => s.page_id === page.id);
 
-        for (let i = 0; i < 9; i++) {
+        const gridLayout = window.currentAlbumGridLayout || '3x3';
+        $grid.addClass('grid-layout-' + gridLayout);
+
+        let numSlots = 9;
+        if (gridLayout === '4x3') numSlots = 12;
+        else if (gridLayout === '2x2') numSlots = 4;
+        else if (gridLayout === '1x1') numSlots = 1;
+
+        for (let i = 0; i < numSlots; i++) {
             const slotData = pageSlots.find(s => s.slot_index === i);
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
             if (slotData && slotData.image_url) {
