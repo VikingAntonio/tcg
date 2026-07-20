@@ -108,7 +108,7 @@ $(document).ready(async function() {
         const is_public = $('#input-album-public').is(':checked');
         const grid_layout = $('#input-album-grid-layout').val() || '3x3';
 
-        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: coverColor, back_color: backColor, is_public, grid_layout };
+        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: '#1a1a1a', back_color: backColor, is_public, grid_layout, cover_style: 'style-cosmic' };
 
         try {
             let { error: albumErr } = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
