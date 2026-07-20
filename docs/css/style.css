@@ -345,19 +345,47 @@ body {
 
 .grid-container.grid-layout-3x3 {
     grid-template-columns: repeat(3, 1fr) !important;
-    grid-template-rows: repeat(3, 1fr) !important;
+    grid-template-rows: repeat(3, auto) !important;
+    gap: 8px !important;
+    align-content: center !important;
+    justify-content: center !important;
+}
+
+.grid-container.grid-layout-3x3 .card-slot {
+    aspect-ratio: 2.5 / 3.5 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: auto !important;
 }
 
 .grid-container.grid-layout-4x3 {
     grid-template-columns: repeat(4, 1fr) !important;
-    grid-template-rows: repeat(3, 1fr) !important;
-    gap: 4px !important;
+    grid-template-rows: repeat(3, auto) !important;
+    gap: 6px !important;
+    align-content: center !important;
+    justify-content: center !important;
+}
+
+.grid-container.grid-layout-4x3 .card-slot {
+    aspect-ratio: 2.5 / 3.5 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: auto !important;
 }
 
 .grid-container.grid-layout-2x2 {
     grid-template-columns: repeat(2, 1fr) !important;
-    grid-template-rows: repeat(2, 1fr) !important;
-    gap: 12px !important;
+    grid-template-rows: repeat(2, auto) !important;
+    gap: 15px !important;
+    align-content: center !important;
+    justify-content: center !important;
+}
+
+.grid-container.grid-layout-2x2 .card-slot {
+    aspect-ratio: 2.5 / 3.5 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: auto !important;
 }
 
 .grid-container.grid-layout-1x1 {
@@ -369,7 +397,8 @@ body {
 
 .grid-container.grid-layout-1x1 .card-slot {
     width: 50% !important;
-    height: 50% !important;
+    aspect-ratio: 2.5 / 3.5 !important;
+    height: auto !important;
     flex-shrink: 0;
 }
 

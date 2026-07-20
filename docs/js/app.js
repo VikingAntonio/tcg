@@ -2270,6 +2270,9 @@ function renderAlbum(album) {
             <div class="album-wrapper">
                 <div id="album-${album.id}" class="album"></div>
             </div>
+            <div class="public-album-footer-title" style="text-align: center; margin-top: 15px; font-size: 1.5rem; font-weight: 800; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px;">
+                ${album.title}
+            </div>
         </div>
     `);
 
@@ -2286,7 +2289,7 @@ function renderAlbum(album) {
 
     const coverImg = album.cover_image_url;
     const coverColor = album.cover_color || '#1a1a1a';
-    const coverStyle = album.cover_style || 'style-standard';
+    const coverStyle = 'style-cosmic';
     let pageCount = 1;
 
     if (coverImg) {
@@ -4023,20 +4026,9 @@ function renderPublicInvListMode($container) {
 }
 
 function getCoverHtml(style, title, color) {
-    let styleClass = style || "style-standard";
-    const displayTitle = (title || 'NUEVO ÁLBUM').toUpperCase();
-
-    if (styleClass === 'style-standard') {
-        return `
-            <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
-                <h2 style="margin:0;">${displayTitle}</h2>
-            </div>
-        `;
-    }
-
+    let styleClass = "style-cosmic";
     return `
         <div class="textured-cover ${styleClass}" style="background-color: ${color || '#1a1a1a'}">
-            <h2 style="margin:0;">${displayTitle}</h2>
         </div>
     `;
 }

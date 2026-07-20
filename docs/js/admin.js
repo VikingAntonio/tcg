@@ -457,9 +457,9 @@ $(document).ready(async function() {
             title,
             cover_image_url: cover,
             back_image_url: back,
-            cover_color: coverColor,
+            cover_color: '#1a1a1a',
             back_color: backColor,
-            cover_style: coverStyle,
+            cover_style: 'style-cosmic',
             is_public,
             grid_layout
         };
@@ -2478,19 +2478,14 @@ async function editAlbum(album) {
     $('#drop-zone-album-back .file-name').text('');
     $('#input-album-cover-color').val(target.cover_color || '#1a1a1a');
     $('#input-album-back-color').val(target.back_color || '#1a1a1a');
-    const coverStyle = target.cover_style || 'style-standard';
+    const coverStyle = 'style-cosmic';
     $('#input-album-cover-style').val(coverStyle);
-    $('.cover-preview-item').removeClass('active');
-    $(`.cover-preview-item[data-style="${coverStyle}"]`).addClass('active');
 
     const gridLayout = target.grid_layout || '3x3';
     $('#input-album-grid-layout').val(gridLayout);
     window.currentAlbumGridLayout = gridLayout;
 
     $('#input-album-public').prop('checked', target.is_public !== false);
-    
-    // Reset tabs to Designs
-    $('.slot-tab-btn[data-tab="album-tab-designs"]').click();
 
     showView('editor');
     loadAlbumPages(target.id, true);
