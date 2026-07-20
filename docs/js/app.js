@@ -609,6 +609,9 @@ $(document).ready(async function() {
     $(document).on("click", "#close-btn, #image-overlay", function(e) {
         if (e.target === this || $(this).attr('id') === 'close-btn' || $(e.target).closest('#close-btn').length > 0) {
             $("#image-overlay").removeClass("active");
+            $("#card-3d-container").removeClass("zoomed-centered");
+            $("#image-overlay").removeClass("has-zoomed-card");
+            $("#zoom-magnifier-btn i").removeClass("fa-search-minus").addClass("fa-search-plus");
 
             // If claim modal is still open, keep modal-open class
             if (!$('#claim-detail-modal').hasClass('active')) {
@@ -619,6 +622,22 @@ $(document).ready(async function() {
             if (window.sharedCard3D) {
                 window.sharedCard3D.stop();
             }
+        }
+    });
+
+    $(document).on("click", "#zoom-magnifier-btn", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $container = $("#card-3d-container");
+        $container.toggleClass("zoomed-centered");
+        $("#image-overlay").toggleClass("has-zoomed-card");
+
+        const isZoomed = $container.hasClass("zoomed-centered");
+        const icon = $(this).find("i");
+        if (isZoomed) {
+            icon.removeClass("fa-search-plus").addClass("fa-search-minus");
+        } else {
+            icon.removeClass("fa-search-minus").addClass("fa-search-plus");
         }
     });
 
@@ -2283,7 +2302,8 @@ function renderAlbum(album) {
     for (const page of pages) {
         pageCount++;
         const $pageDiv = $(`<div class="page album-page" data-page-num="${pageCount}"></div>`);
-        const $grid = $('<div class="grid-container"></div>');
+        const gridLayout = album.grid_layout || '3x3';
+        const $grid = $(`<div class="grid-container grid-layout-${gridLayout}"></div>`);
 
         const { data: slots } = await _supabase
             .from('card_slots')
@@ -2291,7 +2311,12 @@ function renderAlbum(album) {
             .eq('page_id', page.id)
             .order('slot_index', { ascending: true });
 
-        for (let i = 0; i < 9; i++) {
+        let numSlots = 9;
+        if (gridLayout === '4x3') numSlots = 12;
+        else if (gridLayout === '2x2') numSlots = 4;
+        else if (gridLayout === '1x1') numSlots = 1;
+
+        for (let i = 0; i < numSlots; i++) {
             const slotData = slots ? slots.find(s => s.slot_index === i) : null;
             const $slot = $('<div class="card-slot"></div>');
 

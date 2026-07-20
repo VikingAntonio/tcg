@@ -106,11 +106,19 @@ $(document).ready(async function() {
         const coverColor = $('#input-album-cover-color').val();
         const backColor = $('#input-album-back-color').val();
         const is_public = $('#input-album-public').is(':checked');
+        const grid_layout = $('#input-album-grid-layout').val() || '3x3';
 
-        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: coverColor, back_color: backColor, is_public };
+        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: coverColor, back_color: backColor, is_public, grid_layout };
 
         try {
             let { error: albumErr } = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
+
+            if (albumErr && (albumErr.code === '42703' || (albumErr.message && (albumErr.message.includes('is_public') || albumErr.message.includes('grid_layout'))))) {
+                delete updateData.is_public;
+                delete updateData.grid_layout;
+                let retry = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
+                albumErr = retry.error;
+            }
             if (albumErr) throw albumErr;
 
             if (albumSlotsToDelete.length > 0) await _supabase.from('card_slots').delete().in('id', albumSlotsToDelete);
@@ -173,6 +181,11 @@ $(document).ready(async function() {
     });
 
     $(document).on('click', '#btn-back-to-albums', function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); });
+
+    $(document).on('change', '#input-album-grid-layout', function() {
+        window.currentAlbumGridLayout = $(this).val();
+        loadAlbumPages(currentAlbumId, false);
+    });
 
     $(document).on('click', '#btn-external-search', async function() {
         window.searchExternalCard('#external-search-input', '#external-search-results', (card) => {
@@ -291,6 +304,11 @@ async function editAlbum(album) {
     $('#input-album-back').val(album.back_image_url || '');
     $('#input-album-cover-color').val(album.cover_color || '#1a1a1a');
     $('#input-album-back-color').val(album.back_color || '#1a1a1a');
+
+    const gridLayout = album.grid_layout || '3x3';
+    $('#input-album-grid-layout').val(gridLayout);
+    window.currentAlbumGridLayout = gridLayout;
+
     $('#input-album-public').prop('checked', album.is_public !== false);
     showView('editor');
     loadAlbumPages(album.id, true);
@@ -316,7 +334,15 @@ function renderAlbumPagesLocal(pages) {
         `);
         $page.find('.btn-delete-page').click(() => deletePage(page.id));
         const $grid = $page.find('.grid-container');
-        for (let i = 0; i < 9; i++) {
+        const gridLayout = window.currentAlbumGridLayout || '3x3';
+        $grid.addClass('grid-layout-' + gridLayout);
+
+        let numSlots = 9;
+        if (gridLayout === '4x3') numSlots = 12;
+        else if (gridLayout === '2x2') numSlots = 4;
+        else if (gridLayout === '1x1') numSlots = 1;
+
+        for (let i = 0; i < numSlots; i++) {
             const slot = localAlbumSlots.find(s => s.page_id === page.id && s.slot_index === i);
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
             if (slot) $slot.append(`<img src="${slot.image_url}" class="tcg-card">`);
