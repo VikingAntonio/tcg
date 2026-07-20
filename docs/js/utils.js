@@ -1063,10 +1063,20 @@ window.setupMultiMaskField = function(targetInputSelector, containerSelector, ad
         const values = [];
         $container.find('.multi-mask-row-input').each(function() {
             const val = $(this).val().trim();
-            if (val) {
+            if (val && !val.startsWith('data:image/')) {
                 values.push(val);
             }
         });
+
+        // Keep any existing base64 painted mask as the first element of the field
+        const currentVal = $targetInput.val() || '';
+        const masks = window.parseMultipleMasks(currentVal);
+        const base64Mask = masks.find(m => m.startsWith('data:image/'));
+
+        if (base64Mask) {
+            values.unshift(base64Mask);
+        }
+
         $targetInput.val(values.join(';')).trigger('change');
     };
 
@@ -1076,7 +1086,10 @@ window.setupMultiMaskField = function(targetInputSelector, containerSelector, ad
         const masks = window.parseMultipleMasks(value);
 
         masks.forEach((maskUrl) => {
-            addMaskRow(maskUrl);
+            // Only add rows for non-base64 custom uploaded/loaded mask URLs
+            if (!maskUrl.startsWith('data:image/')) {
+                addMaskRow(maskUrl);
+            }
         });
     };
 

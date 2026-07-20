@@ -5557,6 +5557,26 @@ body.modal-open #decks-view.active {
     mask-composite: intersect !important;
 }
 
+/* Force mask to apply with absolute priority over specific rarities/foil CSS rules */
+.card.masked .card__shine,
+.card.masked .card__shine:before,
+.card.masked .card__shine:after,
+.card-3d.masked .card__shine,
+.card-3d.masked .card__shine:before,
+.card-3d.masked .card__shine:after,
+.card-3d.masked .holo-layer,
+.card-slot.masked .holo-layer,
+.wishlist-card-item.masked .holo-layer {
+    -webkit-mask-image: var(--mask-url, var(--mask)) !important;
+    mask-image: var(--mask-url, var(--mask)) !important;
+    -webkit-mask-size: cover !important;
+    mask-size: cover !important;
+    -webkit-mask-position: center center !important;
+    mask-position: center center !important;
+    -webkit-mask-repeat: no-repeat !important;
+    mask-repeat: no-repeat !important;
+}
+
 .card-3d.masked.pokeball-rare .holo-layer,
 .card-slot.masked.pokeball-rare .holo-layer,
 .wishlist-card-item.masked.pokeball-rare .holo-layer,
