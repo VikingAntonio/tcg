@@ -215,8 +215,8 @@
             rgba(180, 0, 255, 0.95) 100%
         );
     background-size: 200% 200%, 400% 400%;
-    background-blend-mode: multiply;
-    mix-blend-mode: screen;
+    background-blend-mode: multiply !important;
+    mix-blend-mode: screen !important;
     opacity: 1 !important;
 }
 
@@ -284,8 +284,8 @@
             rgba(0, 0, 0, 0.95) 100%
         );
     background-size: 200% 200%, 400% 400%;
-    background-blend-mode: normal;
-    mix-blend-mode: multiply;
+    background-blend-mode: normal !important;
+    mix-blend-mode: multiply !important;
     opacity: 0.95 !important;
 }
 
@@ -307,9 +307,9 @@
             rgba(255, 255, 255, 0.95) 100%
         );
     background-size: 200% 200%, 400% 400%;
-    background-blend-mode: multiply;
-    mix-blend-mode: overlay;
-    opacity: 0.95 !important;
+    background-blend-mode: multiply !important;
+    mix-blend-mode: overlay !important;
+    opacity: 1 !important;
 }
 
 
@@ -521,6 +521,9 @@
             rgba(180, 0, 255, 0.95) 100%
         );
     background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-blend-mode: multiply !important;
+    mix-blend-mode: screen !important;
+    opacity: 1 !important;
 }
 
 /* Masked Guinda */
@@ -587,6 +590,9 @@
             rgba(0, 0, 0, 0.95) 100%
         );
     background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-blend-mode: normal !important;
+    mix-blend-mode: multiply !important;
+    opacity: 0.95 !important;
 }
 
 /* Masked Blanco */
@@ -609,6 +615,9 @@
             rgba(255, 255, 255, 0.95) 100%
         );
     background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-blend-mode: multiply !important;
+    mix-blend-mode: overlay !important;
+    opacity: 1 !important;
 }
 
 
