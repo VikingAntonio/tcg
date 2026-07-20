@@ -308,14 +308,66 @@ window.initMaskEditor = function() {
         }
     });
 
-    $('#btn-save-mask').off('click').on('click', function() {
-        const dataUrl = window.maskCanvas.toDataURL('image/png');
+    $('#btn-save-mask').off('click').on('click', async function() {
+        let finalDataUrl = null;
+
+        const activeGuide = window.activeMaskGuide;
+        if (activeGuide && activeGuide !== 'none') {
+            // Load and intersect with guide
+            const guideImg = new Image();
+            guideImg.src = activeGuide === 'poke' ? 'images/guiaPoke.png' : 'images/guiaYugi.png';
+
+            await new Promise((resolve) => {
+                guideImg.onload = resolve;
+                guideImg.onerror = resolve;
+            });
+
+            if (guideImg.complete && guideImg.naturalWidth > 0) {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = window.maskCanvas.width;
+                tempCanvas.height = window.maskCanvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(window.maskCanvas, 0, 0);
+
+                const guideCanvas = document.createElement('canvas');
+                guideCanvas.width = tempCanvas.width;
+                guideCanvas.height = tempCanvas.height;
+                const guideCtx = guideCanvas.getContext('2d');
+                guideCtx.drawImage(guideImg, 0, 0, guideCanvas.width, guideCanvas.height);
+
+                const userImgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const guideImgData = guideCtx.getImageData(0, 0, guideCanvas.width, guideCanvas.height);
+
+                const uData = userImgData.data;
+                const gData = guideImgData.data;
+
+                for (let i = 0; i < uData.length; i += 4) {
+                    const gr = gData[i];
+                    const gg = gData[i+1];
+                    const gb = gData[i+2];
+
+                    // If guide is black/dark (border area)
+                    if (gr < 127 && gg < 127 && gb < 127) {
+                        uData[i] = 0;     // R
+                        uData[i+1] = 0;   // G
+                        uData[i+2] = 0;   // B
+                        uData[i+3] = 255; // A
+                    }
+                }
+                tempCtx.putImageData(userImgData, 0, 0);
+                finalDataUrl = tempCanvas.toDataURL('image/png');
+            }
+        }
+
+        if (!finalDataUrl) {
+            finalDataUrl = window.maskCanvas.toDataURL('image/png');
+        }
 
         // Use explicit target if set, otherwise fallback to standard IDs
         if (window.maskTargetInput) {
-            $(window.maskTargetInput).val(dataUrl).trigger('change');
+            $(window.maskTargetInput).val(finalDataUrl).trigger('change');
         } else {
-            $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #bdd-custom-mask').val(dataUrl).trigger('change');
+            $('#slot-custom-mask, #modal-custom-mask, #owner-card-mask, #bdd-custom-mask').val(finalDataUrl).trigger('change');
         }
 
         $('#mask-editor-overlay').removeClass('active');
@@ -325,6 +377,36 @@ window.initMaskEditor = function() {
     if (window.MultiFoils && typeof window.MultiFoils.initFloatingPalette === 'function') {
         window.MultiFoils.initFloatingPalette();
     }
+
+    // Guide selection event listeners
+    $(document).off('click', '#btn-guide-trigger').on('click', '#btn-guide-trigger', function(e) {
+        e.stopPropagation();
+        $('#guide-palette-dropdown').slideToggle(200);
+    });
+
+    $(document).off('click', '.btn-guide-option').on('click', '.btn-guide-option', function(e) {
+        e.stopPropagation();
+        const guideType = $(this).data('guide');
+        window.activeMaskGuide = guideType;
+
+        $('.btn-guide-option').removeClass('active');
+        $(this).addClass('active');
+
+        if (guideType === 'poke') {
+            $('#mask-guide-overlay-img').css('background-image', 'url(images/guiaPoke.png)').show();
+        } else if (guideType === 'yugi') {
+            $('#mask-guide-overlay-img').css('background-image', 'url(images/guiaYugi.png)').show();
+        } else {
+            $('#mask-guide-overlay-img').hide().css('background-image', '');
+        }
+
+        $('#guide-palette-dropdown').slideUp(150);
+    });
+
+    // Hide guide dropdown when clicking outside
+    $(document).on('click', function() {
+        $('#guide-palette-dropdown').slideUp(150);
+    });
 };
 
 window.initMaskCanvas = function() {
@@ -356,6 +438,37 @@ window.initMaskCanvas = function() {
         $('.multifoil-controls-lateral').hide();
         $('#multifoil-palette-dropdown').hide();
     }
+
+    // Determine if custom-texture or custom-foil is active to show/hide the guide controls
+    let isCustomTextureActive = false;
+    let isCustomFoilActive = false;
+    const bddHoloLower = bddHolo.toLowerCase();
+    const slotHoloLower = slotHolo.toLowerCase();
+    const wishlistHoloLower = wishlistHolo.toLowerCase();
+    const clientHoloLower = clientHolo.toLowerCase();
+
+    if (bddHoloLower.startsWith('custom-texture') || slotHoloLower.startsWith('custom-texture') || wishlistHoloLower.startsWith('custom-texture') || clientHoloLower.startsWith('custom-texture')) {
+        isCustomTextureActive = true;
+    }
+    if (bddHoloLower.startsWith('custom-foil') || slotHoloLower.startsWith('custom-foil') || wishlistHoloLower.startsWith('custom-foil') || clientHoloLower.startsWith('custom-foil')) {
+        isCustomFoilActive = true;
+    }
+
+    const isGuideEligible = isMultiFoilsActive || isCustomTextureActive || isCustomFoilActive;
+    window.isGuideEligible = isGuideEligible;
+
+    if (isGuideEligible) {
+        $('.guide-controls-lateral').show();
+    } else {
+        $('.guide-controls-lateral').hide();
+        $('#guide-palette-dropdown').hide();
+    }
+
+    // Reset guide status when opening
+    window.activeMaskGuide = 'none';
+    $('#mask-guide-overlay-img').hide().css('background-image', '');
+    $('.btn-guide-option').removeClass('active');
+    $('.btn-guide-option[data-guide="none"]').addClass('active');
 
     // Decks specific customizations
     if (window.maskTargetInput === '#slot-custom-mask') {
@@ -744,12 +857,24 @@ $(document).ready(function() {
                     <div id="mask-viewport" style="width: 100%; height: 350px; overflow: auto; border: 2px solid #333; border-radius: 12px; position: relative; background: #000; display: flex; align-items: center; justify-content: center; padding: 20px;">
                         <div id="mask-canvas-wrapper" style="position: relative; width: 168px; height: 244px; flex-shrink: 0; transition: width 0.1s, height 0.1s; background-size: cover; background-position: center;">
                             <canvas id="mask-canvas" width="168" height="244" style="cursor: crosshair; display: block; width: 100%; height: 100%;"></canvas>
+                            <div id="mask-guide-overlay-img" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.4; display: none; background-size: 100% 100%; z-index: 5;"></div>
                         </div>
                     </div>
 
                     <div class="multifoil-controls-lateral">
                         <button id="btn-multifoil-active-color" class="btn-multifoil-trigger" title="Color Foil" style="background: linear-gradient(135deg, #ff00ff, #00ffff);"></button>
                         <div id="multifoil-palette-dropdown" class="multifoil-palette-dropdown"></div>
+                    </div>
+
+                    <div class="guide-controls-lateral" style="display: none;">
+                        <button id="btn-guide-trigger" class="btn btn-secondary" title="Guía de Tarjeta" style="width: 44px; height: 44px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 0; background: #252525; color: #fff; cursor: pointer; transition: transform 0.2s;">
+                            <i class="fas fa-crop-alt" style="font-size: 18px;"></i>
+                        </button>
+                        <div id="guide-palette-dropdown" class="guide-palette-dropdown">
+                            <button class="btn btn-sm btn-dark btn-guide-option active" data-guide="none">Ninguna</button>
+                            <button class="btn btn-sm btn-dark btn-guide-option" data-guide="poke">Poke Guide</button>
+                            <button class="btn btn-sm btn-dark btn-guide-option" data-guide="yugi">Yugi Guide</button>
+                        </div>
                     </div>
 
                     <div class="zoom-controls-lateral" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10;">
