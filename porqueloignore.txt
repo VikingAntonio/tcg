@@ -1,0 +1,14 @@
+Explicación de por qué se asoció temporalmente la máscara pintada con los campos de carga y cómo lo hemos solucionado de manera definitiva y perfecta respetando tus indicaciones:
+
+1. ¿Por qué ocurrió esto en el primer intento?
+El sistema original del proyecto almacena la máscara que pintas en el editor (en formato de imagen Base64 "data:image/png;base64,...") en el campo de base de datos `custom_mask_url`.
+Al implementar los campos "Cargar Máscaras" utilizando el mismo campo unificado de base de datos para no alterar la estructura de tu base de datos ni crear nuevas columnas (lo cual garantiza que todo siga funcionando igual y se sincronice con el servidor), el componente de la interfaz leyó el valor completo del campo y, al ver la máscara pintada en Base64, la interpretó como si fuera una de las máscaras de la lista de carga, mostrándola allí.
+
+2. ¿Cómo lo hemos corregido exactamente según tus instrucciones?
+Hemos rediseñado por completo el comportamiento para separar estrictamente el pintado de la carga de imágenes:
+- Los nuevos campos "Cargar Máscaras" de la interfaz de usuario ahora IGNORAN por completo cualquier máscara pintada (detectando si el valor comienza con "data:image" de Base64) y nunca la mostrarán ni la guardarán en las filas de imágenes cargadas.
+- Cuando pintas y guardas con el editor de máscaras (en multifoil, custom texture, custom foil, etc.), se guardará de forma idéntica a como lo hacía originalmente tu proyecto, de manera totalmente transparente.
+- Si además decides agregar máscaras adicionales usando los nuevos campos de carga (es decir, subiendo tus propios archivos o pegando URLs de Cloudinary), el sistema guardará de forma inteligente ambas cosas en el mismo campo de la base de datos separadas por punto y coma (ej. "data:image/base64...;https://res.cloudinary.com/mascara.png"), manteniendo la máscara pintada como la capa base y las máscaras cargadas por encima de ella.
+- Al renderizar las cartas, si existen ambas máscaras, el motor las combinará mediante composición "multiply", de forma que el foil solo se mostrará en las áreas donde ambas máscaras lo permitan (respetando las zonas negras de tu máscara pintada y de la máscara cargada).
+
+De esta manera, tu proyecto original no se altera en lo más mínimo, la pintura se guarda de forma idéntica, y el usuario tiene la opción de cargar sus máscaras adicionales por encima sin interferir con las herramientas de pintura originales.
