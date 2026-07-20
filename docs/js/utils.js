@@ -392,13 +392,15 @@ window.initMaskEditor = function() {
         $('.btn-guide-option').removeClass('active');
         $(this).addClass('active');
 
-        if (guideType === 'poke') {
-            $('#mask-guide-overlay-img').css('background-image', 'url(images/guiaPoke.png)').show();
-        } else if (guideType === 'yugi') {
-            $('#mask-guide-overlay-img').css('background-image', 'url(images/guiaYugi.png)').show();
+        // Indicate active guide status by changing trigger border color, keeping canvas perfectly clean/clear
+        if (guideType !== 'none') {
+            $('#btn-guide-trigger').css('border-color', '#00d2ff');
         } else {
-            $('#mask-guide-overlay-img').hide().css('background-image', '');
+            $('#btn-guide-trigger').css('border-color', '#ffffff');
         }
+
+        // Keep the visual guide overlay hidden to avoid obscuring card details
+        $('#mask-guide-overlay-img').hide().css('background-image', '');
 
         $('#guide-palette-dropdown').slideUp(150);
     });
@@ -467,6 +469,7 @@ window.initMaskCanvas = function() {
     // Reset guide status when opening
     window.activeMaskGuide = 'none';
     $('#mask-guide-overlay-img').hide().css('background-image', '');
+    $('#btn-guide-trigger').css('border-color', '#ffffff');
     $('.btn-guide-option').removeClass('active');
     $('.btn-guide-option[data-guide="none"]').addClass('active');
 
