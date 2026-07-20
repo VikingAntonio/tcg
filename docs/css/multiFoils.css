@@ -203,21 +203,21 @@
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
-            rgba(220, 200, 255, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(220, 200, 255, 0.4) 55%,
+            rgba(255, 180, 255, 0.5) 45%,
+            rgba(255, 255, 255, 0.95) 50%,
+            rgba(255, 180, 255, 0.5) 55%,
             rgba(255, 255, 255, 0) 100%
         ),
         linear-gradient(
             var(--angle, 135deg),
-            rgba(150, 50, 255, 0.85) 0%,
-            rgba(80, 20, 180, 0.85) 50%,
-            rgba(150, 50, 255, 0.85) 100%
+            rgba(180, 0, 255, 0.95) 0%,
+            rgba(110, 0, 180, 0.95) 50%,
+            rgba(180, 0, 255, 0.95) 100%
         );
     background-size: 200% 200%, 400% 400%;
     background-blend-mode: multiply;
-    mix-blend-mode: color-dodge;
-    opacity: 0.95;
+    mix-blend-mode: screen;
+    opacity: 1 !important;
 }
 
 /* Guinda */
@@ -272,21 +272,44 @@
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
-            rgba(150, 150, 150, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(150, 150, 150, 0.4) 55%,
+            rgba(255, 255, 255, 0.35) 45%,
+            rgba(255, 255, 255, 0.7) 50%,
+            rgba(255, 255, 255, 0.35) 55%,
             rgba(255, 255, 255, 0) 100%
         ),
         linear-gradient(
             var(--angle, 135deg),
-            rgba(20, 20, 20, 0.9) 0%,
-            rgba(0, 0, 0, 0.95) 50%,
-            rgba(20, 20, 20, 0.9) 100%
+            rgba(0, 0, 0, 0.95) 0%,
+            rgba(35, 35, 35, 0.9) 50%,
+            rgba(0, 0, 0, 0.95) 100%
+        );
+    background-size: 200% 200%, 400% 400%;
+    background-blend-mode: normal;
+    mix-blend-mode: multiply;
+    opacity: 0.95 !important;
+}
+
+/* Blanco */
+.multi-foils-blanco .holo-layer {
+    background-image:
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.5) 45%,
+            rgba(255, 255, 255, 0.95) 50%,
+            rgba(255, 255, 255, 0.5) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(235, 235, 235, 0.85) 50%,
+            rgba(255, 255, 255, 0.95) 100%
         );
     background-size: 200% 200%, 400% 400%;
     background-blend-mode: multiply;
-    mix-blend-mode: color-dodge;
-    opacity: 0.95;
+    mix-blend-mode: overlay;
+    opacity: 0.95 !important;
 }
 
 
@@ -486,16 +509,16 @@
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
-            rgba(220, 200, 255, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(220, 200, 255, 0.4) 55%,
+            rgba(255, 180, 255, 0.5) 45%,
+            rgba(255, 255, 255, 0.95) 50%,
+            rgba(255, 180, 255, 0.5) 55%,
             rgba(255, 255, 255, 0) 100%
         ),
         linear-gradient(
             var(--angle, 135deg),
-            rgba(150, 50, 255, 0.85) 0%,
-            rgba(80, 20, 180, 0.85) 50%,
-            rgba(150, 50, 255, 0.85) 100%
+            rgba(180, 0, 255, 0.95) 0%,
+            rgba(110, 0, 180, 0.95) 50%,
+            rgba(180, 0, 255, 0.95) 100%
         );
     background-size: 100% 100%, 200% 200%, 400% 400%;
 }
@@ -552,16 +575,38 @@
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
-            rgba(150, 150, 150, 0.4) 45%,
-            rgba(255, 255, 255, 0.8) 50%,
-            rgba(150, 150, 150, 0.4) 55%,
+            rgba(255, 255, 255, 0.35) 45%,
+            rgba(255, 255, 255, 0.7) 50%,
+            rgba(255, 255, 255, 0.35) 55%,
             rgba(255, 255, 255, 0) 100%
         ),
         linear-gradient(
             var(--angle, 135deg),
-            rgba(20, 20, 20, 0.9) 0%,
-            rgba(0, 0, 0, 0.95) 50%,
-            rgba(20, 20, 20, 0.9) 100%
+            rgba(0, 0, 0, 0.95) 0%,
+            rgba(35, 35, 35, 0.9) 50%,
+            rgba(0, 0, 0, 0.95) 100%
+        );
+    background-size: 100% 100%, 200% 200%, 400% 400%;
+}
+
+/* Masked Blanco */
+.masked.multi-foils-blanco .holo-layer,
+.multi-foils-blanco.masked .holo-layer {
+    background-image:
+        var(--mask-url),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.5) 45%,
+            rgba(255, 255, 255, 0.95) 50%,
+            rgba(255, 255, 255, 0.5) 55%,
+            rgba(255, 255, 255, 0) 100%
+        ),
+        linear-gradient(
+            var(--angle, 135deg),
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(235, 235, 235, 0.85) 50%,
+            rgba(255, 255, 255, 0.95) 100%
         );
     background-size: 100% 100%, 200% 200%, 400% 400%;
 }
@@ -653,4 +698,66 @@
 .multifoil-palette-color-btn.active {
     border-color: #00d2ff;
     transform: scale(1.15);
+}
+
+
+/* ==========================================
+   5. GUIDE CONTROLS LATERAL STYLES
+   ========================================== */
+
+.guide-controls-lateral {
+    position: absolute;
+    left: 15px;
+    top: 25%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 999;
+}
+
+#btn-guide-trigger:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+}
+
+.guide-palette-dropdown {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 50px;
+    background: rgba(18, 18, 18, 0.95);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    z-index: 1000;
+    width: 120px;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.btn-guide-option {
+    width: 100%;
+    text-align: left;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #ccc;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-guide-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.btn-guide-option.active {
+    background: #00d2ff !important;
+    color: #000 !important;
+    font-weight: bold;
 }

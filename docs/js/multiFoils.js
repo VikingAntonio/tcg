@@ -16,7 +16,8 @@ window.MultiFoils = {
         { id: 'morado', name: 'Morado', hex: '#aa00ff', gradient: 'linear-gradient(135deg, #aa00ff, #440099)' },
         { id: 'guinda', name: 'Guinda', hex: '#800020', gradient: 'linear-gradient(135deg, #800020, #40000d)' },
         { id: 'gris', name: 'Gris', hex: '#aaaaaa', gradient: 'linear-gradient(135deg, #aaaaaa, #444444)' },
-        { id: 'negro', name: 'Negro', hex: '#222222', gradient: 'linear-gradient(135deg, #222222, #000000)' }
+        { id: 'negro', name: 'Negro', hex: '#3a3a3a', gradient: 'linear-gradient(135deg, #555555, #111111)' },
+        { id: 'blanco', name: 'Blanco', hex: '#ffffff', gradient: 'linear-gradient(135deg, #ffffff, #cccccc)' }
     ],
     currentColor: 'clasico',
 
