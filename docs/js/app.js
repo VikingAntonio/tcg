@@ -2228,8 +2228,8 @@ async function loadPublicSpirits() {
 
 function getAlbumSize($albumContainer) {
     const isMobile = window.innerWidth <= 640;
-    let width = 600;
-    let height = 420;
+    let width = 540;
+    let height = 378;
 
     if (isMobile) {
         // En móvil usamos el ancho del contenedor con un pequeño margen
@@ -2262,16 +2262,23 @@ function renderAlbum(album) {
     const $albumContainer = $(`
         <div class="public-album-item" id="album-container-${album.id}">
             <div class="public-album-header">
-                <i class="fas fa-book-open"></i> ${album.title}
-                <button class="btn-share-item" onclick="openShareModal('${album.title.replace(/'/g, "\\'")}', 'albums', '${album.id}')" title="Compartir Álbum">
-                    <i class="fas fa-share-alt"></i>
-                </button>
+                <div class="public-album-header-content">
+                    <span class="public-album-title-top">
+                        <i class="fas fa-book-open"></i> ${album.title}
+                    </span>
+                    <button class="btn-share-item btn-share-top" onclick="openShareModal('${album.title.replace(/'/g, "\\'")}', 'albums', '${album.id}')" title="Compartir Álbum">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                </div>
             </div>
             <div class="album-wrapper">
                 <div id="album-${album.id}" class="album"></div>
             </div>
             <div class="public-album-footer-title" style="text-align: center; margin-top: 15px; font-size: 1.5rem; font-weight: 800; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px;">
-                ${album.title}
+                <span>${album.title}</span>
+                <button class="btn-share-item btn-share-bottom" onclick="openShareModal('${album.title.replace(/'/g, "\\'")}', 'albums', '${album.id}')" title="Compartir Álbum">
+                    <i class="fas fa-share-alt"></i>
+                </button>
             </div>
         </div>
     `);

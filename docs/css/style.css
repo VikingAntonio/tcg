@@ -5657,6 +5657,106 @@ body.modal-open #decks-view.active {
     mask-composite: intersect !important;
 }
 
+/* Custom Responsive Overrides for Public Albums (PC vs Mobile layouts) */
+
+/* PC (Desktop) Layout Settings */
+@media (min-width: 641px) {
+    /* Hide top header entirely on PC */
+    .public-album-header {
+        display: none !important;
+    }
+
+    /* Show and center the bottom title, with the adjacent share button */
+    .public-album-footer-title {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 15px !important;
+    }
+
+    /* Customize bottom share button display on PC */
+    .btn-share-bottom {
+        display: flex !important;
+        margin: 0 !important;
+    }
+
+    /* Slightly reduce the outer container size & padding to be more compact */
+    .public-album-item {
+        padding: 20px 25px !important;
+        margin-bottom: 35px !important;
+    }
+
+    /* Slightly reduce the album wrapper box size to prevent wasted vertical space */
+    .album-wrapper {
+        width: 830px !important;
+        height: 500px !important;
+        margin: 10px auto !important;
+    }
+
+    /* Ensure default PC album dimensions match JS config */
+    .album {
+        width: 540px !important;
+        height: 378px !important;
+    }
+    .page {
+        width: 270px !important;
+        height: 378px !important;
+    }
+}
+
+/* Mobile Layout Settings */
+@media (max-width: 640px) {
+    /* Top header is shown and centered on Mobile */
+    .public-album-header {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        border-bottom: 1px solid rgba(0, 210, 255, 0.2) !important;
+        padding: 8px 10px !important;
+        margin-bottom: 15px !important;
+        width: 100% !important;
+    }
+
+    /* Centered content block holding the mobile title and the share button adjacent to each other */
+    .public-album-header-content {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    .public-album-title-top {
+        font-size: 1.15rem !important;
+        font-weight: 700 !important;
+        color: #00d2ff !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Customize top share button inside the centered group on Mobile */
+    .btn-share-top {
+        display: flex !important;
+        margin: 0 !important;
+        width: 38px !important;
+        height: 38px !important;
+    }
+
+    /* Hide the bottom footer title on Mobile */
+    .public-album-footer-title {
+        display: none !important;
+    }
+
+    /* Reduce margins/padding on Mobile to optimize centering & minimize scrolling */
+    .public-album-item {
+        margin-bottom: 25px !important;
+        padding: 10px 0 !important;
+    }
+    .album-wrapper {
+        margin: 5px auto !important;
+    }
+}
+
 /* Force mask to apply with absolute priority over specific rarities/foil CSS rules */
 .card.masked .card__shine,
 .card.masked .card__shine:before,
