@@ -72,6 +72,15 @@ window.getAlbumSize = function($albumContainer) {
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
 
+    // Asynchronously resolve multiple masks if semicolon is present
+    const masks = window.parseMultipleMasks(mask);
+    if (masks.length > 1) {
+        window.resolveMaskUrl(mask).then(resolvedMask => {
+            window.applyFoilToElement($el, holo, resolvedMask);
+        });
+        return;
+    }
+
     const POKEMON_FOILS = window.POKEMON_FOILS;
 
     // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
@@ -105,7 +114,7 @@ window.applyFoilToElement = function($el, holo, mask) {
         if (rarityVal.includes('pokemon')) { $el.attr("data-supertype", "pokémon"); rarityVal = rarityVal.replace('pokemon', ''); }
         $el.attr("data-rarity", rarityVal.trim());
 
-        if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+        if (mask) {
             $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
         const rx = 0.5, ry = 0.5;
@@ -122,7 +131,7 @@ window.applyFoilToElement = function($el, holo, mask) {
             $el.css({'--mx': 0.5, '--my': 0.5});
         } else {
             $el.addClass(baseHolo);
-            if ((isCustomFoil || baseHolo === 'custom-texture' || baseHolo === 'custom-textures') && mask) {
+            if (mask) {
                 $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
             $el.css({'--mx': 0.5, '--my': 0.5});
@@ -425,17 +434,17 @@ window.drawMask = function(e) {
 };
 
 // --- GLOBAL SEARCH FUNCTIONS ---
-let ygoSetsCache = null;
+window.ygoSetsCache = window.ygoSetsCache || null;
 window.getYgoSets = async function() {
-    if (ygoSetsCache) return ygoSetsCache;
+    if (window.ygoSetsCache) return window.ygoSetsCache;
     try {
         const response = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
-        ygoSetsCache = await response.json();
+        window.ygoSetsCache = await response.json();
     } catch (e) {
         console.warn("Error fetching YGO sets:", e);
-        ygoSetsCache = [];
+        window.ygoSetsCache = [];
     }
-    return ygoSetsCache;
+    return window.ygoSetsCache;
 };
 
 window.searchAbortControllers = window.searchAbortControllers || {};
@@ -961,3 +970,186 @@ window.sharedCard3D = {
     }
 };
 
+// --- MULTIPLE MASKS ENGINE & FIELD MANAGER ---
+
+window.parseMultipleMasks = function(maskStr) {
+    if (!maskStr) return [];
+    const parts = maskStr.split(';');
+    const result = [];
+    for (let i = 0; i < parts.length; i++) {
+        const p = parts[i].trim();
+        if (!p) continue;
+        if (p.startsWith('data:') && i + 1 < parts.length && parts[i + 1].trim().startsWith('base64,')) {
+            result.push(p + ';' + parts[i + 1].trim());
+            i++; // skip next part
+        } else {
+            result.push(p);
+        }
+    }
+    return result;
+};
+
+window.resolveMaskUrl = function(maskStr) {
+    const masks = window.parseMultipleMasks(maskStr);
+    if (masks.length === 0) return Promise.resolve('');
+    if (masks.length === 1) return Promise.resolve(masks[0]);
+
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 168;
+        canvas.height = 244;
+        const ctx = canvas.getContext('2d');
+
+        let loadedCount = 0;
+        const images = [];
+
+        const loadImage = (url, index) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                images[index] = img;
+                loadedCount++;
+                if (loadedCount === masks.length) {
+                    drawAndResolve();
+                }
+            };
+            img.onerror = () => {
+                images[index] = null;
+                loadedCount++;
+                if (loadedCount === masks.length) {
+                    drawAndResolve();
+                }
+            };
+            img.src = url;
+        };
+
+        const drawAndResolve = () => {
+            let firstDrawn = false;
+            for (let i = 0; i < images.length; i++) {
+                if (images[i]) {
+                    if (!firstDrawn) {
+                        ctx.drawImage(images[i], 0, 0, canvas.width, canvas.height);
+                        firstDrawn = true;
+                        ctx.globalCompositeOperation = 'multiply';
+                    } else {
+                        ctx.drawImage(images[i], 0, 0, canvas.width, canvas.height);
+                    }
+                }
+            }
+            if (!firstDrawn) {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            resolve(canvas.toDataURL('image/png'));
+        };
+
+        masks.forEach((url, index) => {
+            loadImage(url, index);
+        });
+    });
+};
+
+window.setupMultiMaskField = function(targetInputSelector, containerSelector, addBtnSelector) {
+    console.log("setupMultiMaskField running", targetInputSelector, containerSelector, addBtnSelector);
+    const $targetInput = $(targetInputSelector);
+    const $container = $(containerSelector);
+    const $addBtn = $(addBtnSelector);
+
+    console.log("Elements lengths:", $targetInput.length, $container.length, $addBtn.length);
+    if (!$targetInput.length || !$container.length) return;
+
+    const updateTargetFromRows = () => {
+        const values = [];
+        $container.find('.multi-mask-row-input').each(function() {
+            const val = $(this).val().trim();
+            if (val) {
+                values.push(val);
+            }
+        });
+        $targetInput.val(values.join(';')).trigger('change');
+    };
+
+    const buildRowsFromTarget = () => {
+        $container.empty();
+        const value = $targetInput.val() || '';
+        const masks = window.parseMultipleMasks(value);
+
+        masks.forEach((maskUrl) => {
+            addMaskRow(maskUrl);
+        });
+    };
+
+    const addMaskRow = (maskUrl = '') => {
+        const rowId = 'mask-row-' + Math.random().toString(36).substr(2, 9);
+        const fileInputId = 'file-' + rowId;
+
+        const rowHTML = `
+            <div class="multi-mask-row" id="${rowId}" style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <input type="text" class="multi-mask-row-input" value="${maskUrl}" placeholder="URL de máscara (Cloudinary, etc.)" style="flex: 1; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
+                <input type="file" id="${fileInputId}" class="multi-mask-file-input" accept="image/*" style="display: none;">
+                <button type="button" class="btn btn-secondary btn-sm btn-row-upload" onclick="$('#${fileInputId}').click()" style="white-space: nowrap; padding: 8px 12px; font-size: 12px; border-radius: 6px;">
+                    <i class="fas fa-upload"></i> Subir
+                </button>
+                <button type="button" class="btn btn-danger btn-sm btn-row-delete" style="padding: 8px 12px; font-size: 12px; border-radius: 6px;">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </div>
+        `;
+
+        const $row = $(rowHTML);
+        $container.append($row);
+
+        $row.find('.multi-mask-row-input').on('input change', function() {
+            updateTargetFromRows();
+        });
+
+        $row.find('.multi-mask-file-input').on('change', async function() {
+            if (this.files.length === 0) return;
+            const file = this.files[0];
+            Swal.fire({ title: 'Subiendo máscara...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                const secureUrl = await CloudinaryUpload.uploadImage(file);
+                $row.find('.multi-mask-row-input').val(secureUrl).trigger('change');
+                Swal.fire({ icon: 'success', title: '¡Subido con éxito!', timer: 1000, showConfirmButton: false });
+            } catch (err) {
+                Swal.fire('Error', 'No se pudo subir la imagen a Cloudinary.', 'error');
+            }
+        });
+
+        $row.find('.btn-row-delete').on('click', function() {
+            $row.remove();
+            updateTargetFromRows();
+        });
+    };
+
+    $targetInput.off('change.multiMask').on('change.multiMask', function() {
+        if (!$(document.activeElement).hasClass('multi-mask-row-input')) {
+            buildRowsFromTarget();
+        }
+    });
+
+    $addBtn.off('click').on('click', function() {
+        addMaskRow();
+    });
+
+    buildRowsFromTarget();
+};
+
+// Wrap jQuery val() to automatically trigger 'change' event on target inputs programmatically updated
+const originalVal = $.fn.val;
+$.fn.val = function(value) {
+    if (value !== undefined) {
+        const result = originalVal.apply(this, arguments);
+        const ids = ['#slot-custom-mask', '#bdd-custom-mask', '#modal-wishlist-custom-mask', '#modal-custom-mask', '#owner-card-mask'];
+        this.each(function() {
+            const id = $(this).attr('id');
+            if (id && ids.includes('#' + id)) {
+                $(this).trigger('change');
+            }
+        });
+        return result;
+    }
+    return originalVal.apply(this, arguments);
+};

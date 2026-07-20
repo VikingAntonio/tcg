@@ -65,6 +65,10 @@ window.openShareModal = function(title, type, id) {
 };
 
 $(document).ready(async function() {
+    if (typeof window.setupMultiMaskField === 'function') {
+        window.setupMultiMaskField('#modal-custom-mask', '#deseos-multi-mask-rows-container', '.btn-add-mask-row');
+    }
+
     // --- Share Modal Close & Actions ---
     $(document).on('click', '#close-share-modal, #share-overlay', function(e) {
         if (e.target === this || $(this).hasClass('close-btn')) {
