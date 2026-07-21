@@ -72,11 +72,29 @@ window.getAlbumSize = function($albumContainer) {
 window.applyFoilToElement = function($el, holo, mask) {
     if (!holo) return;
 
+    let firstHolo = holo;
+    let secondHolo = null;
+    let ignoreMaskForSecond = false;
+
+    if (holo.includes(';')) {
+        const parts = holo.split(';');
+        firstHolo = parts[0];
+        if (parts[1]) {
+            secondHolo = parts[1];
+        }
+        if (parts[2] === 'ignoreMask') {
+            ignoreMaskForSecond = true;
+        }
+    }
+
+    // Set holo to firstHolo for the rest of the original logic
+    holo = firstHolo;
+
     // Asynchronously resolve multiple masks if semicolon is present
     const masks = window.parseMultipleMasks(mask);
     if (masks.length > 1) {
         window.resolveMaskUrl(mask).then(resolvedMask => {
-            window.applyFoilToElement($el, holo, resolvedMask);
+            window.applyFoilToElement($el, holo + (secondHolo ? ';' + secondHolo + (ignoreMaskForSecond ? ';ignoreMask' : '') : ''), resolvedMask);
         });
         return;
     }
@@ -144,21 +162,31 @@ window.applyFoilToElement = function($el, holo, mask) {
         'will-change': 'transform, opacity'
     });
 
-    if ($el.find('.holo-layer').length === 0) {
+    if ($el.find('> .holo-layer').length === 0) {
         $el.append('<div class="holo-layer"></div>');
     }
-    if (baseHolo === 'pokeball-rare' && $el.find('.holo-layer-red').length === 0) {
+    if (baseHolo === 'pokeball-rare' && $el.find('> .holo-layer-red').length === 0) {
         $el.append('<div class="holo-layer-red"></div>');
     }
 
     // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
-    $el.find('.holo-layer, .holo-layer-red').css({
+    $el.find('> .holo-layer, > .holo-layer-red').css({
         'will-change': 'transform, opacity',
         'backface-visibility': 'hidden',
         '-webkit-backface-visibility': 'hidden'
     });
 
     $el.addClass('active foil-loop');
+
+    // Only apply the second holo if the current element is NOT a foil-effect-container itself
+    if (!$el.hasClass('foil-effect-container')) {
+        $el.find('> .foil-effect-container').remove();
+        if (secondHolo) {
+            const $container = $('<div class="foil-effect-container"></div>');
+            $el.append($container);
+            window.applyFoilToElement($container, secondHolo, ignoreMaskForSecond ? '' : mask);
+        }
+    }
 };
 
 // --- Global Navigation ---

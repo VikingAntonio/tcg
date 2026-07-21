@@ -1180,11 +1180,28 @@ async function openCardModal($slot) {
 }
 
 function applyVisualsToModal(holo, mask, use3d, options = {}) {
+    let firstHolo = holo;
+    let secondHolo = null;
+    let ignoreMaskForSecond = false;
+
+    if (holo && holo.includes(';')) {
+        const parts = holo.split(';');
+        firstHolo = parts[0];
+        if (parts[1]) {
+            secondHolo = parts[1];
+        }
+        if (parts[2] === 'ignoreMask') {
+            ignoreMaskForSecond = true;
+        }
+    }
+
+    holo = firstHolo;
+
     // Asynchronously resolve multiple masks if semicolon is present
     const masks = window.parseMultipleMasks(mask);
     if (masks.length > 1) {
         window.resolveMaskUrl(mask).then(resolvedMask => {
-            applyVisualsToModal(holo, resolvedMask, use3d, options);
+            applyVisualsToModal(holo + (secondHolo ? ';' + secondHolo + (ignoreMaskForSecond ? ';ignoreMask' : '') : ''), resolvedMask, use3d, options);
         });
         return;
     }
@@ -1280,6 +1297,14 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     }
 
     $card3d.addClass("active");
+
+    // Render second foil in detail view if present
+    $card.find('> .foil-effect-container').remove();
+    if (secondHolo) {
+        const $container = $('<div class="foil-effect-container"></div>');
+        $card.append($container);
+        window.applyFoilToElement($container, secondHolo, ignoreMaskForSecond ? '' : mask);
+    }
 }
 
 async function switchView(view, skipPush = false) {

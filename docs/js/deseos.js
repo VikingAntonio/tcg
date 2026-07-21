@@ -162,6 +162,26 @@ $(document).ready(async function() {
         }
     });
 
+    $(document).on('click', '#btn-deseos-add-second-holo', function() {
+        $('#deseos-second-holo-container').show();
+        $('#deseos-add-second-holo-container').hide();
+    });
+
+    $(document).on('click', '#btn-deseos-remove-second-holo', function() {
+        $('#deseos-second-holo-container').hide();
+        $('#deseos-add-second-holo-container').show();
+        $('#modal-second-holo-effect').val('').trigger('change');
+    });
+
+    $(document).on('change', '#modal-second-holo-effect', function() {
+        const val = $(this).val();
+        if (val === 'custom-foil') {
+            $('#deseos-second-custom-foil-type-container').show();
+        } else {
+            $('#deseos-second-custom-foil-type-container').hide();
+        }
+    });
+
     $('#btn-open-mask-editor').click(function(e) {
         e.preventDefault();
         const cardImgUrl = $('#modal-card-img').attr('src');
@@ -194,7 +214,18 @@ $(document).ready(async function() {
     $('#btn-save-wishlist-modal').click(async function() {
         if (!currentEditingId) return;
 
-        let holoEffect = $('#modal-holo-effect').val();
+        let holoEffect = $('#modal-holo-effect').val() || '';
+
+        // Serialize second holo if present
+        let secondHoloVal = $('#modal-second-holo-effect').val() || '';
+        if (secondHoloVal) {
+            if (secondHoloVal === 'custom-foil') {
+                const subType = $('#modal-second-custom-foil-type').val() || 'foil';
+                secondHoloVal = `custom-foil|${subType}`;
+            }
+            const secondHoloFitMask = $('#modal-second-holo-fit-mask').is(':checked');
+            holoEffect = `${holoEffect};${secondHoloVal}${!secondHoloFitMask ? ';ignoreMask' : ''}`;
+        }
 
         const data = {
             rarity: $('#modal-rarity').val(),
@@ -441,20 +472,58 @@ function openEditModal(item) {
     $('#modal-rarity').val(item.rarity || '');
     $('#modal-quantity').val(item.quantity || 1);
     const holo = item.holo_effect || '';
-    if (holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+
+    let firstHolo = holo;
+    let secondHolo = '';
+    let fitMaskForSecond = true;
+
+    if (holo.includes(';')) {
+        const parts = holo.split(';');
+        firstHolo = parts[0];
+        secondHolo = parts[1] || '';
+        if (parts[2] === 'ignoreMask') {
+            fitMaskForSecond = false;
+        }
+    }
+
+    if (firstHolo === 'multiFoils' || firstHolo.startsWith('multiFoils|')) {
         $('#modal-holo-effect').val('multiFoils');
     } else {
-        $('#modal-holo-effect').val(holo);
+        $('#modal-holo-effect').val(firstHolo);
     }
     $('#modal-custom-mask').val(item.custom_mask_url || '');
     $('#modal-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-notes').val(item.notes || '');
 
-    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+    if (firstHolo === 'custom-texture' || firstHolo === 'custom-foil' || firstHolo === 'multiFoils' || firstHolo.startsWith('multiFoils|')) {
         $('#modal-mask-container').show();
     } else {
         $('#modal-mask-container').hide();
+    }
+
+    // Load second holo fields
+    if (secondHolo) {
+        $('#deseos-second-holo-container').show();
+        $('#deseos-add-second-holo-container').hide();
+
+        let baseSecond = secondHolo;
+        if (baseSecond.startsWith('custom-foil|')) {
+            const parts = baseSecond.split('|');
+            $('#modal-second-holo-effect').val('custom-foil');
+            $('#modal-second-custom-foil-type').val(parts[1] || 'foil');
+            $('#deseos-second-custom-foil-type-container').show();
+        } else {
+            $('#modal-second-holo-effect').val(baseSecond);
+            $('#deseos-second-custom-foil-type-container').hide();
+        }
+        $('#modal-second-holo-fit-mask').prop('checked', fitMaskForSecond);
+    } else {
+        $('#deseos-second-holo-container').hide();
+        $('#deseos-add-second-holo-container').show();
+        $('#modal-second-holo-effect').val('');
+        $('#deseos-second-custom-foil-type-container').hide();
+        $('#modal-second-holo-fit-mask').prop('checked', true);
     }
 
     $('#wishlist-modal').addClass('active');

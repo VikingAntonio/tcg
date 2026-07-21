@@ -104,6 +104,27 @@ $(document).ready(async function() {
         window.setupMultiMaskField('#slot-custom-mask', '#slot-multi-mask-rows-container', '#btn-slot-add-mask-row');
     }
 
+    // Bindings for Second Holo Effect in Card Slot Modal
+    $(document).on('click', '#btn-slot-add-second-holo', function() {
+        $('#slot-second-holo-container').show();
+        $('#slot-add-second-holo-container').hide();
+    });
+
+    $(document).on('click', '#btn-slot-remove-second-holo', function() {
+        $('#slot-second-holo-container').hide();
+        $('#slot-add-second-holo-container').show();
+        $('#slot-second-holo-effect').val('').trigger('change');
+    });
+
+    $(document).on('change', '#slot-second-holo-effect', function() {
+        const val = $(this).val();
+        if (val === 'custom-foil') {
+            $('#slot-second-custom-foil-type-container').show();
+        } else {
+            $('#slot-second-custom-foil-type-container').hide();
+        }
+    });
+
     // --- Navigation (Dashboard Tiles) ---
     $(document).on('click', '#btn-show-albums', function(e) {
         e.preventDefault();
@@ -615,6 +636,17 @@ $(document).ready(async function() {
             holoEffect = 'L:' + holoEffect;
         } else if (!shouldShowInList && holoEffect.startsWith('L:')) {
             holoEffect = holoEffect.substring(2);
+        }
+
+        // Serialize second holo if present
+        let secondHoloVal = $('#slot-second-holo-effect').val() || '';
+        if (secondHoloVal) {
+            if (secondHoloVal === 'custom-foil') {
+                const subType = $('#slot-second-custom-foil-type').val() || 'foil';
+                secondHoloVal = `custom-foil|${subType}`;
+            }
+            const secondHoloFitMask = $('#slot-second-holo-fit-mask').is(':checked');
+            holoEffect = `${holoEffect};${secondHoloVal}${!secondHoloFitMask ? ';ignoreMask' : ''}`;
         }
 
         const cardData = {
@@ -2250,7 +2282,20 @@ function editDeckCard(card) {
     $('#slot-modal').attr('data-complex-val', holo);
     $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
-    let baseHolo = holo;
+    let firstHolo = holo;
+    let secondHolo = '';
+    let fitMaskForSecond = true;
+
+    if (holo.includes(';')) {
+        const parts = holo.split(';');
+        firstHolo = parts[0];
+        secondHolo = parts[1] || '';
+        if (parts[2] === 'ignoreMask') {
+            fitMaskForSecond = false;
+        }
+    }
+
+    let baseHolo = firstHolo;
     if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
     if (baseHolo.startsWith('custom-foil|')) {
@@ -2275,6 +2320,30 @@ function editDeckCard(card) {
         } else {
             $('#custom-mask-container').hide();
         }
+    }
+
+    // Load second holo selection fields
+    if (secondHolo) {
+        $('#slot-second-holo-container').show();
+        $('#slot-add-second-holo-container').hide();
+
+        let baseSecond = secondHolo;
+        if (baseSecond.startsWith('custom-foil|')) {
+            const parts = baseSecond.split('|');
+            $('#slot-second-holo-effect').val('custom-foil');
+            $('#slot-second-custom-foil-type').val(parts[1] || 'foil');
+            $('#slot-second-custom-foil-type-container').show();
+        } else {
+            $('#slot-second-holo-effect').val(baseSecond);
+            $('#slot-second-custom-foil-type-container').hide();
+        }
+        $('#slot-second-holo-fit-mask').prop('checked', fitMaskForSecond);
+    } else {
+        $('#slot-second-holo-container').hide();
+        $('#slot-add-second-holo-container').show();
+        $('#slot-second-holo-effect').val('');
+        $('#slot-second-custom-foil-type-container').hide();
+        $('#slot-second-holo-fit-mask').prop('checked', true);
     }
 
     $('#slot-custom-mask').val(card.custom_mask_url || '');
@@ -2966,6 +3035,13 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-quantity').val('');
     $('#slot-price').val('');
 
+    // Reset second holo elements
+    $('#slot-second-holo-container').hide();
+    $('#slot-add-second-holo-container').show();
+    $('#slot-second-holo-effect').val('');
+    $('#slot-second-custom-foil-type-container').hide();
+    $('#slot-second-holo-fit-mask').prop('checked', true);
+
     if (data) {
         $('#slot-modal').data('current-obtained', data.obtained !== false);
         $('#slot-image-url').val(data.image_url || '');
@@ -2975,7 +3051,20 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-modal').attr('data-complex-val', holo);
         $('#slot-show-foil-list').prop('checked', holo.startsWith('L:'));
 
-        let baseHolo = holo;
+        let firstHolo = holo;
+        let secondHolo = '';
+        let fitMaskForSecond = true;
+
+        if (holo.includes(';')) {
+            const parts = holo.split(';');
+            firstHolo = parts[0];
+            secondHolo = parts[1] || '';
+            if (parts[2] === 'ignoreMask') {
+                fitMaskForSecond = false;
+            }
+        }
+
+        let baseHolo = firstHolo;
         if (baseHolo.startsWith('L:')) baseHolo = baseHolo.substring(2);
 
         if (baseHolo.startsWith('custom-foil|')) {
@@ -3000,6 +3089,24 @@ async function loadSlotData(pageId, slotIndex) {
             } else {
                 $('#custom-mask-container').hide();
             }
+        }
+
+        // Load second holo selection fields
+        if (secondHolo) {
+            $('#slot-second-holo-container').show();
+            $('#slot-add-second-holo-container').hide();
+
+            let baseSecond = secondHolo;
+            if (baseSecond.startsWith('custom-foil|')) {
+                const parts = baseSecond.split('|');
+                $('#slot-second-holo-effect').val('custom-foil');
+                $('#slot-second-custom-foil-type').val(parts[1] || 'foil');
+                $('#slot-second-custom-foil-type-container').show();
+            } else {
+                $('#slot-second-holo-effect').val(baseSecond);
+                $('#slot-second-custom-foil-type-container').hide();
+            }
+            $('#slot-second-holo-fit-mask').prop('checked', fitMaskForSecond);
         }
 
         if (holo) {

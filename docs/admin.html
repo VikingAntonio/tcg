@@ -2037,6 +2037,89 @@
                                 </button>
                             </div>
                         </div>
+
+                        <div class="form-group" id="slot-add-second-holo-container" style="grid-column: span 2; margin-top: 10px;">
+                            <button type="button" id="btn-slot-add-second-holo" class="btn btn-secondary btn-sm" style="width: 100%;">
+                                <i class="fas fa-plus"></i> Agregar otro efecto foil
+                            </button>
+                        </div>
+
+                        <div class="form-group" id="slot-second-holo-container" style="display: none; grid-column: span 2; padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; margin-top: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <label style="font-weight: bold; color: var(--primary-color); margin-bottom: 0;">Segundo Efecto Holo</label>
+                                <button type="button" id="btn-slot-remove-second-holo" class="btn btn-danger btn-sm" style="padding: 2px 8px; font-size: 10px;"><i class="fas fa-trash"></i> Quitar</button>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <select id="slot-second-holo-effect" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                    <option value="" style="background: #252525;">Ninguno</option>
+                                    <option value="foil" style="background: #252525;">Foil</option>
+                                    <option value="custom-texture" style="background: #252525;">CustomTexture</option>
+                                    <option value="custom-foil" style="background: #252525;">CustomFoil</option>
+                                    <option value="multiFoils" style="background: #252525;">MultiFoils</option>
+                                    <option value="pokeball-rare" style="background: #252525;">Pokeball Rare</option>
+                                    <option value="duel-terminal" style="background: #252525;">Duel Terminal</option>
+                                    <option value="cosmo-paldea" style="background: #252525;">Cosmo Holo Paldea</option>
+                                    <option value="pk-rare-holo" style="background: #252525;">PK: Rare Holo</option>
+                                    <option value="pk-rare-holo-cosmos" style="background: #252525;">PK: Cosmos Holo</option>
+                                    <option value="pk-rare-holo-v" style="background: #252525;">PK: Rare Holo V</option>
+                                    <option value="pk-rare-holo-vmax" style="background: #252525;">PK: Rare Holo VMAX</option>
+                                    <option value="pk-rare-holo-vstar" style="background: #252525;">PK: Rare Holo VSTAR</option>
+                                    <option value="pk-rare-rainbow" style="background: #252525;">PK: Rare Rainbow</option>
+                                    <option value="pk-rare-rainbow-alt" style="background: #252525;">PK: Rare Rainbow Alt</option>
+                                    <option value="pk-rare-secret" style="background: #252525;">PK: Rare Secret</option>
+                                    <option value="pk-rare-shiny" style="background: #252525;">PK: Rare Shiny</option>
+                                    <option value="pk-rare-shiny-v" style="background: #252525;">PK: Rare Shiny V</option>
+                                    <option value="pk-rare-shiny-vmax" style="background: #252525;">PK: Rare Shiny VMAX</option>
+                                    <option value="pk-amazing-rare" style="background: #252525;">PK: Amazing Rare</option>
+                                    <option value="pk-radiant-rare" style="background: #252525;">PK: Radiant Rare</option>
+                                    <option value="pk-rare-ultra" style="background: #252525;">PK: Rare Ultra</option>
+                                    <option value="pk-trainer-gallery" style="background: #252525;">PK: Trainer Gallery</option>
+                                    <option value="pk-trainer-gallery-secret-rare" style="background: #252525;">PK: TG Secret Rare</option>
+                                    <option value="pk-trainer-gallery-v-max" style="background: #252525;">PK: TG VMAX</option>
+                                    <option value="pk-trainer-gallery-v-regular" style="background: #252525;">PK: TG V</option>
+                                    <option value="pk-trainer-full-art" style="background: #252525;">PK: Trainer Full Art</option>
+                                    <option value="pk-rare-holo-v-full-art" style="background: #252525;">PK: V Full Art</option>
+                                    <option value="pk-reverse-holo" style="background: #252525;">PK: Reverse Holo</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="slot-second-custom-foil-type-container" style="display: none; margin-bottom: 10px;">
+                                <label>Tipo de Foil (Segundo - CustomFoil)</label>
+                                <select id="slot-second-custom-foil-type" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
+                                    <option value="foil" style="background: #252525;">Foil</option>
+                                    <option value="custom-texture" style="background: #252525;">CustomTexture</option>
+                                    <option value="cosmo-paldea" style="background: #252525;">Cosmo Holo Paldea</option>
+                                    <option value="pk-rare-holo" style="background: #252525;">PK: Rare Holo</option>
+                                    <option value="pk-rare-holo-cosmos" style="background: #252525;">PK: Cosmos Holo</option>
+                                    <option value="pk-rare-holo-v" style="background: #252525;">PK: Rare Holo V</option>
+                                    <option value="pk-rare-holo-vmax" style="background: #252525;">PK: Rare Holo VMAX</option>
+                                    <option value="pk-rare-holo-vstar" style="background: #252525;">PK: Rare Holo VSTAR</option>
+                                    <option value="pk-rare-rainbow" style="background: #252525;">PK: Rare Rainbow</option>
+                                    <option value="pk-rare-rainbow-alt" style="background: #252525;">PK: Rare Rainbow Alt</option>
+                                    <option value="pk-rare-secret" style="background: #252525;">PK: Rare Secret</option>
+                                    <option value="pk-rare-shiny" style="background: #252525;">PK: Rare Shiny</option>
+                                    <option value="pk-rare-shiny-v" style="background: #252525;">PK: Rare Shiny V</option>
+                                    <option value="pk-rare-shiny-vmax" style="background: #252525;">PK: Rare Shiny VMAX</option>
+                                    <option value="pk-amazing-rare" style="background: #252525;">PK: Amazing Rare</option>
+                                    <option value="pk-radiant-rare" style="background: #252525;">PK: Radiant Rare</option>
+                                    <option value="pk-rare-ultra" style="background: #252525;">PK: Rare Ultra</option>
+                                    <option value="pk-trainer-gallery" style="background: #252525;">PK: Trainer Gallery</option>
+                                    <option value="pk-trainer-gallery-secret-rare" style="background: #252525;">PK: TG Secret Rare</option>
+                                    <option value="pk-trainer-gallery-v-max" style="background: #252525;">PK: TG VMAX</option>
+                                    <option value="pk-trainer-gallery-v-regular" style="background: #252525;">PK: TG V</option>
+                                    <option value="pk-trainer-full-art" style="background: #252525;">PK: Trainer Full Art</option>
+                                    <option value="pk-rare-holo-v-full-art" style="background: #252525;">PK: V Full Art</option>
+                                    <option value="pk-reverse-holo" style="background: #252525;">PK: Reverse Holo</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 10px;">
+                                <label class="switch switch-mini" style="position: relative; top: 0; left: 0; margin-bottom: 0;">
+                                    <input type="checkbox" id="slot-second-holo-fit-mask" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #aaa;">Ajustarse a la máscara</span>
+                            </div>
+                        </div>
+
                         <div class="form-group" id="slot-multi-mask-section" style="grid-column: span 2; margin-top: 15px;">
                             <label style="font-weight: bold; color: #ffcb05; display: block; margin-bottom: 8px;">Cargar Máscaras</label>
                             <div id="slot-multi-mask-rows-container"></div>
@@ -2185,6 +2268,89 @@
                     </button>
                 </div>
             </div>
+
+            <div class="form-group" id="wishlist-add-second-holo-container" style="margin-top: 10px;">
+                <button type="button" id="btn-wishlist-add-second-holo" class="btn btn-secondary btn-sm" style="width: 100%;">
+                    <i class="fas fa-plus"></i> Agregar otro efecto foil
+                </button>
+            </div>
+
+            <div class="form-group" id="wishlist-second-holo-container" style="display: none; padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-weight: bold; color: var(--primary-color); margin-bottom: 0;">Segundo Efecto Holo</label>
+                    <button type="button" id="btn-wishlist-remove-second-holo" class="btn btn-danger btn-sm" style="padding: 2px 8px; font-size: 10px;"><i class="fas fa-trash"></i> Quitar</button>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <select id="modal-wishlist-second-holo-effect" class="wishlist-field" style="padding: 10px;">
+                        <option value="">Ninguno</option>
+                        <option value="foil">Foil</option>
+                        <option value="custom-texture">CustomTexture</option>
+                        <option value="custom-foil">CustomFoil</option>
+                        <option value="multiFoils">MultiFoils</option>
+                        <option value="pokeball-rare">Pokeball Rare</option>
+                        <option value="duel-terminal">Duel Terminal</option>
+                        <option value="cosmo-paldea">Cosmo Holo Paldea</option>
+                        <option value="pk-rare-holo">PK: Rare Holo</option>
+                        <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
+                        <option value="pk-rare-holo-v">PK: Rare Holo V</option>
+                        <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
+                        <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
+                        <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
+                        <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
+                        <option value="pk-rare-secret">PK: Rare Secret</option>
+                        <option value="pk-rare-shiny">PK: Rare Shiny</option>
+                        <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
+                        <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
+                        <option value="pk-amazing-rare">PK: Amazing Rare</option>
+                        <option value="pk-radiant-rare">PK: Radiant Rare</option>
+                        <option value="pk-rare-ultra">PK: Rare Ultra</option>
+                        <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
+                        <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
+                        <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
+                        <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
+                        <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
+                        <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
+                        <option value="pk-reverse-holo">PK: Reverse Holo</option>
+                    </select>
+                </div>
+                <div class="form-group" id="wishlist-second-custom-foil-type-container" style="display: none; margin-bottom: 10px;">
+                    <label>Tipo de Foil (Segundo - CustomFoil)</label>
+                    <select id="modal-wishlist-second-custom-foil-type" class="wishlist-field" style="padding: 10px;">
+                        <option value="foil">Foil</option>
+                        <option value="custom-texture">CustomTexture</option>
+                        <option value="cosmo-paldea">Cosmo Holo Paldea</option>
+                        <option value="pk-rare-holo">PK: Rare Holo</option>
+                        <option value="pk-rare-holo-cosmos">PK: Cosmos Holo</option>
+                        <option value="pk-rare-holo-v">PK: Rare Holo V</option>
+                        <option value="pk-rare-holo-vmax">PK: Rare Holo VMAX</option>
+                        <option value="pk-rare-holo-vstar">PK: Rare Holo VSTAR</option>
+                        <option value="pk-rare-rainbow">PK: Rare Rainbow</option>
+                        <option value="pk-rare-rainbow-alt">PK: Rare Rainbow Alt</option>
+                        <option value="pk-rare-secret">PK: Rare Secret</option>
+                        <option value="pk-rare-shiny">PK: Rare Shiny</option>
+                        <option value="pk-rare-shiny-v">PK: Rare Shiny V</option>
+                        <option value="pk-rare-shiny-vmax">PK: Rare Shiny VMAX</option>
+                        <option value="pk-amazing-rare">PK: Amazing Rare</option>
+                        <option value="pk-radiant-rare">PK: Radiant Rare</option>
+                        <option value="pk-rare-ultra">PK: Rare Ultra</option>
+                        <option value="pk-trainer-gallery">PK: Trainer Gallery</option>
+                        <option value="pk-trainer-gallery-secret-rare">PK: TG Secret Rare</option>
+                        <option value="pk-trainer-gallery-v-max">PK: TG VMAX</option>
+                        <option value="pk-trainer-gallery-v-regular">PK: TG V</option>
+                        <option value="pk-trainer-full-art">PK: Trainer Full Art</option>
+                        <option value="pk-rare-holo-v-full-art">PK: V Full Art</option>
+                        <option value="pk-reverse-holo">PK: Reverse Holo</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 10px;">
+                    <label class="switch switch-mini" style="position: relative; top: 0; left: 0; margin-bottom: 0;">
+                        <input type="checkbox" id="modal-wishlist-second-holo-fit-mask" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #aaa;">Ajustarse a la máscara</span>
+                </div>
+            </div>
+
             <div class="form-group" id="wishlist-multi-mask-section" style="margin-top: 15px;">
                 <label style="font-weight: bold; color: #ffcb05; display: block; margin-bottom: 8px;">Cargar Máscaras</label>
                 <div id="wishlist-multi-mask-rows-container"></div>
