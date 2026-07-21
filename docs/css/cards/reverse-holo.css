@@ -113,16 +113,16 @@
 
 */
 
-.card:not(.masked)[data-rarity$="reverse holo"] .card__shine {
+.card[data-rarity$="reverse holo"] .card__shine {
   --foil: none;
   clip-path: var(--clip-invert);
 }
 
-.card:not(.masked)[data-rarity$="reverse holo"][data-subtypes^="stage"] .card__glare:after {
+.card[data-rarity$="reverse holo"][data-subtypes^="stage"] .card__glare:after {
   clip-path: var(--clip-stage-invert);
 }
 
-.card:not(.masked)[data-rarity$="reverse holo"][data-supertype="trainer"] .card__glare:after {
+.card[data-rarity$="reverse holo"][data-supertype="trainer"] .card__glare:after {
   clip-path: var(--clip-trainer-invert);
 }
 
