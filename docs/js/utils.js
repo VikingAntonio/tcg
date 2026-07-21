@@ -455,17 +455,37 @@ window.initMaskCanvas = function() {
 
     // Determine if multiFoils is active to show/hide palette
     let isMultiFoilsActive = false;
-    const bddHolo = $('#bdd-holo-effect').val() || '';
-    const slotHolo = $('#slot-holo-effect').val() || '';
-    const wishlistHolo = $('#modal-wishlist-holo-effect').val() || '';
-    const clientHolo = $('#modal-holo-effect').val() || '';
+    let isCustomTextureActive = false;
+    let isCustomFoilActive = false;
 
-    if (bddHolo.startsWith('multiFoils') ||
-        slotHolo.startsWith('multiFoils') ||
-        wishlistHolo.startsWith('multiFoils') ||
-        clientHolo.startsWith('multiFoils')) {
-        isMultiFoilsActive = true;
-    }
+    const checkHoloVal = (val) => {
+        if (!val) return;
+        const low = val.toLowerCase();
+        if (low.startsWith('multi-foils') || low.startsWith('multifoils')) {
+            isMultiFoilsActive = true;
+        }
+        if (low.startsWith('custom-texture') || low.startsWith('custom-textures')) {
+            isCustomTextureActive = true;
+        }
+        if (low.startsWith('custom-foil')) {
+            isCustomFoilActive = true;
+        }
+    };
+
+    const checkCompound = (val) => {
+        if (!val) return;
+        val.split(';').forEach(checkHoloVal);
+    };
+
+    // Check all possible primary and secondary select elements
+    checkCompound($('#bdd-holo-effect').val());
+    checkCompound($('#slot-holo-effect').val());
+    checkCompound($('#slot-second-holo-effect').val());
+    checkCompound($('#modal-wishlist-holo-effect').val());
+    checkCompound($('#modal-wishlist-second-holo-effect').val());
+    checkCompound($('#modal-holo-effect').val());
+    checkCompound($('#modal-second-holo-effect').val());
+
     window.isMultiFoilsActive = isMultiFoilsActive;
 
     if (isMultiFoilsActive) {
@@ -473,21 +493,6 @@ window.initMaskCanvas = function() {
     } else {
         $('.multifoil-controls-lateral').hide();
         $('#multifoil-palette-dropdown').hide();
-    }
-
-    // Determine if custom-texture or custom-foil is active to show/hide the guide controls
-    let isCustomTextureActive = false;
-    let isCustomFoilActive = false;
-    const bddHoloLower = bddHolo.toLowerCase();
-    const slotHoloLower = slotHolo.toLowerCase();
-    const wishlistHoloLower = wishlistHolo.toLowerCase();
-    const clientHoloLower = clientHolo.toLowerCase();
-
-    if (bddHoloLower.startsWith('custom-texture') || slotHoloLower.startsWith('custom-texture') || wishlistHoloLower.startsWith('custom-texture') || clientHoloLower.startsWith('custom-texture')) {
-        isCustomTextureActive = true;
-    }
-    if (bddHoloLower.startsWith('custom-foil') || slotHoloLower.startsWith('custom-foil') || wishlistHoloLower.startsWith('custom-foil') || clientHoloLower.startsWith('custom-foil')) {
-        isCustomFoilActive = true;
     }
 
     const isGuideEligible = isMultiFoilsActive || isCustomTextureActive || isCustomFoilActive;
