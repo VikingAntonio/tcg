@@ -185,6 +185,10 @@ $(document).ready(async function() {
     $(document).on('change', '#modal-second-holo-effect', function() {
         const val = $(this).val();
         checkDeseosMaskContainerVisibility();
+        if (val === '') {
+            $('#deseos-second-holo-container').hide();
+            $('#deseos-add-second-holo-container').show();
+        }
         if (val === 'custom-foil') {
             $('#deseos-second-custom-foil-type-container').show();
         } else {

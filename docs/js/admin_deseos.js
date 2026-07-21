@@ -98,6 +98,10 @@ function initAdminWishlistListeners() {
     $(document).on('change', '#modal-wishlist-second-holo-effect', function() {
         const val = $(this).val();
         checkWishlistMaskContainerVisibility();
+        if (val === '') {
+            $('#wishlist-second-holo-container').hide();
+            $('#wishlist-add-second-holo-container').show();
+        }
         if (val === 'custom-foil') {
             $('#wishlist-second-custom-foil-type-container').show();
         } else {

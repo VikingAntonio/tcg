@@ -121,6 +121,10 @@ $(document).ready(async function() {
         if (typeof checkMaskContainerVisibility === 'function') {
             checkMaskContainerVisibility();
         }
+        if (val === '') {
+            $('#slot-second-holo-container').hide();
+            $('#slot-add-second-holo-container').show();
+        }
         if (val === 'custom-foil') {
             $('#slot-second-custom-foil-type-container').show();
         } else {

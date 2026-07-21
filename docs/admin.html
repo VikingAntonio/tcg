@@ -2028,16 +2028,6 @@
                                 <option value="pk-reverse-holo" style="background: #252525;">PK: Reverse Holo</option>
                             </select>
                         </div>
-                        <div class="form-group" id="custom-mask-container" style="display: none; grid-column: span 2;">
-                            <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="slot-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
-                                <button id="btn-open-mask-editor" class="btn btn-secondary" style="white-space: nowrap;">
-                                    <i class="fas fa-paint-brush"></i> Editar
-                                </button>
-                            </div>
-                        </div>
-
                         <div class="form-group" id="slot-add-second-holo-container" style="grid-column: span 2; margin-top: 10px;">
                             <button type="button" id="btn-slot-add-second-holo" class="btn btn-secondary btn-sm" style="width: 100%;">
                                 <i class="fas fa-plus"></i> Agregar otro efecto foil
@@ -2117,6 +2107,16 @@
                                     <span class="slider"></span>
                                 </label>
                                 <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #aaa;">Ajustarse a la máscara</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="custom-mask-container" style="display: none; grid-column: span 2; margin-top: 15px;">
+                            <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="slot-custom-mask" placeholder="midominio.com/mascara.png" style="flex: 1;">
+                                <button id="btn-open-mask-editor" class="btn btn-secondary" style="white-space: nowrap;">
+                                    <i class="fas fa-paint-brush"></i> Editar
+                                </button>
                             </div>
                         </div>
 
@@ -2259,16 +2259,6 @@
                 </select>
             </div>
 
-            <div class="form-group" id="modal-wishlist-mask-container" style="display: none;">
-                <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="modal-wishlist-custom-mask" class="wishlist-field" placeholder="midominio.com/mascara.png" style="flex: 1;">
-                    <button id="btn-open-mask-editor-wishlist" class="btn btn-secondary" style="white-space: nowrap;">
-                        <i class="fas fa-paint-brush"></i> Editar
-                    </button>
-                </div>
-            </div>
-
             <div class="form-group" id="wishlist-add-second-holo-container" style="margin-top: 10px;">
                 <button type="button" id="btn-wishlist-add-second-holo" class="btn btn-secondary btn-sm" style="width: 100%;">
                     <i class="fas fa-plus"></i> Agregar otro efecto foil
@@ -2348,6 +2338,16 @@
                         <span class="slider"></span>
                     </label>
                     <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #aaa;">Ajustarse a la máscara</span>
+                </div>
+            </div>
+
+            <div class="form-group" id="modal-wishlist-mask-container" style="display: none; margin-top: 15px;">
+                <label>URL de la Máscara (CustomTexture / CustomFoil)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="modal-wishlist-custom-mask" class="wishlist-field" placeholder="midominio.com/mascara.png" style="flex: 1;">
+                    <button id="btn-open-mask-editor-wishlist" class="btn btn-secondary" style="white-space: nowrap;">
+                        <i class="fas fa-paint-brush"></i> Editar
+                    </button>
                 </div>
             </div>
 
