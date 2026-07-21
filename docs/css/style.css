@@ -5667,6 +5667,59 @@ body.modal-open #decks-view.active {
     border-radius: inherit;
     overflow: hidden;
     z-index: 3;
+    display: grid;
+    grid-template: 1fr / 1fr;
+}
+
+.foil-effect-container .card__shine,
+.foil-effect-container .card__glare,
+.foil-effect-container .holo-layer,
+.foil-effect-container .holo-layer-red {
+    grid-area: 1/1;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* Custom Masking for second foil layer container and its children */
+.foil-effect-container.masked .card__shine,
+.foil-effect-container.masked .card__shine:before,
+.foil-effect-container.masked .card__shine:after,
+.foil-effect-container.masked .holo-layer {
+    -webkit-mask-image: var(--mask-url, var(--mask)) !important;
+    mask-image: var(--mask-url, var(--mask)) !important;
+    -webkit-mask-size: cover !important;
+    mask-size: cover !important;
+    -webkit-mask-position: center center !important;
+    mask-position: center center !important;
+    -webkit-mask-repeat: no-repeat !important;
+    mask-repeat: no-repeat !important;
+}
+
+/* Multi-mask compositing for duel terminal on second foil layer */
+.foil-effect-container.masked.duel-terminal .holo-layer {
+    -webkit-mask-image: var(--mask-url, var(--mask)), var(--duel-terminal-mask, none) !important;
+    mask-image: var(--mask-url, var(--mask)), var(--duel-terminal-mask, none) !important;
+    -webkit-mask-composite: source-in !important;
+    mask-composite: intersect !important;
+}
+
+/* Multi-mask compositing for pokeball rare on second foil layer */
+.foil-effect-container.masked.pokeball-rare .holo-layer {
+    -webkit-mask-image: var(--mask-url, var(--mask)), var(--pokeball-white-mask, none) !important;
+    mask-image: var(--mask-url, var(--mask)), var(--pokeball-white-mask, none) !important;
+    -webkit-mask-composite: source-in !important;
+    mask-composite: intersect !important;
+}
+.foil-effect-container.masked.pokeball-rare .holo-layer-red {
+    -webkit-mask-image: var(--mask-url, var(--mask)), var(--pokeball-red-mask, none) !important;
+    mask-image: var(--mask-url, var(--mask)), var(--pokeball-red-mask, none) !important;
+    -webkit-mask-composite: source-in !important;
+    mask-composite: intersect !important;
 }
 
 /* Custom Responsive Overrides for Public Albums (PC vs Mobile layouts) */

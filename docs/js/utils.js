@@ -171,12 +171,18 @@ window.applyFoilToElement = function($el, holo, mask) {
     if ($el.find('> .holo-layer').length === 0) {
         $el.append('<div class="holo-layer"></div>');
     }
+    if ($el.find('> .card__shine').length === 0) {
+        $el.append('<div class="card__shine"></div>');
+    }
+    if ($el.find('> .card__glare').length === 0) {
+        $el.append('<div class="card__glare"></div>');
+    }
     if (baseHolo === 'pokeball-rare' && $el.find('> .holo-layer-red').length === 0) {
         $el.append('<div class="holo-layer-red"></div>');
     }
 
-    // Explicitly enforce 3D rendering context and backface-visibility on the appended layer to guarantee zero flickering
-    $el.find('> .holo-layer, > .holo-layer-red').css({
+    // Explicitly enforce 3D rendering context and backface-visibility on the appended layers to guarantee zero flickering
+    $el.find('> .holo-layer, > .holo-layer-red, > .card__shine, > .card__glare').css({
         'will-change': 'transform, opacity',
         'backface-visibility': 'hidden',
         '-webkit-backface-visibility': 'hidden'
