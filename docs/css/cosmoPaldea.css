@@ -1,0 +1,182 @@
+/* Cosmo Holo Paldea Foil Effect CSS */
+
+/* ==========================================
+   1. BASE CLASS STYLING
+   ========================================== */
+.card-3d-container .card-3d.cosmo-paldea .holo-layer,
+.card-3d-container.cosmo-paldea .card-3d .holo-layer,
+.card-slot.cosmo-paldea .holo-layer,
+.wishlist-card-item.cosmo-paldea .holo-layer,
+.cosmo-paldea .holo-layer {
+    opacity: 1 !important;
+    transition: opacity 0.3s;
+    background-color: transparent !important;
+    overflow: hidden;
+    border-radius: 8px;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+}
+
+.cosmo-paldea .holo-layer::before,
+.cosmo-paldea .holo-layer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 1;
+    will-change: transform, opacity;
+    transform: translate3d(0, 0, 0.05px);
+}
+
+.cosmo-paldea .holo-layer::after {
+    z-index: 2;
+    transform: translate3d(0, 0, 0.1px);
+}
+
+/* ==========================================
+   2. SHINE LAYERS (REPRODUCING COSMOS HOLO)
+   ========================================== */
+
+/* Main layer (Bottom Layer) */
+.card-3d-container .card-3d.cosmo-paldea .holo-layer,
+.card-3d-container.cosmo-paldea .card-3d .holo-layer,
+.card-slot.cosmo-paldea .holo-layer,
+.wishlist-card-item.cosmo-paldea .holo-layer,
+.cosmo-paldea .holo-layer {
+    --space: 4%;
+
+    background-image:
+        url("../img/cosmos-bottom.png"),
+        repeating-linear-gradient(
+            82deg,
+            hsl(53, 65%, 60%) calc(var(--space)*1),
+            hsl(93, 56%, 50%) calc(var(--space)*2),
+            hsl(176, 54%, 49%) calc(var(--space)*3),
+            hsl(228, 59%, 55%) calc(var(--space)*4),
+            hsl(283, 60%, 55%) calc(var(--space)*5),
+            hsl(326, 59%, 51%) calc(var(--space)*6),
+            hsl(326, 59%, 51%) calc(var(--space)*7),
+            hsl(283, 60%, 55%) calc(var(--space)*8),
+            hsl(228, 59%, 55%) calc(var(--space)*9),
+            hsl(176, 54%, 49%) calc(var(--space)*10),
+            hsl(93, 56%, 50%) calc(var(--space)*11),
+            hsl(53, 65%, 60%) calc(var(--space)*12)
+        ),
+        radial-gradient(
+            farthest-corner circle
+            at var(--pointer-x, 50%) var(--pointer-y, 50%),
+            hsla(180, 100%, 89%, 0.5) 5%,
+            hsla(180, 14%, 57%, 0.3) 40%,
+            hsl(0, 0%, 0%) 130%
+        );
+
+    background-blend-mode: color-burn, multiply;
+    background-position:
+        var(--cosmosbg, center center),
+        calc( 10% + ( var(--pointer-from-left, 0.5) * 80% ) ) calc( 10% + ( var(--pointer-from-top, 0.5) * 80% ) ),
+        center center;
+    background-size: cover, 400% 900%, cover;
+    filter: brightness(1) contrast(1) saturate(.8);
+    mix-blend-mode: color-dodge;
+}
+
+/* Before pseudo-element (Middle Layer) */
+.cosmo-paldea .holo-layer::before {
+    background-image:
+        url("../img/cosmos-middle-trans.png"),
+        repeating-linear-gradient(
+            82deg,
+            hsl(53, 65%, 60%) calc(var(--space)*1),
+            hsl(93, 56%, 50%) calc(var(--space)*2),
+            hsl(176, 54%, 49%) calc(var(--space)*3),
+            hsl(228, 59%, 55%) calc(var(--space)*4),
+            hsl(283, 60%, 55%) calc(var(--space)*5),
+            hsl(326, 59%, 51%) calc(var(--space)*6),
+            hsl(326, 59%, 51%) calc(var(--space)*7),
+            hsl(283, 60%, 55%) calc(var(--space)*8),
+            hsl(228, 59%, 55%) calc(var(--space)*9),
+            hsl(176, 54%, 49%) calc(var(--space)*10),
+            hsl(93, 56%, 50%) calc(var(--space)*11),
+            hsl(53, 65%, 60%) calc(var(--space)*12)
+        );
+
+    background-blend-mode: lighten, multiply;
+    background-position:
+        var(--cosmosbg, center center),
+        calc( 15% + ( var(--pointer-from-left, 0.5) * 70% ) ) calc( 15% + ( var(--pointer-from-top, 0.5) * 70% ) ),
+        center center;
+    background-size: cover, 400% 900%, cover;
+    filter: brightness(1.25) contrast(1.75) saturate(.8);
+    mix-blend-mode: overlay;
+}
+
+/* After pseudo-element (Top Layer) */
+.cosmo-paldea .holo-layer::after {
+    background-image:
+        url("../img/cosmos-top-trans.png"),
+        repeating-linear-gradient(
+            82deg,
+            hsl(53, 65%, 60%) calc(var(--space)*1),
+            hsl(93, 56%, 50%) calc(var(--space)*2),
+            hsl(176, 54%, 49%) calc(var(--space)*3),
+            hsl(228, 59%, 55%) calc(var(--space)*4),
+            hsl(283, 60%, 55%) calc(var(--space)*5),
+            hsl(326, 59%, 51%) calc(var(--space)*6),
+            hsl(326, 59%, 51%) calc(var(--space)*7),
+            hsl(283, 60%, 55%) calc(var(--space)*8),
+            hsl(228, 59%, 55%) calc(var(--space)*9),
+            hsl(176, 54%, 49%) calc(var(--space)*10),
+            hsl(93, 56%, 50%) calc(var(--space)*11),
+            hsl(53, 65%, 60%) calc(var(--space)*12)
+        );
+
+    background-blend-mode: multiply, multiply;
+    background-position:
+        var(--cosmosbg, center center),
+        calc( 20% + ( var(--pointer-from-left, 0.5) * 60% ) ) calc( 20% + ( var(--pointer-from-top, 0.5) * 60% ) ),
+        center center;
+    background-size: cover, 400% 900%, cover;
+    filter: brightness(1.25) contrast(1.75) saturate(.8);
+    mix-blend-mode: multiply;
+}
+
+/* ==========================================
+   3. MASK APPLICATION FOR COSMO PALDEA
+   ========================================== */
+
+/* Standard unmasked configuration - strictly applies the generated Paldea mask */
+.cosmo-paldea .holo-layer,
+.cosmo-paldea .holo-layer::before,
+.cosmo-paldea .holo-layer::after {
+    -webkit-mask-image: var(--cosmo-paldea-mask, none);
+    mask-image: var(--cosmo-paldea-mask, none);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+/* Masked configuration - combines user-uploaded custom mask and Paldea mask */
+.card-3d.masked.cosmo-paldea .holo-layer,
+.card-3d.masked.cosmo-paldea .holo-layer::before,
+.card-3d.masked.cosmo-paldea .holo-layer::after,
+.card-slot.masked.cosmo-paldea .holo-layer,
+.card-slot.masked.cosmo-paldea .holo-layer::before,
+.card-slot.masked.cosmo-paldea .holo-layer::after,
+.wishlist-card-item.masked.cosmo-paldea .holo-layer,
+.wishlist-card-item.masked.cosmo-paldea .holo-layer::before,
+.wishlist-card-item.masked.cosmo-paldea .holo-layer::after,
+.cosmo-paldea.masked .holo-layer,
+.cosmo-paldea.masked .holo-layer::before,
+.cosmo-paldea.masked .holo-layer::after {
+    -webkit-mask-image: var(--mask-url), var(--cosmo-paldea-mask, none) !important;
+    mask-image: var(--mask-url), var(--cosmo-paldea-mask, none) !important;
+    -webkit-mask-composite: source-in !important;
+    mask-composite: intersect !important;
+}

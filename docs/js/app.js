@@ -939,7 +939,7 @@ async function openCardModal($slot) {
     $card.removeClass("card masked interacting");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0'});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro multi-foils-blanco pokeball-rare duel-terminal");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro multi-foils-blanco pokeball-rare duel-terminal cosmo-paldea");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     let baseHolo = holo;
@@ -1193,10 +1193,10 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
     const $card = $("#card-3d");
 
     // Cleanup all possible holo classes and styles
-    $card.removeClass("card masked interacting foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro multi-foils-blanco pokeball-rare duel-terminal");
+    $card.removeClass("card masked interacting foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro multi-foils-blanco pokeball-rare duel-terminal cosmo-paldea");
     $card.removeAttr("data-rarity data-trainer-gallery data-subtypes data-supertype");
     $card.css({'--seedx': '', '--seedy': '', '--cosmosbg': '', '--card-opacity': '0', '--mask': '', '--mask-url': ''});
-    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro multi-foils-blanco pokeball-rare duel-terminal");
+    $card3d.removeClass("super-rare secret-rare ghost-rare foil rainbow starlight-rare custom-texture custom-textures custom-foil active foil-loop multi-foils multi-foils-rojo multi-foils-dorado multi-foils-verde multi-foils-azul multi-foils-clasico multi-foils-amarillo multi-foils-naranja multi-foils-rosa multi-foils-morado multi-foils-guinda multi-foils-gris multi-foils-negro multi-foils-blanco pokeball-rare duel-terminal cosmo-paldea");
     $card3d.find('.holo-layer').css('--mask-url', '');
 
     // Strip metadata prefixes (L:, custom-foil|, custom-textures|)
