@@ -118,6 +118,9 @@ $(document).ready(async function() {
 
     $(document).on('change', '#slot-second-holo-effect', function() {
         const val = $(this).val();
+        if (typeof checkMaskContainerVisibility === 'function') {
+            checkMaskContainerVisibility();
+        }
         if (val === 'custom-foil') {
             $('#slot-second-custom-foil-type-container').show();
         } else {
@@ -746,13 +749,23 @@ $(document).ready(async function() {
         window.card3dActive = false;
     });
 
-    $('#slot-holo-effect').change(function() {
-        const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'custom-textures' || val === 'multiFoils') {
+    function checkMaskContainerVisibility() {
+        const val1 = $('#slot-holo-effect').val();
+        const val2 = $('#slot-second-holo-effect').val();
+        const needsMask1 = (val1 === 'custom-texture' || val1 === 'custom-foil' || val1 === 'custom-textures' || val1 === 'multiFoils');
+        const needsMask2 = (val2 === 'custom-texture' || val2 === 'custom-foil' || val2 === 'custom-textures' || val2 === 'multiFoils');
+
+        if (needsMask1 || needsMask2) {
             $('#custom-mask-container').show();
         } else {
             $('#custom-mask-container').hide();
         }
+    }
+    window.checkMaskContainerVisibility = checkMaskContainerVisibility;
+
+    $('#slot-holo-effect').change(function() {
+        const val = $(this).val();
+        checkMaskContainerVisibility();
 
         if (val === 'custom-foil') {
             $('#custom-foil-type-container').show();
@@ -2348,6 +2361,10 @@ function editDeckCard(card) {
 
     $('#slot-custom-mask').val(card.custom_mask_url || '');
 
+    if (typeof checkMaskContainerVisibility === 'function') {
+        checkMaskContainerVisibility();
+    }
+
     $('#slot-rarity').val(card.rarity || '');
     $('#slot-expansion').val(card.expansion || '');
     $('#slot-condition').val(card.condition || '');
@@ -3116,6 +3133,10 @@ async function loadSlotData(pageId, slotIndex) {
         }
 
         $('#slot-custom-mask').val(data.custom_mask_url || '');
+
+        if (typeof checkMaskContainerVisibility === 'function') {
+            checkMaskContainerVisibility();
+        }
 
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');

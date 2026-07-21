@@ -153,13 +153,22 @@ $(document).ready(async function() {
     // Modal listeners
     $('#close-wishlist-modal').click(() => $('#wishlist-modal').removeClass('active'));
 
-    $('#modal-holo-effect').on('change', function() {
-        const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils') {
+    function checkDeseosMaskContainerVisibility() {
+        const val1 = $('#modal-holo-effect').val();
+        const val2 = $('#modal-second-holo-effect').val();
+        const needsMask1 = (val1 === 'custom-texture' || val1 === 'custom-foil' || val1 === 'multiFoils');
+        const needsMask2 = (val2 === 'custom-texture' || val2 === 'custom-foil' || val2 === 'multiFoils');
+
+        if (needsMask1 || needsMask2) {
             $('#modal-mask-container').show();
         } else {
             $('#modal-mask-container').hide();
         }
+    }
+    window.checkDeseosMaskContainerVisibility = checkDeseosMaskContainerVisibility;
+
+    $('#modal-holo-effect').on('change', function() {
+        checkDeseosMaskContainerVisibility();
     });
 
     $(document).on('click', '#btn-deseos-add-second-holo', function() {
@@ -175,6 +184,7 @@ $(document).ready(async function() {
 
     $(document).on('change', '#modal-second-holo-effect', function() {
         const val = $(this).val();
+        checkDeseosMaskContainerVisibility();
         if (val === 'custom-foil') {
             $('#deseos-second-custom-foil-type-container').show();
         } else {
@@ -496,12 +506,6 @@ function openEditModal(item) {
     $('#modal-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-notes').val(item.notes || '');
 
-    if (firstHolo === 'custom-texture' || firstHolo === 'custom-foil' || firstHolo === 'multiFoils' || firstHolo.startsWith('multiFoils|')) {
-        $('#modal-mask-container').show();
-    } else {
-        $('#modal-mask-container').hide();
-    }
-
     // Load second holo fields
     if (secondHolo) {
         $('#deseos-second-holo-container').show();
@@ -524,6 +528,10 @@ function openEditModal(item) {
         $('#modal-second-holo-effect').val('');
         $('#deseos-second-custom-foil-type-container').hide();
         $('#modal-second-holo-fit-mask').prop('checked', true);
+    }
+
+    if (typeof checkDeseosMaskContainerVisibility === 'function') {
+        checkDeseosMaskContainerVisibility();
     }
 
     $('#wishlist-modal').addClass('active');
