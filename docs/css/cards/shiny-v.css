@@ -149,8 +149,8 @@
 */
 
 
-.card:not(.masked)[data-rarity="rare shiny v"] .card__shine,
-.card:not(.masked)[data-rarity="rare shiny v"] .card__shine:after {
+.card[data-rarity="rare shiny v"] .card__shine,
+.card[data-rarity="rare shiny v"] .card__shine:after {
 
   --mask: none;
   --foil: url("../../img/illusion.png");
@@ -166,12 +166,12 @@
 
 }
 
-.card:not(.masked)[data-rarity="rare shiny v"] .card__shine:before {
+.card[data-rarity="rare shiny v"] .card__shine:before {
   content: none;
   display: none;
 }
 
-.card:not(.masked)[data-rarity="rare shiny v"] .card__shine:after {
+.card[data-rarity="rare shiny v"] .card__shine:after {
   filter: brightness(calc((var(--pointer-from-center)*.5) + .8)) contrast(1.6) saturate(1.4);
 }
 

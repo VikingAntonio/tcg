@@ -189,8 +189,8 @@
 
 */
 
-.card:not(.masked)[data-rarity="radiant rare"] .card__shine,
-.card:not(.masked)[data-rarity="radiant rare"] .card__shine:after {
+.card[data-rarity="radiant rare"] .card__shine,
+.card[data-rarity="radiant rare"] .card__shine:after {
 
   --mask: none;
   --foil: url("../../img/trainerbg.png");
@@ -198,7 +198,7 @@
 
 }
   
-.card:not(.masked)[data-rarity="radiant rare"] .card__shine:after {
+.card[data-rarity="radiant rare"] .card__shine:after {
 
   background-blend-mode: difference;
   

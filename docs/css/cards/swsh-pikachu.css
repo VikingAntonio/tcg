@@ -135,7 +135,7 @@
 */
 
 
-.card:not(.masked)[data-rarity="rare secret"][data-set="swsh12pt5"][data-number="160"] .card__shine {
+.card[data-rarity="rare secret"][data-set="swsh12pt5"][data-number="160"] .card__shine {
 
   --foil: url("../../img/illusion-mask.png");
   --imgsize: 33%;

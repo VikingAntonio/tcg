@@ -145,8 +145,8 @@
 */
 
 
-.card:not(.masked)[data-rarity="rare holo vstar"] .card__shine,
-.card:not(.masked)[data-rarity="rare holo vstar"] .card__shine:after {
+.card[data-rarity="rare holo vstar"] .card__shine,
+.card[data-rarity="rare holo vstar"] .card__shine:after {
 
   --mask: none;
   --foil: url("../../img/ancient.png");

@@ -152,8 +152,8 @@
 
 */
 
-.card:not(.masked).card[data-rarity="rare shiny"] .card__shine,
-.card:not(.masked).card[data-rarity="rare shiny"] .card__shine:after {
+.card[data-rarity="rare shiny"] .card__shine,
+.card[data-rarity="rare shiny"] .card__shine:after {
 
   --mask: none;
   --foil: url("../../img/illusion.png");
@@ -169,7 +169,7 @@
 
 }
 
-.card:not(.masked).card[data-rarity*="rare shiny"] .card__shine:after {
+.card[data-rarity*="rare shiny"] .card__shine:after {
 
   filter: brightness(calc((var(--pointer-from-center)*.4) + .5)) contrast(1.4) saturate(1.2);
   mix-blend-mode: difference;

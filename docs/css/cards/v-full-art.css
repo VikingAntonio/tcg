@@ -158,10 +158,10 @@
 */
 
 
-.card:not(.masked)[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine,
-.card:not(.masked)[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine:after,
-.card:not(.masked)[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine,
-.card:not(.masked)[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine:after {
+.card[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine,
+.card[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine:after,
+.card[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine,
+.card[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine:after {
 
   --mask: none;
   --foil: url("../../img/illusion.png");
@@ -177,14 +177,14 @@
 
 }
 
-.card:not(.masked)[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine:before,
-.card:not(.masked)[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine:before {
+.card[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine:before,
+.card[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine:before {
   content: none;
   display: none;
 }
 
-.card:not(.masked)[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine:after,
-.card:not(.masked)[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine:after {
+.card[data-supertype="pokémon"][data-rarity="rare ultra"] .card__shine:after,
+.card[data-trainer-gallery="true"][data-rarity="rare holo v"] .card__shine:after {
   filter: brightness(calc((var(--pointer-from-center)*.5) + .8)) contrast(1.6) saturate(1.4);
 }
 

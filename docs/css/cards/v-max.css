@@ -9,8 +9,8 @@
 
 
 
-.card:not(.masked)[data-rarity="rare holo vmax"][data-supertype="pokémon"] .card__shine,
-.card:not(.masked)[data-rarity="rare holo vmax"][data-supertype="pokémon"] .card__shine:after {
+.card[data-rarity="rare holo vmax"][data-supertype="pokémon"] .card__shine,
+.card[data-rarity="rare holo vmax"][data-supertype="pokémon"] .card__shine:after {
 
   --mask: none;
   --foil: url("../../img/vmaxbg.jpg");
@@ -153,7 +153,7 @@
 
 
 
-.card:not(.masked) [data-rarity="rare holo vmax"] .card__shine {
+.card [data-rarity="rare holo vmax"] .card__shine {
 
   filter: brightness(calc((var(--pointer-from-center) * .4) + .4)) contrast(2) saturate(1);
 
