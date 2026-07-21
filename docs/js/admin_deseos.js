@@ -75,6 +75,26 @@ function initAdminWishlistListeners() {
         }
     });
 
+    $(document).on('click', '#btn-wishlist-add-second-holo', function() {
+        $('#wishlist-second-holo-container').show();
+        $('#wishlist-add-second-holo-container').hide();
+    });
+
+    $(document).on('click', '#btn-wishlist-remove-second-holo', function() {
+        $('#wishlist-second-holo-container').hide();
+        $('#wishlist-add-second-holo-container').show();
+        $('#modal-wishlist-second-holo-effect').val('').trigger('change');
+    });
+
+    $(document).on('change', '#modal-wishlist-second-holo-effect', function() {
+        const val = $(this).val();
+        if (val === 'custom-foil') {
+            $('#wishlist-second-custom-foil-type-container').show();
+        } else {
+            $('#wishlist-second-custom-foil-type-container').hide();
+        }
+    });
+
     $('#btn-open-mask-editor-wishlist').click(function(e) {
         e.preventDefault();
         const cardImgUrl = $('#modal-wishlist-card-img').attr('src');
@@ -95,7 +115,18 @@ function initAdminWishlistListeners() {
     $('#btn-save-wishlist-modal-admin').click(async function() {
         if (!currentEditingWishlistId) return;
 
-        let holoEffect = $('#modal-wishlist-holo-effect').val();
+        let holoEffect = $('#modal-wishlist-holo-effect').val() || '';
+
+        // Serialize second holo if present
+        let secondHoloVal = $('#modal-wishlist-second-holo-effect').val() || '';
+        if (secondHoloVal) {
+            if (secondHoloVal === 'custom-foil') {
+                const subType = $('#modal-wishlist-second-custom-foil-type').val() || 'foil';
+                secondHoloVal = `custom-foil|${subType}`;
+            }
+            const secondHoloFitMask = $('#modal-wishlist-second-holo-fit-mask').is(':checked');
+            holoEffect = `${holoEffect};${secondHoloVal}${!secondHoloFitMask ? ';ignoreMask' : ''}`;
+        }
 
         const data = {
             rarity: $('#modal-wishlist-rarity').val(),
@@ -244,20 +275,58 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-rarity').val(item.rarity || '');
     $('#modal-wishlist-quantity').val(item.quantity || 1);
     const holo = item.holo_effect || '';
-    if (holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+
+    let firstHolo = holo;
+    let secondHolo = '';
+    let fitMaskForSecond = true;
+
+    if (holo.includes(';')) {
+        const parts = holo.split(';');
+        firstHolo = parts[0];
+        secondHolo = parts[1] || '';
+        if (parts[2] === 'ignoreMask') {
+            fitMaskForSecond = false;
+        }
+    }
+
+    if (firstHolo === 'multiFoils' || firstHolo.startsWith('multiFoils|')) {
         $('#modal-wishlist-holo-effect').val('multiFoils');
     } else {
-        $('#modal-wishlist-holo-effect').val(holo);
+        $('#modal-wishlist-holo-effect').val(firstHolo);
     }
     $('#modal-wishlist-custom-mask').val(item.custom_mask_url || '');
     $('#modal-wishlist-use-3d').prop('checked', item.use_3d !== false);
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (holo === 'custom-texture' || holo === 'custom-foil' || holo === 'multiFoils' || holo.startsWith('multiFoils|')) {
+    if (firstHolo === 'custom-texture' || firstHolo === 'custom-foil' || firstHolo === 'multiFoils' || firstHolo.startsWith('multiFoils|')) {
         $('#modal-wishlist-mask-container').show();
     } else {
         $('#modal-wishlist-mask-container').hide();
+    }
+
+    // Load second holo fields
+    if (secondHolo) {
+        $('#wishlist-second-holo-container').show();
+        $('#wishlist-add-second-holo-container').hide();
+
+        let baseSecond = secondHolo;
+        if (baseSecond.startsWith('custom-foil|')) {
+            const parts = baseSecond.split('|');
+            $('#modal-wishlist-second-holo-effect').val('custom-foil');
+            $('#modal-wishlist-second-custom-foil-type').val(parts[1] || 'foil');
+            $('#wishlist-second-custom-foil-type-container').show();
+        } else {
+            $('#modal-wishlist-second-holo-effect').val(baseSecond);
+            $('#wishlist-second-custom-foil-type-container').hide();
+        }
+        $('#modal-wishlist-second-holo-fit-mask').prop('checked', fitMaskForSecond);
+    } else {
+        $('#wishlist-second-holo-container').hide();
+        $('#wishlist-add-second-holo-container').show();
+        $('#modal-wishlist-second-holo-effect').val('');
+        $('#wishlist-second-custom-foil-type-container').hide();
+        $('#modal-wishlist-second-holo-fit-mask').prop('checked', true);
     }
 
     $('#wishlist-modal-admin').addClass('active');
