@@ -66,13 +66,22 @@ function initAdminWishlistListeners() {
     // Modal listeners
     $('#close-wishlist-modal-admin').click(() => $('#wishlist-modal-admin').removeClass('active'));
 
-    $('#modal-wishlist-holo-effect').on('change', function() {
-        const val = $(this).val();
-        if (val === 'custom-texture' || val === 'custom-foil' || val === 'multiFoils') {
+    function checkWishlistMaskContainerVisibility() {
+        const val1 = $('#modal-wishlist-holo-effect').val();
+        const val2 = $('#modal-wishlist-second-holo-effect').val();
+        const needsMask1 = (val1 === 'custom-texture' || val1 === 'custom-foil' || val1 === 'multiFoils');
+        const needsMask2 = (val2 === 'custom-texture' || val2 === 'custom-foil' || val2 === 'multiFoils');
+
+        if (needsMask1 || needsMask2) {
             $('#modal-wishlist-mask-container').show();
         } else {
             $('#modal-wishlist-mask-container').hide();
         }
+    }
+    window.checkWishlistMaskContainerVisibility = checkWishlistMaskContainerVisibility;
+
+    $('#modal-wishlist-holo-effect').on('change', function() {
+        checkWishlistMaskContainerVisibility();
     });
 
     $(document).on('click', '#btn-wishlist-add-second-holo', function() {
@@ -88,6 +97,7 @@ function initAdminWishlistListeners() {
 
     $(document).on('change', '#modal-wishlist-second-holo-effect', function() {
         const val = $(this).val();
+        checkWishlistMaskContainerVisibility();
         if (val === 'custom-foil') {
             $('#wishlist-second-custom-foil-type-container').show();
         } else {
@@ -299,12 +309,6 @@ function openEditWishlistModalAdmin(item) {
     $('#modal-wishlist-show-foil-list').prop('checked', item.show_foil_in_list === true);
     $('#modal-wishlist-notes').val(item.notes || '');
 
-    if (firstHolo === 'custom-texture' || firstHolo === 'custom-foil' || firstHolo === 'multiFoils' || firstHolo.startsWith('multiFoils|')) {
-        $('#modal-wishlist-mask-container').show();
-    } else {
-        $('#modal-wishlist-mask-container').hide();
-    }
-
     // Load second holo fields
     if (secondHolo) {
         $('#wishlist-second-holo-container').show();
@@ -327,6 +331,10 @@ function openEditWishlistModalAdmin(item) {
         $('#modal-wishlist-second-holo-effect').val('');
         $('#wishlist-second-custom-foil-type-container').hide();
         $('#modal-wishlist-second-holo-fit-mask').prop('checked', true);
+    }
+
+    if (typeof checkWishlistMaskContainerVisibility === 'function') {
+        checkWishlistMaskContainerVisibility();
     }
 
     $('#wishlist-modal-admin').addClass('active');

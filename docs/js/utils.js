@@ -135,8 +135,10 @@ window.applyFoilToElement = function($el, holo, mask) {
         if (mask) {
             $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
         }
-        const rx = 0.5, ry = 0.5;
-        $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+        if (!$el.hasClass('foil-effect-container')) {
+            const rx = 0.5, ry = 0.5;
+            $el.css({'--mx': rx, '--my': ry, '--seedx': rx, '--seedy': ry, '--cosmosbg': `${Math.floor(rx * 734)}px ${Math.floor(ry * 1280)}px`});
+        }
     } else {
         if (isMultiFoils) {
             $el.addClass('multi-foils');
@@ -146,13 +148,17 @@ window.applyFoilToElement = function($el, holo, mask) {
             if (mask) {
                 $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
-            $el.css({'--mx': 0.5, '--my': 0.5});
+            if (!$el.hasClass('foil-effect-container')) {
+                $el.css({'--mx': 0.5, '--my': 0.5});
+            }
         } else {
             $el.addClass(baseHolo);
             if (mask) {
                 $el.addClass("masked").css({"--mask": `url(${mask})`, "--mask-url": `url(${mask})`});
             }
-            $el.css({'--mx': 0.5, '--my': 0.5});
+            if (!$el.hasClass('foil-effect-container')) {
+                $el.css({'--mx': 0.5, '--my': 0.5});
+            }
         }
     }
 
