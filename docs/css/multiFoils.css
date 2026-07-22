@@ -325,7 +325,6 @@
 .masked.multi-foils-clasico .holo-layer,
 .multi-foils-clasico.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -344,14 +343,13 @@
             rgba(255, 0, 255, 0.4) 85%,
             rgba(255, 0, 0, 0.4) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Rojo */
 .masked.multi-foils-rojo .holo-layer,
 .multi-foils-rojo.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -366,14 +364,13 @@
             rgba(180, 0, 0, 0.85) 50%,
             rgba(255, 0, 0, 0.85) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Dorado */
 .masked.multi-foils-dorado .holo-layer,
 .multi-foils-dorado.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -388,14 +385,13 @@
             rgba(170, 130, 30, 0.9) 50%,
             rgba(212, 175, 55, 0.9) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Verde */
 .masked.multi-foils-verde .holo-layer,
 .multi-foils-verde.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -410,14 +406,13 @@
             rgba(0, 150, 40, 0.85) 50%,
             rgba(0, 255, 100, 0.85) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Azul */
 .masked.multi-foils-azul .holo-layer,
 .multi-foils-azul.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -432,14 +427,13 @@
             rgba(0, 40, 180, 0.85) 50%,
             rgba(0, 100, 255, 0.85) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Amarillo */
 .masked.multi-foils-amarillo .holo-layer,
 .multi-foils-amarillo.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -454,14 +448,13 @@
             rgba(180, 150, 0, 0.85) 50%,
             rgba(255, 220, 0, 0.85) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Naranja */
 .masked.multi-foils-naranja .holo-layer,
 .multi-foils-naranja.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -476,14 +469,13 @@
             rgba(180, 60, 0, 0.85) 50%,
             rgba(255, 120, 0, 0.85) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Rosa */
 .masked.multi-foils-rosa .holo-layer,
 .multi-foils-rosa.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -498,14 +490,13 @@
             rgba(180, 20, 90, 0.85) 50%,
             rgba(255, 50, 150, 0.85) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Morado */
 .masked.multi-foils-morado .holo-layer,
 .multi-foils-morado.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -520,7 +511,7 @@
             rgba(110, 0, 180, 0.95) 50%,
             rgba(180, 0, 255, 0.95) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
     background-blend-mode: multiply !important;
     mix-blend-mode: screen !important;
     opacity: 1 !important;
@@ -530,7 +521,6 @@
 .masked.multi-foils-guinda .holo-layer,
 .multi-foils-guinda.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -545,14 +535,13 @@
             rgba(70, 0, 15, 0.9) 50%,
             rgba(128, 0, 32, 0.9) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Gris */
 .masked.multi-foils-gris .holo-layer,
 .multi-foils-gris.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -567,14 +556,13 @@
             rgba(40, 40, 40, 0.8) 50%,
             rgba(100, 100, 100, 0.8) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
 }
 
 /* Masked Negro */
 .masked.multi-foils-negro .holo-layer,
 .multi-foils-negro.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -589,7 +577,7 @@
             rgba(35, 35, 35, 0.9) 50%,
             rgba(0, 0, 0, 0.95) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
     background-blend-mode: normal !important;
     mix-blend-mode: multiply !important;
     opacity: 0.95 !important;
@@ -599,7 +587,6 @@
 .masked.multi-foils-blanco .holo-layer,
 .multi-foils-blanco.masked .holo-layer {
     background-image:
-        var(--mask-url),
         linear-gradient(
             var(--angle, 135deg),
             rgba(255, 255, 255, 0) 0%,
@@ -614,7 +601,7 @@
             rgba(235, 235, 235, 0.85) 50%,
             rgba(255, 255, 255, 0.95) 100%
         );
-    background-size: 100% 100%, 200% 200%, 400% 400%;
+    background-size: 200% 200%, 400% 400%;
     background-blend-mode: multiply !important;
     mix-blend-mode: overlay !important;
     opacity: 1 !important;
