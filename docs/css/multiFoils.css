@@ -624,6 +624,8 @@
     mask-position: center;
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
+    mask-mode: luminance !important;
+    -webkit-mask-source-type: luminance !important;
 }
 
 
