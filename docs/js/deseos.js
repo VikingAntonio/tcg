@@ -406,7 +406,7 @@ async function loadWishlist() {
 
     wishlist.forEach(item => {
         const $card = $(`
-            <div class="album-card wishlist-item" data-id="${item.id}" style="position: relative; padding: 15px; gap: 8px; ${item.obtained ? 'opacity: 0.7;' : ''}">
+            <div class="album-card wishlist-item" data-id="${item.id}" data-mask="${item.custom_mask_url || ''}" style="position: relative; padding: 15px; gap: 8px; ${item.obtained ? 'opacity: 0.7;' : ''}">
                 <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 20;">
                     <div class="btn-delete-card-top btn-edit-wishlist" data-id="${item.id}" title="Efectos y Más" style="background: var(--primary-color) !important; position: static;"><i class="fas fa-magic"></i></div>
                     <div class="btn-delete-card-top btn-delete-wishlist" data-id="${item.id}" title="Eliminar" style="position: static;"><i class="fas fa-times"></i></div>
@@ -461,7 +461,7 @@ async function loadWishlist() {
 
         $card.find('.btn-delete-wishlist').click(function(e) {
             e.stopPropagation();
-            deleteWishlistItem(item.id);
+            deleteWishlistItem(item.id, item.custom_mask_url);
         });
 
         $card.find('.btn-edit-wishlist').click(function(e) {
@@ -589,7 +589,7 @@ async function updateWishlistItem(id, data) {
     }
 }
 
-async function deleteWishlistItem(id) {
+async function deleteWishlistItem(id, maskUrl = '') {
     const result = await Swal.fire({
         title: '¿Eliminar de la lista?',
         icon: 'warning',
@@ -599,6 +599,16 @@ async function deleteWishlistItem(id) {
     });
 
     if (result.isConfirmed) {
+        // Deletion of custom masks from Cloudinary
+        if (maskUrl) {
+            const maskUrls = maskUrl.split(';');
+            for (const url of maskUrls) {
+                if (url && url.includes('cloudinary.com')) {
+                    CloudinaryUpload.deleteImage(url);
+                }
+            }
+        }
+
         const { error } = await _supabase.from('wishlist').delete().eq('id', id);
         if (error) {
             Swal.fire('Error', 'No se pudo eliminar', 'error');

@@ -179,4 +179,6 @@
     mask-image: var(--mask-url), var(--cosmo-paldea-mask, none) !important;
     -webkit-mask-composite: source-in !important;
     mask-composite: intersect !important;
+    mask-mode: luminance, alpha !important;
+    -webkit-mask-source-type: luminance, alpha !important;
 }
