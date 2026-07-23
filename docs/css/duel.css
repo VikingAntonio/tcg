@@ -1,0 +1,851 @@
+/* Vikingdev Duel Simulator Stylesheet */
+
+:root {
+    --bg-color: #0c0f12;
+    --text-color: #f1f2f6;
+    --primary-color: #00d2ff;
+    --primary-glow: rgba(0, 210, 255, 0.4);
+    --secondary-color: #9b5de5;
+    --success-color: #2ec4b6;
+    --danger-color: #ff1b6b;
+    --panel-bg: rgba(18, 24, 30, 0.75);
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --card-width: 66px;
+    --card-height: 96px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.duel-body {
+    background-color: var(--bg-color);
+    background-image: radial-gradient(circle at center, #1b263b 0%, #080d14 100%);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Background Cosmic Blobs */
+.bg-blobs {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.15;
+}
+
+.blob-1 {
+    width: 400px;
+    height: 400px;
+    background-color: var(--primary-color);
+    top: -100px;
+    left: 10%;
+}
+
+.blob-2 {
+    width: 500px;
+    height: 500px;
+    background-color: var(--secondary-color);
+    bottom: -150px;
+    right: 15%;
+}
+
+/* Header Navbar */
+.duel-header {
+    background: var(--panel-bg);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 80px;
+    z-index: 100;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.btn-header-back {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-color);
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.btn-header-back:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(-3px);
+}
+
+.duel-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.duel-logo span {
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* LP Trackers */
+.lp-trackers-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    justify-content: center;
+}
+
+.lp-tracker {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 6px 15px;
+    gap: 15px;
+}
+
+.lp-tracker.player-1 {
+    border-left: 4px solid var(--primary-color);
+}
+
+.lp-tracker.player-2 {
+    border-right: 4px solid var(--secondary-color);
+}
+
+.lp-player-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 110px;
+}
+
+.lp-label {
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    color: #888;
+    font-weight: 700;
+}
+
+.lp-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,0.2);
+    transition: all 0.3s;
+}
+
+.lp-value.glowing {
+    color: var(--primary-color);
+    text-shadow: 0 0 15px var(--primary-glow);
+    transform: scale(1.1);
+}
+
+.lp-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lp-input {
+    width: 65px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px;
+    outline: none;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.lp-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-weight: 800;
+    transition: all 0.2s;
+}
+
+.lp-add { background: var(--success-color); color: #000; }
+.lp-sub { background: var(--danger-color); color: #fff; }
+.lp-half { background: #ffa502; color: #000; font-size: 0.75rem; }
+
+.lp-btn:hover {
+    filter: brightness(1.2);
+    transform: scale(1.05);
+}
+
+.lp-btn:active {
+    transform: scale(0.95);
+}
+
+/* Central Coin & Dice Utilities */
+.central-utils {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.util-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: #aaa;
+    border-radius: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    min-width: 75px;
+}
+
+.util-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.util-btn i {
+    font-size: 1.2rem;
+}
+
+.util-result {
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Header Right Mode Buttons */
+.mode-selector {
+    display: flex;
+    background: rgba(0,0,0,0.4);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.mode-btn {
+    background: none;
+    border: none;
+    color: #888;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mode-btn.active {
+    background: var(--primary-color);
+    color: #000;
+    font-weight: 800;
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* Workspace Layout */
+.duel-workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Sidebar Option Panels */
+.duel-sidebar {
+    width: 320px;
+    background: var(--panel-bg);
+    backdrop-filter: blur(15px);
+    border-right: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px;
+    gap: 25px;
+    z-index: 5;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+}
+
+.duel-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.duel-sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--glass-border);
+    border-radius: 10px;
+}
+
+.sidebar-section {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 15px;
+}
+
+.sidebar-section h3 {
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 8px;
+}
+
+.sidebar-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #888;
+    margin-top: 10px;
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.sidebar-select {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: white;
+    padding: 10px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.sidebar-select:focus {
+    border-color: var(--primary-color);
+}
+
+/* Loader deck button configurations */
+.load-deck-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* Button styles */
+.btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: #000;
+    border: none;
+    font-weight: 800;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.2);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger-color), #b3003b);
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 10px rgba(255, 27, 107, 0.4);
+}
+
+.btn:disabled, .sidebar-select:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Room online inputs */
+.room-input-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.room-input-group input {
+    flex: 1;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: white;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.room-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #aaa;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-indicator.offline { background-color: #747d8c; }
+.status-indicator.connecting { background-color: #ffa502; animation: blink 1s infinite; }
+.status-indicator.online { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
+
+@keyframes blink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+/* Quick game tool grid */
+.quick-tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-tool {
+    padding: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Detailed Card Previewer */
+.card-detailed-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.preview-img-container {
+    width: 100%;
+    aspect-ratio: 2.5 / 3.5;
+    background: #000;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s;
+}
+
+.preview-info h4 {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 4px;
+}
+
+.preview-info p {
+    font-size: 0.7rem;
+    color: #888;
+    line-height: 1.4;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+/* Playmat Area Grid Wrapper */
+.duel-arena-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    gap: 10px;
+    background: radial-gradient(circle at center, rgba(16, 28, 43, 0.4) 0%, rgba(5, 8, 12, 0.8) 100%);
+    overflow: auto;
+    position: relative;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Hand trays */
+.hand-tray {
+    width: 100%;
+    max-width: 900px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    position: relative;
+    z-index: 2;
+}
+
+.hand-tray.player-2 {
+    border-top: 3px solid var(--secondary-color);
+}
+
+.hand-tray.player-1 {
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.tray-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+}
+
+.hand-cards-container {
+    display: flex;
+    gap: 12px;
+    min-height: 105px;
+    align-items: center;
+    justify-content: center;
+    overflow-x: auto;
+    padding: 5px;
+}
+
+/* Playmat Board Element */
+.playmat-board {
+    width: 960px;
+    height: 520px;
+    background: rgba(10, 15, 20, 0.6);
+    border: 2px solid rgba(0, 210, 255, 0.15);
+    border-radius: 20px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 0 40px rgba(0, 210, 255, 0.05);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.board-grid-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-size: 40px 40px;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    pointer-events: none;
+}
+
+/* Board Zones (Slots) */
+.board-zone {
+    position: absolute;
+    width: var(--card-width);
+    height: var(--card-height);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.01);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s;
+    pointer-events: auto;
+    z-index: 1;
+}
+
+.board-zone.highlighted {
+    border-color: var(--primary-color);
+    background: rgba(0, 210, 255, 0.06);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.15);
+}
+
+.zone-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.25);
+    text-transform: uppercase;
+    pointer-events: none;
+    padding: 4px;
+}
+
+.zone-card-count {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 4px;
+    pointer-events: none;
+}
+
+/* Card Element (Interactive physical sandboxes) */
+.duel-card {
+    width: var(--card-width);
+    height: var(--card-height);
+    position: absolute;
+    border-radius: 6px;
+    overflow: visible;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    user-select: none;
+    z-index: 10;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Transition is enabled when not actively dragged */
+.duel-card.snapping {
+    transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s, box-shadow 0.3s;
+}
+
+.duel-card:hover {
+    box-shadow: 0 8px 18px rgba(0,0,0,0.6), 0 0 10px rgba(255,255,255,0.1);
+    transform: scale(1.05) translate3d(0, 0, 5px);
+    z-index: 100;
+}
+
+.duel-card.dragging {
+    cursor: grabbing;
+    box-shadow: 0 15px 28px rgba(0,0,0,0.7), 0 0 15px var(--primary-glow);
+    transform: scale(1.1) rotate(2deg) translate3d(0, 0, 15px);
+    border-color: var(--primary-color);
+    z-index: 200 !important;
+}
+
+.card-img-wrapper {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+}
+
+.duel-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+}
+
+/* Card states */
+.duel-card.tapped {
+    transform: rotate(90deg);
+}
+
+.duel-card.tapped:hover {
+    transform: rotate(90deg) scale(1.05);
+}
+
+.duel-card.tapped.dragging {
+    transform: rotate(92deg) scale(1.1);
+}
+
+/* Face Down Mode */
+.duel-card.face-down img {
+    visibility: hidden;
+}
+
+.duel-card.face-down .card-img-wrapper {
+    background-size: cover;
+    background-position: center;
+    /* Fancy glowing sci-fi deck back design */
+    background-image:
+        radial-gradient(circle at center, rgba(0, 210, 255, 0.3) 0%, rgba(15, 23, 42, 0.95) 100%),
+        repeating-linear-gradient(45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, transparent 2px, transparent 10px),
+        repeating-linear-gradient(-45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, rgba(15, 23, 42, 0.95) 2px, rgba(15, 23, 42, 0.95) 10px);
+    border: 2px solid rgba(0, 210, 255, 0.3);
+    box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.4);
+}
+
+/* Counter indicator badges */
+.card-counter {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: radial-gradient(circle at center, #ffd32d 0%, #ff5e13 100%);
+    border: 2px solid #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    color: black;
+    font-weight: 900;
+    font-size: 0.65rem;
+    font-family: 'Orbitron', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px rgba(255, 94, 19, 0.8);
+    pointer-events: none;
+    z-index: 20;
+    animation: counterPulse 1.5s infinite alternate;
+}
+
+@keyframes counterPulse {
+    0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 94, 19, 0.6); }
+    100% { transform: scale(1.15); box-shadow: 0 0 15px rgba(255, 94, 19, 0.9); }
+}
+
+/* Hand tray specific cards */
+.hand-cards-container .duel-card {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    flex-shrink: 0;
+    transform: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.hand-cards-container .duel-card:hover {
+    transform: translateY(-15px) scale(1.15);
+    z-index: 50;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+}
+
+/* Interactive custom context menu */
+.card-context-menu {
+    position: fixed;
+    background: rgba(18, 25, 33, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    padding: 6px 0;
+    width: 230px;
+    z-index: 1000;
+    display: none;
+    user-select: none;
+}
+
+.card-context-menu hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 4px 0;
+}
+
+.menu-item {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #ccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+}
+
+.menu-item i {
+    font-size: 0.95rem;
+    width: 16px;
+    color: var(--primary-color);
+}
+
+.menu-item:hover {
+    background: rgba(0, 210, 255, 0.15);
+    color: #fff;
+    padding-left: 20px;
+}
+
+/* Mobile responsive constraints */
+@media (max-width: 1280px) {
+    .duel-sidebar {
+        width: 260px;
+    }
+}
+
+@media (max-width: 1024px) {
+    body.duel-body {
+        overflow: auto;
+    }
+
+    .duel-workspace {
+        flex-direction: column;
+        overflow: auto;
+    }
+
+    .duel-sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+    }
+}
