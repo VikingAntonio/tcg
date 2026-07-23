@@ -32,7 +32,7 @@
         <div class="lp-trackers-container">
             <div class="lp-tracker player-1" id="lp-tracker-p1">
                 <div class="lp-player-info">
-                    <span class="lp-label" id="name-p1-label">JUGADOR 1</span>
+                    <span class="lp-label" id="name-p1-label">JUGADOR 1 (TÚ)</span>
                     <span class="lp-value" id="lp-p1-val">8000</span>
                 </div>
                 <div class="lp-actions">
@@ -104,8 +104,8 @@
                         <span class="status-indicator offline"></span>
                         <span id="room-status-text">Sin conectar</span>
                     </div>
-                    <button class="btn btn-secondary" id="btn-copy-link" style="display: none;">
-                        <i class="fas fa-copy"></i> Copiar Link de Invitación
+                    <button class="btn btn-secondary" id="btn-copy-link" style="display: none; margin-top: 10px; width: 100%;">
+                        <i class="fas fa-copy"></i> Copiar Link
                     </button>
                 </div>
             </div>
@@ -123,14 +123,9 @@
             <div class="sidebar-section">
                 <h3><i class="fas fa-folder-open"></i> CARGAR DECKS</h3>
                 <div class="deck-loader-controls">
-                    <label class="sidebar-label">Seleccionar Usuario/Tienda</label>
-                    <select id="select-store-user" class="sidebar-select">
-                        <option value="">Cargando usuarios...</option>
-                    </select>
-
                     <label class="sidebar-label">Seleccionar Deck</label>
                     <select id="select-user-deck" class="sidebar-select" disabled>
-                        <option value="">Elige un usuario primero...</option>
+                        <option value="">Cargando decks...</option>
                     </select>
 
                     <div class="load-deck-buttons">
@@ -210,7 +205,7 @@
 
             <!-- Player 1 Hand Tray (At the bottom) -->
             <div class="hand-tray player-1" id="hand-tray-p1">
-                <div class="tray-label">MANO JUGADOR 1</div>
+                <div class="tray-label">MANO JUGADOR 1 (TU MANO)</div>
                 <div class="hand-cards-container" id="hand-p1">
                     <!-- Cards inside P1 hand will be appended here -->
                 </div>
@@ -228,7 +223,7 @@
         <div class="menu-item" id="menu-sub-counter"><i class="fas fa-minus-circle"></i> Quitar Contador (-1)</div>
         <hr>
         <div class="menu-item" id="menu-to-hand"><i class="fas fa-hand-paper"></i> Enviar a la Mano</div>
-        <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio</div>
+        <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio / Descarte</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
     </div>
