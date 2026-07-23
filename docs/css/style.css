@@ -2039,13 +2039,7 @@ input:checked + .slider:before {
 .card-3d-container .card-3d.masked .card__shine,
 .card-3d-container .card-3d.masked .card__shine:before,
 .card-3d-container .card-3d.masked .card__shine:after,
-.card-3d-container .card-3d.masked .card__glare,
-.card-3d-container .card-3d.masked .card__glare:before,
-.card-3d-container .card-3d.masked .card__glare:after,
-.card-slot.masked .holo-layer,
-.card-slot.masked .card__glare,
-.card-slot.masked .card__glare:before,
-.card-slot.masked .card__glare:after {
+.card-slot.masked .holo-layer {
     -webkit-mask-image: var(--mask-url);
     mask-image: var(--mask-url);
     -webkit-mask-size: 100% 100%;
@@ -5661,72 +5655,6 @@ body.modal-open #decks-view.active {
     mask-image: var(--mask-url), var(--duel-terminal-mask, none) !important;
     -webkit-mask-composite: source-in !important;
     mask-composite: intersect !important;
-    mask-mode: luminance, alpha !important;
-    -webkit-mask-source-type: luminance, alpha !important;
-}
-
-/* Hide default Pokemon TCG card shine and glare when custom foil effects are active */
-.card.pokeball-rare .card__shine,
-.card.pokeball-rare .card__glare,
-.card-3d.pokeball-rare .card__shine,
-.card-3d.pokeball-rare .card__glare,
-.card-slot.pokeball-rare .card__shine,
-.card-slot.pokeball-rare .card__glare,
-.wishlist-card-item.pokeball-rare .card__shine,
-.wishlist-card-item.pokeball-rare .card__glare,
-.foil-effect-container.pokeball-rare .card__shine,
-.foil-effect-container.pokeball-rare .card__glare,
-.pokeball-rare .card__shine,
-.pokeball-rare .card__glare,
-
-.card.duel-terminal .card__shine,
-.card.duel-terminal .card__glare,
-.card-3d.duel-terminal .card__shine,
-.card-3d.duel-terminal .card__glare,
-.card-slot.duel-terminal .card__shine,
-.card-slot.duel-terminal .card__glare,
-.wishlist-card-item.duel-terminal .card__shine,
-.wishlist-card-item.duel-terminal .card__glare,
-.foil-effect-container.duel-terminal .card__shine,
-.foil-effect-container.duel-terminal .card__glare,
-.duel-terminal .card__shine,
-.duel-terminal .card__glare,
-
-.card.cosmo-paldea .card__shine,
-.card.cosmo-paldea .card__glare,
-.card-3d.cosmo-paldea .card__shine,
-.card-3d.cosmo-paldea .card__glare,
-.card-slot.cosmo-paldea .card__shine,
-.card-slot.cosmo-paldea .card__glare,
-.wishlist-card-item.cosmo-paldea .card__shine,
-.wishlist-card-item.cosmo-paldea .card__glare,
-.foil-effect-container.cosmo-paldea .card__shine,
-.foil-effect-container.cosmo-paldea .card__glare,
-.cosmo-paldea .card__shine,
-.cosmo-paldea .card__glare,
-
-.card.multi-foils .card__shine,
-.card.multi-foils .card__glare,
-.card-3d.multi-foils .card__shine,
-.card-3d.multi-foils .card__glare,
-.card-slot.multi-foils .card__shine,
-.card-slot.multi-foils .card__glare,
-.wishlist-card-item.multi-foils .card__shine,
-.wishlist-card-item.multi-foils .card__glare,
-.foil-effect-container.multi-foils .card__shine,
-.foil-effect-container.multi-foils .card__glare,
-.multi-foils .card__shine,
-.multi-foils .card__glare {
-    display: none !important;
-}
-
-/* Guarantee nested foil effect containers and their layers are completely transparent to prevent darkening or hiding base card images */
-.foil-effect-container {
-    background: transparent !important;
-    background-color: transparent !important;
-}
-.foil-effect-container .holo-layer {
-    background-color: transparent !important;
 }
 
 .foil-effect-container {
@@ -5761,9 +5689,6 @@ body.modal-open #decks-view.active {
 .foil-effect-container.masked .card__shine,
 .foil-effect-container.masked .card__shine:before,
 .foil-effect-container.masked .card__shine:after,
-.foil-effect-container.masked .card__glare,
-.foil-effect-container.masked .card__glare:before,
-.foil-effect-container.masked .card__glare:after,
 .foil-effect-container.masked .holo-layer {
     -webkit-mask-image: var(--mask-url, var(--mask)) !important;
     mask-image: var(--mask-url, var(--mask)) !important;
@@ -5773,8 +5698,6 @@ body.modal-open #decks-view.active {
     mask-position: center center !important;
     -webkit-mask-repeat: no-repeat !important;
     mask-repeat: no-repeat !important;
-    mask-mode: luminance, alpha !important;
-    -webkit-mask-source-type: luminance, alpha !important;
 }
 
 /* Multi-mask compositing for duel terminal on second foil layer */
@@ -5783,8 +5706,6 @@ body.modal-open #decks-view.active {
     mask-image: var(--mask-url, var(--mask)), var(--duel-terminal-mask, none) !important;
     -webkit-mask-composite: source-in !important;
     mask-composite: intersect !important;
-    mask-mode: luminance, alpha !important;
-    -webkit-mask-source-type: luminance, alpha !important;
 }
 
 /* Multi-mask compositing for pokeball rare on second foil layer */
@@ -5793,16 +5714,12 @@ body.modal-open #decks-view.active {
     mask-image: var(--mask-url, var(--mask)), var(--pokeball-white-mask, none) !important;
     -webkit-mask-composite: source-in !important;
     mask-composite: intersect !important;
-    mask-mode: luminance, alpha !important;
-    -webkit-mask-source-type: luminance, alpha !important;
 }
 .foil-effect-container.masked.pokeball-rare .holo-layer-red {
     -webkit-mask-image: var(--mask-url, var(--mask)), var(--pokeball-red-mask, none) !important;
     mask-image: var(--mask-url, var(--mask)), var(--pokeball-red-mask, none) !important;
     -webkit-mask-composite: source-in !important;
     mask-composite: intersect !important;
-    mask-mode: luminance, alpha !important;
-    -webkit-mask-source-type: luminance, alpha !important;
 }
 
 /* Custom Responsive Overrides for Public Albums (PC vs Mobile layouts) */
@@ -5909,24 +5826,12 @@ body.modal-open #decks-view.active {
 .card.masked .card__shine,
 .card.masked .card__shine:before,
 .card.masked .card__shine:after,
-.card.masked .card__glare,
-.card.masked .card__glare:before,
-.card.masked .card__glare:after,
 .card-3d.masked .card__shine,
 .card-3d.masked .card__shine:before,
 .card-3d.masked .card__shine:after,
-.card-3d.masked .card__glare,
-.card-3d.masked .card__glare:before,
-.card-3d.masked .card__glare:after,
 .card-3d.masked .holo-layer,
 .card-slot.masked .holo-layer,
-.card-slot.masked .card__glare,
-.card-slot.masked .card__glare:before,
-.card-slot.masked .card__glare:after,
-.wishlist-card-item.masked .holo-layer,
-.wishlist-card-item.masked .card__glare,
-.wishlist-card-item.masked .card__glare:before,
-.wishlist-card-item.masked .card__glare:after {
+.wishlist-card-item.masked .holo-layer {
     -webkit-mask-image: var(--mask-url, var(--mask)) !important;
     mask-image: var(--mask-url, var(--mask)) !important;
     -webkit-mask-size: cover !important;
@@ -5935,8 +5840,6 @@ body.modal-open #decks-view.active {
     mask-position: center center !important;
     -webkit-mask-repeat: no-repeat !important;
     mask-repeat: no-repeat !important;
-    mask-mode: luminance !important;
-    -webkit-mask-source-type: luminance !important;
 }
 
 .card-3d.masked.pokeball-rare .holo-layer,
@@ -5947,8 +5850,6 @@ body.modal-open #decks-view.active {
     mask-image: var(--mask-url), var(--pokeball-white-mask, none) !important;
     -webkit-mask-composite: source-in !important;
     mask-composite: intersect !important;
-    mask-mode: luminance, alpha !important;
-    -webkit-mask-source-type: luminance, alpha !important;
 }
 
 .card-3d.masked.pokeball-rare .holo-layer-red,
@@ -5959,6 +5860,4 @@ body.modal-open #decks-view.active {
     mask-image: var(--mask-url), var(--pokeball-red-mask, none) !important;
     -webkit-mask-composite: source-in !important;
     mask-composite: intersect !important;
-    mask-mode: luminance, alpha !important;
-    -webkit-mask-source-type: luminance, alpha !important;
 }
