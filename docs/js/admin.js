@@ -180,7 +180,9 @@ $(document).ready(async function() {
 
     $(document).on('click', '#btn-wishlist, #menu-btn-wishlist', function(e) {
         e.preventDefault();
-        window.location.href = 'deseos.html';
+        showView('wishlist');
+        if (typeof loadWishlistAdmin === 'function') loadWishlistAdmin();
+        if (window.botInstance) window.botInstance.setContext('wishlist');
     });
 
     $(document).on('click', '#btn-show-expansiones', function(e) {
@@ -2210,15 +2212,6 @@ function renderDeckCardsLocal(scrollPos = null) {
                 if (card.id) {
                     deckCardsToDelete.push(card.id);
                 }
-                // Deletion of custom masks from Cloudinary
-                if (card.custom_mask_url) {
-                    const maskUrls = card.custom_mask_url.split(';');
-                    for (const url of maskUrls) {
-                        if (url && url.includes('cloudinary.com')) {
-                            CloudinaryUpload.deleteImage(url);
-                        }
-                    }
-                }
                 localDeckCards = localDeckCards.filter(c => c !== card);
                 renderDeckCardsLocal();
             }
@@ -2752,15 +2745,6 @@ function renderAlbumPagesLocal(pages, scrollPos) {
                         // Track deletion
                         if (slotData.id) {
                             albumSlotsToDelete.push(slotData.id);
-                        }
-                        // Deletion of custom masks from Cloudinary
-                        if (slotData.custom_mask_url) {
-                            const maskUrls = slotData.custom_mask_url.split(';');
-                            for (const url of maskUrls) {
-                                if (url && url.includes('cloudinary.com')) {
-                                    CloudinaryUpload.deleteImage(url);
-                                }
-                            }
                         }
                         // Remove from local state
                         localAlbumSlots = localAlbumSlots.filter(s => !(s.page_id === page.id && s.slot_index === i));
