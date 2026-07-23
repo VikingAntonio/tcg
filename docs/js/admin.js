@@ -180,9 +180,7 @@ $(document).ready(async function() {
 
     $(document).on('click', '#btn-wishlist, #menu-btn-wishlist', function(e) {
         e.preventDefault();
-        showView('wishlist');
-        if (typeof loadWishlistAdmin === 'function') loadWishlistAdmin();
-        if (window.botInstance) window.botInstance.setContext('wishlist');
+        window.location.href = 'deseos.html';
     });
 
     $(document).on('click', '#btn-show-expansiones', function(e) {
