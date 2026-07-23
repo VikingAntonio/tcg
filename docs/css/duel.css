@@ -5,12 +5,13 @@
     --text-color: #f1f2f6;
     --primary-color: #00d2ff;
     --primary-glow: rgba(0, 210, 255, 0.4);
-    --secondary-color: #9b5de5;
+    --secondary-color: #ff1b6b;
+    --secondary-glow: rgba(255, 27, 107, 0.4);
     --success-color: #2ec4b6;
     --danger-color: #ff1b6b;
-    --panel-bg: rgba(18, 24, 30, 0.75);
+    --panel-bg: rgba(18, 24, 30, 0.85);
     --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.08);
     --card-width: 66px;
     --card-height: 96px;
 }
@@ -24,7 +25,7 @@
 
 body.duel-body {
     background-color: var(--bg-color);
-    background-image: radial-gradient(circle at center, #1b263b 0%, #080d14 100%);
+    background-image: radial-gradient(circle at center, #111a2e 0%, #06090e 100%);
     color: var(--text-color);
     font-family: 'Montserrat', sans-serif;
     min-height: 100vh;
@@ -49,20 +50,20 @@ body.duel-body {
     position: absolute;
     border-radius: 50%;
     filter: blur(100px);
-    opacity: 0.15;
+    opacity: 0.12;
 }
 
 .blob-1 {
-    width: 400px;
-    height: 400px;
+    width: 450px;
+    height: 450px;
     background-color: var(--primary-color);
     top: -100px;
     left: 10%;
 }
 
 .blob-2 {
-    width: 500px;
-    height: 500px;
+    width: 550px;
+    height: 550px;
     background-color: var(--secondary-color);
     bottom: -150px;
     right: 15%;
@@ -73,13 +74,13 @@ body.duel-body {
     background: var(--panel-bg);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--glass-border);
-    padding: 10px 20px;
+    padding: 10px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: 80px;
     z-index: 100;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
 }
 
 .header-left {
@@ -135,11 +136,12 @@ body.duel-body {
 .lp-tracker {
     display: flex;
     align-items: center;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.45);
     border: 1px solid var(--glass-border);
     border-radius: 15px;
     padding: 6px 15px;
     gap: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
 .lp-tracker.player-1 {
@@ -160,7 +162,7 @@ body.duel-body {
 .lp-label {
     font-size: 0.65rem;
     letter-spacing: 1px;
-    color: #888;
+    color: #8c8c8c;
     font-weight: 700;
 }
 
@@ -186,8 +188,8 @@ body.duel-body {
 }
 
 .lp-input {
-    width: 65px;
-    background: rgba(0,0,0,0.5);
+    width: 75px;
+    background: rgba(0,0,0,0.6);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     color: white;
@@ -234,7 +236,7 @@ body.duel-body {
 }
 
 .util-btn {
-    background: var(--glass-bg);
+    background: rgba(0,0,0,0.3);
     border: 1px solid var(--glass-border);
     color: #aaa;
     border-radius: 12px;
@@ -245,13 +247,14 @@ body.duel-body {
     align-items: center;
     gap: 4px;
     transition: all 0.2s;
-    min-width: 75px;
+    min-width: 80px;
 }
 
 .util-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
     border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.15);
 }
 
 .util-btn i {
@@ -268,7 +271,7 @@ body.duel-body {
 /* Header Right Mode Buttons */
 .mode-selector {
     display: flex;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.5);
     padding: 4px;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
@@ -306,7 +309,7 @@ body.duel-body {
 
 /* Sidebar Option Panels */
 .duel-sidebar {
-    width: 320px;
+    width: 330px;
     background: var(--panel-bg);
     backdrop-filter: blur(15px);
     border-right: 1px solid var(--glass-border);
@@ -314,9 +317,9 @@ body.duel-body {
     flex-direction: column;
     overflow-y: auto;
     padding: 20px;
-    gap: 25px;
+    gap: 20px;
     z-index: 5;
-    box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+    box-shadow: 5px 0 15px rgba(0,0,0,0.4);
 }
 
 .duel-sidebar::-webkit-scrollbar {
@@ -329,7 +332,7 @@ body.duel-body {
 }
 
 .sidebar-section {
-    background: rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.3);
     border: 1px solid var(--glass-border);
     border-radius: 15px;
     padding: 15px;
@@ -351,7 +354,7 @@ body.duel-body {
 .sidebar-label {
     font-size: 0.7rem;
     font-weight: 700;
-    color: #888;
+    color: #999;
     margin-top: 10px;
     display: block;
     margin-bottom: 4px;
@@ -360,7 +363,7 @@ body.duel-body {
 
 .sidebar-select {
     width: 100%;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.5);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     color: white;
@@ -370,6 +373,7 @@ body.duel-body {
     outline: none;
     cursor: pointer;
     margin-bottom: 10px;
+    transition: border-color 0.2s;
 }
 
 .sidebar-select:focus {
@@ -414,7 +418,7 @@ body.duel-body {
 
 .btn-secondary:hover {
     background: rgba(255,255,255,0.08);
-    border-color: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.25);
 }
 
 .btn-danger {
@@ -443,7 +447,7 @@ body.duel-body {
 
 .room-input-group input {
     flex: 1;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.5);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     color: white;
@@ -459,7 +463,7 @@ body.duel-body {
     margin-top: 10px;
     font-size: 0.75rem;
     font-weight: 700;
-    color: #aaa;
+    color: #bbb;
 }
 
 .status-indicator {
@@ -525,11 +529,12 @@ body.duel-body {
 }
 
 .preview-info p {
-    font-size: 0.7rem;
-    color: #888;
+    font-size: 0.75rem;
+    color: #aaa;
     line-height: 1.4;
     max-height: 120px;
     overflow-y: auto;
+    white-space: pre-line;
 }
 
 /* Playmat Area Grid Wrapper */
@@ -549,16 +554,17 @@ body.duel-body {
 /* Hand trays */
 .hand-tray {
     width: 100%;
-    max-width: 900px;
-    background: rgba(0,0,0,0.4);
+    max-width: 960px;
+    background: rgba(0,0,0,0.55);
     border: 1px solid var(--glass-border);
     border-radius: 15px;
-    padding: 10px 20px;
+    padding: 8px 16px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
     position: relative;
     z-index: 2;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
 .hand-tray.player-2 {
@@ -572,8 +578,8 @@ body.duel-body {
 .tray-label {
     font-size: 0.6rem;
     font-weight: 800;
-    letter-spacing: 1px;
-    color: rgba(255,255,255,0.3);
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.4);
     text-transform: uppercase;
 }
 
@@ -591,11 +597,11 @@ body.duel-body {
 .playmat-board {
     width: 960px;
     height: 520px;
-    background: rgba(10, 15, 20, 0.6);
-    border: 2px solid rgba(0, 210, 255, 0.15);
+    background: rgba(8, 12, 18, 0.8);
+    border: 2px solid rgba(0, 210, 255, 0.25);
     border-radius: 20px;
     position: relative;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 0 40px rgba(0, 210, 255, 0.05);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 0 40px rgba(0, 210, 255, 0.08);
     overflow: hidden;
     flex-shrink: 0;
 }
@@ -608,51 +614,184 @@ body.duel-body {
     left: 0;
     background-size: 40px 40px;
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     pointer-events: none;
 }
 
-/* Board Zones (Slots) */
+/* Symmetrical and Professional Board Dividers & Labels */
+.playmat-board::before {
+    content: "JUGADOR 2 FIELD";
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: rgba(255, 27, 107, 0.35);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.playmat-board::after {
+    content: "JUGADOR 1 FIELD";
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: rgba(0, 210, 255, 0.35);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Center Playmat Divider Line */
+.playmat-divider {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), rgba(0, 210, 255, 0.5), rgba(255, 27, 107, 0.5), rgba(255, 255, 255, 0.1), transparent);
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Base Board Zone Overhaul */
 .board-zone {
     position: absolute;
     width: var(--card-width);
     height: var(--card-height);
-    border: 1px dashed rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.01);
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     pointer-events: auto;
     z-index: 1;
+    background: rgba(11, 16, 25, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+/* Player 1 Cyan Glow Theme */
+.board-zone.zone-player-1 {
+    border-color: rgba(0, 210, 255, 0.25);
+    box-shadow: inset 0 0 8px rgba(0, 210, 255, 0.05);
+}
+.board-zone.zone-player-1 .zone-label {
+    color: rgba(0, 210, 255, 0.65);
+}
+
+/* Player 2 Pink Glow Theme */
+.board-zone.zone-player-2 {
+    border-color: rgba(255, 27, 107, 0.25);
+    box-shadow: inset 0 0 8px rgba(255, 27, 107, 0.05);
+}
+.board-zone.zone-player-2 .zone-label {
+    color: rgba(255, 27, 107, 0.65);
+}
+
+/* Specific Zone Type Overrides */
+.board-zone.zone-type-deck {
+    background: linear-gradient(135deg, rgba(15, 32, 67, 0.85) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+}
+.board-zone.zone-type-deck.zone-player-1 { border-color: rgba(0, 210, 255, 0.5); box-shadow: 0 0 10px rgba(0, 210, 255, 0.1); }
+.board-zone.zone-type-deck.zone-player-2 { border-color: rgba(255, 27, 107, 0.5); box-shadow: 0 0 10px rgba(255, 27, 107, 0.1); }
+
+.board-zone.zone-type-extra {
+    background: linear-gradient(135deg, rgba(74, 20, 140, 0.65) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(155, 93, 229, 0.5);
+}
+
+.board-zone.zone-type-grave {
+    background: linear-gradient(135deg, rgba(43, 43, 43, 0.85) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(140, 140, 140, 0.5);
+}
+
+.board-zone.zone-type-banished {
+    background: linear-gradient(135deg, rgba(183, 28, 28, 0.55) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: dashed;
+    border-color: rgba(255, 27, 107, 0.5);
+}
+
+.board-zone.zone-type-field {
+    background: linear-gradient(135deg, rgba(27, 94, 32, 0.45) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(46, 196, 182, 0.5);
+}
+
+.board-zone.zone-type-monster {
+    background: linear-gradient(135deg, rgba(230, 81, 0, 0.3) 0%, rgba(8, 12, 18, 0.9) 100%);
+    border-style: solid;
+    border-color: rgba(255, 121, 63, 0.45);
+}
+
+.board-zone.zone-type-spell {
+    background: linear-gradient(135deg, rgba(13, 71, 161, 0.3) 0%, rgba(8, 12, 18, 0.9) 100%);
+    border-style: solid;
+    border-color: rgba(0, 210, 255, 0.45);
+}
+
+.board-zone.zone-type-active {
+    background: linear-gradient(135deg, rgba(245, 127, 23, 0.4) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(255, 211, 45, 0.6);
+    box-shadow: inset 0 0 15px rgba(255, 211, 45, 0.2), 0 0 8px rgba(255, 211, 45, 0.1);
+}
+
+.board-zone.zone-type-bench {
+    background: linear-gradient(135deg, rgba(51, 105, 30, 0.25) 0%, rgba(8, 12, 18, 0.9) 100%);
+    border-style: solid;
+    border-color: rgba(76, 175, 80, 0.45);
+}
+
+.board-zone.zone-type-prize {
+    background: linear-gradient(135deg, rgba(255, 235, 59, 0.2) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(255, 235, 59, 0.4);
 }
 
 .board-zone.highlighted {
-    border-color: var(--primary-color);
-    background: rgba(0, 210, 255, 0.06);
-    box-shadow: 0 0 15px rgba(0, 210, 255, 0.15);
+    border-color: var(--primary-color) !important;
+    background: rgba(0, 210, 255, 0.12) !important;
+    box-shadow: 0 0 18px rgba(0, 210, 255, 0.25), inset 0 0 10px rgba(0, 210, 255, 0.1) !important;
 }
 
 .zone-label {
     font-size: 0.55rem;
-    font-weight: 700;
+    font-weight: 800;
     text-align: center;
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.35);
     text-transform: uppercase;
     pointer-events: none;
     padding: 4px;
+    line-height: 1.2;
 }
 
 .zone-card-count {
     font-family: 'Orbitron', sans-serif;
     font-size: 0.75rem;
     font-weight: 800;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.5);
     margin-top: 4px;
     pointer-events: none;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 2px 6px;
+    min-width: 22px;
+    text-align: center;
 }
 
 /* Card Element (Interactive physical sandboxes) */
@@ -667,7 +806,7 @@ body.duel-body {
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     user-select: none;
     z-index: 10;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* Transition is enabled when not actively dragged */
@@ -676,15 +815,15 @@ body.duel-body {
 }
 
 .duel-card:hover {
-    box-shadow: 0 8px 18px rgba(0,0,0,0.6), 0 0 10px rgba(255,255,255,0.1);
-    transform: scale(1.05) translate3d(0, 0, 5px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.6), 0 0 10px rgba(255,255,255,0.15);
+    transform: scale(1.08) translate3d(0, 0, 5px);
     z-index: 100;
 }
 
 .duel-card.dragging {
     cursor: grabbing;
     box-shadow: 0 15px 28px rgba(0,0,0,0.7), 0 0 15px var(--primary-glow);
-    transform: scale(1.1) rotate(2deg) translate3d(0, 0, 15px);
+    transform: scale(1.12) rotate(2deg) translate3d(0, 0, 15px);
     border-color: var(--primary-color);
     z-index: 200 !important;
 }
@@ -712,11 +851,11 @@ body.duel-body {
 }
 
 .duel-card.tapped:hover {
-    transform: rotate(90deg) scale(1.05);
+    transform: rotate(90deg) scale(1.08);
 }
 
 .duel-card.tapped.dragging {
-    transform: rotate(92deg) scale(1.1);
+    transform: rotate(92deg) scale(1.12);
 }
 
 /* Face Down Mode */
@@ -729,11 +868,11 @@ body.duel-body {
     background-position: center;
     /* Fancy glowing sci-fi deck back design */
     background-image:
-        radial-gradient(circle at center, rgba(0, 210, 255, 0.3) 0%, rgba(15, 23, 42, 0.95) 100%),
+        radial-gradient(circle at center, rgba(0, 210, 255, 0.35) 0%, rgba(15, 23, 42, 0.98) 100%),
         repeating-linear-gradient(45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, transparent 2px, transparent 10px),
-        repeating-linear-gradient(-45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, rgba(15, 23, 42, 0.95) 2px, rgba(15, 23, 42, 0.95) 10px);
-    border: 2px solid rgba(0, 210, 255, 0.3);
-    box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.4);
+        repeating-linear-gradient(-45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, rgba(15, 23, 42, 0.98) 2px, rgba(15, 23, 42, 0.98) 10px);
+    border: 2px solid rgba(0, 210, 255, 0.4);
+    box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.5);
 }
 
 /* Counter indicator badges */
@@ -783,11 +922,11 @@ body.duel-body {
 /* Interactive custom context menu */
 .card-context-menu {
     position: fixed;
-    background: rgba(18, 25, 33, 0.95);
+    background: rgba(18, 25, 33, 0.98);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     padding: 6px 0;
     width: 230px;
     z-index: 1000;

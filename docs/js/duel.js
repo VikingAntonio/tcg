@@ -3,72 +3,72 @@
 // JSON Playmat layouts for Yu-Gi-Oh and Pokémon TCG
 const BOARD_LAYOUTS = {
     yugioh: [
-        // Player 1 (Bottom Half)
-        { id: "deck_1", name: "Deck", player: 1, x: 860, y: 390, type: "deck" },
-        { id: "extra_1", name: "Extra Deck", player: 1, x: 30, y: 390, type: "deck" },
-        { id: "grave_1", name: "Cementerio", player: 1, x: 860, y: 280, type: "pile" },
-        { id: "banished_1", name: "Desterrado", player: 1, x: 860, y: 170, type: "pile" },
-        { id: "field_1", name: "Campo", player: 1, x: 30, y: 280, type: "slot" },
-        { id: "monster_1_1", name: "Monstruo 1", player: 1, x: 170, y: 280, type: "slot" },
-        { id: "monster_1_2", name: "Monstruo 2", player: 1, x: 310, y: 280, type: "slot" },
-        { id: "monster_1_3", name: "Monstruo 3", player: 1, x: 450, y: 280, type: "slot" },
-        { id: "monster_1_4", name: "Monstruo 4", player: 1, x: 590, y: 280, type: "slot" },
-        { id: "monster_1_5", name: "Monstruo 5", player: 1, x: 730, y: 280, type: "slot" },
-        { id: "spell_1_1", name: "Magia/Trampa 1", player: 1, x: 170, y: 390, type: "slot" },
-        { id: "spell_1_2", name: "Magia/Trampa 2", player: 1, x: 310, y: 390, type: "slot" },
-        { id: "spell_1_3", name: "Magia/Trampa 3", player: 1, x: 450, y: 390, type: "slot" },
-        { id: "spell_1_4", name: "Magia/Trampa 4", player: 1, x: 590, y: 390, type: "slot" },
-        { id: "spell_1_5", name: "Magia/Trampa 5", player: 1, x: 730, y: 390, type: "slot" },
+        // Player 2 (Top Half, Mirrored) - Red/Pink Theme
+        { id: "deck_2", name: "P2 Deck", player: 2, x: 40, y: 20, type: "deck" },
+        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 40, y: 130, type: "grave" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 755, y: 130, type: "banished" },
+        { id: "extra_2", name: "P2 Extra", player: 2, x: 860, y: 20, type: "extra" },
+        { id: "field_2", name: "P2 Campo", player: 2, x: 860, y: 130, type: "field" },
+        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 170, y: 130, type: "monster" },
+        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 290, y: 130, type: "monster" },
+        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 410, y: 130, type: "monster" },
+        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 530, y: 130, type: "monster" },
+        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 650, y: 130, type: "monster" },
+        { id: "spell_2_5", name: "P2 Magia/Trampa 5", player: 2, x: 170, y: 20, type: "spell" },
+        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 290, y: 20, type: "spell" },
+        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 410, y: 20, type: "spell" },
+        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 530, y: 20, type: "spell" },
+        { id: "spell_2_1", name: "P2 Magia/Trampa 1", player: 2, x: 650, y: 20, type: "spell" },
 
-        // Player 2 (Top Half, Mirrored)
-        { id: "deck_2", name: "Deck", player: 2, x: 30, y: 30, type: "deck" },
-        { id: "extra_2", name: "Extra Deck", player: 2, x: 860, y: 30, type: "deck" },
-        { id: "grave_2", name: "Cementerio", player: 2, x: 30, y: 140, type: "pile" },
-        { id: "banished_2", name: "Desterrado", player: 2, x: 30, y: 250, type: "pile" },
-        { id: "field_2", name: "Campo", player: 2, x: 860, y: 140, type: "slot" },
-        { id: "monster_2_1", name: "Monstruo 1", player: 2, x: 730, y: 140, type: "slot" },
-        { id: "monster_2_2", name: "Monstruo 2", player: 2, x: 590, y: 140, type: "slot" },
-        { id: "monster_2_3", name: "Monstruo 3", player: 2, x: 450, y: 140, type: "slot" },
-        { id: "monster_2_4", name: "Monstruo 4", player: 2, x: 310, y: 140, type: "slot" },
-        { id: "monster_2_5", name: "Monstruo 5", player: 2, x: 170, y: 140, type: "slot" },
-        { id: "spell_2_1", name: "Magia/Trampa 1", player: 2, x: 730, y: 30, type: "slot" },
-        { id: "spell_2_2", name: "Magia/Trampa 2", player: 2, x: 590, y: 30, type: "slot" },
-        { id: "spell_2_3", name: "Magia/Trampa 3", player: 2, x: 450, y: 30, type: "slot" },
-        { id: "spell_2_4", name: "Magia/Trampa 4", player: 2, x: 310, y: 30, type: "slot" },
-        { id: "spell_2_5", name: "Magia/Trampa 5", player: 2, x: 170, y: 30, type: "slot" }
+        // Player 1 (Bottom Half) - Blue Theme
+        { id: "extra_1", name: "P1 Extra", player: 1, x: 40, y: 400, type: "extra" },
+        { id: "field_1", name: "P1 Campo", player: 1, x: 40, y: 290, type: "field" },
+        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 755, y: 290, type: "banished" },
+        { id: "deck_1", name: "P1 Deck", player: 1, x: 860, y: 400, type: "deck" },
+        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 860, y: 290, type: "grave" },
+        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 170, y: 290, type: "monster" },
+        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 290, y: 290, type: "monster" },
+        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 410, y: 290, type: "monster" },
+        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 530, y: 290, type: "monster" },
+        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 650, y: 290, type: "monster" },
+        { id: "spell_1_1", name: "P1 Magia/Trampa 1", player: 1, x: 170, y: 400, type: "spell" },
+        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 290, y: 400, type: "spell" },
+        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 410, y: 400, type: "spell" },
+        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 530, y: 400, type: "spell" },
+        { id: "spell_1_5", name: "P1 Magia/Trampa 5", player: 1, x: 650, y: 400, type: "spell" }
     ],
     pokemon: [
-        // Player 1 (Bottom Half)
-        { id: "deck_1", name: "Deck", player: 1, x: 860, y: 390, type: "deck" },
-        { id: "grave_1", name: "Descarte", player: 1, x: 860, y: 280, type: "pile" },
-        { id: "active_1", name: "Activo", player: 1, x: 450, y: 275, type: "slot" },
-        { id: "bench_1_1", name: "Banca 1", player: 1, x: 170, y: 390, type: "slot" },
-        { id: "bench_1_2", name: "Banca 2", player: 1, x: 310, y: 390, type: "slot" },
-        { id: "bench_1_3", name: "Banca 3", player: 1, x: 450, y: 390, type: "slot" },
-        { id: "bench_1_4", name: "Banca 4", player: 1, x: 590, y: 390, type: "slot" },
-        { id: "bench_1_5", name: "Banca 5", player: 1, x: 730, y: 390, type: "slot" },
-        { id: "prize_1_1", name: "Premio 1", player: 1, x: 30, y: 245, type: "slot" },
-        { id: "prize_1_2", name: "Premio 2", player: 1, x: 100, y: 245, type: "slot" },
-        { id: "prize_1_3", name: "Premio 3", player: 1, x: 30, y: 315, type: "slot" },
-        { id: "prize_1_4", name: "Premio 4", player: 1, x: 100, y: 315, type: "slot" },
-        { id: "prize_1_5", name: "Premio 5", player: 1, x: 30, y: 385, type: "slot" },
-        { id: "prize_1_6", name: "Premio 6", player: 1, x: 100, y: 385, type: "slot" },
+        // Player 2 (Top Half, Mirrored) - Red/Pink Theme
+        { id: "deck_2", name: "P2 Deck", player: 2, x: 40, y: 20, type: "deck" },
+        { id: "grave_2", name: "P2 Descarte", player: 2, x: 40, y: 130, type: "grave" },
+        { id: "active_2", name: "P2 Activo", player: 2, x: 510, y: 130, type: "active" },
+        { id: "bench_2_5", name: "P2 Banca 5", player: 2, x: 310, y: 20, type: "bench" },
+        { id: "bench_2_4", name: "P2 Banca 4", player: 2, x: 410, y: 20, type: "bench" },
+        { id: "bench_2_3", name: "P2 Banca 3", player: 2, x: 510, y: 20, type: "bench" },
+        { id: "bench_2_2", name: "P2 Banca 2", player: 2, x: 610, y: 20, type: "bench" },
+        { id: "bench_2_1", name: "P2 Banca 1", player: 2, x: 710, y: 20, type: "bench" },
+        { id: "prize_2_1", name: "P2 Premio 1", player: 2, x: 850, y: 130, type: "prize" },
+        { id: "prize_2_2", name: "P2 Premio 2", player: 2, x: 850, y: 20, type: "prize" },
+        { id: "prize_2_3", name: "P2 Premio 3", player: 2, x: 780, y: 130, type: "prize" },
+        { id: "prize_2_4", name: "P2 Premio 4", player: 2, x: 780, y: 20, type: "prize" },
+        { id: "prize_2_5", name: "P2 Premio 5", player: 2, x: 710, y: 130, type: "prize" },
+        { id: "prize_2_6", name: "P2 Premio 6", player: 2, x: 710, y: 20, type: "prize" },
 
-        // Player 2 (Top Half, Mirrored)
-        { id: "deck_2", name: "Deck", player: 2, x: 30, y: 30, type: "deck" },
-        { id: "grave_2", name: "Descarte", player: 2, x: 30, y: 140, type: "pile" },
-        { id: "active_2", name: "Activo", player: 2, x: 450, y: 145, type: "slot" },
-        { id: "bench_2_1", name: "Banca 1", player: 2, x: 730, y: 30, type: "slot" },
-        { id: "bench_2_2", name: "Banca 2", player: 2, x: 590, y: 30, type: "slot" },
-        { id: "bench_2_3", name: "Banca 3", player: 2, x: 450, y: 30, type: "slot" },
-        { id: "bench_2_4", name: "Banca 4", player: 2, x: 310, y: 30, type: "slot" },
-        { id: "bench_2_5", name: "Banca 5", player: 2, x: 170, y: 30, type: "slot" },
-        { id: "prize_2_1", name: "Premio 1", player: 2, x: 860, y: 175, type: "slot" },
-        { id: "prize_2_2", name: "Premio 2", player: 2, x: 790, y: 175, type: "slot" },
-        { id: "prize_2_3", name: "Premio 3", player: 2, x: 860, y: 105, type: "slot" },
-        { id: "prize_2_4", name: "Premio 4", player: 2, x: 790, y: 105, type: "slot" },
-        { id: "prize_2_5", name: "Premio 5", player: 2, x: 860, y: 35, type: "slot" },
-        { id: "prize_2_6", name: "Premio 6", player: 2, x: 790, y: 35, type: "slot" }
+        // Player 1 (Bottom Half) - Blue Theme
+        { id: "prize_1_1", name: "P1 Premio 1", player: 1, x: 40, y: 290, type: "prize" },
+        { id: "prize_1_2", name: "P1 Premio 2", player: 1, x: 40, y: 400, type: "prize" },
+        { id: "prize_1_3", name: "P1 Premio 3", player: 1, x: 110, y: 290, type: "prize" },
+        { id: "prize_1_4", name: "P1 Premio 4", player: 1, x: 110, y: 400, type: "prize" },
+        { id: "prize_1_5", name: "P1 Premio 5", player: 1, x: 180, y: 290, type: "prize" },
+        { id: "prize_1_6", name: "P1 Premio 6", player: 1, x: 180, y: 400, type: "prize" },
+        { id: "active_1", name: "P1 Activo", player: 1, x: 510, y: 290, type: "active" },
+        { id: "bench_1_1", name: "P1 Banca 1", player: 1, x: 310, y: 400, type: "bench" },
+        { id: "bench_1_2", name: "P1 Banca 2", player: 1, x: 410, y: 400, type: "bench" },
+        { id: "bench_1_3", name: "P1 Banca 3", player: 1, x: 510, y: 400, type: "bench" },
+        { id: "bench_1_4", name: "P1 Banca 4", player: 1, x: 610, y: 400, type: "bench" },
+        { id: "bench_1_5", name: "P1 Banca 5", player: 1, x: 710, y: 400, type: "bench" },
+        { id: "deck_1", name: "P1 Deck", player: 1, x: 860, y: 400, type: "deck" },
+        { id: "grave_1", name: "P1 Descarte", player: 1, x: 860, y: 290, type: "grave" }
     ]
 };
 
@@ -82,7 +82,8 @@ const state = {
     cards: [], // All active card instances currently in game
     decks: { player1: [], player2: [] }, // Raw decks selected
     userList: [],
-    syncChannel: null
+    syncChannel: null,
+    currentUser: null
 };
 
 // Active drag tracking
@@ -93,7 +94,7 @@ let activeMenuCard = null;
 // Page initialization
 $(document).ready(async function() {
     initLayout();
-    await loadUsers();
+    await checkUserSession();
     setupEventListeners();
     parseUrlParameters();
 });
@@ -101,13 +102,19 @@ $(document).ready(async function() {
 // Configure Playmat Field Zones & Scale
 function initLayout() {
     $("#dynamic-zones-container").empty();
+
+    // Add central separator
+    $("#dynamic-zones-container").append('<div class="playmat-divider"></div>');
+
     const zones = BOARD_LAYOUTS[state.layout];
 
     zones.forEach(zone => {
+        const playerClass = zone.player === 1 ? "zone-player-1" : "zone-player-2";
+        const typeClass = `zone-type-${zone.type}`;
         const zoneHTML = `
-            <div class="board-zone" id="zone-${zone.id}" style="left: ${zone.x}px; top: ${zone.y}px;" data-id="${zone.id}">
+            <div class="board-zone ${playerClass} ${typeClass}" id="zone-${zone.id}" style="left: ${zone.x}px; top: ${zone.y}px;" data-id="${zone.id}">
                 <div class="zone-label">${zone.name}</div>
-                ${(zone.type === "deck" || zone.type === "pile") ? `<div class="zone-card-count" id="count-${zone.id}">0</div>` : ""}
+                ${(zone.type === "deck" || zone.type === "grave" || zone.type === "extra" || zone.type === "banished") ? `<div class="zone-card-count" id="count-${zone.id}">0</div>` : ""}
             </div>
         `;
         $("#dynamic-zones-container").append(zoneHTML);
@@ -116,56 +123,60 @@ function initLayout() {
     renderAllCards();
 }
 
-// Fetch users from project database to load decks
-async function loadUsers() {
-    $("#select-store-user").html('<option value="">Cargando tiendas...</option>');
+// Fetch active user session or public/mock decks
+async function checkUserSession() {
+    $("#select-user-deck").prop('disabled', true).html('<option value="">Verificando sesión...</option>');
+    $("#btn-load-p1, #btn-load-p2").prop('disabled', true);
+
     try {
-        const { data: users, error } = await _supabase
-            .from('usuarios')
-            .select('id, username, store_name, is_store')
-            .order('store_name', { ascending: true });
+        const { data: { session } } = await _supabase.auth.getSession();
 
-        if (error) throw error;
-        state.userList = users || [];
-
-        let html = '<option value="">-- Elige un Vendedor --</option>';
-        state.userList.forEach(user => {
-            const displayName = user.store_name || user.username || `Usuario #${user.id}`;
-            html += `<option value="${user.id}">${displayName}</option>`;
-        });
-        $("#select-store-user").html(html);
+        if (session && session.user) {
+            state.currentUser = session.user;
+            // Load custom user decks
+            await loadDecksForUser(session.user.id);
+        } else {
+            // User is not logged in
+            state.currentUser = null;
+            $("#select-user-deck").html('<option value="">Inicia sesión para cargar decks</option>');
+            Swal.fire({
+                icon: 'info',
+                title: 'No has iniciado sesión',
+                text: 'Para usar tus decks construidos en el simulador, por favor inicia sesión. Puedes seguir probando las mecánicas usando el simulador libremente.',
+                confirmButtonText: 'Entendido'
+            });
+        }
     } catch (err) {
-        console.error("Error loading users:", err);
-        $("#select-store-user").html('<option value="">Error al cargar usuarios</option>');
+        console.error("Error checking user session:", err);
+        $("#select-user-deck").html('<option value="">Error al verificar sesión</option>');
     }
 }
 
-// Handle dynamic dropdown changes and load decks
-async function loadUserDecks(userId) {
-    $("#select-user-deck").prop('disabled', true).html('<option value="">Cargando decks...</option>');
-    $("#btn-load-p1, #btn-load-p2").prop('disabled', true);
+// Load custom user decks specifically belonging to the active logged-in user
+async function loadDecksForUser(userId) {
+    $("#select-user-deck").prop('disabled', true).html('<option value="">Cargando tus decks...</option>');
 
     try {
         const { data: decks, error } = await _supabase
             .from('decks')
             .select('id, name')
             .eq('user_id', userId)
-            .eq('is_public', true);
+            .order('name', { ascending: true });
 
         if (error) throw error;
 
         if (!decks || decks.length === 0) {
-            $("#select-user-deck").html('<option value="">Sin decks públicos</option>');
+            $("#select-user-deck").html('<option value="">No tienes decks creados</option>');
             return;
         }
 
-        let html = '<option value="">-- Elige un Deck --</option>';
+        let html = '<option value="">-- Elige tu Deck --</option>';
         decks.forEach(deck => {
             html += `<option value="${deck.id}">${deck.name}</option>`;
         });
         $("#select-user-deck").html(html).prop('disabled', false);
     } catch (err) {
-        console.error("Error loading decks:", err);
+        console.error("Error loading user decks:", err);
         $("#select-user-deck").html('<option value="">Error al cargar decks</option>');
     }
 }
@@ -246,7 +257,7 @@ function renderAllCards() {
         const isHand = card.zone.startsWith("hand_");
 
         // Count cards in piles
-        const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("grave_") || card.zone.startsWith("banished_");
+        const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("grave_") || card.zone.startsWith("banished_") || card.zone.startsWith("extra_");
         if (isPile) {
             zoneCounts[card.zone] = (zoneCounts[card.zone] || 0) + 1;
         }
@@ -512,6 +523,7 @@ function adjustLP(player, op, valInputId) {
     broadcastState();
 }
 
+// Synchronize LP states visually
 function updateLPUI() {
     $("#lp-p1-val").text(state.lp.player1);
     $("#lp-p2-val").text(state.lp.player2);
@@ -533,6 +545,7 @@ function flipCoin() {
     }, 800);
 }
 
+// Roll randomized 6-sided die
 function rollDice() {
     $("#dice-res").text("LANZANDO...");
     setTimeout(() => {
@@ -642,16 +655,6 @@ function setupEventListeners() {
     });
 
     // Deck Loader Event Bindings
-    $("#select-store-user").change(function() {
-        const userId = $(this).val();
-        if (userId) {
-            loadUserDecks(userId);
-        } else {
-            $("#select-user-deck").prop('disabled', true).html('<option value="">Elige un usuario primero...</option>');
-            $("#btn-load-p1, #btn-load-p2").prop('disabled', true);
-        }
-    });
-
     $("#select-user-deck").change(function() {
         const deckId = $(this).val();
         if (deckId) {
