@@ -300,24 +300,23 @@ function renderAllCards() {
         if (isHand) {
             handActionOverlayHTML = `
                 <div class="hand-card-actions">
-                    <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}"><i class="fas fa-arrow-up"></i> Invocar</button>
-                    <button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}"><i class="fas fa-eye-slash"></i> Setear</button>
-                    <button class="hand-action-btn btn-def" data-instance-id="${card.instanceId}"><i class="fas fa-sync"></i> Defensa</button>
-                    <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}"><i class="fas fa-skull"></i> Cementerio</button>
-                    <button class="hand-action-btn btn-deck" data-instance-id="${card.instanceId}"><i class="fas fa-undo"></i> Al Deck</button>
-                    <button class="hand-action-btn btn-banish" data-instance-id="${card.instanceId}"><i class="fas fa-fire"></i> Desterrar</button>
+                    <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                    <button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>
+                    <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}">Cementerio</button>
+                    <button class="hand-action-btn btn-banish" data-instance-id="${card.instanceId}">Remover</button>
+                    <button class="hand-action-btn btn-deck" data-instance-id="${card.instanceId}">Deck</button>
                 </div>
             `;
         } else if (!isPile) {
-            // Cards on active playmat slots get a quick field action horizontal ribbon bar
+            // Cards on active playmat slots get a quick field action horizontal ribbon bar - Text only (No icons)
             fieldActionOverlayHTML = `
                 <div class="field-card-actions">
-                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}" title="Voltear"><i class="fas fa-eye-slash"></i></button>
-                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}" title="Modo Defensa (Girar)"><i class="fas fa-sync"></i></button>
-                    <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}" title="Activar efecto (Brillar)"><i class="fas fa-bolt" style="color: #ffd700;"></i></button>
-                    <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}" title="Enviar a la Mano"><i class="fas fa-hand-paper"></i></button>
-                    <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}" title="Enviar al Cementerio"><i class="fas fa-skull"></i></button>
-                    <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}" title="Desterrar"><i class="fas fa-fire"></i></button>
+                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
+                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
+                    <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
+                    <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">Mano</button>
+                    <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}">Cementerio</button>
+                    <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}">Remover</button>
                 </div>
             `;
         }
@@ -752,9 +751,11 @@ function openExtraDeckModal(playerKey) {
     } else {
         extraCards.forEach(card => {
             const cardHTML = `
-                <div class="search-card-item" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <div class="extra-deck-card-container" data-instance-id="${card.instanceId}">
                     <img src="${card.imageUrl}" alt="${card.name}">
-                    <button class="extra-card-action-btn" data-instance-id="${card.instanceId}"><i class="fas fa-magic"></i> Invocar</button>
+                    <div class="extra-deck-card-hover-overlay">
+                        <button class="extra-card-action-btn" data-instance-id="${card.instanceId}">Invocar</button>
+                    </div>
                 </div>
             `;
             $("#extra-cards-grid").append(cardHTML);
