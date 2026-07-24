@@ -55,3 +55,13 @@
 127.0.0.1 - - [24/Jul/2026 05:09:10] "GET /js/supabase-config.js HTTP/1.1" 200 -
 127.0.0.1 - - [24/Jul/2026 05:09:10] "GET /js/utils.js HTTP/1.1" 200 -
 127.0.0.1 - - [24/Jul/2026 05:09:10] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:39:04] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:39:04] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:39:04] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:39:04] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:39:04] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:40:20] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:40:20] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:40:20] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:40:20] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2026 05:40:20] "GET /js/duel.js HTTP/1.1" 200 -

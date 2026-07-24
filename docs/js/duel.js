@@ -253,6 +253,7 @@ function renderAllCards() {
     state.cards.sort((a, b) => a.z - b.z);
 
     state.cards.forEach(card => {
+        if (card.isDrawing) return; // Hide card during draw flight animation
         const isHand = card.zone.startsWith("hand_");
 
         // Count cards in piles
@@ -342,12 +343,17 @@ function bindCardDragEvents() {
     });
 
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
+
+        // Prevent dragging deck cards so that click events register to open deck menu
+        if (cardObj.zone.startsWith("deck_")) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
 
         // Visual preview selection
         updatePreview(cardObj);
@@ -533,7 +539,6 @@ function shuffleDeck(playerKey) {
 function drawCards(playerKey, count = 1) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
     const targetHand = playerKey === "player1" ? "hand_1" : "hand_2";
-    const traySelector = playerKey === "player1" ? "#hand-p1" : "#hand-p2";
 
     // Gather cards currently inside player's deck, sorted by stack depth (z-index)
     const deckCards = state.cards
@@ -546,55 +551,47 @@ function drawCards(playerKey, count = 1) {
 
     const drawCount = Math.min(count, deckCards.length);
 
-    // For single cards, animate beautifully. For multiple, execute sequential flying cards.
+    // Draw cards one by one
     for (let i = 0; i < drawCount; i++) {
         const card = deckCards[i];
 
-        // Find screen coordinates of the deck zone element
-        const $deckZoneEl = $(`#zone-${deckZone}`);
-        if ($deckZoneEl.length) {
-            const deckOffset = $deckZoneEl.offset();
-            const deckWidth = $deckZoneEl.outerWidth();
-            const deckHeight = $deckZoneEl.outerHeight();
+        // Find zone coordinates directly from BOARD_LAYOUTS configuration
+        const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === deckZone);
+        if (zoneObj) {
+            // Hide card during transition and immediately update the deck count label
+            card.isDrawing = true;
+            card.zone = targetHand;
+            renderAllCards();
 
-            // Spawn a temporary flying card visual clone
+            // Spawn temporary flying card visual clone relative to #playmat
             const $flying = $('<div class="flying-card card-back"></div>');
             $flying.css({
-                top: deckOffset.top,
-                left: deckOffset.left,
+                top: `${zoneObj.y}px`,
+                left: `${zoneObj.x}px`,
                 transform: 'scale(1) rotate(0deg)'
             });
-            $('body').append($flying);
+            $('#playmat').append($flying);
 
-            // Determine target landing hand position
-            const $handTray = $(traySelector);
-            let targetLeft = window.innerWidth / 2 - 33;
-            let targetTop = playerKey === "player1" ? window.innerHeight - 110 : 10;
+            // Landing coordinates relative to #playmat
+            const targetLeft = 450;
+            const targetTop = playerKey === "player1" ? 580 : -100;
 
-            if ($handTray.length) {
-                const trayOffset = $handTray.offset();
-                const cardsCount = $handTray.children().length;
-                targetTop = trayOffset.top + ($handTray.height() / 2) - 48;
-                // Distribute slightly to the right of current hand cards
-                targetLeft = trayOffset.left + ($handTray.width() / 2) - 33 + (cardsCount * 15);
-            }
-
-            // Trigger the transition using requestAnimationFrame to ensure the initial state is registered
+            // Trigger transition using requestAnimationFrame to ensure states are evaluated
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     $flying.css({
-                        top: targetTop,
-                        left: targetLeft,
+                        top: `${targetTop}px`,
+                        left: `${targetLeft}px`,
                         transform: 'scale(1.1) rotate(360deg)'
                     });
                 });
             });
 
-            // After animation ends, remove clone and add to visual hand tray state
+            // After animation ends, remove clone, clear drawing state, and render inside hand tray
             setTimeout(() => {
                 $flying.remove();
-                card.zone = targetHand;
-                card.faceDown = false; // Draw face up for ease in Practice
+                card.isDrawing = false;
+                card.faceDown = false; // Draw face up
                 renderAllCards();
             }, 500);
         } else {
@@ -676,17 +673,49 @@ function setupEventListeners() {
 
     // Right click context menu overrides on card items
     $(document).on("contextmenu", ".duel-card", function(e) {
-        e.preventDefault();
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
+        // If card is inside a deck zone, open the deck menu instead of card menu
+        if (cardObj.zone.startsWith("deck_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+            $("#card-menu").removeClass("active");
+            $("#deck-menu").css({
+                left: `${e.clientX}px`,
+                top: `${e.clientY}px`
+            }).addClass("active");
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
         activeMenuCard = cardObj;
         $("#deck-menu").removeClass("active");
         $("#card-menu").css({
             left: `${e.clientX}px`,
             top: `${e.clientY}px`
         }).addClass("active");
+    });
+
+    // Handle left click directly on a deck card to toggle menu
+    $(document).on("click", ".duel-card", function(e) {
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (!cardObj) return;
+
+        if (cardObj.zone.startsWith("deck_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+            $("#card-menu").removeClass("active");
+            $("#deck-menu").css({
+                left: `${e.clientX}px`,
+                top: `${e.clientY}px`
+            }).addClass("active");
+        }
     });
 
     // Right click context menu on Deck Zone elements (Or Left click to open deck options)
