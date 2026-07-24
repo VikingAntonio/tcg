@@ -529,10 +529,11 @@ function shuffleDeck(playerKey) {
     });
 }
 
-// Draw cards from top deck
+// Draw cards from top deck with stunning flight motion animation
 function drawCards(playerKey, count = 1) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
     const targetHand = playerKey === "player1" ? "hand_1" : "hand_2";
+    const traySelector = playerKey === "player1" ? "#hand-p1" : "#hand-p2";
 
     // Gather cards currently inside player's deck, sorted by stack depth (z-index)
     const deckCards = state.cards
@@ -544,13 +545,65 @@ function drawCards(playerKey, count = 1) {
     }
 
     const drawCount = Math.min(count, deckCards.length);
+
+    // For single cards, animate beautifully. For multiple, execute sequential flying cards.
     for (let i = 0; i < drawCount; i++) {
         const card = deckCards[i];
-        card.zone = targetHand;
-        card.faceDown = false; // Draw face up for ease in Practice
-    }
 
-    renderAllCards();
+        // Find screen coordinates of the deck zone element
+        const $deckZoneEl = $(`#zone-${deckZone}`);
+        if ($deckZoneEl.length) {
+            const deckOffset = $deckZoneEl.offset();
+            const deckWidth = $deckZoneEl.outerWidth();
+            const deckHeight = $deckZoneEl.outerHeight();
+
+            // Spawn a temporary flying card visual clone
+            const $flying = $('<div class="flying-card card-back"></div>');
+            $flying.css({
+                top: deckOffset.top,
+                left: deckOffset.left,
+                transform: 'scale(1) rotate(0deg)'
+            });
+            $('body').append($flying);
+
+            // Determine target landing hand position
+            const $handTray = $(traySelector);
+            let targetLeft = window.innerWidth / 2 - 33;
+            let targetTop = playerKey === "player1" ? window.innerHeight - 110 : 10;
+
+            if ($handTray.length) {
+                const trayOffset = $handTray.offset();
+                const cardsCount = $handTray.children().length;
+                targetTop = trayOffset.top + ($handTray.height() / 2) - 48;
+                // Distribute slightly to the right of current hand cards
+                targetLeft = trayOffset.left + ($handTray.width() / 2) - 33 + (cardsCount * 15);
+            }
+
+            // Trigger the transition using requestAnimationFrame to ensure the initial state is registered
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    $flying.css({
+                        top: targetTop,
+                        left: targetLeft,
+                        transform: 'scale(1.1) rotate(360deg)'
+                    });
+                });
+            });
+
+            // After animation ends, remove clone and add to visual hand tray state
+            setTimeout(() => {
+                $flying.remove();
+                card.zone = targetHand;
+                card.faceDown = false; // Draw face up for ease in Practice
+                renderAllCards();
+            }, 500);
+        } else {
+            // Fallback without animation
+            card.zone = targetHand;
+            card.faceDown = false;
+            renderAllCards();
+        }
+    }
 }
 
 // Search and extract from deck
@@ -629,11 +682,11 @@ function setupEventListeners() {
         if (!cardObj) return;
 
         activeMenuCard = cardObj;
+        $("#deck-menu").removeClass("active");
         $("#card-menu").css({
-            display: "block",
             left: `${e.clientX}px`,
             top: `${e.clientY}px`
-        });
+        }).addClass("active");
     });
 
     // Right click context menu on Deck Zone elements (Or Left click to open deck options)
@@ -644,17 +697,17 @@ function setupEventListeners() {
         const zoneId = $(this).data("id");
         activeMenuDeckPlayer = zoneId === "zone-deck_1" || zoneId === "deck_1" ? "player1" : "player2";
 
+        $("#card-menu").removeClass("active");
         $("#deck-menu").css({
-            display: "block",
             left: `${e.clientX}px`,
             top: `${e.clientY}px`
-        });
+        }).addClass("active");
     });
 
     // Hide context menus on global left click
     $(document).on("click", function() {
-        $("#card-menu").hide();
-        $("#deck-menu").hide();
+        $("#card-menu").removeClass("active");
+        $("#deck-menu").removeClass("active");
     });
 
     // Card Menu Action handlers
