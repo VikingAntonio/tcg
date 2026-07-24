@@ -738,7 +738,7 @@ body.duel-body {
 
 /* Flying card draw animation */
 .flying-card {
-    position: fixed;
+    position: absolute;
     width: var(--card-width);
     height: var(--card-height);
     pointer-events: none;
