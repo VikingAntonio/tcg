@@ -1,4 +1,4 @@
-// Vikingdev Duel Simulator Engine
+// Duel Simulator Engine
 
 // JSON Playmat layouts for Yu-Gi-Oh and Pokémon TCG
 const BOARD_LAYOUTS = {
@@ -72,17 +72,27 @@ const BOARD_LAYOUTS = {
     ]
 };
 
+// High-Fidelity Mock card collection to preload if no custom "test" deck exists
+const HIGH_FIDELITY_MOCKS = [
+    { name: "Dragón Blanco de Ojos Azules", image_url: "https://images.ygoprodeck.com/images/cards/89631139.jpg" },
+    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg" },
+    { name: "Chica Maga Oscura", image_url: "https://images.ygoprodeck.com/images/cards/31755083.jpg" },
+    { name: "Dragón Negro de Ojos Rojos", image_url: "https://images.ygoprodeck.com/images/cards/74677422.jpg" },
+    { name: "Kuriboh", image_url: "https://images.ygoprodeck.com/images/cards/40640057.jpg" },
+    { name: "Exodia el Prohibido", image_url: "https://images.ygoprodeck.com/images/cards/33396948.jpg" },
+    { name: "Polimerización", image_url: "https://images.ygoprodeck.com/images/cards/24094653.jpg" },
+    { name: "Fuerza de Espejo", image_url: "https://images.ygoprodeck.com/images/cards/44095762.jpg" },
+    { name: "Tifón del Espacio Místico", image_url: "https://images.ygoprodeck.com/images/cards/5318639.jpg" },
+    { name: "Olla de la Codicia", image_url: "https://images.ygoprodeck.com/images/cards/55144522.jpg" }
+];
+
 // Application State
 const state = {
     roomId: null,
-    mode: "practice", // "practice" or "online"
+    mode: "practice", // "practice" mode is fully enabled
     layout: "yugioh",
-    myRole: "player1", // Default role. Online connects P1 (creator) or P2 (joiner)
-    lp: { player1: 8000, player2: 8000 },
     cards: [], // All active card instances currently in game
     decks: { player1: [], player2: [] }, // Raw decks selected
-    userList: [],
-    syncChannel: null,
     currentUser: null
 };
 
@@ -90,13 +100,13 @@ const state = {
 let dragCard = null;
 let dragOffset = { x: 0, y: 0 };
 let activeMenuCard = null;
+let activeMenuDeckPlayer = null; // tracking which player deck is clicked
 
 // Page initialization
 $(document).ready(async function() {
     initLayout();
-    await checkUserSession();
+    await checkUserSessionAndPreload();
     setupEventListeners();
-    parseUrlParameters();
 });
 
 // Configure Playmat Field Zones & Scale
@@ -112,7 +122,7 @@ function initLayout() {
         const playerClass = zone.player === 1 ? "zone-player-1" : "zone-player-2";
         const typeClass = `zone-type-${zone.type}`;
         const zoneHTML = `
-            <div class="board-zone ${playerClass} ${typeClass}" id="zone-${zone.id}" style="left: ${zone.x}px; top: ${zone.y}px;" data-id="${zone.id}">
+            <div class="board-zone ${playerClass} ${typeClass}" id="zone-${zone.id}" style="left: ${zone.x}px; top: ${zone.y}px;" data-id="${zone.id}" data-player="${zone.player}">
                 <div class="zone-label">${zone.name}</div>
                 ${(zone.type === "deck" || zone.type === "grave" || zone.type === "extra" || zone.type === "banished") ? `<div class="zone-card-count" id="count-${zone.id}">0</div>` : ""}
             </div>
@@ -124,61 +134,61 @@ function initLayout() {
 }
 
 // Fetch active user session or public/mock decks
-async function checkUserSession() {
-    $("#select-user-deck").prop('disabled', true).html('<option value="">Verificando sesión...</option>');
-    $("#btn-load-p1, #btn-load-p2").prop('disabled', true);
-
+async function checkUserSessionAndPreload() {
     try {
         const { data: { session } } = await _supabase.auth.getSession();
+        let loadedCustom = false;
 
         if (session && session.user) {
             state.currentUser = session.user;
-            // Load custom user decks
-            await loadDecksForUser(session.user.id);
-        } else {
-            // User is not logged in
-            state.currentUser = null;
-            $("#select-user-deck").html('<option value="">Inicia sesión para cargar decks</option>');
-            Swal.fire({
-                icon: 'info',
-                title: 'No has iniciado sesión',
-                text: 'Para usar tus decks construidos en el simulador, por favor inicia sesión. Puedes seguir probando las mecánicas usando el simulador libremente.',
-                confirmButtonText: 'Entendido'
-            });
+            loadedCustom = await loadDecksForUser(session.user.id);
+        }
+
+        if (!loadedCustom) {
+            // Preload high-fidelity mocks directly immediately!
+            loadMockDecks();
         }
     } catch (err) {
         console.error("Error checking user session:", err);
-        $("#select-user-deck").html('<option value="">Error al verificar sesión</option>');
+        loadMockDecks();
     }
 }
 
 // Load custom user decks specifically belonging to the active logged-in user
 async function loadDecksForUser(userId) {
-    $("#select-user-deck").prop('disabled', true).html('<option value="">Cargando tus decks...</option>');
-
     try {
         const { data: decks, error } = await _supabase
             .from('decks')
             .select('id, name')
-            .eq('user_id', userId)
-            .order('name', { ascending: true });
+            .eq('user_id', userId);
 
         if (error) throw error;
 
-        if (!decks || decks.length === 0) {
-            $("#select-user-deck").html('<option value="">No tienes decks creados</option>');
-            return;
-        }
+        if (decks && decks.length > 0) {
+            // Search for a deck named "test"
+            const testDeck = decks.find(d => d.name.toLowerCase() === "test") || decks[0];
+            if (testDeck) {
+                await fetchDeckCards(testDeck.id, "player1");
+                instantiateDeck("player1");
 
-        let html = '<option value="">-- Elige tu Deck --</option>';
-        decks.forEach(deck => {
-            html += `<option value="${deck.id}">${deck.name}</option>`;
-        });
-        $("#select-user-deck").html(html).prop('disabled', false);
+                // Duplicate for player 2 in practice mode to have an opponent deck pre-populated
+                state.decks["player2"] = [...state.decks["player1"]];
+                instantiateDeck("player2");
+                return true;
+            }
+        }
     } catch (err) {
         console.error("Error loading user decks:", err);
-        $("#select-user-deck").html('<option value="">Error al cargar decks</option>');
     }
+    return false;
+}
+
+// Load Mock high-fidelity cards
+function loadMockDecks() {
+    state.decks["player1"] = [...HIGH_FIDELITY_MOCKS];
+    state.decks["player2"] = [...HIGH_FIDELITY_MOCKS];
+    instantiateDeck("player1");
+    instantiateDeck("player2");
 }
 
 // Fetch raw card templates for selected deck
@@ -192,18 +202,8 @@ async function fetchDeckCards(deckId, playerKey) {
 
         if (error) throw error;
         state.decks[playerKey] = cards || [];
-        Swal.fire({
-            icon: 'success',
-            title: 'Deck cargado',
-            text: `Se cargaron ${cards.length} cartas para ${playerKey === "player1" ? "Jugador 1" : "Jugador 2"}`,
-            toast: true,
-            position: 'top-end',
-            timer: 2000,
-            showConfirmButton: false
-        });
     } catch (err) {
         console.error("Error loading deck cards:", err);
-        Swal.fire('Error', 'No se pudieron descargar las cartas del deck', 'error');
     }
 }
 
@@ -234,7 +234,6 @@ function instantiateDeck(playerKey) {
     });
 
     renderAllCards();
-    broadcastState();
 }
 
 // Multi-deck setup / Rendering
@@ -333,6 +332,15 @@ function renderAllCards() {
 function bindCardDragEvents() {
     const cards = $(".duel-card");
 
+    // Hover preview update
+    cards.off('mouseenter').on('mouseenter', function() {
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            updatePreview(cardObj);
+        }
+    });
+
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -344,21 +352,6 @@ function bindCardDragEvents() {
         // Visual preview selection
         updatePreview(cardObj);
 
-        // Dragging is permitted if in Practice, or if Online & you are the controller/owner
-        if (state.mode === "online" && cardObj.controller !== state.myRole) {
-            // You can only drag your own controlled cards, but can hover or view anything
-            Swal.fire({
-                icon: 'warning',
-                title: 'No te pertenece',
-                text: 'Solo puedes mover tus propias cartas.',
-                toast: true,
-                position: 'top-end',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            return;
-        }
-
         dragCard = $(this);
         dragCard.addClass("dragging").removeClass("snapping");
 
@@ -369,7 +362,6 @@ function bindCardDragEvents() {
 
         const pos = getEventCoords(e);
         const cardOffset = dragCard.offset();
-        const matOffset = $("#playmat").offset();
 
         // Calculate offset relative to mouse/touch position
         dragOffset.x = pos.x - cardOffset.left;
@@ -468,7 +460,6 @@ $(window).on('mouseup touchend', function(e) {
 
     dragCard = null;
     renderAllCards();
-    broadcastState();
 });
 
 // Collision handler against zones
@@ -505,54 +496,7 @@ function checkHandTrayHover(e, traySelector) {
 function updatePreview(card) {
     $("#detail-card-img").attr("src", card.imageUrl);
     $("#detail-card-name").text(card.name);
-    $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nControlador: ${card.controller === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo" : "Boca Arriba"}\nContadores: ${card.counters}`);
-}
-
-// Life points mechanics
-function adjustLP(player, op, valInputId) {
-    const val = parseInt($(valInputId).val()) || 0;
-    if (op === "half") {
-        state.lp[`player${player}`] = Math.ceil(state.lp[`player${player}`] / 2);
-    } else if (op === "add") {
-        state.lp[`player${player}`] += val;
-    } else if (op === "sub") {
-        state.lp[`player${player}`] = Math.max(0, state.lp[`player${player}`] - val);
-    }
-
-    updateLPUI();
-    broadcastState();
-}
-
-// Synchronize LP states visually
-function updateLPUI() {
-    $("#lp-p1-val").text(state.lp.player1);
-    $("#lp-p2-val").text(state.lp.player2);
-
-    // Short glowing scale animations
-    $("#lp-p1-val, #lp-p2-val").addClass("glowing");
-    setTimeout(() => {
-        $("#lp-p1-val, #lp-p2-val").removeClass("glowing");
-    }, 400);
-}
-
-// Manual play mechanics (monedas / dados)
-function flipCoin() {
-    $("#coin-res").text("GIRANDO...");
-    setTimeout(() => {
-        const res = Math.random() < 0.5 ? "CARA" : "CRUZ";
-        $("#coin-res").text(res);
-        broadcastUtil("coin", res);
-    }, 800);
-}
-
-// Roll randomized 6-sided die
-function rollDice() {
-    $("#dice-res").text("LANZANDO...");
-    setTimeout(() => {
-        const res = Math.floor(Math.random() * 6) + 1;
-        $("#dice-res").text(`RESULTADO: ${res}`);
-        broadcastUtil("dice", res);
-    }, 800);
+    $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo" : "Boca Arriba"}\nContadores: ${card.counters}`);
 }
 
 // Shuffle deck piles
@@ -561,15 +505,6 @@ function shuffleDeck(playerKey) {
     const deckCards = state.cards.filter(c => c.zone === deckZone);
 
     if (deckCards.length === 0) {
-        Swal.fire({
-            icon: 'info',
-            title: 'Sin cartas',
-            text: 'El deck de este jugador no tiene cartas para barajar.',
-            toast: true,
-            position: 'top-end',
-            timer: 1500,
-            showConfirmButton: false
-        });
         return;
     }
 
@@ -582,12 +517,11 @@ function shuffleDeck(playerKey) {
     }
 
     renderAllCards();
-    broadcastState();
 
     Swal.fire({
         icon: 'success',
-        title: 'Deck barajado',
-        text: `Se barajaron ${deckCards.length} cartas del deck.`,
+        title: 'Barajado',
+        text: `El deck ha sido barajado.`,
         toast: true,
         position: 'top-end',
         timer: 1500,
@@ -606,15 +540,6 @@ function drawCards(playerKey, count = 1) {
         .sort((a, b) => b.z - a.z); // top card is largest z-index
 
     if (deckCards.length === 0) {
-        Swal.fire({
-            icon: 'info',
-            title: 'Sin cartas',
-            text: 'No quedan cartas en el deck para robar.',
-            toast: true,
-            position: 'top-end',
-            timer: 1500,
-            showConfirmButton: false
-        });
         return;
     }
 
@@ -622,119 +547,86 @@ function drawCards(playerKey, count = 1) {
     for (let i = 0; i < drawCount; i++) {
         const card = deckCards[i];
         card.zone = targetHand;
-        card.faceDown = (playerKey === "player2" && state.mode === "online"); // hidden card backs if opponent
+        card.faceDown = false; // Draw face up for ease in Practice
     }
 
     renderAllCards();
-    broadcastState();
 }
 
-// Long-press or Right-click interactive Context Menu logic
+// Search and extract from deck
+function openSearchModal(playerKey) {
+    const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
+    const deckCards = state.cards.filter(c => c.zone === deckZone);
+
+    $("#search-modal-title").text(`Buscando en: ${playerKey === "player1" ? "P1 Deck" : "P2 Deck"}`);
+    $("#search-cards-grid").empty();
+
+    if (deckCards.length === 0) {
+        $("#search-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Deck.</p>');
+    } else {
+        deckCards.forEach(card => {
+            const cardHTML = `
+                <div class="search-card-item" data-instance-id="${card.instanceId}">
+                    <img src="${card.imageUrl}" alt="${card.name}">
+                </div>
+            `;
+            $("#search-cards-grid").append(cardHTML);
+        });
+    }
+
+    $("#search-overlay").fadeIn(200).css("display", "flex");
+
+    // Click inside search results to pull card directly to hand
+    $(".search-card-item").off("click").on("click", function() {
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            cardObj.zone = playerKey === "player1" ? "hand_1" : "hand_2";
+            cardObj.faceDown = false;
+            renderAllCards();
+            $("#search-overlay").fadeOut(200);
+            Swal.fire({
+                icon: 'success',
+                title: 'Añadida',
+                text: `${cardObj.name} añadida a la mano.`,
+                toast: true,
+                position: 'top-end',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+    });
+}
+
 function setupEventListeners() {
     // Menu layout toggle
     $("#select-board-layout").change(function() {
         state.layout = $(this).val();
         initLayout();
-        broadcastState();
     });
-
-    // Practice/Online Mode selector toggle
-    $(".mode-btn").click(function() {
-        const mode = $(this).data("mode");
-        $(".mode-btn").removeClass("active");
-        $(this).addClass("active");
-
-        state.mode = mode;
-        if (mode === "online") {
-            $(".online-only").slideDown(300);
-            initOnlineMode();
-        } else {
-            $(".online-only").slideUp(300);
-            disconnectOnline();
-        }
-    });
-
-    // Deck Loader Event Bindings
-    $("#select-user-deck").change(function() {
-        const deckId = $(this).val();
-        if (deckId) {
-            $("#btn-load-p1, #btn-load-p2").prop('disabled', false);
-        } else {
-            $("#btn-load-p1, #btn-load-p2").prop('disabled', true);
-        }
-    });
-
-    $("#btn-load-p1").click(async function() {
-        const deckId = $("#select-user-deck").val();
-        if (!deckId) return;
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cargando...');
-        await fetchDeckCards(deckId, "player1");
-        instantiateDeck("player1");
-        $(this).prop('disabled', false).html('<i class="fas fa-download"></i> Cargar a P1');
-    });
-
-    $("#btn-load-p2").click(async function() {
-        const deckId = $("#select-user-deck").val();
-        if (!deckId) return;
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cargando...');
-        await fetchDeckCards(deckId, "player2");
-        instantiateDeck("player2");
-        $(this).prop('disabled', false).html('<i class="fas fa-download"></i> Cargar a P2');
-    });
-
-    // LP trackers bind adjustments
-    $(".lp-add").click(function() {
-        const player = $(this).data("player");
-        adjustLP(player, "add", `#lp-p${player}-input`);
-    });
-
-    $(".lp-sub").click(function() {
-        const player = $(this).data("player");
-        adjustLP(player, "sub", `#lp-p${player}-input`);
-    });
-
-    $(".lp-half").click(function() {
-        const player = $(this).data("player");
-        adjustLP(player, "half", null);
-    });
-
-    // Util trigger actions
-    $("#btn-flip-coin").click(flipCoin);
-    $("#btn-roll-dice").click(rollDice);
-
-    // Fast tool grid bind actions
-    $("#btn-shuffle-p1").click(() => shuffleDeck("player1"));
-    $("#btn-shuffle-p2").click(() => shuffleDeck("player2"));
-    $("#btn-draw-1-p1").click(() => drawCards("player1", 1));
-    $("#btn-draw-1-p2").click(() => drawCards("player2", 1));
-    $("#btn-draw-5-p1").click(() => drawCards("player1", 5));
-    $("#btn-draw-5-p2").click(() => drawCards("player2", 5));
 
     $("#btn-reset-game").click(function() {
         Swal.fire({
             title: '¿Limpiar Tablero?',
-            text: 'Se eliminarán todas las cartas cargadas y se reiniciarán los Life Points.',
+            text: 'Se eliminarán todas las cartas y se recargarán los decks iniciales.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, reiniciar',
             cancelButtonText: 'Cancelar'
         }).then((res) => {
             if (res.isConfirmed) {
-                resetGameSimulator();
-                broadcastState();
+                state.cards = [];
+                checkUserSessionAndPreload();
             }
         });
     });
 
-    // Right click context menu overrides on duel playmat card items
+    // Right click context menu overrides on card items
     $(document).on("contextmenu", ".duel-card", function(e) {
         e.preventDefault();
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
-
-        // Verify controllers to restrict online context triggers
-        if (state.mode === "online" && cardObj.controller !== state.myRole) return;
 
         activeMenuCard = cardObj;
         $("#card-menu").css({
@@ -744,45 +636,56 @@ function setupEventListeners() {
         });
     });
 
-    // Hide context menu on left click clicks
-    $(document).on("click", function() {
-        $("#card-menu").hide();
+    // Right click context menu on Deck Zone elements (Or Left click to open deck options)
+    $(document).on("click contextmenu", ".board-zone.zone-type-deck", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const zoneId = $(this).data("id");
+        activeMenuDeckPlayer = zoneId === "zone-deck_1" || zoneId === "deck_1" ? "player1" : "player2";
+
+        $("#deck-menu").css({
+            display: "block",
+            left: `${e.clientX}px`,
+            top: `${e.clientY}px`
+        });
     });
 
-    // Context Action handlers
+    // Hide context menus on global left click
+    $(document).on("click", function() {
+        $("#card-menu").hide();
+        $("#deck-menu").hide();
+    });
+
+    // Card Menu Action handlers
     $("#menu-flip").click(function() {
         if (!activeMenuCard) return;
         activeMenuCard.faceDown = !activeMenuCard.faceDown;
         renderAllCards();
-        broadcastState();
     });
 
     $("#menu-tap").click(function() {
         if (!activeMenuCard) return;
         activeMenuCard.tapped = !activeMenuCard.tapped;
         renderAllCards();
-        broadcastState();
     });
 
     $("#menu-add-counter").click(function() {
         if (!activeMenuCard) return;
         activeMenuCard.counters += 1;
         renderAllCards();
-        broadcastState();
     });
 
     $("#menu-sub-counter").click(function() {
         if (!activeMenuCard) return;
         activeMenuCard.counters = Math.max(0, activeMenuCard.counters - 1);
         renderAllCards();
-        broadcastState();
     });
 
     $("#menu-to-hand").click(function() {
         if (!activeMenuCard) return;
         activeMenuCard.zone = activeMenuCard.owner === "player1" ? "hand_1" : "hand_2";
         renderAllCards();
-        broadcastState();
     });
 
     $("#menu-to-grave").click(function() {
@@ -791,7 +694,6 @@ function setupEventListeners() {
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
         renderAllCards();
-        broadcastState();
     });
 
     $("#menu-to-deck-top").click(function() {
@@ -801,13 +703,11 @@ function setupEventListeners() {
         activeMenuCard.faceDown = true;
         activeMenuCard.tapped = false;
 
-        // Elevate z-index so it sits at deck top
         const zoneCards = state.cards.filter(c => c.zone === targetZone);
         const maxZ = zoneCards.length > 0 ? Math.max(...zoneCards.map(c => c.z)) : 1;
         activeMenuCard.z = maxZ + 1;
 
         renderAllCards();
-        broadcastState();
     });
 
     $("#menu-to-deck-bottom").click(function() {
@@ -817,186 +717,50 @@ function setupEventListeners() {
         activeMenuCard.faceDown = true;
         activeMenuCard.tapped = false;
 
-        // Reduce z-index so it sits at deck bottom
         const zoneCards = state.cards.filter(c => c.zone === targetZone);
         const minZ = zoneCards.length > 0 ? Math.min(...zoneCards.map(c => c.z)) : 1;
         activeMenuCard.z = minZ - 1;
 
         renderAllCards();
-        broadcastState();
     });
 
-    // Room connection buttons
-    $("#btn-create-room").click(createOnlineRoom);
-    $("#btn-join-room").click(function() {
-        const code = $("#room-code-input").val().trim();
-        if (code) {
-            joinOnlineRoom(code);
+    // Deck Menu Action handlers
+    $("#deck-menu-draw").click(function() {
+        if (activeMenuDeckPlayer) {
+            drawCards(activeMenuDeckPlayer, 1);
         }
     });
 
-    $("#btn-copy-link").click(function() {
-        if (!state.roomId) return;
-        const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${state.roomId}`;
-        navigator.clipboard.writeText(inviteUrl);
+    $("#deck-menu-shuffle").click(function() {
+        if (activeMenuDeckPlayer) {
+            shuffleDeck(activeMenuDeckPlayer);
+        }
+    });
+
+    $("#deck-menu-search").click(function() {
+        if (activeMenuDeckPlayer) {
+            openSearchModal(activeMenuDeckPlayer);
+        }
+    });
+
+    $("#deck-menu-concede").click(function() {
         Swal.fire({
-            icon: 'success',
-            title: 'Copiado',
-            text: 'Enlace de invitación copiado al portapapeles.',
-            toast: true,
-            position: 'top-end',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    });
-}
-
-function resetGameSimulator() {
-    state.cards = [];
-    state.lp = { player1: 8000, player2: 8000 };
-    updateLPUI();
-    renderAllCards();
-}
-
-// Parse initial URL triggers to directly hook into shared rooms
-function parseUrlParameters() {
-    const params = new URLSearchParams(window.location.search);
-    const roomParam = params.get("room");
-    if (roomParam) {
-        $("#btn-mode-online").click();
-        $("#room-code-input").val(roomParam);
-        joinOnlineRoom(roomParam);
-    }
-}
-
-// Real-time synchronization routines using Supabase Broadcast Channels
-function initOnlineMode() {
-    updateOnlineUI("connecting", "Estableciendo canal...");
-}
-
-function disconnectOnline() {
-    if (state.syncChannel) {
-        _supabase.removeChannel(state.syncChannel);
-        state.syncChannel = null;
-    }
-    state.roomId = null;
-    updateOnlineUI("offline", "Sin conectar");
-    $("#btn-copy-link").hide();
-}
-
-function updateOnlineUI(status, text) {
-    const indicator = $("#room-status span.status-indicator");
-    indicator.removeClass("offline connecting online").addClass(status);
-    $("#room-status-text").text(text);
-}
-
-// Create unique room code and register channel
-function createOnlineRoom() {
-    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    state.myRole = "player1"; // Creator is player 1
-    joinOnlineRoom(randomCode);
-}
-
-// Join active channel and listen to broadcasts
-function joinOnlineRoom(code) {
-    disconnectOnline();
-    state.roomId = code;
-    $("#room-code-input").val(code);
-    updateOnlineUI("connecting", "Uniéndose a sala: " + code);
-
-    // Create channel
-    state.syncChannel = _supabase.channel(`room:${code}`, {
-        config: {
-            broadcast: { self: false } // Only receive peer updates
-        }
-    });
-
-    state.syncChannel
-        .on('broadcast', { event: 'JOIN' }, payload => {
-            console.log("Peer joined room:", payload);
-            updateOnlineUI("online", "Jugador conectado");
-            // As creator (Player 1), upon peer connect, push them the current full state
-            if (state.myRole === "player1") {
-                pushCompleteStateToPeer();
-            }
-        })
-        .on('broadcast', { event: 'STATE_UPDATE' }, payload => {
-            console.log("Broadcast state received:", payload);
-            updateOnlineUI("online", "Jugador conectado");
-
-            // Re-apply state
-            if (payload.payload) {
-                state.cards = payload.payload.cards || [];
-                state.lp = payload.payload.lp || { player1: 8000, player2: 8000 };
-                state.layout = payload.payload.layout || "yugioh";
-
-                // Update Layout selectors if mismatch
-                $("#select-board-layout").val(state.layout);
-                updateLPUI();
-                renderAllCards();
-            }
-        })
-        .on('broadcast', { event: 'UTIL' }, payload => {
-            // Coin or dice broadcast
-            const data = payload.payload;
-            if (data.type === "coin") {
-                $("#coin-res").text(data.result);
-            } else if (data.type === "dice") {
-                $("#dice-res").text(`RESULTADO: ${data.result}`);
-            }
-        })
-        .on('broadcast', { event: 'REQUEST_SYNC' }, payload => {
-            if (state.myRole === "player1") {
-                pushCompleteStateToPeer();
-            }
-        })
-        .subscribe(status => {
-            if (status === 'SUBSCRIBED') {
-                updateOnlineUI("online", "Esperando oponente...");
-                $("#btn-copy-link").show();
-
-                // If joining as player 2, notify join and ask for sync state
-                if (state.myRole !== "player1") {
-                    state.myRole = "player2";
-                    state.syncChannel.send({
-                        type: 'broadcast',
-                        event: 'JOIN',
-                        payload: { role: 'player2' }
-                    });
-                }
-            } else {
-                updateOnlineUI("offline", "Error de canal");
+            title: '¿Rendirse?',
+            text: 'Concedes el juego. El tablero se reiniciará.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, conceder',
+            cancelButtonText: 'Cancelar'
+        }).then((res) => {
+            if (res.isConfirmed) {
+                state.cards = [];
+                checkUserSessionAndPreload();
             }
         });
-}
-
-// Broadcast revised state to peer
-function broadcastState() {
-    if (state.mode !== "online" || !state.syncChannel) return;
-
-    state.syncChannel.send({
-        type: 'broadcast',
-        event: 'STATE_UPDATE',
-        payload: {
-            cards: state.cards,
-            lp: state.lp,
-            layout: state.layout
-        }
     });
-}
 
-// Broadcast dice or coins updates
-function broadcastUtil(type, result) {
-    if (state.mode !== "online" || !state.syncChannel) return;
-
-    state.syncChannel.send({
-        type: 'broadcast',
-        event: 'UTIL',
-        payload: { type, result }
+    // Modal Search Close
+    $("#btn-close-search").click(function() {
+        $("#search-overlay").fadeOut(200);
     });
-}
-
-// Explicit state sender
-function pushCompleteStateToPeer() {
-    broadcastState();
 }
