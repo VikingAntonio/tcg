@@ -244,8 +244,10 @@ function instantiateDeck(playerKey) {
         }
 
         let targetZone = `deck_${playerSuffix}`; // Default is Main Deck
+        let isExtra = false;
         if (section === "Extra") {
             targetZone = `extra_${playerSuffix}`; // Extra Deck pile
+            isExtra = true;
         }
 
         state.cards.push({
@@ -260,7 +262,8 @@ function instantiateDeck(playerKey) {
             counters: 0,
             x: 0,
             y: 0,
-            z: index + 1
+            z: index + 1,
+            isExtra: isExtra
         });
     });
 
@@ -309,12 +312,13 @@ function renderAllCards() {
             `;
         } else if (!isPile) {
             // Cards on active playmat slots get a quick field action horizontal ribbon bar - Text only (No icons)
+            const returnBtnLabel = card.isExtra ? "Deck" : "Mano";
             fieldActionOverlayHTML = `
                 <div class="field-card-actions">
                     <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
                     <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
                     <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
-                    <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">Mano</button>
+                    <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">${returnBtnLabel}</button>
                     <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}">Cementerio</button>
                     <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}">Remover</button>
                 </div>
@@ -462,7 +466,15 @@ function bindCardDragEvents() {
                 $cardElem.removeClass("activating-flash");
             }, 800);
         } else if ($(this).hasClass("btn-field-return")) {
-            cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+            if (cardObj.isExtra) {
+                // Return to Extra Deck face-down
+                const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
+                cardObj.zone = `extra_${playerSuffix}`;
+                cardObj.faceDown = true;
+                cardObj.tapped = false;
+            } else {
+                cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+            }
             renderAllCards();
         } else if ($(this).hasClass("btn-field-grave")) {
             cardObj.zone = `grave_${playerSuffix}`;

@@ -240,7 +240,7 @@ body.duel-body {
     flex-direction: column;
     gap: 0;
     position: relative;
-    z-index: 2;
+    z-index: 105;
     box-shadow: none;
 }
 
@@ -250,7 +250,7 @@ body.duel-body {
     min-height: 135px;
     align-items: center;
     justify-content: center;
-    overflow-x: auto;
+    overflow: visible;
     padding: 10px;
 }
 
@@ -508,15 +508,16 @@ body.duel-body {
 }
 
 /* Card states */
-.duel-card.tapped {
+.duel-card.tapped .card-img-wrapper {
     transform: rotate(90deg);
+    transition: transform 0.2s ease-in-out;
 }
 
-.duel-card.tapped:hover {
+.duel-card.tapped:hover .card-img-wrapper {
     transform: rotate(90deg) scale(1.08);
 }
 
-.duel-card.tapped.dragging {
+.duel-card.tapped.dragging .card-img-wrapper {
     transform: rotate(92deg) scale(1.12);
 }
 
@@ -584,7 +585,7 @@ body.duel-body {
 /* Quick Action Menu for Hand Cards (Sits above hover card inside hand) */
 .hand-card-actions {
     position: absolute;
-    bottom: 110px;
+    bottom: 120px;
     left: 50%;
     transform: translateX(-50%) scale(0.8);
     background: rgba(10, 15, 22, 0.98);
@@ -594,7 +595,7 @@ body.duel-body {
     flex-direction: column;
     gap: 4px;
     padding: 5px;
-    z-index: 999;
+    z-index: 99999;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
     min-width: 110px;
     transition: transform 0.2s;
@@ -621,7 +622,7 @@ body.duel-body {
 /* Quick Action Hover Bar for Cards placed on the field */
 .field-card-actions {
     position: absolute;
-    top: -38px;
+    top: -32px;
     left: 50%;
     transform: translateX(-50%) scale(0.8);
     background: rgba(10, 15, 22, 0.98);
@@ -631,7 +632,7 @@ body.duel-body {
     flex-direction: row;
     gap: 4px;
     padding: 3px;
-    z-index: 9999;
+    z-index: 99999;
     box-shadow: 0 6px 16px rgba(0,0,0,0.8);
     transition: transform 0.2s;
     pointer-events: auto;
