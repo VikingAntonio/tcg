@@ -112,6 +112,8 @@ const state = {
 // Active drag tracking
 let dragCard = null;
 let dragOffset = { x: 0, y: 0 };
+let dragStartCoords = { x: 0, y: 0 };
+let dragStartTime = 0;
 let activeMenuCard = null;
 let activeMenuDeckPlayer = null; // tracking which player deck is clicked
 
@@ -133,8 +135,16 @@ function initLayout() {
     // Add central separator
     $("#dynamic-zones-container").append('<div class="playmat-divider"></div>');
 
+    // DYNAMIC CARD BACK SETTING BASED ON THE SELECTED LAYOUT
+    if (state.layout === "yugioh") {
+        document.body.style.setProperty('--card-back-url', "url('img/bocabajo.jpg')");
+    } else {
+        document.body.style.setProperty('--card-back-url', "url('img/pokeBocaAbajo.jpg')");
+    }
+
     const zones = BOARD_LAYOUTS[state.layout];
 
+    $("#pile-counters-container").empty();
     zones.forEach(zone => {
         const playerClass = zone.player === 1 ? "zone-player-1" : "zone-player-2";
         const typeClass = `zone-type-${zone.type}`;
@@ -145,6 +155,18 @@ function initLayout() {
             </div>
         `;
         $("#dynamic-zones-container").append(zoneHTML);
+
+        // Render top-level floating count badge for piles
+        if (zone.type === "deck" || zone.type === "grave" || zone.type === "extra" || zone.type === "banished") {
+            const borderColor = zone.player === 1 ? 'var(--primary-color)' : 'var(--secondary-color)';
+            const shadowColor = zone.player === 1 ? 'rgba(0, 210, 255, 0.4)' : 'rgba(255, 27, 107, 0.4)';
+            const badgeHTML = `
+                <div class="floating-zone-count" id="floating-count-${zone.id}" style="left: ${zone.x + 58}px; top: ${zone.y - 8}px; border-color: ${borderColor}; box-shadow: 0 0 10px ${shadowColor};">
+                    0
+                </div>
+            `;
+            $("#pile-counters-container").append(badgeHTML);
+        }
     });
 
     renderAllCards();
@@ -328,7 +350,8 @@ function renderAllCards() {
         const cardHTML = `
             <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
                  id="${card.instanceId}"
-                 data-instance-id="${card.instanceId}">
+                 data-instance-id="${card.instanceId}"
+                 style="--tilt: ${card.tiltAngle || 0}deg;">
                 <div class="card-img-wrapper">
                     <img src="${card.imageUrl}" alt="${card.name}">
                 </div>
@@ -388,6 +411,17 @@ function renderAllCards() {
     BOARD_LAYOUTS[state.layout].forEach(zone => {
         const count = zoneCounts[zone.id] || 0;
         $(`#count-${zone.id}`).text(count);
+
+        // Update floating counters
+        const $floatCount = $(`#floating-count-${zone.id}`);
+        if ($floatCount.length) {
+            $floatCount.text(count);
+            if (count === 0) {
+                $floatCount.css("opacity", "0.4");
+            } else {
+                $floatCount.css("opacity", "1");
+            }
+        }
     });
 
     bindCardDragEvents();
@@ -519,6 +553,8 @@ function bindCardDragEvents() {
         // Calculate offset relative to mouse/touch position
         dragOffset.x = pos.x - cardOffset.left;
         dragOffset.y = pos.y - cardOffset.top;
+        dragStartCoords = { x: pos.x, y: pos.y };
+        dragStartTime = Date.now();
     });
 }
 
@@ -580,35 +616,59 @@ $(window).on('mouseup touchend', function(e) {
     const cardObj = state.cards.find(c => c.instanceId === instId);
     if (!cardObj) return;
 
+    const endPos = getEventCoords(e);
+    const dx = endPos.x - dragStartCoords.x;
+    const dy = endPos.y - dragStartCoords.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const duration = Date.now() - dragStartTime;
+
+    let isClick = (dist < 6 && duration < 350);
+
     dragCard.removeClass("dragging").addClass("snapping");
     $(".board-zone").removeClass("highlighted");
 
-    // Center point of dropped card
-    const centerCoords = {
-        x: cardObj.x + 40,
-        y: cardObj.y + 58
-    };
-
-    // Determine target dropping destination (Zone, Hand tray, or Free Board float)
-    const hoverZone = findOverlappingZone(centerCoords);
-    const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
-    const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
-
-    if (isOverP1Hand) {
-        // Return/move to Player 1 hand
-        cardObj.zone = "hand_1";
-        cardObj.controller = "player1";
-    } else if (isOverP2Hand) {
-        // Return/move to Player 2 hand
-        cardObj.zone = "hand_2";
-        cardObj.controller = "player2";
-    } else if (hoverZone) {
-        // Drop card inside target zone
-        cardObj.zone = hoverZone.id;
-        // Snap coordinates are mapped to zone centers automatically in render
+    if (isClick) {
+        // This is a click!
+        // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
+        const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
+        if (isField) {
+            if (!cardObj.tiltAngle) {
+                // Set a small random angle between -8 and 8 (excluding -2 to 2)
+                const sign = Math.random() < 0.5 ? -1 : 1;
+                const angle = sign * (4 + Math.random() * 5); // 4 to 9 degrees
+                cardObj.tiltAngle = Math.round(angle);
+            } else {
+                cardObj.tiltAngle = 0;
+            }
+        }
     } else {
-        // Card was dropped freely on field
-        cardObj.zone = "field_free";
+        // Center point of dropped card
+        const centerCoords = {
+            x: cardObj.x + 40,
+            y: cardObj.y + 58
+        };
+
+        // Determine target dropping destination (Zone, Hand tray, or Free Board float)
+        const hoverZone = findOverlappingZone(centerCoords);
+        const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
+        const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+
+        if (isOverP1Hand) {
+            // Return/move to Player 1 hand
+            cardObj.zone = "hand_1";
+            cardObj.controller = "player1";
+        } else if (isOverP2Hand) {
+            // Return/move to Player 2 hand
+            cardObj.zone = "hand_2";
+            cardObj.controller = "player2";
+        } else if (hoverZone) {
+            // Drop card inside target zone
+            cardObj.zone = hoverZone.id;
+            // Snap coordinates are mapped to zone centers automatically in render
+        } else {
+            // Card was dropped freely on field
+            cardObj.zone = "field_free";
+        }
     }
 
     dragCard = null;
@@ -897,6 +957,95 @@ function openSearchModal(playerKey) {
     });
 }
 
+// Open Graveyard or Banished Pile Modal Viewer
+function openPileModal(playerKey, pileType) {
+    const playerSuffix = playerKey === "player1" ? 1 : 2;
+    const zoneId = `${pileType}_${playerSuffix}`;
+    const pileCards = state.cards.filter(c => c.zone === zoneId);
+
+    // Dynamic titles depending on pileType and layout
+    let title = "";
+    if (pileType === "grave") {
+        title = state.layout === "yugioh" ? "Cementerio" : "Descarte";
+    } else {
+        title = state.layout === "yugioh" ? "Desterrado" : "Mano de Premios / Removido";
+    }
+
+    $("#pile-modal-title").text(`${title} (${playerKey === "player1" ? "P1" : "P2"})`);
+    $("#pile-cards-grid").empty();
+
+    if (pileCards.length === 0) {
+        $("#pile-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas aquí.</p>');
+    } else {
+        pileCards.forEach(card => {
+            const cardHTML = `
+                <div class="pile-card-container" data-instance-id="${card.instanceId}">
+                    <img src="${card.imageUrl}" alt="${card.name}">
+                    <div class="pile-card-hover-overlay">
+                        <div class="pile-card-menu">
+                            <button class="pile-card-action-btn btn-pile-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                            <button class="pile-card-action-btn btn-pile-set" data-instance-id="${card.instanceId}">Set</button>
+                            <button class="pile-card-action-btn btn-pile-hand" data-instance-id="${card.instanceId}">Mano</button>
+                            <button class="pile-card-action-btn btn-pile-deck" data-instance-id="${card.instanceId}">Deck</button>
+                            ${pileType === 'grave' ?
+                                `<button class="pile-card-action-btn btn-pile-banish" data-instance-id="${card.instanceId}">Remover</button>` :
+                                `<button class="pile-card-action-btn btn-pile-grave" data-instance-id="${card.instanceId}">Cementerio</button>`
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+            $("#pile-cards-grid").append(cardHTML);
+        });
+    }
+
+    $("#pile-overlay").fadeIn(200).css("display", "flex");
+
+    // Click events inside results
+    $("#pile-cards-grid").off("click").on("click", ".pile-card-action-btn", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (!cardObj) return;
+
+        const pSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if ($(this).hasClass("btn-pile-summon")) {
+            $("#pile-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "summon");
+        } else if ($(this).hasClass("btn-pile-set")) {
+            $("#pile-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-pile-hand")) {
+            cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+        } else if ($(this).hasClass("btn-pile-deck")) {
+            cardObj.zone = `deck_${pSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+        } else if ($(this).hasClass("btn-pile-banish")) {
+            cardObj.zone = `banished_${pSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+        } else if ($(this).hasClass("btn-pile-grave")) {
+            cardObj.zone = `grave_${pSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+        }
+    });
+}
+
 function setupEventListeners() {
     // Menu layout toggle
     $("#select-board-layout").change(function() {
@@ -951,6 +1100,24 @@ function setupEventListeners() {
             return;
         }
 
+        // If card is inside a graveyard zone, open the Graveyard Pile modal viewer instead
+        if (cardObj.zone.startsWith("grave_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
+            openPileModal(playerKey, "grave");
+            return;
+        }
+
+        // If card is inside a banished zone, open the Banished Pile modal viewer instead
+        if (cardObj.zone.startsWith("banished_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
+            openPileModal(playerKey, "banished");
+            return;
+        }
+
         e.preventDefault();
         e.stopPropagation();
         activeMenuCard = cardObj;
@@ -961,7 +1128,7 @@ function setupEventListeners() {
         }).addClass("active");
     });
 
-    // Handle left click directly on a deck or extra deck card to toggle correct overlays/menus
+    // Handle left click directly on a deck, extra deck, grave, or banished card to toggle correct overlays/menus
     $(document).on("click", ".duel-card", function(e) {
         if ($("#playmat").hasClass("selecting-zone")) return;
 
@@ -983,6 +1150,16 @@ function setupEventListeners() {
             e.stopPropagation();
             const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
             openExtraDeckModal(playerKey);
+        } else if (cardObj.zone.startsWith("grave_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
+            openPileModal(playerKey, "grave");
+        } else if (cardObj.zone.startsWith("banished_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
+            openPileModal(playerKey, "banished");
         }
     });
 
@@ -1011,6 +1188,28 @@ function setupEventListeners() {
         const zoneId = $(this).data("id");
         const playerKey = zoneId === "zone-extra_1" || zoneId === "extra_1" ? "player1" : "player2";
         openExtraDeckModal(playerKey);
+    });
+
+    // Left or Right click context menu on Graveyard Zone elements
+    $(document).on("click contextmenu", ".board-zone.zone-type-grave", function(e) {
+        if ($("#playmat").hasClass("selecting-zone")) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const zoneId = $(this).data("id");
+        const playerKey = zoneId === "zone-grave_1" || zoneId === "grave_1" ? "player1" : "player2";
+        openPileModal(playerKey, "grave");
+    });
+
+    // Left or Right click context menu on Banished Zone elements
+    $(document).on("click contextmenu", ".board-zone.zone-type-banished", function(e) {
+        if ($("#playmat").hasClass("selecting-zone")) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const zoneId = $(this).data("id");
+        const playerKey = zoneId === "zone-banished_1" || zoneId === "banished_1" ? "player1" : "player2";
+        openPileModal(playerKey, "banished");
     });
 
     // Hide context menus on global left click
@@ -1129,5 +1328,10 @@ function setupEventListeners() {
     // Extra Deck Close
     $("#btn-close-extra").click(function() {
         $("#extra-overlay").fadeOut(200);
+    });
+
+    // Pile View Close
+    $("#btn-close-pile").click(function() {
+        $("#pile-overlay").fadeOut(200);
     });
 }

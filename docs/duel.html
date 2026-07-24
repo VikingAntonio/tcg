@@ -68,6 +68,9 @@
 
                 <!-- Absolutely Positioned Cards on the field -->
                 <div id="field-cards-container"></div>
+
+                <!-- Floating pile card counters -->
+                <div id="pile-counters-container"></div>
             </div>
 
             <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
@@ -110,6 +113,19 @@
                 <button class="search-close-btn" id="btn-close-search"><i class="fas fa-times"></i></button>
             </div>
             <div class="search-body" id="search-cards-grid">
+                <!-- Cards will render here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Pile Cards View Overlay/Modal (Graveyard / Banished) -->
+    <div class="search-overlay" id="pile-overlay">
+        <div class="search-modal">
+            <div class="search-header">
+                <h3 id="pile-modal-title">Cementerio / Desterrado</h3>
+                <button class="search-close-btn" id="btn-close-pile"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="search-body" id="pile-cards-grid">
                 <!-- Cards will render here -->
             </div>
         </div>

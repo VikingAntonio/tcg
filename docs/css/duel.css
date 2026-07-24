@@ -469,6 +469,7 @@ body.duel-body {
     user-select: none;
     z-index: 10;
     border: 1px solid rgba(255, 255, 255, 0.12);
+    transform: rotate(var(--tilt, 0deg));
 }
 
 /* Transition is enabled when not actively dragged */
@@ -478,14 +479,14 @@ body.duel-body {
 
 .duel-card:hover {
     box-shadow: 0 8px 18px rgba(0,0,0,0.6), 0 0 10px rgba(255,255,255,0.15);
-    transform: scale(1.08) translate3d(0, 0, 5px);
+    transform: scale(1.08) rotate(var(--tilt, 0deg)) translate3d(0, 0, 5px);
     z-index: 100;
 }
 
 .duel-card.dragging {
     cursor: grabbing;
     box-shadow: 0 15px 28px rgba(0,0,0,0.7), 0 0 15px var(--primary-glow);
-    transform: scale(1.12) rotate(2deg) translate3d(0, 0, 15px);
+    transform: scale(1.12) rotate(calc(var(--tilt, 0deg) + 2deg)) translate3d(0, 0, 15px);
     border-color: var(--primary-color);
     z-index: 200 !important;
 }
@@ -529,13 +530,9 @@ body.duel-body {
 .duel-card.face-down .card-img-wrapper {
     background-size: cover;
     background-position: center;
-    /* Fancy glowing sci-fi deck back design */
-    background-image:
-        radial-gradient(circle at center, rgba(0, 210, 255, 0.35) 0%, rgba(15, 23, 42, 0.98) 100%),
-        repeating-linear-gradient(45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, transparent 2px, transparent 10px),
-        repeating-linear-gradient(-45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, rgba(15, 23, 42, 0.98) 2px, rgba(15, 23, 42, 0.98) 10px);
-    border: 2px solid rgba(0, 210, 255, 0.4);
-    box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.5);
+    background-image: var(--card-back-url);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 /* Counter indicator badges */
@@ -1014,9 +1011,106 @@ body.duel-body {
 }
 
 .flying-card.card-back {
-    background-image:
-        radial-gradient(circle at center, rgba(0, 210, 255, 0.35) 0%, rgba(15, 23, 42, 0.98) 100%),
-        repeating-linear-gradient(45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, transparent 2px, transparent 10px),
-        repeating-linear-gradient(-45deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, rgba(15, 23, 42, 0.98) 2px, rgba(15, 23, 42, 0.98) 10px);
-    box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.5), 0 10px 25px rgba(0,0,0,0.6);
+    background-image: var(--card-back-url);
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+}
+
+/* Floating zone counters stacked on top of piles */
+.floating-zone-count {
+    position: absolute;
+    background: rgba(10, 15, 22, 0.95);
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border-radius: 8px;
+    padding: 2px 6px;
+    min-width: 24px;
+    text-align: center;
+    z-index: 150; /* Needs to sit above standard card z-index but below drag */
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    border: 1.5px solid var(--glass-border);
+}
+
+/* Pile Modal Card Styles */
+.pile-card-container {
+    position: relative;
+    width: 80px;
+    height: 116px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+
+.pile-card-container:hover {
+    transform: scale(1.1);
+    border-color: #00d2ff;
+    box-shadow: 0 8px 18px rgba(0, 210, 255, 0.3);
+    z-index: 10;
+}
+
+.pile-card-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.pile-card-hover-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 15, 22, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+    padding: 2px;
+}
+
+.pile-card-container:hover .pile-card-hover-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.pile-card-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    padding: 2px;
+}
+
+.pile-card-action-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f1f2f6;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.55rem;
+    padding: 3px 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    text-align: center;
+    transition: all 0.15s;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.pile-card-action-btn:hover {
+    background: #00d2ff;
+    color: black;
+    border-color: #ffffff;
 }
