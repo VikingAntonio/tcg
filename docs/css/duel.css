@@ -12,8 +12,8 @@
     --panel-bg: rgba(18, 24, 30, 0.85);
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.08);
-    --card-width: 66px;
-    --card-height: 96px;
+    --card-width: 80px;
+    --card-height: 116px;
 }
 
 * {
@@ -230,11 +230,12 @@ body.duel-body {
 /* Hand trays (Fully transparent, no borders, no label, no shadow) */
 .hand-tray {
     width: 100%;
-    max-width: 960px;
+    max-width: 1120px;
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: 0;
+    padding: 10px 0;
+    margin: 5px 0;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -245,18 +246,18 @@ body.duel-body {
 
 .hand-cards-container {
     display: flex;
-    gap: 12px;
-    min-height: 105px;
+    gap: 16px;
+    min-height: 135px;
     align-items: center;
     justify-content: center;
     overflow-x: auto;
-    padding: 5px;
+    padding: 10px;
 }
 
 /* Playmat Board Element */
 .playmat-board {
-    width: 960px;
-    height: 520px;
+    width: 1120px;
+    height: 600px;
     background: rgba(8, 12, 18, 0.8);
     border: 2px solid rgba(0, 210, 255, 0.25);
     border-radius: 20px;
@@ -580,6 +581,119 @@ body.duel-body {
     box-shadow: 0 10px 20px rgba(0,0,0,0.6);
 }
 
+/* Quick Action Menu for Hand Cards (Sits above hover card inside hand) */
+.hand-card-actions {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background: rgba(18, 25, 33, 0.95);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    z-index: 999;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    min-width: 130px;
+    transition: transform 0.2s;
+}
+
+.duel-card:hover .hand-card-actions {
+    display: flex;
+    transform: translateX(-50%) scale(1);
+}
+
+/* Quick Action Hover Bar for Cards placed on the field */
+.field-card-actions {
+    position: absolute;
+    top: -45px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background: rgba(18, 25, 33, 0.95);
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    border-radius: 6px;
+    display: none;
+    flex-direction: row;
+    gap: 5px;
+    padding: 4px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    transition: transform 0.2s;
+}
+
+.duel-card:hover .field-card-actions {
+    display: flex;
+    transform: translateX(-50%) scale(1);
+}
+
+/* Field micro quick-buttons style */
+.field-action-btn {
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.field-action-btn:hover {
+    background: #00d2ff;
+    color: black;
+    border-color: white;
+}
+
+/* Glowing flash activation effect */
+.duel-card.activating-flash {
+    animation: activateFlashPulse 0.4s 2 alternate ease-in-out;
+}
+
+@keyframes activateFlashPulse {
+    0% {
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        border-color: #00d2ff;
+    }
+    100% {
+        box-shadow: 0 0 40px rgba(0, 210, 255, 1), 0 0 20px rgba(255, 255, 255, 1);
+        border-color: white;
+        transform: scale(1.15);
+    }
+}
+
+.hand-action-btn {
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.hand-action-btn:hover {
+    background: rgba(0, 210, 255, 0.2);
+    color: white;
+    border-color: #00d2ff;
+}
+
+.hand-action-btn i {
+    width: 12px;
+    font-size: 0.7rem;
+    color: #00d2ff;
+}
+
 /* Interactive custom context menu & Deck menus */
 .card-context-menu, .deck-context-menu {
     position: fixed;
@@ -647,6 +761,79 @@ body.duel-body {
     display: none;
     justify-content: center;
     align-items: center;
+}
+
+/* Graphical Target Zone Picker Overlay */
+.zone-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 210, 255, 0.08);
+    backdrop-filter: blur(2px);
+    z-index: 3000;
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    pointer-events: none; /* Let clicks pass to zones */
+}
+
+.zone-picker-toast {
+    margin-top: 30px;
+    background: linear-gradient(135deg, #00d2ff, #0066ff);
+    box-shadow: 0 10px 30px rgba(0, 210, 255, 0.5), 0 0 20px rgba(0, 210, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 15px 30px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideDownIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: auto; /* Buttons / text in toast are clickable but we keep it clean */
+}
+
+@keyframes slideDownIn {
+    0% { transform: translateY(-50px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Zone highlighter in targeting mode */
+.playmat-board.selecting-zone .board-zone {
+    border-color: rgba(0, 210, 255, 0.7) !important;
+    animation: zonePulse 1.2s infinite alternate;
+    cursor: crosshair !important;
+    pointer-events: auto !important;
+}
+
+@keyframes zonePulse {
+    0% { box-shadow: 0 0 5px rgba(0, 210, 255, 0.2); }
+    100% { box-shadow: 0 0 15px rgba(0, 210, 255, 0.6); }
+}
+
+/* Extra Deck interactive preview items */
+.extra-card-action-btn {
+    background: #00d2ff;
+    color: black;
+    border: none;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    margin-top: 8px;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.extra-card-action-btn:hover {
+    background: #0099ff;
+    color: white;
+    transform: translateY(-2px);
 }
 
 .search-modal {

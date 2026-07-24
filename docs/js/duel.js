@@ -1,89 +1,102 @@
 // Duel Simulator Engine
 
 // JSON Playmat layouts for Yu-Gi-Oh and Pokémon TCG
+// Scaled layout for a 1120x600 playmat board.
+// Card Width: 80px, Height: 116px.
+// Let's position things symmetrically and nicely.
 const BOARD_LAYOUTS = {
     yugioh: [
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
-        { id: "deck_2", name: "P2 Deck", player: 2, x: 40, y: 20, type: "deck" },
-        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 40, y: 130, type: "grave" },
-        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 755, y: 130, type: "banished" },
-        { id: "extra_2", name: "P2 Extra", player: 2, x: 860, y: 20, type: "extra" },
-        { id: "field_2", name: "P2 Campo", player: 2, x: 860, y: 130, type: "field" },
-        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 170, y: 130, type: "monster" },
-        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 290, y: 130, type: "monster" },
-        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 410, y: 130, type: "monster" },
-        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 530, y: 130, type: "monster" },
-        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 650, y: 130, type: "monster" },
-        { id: "spell_2_5", name: "P2 Magia/Trampa 5", player: 2, x: 170, y: 20, type: "spell" },
-        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 290, y: 20, type: "spell" },
-        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 410, y: 20, type: "spell" },
-        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 530, y: 20, type: "spell" },
-        { id: "spell_2_1", name: "P2 Magia/Trampa 1", player: 2, x: 650, y: 20, type: "spell" },
+        { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 880, y: 160, type: "banished" },
+        { id: "extra_2", name: "P2 Extra", player: 2, x: 990, y: 30, type: "extra" },
+        { id: "field_2", name: "P2 Campo", player: 2, x: 990, y: 160, type: "field" },
+        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 190, y: 160, type: "monster" },
+        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 310, y: 160, type: "monster" },
+        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 430, y: 160, type: "monster" },
+        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 550, y: 160, type: "monster" },
+        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 670, y: 160, type: "monster" },
+        { id: "spell_2_5", name: "P2 Magia/Trampa 5", player: 2, x: 190, y: 30, type: "spell" },
+        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 310, y: 30, type: "spell" },
+        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 430, y: 30, type: "spell" },
+        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 550, y: 30, type: "spell" },
+        { id: "spell_2_1", name: "P2 Magia/Trampa 1", player: 2, x: 670, y: 30, type: "spell" },
 
         // Player 1 (Bottom Half) - Blue Theme
-        { id: "extra_1", name: "P1 Extra", player: 1, x: 40, y: 400, type: "extra" },
-        { id: "field_1", name: "P1 Campo", player: 1, x: 40, y: 290, type: "field" },
-        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 755, y: 290, type: "banished" },
-        { id: "deck_1", name: "P1 Deck", player: 1, x: 860, y: 400, type: "deck" },
-        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 860, y: 290, type: "grave" },
-        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 170, y: 290, type: "monster" },
-        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 290, y: 290, type: "monster" },
-        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 410, y: 290, type: "monster" },
-        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 530, y: 290, type: "monster" },
-        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 650, y: 290, type: "monster" },
-        { id: "spell_1_1", name: "P1 Magia/Trampa 1", player: 1, x: 170, y: 400, type: "spell" },
-        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 290, y: 400, type: "spell" },
-        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 410, y: 400, type: "spell" },
-        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 530, y: 400, type: "spell" },
-        { id: "spell_1_5", name: "P1 Magia/Trampa 5", player: 1, x: 650, y: 400, type: "spell" }
+        { id: "extra_1", name: "P1 Extra", player: 1, x: 50, y: 450, type: "extra" },
+        { id: "field_1", name: "P1 Campo", player: 1, x: 50, y: 320, type: "field" },
+        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 880, y: 320, type: "banished" },
+        { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
+        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 190, y: 320, type: "monster" },
+        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 310, y: 320, type: "monster" },
+        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 430, y: 320, type: "monster" },
+        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 550, y: 320, type: "monster" },
+        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 670, y: 320, type: "monster" },
+        { id: "spell_1_1", name: "P1 Magia/Trampa 1", player: 1, x: 190, y: 450, type: "spell" },
+        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 310, y: 450, type: "spell" },
+        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 430, y: 450, type: "spell" },
+        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 550, y: 450, type: "spell" },
+        { id: "spell_1_5", name: "P1 Magia/Trampa 5", player: 1, x: 670, y: 450, type: "spell" }
     ],
     pokemon: [
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
-        { id: "deck_2", name: "P2 Deck", player: 2, x: 40, y: 20, type: "deck" },
-        { id: "grave_2", name: "P2 Descarte", player: 2, x: 40, y: 130, type: "grave" },
-        { id: "active_2", name: "P2 Activo", player: 2, x: 510, y: 130, type: "active" },
-        { id: "bench_2_5", name: "P2 Banca 5", player: 2, x: 310, y: 20, type: "bench" },
-        { id: "bench_2_4", name: "P2 Banca 4", player: 2, x: 410, y: 20, type: "bench" },
-        { id: "bench_2_3", name: "P2 Banca 3", player: 2, x: 510, y: 20, type: "bench" },
-        { id: "bench_2_2", name: "P2 Banca 2", player: 2, x: 610, y: 20, type: "bench" },
-        { id: "bench_2_1", name: "P2 Banca 1", player: 2, x: 710, y: 20, type: "bench" },
-        { id: "prize_2_1", name: "P2 Premio 1", player: 2, x: 850, y: 130, type: "prize" },
-        { id: "prize_2_2", name: "P2 Premio 2", player: 2, x: 850, y: 20, type: "prize" },
-        { id: "prize_2_3", name: "P2 Premio 3", player: 2, x: 780, y: 130, type: "prize" },
-        { id: "prize_2_4", name: "P2 Premio 4", player: 2, x: 780, y: 20, type: "prize" },
-        { id: "prize_2_5", name: "P2 Premio 5", player: 2, x: 710, y: 130, type: "prize" },
-        { id: "prize_2_6", name: "P2 Premio 6", player: 2, x: 710, y: 20, type: "prize" },
+        { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Descarte", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "active_2", name: "P2 Activo", player: 2, x: 590, y: 160, type: "active" },
+        { id: "bench_2_5", name: "P2 Banca 5", player: 2, x: 350, y: 30, type: "bench" },
+        { id: "bench_2_4", name: "P2 Banca 4", player: 2, x: 470, y: 30, type: "bench" },
+        { id: "bench_2_3", name: "P2 Banca 3", player: 2, x: 590, y: 30, type: "bench" },
+        { id: "bench_2_2", name: "P2 Banca 2", player: 2, x: 710, y: 30, type: "bench" },
+        { id: "bench_2_1", name: "P2 Banca 1", player: 2, x: 830, y: 30, type: "bench" },
+        { id: "prize_2_1", name: "P2 Premio 1", player: 2, x: 990, y: 160, type: "prize" },
+        { id: "prize_2_2", name: "P2 Premio 2", player: 2, x: 990, y: 30, type: "prize" },
+        { id: "prize_2_3", name: "P2 Premio 3", player: 2, x: 910, y: 160, type: "prize" },
+        { id: "prize_2_4", name: "P2 Premio 4", player: 2, x: 910, y: 30, type: "prize" },
+        { id: "prize_2_5", name: "P2 Premio 5", player: 2, x: 830, y: 160, type: "prize" },
+        { id: "prize_2_6", name: "P2 Premio 6", player: 2, x: 830, y: 30, type: "prize" },
 
         // Player 1 (Bottom Half) - Blue Theme
-        { id: "prize_1_1", name: "P1 Premio 1", player: 1, x: 40, y: 290, type: "prize" },
-        { id: "prize_1_2", name: "P1 Premio 2", player: 1, x: 40, y: 400, type: "prize" },
-        { id: "prize_1_3", name: "P1 Premio 3", player: 1, x: 110, y: 290, type: "prize" },
-        { id: "prize_1_4", name: "P1 Premio 4", player: 1, x: 110, y: 400, type: "prize" },
-        { id: "prize_1_5", name: "P1 Premio 5", player: 1, x: 180, y: 290, type: "prize" },
-        { id: "prize_1_6", name: "P1 Premio 6", player: 1, x: 180, y: 400, type: "prize" },
-        { id: "active_1", name: "P1 Activo", player: 1, x: 510, y: 290, type: "active" },
-        { id: "bench_1_1", name: "P1 Banca 1", player: 1, x: 310, y: 400, type: "bench" },
-        { id: "bench_1_2", name: "P1 Banca 2", player: 1, x: 410, y: 400, type: "bench" },
-        { id: "bench_1_3", name: "P1 Banca 3", player: 1, x: 510, y: 400, type: "bench" },
-        { id: "bench_1_4", name: "P1 Banca 4", player: 1, x: 610, y: 400, type: "bench" },
-        { id: "bench_1_5", name: "P1 Banca 5", player: 1, x: 710, y: 400, type: "bench" },
-        { id: "deck_1", name: "P1 Deck", player: 1, x: 860, y: 400, type: "deck" },
-        { id: "grave_1", name: "P1 Descarte", player: 1, x: 860, y: 290, type: "grave" }
+        { id: "prize_1_1", name: "P1 Premio 1", player: 1, x: 50, y: 320, type: "prize" },
+        { id: "prize_1_2", name: "P1 Premio 2", player: 1, x: 50, y: 450, type: "prize" },
+        { id: "prize_1_3", name: "P1 Premio 3", player: 1, x: 130, y: 320, type: "prize" },
+        { id: "prize_1_4", name: "P1 Premio 4", player: 1, x: 130, y: 450, type: "prize" },
+        { id: "prize_1_5", name: "P1 Premio 5", player: 1, x: 210, y: 320, type: "prize" },
+        { id: "prize_1_6", name: "P1 Premio 6", player: 1, x: 210, y: 450, type: "prize" },
+        { id: "active_1", name: "P1 Activo", player: 1, x: 590, y: 320, type: "active" },
+        { id: "bench_1_1", name: "P1 Banca 1", player: 1, x: 350, y: 450, type: "bench" },
+        { id: "bench_1_2", name: "P1 Banca 2", player: 1, x: 470, y: 450, type: "bench" },
+        { id: "bench_1_3", name: "P1 Banca 3", player: 1, x: 590, y: 450, type: "bench" },
+        { id: "bench_1_4", name: "P1 Banca 4", player: 1, x: 710, y: 450, type: "bench" },
+        { id: "bench_1_5", name: "P1 Banca 5", player: 1, x: 830, y: 450, type: "bench" },
+        { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
+        { id: "grave_1", name: "P1 Descarte", player: 1, x: 990, y: 320, type: "grave" }
     ]
 };
 
 // High-Fidelity Mock card collection to preload if no custom "test" deck exists
+// Contains explicit section definitions for Deck Division: Main and Extra. Side is omitted/ignored on load.
 const HIGH_FIDELITY_MOCKS = [
-    { name: "Dragón Blanco de Ojos Azules", image_url: "https://images.ygoprodeck.com/images/cards/89631139.jpg" },
-    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg" },
-    { name: "Chica Maga Oscura", image_url: "https://images.ygoprodeck.com/images/cards/31755083.jpg" },
-    { name: "Dragón Negro de Ojos Rojos", image_url: "https://images.ygoprodeck.com/images/cards/74677422.jpg" },
-    { name: "Kuriboh", image_url: "https://images.ygoprodeck.com/images/cards/40640057.jpg" },
-    { name: "Exodia el Prohibido", image_url: "https://images.ygoprodeck.com/images/cards/33396948.jpg" },
-    { name: "Polimerización", image_url: "https://images.ygoprodeck.com/images/cards/24094653.jpg" },
-    { name: "Fuerza de Espejo", image_url: "https://images.ygoprodeck.com/images/cards/44095762.jpg" },
-    { name: "Tifón del Espacio Místico", image_url: "https://images.ygoprodeck.com/images/cards/5318639.jpg" },
-    { name: "Olla de la Codicia", image_url: "https://images.ygoprodeck.com/images/cards/55144522.jpg" }
+    // Main deck cards
+    { name: "Dragón Blanco de Ojos Azules", image_url: "https://images.ygoprodeck.com/images/cards/89631139.jpg", section: "Main" },
+    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg", section: "Main" },
+    { name: "Chica Maga Oscura", image_url: "https://images.ygoprodeck.com/images/cards/31755083.jpg", section: "Main" },
+    { name: "Dragón Negro de Ojos Rojos", image_url: "https://images.ygoprodeck.com/images/cards/74677422.jpg", section: "Main" },
+    { name: "Kuriboh", image_url: "https://images.ygoprodeck.com/images/cards/40640057.jpg", section: "Main" },
+    { name: "Exodia el Prohibido", image_url: "https://images.ygoprodeck.com/images/cards/33396948.jpg", section: "Main" },
+    { name: "Polimerización", image_url: "https://images.ygoprodeck.com/images/cards/24094653.jpg", section: "Main" },
+    { name: "Fuerza de Espejo", image_url: "https://images.ygoprodeck.com/images/cards/44095762.jpg", section: "Main" },
+    { name: "Tifón del Espacio Místico", image_url: "https://images.ygoprodeck.com/images/cards/5318639.jpg", section: "Main" },
+    { name: "Olla de la Codicia", image_url: "https://images.ygoprodeck.com/images/cards/55144522.jpg", section: "Main" },
+
+    // Extra deck cards
+    { name: "Dragón de la Flama Espada", image_url: "https://images.ygoprodeck.com/images/cards/90884155.jpg", section: "Extra" },
+    { name: "Mago de la Tempestad", image_url: "https://images.ygoprodeck.com/images/cards/20563450.jpg", section: "Extra" },
+    { name: "Dragón de la Rosa Negra", image_url: "https://images.ygoprodeck.com/images/cards/73580471.jpg", section: "Extra" },
+
+    // Side deck cards (Will be filtered out and ignored according to instructions)
+    { name: " side deck placeholder (ignored)", image_url: "", section: "Side" }
 ];
 
 // Application State
@@ -101,6 +114,10 @@ let dragCard = null;
 let dragOffset = { x: 0, y: 0 };
 let activeMenuCard = null;
 let activeMenuDeckPlayer = null; // tracking which player deck is clicked
+
+// Targeting system state
+let targetingCard = null;
+let targetActionType = null; // "summon", "set", "defense"
 
 // Page initialization
 $(document).ready(async function() {
@@ -208,6 +225,7 @@ async function fetchDeckCards(deckId, playerKey) {
 }
 
 // Populate virtual card instances on board
+// Partition: only "Main" section cards populate the Deck pile; "Extra" section cards populate the Extra Deck pile. "Side" cards are ignored.
 function instantiateDeck(playerKey) {
     const deckCards = state.decks[playerKey];
     if (!deckCards || deckCards.length === 0) return;
@@ -215,16 +233,29 @@ function instantiateDeck(playerKey) {
     // Filter out previously loaded cards of this player from game cards
     state.cards = state.cards.filter(c => c.owner !== playerKey);
 
-    // Create virtual card instances
+    const playerSuffix = playerKey === "player1" ? 1 : 2;
+
+    // Create virtual card instances with exact section mapping
     deckCards.forEach((c, index) => {
+        const section = c.section || "Main";
+        if (section === "Side") {
+            // Ignore Side deck completely according to instructions
+            return;
+        }
+
+        let targetZone = `deck_${playerSuffix}`; // Default is Main Deck
+        if (section === "Extra") {
+            targetZone = `extra_${playerSuffix}`; // Extra Deck pile
+        }
+
         state.cards.push({
             instanceId: `card_${playerKey}_${Date.now()}_${index}_${Math.floor(Math.random() * 1000)}`,
             name: c.name || "Carta",
             imageUrl: c.image_url || "https://vikingtcg.xyz/favi.png",
             owner: playerKey,
             controller: playerKey,
-            zone: `deck_${playerKey === "player1" ? 1 : 2}`, // Initial zone is the player's deck pile
-            faceDown: true, // Face down in deck by default
+            zone: targetZone,
+            faceDown: true, // Initial pile cards are face down by default
             tapped: false,
             counters: 0,
             x: 0,
@@ -262,7 +293,35 @@ function renderAllCards() {
             zoneCounts[card.zone] = (zoneCounts[card.zone] || 0) + 1;
         }
 
-        // Render card
+        // Render card (Including Hand and Field action overlays dynamically for interactive play)
+        let handActionOverlayHTML = "";
+        let fieldActionOverlayHTML = "";
+
+        if (isHand) {
+            handActionOverlayHTML = `
+                <div class="hand-card-actions">
+                    <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}"><i class="fas fa-arrow-up"></i> Invocar</button>
+                    <button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}"><i class="fas fa-eye-slash"></i> Setear</button>
+                    <button class="hand-action-btn btn-def" data-instance-id="${card.instanceId}"><i class="fas fa-sync"></i> Defensa</button>
+                    <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}"><i class="fas fa-skull"></i> Cementerio</button>
+                    <button class="hand-action-btn btn-deck" data-instance-id="${card.instanceId}"><i class="fas fa-undo"></i> Al Deck</button>
+                    <button class="hand-action-btn btn-banish" data-instance-id="${card.instanceId}"><i class="fas fa-fire"></i> Desterrar</button>
+                </div>
+            `;
+        } else if (!isPile) {
+            // Cards on active playmat slots get a quick field action horizontal ribbon bar
+            fieldActionOverlayHTML = `
+                <div class="field-card-actions">
+                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}" title="Voltear"><i class="fas fa-eye-slash"></i></button>
+                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}" title="Modo Defensa (Girar)"><i class="fas fa-sync"></i></button>
+                    <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}" title="Activar efecto (Brillar)"><i class="fas fa-bolt" style="color: #ffd700;"></i></button>
+                    <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}" title="Enviar a la Mano"><i class="fas fa-hand-paper"></i></button>
+                    <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}" title="Enviar al Cementerio"><i class="fas fa-skull"></i></button>
+                    <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}" title="Desterrar"><i class="fas fa-fire"></i></button>
+                </div>
+            `;
+        }
+
         const cardHTML = `
             <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
                  id="${card.instanceId}"
@@ -271,6 +330,8 @@ function renderAllCards() {
                     <img src="${card.imageUrl}" alt="${card.name}">
                 </div>
                 ${card.counters > 0 ? `<div class="card-counter">${card.counters}</div>` : ""}
+                ${handActionOverlayHTML}
+                ${fieldActionOverlayHTML}
             </div>
         `;
 
@@ -342,6 +403,81 @@ function bindCardDragEvents() {
         }
     });
 
+    // Event handlers for Hand Quick Actions
+    $(".hand-action-btn").off("click").on("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (!cardObj) return;
+
+        const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if ($(this).hasClass("btn-summon")) {
+            startGraphicalTargeting(cardObj, "summon");
+        } else if ($(this).hasClass("btn-set")) {
+            startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-def")) {
+            startGraphicalTargeting(cardObj, "defense");
+        } else if ($(this).hasClass("btn-grave")) {
+            cardObj.zone = `grave_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+        } else if ($(this).hasClass("btn-deck")) {
+            cardObj.zone = `deck_${playerSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+            renderAllCards();
+        } else if ($(this).hasClass("btn-banish")) {
+            cardObj.zone = `banished_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+        }
+    });
+
+    // Event handlers for Field Quick Actions (Overlays)
+    $(".field-action-btn").off("click").on("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (!cardObj) return;
+
+        const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if ($(this).hasClass("btn-field-flip")) {
+            cardObj.faceDown = !cardObj.faceDown;
+            renderAllCards();
+        } else if ($(this).hasClass("btn-field-tap")) {
+            cardObj.tapped = !cardObj.tapped;
+            renderAllCards();
+        } else if ($(this).hasClass("btn-field-flash")) {
+            // Trigger beautiful temporary activation glow animation
+            const $cardElem = $(`#${cardObj.instanceId}`);
+            $cardElem.addClass("activating-flash");
+            setTimeout(() => {
+                $cardElem.removeClass("activating-flash");
+            }, 800);
+        } else if ($(this).hasClass("btn-field-return")) {
+            cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+            renderAllCards();
+        } else if ($(this).hasClass("btn-field-grave")) {
+            cardObj.zone = `grave_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+        } else if ($(this).hasClass("btn-field-banish")) {
+            cardObj.zone = `banished_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+        }
+    });
+
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
@@ -400,9 +536,9 @@ $(window).on('mousemove touchmove', function(e) {
     const x = pos.x - matOffset.left - dragOffset.x;
     const y = pos.y - matOffset.top - dragOffset.y;
 
-    // Constrain inside mat viewport boundaries + offset spacing
-    const boundedX = Math.max(-10, Math.min(960 - 55, x));
-    const boundedY = Math.max(-10, Math.min(520 - 85, y));
+    // Constrain inside mat viewport boundaries + offset spacing (scaled to 1120x600 playmat, card is 80x116)
+    const boundedX = Math.max(-10, Math.min(1120 - 70, x));
+    const boundedY = Math.max(-10, Math.min(600 - 100, y));
 
     cardObj.x = boundedX;
     cardObj.y = boundedY;
@@ -413,10 +549,10 @@ $(window).on('mousemove touchmove', function(e) {
         top: `${boundedY}px`
     });
 
-    // Check collision highlights against zones underneath the dragged card
+    // Check collision highlights against zones underneath the dragged card (center of 80x116 is +40, +58)
     const centerCoords = {
-        x: boundedX + 33,
-        y: boundedY + 48
+        x: boundedX + 40,
+        y: boundedY + 58
     };
 
     $(".board-zone").removeClass("highlighted");
@@ -438,8 +574,8 @@ $(window).on('mouseup touchend', function(e) {
 
     // Center point of dropped card
     const centerCoords = {
-        x: cardObj.x + 33,
-        y: cardObj.y + 48
+        x: cardObj.x + 40,
+        y: cardObj.y + 58
     };
 
     // Determine target dropping destination (Zone, Hand tray, or Free Board float)
@@ -473,9 +609,9 @@ function findOverlappingZone(coords) {
     const zones = BOARD_LAYOUTS[state.layout];
     for (let i = 0; i < zones.length; i++) {
         const z = zones[i];
-        // simple box overlaps
-        const width = 66;
-        const height = 96;
+        // simple box overlaps adjusted for the new larger card size (80x116px)
+        const width = 80;
+        const height = 116;
         if (coords.x >= z.x && coords.x <= z.x + width &&
             coords.y >= z.y && coords.y <= z.y + height) {
             return z;
@@ -603,6 +739,106 @@ function drawCards(playerKey, count = 1) {
     }
 }
 
+// Interactive Extra Deck viewer overlay and Summoning system
+function openExtraDeckModal(playerKey) {
+    const extraZone = playerKey === "player1" ? "extra_1" : "extra_2";
+    const extraCards = state.cards.filter(c => c.zone === extraZone);
+
+    $("#extra-modal-title").text(`Extra Deck: ${playerKey === "player1" ? "P1" : "P2"}`);
+    $("#extra-cards-grid").empty();
+
+    if (extraCards.length === 0) {
+        $("#extra-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Extra Deck.</p>');
+    } else {
+        extraCards.forEach(card => {
+            const cardHTML = `
+                <div class="search-card-item" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <img src="${card.imageUrl}" alt="${card.name}">
+                    <button class="extra-card-action-btn" data-instance-id="${card.instanceId}"><i class="fas fa-magic"></i> Invocar</button>
+                </div>
+            `;
+            $("#extra-cards-grid").append(cardHTML);
+        });
+    }
+
+    $("#extra-overlay").fadeIn(200).css("display", "flex");
+
+    // Click Invocar button to start targeting mode on the field
+    $(".extra-card-action-btn").off("click").on("click", function() {
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            $("#extra-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "summon");
+        }
+    });
+}
+
+// Graphical zone selection mechanics
+function startGraphicalTargeting(cardObj, actionType) {
+    targetingCard = cardObj;
+    targetActionType = actionType;
+
+    // Display the guidance overlay
+    $("#zone-picker-overlay").fadeIn(200).css("display", "flex");
+    $("#playmat").addClass("selecting-zone");
+
+    // Temporarily bind click event strictly to board zones
+    $(".board-zone").off("click.targeting").on("click.targeting", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const zoneId = $(this).data("id");
+
+        // Execute the targeted action on the selected zone!
+        if (targetingCard) {
+            targetingCard.zone = zoneId;
+
+            if (targetActionType === "summon") {
+                targetingCard.faceDown = false;
+                targetingCard.tapped = false;
+            } else if (targetActionType === "set") {
+                targetingCard.faceDown = true;
+                targetingCard.tapped = false;
+            } else if (targetActionType === "defense") {
+                targetingCard.faceDown = false;
+                targetingCard.tapped = true;
+            }
+
+            renderAllCards();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Carta Colocada',
+                text: `${targetingCard.name} colocada en ${$(this).find('.zone-label').text() || zoneId}.`,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        // Cleanup targeting state
+        stopGraphicalTargeting();
+    });
+
+    // Let user cancel targeting mode by clicking anywhere else or pressing escape
+    $(document).off("keydown.targeting").on("keydown.targeting", function(e) {
+        if (e.key === "Escape") {
+            stopGraphicalTargeting();
+        }
+    });
+}
+
+function stopGraphicalTargeting() {
+    targetingCard = null;
+    targetActionType = null;
+    $("#zone-picker-overlay").fadeOut(150);
+    $("#playmat").removeClass("selecting-zone");
+    $(".board-zone").off("click.targeting");
+    $(document).off("keydown.targeting");
+}
+
 // Search and extract from deck
 function openSearchModal(playerKey) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
@@ -673,6 +909,9 @@ function setupEventListeners() {
 
     // Right click context menu overrides on card items
     $(document).on("contextmenu", ".duel-card", function(e) {
+        // If targeting mode is active, do not interrupt
+        if ($("#playmat").hasClass("selecting-zone")) return;
+
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
@@ -690,6 +929,15 @@ function setupEventListeners() {
             return;
         }
 
+        // If card is inside an extra deck zone, open the Extra Deck overlay instead
+        if (cardObj.zone.startsWith("extra_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
+            openExtraDeckModal(playerKey);
+            return;
+        }
+
         e.preventDefault();
         e.stopPropagation();
         activeMenuCard = cardObj;
@@ -700,8 +948,10 @@ function setupEventListeners() {
         }).addClass("active");
     });
 
-    // Handle left click directly on a deck card to toggle menu
+    // Handle left click directly on a deck or extra deck card to toggle correct overlays/menus
     $(document).on("click", ".duel-card", function(e) {
+        if ($("#playmat").hasClass("selecting-zone")) return;
+
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
@@ -715,11 +965,17 @@ function setupEventListeners() {
                 left: `${e.clientX}px`,
                 top: `${e.clientY}px`
             }).addClass("active");
+        } else if (cardObj.zone.startsWith("extra_")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
+            openExtraDeckModal(playerKey);
         }
     });
 
-    // Right click context menu on Deck Zone elements (Or Left click to open deck options)
+    // Left or Right click context menu on Deck Zone elements
     $(document).on("click contextmenu", ".board-zone.zone-type-deck", function(e) {
+        if ($("#playmat").hasClass("selecting-zone")) return;
         e.preventDefault();
         e.stopPropagation();
 
@@ -731,6 +987,17 @@ function setupEventListeners() {
             left: `${e.clientX}px`,
             top: `${e.clientY}px`
         }).addClass("active");
+    });
+
+    // Left or Right click context menu on Extra Deck Zone elements
+    $(document).on("click contextmenu", ".board-zone.zone-type-extra", function(e) {
+        if ($("#playmat").hasClass("selecting-zone")) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const zoneId = $(this).data("id");
+        const playerKey = zoneId === "zone-extra_1" || zoneId === "extra_1" ? "player1" : "player2";
+        openExtraDeckModal(playerKey);
     });
 
     // Hide context menus on global left click
@@ -844,5 +1111,10 @@ function setupEventListeners() {
     // Modal Search Close
     $("#btn-close-search").click(function() {
         $("#search-overlay").fadeOut(200);
+    });
+
+    // Extra Deck Close
+    $("#btn-close-extra").click(function() {
+        $("#extra-overlay").fadeOut(200);
     });
 }
