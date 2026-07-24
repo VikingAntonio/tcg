@@ -584,20 +584,33 @@ body.duel-body {
 /* Quick Action Menu for Hand Cards (Sits above hover card inside hand) */
 .hand-card-actions {
     position: absolute;
-    bottom: 120px;
+    bottom: 110px;
     left: 50%;
     transform: translateX(-50%) scale(0.8);
-    background: rgba(18, 25, 33, 0.95);
-    border: 1px solid rgba(0, 210, 255, 0.3);
+    background: rgba(10, 15, 22, 0.98);
+    border: 1.5px solid rgba(0, 210, 255, 0.45);
     border-radius: 8px;
     display: none;
     flex-direction: column;
     gap: 4px;
-    padding: 6px;
+    padding: 5px;
     z-index: 999;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-    min-width: 130px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+    min-width: 110px;
     transition: transform 0.2s;
+    pointer-events: auto;
+}
+
+/* Hover bridge pseudo-element for hand card menu options */
+.hand-card-actions::after {
+    content: "";
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    pointer-events: auto;
 }
 
 .duel-card:hover .hand-card-actions {
@@ -608,19 +621,32 @@ body.duel-body {
 /* Quick Action Hover Bar for Cards placed on the field */
 .field-card-actions {
     position: absolute;
-    top: -45px;
+    top: -38px;
     left: 50%;
     transform: translateX(-50%) scale(0.8);
-    background: rgba(18, 25, 33, 0.95);
-    border: 1px solid rgba(0, 210, 255, 0.35);
+    background: rgba(10, 15, 22, 0.98);
+    border: 1.5px solid rgba(0, 210, 255, 0.45);
     border-radius: 6px;
     display: none;
     flex-direction: row;
-    gap: 5px;
-    padding: 4px;
+    gap: 4px;
+    padding: 3px;
     z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.8);
     transition: transform 0.2s;
+    pointer-events: auto;
+}
+
+/* Hover bridge pseudo-element to guarantee zero-gap and prevent menu disappearing */
+.field-card-actions::after {
+    content: "";
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    pointer-events: auto;
 }
 
 .duel-card:hover .field-card-actions {
@@ -628,25 +654,29 @@ body.duel-body {
     transform: translateX(-50%) scale(1);
 }
 
-/* Field micro quick-buttons style */
+/* Field micro quick-buttons style - Text Only (No Icons) */
 .field-action-btn {
-    background: rgba(255,255,255,0.06);
+    background: rgba(255, 255, 255, 0.04);
     color: #e2e8f0;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 4px;
-    padding: 5px 8px;
-    font-size: 0.75rem;
+    padding: 3px 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    white-space: nowrap;
     transition: all 0.15s;
+    text-transform: uppercase;
+    font-family: inherit;
 }
 
 .field-action-btn:hover {
     background: #00d2ff;
     color: black;
-    border-color: white;
+    border-color: #ffffff;
 }
 
 /* Glowing flash activation effect */
@@ -667,31 +697,28 @@ body.duel-body {
 }
 
 .hand-action-btn {
-    background: rgba(255,255,255,0.06);
+    background: rgba(255, 255, 255, 0.04);
     color: #e2e8f0;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 4px;
-    padding: 5px 8px;
+    padding: 4px 8px;
     font-size: 0.65rem;
     font-weight: 700;
     cursor: pointer;
-    text-align: left;
+    text-align: center;
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: background 0.2s, color 0.2s;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    text-transform: uppercase;
+    font-family: inherit;
+    white-space: nowrap;
 }
 
 .hand-action-btn:hover {
-    background: rgba(0, 210, 255, 0.2);
-    color: white;
-    border-color: #00d2ff;
-}
-
-.hand-action-btn i {
-    width: 12px;
-    font-size: 0.7rem;
-    color: #00d2ff;
+    background: #00d2ff;
+    color: black;
+    border-color: #ffffff;
 }
 
 /* Interactive custom context menu & Deck menus */
@@ -814,26 +841,72 @@ body.duel-body {
     100% { box-shadow: 0 0 15px rgba(0, 210, 255, 0.6); }
 }
 
-/* Extra Deck interactive preview items */
+/* Extra Deck interactive card container & visual hover overlays */
+.extra-deck-card-container {
+    position: relative;
+    width: 80px;
+    height: 116px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+
+.extra-deck-card-container:hover {
+    transform: scale(1.1);
+    border-color: #00d2ff;
+    box-shadow: 0 8px 18px rgba(0, 210, 255, 0.3);
+}
+
+.extra-deck-card-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.extra-deck-card-hover-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+}
+
+.extra-deck-card-container:hover .extra-deck-card-hover-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Extra Deck interactive preview items (Clean text, no icons) */
 .extra-card-action-btn {
     background: #00d2ff;
     color: black;
     border: none;
     border-radius: 4px;
-    font-weight: 700;
-    font-size: 0.75rem;
-    padding: 6px 12px;
-    margin-top: 8px;
+    font-weight: 800;
+    font-size: 0.65rem;
+    padding: 6px 10px;
     cursor: pointer;
-    width: 100%;
-    text-align: center;
-    transition: transform 0.2s, background 0.2s;
+    text-transform: uppercase;
+    transition: transform 0.15s, background-color 0.15s;
+    box-shadow: 0 4px 10px rgba(0, 210, 255, 0.5);
+    white-space: nowrap;
 }
 
 .extra-card-action-btn:hover {
-    background: #0099ff;
-    color: white;
-    transform: translateY(-2px);
+    background: #ffffff;
+    color: black;
+    transform: scale(1.08);
 }
 
 .search-modal {
