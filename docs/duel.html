@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
-    <title>Vikingdev Duel Simulator</title>
+    <title>Duel Simulator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/duel.css">
@@ -19,175 +19,42 @@
         <div class="blob blob-2"></div>
     </div>
 
-    <!-- Main Navigation Header -->
-    <header class="duel-header">
-        <div class="header-left">
-            <a href="index.html" class="btn-header-back" id="btn-back">
-                <i class="fas fa-arrow-left"></i> <span>Volver</span>
-            </a>
-            <div class="duel-logo">Vikingdev <span>DUEL</span></div>
-        </div>
-
-        <!-- Life Points Trackers -->
-        <div class="lp-trackers-container">
-            <div class="lp-tracker player-1" id="lp-tracker-p1">
-                <div class="lp-player-info">
-                    <span class="lp-label" id="name-p1-label">JUGADOR 1 (TÚ)</span>
-                    <span class="lp-value" id="lp-p1-val">8000</span>
-                </div>
-                <div class="lp-actions">
-                    <button class="lp-btn lp-sub" data-player="1" title="Restar LP"><i class="fas fa-minus"></i></button>
-                    <input type="number" class="lp-input" id="lp-p1-input" value="1000" placeholder="1000" min="0">
-                    <button class="lp-btn lp-add" data-player="1" title="Sumar LP"><i class="fas fa-plus"></i></button>
-                    <button class="lp-btn lp-half" data-player="1" title="Mitad de LP">/2</button>
-                </div>
-            </div>
-
-            <!-- Central Utilities (Dice, Coin) -->
-            <div class="central-utils">
-                <button class="util-btn" id="btn-flip-coin" title="Lanzar Moneda">
-                    <i class="fas fa-coins"></i>
-                    <span class="util-result" id="coin-res">MONEDA</span>
-                </button>
-                <button class="util-btn" id="btn-roll-dice" title="Lanzar Dado">
-                    <i class="fas fa-dice"></i>
-                    <span class="util-result" id="dice-res">DADO</span>
-                </button>
-            </div>
-
-            <div class="lp-tracker player-2" id="lp-tracker-p2">
-                <div class="lp-player-info">
-                    <span class="lp-label" id="name-p2-label">JUGADOR 2</span>
-                    <span class="lp-value" id="lp-p2-val">8000</span>
-                </div>
-                <div class="lp-actions">
-                    <button class="lp-btn lp-sub" data-player="2" title="Restar LP"><i class="fas fa-minus"></i></button>
-                    <input type="number" class="lp-input" id="lp-p2-input" value="1000" placeholder="1000" min="0">
-                    <button class="lp-btn lp-add" data-player="2" title="Sumar LP"><i class="fas fa-plus"></i></button>
-                    <button class="lp-btn lp-half" data-player="2" title="Mitad de LP">/2</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="header-right">
-            <!-- Mode selection buttons -->
-            <div class="mode-selector">
-                <button class="mode-btn active" id="btn-mode-practice" data-mode="practice">
-                    <i class="fas fa-user"></i> Practice
-                </button>
-                <button class="mode-btn" id="btn-mode-online" data-mode="online">
-                    <i class="fas fa-users"></i> Online 1vs1
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Workspace Container -->
+    <!-- Main Workspace (Symmetrical) -->
     <div class="duel-workspace">
 
-        <!-- Left Sidebar Options -->
+        <!-- Left Sidebar: Only the Card Preview & Minimal Utilities -->
         <aside class="duel-sidebar">
-            <!-- Online Room Configurations -->
-            <div class="sidebar-section online-only" id="room-config-section" style="display: none;">
-                <h3><i class="fas fa-network-wired"></i> CONEXIÓN ONLINE</h3>
-                <div class="room-controls">
-                    <button class="btn btn-primary" id="btn-create-room">
-                        <i class="fas fa-magic"></i> Crear Sala
-                    </button>
-                    <div class="room-input-group">
-                        <input type="text" id="room-code-input" placeholder="Código de Sala">
-                        <button class="btn btn-secondary" id="btn-join-room" title="Unirse a Sala">
-                            <i class="fas fa-sign-in-alt"></i> Unirse
-                        </button>
-                    </div>
-                    <div class="room-status-badge" id="room-status">
-                        <span class="status-indicator offline"></span>
-                        <span id="room-status-text">Sin conectar</span>
-                    </div>
-                    <button class="btn btn-secondary" id="btn-copy-link" style="display: none; margin-top: 10px; width: 100%;">
-                        <i class="fas fa-copy"></i> Copiar Link
-                    </button>
-                </div>
-            </div>
-
-            <!-- Layout Board Selector -->
             <div class="sidebar-section">
-                <h3><i class="fas fa-th-large"></i> LAYOUT DEL TABLERO</h3>
+                <h3><i class="fas fa-th-large"></i> Tablero</h3>
                 <select id="select-board-layout" class="sidebar-select">
                     <option value="yugioh">Yu-Gi-Oh! Field</option>
                     <option value="pokemon">Pokémon Arena</option>
                 </select>
-            </div>
-
-            <!-- Deck Selector Module -->
-            <div class="sidebar-section">
-                <h3><i class="fas fa-folder-open"></i> CARGAR DECKS</h3>
-                <div class="deck-loader-controls">
-                    <label class="sidebar-label">Seleccionar Deck</label>
-                    <select id="select-user-deck" class="sidebar-select" disabled>
-                        <option value="">Cargando decks...</option>
-                    </select>
-
-                    <div class="load-deck-buttons">
-                        <button class="btn btn-primary" id="btn-load-p1" disabled>
-                            <i class="fas fa-download"></i> Cargar a P1
-                        </button>
-                        <button class="btn btn-secondary" id="btn-load-p2" disabled>
-                            <i class="fas fa-download"></i> Cargar a P2
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Manual Play Controls -->
-            <div class="sidebar-section">
-                <h3><i class="fas fa-cogs"></i> HERRAMIENTAS RÁPIDAS</h3>
-                <div class="quick-tools-grid">
-                    <button class="btn btn-tool" id="btn-shuffle-p1" title="Barajar Deck P1">
-                        <i class="fas fa-random"></i> Barajar P1
-                    </button>
-                    <button class="btn btn-tool" id="btn-shuffle-p2" title="Barajar Deck P2">
-                        <i class="fas fa-random"></i> Barajar P2
-                    </button>
-                    <button class="btn btn-tool" id="btn-draw-1-p1" title="Robar 1 Carta P1">
-                        <i class="fas fa-plus-circle"></i> Robar 1 (P1)
-                    </button>
-                    <button class="btn btn-tool" id="btn-draw-1-p2" title="Robar 1 Carta P2">
-                        <i class="fas fa-plus-circle"></i> Robar 1 (P2)
-                    </button>
-                    <button class="btn btn-tool" id="btn-draw-5-p1" title="Robar Mano Inicial P1">
-                        <i class="fas fa-hand-holding"></i> Robar 5 (P1)
-                    </button>
-                    <button class="btn btn-tool" id="btn-draw-5-p2" title="Robar Mano Inicial P2">
-                        <i class="fas fa-hand-holding"></i> Robar 5 (P2)
-                    </button>
-                </div>
-                <button class="btn btn-danger" id="btn-reset-game" style="width: 100%; margin-top: 15px;">
-                    <i class="fas fa-undo-alt"></i> Limpiar / Reset
+                <button class="btn btn-danger" id="btn-reset-game" style="width: 100%;">
+                    <i class="fas fa-undo-alt"></i> Limpiar Tablero
                 </button>
             </div>
 
             <!-- Detailed Card Preview Panel -->
             <div class="sidebar-section preview-panel">
-                <h3><i class="fas fa-search-plus"></i> VISTA DETALLADA</h3>
+                <h3><i class="fas fa-search-plus"></i> Vista Detallada</h3>
                 <div class="card-detailed-preview" id="card-detail-view">
                     <div class="preview-img-container">
                         <img id="detail-card-img" src="https://via.placeholder.com/300x440?text=Hover+o+Click" alt="Preview">
                     </div>
                     <div class="preview-info">
                         <h4 id="detail-card-name">Selecciona una carta</h4>
-                        <p id="detail-card-desc">Pasa el cursor o haz clic en cualquier carta de la mano o del tablero para ver sus detalles en alta resolución.</p>
+                        <p id="detail-card-desc">Pasa el cursor o haz clic en cualquier carta para ver sus detalles en alta resolución.</p>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <!-- Playmat Arena Area (Scrollable / Draggable Area) -->
+        <!-- Playmat Arena Area -->
         <main class="duel-arena-wrapper">
 
-            <!-- Player 2 Hand Tray (At the top) -->
+            <!-- Player 2 Hand Tray (Invisible transparent workspace area at the top) -->
             <div class="hand-tray player-2" id="hand-tray-p2">
-                <div class="tray-label">MANO JUGADOR 2</div>
                 <div class="hand-cards-container" id="hand-p2">
                     <!-- Cards inside P2 hand will be appended here -->
                 </div>
@@ -203,9 +70,8 @@
                 <div id="field-cards-container"></div>
             </div>
 
-            <!-- Player 1 Hand Tray (At the bottom) -->
+            <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
             <div class="hand-tray player-1" id="hand-tray-p1">
-                <div class="tray-label">MANO JUGADOR 1 (TU MANO)</div>
                 <div class="hand-cards-container" id="hand-p1">
                     <!-- Cards inside P1 hand will be appended here -->
                 </div>
@@ -214,18 +80,39 @@
         </main>
     </div>
 
-    <!-- Custom Context Menu for Card Options -->
+    <!-- Context Menu for Cards -->
     <div class="card-context-menu" id="card-menu">
         <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Voltear Boca Abajo/Arriba</div>
-        <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> Girar/Girar horizontal (Defensa)</div>
+        <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> Girar/Girar Defensa</div>
         <hr>
         <div class="menu-item" id="menu-add-counter"><i class="fas fa-plus-circle"></i> Agregar Contador (+1)</div>
         <div class="menu-item" id="menu-sub-counter"><i class="fas fa-minus-circle"></i> Quitar Contador (-1)</div>
         <hr>
         <div class="menu-item" id="menu-to-hand"><i class="fas fa-hand-paper"></i> Enviar a la Mano</div>
-        <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio / Descarte</div>
+        <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
+    </div>
+
+    <!-- Context Menu for Decks -->
+    <div class="deck-context-menu" id="deck-menu">
+        <div class="menu-item" id="deck-menu-draw"><i class="fas fa-plus-circle"></i> Robar Carta</div>
+        <div class="menu-item" id="deck-menu-shuffle"><i class="fas fa-random"></i> Barajar</div>
+        <div class="menu-item" id="deck-menu-search"><i class="fas fa-search"></i> Buscar</div>
+        <div class="menu-item" id="deck-menu-concede"><i class="fas fa-flag"></i> Rendirse</div>
+    </div>
+
+    <!-- Deck Cards Search Overlay/Modal -->
+    <div class="search-overlay" id="search-overlay">
+        <div class="search-modal">
+            <div class="search-header">
+                <h3 id="search-modal-title">Buscando en el Deck</h3>
+                <button class="search-close-btn" id="btn-close-search"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="search-body" id="search-cards-grid">
+                <!-- Cards will render here -->
+            </div>
+        </div>
     </div>
 
     <!-- External project config & logic scripts -->
