@@ -305,6 +305,21 @@ function instantiateDeck(playerKey) {
 
 // Multi-deck setup / Rendering
 function renderAllCards() {
+    // ENFORCE SANITIZATION RULES SECURELY
+    state.cards.forEach(card => {
+        // Rule 1: Hand cards are always face-up
+        if (card.zone.startsWith("hand_")) {
+            card.faceDown = false;
+        }
+
+        // Rule 2: In Pokémon, field cards are always face-up (except deck and prizes)
+        if (state.layout === "pokemon") {
+            if (!card.zone.startsWith("deck_") && !card.zone.startsWith("prize_") && !card.zone.startsWith("hand_")) {
+                card.faceDown = false;
+            }
+        }
+    });
+
     // Clear field and hand containers
     $("#field-cards-container").empty();
     $("#hand-p1").empty();
@@ -337,7 +352,10 @@ function renderAllCards() {
             handActionOverlayHTML = `
                 <div class="hand-card-actions">
                     <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}">Invocar</button>
-                    <button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>
+                    ${state.layout === 'pokemon' ?
+                        `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>` :
+                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
+                    }
                     <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}">Cementerio</button>
                     <button class="hand-action-btn btn-banish" data-instance-id="${card.instanceId}">Remover</button>
                     <button class="hand-action-btn btn-deck" data-instance-id="${card.instanceId}">Deck</button>
@@ -466,8 +484,38 @@ function bindCardDragEvents() {
             startGraphicalTargeting(cardObj, "summon");
         } else if ($(this).hasClass("btn-set")) {
             startGraphicalTargeting(cardObj, "set");
-        } else if ($(this).hasClass("btn-def")) {
-            startGraphicalTargeting(cardObj, "defense");
+        } else if ($(this).hasClass("btn-activate")) {
+            // Pokémon "Activar" action path: drops card straight face-up next to the discard pile (grave)
+            cardObj.zone = "field_free";
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            if (playerSuffix === 1) {
+                cardObj.x = 870;
+                cardObj.y = 320;
+            } else {
+                cardObj.x = 170;
+                cardObj.y = 160;
+            }
+            renderAllCards();
+
+            // Trigger activation glow flash
+            setTimeout(() => {
+                const $cardElem = $(`#${cardObj.instanceId}`);
+                $cardElem.addClass("activating-flash");
+                setTimeout(() => {
+                    $cardElem.removeClass("activating-flash");
+                }, 800);
+            }, 100);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Efecto Activado',
+                text: `${cardObj.name} ha sido colocada en el campo de activación.`,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
         } else if ($(this).hasClass("btn-grave")) {
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
@@ -717,10 +765,21 @@ function checkHandTrayHover(e, traySelector) {
 }
 
 // Side info detailed previewer
+// SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
-    $("#detail-card-img").attr("src", card.imageUrl);
-    $("#detail-card-name").text(card.name);
-    $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo" : "Boca Arriba"}\nContadores: ${card.counters}`);
+    const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
+    const isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+
+    if (isPile || isFaceDown) {
+        const backImg = state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        $("#detail-card-img").attr("src", backImg);
+        $("#detail-card-name").text("Carta Boca Abajo");
+        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
+    } else {
+        $("#detail-card-img").attr("src", card.imageUrl);
+        $("#detail-card-name").text(card.name);
+        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo" : "Boca Arriba"}\nContadores: ${card.counters}`);
+    }
 }
 
 // Shuffle deck piles silently without notification
@@ -918,20 +977,51 @@ function startGraphicalTargeting(cardObj, actionType) {
         e.stopPropagation();
 
         const zoneId = $(this).data("id");
+        const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === zoneId);
 
         // Execute the targeted action on the selected zone!
         if (targetingCard) {
             targetingCard.zone = zoneId;
 
-            if (targetActionType === "summon") {
+            if (state.layout === "yugioh") {
+                // Symmetrical placement rules for Yu-Gi-Oh!
+                if (zoneObj && zoneObj.type === "monster") {
+                    if (targetActionType === "set") {
+                        targetingCard.faceDown = true;
+                        targetingCard.tapped = true; // Monster set is rotated/defense
+                    } else {
+                        targetingCard.faceDown = false;
+                        targetingCard.tapped = false; // Monster summon is upright
+                    }
+                } else if (zoneObj && (zoneObj.type === "spell" || zoneObj.type === "field")) {
+                    if (targetActionType === "set") {
+                        targetingCard.faceDown = true;
+                        targetingCard.tapped = false; // Spell/Trap set is upright
+                    } else {
+                        targetingCard.faceDown = false;
+                        targetingCard.tapped = false;
+                    }
+                } else {
+                    // Default zone fallback
+                    if (targetActionType === "summon") {
+                        targetingCard.faceDown = false;
+                        targetingCard.tapped = false;
+                    } else if (targetActionType === "set") {
+                        targetingCard.faceDown = true;
+                        targetingCard.tapped = false;
+                    } else if (targetActionType === "defense") {
+                        targetingCard.faceDown = false;
+                        targetingCard.tapped = true;
+                    }
+                }
+            } else {
+                // Pokémon placement rules (everything on the playmat is face-up except deck and prizes)
                 targetingCard.faceDown = false;
-                targetingCard.tapped = false;
-            } else if (targetActionType === "set") {
-                targetingCard.faceDown = true;
-                targetingCard.tapped = false;
-            } else if (targetActionType === "defense") {
-                targetingCard.faceDown = false;
-                targetingCard.tapped = true;
+                if (targetActionType === "defense") {
+                    targetingCard.tapped = true;
+                } else {
+                    targetingCard.tapped = false;
+                }
             }
 
             renderAllCards();
@@ -968,7 +1058,7 @@ function stopGraphicalTargeting() {
     $(document).off("keydown.targeting");
 }
 
-// Search and extract from deck
+// Search and extract from deck (UPGRADED WITH COMPREHENSIVE MULTI-ACTIONS)
 function openSearchModal(playerKey) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
     const deckCards = state.cards.filter(c => c.zone === deckZone);
@@ -981,8 +1071,17 @@ function openSearchModal(playerKey) {
     } else {
         deckCards.forEach(card => {
             const cardHTML = `
-                <div class="search-card-item" data-instance-id="${card.instanceId}">
+                <div class="pile-card-container" data-instance-id="${card.instanceId}">
                     <img src="${card.imageUrl}" alt="${card.name}">
+                    <div class="pile-card-hover-overlay">
+                        <div class="pile-card-menu">
+                            <button class="pile-card-action-btn btn-search-hand" data-instance-id="${card.instanceId}">Mano</button>
+                            <button class="pile-card-action-btn btn-search-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                            <button class="pile-card-action-btn btn-search-set" data-instance-id="${card.instanceId}">Set</button>
+                            <button class="pile-card-action-btn btn-search-grave" data-instance-id="${card.instanceId}">Grave</button>
+                            <button class="pile-card-action-btn btn-search-banish" data-instance-id="${card.instanceId}">Remover</button>
+                        </div>
+                    </div>
                 </div>
             `;
             $("#search-cards-grid").append(cardHTML);
@@ -991,24 +1090,55 @@ function openSearchModal(playerKey) {
 
     $("#search-overlay").fadeIn(200).css("display", "flex");
 
-    // Click inside search results to pull card directly to hand
-    $(".search-card-item").off("click").on("click", function() {
+    // Click events inside results
+    $("#search-cards-grid").off("click").on("click", ".pile-card-action-btn", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (cardObj) {
-            cardObj.zone = playerKey === "player1" ? "hand_1" : "hand_2";
-            cardObj.faceDown = false;
-            renderAllCards();
+        if (!cardObj) return;
+
+        const pSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if ($(this).hasClass("btn-search-hand")) {
             $("#search-overlay").fadeOut(200);
+            cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+
+            // Symmetrical reveal to opponent
             Swal.fire({
-                icon: 'success',
-                title: 'Añadida',
-                text: `${cardObj.name} añadida a la mano.`,
-                toast: true,
-                position: 'top-end',
-                timer: 1500,
-                showConfirmButton: false
+                title: '¡Carta Revelada!',
+                html: `
+                    <p style="margin-bottom: 15px; font-weight: 600;">El jugador ha buscado y añadido esta carta a su mano:</p>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
+                        <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
+                    </div>
+                `,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#00d2ff'
             });
+        } else if ($(this).hasClass("btn-search-summon")) {
+            $("#search-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "summon");
+        } else if ($(this).hasClass("btn-search-set")) {
+            $("#search-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-search-grave")) {
+            cardObj.zone = `grave_${pSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+            openSearchModal(playerKey); // refresh
+        } else if ($(this).hasClass("btn-search-banish")) {
+            cardObj.zone = `banished_${pSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+            openSearchModal(playerKey); // refresh
         }
     });
 }
@@ -1104,10 +1234,10 @@ function openPileModal(playerKey, pileType) {
 
 function setupEventListeners() {
     // Menu layout toggle
-    $("#select-board-layout").change(function() {
+    $("#select-board-layout").change(async function() {
         state.layout = $(this).val();
         state.cards = [];
-        checkUserSessionAndPreload();
+        await checkUserSessionAndPreload();
         initLayout();
     });
 
