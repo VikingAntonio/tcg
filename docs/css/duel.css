@@ -267,6 +267,18 @@ body.duel-body {
     flex-shrink: 0;
 }
 
+.playmat-board.pokemon-active {
+    background-image: url('../img/tablero_poke.jpg') !important;
+    background-size: cover;
+    background-position: center;
+    border-color: rgba(255, 215, 0, 0.35) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 50px rgba(255, 215, 0, 0.15) !important;
+}
+
+.playmat-board.pokemon-active .board-grid-bg {
+    opacity: 0.15;
+}
+
 .board-grid-bg {
     position: absolute;
     width: 100%;
@@ -535,6 +547,14 @@ body.duel-body {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
+body.layout-yugioh .duel-card.face-down .card-img-wrapper {
+    background-image: url('../img/bocabajo.jpg') !important;
+}
+
+body.layout-pokemon .duel-card.face-down .card-img-wrapper {
+    background-image: url('../img/pokeBocaAbajo.jpg') !important;
+}
+
 /* Counter indicator badges */
 .card-counter {
     position: absolute;
@@ -759,6 +779,10 @@ body.duel-body {
     align-items: center;
     gap: 12px;
     transition: all 0.2s;
+}
+
+body:not(.layout-pokemon) .pokemon-only-item {
+    display: none !important;
 }
 
 .menu-item i {

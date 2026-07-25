@@ -137,8 +137,10 @@ function initLayout() {
 
     // DYNAMIC CARD BACK SETTING BASED ON THE SELECTED LAYOUT
     if (state.layout === "yugioh") {
+        $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
         document.body.style.setProperty('--card-back-url', "url('img/bocabajo.jpg')");
     } else {
+        $("body").addClass("layout-pokemon").removeClass("layout-yugioh");
         document.body.style.setProperty('--card-back-url', "url('img/pokeBocaAbajo.jpg')");
     }
 
@@ -268,8 +270,13 @@ function instantiateDeck(playerKey) {
         let targetZone = `deck_${playerSuffix}`; // Default is Main Deck
         let isExtra = false;
         if (section === "Extra") {
-            targetZone = `extra_${playerSuffix}`; // Extra Deck pile
-            isExtra = true;
+            if (state.layout === "yugioh") {
+                targetZone = `extra_${playerSuffix}`; // Extra Deck pile
+                isExtra = true;
+            } else {
+                targetZone = `deck_${playerSuffix}`; // Force Main Deck for Pokémon
+                isExtra = false;
+            }
         }
 
         state.cards.push({
@@ -288,6 +295,10 @@ function instantiateDeck(playerKey) {
             isExtra: isExtra
         });
     });
+
+    if (state.layout === "pokemon") {
+        shuffleDeckSilent(playerKey);
+    }
 
     renderAllCards();
 }
@@ -622,7 +633,7 @@ $(window).on('mouseup touchend', function(e) {
     const dist = Math.sqrt(dx * dx + dy * dy);
     const duration = Date.now() - dragStartTime;
 
-    let isClick = (dist < 6 && duration < 350);
+    let isClick = (dist < 15 && duration < 500);
 
     dragCard.removeClass("dragging").addClass("snapping");
     $(".board-zone").removeClass("highlighted");
@@ -632,13 +643,13 @@ $(window).on('mouseup touchend', function(e) {
         // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
         const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
         if (isField) {
-            if (!cardObj.tiltAngle) {
+            if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
+                cardObj.tiltAngle = 0;
+            } else {
                 // Set a small random angle between -8 and 8 (excluding -2 to 2)
                 const sign = Math.random() < 0.5 ? -1 : 1;
                 const angle = sign * (4 + Math.random() * 5); // 4 to 9 degrees
                 cardObj.tiltAngle = Math.round(angle);
-            } else {
-                cardObj.tiltAngle = 0;
             }
         }
     } else {
@@ -712,8 +723,8 @@ function updatePreview(card) {
     $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo" : "Boca Arriba"}\nContadores: ${card.counters}`);
 }
 
-// Shuffle deck piles
-function shuffleDeck(playerKey) {
+// Shuffle deck piles silently without notification
+function shuffleDeckSilent(playerKey) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
     const deckCards = state.cards.filter(c => c.zone === deckZone);
 
@@ -728,7 +739,11 @@ function shuffleDeck(playerKey) {
         deckCards[i].z = deckCards[j].z;
         deckCards[j].z = tempZ;
     }
+}
 
+// Shuffle deck piles
+function shuffleDeck(playerKey) {
+    shuffleDeckSilent(playerKey);
     renderAllCards();
 
     Swal.fire({
@@ -738,6 +753,47 @@ function shuffleDeck(playerKey) {
         toast: true,
         position: 'top-end',
         timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+// Set up 6 face-down Prize Cards for Pokemon
+function setupPokemonPrizes(playerKey) {
+    const playerSuffix = playerKey === "player1" ? 1 : 2;
+    const deckZone = `deck_${playerSuffix}`;
+    const prizePrefix = `prize_${playerSuffix}_`;
+
+    // Filter and sort deck cards descending by z-index (top cards first)
+    const deckCards = state.cards
+        .filter(c => c.zone === deckZone)
+        .sort((a, b) => b.z - a.z);
+
+    if (deckCards.length < 6) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Insuficientes cartas',
+            text: `No hay suficientes cartas en el Deck para colocar los 6 Premios.`
+        });
+        return;
+    }
+
+    // Move top 6 cards to prize zones 1 to 6
+    for (let i = 0; i < 6; i++) {
+        const card = deckCards[i];
+        card.zone = `${prizePrefix}${i + 1}`;
+        card.faceDown = true; // Prize cards are always face-down
+        card.tapped = false;
+    }
+
+    renderAllCards();
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Premios Colocados',
+        text: `Se han colocado 6 cartas de Premio boca abajo.`,
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
         showConfirmButton: false
     });
 }
@@ -1050,6 +1106,8 @@ function setupEventListeners() {
     // Menu layout toggle
     $("#select-board-layout").change(function() {
         state.layout = $(this).val();
+        state.cards = [];
+        checkUserSessionAndPreload();
         initLayout();
     });
 
@@ -1295,6 +1353,12 @@ function setupEventListeners() {
     $("#deck-menu-shuffle").click(function() {
         if (activeMenuDeckPlayer) {
             shuffleDeck(activeMenuDeckPlayer);
+        }
+    });
+
+    $("#deck-menu-prizes").click(function() {
+        if (activeMenuDeckPlayer) {
+            setupPokemonPrizes(activeMenuDeckPlayer);
         }
     });
 
