@@ -578,9 +578,36 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     animation: counterPulse 1.5s infinite alternate;
 }
 
+.card-attached-badge {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background: radial-gradient(circle at center, #00d2ff 0%, #0066ff 100%);
+    border: 2px solid #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    color: white;
+    font-weight: 900;
+    font-size: 0.6rem;
+    font-family: 'Orbitron', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
+    pointer-events: none;
+    z-index: 20;
+    animation: attachedPulse 1.5s infinite alternate;
+}
+
 @keyframes counterPulse {
     0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 94, 19, 0.6); }
     100% { transform: scale(1.15); box-shadow: 0 0 15px rgba(255, 94, 19, 0.9); }
+}
+
+@keyframes attachedPulse {
+    0% { transform: scale(1); box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); }
+    100% { transform: scale(1.15); box-shadow: 0 0 15px rgba(0, 210, 255, 0.9); }
 }
 
 /* Hand tray specific cards */
@@ -617,6 +644,10 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     min-width: 110px;
     transition: transform 0.2s;
     pointer-events: auto;
+}
+
+.attached-card-cascade {
+    pointer-events: auto !important;
 }
 
 /* Hover bridge pseudo-element for hand card menu options */

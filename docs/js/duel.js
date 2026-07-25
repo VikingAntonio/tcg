@@ -128,6 +128,9 @@ $(document).ready(async function() {
     setupEventListeners();
 });
 
+// Targeting system state for Attach attachment process
+let attachingCard = null;
+
 // Configure Playmat Field Zones & Scale
 function initLayout() {
     $("#dynamic-zones-container").empty();
@@ -289,6 +292,7 @@ function instantiateDeck(playerKey) {
             faceDown: true, // Initial pile cards are face down by default
             tapped: false,
             counters: 0,
+            attachedTo: null, // Keep track of attached card instances (Energies, Tools, Xyz materials)
             x: 0,
             y: 0,
             z: index + 1,
@@ -307,9 +311,21 @@ function instantiateDeck(playerKey) {
 function renderAllCards() {
     // ENFORCE SANITIZATION RULES SECURELY
     state.cards.forEach(card => {
+        // If attached, inherit zone of the parent card to stay logically in play
+        if (card.attachedTo) {
+            const parent = state.cards.find(c => c.instanceId === card.attachedTo);
+            if (parent) {
+                card.zone = parent.zone;
+                card.faceDown = parent.faceDown;
+            } else {
+                card.attachedTo = null; // orphan cleanup
+            }
+        }
+
         // Rule 1: Hand cards are always face-up
         if (card.zone.startsWith("hand_")) {
             card.faceDown = false;
+            card.attachedTo = null; // attached cards returned to hand get detached
         }
 
         // Rule 2: In Pokémon, field cards are always face-up (except deck and prizes)
@@ -336,6 +352,8 @@ function renderAllCards() {
 
     state.cards.forEach(card => {
         if (card.isDrawing) return; // Hide card during draw flight animation
+        if (card.attachedTo) return; // Render cascades separately below parent!
+
         const isHand = card.zone.startsWith("hand_");
 
         // Count cards in piles
@@ -348,14 +366,20 @@ function renderAllCards() {
         let handActionOverlayHTML = "";
         let fieldActionOverlayHTML = "";
 
+        // Find count of cards attached to this parent
+        const attachedCards = state.cards.filter(c => c.attachedTo === card.instanceId);
+        const attachedCount = attachedCards.length;
+
         if (isHand) {
             handActionOverlayHTML = `
                 <div class="hand-card-actions">
                     <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}">Invocar</button>
                     ${state.layout === 'pokemon' ?
-                        `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>` :
+                        `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
+                         <button class="hand-action-btn btn-pokemon-field" data-instance-id="${card.instanceId}">Field</button>` :
                         `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
                     }
+                    <button class="hand-action-btn btn-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}">Cementerio</button>
                     <button class="hand-action-btn btn-banish" data-instance-id="${card.instanceId}">Remover</button>
                     <button class="hand-action-btn btn-deck" data-instance-id="${card.instanceId}">Deck</button>
@@ -368,6 +392,7 @@ function renderAllCards() {
                 <div class="field-card-actions">
                     <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
                     <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
+                    <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
                     <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">${returnBtnLabel}</button>
                     <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}">Cementerio</button>
@@ -375,6 +400,9 @@ function renderAllCards() {
                 </div>
             `;
         }
+
+        // Attached badge for visual tracking of quantity
+        const attachedBadgeHTML = attachedCount > 0 ? `<div class="card-attached-badge">📎${attachedCount}</div>` : "";
 
         const cardHTML = `
             <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
@@ -385,6 +413,7 @@ function renderAllCards() {
                     <img src="${card.imageUrl}" alt="${card.name}">
                 </div>
                 ${card.counters > 0 ? `<div class="card-counter">${card.counters}</div>` : ""}
+                ${attachedBadgeHTML}
                 ${handActionOverlayHTML}
                 ${fieldActionOverlayHTML}
             </div>
@@ -420,19 +449,42 @@ function renderAllCards() {
 
             // Determine position
             const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
+            let finalX = card.x;
+            let finalY = card.y;
             if (zoneObj) {
-                // Snapped to board slot center
-                $(`#${card.instanceId}`).css({
-                    left: `${zoneObj.x}px`,
-                    top: `${zoneObj.y}px`
-                });
-            } else {
-                // Free absolute float placement
-                $(`#${card.instanceId}`).css({
-                    left: `${card.x}px`,
-                    top: `${card.y}px`
-                });
+                finalX = zoneObj.x;
+                finalY = zoneObj.y;
             }
+
+            $(`#${card.instanceId}`).css({
+                left: `${finalX}px`,
+                top: `${finalY}px`
+            });
+
+            // RENDER ATTACHED CARDS UNDER THIS PARENT CARD AS A SLIGHT CASCADE
+            let cumulativeOffset = 0;
+            state.cards.forEach(childCard => {
+                if (childCard.attachedTo === card.instanceId) {
+                    cumulativeOffset += 14; // cascade offset
+                    const childZ = card.z - cumulativeOffset; // below parent
+
+                    const childCardHTML = `
+                        <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''}"
+                             id="${childCard.instanceId}"
+                             data-instance-id="${childCard.instanceId}"
+                             style="left: ${finalX + cumulativeOffset}px; top: ${finalY + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg;">
+                            <div class="card-img-wrapper">
+                                <img src="${childCard.imageUrl}" alt="${childCard.name}">
+                            </div>
+                            <div class="field-card-actions">
+                                <button class="field-action-btn btn-field-detach" data-instance-id="${childCard.instanceId}">Desacoplar</button>
+                                <button class="field-action-btn btn-field-grave" data-instance-id="${childCard.instanceId}">Cementerio</button>
+                            </div>
+                        </div>
+                    `;
+                    $("#field-cards-container").append(childCardHTML);
+                }
+            });
         }
     });
 
@@ -484,6 +536,9 @@ function bindCardDragEvents() {
             startGraphicalTargeting(cardObj, "summon");
         } else if ($(this).hasClass("btn-set")) {
             startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-attach")) {
+            // Start Attachment Targeting mode
+            startAttachmentTargeting(cardObj);
         } else if ($(this).hasClass("btn-activate")) {
             // Pokémon "Activar" action path: drops card straight face-up next to the discard pile (grave)
             cardObj.zone = "field_free";
@@ -511,6 +566,39 @@ function bindCardDragEvents() {
                 icon: 'success',
                 title: 'Efecto Activado',
                 text: `${cardObj.name} ha sido colocada en el campo de activación.`,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } else if ($(this).hasClass("btn-pokemon-field")) {
+            // Pokémon "Field" Stadium card action: places the card between active and prize cards
+            cardObj.zone = "field_free";
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            if (playerSuffix === 1) {
+                // Symmetrical slot on Player 1 between Active (x:590, y:320) and Prizes (x:50-210, y:320-450) -> e.g. x: 310, y: 320
+                cardObj.x = 310;
+                cardObj.y = 320;
+            } else {
+                // Symmetrical slot on Player 2 between Active (x:590, y:160) and Prizes (x:830-990, y:30-160) -> e.g. x: 730, y: 160
+                cardObj.x = 730;
+                cardObj.y = 160;
+            }
+            renderAllCards();
+
+            setTimeout(() => {
+                const $cardElem = $(`#${cardObj.instanceId}`);
+                $cardElem.addClass("activating-flash");
+                setTimeout(() => {
+                    $cardElem.removeClass("activating-flash");
+                }, 800);
+            }, 100);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Estadio Activado',
+                text: `${cardObj.name} colocada como Estadio (Field).`,
                 toast: true,
                 position: 'top-end',
                 timer: 2000,
@@ -551,6 +639,21 @@ function bindCardDragEvents() {
         } else if ($(this).hasClass("btn-field-tap")) {
             cardObj.tapped = !cardObj.tapped;
             renderAllCards();
+        } else if ($(this).hasClass("btn-field-attach")) {
+            startAttachmentTargeting(cardObj);
+        } else if ($(this).hasClass("btn-field-detach")) {
+            cardObj.attachedTo = null;
+            cardObj.zone = "field_free";
+            renderAllCards();
+            Swal.fire({
+                icon: 'info',
+                title: 'Desacoplada',
+                text: `${cardObj.name} ha sido desacoplada.`,
+                toast: true,
+                position: 'top-end',
+                timer: 1500,
+                showConfirmButton: false
+            });
         } else if ($(this).hasClass("btn-field-flash")) {
             // Trigger beautiful temporary activation glow animation
             const $cardElem = $(`#${cardObj.instanceId}`);
@@ -568,16 +671,19 @@ function bindCardDragEvents() {
             } else {
                 cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
             }
+            cardObj.attachedTo = null; // detach on return
             renderAllCards();
         } else if ($(this).hasClass("btn-field-grave")) {
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.attachedTo = null; // detach on discard
             renderAllCards();
         } else if ($(this).hasClass("btn-field-banish")) {
             cardObj.zone = `banished_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.attachedTo = null; // detach on banish
             renderAllCards();
         }
     });
@@ -723,16 +829,67 @@ $(window).on('mouseup touchend', function(e) {
         } else if (hoverZone) {
             // Drop card inside target zone
             cardObj.zone = hoverZone.id;
+            cardObj.attachedTo = null; // Detach if dragged to a fresh board zone
             // Snap coordinates are mapped to zone centers automatically in render
         } else {
-            // Card was dropped freely on field
-            cardObj.zone = "field_free";
+            // Check if dropped directly on top of another field card to attach it!
+            const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
+            if (droppedOnCard) {
+                cardObj.attachedTo = droppedOnCard.instanceId;
+                cardObj.zone = droppedOnCard.zone;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Carta Acoplada',
+                    text: `${cardObj.name} ha sido acoplada a ${droppedOnCard.name}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                // Card was dropped freely on field
+                cardObj.zone = "field_free";
+                cardObj.attachedTo = null; // Detach if dragged freely to the board background
+            }
         }
     }
 
     dragCard = null;
     renderAllCards();
 });
+
+// Helper to find parent cards under coordinate
+function findOverlappingCard(coords, excludeInstanceId) {
+    // Only search active field/mat parent cards (no hand, no decks, no discarded)
+    const candidates = state.cards.filter(c =>
+        c.instanceId !== excludeInstanceId &&
+        !c.attachedTo &&
+        !c.zone.startsWith("hand_") &&
+        !c.zone.startsWith("deck_") &&
+        !c.zone.startsWith("extra_") &&
+        !c.zone.startsWith("grave_") &&
+        !c.zone.startsWith("banished_") &&
+        !c.zone.startsWith("prize_")
+    );
+
+    for (let i = candidates.length - 1; i >= 0; i--) {
+        const c = candidates[i];
+        const $elem = $(`#${c.instanceId}`);
+        if ($elem.length) {
+            const offset = $elem.offset();
+            const matOffset = $("#playmat").offset();
+            const x = offset.left - matOffset.left;
+            const y = offset.top - matOffset.top;
+
+            if (coords.x >= x && coords.x <= x + 80 &&
+                coords.y >= y && coords.y <= y + 116) {
+                return c;
+            }
+        }
+    }
+    return null;
+}
 
 // Collision handler against zones
 function findOverlappingZone(coords) {
@@ -768,7 +925,12 @@ function checkHandTrayHover(e, traySelector) {
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
     const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
-    const isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+    let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+
+    // Seteadas de mi lado (player1) en el campo se pueden ver en el preview
+    if (isFaceDown && card.owner === "player1" && !isPile) {
+        isFaceDown = false;
+    }
 
     if (isPile || isFaceDown) {
         const backImg = state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
@@ -778,7 +940,7 @@ function updatePreview(card) {
     } else {
         $("#detail-card-img").attr("src", card.imageUrl);
         $("#detail-card-name").text(card.name);
-        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo" : "Boca Arriba"}\nContadores: ${card.counters}`);
+        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada para ti)" : "Boca Arriba"}\nContadores: ${card.counters}`);
     }
 }
 
@@ -1058,6 +1220,71 @@ function stopGraphicalTargeting() {
     $(document).off("keydown.targeting");
 }
 
+// Dynamic Graphical Attachment Targeting Mode
+function startAttachmentTargeting(cardObj) {
+    attachingCard = cardObj;
+
+    // Display targeting instructions Toast
+    $("#zone-picker-overlay").html(`
+        <div class="zone-picker-toast" style="background: linear-gradient(135deg, #ffd32d, #ff5e13); box-shadow: 0 10px 30px rgba(255, 94, 19, 0.5);">
+            <i class="fas fa-paperclip animate-pulse"></i> Elige una carta en el campo para acoplar esta carta
+        </div>
+    `).fadeIn(200).css("display", "flex");
+
+    $("#playmat").addClass("selecting-zone");
+
+    // Bind temporary click event exclusively to visible field parent cards
+    setTimeout(() => {
+        // Prevent clicking the attaching card itself
+        $(".duel-card").not(`#${cardObj.instanceId}`).not(".attached-card-cascade").off("click.attach").on("click.attach", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetInstId = $(this).data("instance-id");
+            const parentCardObj = state.cards.find(c => c.instanceId === targetInstId);
+
+            if (parentCardObj && attachingCard) {
+                attachingCard.attachedTo = parentCardObj.instanceId;
+                attachingCard.zone = parentCardObj.zone;
+                attachingCard.faceDown = parentCardObj.faceDown;
+
+                renderAllCards();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Carta Acoplada',
+                    text: `${attachingCard.name} acoplada a ${parentCardObj.name}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+
+            stopAttachmentTargeting();
+        });
+    }, 100);
+
+    // Cancel on ESC
+    $(document).off("keydown.attach").on("keydown.attach", function(e) {
+        if (e.key === "Escape") {
+            stopAttachmentTargeting();
+        }
+    });
+}
+
+function stopAttachmentTargeting() {
+    attachingCard = null;
+    $("#zone-picker-overlay").fadeOut(150).html(`
+        <div class="zone-picker-toast">
+            <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+        </div>
+    `);
+    $("#playmat").removeClass("selecting-zone");
+    $(".duel-card").off("click.attach");
+    $(document).off("keydown.attach");
+}
+
 // Search and extract from deck (UPGRADED WITH COMPREHENSIVE MULTI-ACTIONS)
 function openSearchModal(playerKey) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
@@ -1078,6 +1305,7 @@ function openSearchModal(playerKey) {
                             <button class="pile-card-action-btn btn-search-hand" data-instance-id="${card.instanceId}">Mano</button>
                             <button class="pile-card-action-btn btn-search-summon" data-instance-id="${card.instanceId}">Invocar</button>
                             <button class="pile-card-action-btn btn-search-set" data-instance-id="${card.instanceId}">Set</button>
+                                    <button class="pile-card-action-btn btn-search-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-search-grave" data-instance-id="${card.instanceId}">Grave</button>
                             <button class="pile-card-action-btn btn-search-banish" data-instance-id="${card.instanceId}">Remover</button>
                         </div>
@@ -1127,6 +1355,9 @@ function openSearchModal(playerKey) {
         } else if ($(this).hasClass("btn-search-set")) {
             $("#search-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-search-attach")) {
+            $("#search-overlay").fadeOut(200);
+            startAttachmentTargeting(cardObj);
         } else if ($(this).hasClass("btn-search-grave")) {
             cardObj.zone = `grave_${pSuffix}`;
             cardObj.faceDown = false;
@@ -1171,6 +1402,7 @@ function openPileModal(playerKey, pileType) {
                         <div class="pile-card-menu">
                             <button class="pile-card-action-btn btn-pile-summon" data-instance-id="${card.instanceId}">Invocar</button>
                             <button class="pile-card-action-btn btn-pile-set" data-instance-id="${card.instanceId}">Set</button>
+                            <button class="pile-card-action-btn btn-pile-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-pile-hand" data-instance-id="${card.instanceId}">Mano</button>
                             <button class="pile-card-action-btn btn-pile-deck" data-instance-id="${card.instanceId}">Deck</button>
                             ${pileType === 'grave' ?
@@ -1204,6 +1436,9 @@ function openPileModal(playerKey, pileType) {
         } else if ($(this).hasClass("btn-pile-set")) {
             $("#pile-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-pile-attach")) {
+            $("#pile-overlay").fadeOut(200);
+            startAttachmentTargeting(cardObj);
         } else if ($(this).hasClass("btn-pile-hand")) {
             cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
             cardObj.faceDown = false;
@@ -1404,6 +1639,35 @@ function setupEventListeners() {
     $(document).on("click", function() {
         $("#card-menu").removeClass("active");
         $("#deck-menu").removeClass("active");
+    });
+
+    // Context Menu Detach handler
+    $("#card-menu").append(`
+        <div class="menu-item" id="menu-detach"><i class="fas fa-paperclip"></i> Desacoplar todo</div>
+    `);
+
+    $(document).on("click", "#menu-detach", function() {
+        if (!activeMenuCard) return;
+        let count = 0;
+        state.cards.forEach(c => {
+            if (c.attachedTo === activeMenuCard.instanceId) {
+                c.attachedTo = null;
+                c.zone = "field_free";
+                count++;
+            }
+        });
+        if (count > 0) {
+            renderAllCards();
+            Swal.fire({
+                icon: 'info',
+                title: 'Cartas Desacopladas',
+                text: `Se han desacoplado ${count} cartas de ${activeMenuCard.name}.`,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
     });
 
     // Card Menu Action handlers
