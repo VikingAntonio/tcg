@@ -145,6 +145,26 @@
         </div>
     </div>
 
+    <!-- Attached Cards View Overlay/Modal -->
+    <div class="search-overlay" id="attached-overlay">
+        <div class="search-modal">
+            <div class="search-header">
+                <h3 id="attached-modal-title">Cartas Acopladas</h3>
+                <button class="search-close-btn" id="btn-close-attached"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- Dynamic Bulk operations ribbon inside the header area -->
+            <div class="attached-bulk-actions" style="display: flex; gap: 8px; justify-content: center; padding: 10px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
+                <button class="bulk-action-btn" id="bulk-to-hand" style="background: var(--primary-color); color: #000; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-hand-holding"></i> Todas a Mano</button>
+                <button class="bulk-action-btn" id="bulk-to-grave" style="background: #ff1b6b; color: #fff; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-trash-alt"></i> Todas a Cementerio</button>
+                <button class="bulk-action-btn" id="bulk-to-banish" style="background: #ff8c00; color: #fff; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-ban"></i> Todas a Removido</button>
+                <button class="bulk-action-btn" id="bulk-to-deck" style="background: #999; color: #000; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-folder"></i> Todas a Deck</button>
+            </div>
+            <div class="search-body" id="attached-cards-grid">
+                <!-- Attached cards will render here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Graphical Target Zone Picker Overlay -->
     <div class="zone-picker-overlay" id="zone-picker-overlay">
         <div class="zone-picker-toast">

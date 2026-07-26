@@ -462,28 +462,35 @@ function renderAllCards() {
             });
 
             // RENDER ATTACHED CARDS UNDER THIS PARENT CARD AS A SLIGHT CASCADE
-            let cumulativeOffset = 0;
-            state.cards.forEach(childCard => {
-                if (childCard.attachedTo === card.instanceId) {
-                    cumulativeOffset += 14; // cascade offset
-                    const childZ = card.z - cumulativeOffset; // below parent
-
-                    const childCardHTML = `
-                        <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''}"
-                             id="${childCard.instanceId}"
-                             data-instance-id="${childCard.instanceId}"
-                             style="left: ${finalX + cumulativeOffset}px; top: ${finalY + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg;">
-                            <div class="card-img-wrapper">
-                                <img src="${childCard.imageUrl}" alt="${childCard.name}">
-                            </div>
-                            <div class="field-card-actions">
-                                <button class="field-action-btn btn-field-detach" data-instance-id="${childCard.instanceId}">Desacoplar</button>
-                                <button class="field-action-btn btn-field-grave" data-instance-id="${childCard.instanceId}">Cementerio</button>
-                            </div>
-                        </div>
-                    `;
-                    $("#field-cards-container").append(childCardHTML);
+            const attachedCards = state.cards.filter(c => c.attachedTo === card.instanceId);
+            attachedCards.sort((a, b) => {
+                const aExtra = a.isExtra ? 1 : 0;
+                const bExtra = b.isExtra ? 1 : 0;
+                if (aExtra !== bExtra) {
+                    return bExtra - aExtra; // 1 (Extra Deck) comes before 0 (Normal)
                 }
+                const aTime = a.attachedAt || 0;
+                const bTime = b.attachedAt || 0;
+                return bTime - aTime;
+            });
+
+            let cumulativeOffset = 0;
+            attachedCards.forEach(childCard => {
+                cumulativeOffset += 14; // cascade offset
+                const childZ = card.z - cumulativeOffset; // below parent
+
+                const childCardHTML = `
+                    <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''}"
+                         id="${childCard.instanceId}"
+                         data-instance-id="${childCard.instanceId}"
+                         data-parent-id="${card.instanceId}"
+                         style="left: ${finalX + cumulativeOffset}px; top: ${finalY + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg;">
+                        <div class="card-img-wrapper">
+                            <img src="${childCard.imageUrl}" alt="${childCard.name}">
+                        </div>
+                    </div>
+                `;
+                $("#field-cards-container").append(childCardHTML);
             });
         }
     });
@@ -641,19 +648,6 @@ function bindCardDragEvents() {
             renderAllCards();
         } else if ($(this).hasClass("btn-field-attach")) {
             startAttachmentTargeting(cardObj);
-        } else if ($(this).hasClass("btn-field-detach")) {
-            cardObj.attachedTo = null;
-            cardObj.zone = "field_free";
-            renderAllCards();
-            Swal.fire({
-                icon: 'info',
-                title: 'Desacoplada',
-                text: `${cardObj.name} ha sido desacoplada.`,
-                toast: true,
-                position: 'top-end',
-                timer: 1500,
-                showConfirmButton: false
-            });
         } else if ($(this).hasClass("btn-field-flash")) {
             // Trigger beautiful temporary activation glow animation
             const $cardElem = $(`#${cardObj.instanceId}`);
@@ -662,6 +656,7 @@ function bindCardDragEvents() {
                 $cardElem.removeClass("activating-flash");
             }, 800);
         } else if ($(this).hasClass("btn-field-return")) {
+            detachAllChildren(cardObj.instanceId);
             if (cardObj.isExtra) {
                 // Return to Extra Deck face-down
                 const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
@@ -674,12 +669,14 @@ function bindCardDragEvents() {
             cardObj.attachedTo = null; // detach on return
             renderAllCards();
         } else if ($(this).hasClass("btn-field-grave")) {
+            detachAllChildren(cardObj.instanceId);
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on discard
             renderAllCards();
         } else if ($(this).hasClass("btn-field-banish")) {
+            detachAllChildren(cardObj.instanceId);
             cardObj.zone = `banished_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
@@ -688,13 +685,21 @@ function bindCardDragEvents() {
         }
     });
 
+    // Click / Contextmenu on attached card cascade to open the Attached Cards Modal
+    $(".attached-card-cascade").off("click contextmenu").on("click contextmenu", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const parentId = $(this).data("parent-id");
+        openAttachedCardsModal(parentId);
+    });
+
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
-        // Prevent dragging deck cards so that click events register to open deck menu
-        if (cardObj.zone.startsWith("deck_")) {
+        // Prevent dragging deck cards or attached cards
+        if (cardObj.zone.startsWith("deck_") || cardObj.attachedTo) {
             return;
         }
 
@@ -836,6 +841,7 @@ $(window).on('mouseup touchend', function(e) {
             const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
             if (droppedOnCard) {
                 cardObj.attachedTo = droppedOnCard.instanceId;
+                cardObj.attachedAt = Date.now() + Math.random(); // tracking timestamp
                 cardObj.zone = droppedOnCard.zone;
 
                 Swal.fire({
@@ -1220,6 +1226,146 @@ function stopGraphicalTargeting() {
     $(document).off("keydown.targeting");
 }
 
+function detachAllChildren(parentId) {
+    state.cards.forEach(c => {
+        if (c.attachedTo === parentId) {
+            c.attachedTo = null;
+            c.zone = "field_free";
+        }
+    });
+}
+
+function moveAllAttachedTo(parentId, targetType) {
+    const parent = state.cards.find(c => c.instanceId === parentId);
+    if (!parent) return;
+
+    const attached = state.cards.filter(c => c.attachedTo === parentId);
+    if (attached.length === 0) return;
+
+    attached.forEach(cardObj => {
+        cardObj.attachedTo = null;
+        const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if (targetType === "hand") {
+            cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+        } else if (targetType === "grave") {
+            cardObj.zone = `grave_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+        } else if (targetType === "banished") {
+            cardObj.zone = `banished_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+        } else if (targetType === "deck") {
+            cardObj.zone = `deck_${playerSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+        }
+    });
+
+    renderAllCards();
+    $("#attached-overlay").fadeOut(200);
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Cartas Enviadas',
+        text: `Todas las cartas acopladas han sido enviadas.`,
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
+
+// Interactive Attached Cards viewer overlay
+function openAttachedCardsModal(parentId) {
+    const parentCard = state.cards.find(c => c.instanceId === parentId);
+    if (!parentCard) return;
+
+    const attachedCards = state.cards.filter(c => c.attachedTo === parentId);
+    attachedCards.sort((a, b) => {
+        const aExtra = a.isExtra ? 1 : 0;
+        const bExtra = b.isExtra ? 1 : 0;
+        if (aExtra !== bExtra) {
+            return bExtra - aExtra;
+        }
+        const aTime = a.attachedAt || 0;
+        const bTime = b.attachedAt || 0;
+        return bTime - aTime;
+    });
+
+    $("#attached-modal-title").text(`Cartas Acopladas a: ${parentCard.name}`);
+    $("#attached-cards-grid").empty();
+
+    // Store active parentId on the bulk buttons to read on click
+    $("#bulk-to-hand").data("parent-id", parentId);
+    $("#bulk-to-grave").data("parent-id", parentId);
+    $("#bulk-to-banish").data("parent-id", parentId);
+    $("#bulk-to-deck").data("parent-id", parentId);
+
+    if (attachedCards.length === 0) {
+        $("#attached-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas acopladas.</p>');
+        $(".attached-bulk-actions").hide();
+    } else {
+        $(".attached-bulk-actions").show();
+        attachedCards.forEach(card => {
+            const cardHTML = `
+                <div class="pile-card-container" data-instance-id="${card.instanceId}">
+                    <img src="${card.imageUrl}" alt="${card.name}">
+                    <div class="pile-card-hover-overlay">
+                        <div class="pile-card-menu">
+                            <button class="pile-card-action-btn btn-attached-hand" data-instance-id="${card.instanceId}">Mano</button>
+                            <button class="pile-card-action-btn btn-attached-grave" data-instance-id="${card.instanceId}">Grave</button>
+                            <button class="pile-card-action-btn btn-attached-banish" data-instance-id="${card.instanceId}">Remover</button>
+                            <button class="pile-card-action-btn btn-attached-deck" data-instance-id="${card.instanceId}">Deck</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $("#attached-cards-grid").append(cardHTML);
+        });
+    }
+
+    $("#attached-overlay").fadeIn(200).css("display", "flex");
+
+    // Click events inside results for individual cards
+    $("#attached-cards-grid").off("click").on("click", ".pile-card-action-btn", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (!cardObj) return;
+
+        const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        cardObj.attachedTo = null; // Detach first!
+
+        if ($(this).hasClass("btn-attached-hand")) {
+            cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+        } else if ($(this).hasClass("btn-attached-grave")) {
+            cardObj.zone = `grave_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+        } else if ($(this).hasClass("btn-attached-banish")) {
+            cardObj.zone = `banished_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+        } else if ($(this).hasClass("btn-attached-deck")) {
+            cardObj.zone = `deck_${playerSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+        }
+
+        renderAllCards();
+        openAttachedCardsModal(parentId); // Refresh
+    });
+}
+
 // Dynamic Graphical Attachment Targeting Mode
 function startAttachmentTargeting(cardObj) {
     attachingCard = cardObj;
@@ -1245,6 +1391,7 @@ function startAttachmentTargeting(cardObj) {
 
             if (parentCardObj && attachingCard) {
                 attachingCard.attachedTo = parentCardObj.instanceId;
+                attachingCard.attachedAt = Date.now() + Math.random(); // tracking timestamp
                 attachingCard.zone = parentCardObj.zone;
                 attachingCard.faceDown = parentCardObj.faceDown;
 
@@ -1697,12 +1844,14 @@ function setupEventListeners() {
 
     $("#menu-to-hand").click(function() {
         if (!activeMenuCard) return;
+        detachAllChildren(activeMenuCard.instanceId);
         activeMenuCard.zone = activeMenuCard.owner === "player1" ? "hand_1" : "hand_2";
         renderAllCards();
     });
 
     $("#menu-to-grave").click(function() {
         if (!activeMenuCard) return;
+        detachAllChildren(activeMenuCard.instanceId);
         activeMenuCard.zone = activeMenuCard.owner === "player1" ? "grave_1" : "grave_2";
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
@@ -1711,6 +1860,7 @@ function setupEventListeners() {
 
     $("#menu-to-deck-top").click(function() {
         if (!activeMenuCard) return;
+        detachAllChildren(activeMenuCard.instanceId);
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
         activeMenuCard.faceDown = true;
@@ -1725,6 +1875,7 @@ function setupEventListeners() {
 
     $("#menu-to-deck-bottom").click(function() {
         if (!activeMenuCard) return;
+        detachAllChildren(activeMenuCard.instanceId);
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
         activeMenuCard.faceDown = true;
@@ -1791,5 +1942,28 @@ function setupEventListeners() {
     // Pile View Close
     $("#btn-close-pile").click(function() {
         $("#pile-overlay").fadeOut(200);
+    });
+
+    // Attached Cards Modal Close
+    $("#btn-close-attached").click(function() {
+        $("#attached-overlay").fadeOut(200);
+    });
+
+    // Bulk Attached Card Operations
+    $("#bulk-to-hand").click(function() {
+        const parentId = $(this).data("parent-id");
+        moveAllAttachedTo(parentId, "hand");
+    });
+    $("#bulk-to-grave").click(function() {
+        const parentId = $(this).data("parent-id");
+        moveAllAttachedTo(parentId, "grave");
+    });
+    $("#bulk-to-banish").click(function() {
+        const parentId = $(this).data("parent-id");
+        moveAllAttachedTo(parentId, "banished");
+    });
+    $("#bulk-to-deck").click(function() {
+        const parentId = $(this).data("parent-id");
+        moveAllAttachedTo(parentId, "deck");
     });
 }
