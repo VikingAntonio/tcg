@@ -113,64 +113,10 @@ const state = {
 let dragCard = null;
 let dragOffset = { x: 0, y: 0 };
 let dragStartCoords = { x: 0, y: 0 };
+let dragStartCardPos = { left: 0, top: 0 };
 let dragStartTime = 0;
 let activeMenuCard = null;
 let activeMenuDeckPlayer = null; // tracking which player deck is clicked
-
-function getNextMaxZ() {
-    const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z || 0)) : 0;
-    return maxZ + 1;
-}
-
-function getRootParent(card) {
-    let current = card;
-    while (current && current.attachedTo) {
-        const parent = state.cards.find(c => c.instanceId === current.attachedTo);
-        if (!parent || parent === current) break;
-        current = parent;
-    }
-    return current;
-}
-
-function coupleCards(draggedCard, targetCard) {
-    const zone = targetCard.zone;
-
-    // Resolve targetCard's children
-    const targetChildren = state.cards.filter(c => c.attachedTo === targetCard.instanceId);
-    // Resolve draggedCard's children
-    const draggedChildren = state.cards.filter(c => c.attachedTo === draggedCard.instanceId);
-
-    if (draggedCard.isExtra) {
-        // Dragged is Extra. Dragged becomes parent. Target and all children (both target's and dragged's) are attached to dragged.
-        targetChildren.forEach(child => {
-            child.attachedTo = draggedCard.instanceId;
-            child.zone = zone;
-        });
-
-        targetCard.attachedTo = draggedCard.instanceId;
-        targetCard.attachedAt = Date.now() + Math.random();
-        targetCard.zone = zone;
-
-        draggedChildren.forEach(child => {
-            child.attachedTo = draggedCard.instanceId;
-            child.zone = zone;
-        });
-
-        draggedCard.attachedTo = null;
-        draggedCard.zone = zone;
-        draggedCard.z = getNextMaxZ();
-    } else {
-        // Dragged is Normal. Target becomes parent (or keeps being parent). Dragged and its children attach to target.
-        draggedChildren.forEach(child => {
-            child.attachedTo = targetCard.instanceId;
-            child.zone = zone;
-        });
-
-        draggedCard.attachedTo = targetCard.instanceId;
-        draggedCard.attachedAt = Date.now() + Math.random();
-        draggedCard.zone = zone;
-    }
-}
 
 // Targeting system state
 let targetingCard = null;
@@ -459,11 +405,8 @@ function renderAllCards() {
         // Attached badge for visual tracking of quantity
         const attachedBadgeHTML = attachedCount > 0 ? `<div class="card-attached-badge">📎${attachedCount}</div>` : "";
 
-        const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
-        const isOpponentSide = zoneObj ? (zoneObj.player === 2) : (!card.zone.startsWith("hand_") && card.y < 300);
-
         const cardHTML = `
-            <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''} ${isOpponentSide ? 'opponent-side' : ''}"
+            <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
                  id="${card.instanceId}"
                  data-instance-id="${card.instanceId}"
                  style="--tilt: ${card.tiltAngle || 0}deg;">
@@ -537,11 +480,8 @@ function renderAllCards() {
                 cumulativeOffset += 14; // cascade offset
                 const childZ = card.z - cumulativeOffset; // below parent
 
-                const childZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === childCard.zone);
-                const childIsOpponentSide = childZoneObj ? (childZoneObj.player === 2) : (!childCard.zone.startsWith("hand_") && childCard.y < 300);
-
                 const childCardHTML = `
-                    <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''} ${childIsOpponentSide ? 'opponent-side' : ''}"
+                    <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''}"
                          id="${childCard.instanceId}"
                          data-instance-id="${childCard.instanceId}"
                          data-parent-id="${card.instanceId}"
@@ -717,15 +657,9 @@ function bindCardDragEvents() {
                 $cardElem.removeClass("activating-flash");
             }, 800);
         } else if ($(this).hasClass("btn-field-return")) {
-            const children = state.cards.filter(c => c.attachedTo === cardObj.instanceId);
-            children.forEach(child => {
-                child.attachedTo = null;
-                child.zone = child.owner === "player1" ? "hand_1" : "hand_2";
-                child.faceDown = false;
-                child.tapped = false;
-                child.z = getNextMaxZ();
-            });
+            detachAllChildren(cardObj.instanceId);
             if (cardObj.isExtra) {
+                // Return to Extra Deck face-down
                 const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
                 cardObj.zone = `extra_${playerSuffix}`;
                 cardObj.faceDown = true;
@@ -733,40 +667,21 @@ function bindCardDragEvents() {
             } else {
                 cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
             }
-            cardObj.attachedTo = null;
-            cardObj.z = getNextMaxZ();
+            cardObj.attachedTo = null; // detach on return
             renderAllCards();
         } else if ($(this).hasClass("btn-field-grave")) {
-            const children = state.cards.filter(c => c.attachedTo === cardObj.instanceId);
-            children.forEach(child => {
-                const childSuffix = child.owner === "player1" ? 1 : 2;
-                child.attachedTo = null;
-                child.zone = `grave_${childSuffix}`;
-                child.faceDown = false;
-                child.tapped = false;
-                child.z = getNextMaxZ();
-            });
+            detachAllChildren(cardObj.instanceId);
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
-            cardObj.attachedTo = null;
-            cardObj.z = getNextMaxZ();
+            cardObj.attachedTo = null; // detach on discard
             renderAllCards();
         } else if ($(this).hasClass("btn-field-banish")) {
-            const children = state.cards.filter(c => c.attachedTo === cardObj.instanceId);
-            children.forEach(child => {
-                const childSuffix = child.owner === "player1" ? 1 : 2;
-                child.attachedTo = null;
-                child.zone = `banished_${childSuffix}`;
-                child.faceDown = false;
-                child.tapped = false;
-                child.z = getNextMaxZ();
-            });
+            detachAllChildren(cardObj.instanceId);
             cardObj.zone = `banished_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
-            cardObj.attachedTo = null;
-            cardObj.z = getNextMaxZ();
+            cardObj.attachedTo = null; // detach on banish
             renderAllCards();
         }
     });
@@ -803,34 +718,25 @@ function bindCardDragEvents() {
         cardObj.z = maxZ + 1;
         dragCard.css("z-index", cardObj.z);
 
-        // Capture starting position and offset relative to playmat to prevent jumping
-        const cardOffset = dragCard.offset();
-        const matOffset = $("#playmat").offset();
-        const initialX = cardOffset.left - matOffset.left;
-        const initialY = cardOffset.top - matOffset.top;
-
-        // Save playmat-relative coords on object
-        cardObj.x = initialX;
-        cardObj.y = initialY;
-
-        // Move the DOM element to the field container so that absolute positioning maps to the playmat
-        if (cardObj.zone.startsWith("hand_")) {
-            // Temporarily set zone to field_free so that it is styled as a field card
-            cardObj.zone = "field_free";
-            $("#field-cards-container").append(dragCard);
-        }
-
-        dragCard.css({
-            left: `${initialX}px`,
-            top: `${initialY}px`,
-            position: 'absolute'
-        });
-
+        // Capture starting positions
         const pos = getEventCoords(e);
-        dragOffset.x = pos.x - cardOffset.left;
-        dragOffset.y = pos.y - cardOffset.top;
         dragStartCoords = { x: pos.x, y: pos.y };
         dragStartTime = Date.now();
+
+        // Get parent offset so we can calculate relative starting coordinates
+        const parentOffset = dragCard.offsetParent().offset() || { left: 0, top: 0 };
+        const cardOffset = dragCard.offset();
+
+        dragStartCardPos = {
+            left: cardOffset.left - parentOffset.left,
+            top: cardOffset.top - parentOffset.top
+        };
+
+        dragCard.css({
+            position: 'absolute',
+            left: `${dragStartCardPos.left}px`,
+            top: `${dragStartCardPos.top}px`
+        });
     });
 }
 
@@ -855,49 +761,37 @@ function getEventCoords(e) {
 // Global window event listeners for active drag tracking
 $(window).on('mousemove touchmove', function(e) {
     if (!dragCard) return;
-    e.preventDefault();
 
     const instId = dragCard.data("instance-id");
     const cardObj = state.cards.find(c => c.instanceId === instId);
     if (!cardObj) return;
 
     const pos = getEventCoords(e);
-    const matOffset = $("#playmat").offset();
 
-    // Free movement boundaries relative to playmat container
-    const x = pos.x - matOffset.left - dragOffset.x;
-    const y = pos.y - matOffset.top - dragOffset.y;
+    // Calculate mouse displacement (delta) since starting the drag
+    const dx = pos.x - dragStartCoords.x;
+    const dy = pos.y - dragStartCoords.y;
 
-    // Constrain inside mat viewport boundaries + offset spacing (scaled to 1120x600 playmat, card is 80x116)
-    const boundedX = Math.max(-10, Math.min(1120 - 70, x));
-    const boundedY = Math.max(-10, Math.min(600 - 100, y));
+    // Calculate absolute position on screen and relative to the target container
+    const newLeft = dragStartCardPos.left + dx;
+    const newTop = dragStartCardPos.top + dy;
 
-    cardObj.x = boundedX;
-    cardObj.y = boundedY;
-
-    // Apply immediate position overrides (bypassing smooth snaps during live movement)
+    // Direct movement rendering
     dragCard.css({
-        left: `${boundedX}px`,
-        top: `${boundedY}px`
+        left: `${newLeft}px`,
+        top: `${newTop}px`
     });
 
-    // Move attached cards too in real-time
-    const attachedElements = $(`.attached-card-cascade[data-parent-id="${instId}"]`);
-    if (attachedElements.length > 0) {
-        let cumulativeOffset = 0;
-        attachedElements.each(function() {
-            cumulativeOffset += 14;
-            $(this).css({
-                left: `${boundedX + cumulativeOffset}px`,
-                top: `${boundedY + cumulativeOffset}px`
-            });
-        });
-    }
+    // Translate coordinates relative to the playmat board to detect collision highlights
+    const cardOffset = dragCard.offset();
+    const matOffset = $("#playmat").offset();
+    const relativeX = cardOffset.left - matOffset.left;
+    const relativeY = cardOffset.top - matOffset.top;
 
-    // Check collision highlights against zones underneath the dragged card (center of 80x116 is +40, +58)
+    // Check collision highlights against zones underneath the dragged card
     const centerCoords = {
-        x: boundedX + 40,
-        y: boundedY + 58
+        x: relativeX + 40,
+        y: relativeY + 58
     };
 
     $(".board-zone").removeClass("highlighted");
@@ -925,6 +819,12 @@ $(window).on('mouseup touchend', function(e) {
     dragCard.removeClass("dragging").addClass("snapping");
     $(".board-zone").removeClass("highlighted");
 
+    // Calculate real playmat relative position on release
+    const cardOffset = dragCard.offset();
+    const matOffset = $("#playmat").offset();
+    const relativeX = cardOffset.left - matOffset.left;
+    const relativeY = cardOffset.top - matOffset.top;
+
     if (isClick) {
         // This is a click!
         // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
@@ -940,10 +840,10 @@ $(window).on('mouseup touchend', function(e) {
             }
         }
     } else {
-        // Center point of dropped card
+        // Center point of dropped card relative to playmat
         const centerCoords = {
-            x: cardObj.x + 40,
-            y: cardObj.y + 58
+            x: relativeX + 40,
+            y: relativeY + 58
         };
 
         // Determine target dropping destination (Zone, Hand tray, or Free Board float)
@@ -951,103 +851,43 @@ $(window).on('mouseup touchend', function(e) {
         const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
         const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
 
-        let destinationZone = null;
-        let shouldCouple = false;
-        let targetParentCard = null;
-
         if (isOverP1Hand) {
-            destinationZone = "hand_1";
+            // Return/move to Player 1 hand
+            cardObj.zone = "hand_1";
+            cardObj.controller = "player1";
+            cardObj.attachedTo = null;
         } else if (isOverP2Hand) {
-            destinationZone = "hand_2";
+            // Return/move to Player 2 hand
+            cardObj.zone = "hand_2";
+            cardObj.controller = "player2";
+            cardObj.attachedTo = null;
         } else if (hoverZone) {
-            destinationZone = hoverZone.id;
-
-            // Check if this is a pile zone
-            const isPileZone = destinationZone.startsWith("deck_") || destinationZone.startsWith("grave_") || destinationZone.startsWith("banished_") || destinationZone.startsWith("extra_") || destinationZone.startsWith("prize_");
-            if (!isPileZone) {
-                // Check if there is already a card in this field slot
-                const existingInZone = state.cards.find(c => c.zone === destinationZone && !c.attachedTo && c.instanceId !== cardObj.instanceId);
-                if (existingInZone) {
-                    shouldCouple = true;
-                    targetParentCard = getRootParent(existingInZone);
-                }
-            }
+            // Drop card inside target zone
+            cardObj.zone = hoverZone.id;
+            cardObj.attachedTo = null; // Detach if dragged to a fresh board zone
         } else {
-            // Check overlapping card
+            // Check if dropped directly on top of another field card to attach it!
             const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
             if (droppedOnCard) {
-                shouldCouple = true;
-                targetParentCard = getRootParent(droppedOnCard);
-                destinationZone = targetParentCard.zone;
+                cardObj.attachedTo = droppedOnCard.instanceId;
+                cardObj.attachedAt = Date.now() + Math.random(); // tracking timestamp
+                cardObj.zone = droppedOnCard.zone;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Carta Acoplada',
+                    text: `${cardObj.name} ha sido acoplada a ${droppedOnCard.name}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } else {
-                destinationZone = "field_free";
-            }
-        }
-
-        if (shouldCouple && targetParentCard) {
-            coupleCards(cardObj, targetParentCard);
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Carta Acoplada',
-                text: `${cardObj.name} ha sido acoplada a ${targetParentCard.name}.`,
-                toast: true,
-                position: 'top-end',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        } else {
-            // Drop normally, checking if we are transferring in bulk to hand, pile, or field
-            const isPileZone = destinationZone.startsWith("deck_") || destinationZone.startsWith("grave_") || destinationZone.startsWith("banished_") || destinationZone.startsWith("extra_") || destinationZone.startsWith("prize_");
-            const isHandZone = destinationZone.startsWith("hand_");
-
-            if (isPileZone) {
-                // Send children first, then parent so parent is on top of stack
-                const children = state.cards.filter(c => c.attachedTo === cardObj.instanceId);
-                children.forEach(child => {
-                    child.attachedTo = null;
-                    child.zone = destinationZone;
-                    child.tapped = false;
-                    child.faceDown = (destinationZone.startsWith("deck_") || destinationZone.startsWith("extra_"));
-                    child.z = getNextMaxZ();
-                });
-
-                cardObj.zone = destinationZone;
-                cardObj.attachedTo = null;
-                cardObj.tapped = false;
-                cardObj.faceDown = (destinationZone.startsWith("deck_") || destinationZone.startsWith("extra_"));
-                cardObj.z = getNextMaxZ();
-            } else if (isHandZone) {
-                // Send children to their owner's hand
-                const children = state.cards.filter(c => c.attachedTo === cardObj.instanceId);
-                children.forEach(child => {
-                    child.attachedTo = null;
-                    child.zone = child.owner === "player1" ? "hand_1" : "hand_2";
-                    child.faceDown = false;
-                    child.tapped = false;
-                    child.z = getNextMaxZ();
-                });
-
-                cardObj.zone = destinationZone;
-                cardObj.attachedTo = null;
-                cardObj.controller = destinationZone === "hand_1" ? "player1" : "player2";
-                cardObj.z = getNextMaxZ();
-            } else {
-                // Normal field zone or free float
-                cardObj.zone = destinationZone;
-                cardObj.attachedTo = null;
-                cardObj.z = getNextMaxZ();
-
-                // Update controller based on where on playmat it resides
-                const zoneObj = hoverZone || BOARD_LAYOUTS[state.layout].find(z => z.id === destinationZone);
-                cardObj.controller = zoneObj ? (zoneObj.player === 2 ? "player2" : "player1") : (cardObj.y < 300 ? "player2" : "player1");
-
-                // Keep children attached and in the same zone
-                const children = state.cards.filter(c => c.attachedTo === cardObj.instanceId);
-                children.forEach(child => {
-                    child.zone = destinationZone;
-                    child.controller = cardObj.controller;
-                });
+                // Card was dropped freely on field
+                cardObj.zone = "field_free";
+                cardObj.x = relativeX;
+                cardObj.y = relativeY;
+                cardObj.attachedTo = null; // Detach if dragged freely to the board background
             }
         }
     }
@@ -1441,22 +1281,18 @@ function moveAllAttachedTo(parentId, targetType) {
             cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
             cardObj.faceDown = false;
             cardObj.tapped = false;
-            cardObj.z = getNextMaxZ();
         } else if (targetType === "grave") {
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
-            cardObj.z = getNextMaxZ();
         } else if (targetType === "banished") {
             cardObj.zone = `banished_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
-            cardObj.z = getNextMaxZ();
         } else if (targetType === "deck") {
             cardObj.zone = `deck_${playerSuffix}`;
             cardObj.faceDown = true;
             cardObj.tapped = false;
-            cardObj.z = getNextMaxZ();
         }
     });
 
