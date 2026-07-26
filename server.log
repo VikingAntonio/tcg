@@ -45,3 +45,10 @@
 127.0.0.1 - - [25/Jul/2026 08:15:02] "GET /js/duel.js HTTP/1.1" 200 -
 127.0.0.1 - - [25/Jul/2026 08:15:02] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
 127.0.0.1 - - [25/Jul/2026 08:15:04] "GET /img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 04:08:01] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 04:08:01] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 04:08:01] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 04:08:01] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 04:08:01] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 04:08:01] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 04:08:04] "GET /img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
