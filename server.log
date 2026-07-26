@@ -94,3 +94,37 @@
 127.0.0.1 - - [26/Jul/2026 09:29:34] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
 127.0.0.1 - - [26/Jul/2026 09:29:34] code 404, message File not found
 127.0.0.1 - - [26/Jul/2026 09:29:34] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:13:39] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:13:39] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:13:39] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:13:39] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:13:39] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:13:39] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:13:43] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:13:43] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:13:45] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:13:45] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:13:45] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:13:45] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:13:46] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:13:46] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:13:46] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:13:46] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:17:28] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:17:28] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:17:28] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:17:28] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:17:28] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:17:28] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 10:17:32] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:17:32] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:17:32] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:17:32] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:17:33] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:17:33] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:17:33] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:17:33] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:17:35] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:17:35] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jul/2026 10:17:35] code 404, message File not found
+127.0.0.1 - - [26/Jul/2026 10:17:35] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
