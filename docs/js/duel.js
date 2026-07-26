@@ -717,10 +717,30 @@ function bindCardDragEvents() {
         cardObj.z = maxZ + 1;
         dragCard.css("z-index", cardObj.z);
 
-        const pos = getEventCoords(e);
+        // Capture starting position and offset relative to playmat to prevent jumping
         const cardOffset = dragCard.offset();
+        const matOffset = $("#playmat").offset();
+        const initialX = cardOffset.left - matOffset.left;
+        const initialY = cardOffset.top - matOffset.top;
 
-        // Calculate offset relative to mouse/touch position
+        // Save playmat-relative coords on object
+        cardObj.x = initialX;
+        cardObj.y = initialY;
+
+        // Move the DOM element to the field container so that absolute positioning maps to the playmat
+        if (cardObj.zone.startsWith("hand_")) {
+            // Temporarily set zone to field_free so that it is styled as a field card
+            cardObj.zone = "field_free";
+            $("#field-cards-container").append(dragCard);
+        }
+
+        dragCard.css({
+            left: `${initialX}px`,
+            top: `${initialY}px`,
+            position: 'absolute'
+        });
+
+        const pos = getEventCoords(e);
         dragOffset.x = pos.x - cardOffset.left;
         dragOffset.y = pos.y - cardOffset.top;
         dragStartCoords = { x: pos.x, y: pos.y };
@@ -730,11 +750,20 @@ function bindCardDragEvents() {
 
 // Helper to resolve client touch vs mouse coords
 function getEventCoords(e) {
-    if (e.type.startsWith('touch')) {
-        const t = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-        return { x: t.clientX, y: t.clientY };
+    const oe = e.originalEvent || e;
+    if (e.type && e.type.startsWith('touch')) {
+        const t = (oe.touches && oe.touches[0]) || (oe.changedTouches && oe.changedTouches[0]);
+        if (t) {
+            return { x: t.clientX, y: t.clientY };
+        }
     }
-    return { x: e.clientX, y: e.clientY };
+    if (oe.touches && oe.touches.length) {
+        return { x: oe.touches[0].clientX, y: oe.touches[0].clientY };
+    }
+    if (oe.changedTouches && oe.changedTouches.length) {
+        return { x: oe.changedTouches[0].clientX, y: oe.changedTouches[0].clientY };
+    }
+    return { x: e.clientX || oe.clientX || 0, y: e.clientY || oe.clientY || 0 };
 }
 
 // Global window event listeners for active drag tracking

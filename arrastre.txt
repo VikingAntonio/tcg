@@ -1,0 +1,17 @@
+Explicación del Sistema de Arrastre de Cartas (Drag and Drop) en el Simulador de Duelos
+
+El arrastre de cartas inicialmente experimentaba problemas de posicionamiento debido a un conflicto de contextos de diseño (CSS layout contexts) y desbordamiento de contenedores de origen:
+
+1. El Problema de los Contenedores (Nesting & Flexbox):
+   Las manos de los jugadores (Hand Trays) están diseñadas como contenedores de tipo flexbox (`display: flex`). Cuando una carta se encuentra dentro de un contenedor flexbox con posiciones relativas o estáticas, su espacio físico está controlado por el flujo del navegador. Intentar aplicar posiciones absolutas (`position: absolute; left: Xpx; top: Ypx`) directamente a un elemento hijo dentro de un flexbox hacía que la carta saltara fuera de la pantalla, se comportara de forma errática o se quedara atascada dentro de los límites visuales de la mano (overflow clipping).
+
+2. El Conflicto de Coordenadas de Referencia:
+   Las zonas del tablero (Playmat) usan un sistema de coordenadas relativo al tablero central. Cuando se iniciaba el arrastre dentro de la mano, la posición del cursor de mouse o dedo táctil devolvía coordenadas en pantalla global, las cuales no coincidían con el origen físico del elemento flexbox de la mano, provocando saltos bruscos hacia posiciones incorrectas.
+
+Solución Implementada:
+Para permitir que las cartas se puedan arrastrar libremente por todo el tablero sin ninguna restricción de límites físicos o flexbox, implementamos la delegación dinámica de contenedor al iniciar el arrastre:
+
+- Desacoplamiento de la Mano: Tan pronto como se detecta el evento `mousedown` o `touchstart` sobre cualquier carta, el simulador la remueve dinámicamente de su bandeja de origen (el flexbox de la mano o la ranura de zona).
+- Reposicionamiento Absoluto Global: La carta se mueve inmediatamente y se añade como un elemento hijo directo de `#field-cards-container` (el cual está posicionado de forma absoluta dentro de `#playmat`).
+- Conversión Precisa de Coordenadas: Traducimos al instante la posición inicial en pantalla a la escala del tablero usando la diferencia de su rectángulo delimitador (`getBoundingClientRect()`).
+- Libertad de Arrastre Completa: Al estar libre de los contenedores restringidos y unirse al tablero, la carta ahora puede ser arrastrada de manera sumamente suave a cualquier coordenada física del tablero sin saltar o desaparecer.
