@@ -852,14 +852,14 @@ body.theme-light input[type="datetime-local"]::-webkit-calendar-picker-indicator
 }
 
 .admin-grid-preview {
-    height: auto !important;
+    height: 300px;
     max-width: 400px;
     margin: 0 auto;
 }
 
 @media (max-width: 480px) {
     .admin-grid-preview {
-        height: auto !important;
+        height: 250px;
         max-width: 100%;
     }
 }
