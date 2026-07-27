@@ -646,6 +646,13 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     pointer-events: auto;
 }
 
+/* Opponent Hand (P2) drops actions downwards instead of upwards off-screen */
+.player-2 .hand-card-actions {
+    bottom: auto;
+    top: 120px;
+    border-color: rgba(255, 27, 107, 0.45);
+}
+
 .attached-card-cascade {
     pointer-events: auto !important;
 }
@@ -660,6 +667,13 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     height: 18px;
     background: transparent;
     pointer-events: auto;
+}
+
+/* P2 hover bridge pseudo-element needs to bridge downwards */
+.player-2 .hand-card-actions::after {
+    bottom: auto;
+    top: -15px;
+    height: 18px;
 }
 
 .duel-card:hover .hand-card-actions {
@@ -678,15 +692,12 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-radius: 6px;
     display: none;
     flex-direction: row;
-    flex-wrap: wrap;
-    max-width: 220px;
     gap: 4px;
     padding: 3px;
     z-index: 99999;
     box-shadow: 0 6px 16px rgba(0,0,0,0.8);
     transition: transform 0.2s;
     pointer-events: auto;
-    justify-content: center;
 }
 
 .field-card-actions.p2-card-actions {
@@ -706,7 +717,44 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     pointer-events: auto;
 }
 
-.duel-card:hover .field-card-actions {
+/* Specific Vertical layouts for Field Zone cards so options flow inward and stay fully on-screen */
+.field-card-actions.field-zone-right {
+    flex-direction: column !important;
+    left: calc(100% + 10px) !important;
+    top: 50% !important;
+    transform: translateY(-50%) scale(0.8) !important;
+}
+.field-card-actions.field-zone-right::after {
+    bottom: 0;
+    left: -15px;
+    width: 18px;
+    height: 100%;
+}
+.duel-card:hover .field-card-actions.field-zone-right {
+    display: flex;
+    transform: translateY(-50%) scale(1) !important;
+}
+
+.field-card-actions.field-zone-left {
+    flex-direction: column !important;
+    left: auto !important;
+    right: calc(100% + 10px) !important;
+    top: 50% !important;
+    transform: translateY(-50%) scale(0.8) !important;
+}
+.field-card-actions.field-zone-left::after {
+    bottom: 0;
+    right: -15px;
+    left: auto;
+    width: 18px;
+    height: 100%;
+}
+.duel-card:hover .field-card-actions.field-zone-left {
+    display: flex;
+    transform: translateY(-50%) scale(1) !important;
+}
+
+.duel-card:hover .field-card-actions:not(.field-zone-right):not(.field-zone-left) {
     display: flex;
     transform: translateX(-50%) scale(1);
 }
@@ -734,6 +782,86 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     background: #00d2ff;
     color: black;
     border-color: #ffffff;
+}
+
+/* Custom Sleek Switch Toggles */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+    margin: 0;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    transition: .3s;
+    border-radius: 20px;
+}
+
+.theme-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 4px;
+    bottom: 3.5px;
+    background-color: #ffffff;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+/* Player 1 Theme Switch (Cyan Glow) */
+.p1-theme-switch input:checked + .theme-slider {
+    background-color: rgba(0, 210, 255, 0.2);
+    border-color: #00d2ff;
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.4);
+}
+
+.p1-theme-switch input:checked + .theme-slider:before {
+    transform: translateX(20px);
+    background-color: #00d2ff;
+    box-shadow: 0 0 8px #00d2ff;
+}
+
+/* Player 2 Theme Switch (Pink Glow) */
+.p2-theme-switch input:checked + .theme-slider {
+    background-color: rgba(255, 27, 107, 0.2);
+    border-color: #ff1b6b;
+    box-shadow: 0 0 8px rgba(255, 27, 107, 0.4);
+}
+
+.p2-theme-switch input:checked + .theme-slider:before {
+    transform: translateX(20px);
+    background-color: #ff1b6b;
+    box-shadow: 0 0 8px #ff1b6b;
+}
+
+/* Sleek Hover Animation */
+.theme-switch:hover .theme-slider {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Pile Batch Actions Hover Transitions */
+.batch-action-btn:hover {
+    background: #00d2ff !important;
+    color: #000 !important;
+    text-shadow: none !important;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
 }
 
 /* Multi-select active state highlights */

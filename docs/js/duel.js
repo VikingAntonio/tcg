@@ -400,8 +400,10 @@ function renderAllCards() {
             const returnBtnLabel = card.isExtra ? "Deck" : "Mano";
             const isP2 = card.owner === "player2" || card.zone.endsWith("_2") || card.zone === "hand_2";
             const p2Class = isP2 ? "p2-card-actions" : "";
+            const isFieldZone = card.zone === "field_1" || card.zone === "field_2" || card.zone === "stadium_1" || card.zone === "stadium_2";
+            const fieldZoneClass = isFieldZone ? (card.zone === "field_1" ? "field-zone-right" : "field-zone-left") : "";
             fieldActionOverlayHTML = `
-                <div class="field-card-actions ${p2Class}">
+                <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
                     <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
                     <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
                     <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
@@ -2140,6 +2142,7 @@ function setupEventListeners() {
     $("#menu-to-deck-top").click(function() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
+        const oldZone = activeMenuCard.zone;
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
         activeMenuCard.faceDown = true;
@@ -2150,11 +2153,30 @@ function setupEventListeners() {
         activeMenuCard.z = maxZ + 1;
 
         renderAllCards();
+
+        const isFromGrave = oldZone.startsWith("grave_");
+        const isFromBanish = oldZone.startsWith("banished_");
+        const isFromHand = oldZone.startsWith("hand_");
+        const sourceLabel = isFromGrave ? "el Cementerio" : (isFromBanish ? "el Desterrado" : (isFromHand ? "la Mano" : "el Campo"));
+
+        Swal.fire({
+            title: '¡Carta enviada al Deck!',
+            html: `
+                <p style="margin-bottom: 15px; font-weight: 600;">Se ha enviado esta carta desde ${sourceLabel} al tope del Deck:</p>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <img src="${activeMenuCard.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
+                    <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${activeMenuCard.name}</h3>
+                </div>
+            `,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#00d2ff'
+        });
     });
 
     $("#menu-to-deck-bottom").click(function() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
+        const oldZone = activeMenuCard.zone;
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
         activeMenuCard.faceDown = true;
@@ -2165,6 +2187,24 @@ function setupEventListeners() {
         activeMenuCard.z = minZ - 1;
 
         renderAllCards();
+
+        const isFromGrave = oldZone.startsWith("grave_");
+        const isFromBanish = oldZone.startsWith("banished_");
+        const isFromHand = oldZone.startsWith("hand_");
+        const sourceLabel = isFromGrave ? "el Cementerio" : (isFromBanish ? "el Desterrado" : (isFromHand ? "la Mano" : "el Campo"));
+
+        Swal.fire({
+            title: '¡Carta enviada al Deck!',
+            html: `
+                <p style="margin-bottom: 15px; font-weight: 600;">Se ha enviado esta carta desde ${sourceLabel} al fondo del Deck:</p>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <img src="${activeMenuCard.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
+                    <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${activeMenuCard.name}</h3>
+                </div>
+            `,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#00d2ff'
+        });
     });
 
     // Deck Menu Action handlers
