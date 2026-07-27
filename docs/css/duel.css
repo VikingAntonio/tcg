@@ -882,6 +882,11 @@ body:not(.layout-pokemon) .pokemon-only-item {
 }
 
 /* Zone highlighter in targeting mode */
+.playmat-board.selecting-zone {
+    cursor: crosshair !important;
+    pointer-events: auto !important;
+}
+
 .playmat-board.selecting-zone .board-zone {
     border-color: rgba(0, 210, 255, 0.7) !important;
     animation: zonePulse 1.2s infinite alternate;
