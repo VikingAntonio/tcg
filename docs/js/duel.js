@@ -792,8 +792,8 @@ $(window).on('mousemove touchmove', function(e) {
     const dy = pos.y - dragStartCoords.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    // If drag is not active yet, and we exceed threshold (8px)
-    if (!dragActive && dist > 8) {
+    // If drag is not active yet, and we exceed a small threshold (3px is enough to avoid false clicks)
+    if (!dragActive && dist > 3) {
         dragActive = true;
         dragCard = dragCardPending;
         dragCard.addClass("dragging").removeClass("snapping");
@@ -802,36 +802,14 @@ $(window).on('mousemove touchmove', function(e) {
         const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
         cardObj.z = maxZ + 1;
         dragCard.css("z-index", cardObj.z);
-
-        // Get the card's screen coordinates and translate them relative to #playmat
-        const cardOffset = dragCard.offset();
-        const matOffset = $("#playmat").offset();
-        const initialX = cardOffset.left - matOffset.left;
-        const initialY = cardOffset.top - matOffset.top;
-
-        // Decouple immediately from Hand Tray flexbox or any other parent and append to playmat container
-        $("#field-cards-container").append(dragCard);
-
-        dragStartCardPos = {
-            left: initialX,
-            top: initialY
-        };
-
-        dragCard.css({
-            position: 'absolute',
-            left: `${initialX}px`,
-            top: `${initialY}px`
-        });
     }
 
     if (dragActive && dragCard) {
-        // Direct movement rendering
-        const newLeft = dragStartCardPos.left + dx;
-        const newTop = dragStartCardPos.top + dy;
-
+        // Direct movement rendering using GPU-accelerated CSS translate3d!
+        // This is 100% robust and NEVER detaches the DOM node, keeping active pointer capture perfectly intact!
+        const tilt = cardObj.tiltAngle || 0;
         dragCard.css({
-            left: `${newLeft}px`,
-            top: `${newTop}px`
+            transform: `translate3d(${dx}px, ${dy}px, 0px) scale(1.12) rotate(${tilt + 2}deg)`
         });
 
         // Translate coordinates relative to the playmat board to detect collision highlights
@@ -942,6 +920,13 @@ $(window).on('mouseup touchend', function(e) {
                 cardObj.tiltAngle = Math.round(angle);
             }
         }
+    }
+
+    if (dragCard) {
+        dragCard.css({
+            transform: '',
+            'z-index': ''
+        });
     }
 
     dragCard = null;
