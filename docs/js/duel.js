@@ -407,11 +407,13 @@ function renderAllCards() {
         // Attached badge for visual tracking of quantity
         const attachedBadgeHTML = attachedCount > 0 ? `<div class="card-attached-badge">📎${attachedCount}</div>` : "";
 
+        const zIndexStyle = isHand ? "" : `z-index: ${card.z};`;
+
         const cardHTML = `
             <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
                  id="${card.instanceId}"
                  data-instance-id="${card.instanceId}"
-                 style="--tilt: ${card.tiltAngle || 0}deg;">
+                 style="--tilt: ${card.tiltAngle || 0}deg; ${zIndexStyle}">
                 <div class="card-img-wrapper">
                     <img src="${card.imageUrl}" alt="${card.name}">
                 </div>
@@ -864,6 +866,11 @@ $(window).on('mouseup touchend', function(e) {
                         c.attachedTo = droppedOnCard.instanceId;
                     }
                 });
+
+                // Bring droppedOnCard to front so it is visually on top of everything
+                const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                droppedOnCard.z = maxZ + 1;
+
                 cardObj.attachedTo = droppedOnCard.instanceId;
                 cardObj.attachedAt = Date.now() + Math.random(); // tracking timestamp
                 cardObj.zone = droppedOnCard.zone;
@@ -1284,6 +1291,10 @@ function startXYZTargeting(cardObj) {
             const parentCardObj = state.cards.find(c => c.instanceId === targetInstId);
 
             if (parentCardObj && xyzCard) {
+                // Bring xyzCard to front so it is visually on top of everything
+                const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                xyzCard.z = maxZ + 1;
+
                 // target/parentCardObj becomes attached to the new xyzCard
                 xyzCard.zone = parentCardObj.zone;
                 xyzCard.x = parentCardObj.x;
@@ -1535,6 +1546,17 @@ function startAttachmentTargeting(cardObj) {
             const parentCardObj = state.cards.find(c => c.instanceId === targetInstId);
 
             if (parentCardObj && attachingCard) {
+                // Flat-map transfer any cards already attached to attachingCard
+                state.cards.forEach(c => {
+                    if (c.attachedTo === attachingCard.instanceId) {
+                        c.attachedTo = parentCardObj.instanceId;
+                    }
+                });
+
+                // Bring parentCardObj to front so it is visually on top of everything
+                const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                parentCardObj.z = maxZ + 1;
+
                 attachingCard.attachedTo = parentCardObj.instanceId;
                 attachingCard.attachedAt = Date.now() + Math.random(); // tracking timestamp
                 attachingCard.zone = parentCardObj.zone;
