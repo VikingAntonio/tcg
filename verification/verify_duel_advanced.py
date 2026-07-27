@@ -17,7 +17,7 @@ def run_cuj(page):
 
     # 2. Toggle hand multi-select for P1
     print("Toggling hand multi-select checkbox...")
-    page.click("#hand-controls-p1 input[type='checkbox']")
+    page.click("#hand-controls-p1 .p1-theme-switch")
     page.wait_for_timeout(1000)
 
     # 3. Select first two cards in hand

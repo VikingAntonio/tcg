@@ -1,0 +1,40 @@
+================================================================================
+ANÁLISIS DE LA BASE DE DATOS EXTERNA E INTEGRACIÓN DE EFECTOS DE CARTAS
+================================================================================
+
+1. ESTADO ACTUAL DE LA BASE DE DATOS LOCAL (SUPABASE):
+   - La tabla `deck_cards` en la base de datos de Supabase realiza actualmente una consulta completa de todas las columnas de la tabla:
+     `_supabase.from('deck_cards').select('*')`
+   - Sin embargo, las columnas existentes en esta tabla se limitan a: `id`, `deck_id`, `name`, `image_url`, `price`, `quantity`, `section` y `position`.
+   - **No existe** ninguna columna nativa de descripción (`description`), efecto (`effect`) o texto (`text`) en la base de datos de Supabase.
+
+2. CÓMO EL DUEL SIMULATOR (duel.js) ESTÁ PREPARADO PARA MOSTRAR EFECTOS:
+   - El visualizador de detalles y el preview del simulador (`updatePreview(card)`) ya están diseñados de forma robusta para renderizar efectos automáticamente en pantalla usando el campo `description`:
+     ```javascript
+     description: c.description || c.effect || c.desc || c.text || ""
+     ```
+     Si alguna base de datos externa o futura columna en tu tabla provee esta información, el simulador la pintará de forma inmediata sin necesidad de modificar el código visual.
+
+3. FUENTES EXTERNAS RECOMENDADAS PARA INTEGRACIÓN AUTOMÁTICA:
+   Para cargar automáticamente los efectos en tiempo real usando APIs públicas y gratuitas que ya contienen los efectos en español e inglés, se pueden consumir los siguientes recursos:
+
+   A) PARA YU-GI-OH! (YGOPRODeck API):
+      - Endpoint: `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=[CARD_NAME]`
+      - Atributo que contiene el efecto: `data[0].desc`
+      - Implementación rápida en `fetchDeckCards`:
+        ```javascript
+        // Durante la inicialización del deck, se puede consultar el efecto en la API oficial:
+        fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(c.name)}`)
+          .then(res => res.json())
+          .then(data => {
+             if(data && data.data) {
+                card.description = data.data[0].desc;
+             }
+          });
+        ```
+
+   B) PARA POKÉMON (TCGDex API):
+      - Endpoint: `https://api.tcgdex.net/v2/en/cards/[CARD_ID]` o filtrado por nombre de carta.
+      - Atributo que contiene el efecto: `description` o `attacks[].effect` / `abilities[].effect`.
+
+================================================================================
