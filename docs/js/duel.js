@@ -131,6 +131,9 @@ $(document).ready(async function() {
 // Targeting system state for Attach attachment process
 let attachingCard = null;
 
+// Targeting system state for XYZ summon process
+let xyzCard = null;
+
 // Configure Playmat Field Zones & Scale
 function initLayout() {
     $("#dynamic-zones-container").empty();
@@ -615,6 +618,7 @@ function bindCardDragEvents() {
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
         } else if ($(this).hasClass("btn-deck")) {
             cardObj.zone = `deck_${playerSuffix}`;
@@ -625,6 +629,7 @@ function bindCardDragEvents() {
             cardObj.zone = `banished_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
         }
     });
@@ -669,15 +674,17 @@ function bindCardDragEvents() {
             cardObj.attachedTo = null; // detach on return
             renderAllCards();
         } else if ($(this).hasClass("btn-field-grave")) {
-            detachAllChildren(cardObj.instanceId);
-            cardObj.zone = `grave_${playerSuffix}`;
+            const pileId = `grave_${playerSuffix}`;
+            sendAttachedCardsToPile(cardObj.instanceId, pileId);
+            cardObj.zone = pileId;
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on discard
             renderAllCards();
         } else if ($(this).hasClass("btn-field-banish")) {
-            detachAllChildren(cardObj.instanceId);
-            cardObj.zone = `banished_${playerSuffix}`;
+            const pileId = `banished_${playerSuffix}`;
+            sendAttachedCardsToPile(cardObj.instanceId, pileId);
+            cardObj.zone = pileId;
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on banish
@@ -802,13 +809,19 @@ $(window).on('mouseup touchend', function(e) {
         // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
         const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
         if (isField) {
-            if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
-                cardObj.tiltAngle = 0;
+            // Check if this card has attached cards!
+            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
+            if (hasAttached) {
+                openAttachedCardsModal(cardObj.instanceId);
             } else {
-                // Set a small random angle between -8 and 8 (excluding -2 to 2)
-                const sign = Math.random() < 0.5 ? -1 : 1;
-                const angle = sign * (4 + Math.random() * 5); // 4 to 9 degrees
-                cardObj.tiltAngle = Math.round(angle);
+                if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
+                    cardObj.tiltAngle = 0;
+                } else {
+                    // Set a small random angle between -8 and 8 (excluding -2 to 2)
+                    const sign = Math.random() < 0.5 ? -1 : 1;
+                    const angle = sign * (4 + Math.random() * 5); // 4 to 9 degrees
+                    cardObj.tiltAngle = Math.round(angle);
+                }
             }
         }
     } else {
@@ -832,6 +845,11 @@ $(window).on('mouseup touchend', function(e) {
             cardObj.zone = "hand_2";
             cardObj.controller = "player2";
         } else if (hoverZone) {
+            // If dropped on grave/banished pile, send attached cards too
+            if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
+                sendAttachedCardsToPile(cardObj.instanceId, hoverZone.id);
+                cardObj.movedToPileAt = Date.now() + Math.random();
+            }
             // Drop card inside target zone
             cardObj.zone = hoverZone.id;
             cardObj.attachedTo = null; // Detach if dragged to a fresh board zone
@@ -840,6 +858,12 @@ $(window).on('mouseup touchend', function(e) {
             // Check if dropped directly on top of another field card to attach it!
             const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
             if (droppedOnCard) {
+                // Flat-map transfer any cards already attached to cardObj
+                state.cards.forEach(c => {
+                    if (c.attachedTo === cardObj.instanceId) {
+                        c.attachedTo = droppedOnCard.instanceId;
+                    }
+                });
                 cardObj.attachedTo = droppedOnCard.instanceId;
                 cardObj.attachedAt = Date.now() + Math.random(); // tracking timestamp
                 cardObj.zone = droppedOnCard.zone;
@@ -1108,8 +1132,9 @@ function openExtraDeckModal(playerKey) {
             const cardHTML = `
                 <div class="extra-deck-card-container" data-instance-id="${card.instanceId}">
                     <img src="${card.imageUrl}" alt="${card.name}">
-                    <div class="extra-deck-card-hover-overlay">
-                        <button class="extra-card-action-btn" data-instance-id="${card.instanceId}">Invocar</button>
+                    <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 6px;">
+                        <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                        <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
                     </div>
                 </div>
             `;
@@ -1120,12 +1145,22 @@ function openExtraDeckModal(playerKey) {
     $("#extra-overlay").fadeIn(200).css("display", "flex");
 
     // Click Invocar button to start targeting mode on the field
-    $(".extra-card-action-btn").off("click").on("click", function() {
+    $(".btn-extra-summon").off("click").on("click", function() {
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (cardObj) {
             $("#extra-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "summon");
+        }
+    });
+
+    // Click XYZ button to start XYZ targeting mode on the field
+    $(".btn-extra-xyz").off("click").on("click", function() {
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            $("#extra-overlay").fadeOut(200);
+            startXYZTargeting(cardObj);
         }
     });
 }
@@ -1226,13 +1261,123 @@ function stopGraphicalTargeting() {
     $(document).off("keydown.targeting");
 }
 
+function startXYZTargeting(cardObj) {
+    xyzCard = cardObj;
+
+    // Display targeting instructions Toast
+    $("#zone-picker-overlay").html(`
+        <div class="zone-picker-toast" style="background: linear-gradient(135deg, #00d2ff, #ffd32d); box-shadow: 0 10px 30px rgba(0, 210, 255, 0.5);">
+            <i class="fas fa-layer-group animate-pulse"></i> Elige una carta en el campo para colocar esta carta encima (XYZ)
+        </div>
+    `).fadeIn(200).css("display", "flex");
+
+    $("#playmat").addClass("selecting-zone");
+
+    // Bind temporary click event exclusively to visible field parent cards
+    setTimeout(() => {
+        // Prevent clicking any card that is currently attached
+        $(".duel-card").not(".attached-card-cascade").off("click.xyz").on("click.xyz", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetInstId = $(this).data("instance-id");
+            const parentCardObj = state.cards.find(c => c.instanceId === targetInstId);
+
+            if (parentCardObj && xyzCard) {
+                // target/parentCardObj becomes attached to the new xyzCard
+                xyzCard.zone = parentCardObj.zone;
+                xyzCard.x = parentCardObj.x;
+                xyzCard.y = parentCardObj.y;
+                xyzCard.faceDown = false;
+                xyzCard.tapped = parentCardObj.tapped;
+                xyzCard.isExtra = true;
+
+                // Move all currently attached cards of target to the new parent (xyzCard)
+                state.cards.forEach(c => {
+                    if (c.attachedTo === parentCardObj.instanceId) {
+                        c.attachedTo = xyzCard.instanceId;
+                    }
+                });
+
+                // Parent itself gets attached to xyzCard
+                parentCardObj.attachedTo = xyzCard.instanceId;
+                parentCardObj.attachedAt = Date.now() + Math.random();
+
+                renderAllCards();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Invocación XYZ',
+                    text: `${xyzCard.name} ha sido colocada encima de ${parentCardObj.name} (XYZ).`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+
+            stopXYZTargeting();
+        });
+    }, 100);
+
+    // Cancel on ESC
+    $(document).off("keydown.xyz").on("keydown.xyz", function(e) {
+        if (e.key === "Escape") {
+            stopXYZTargeting();
+        }
+    });
+}
+
+function stopXYZTargeting() {
+    xyzCard = null;
+    $("#zone-picker-overlay").fadeOut(150).html(`
+        <div class="zone-picker-toast">
+            <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+        </div>
+    `);
+    $("#playmat").removeClass("selecting-zone");
+    $(".duel-card").off("click.xyz");
+    $(document).off("keydown.xyz");
+}
+
 function detachAllChildren(parentId) {
+    const parent = state.cards.find(c => c.instanceId === parentId);
+    if (!parent) return;
+    const playerSuffix = parent.owner === "player1" ? 1 : 2;
+    const pileId = `grave_${playerSuffix}`;
     state.cards.forEach(c => {
         if (c.attachedTo === parentId) {
             c.attachedTo = null;
-            c.zone = "field_free";
+            c.zone = pileId;
+            c.faceDown = false;
+            c.tapped = false;
+            c.movedToPileAt = Date.now() + Math.random();
         }
     });
+}
+
+function sendAttachedCardsToPile(parentId, pileId) {
+    const parent = state.cards.find(c => c.instanceId === parentId);
+    if (!parent) return;
+
+    // Get all attached cards
+    const attached = state.cards.filter(c => c.attachedTo === parentId);
+
+    // Sort attached cards by attachedAt ascending (first attached first)
+    attached.sort((a, b) => (a.attachedAt || 0) - (b.attachedAt || 0));
+
+    // Assign timestamps to maintain perfect graveyard ordering: earlier attached -> older timestamp, parent -> absolute newest
+    const baseTime = Date.now();
+    attached.forEach((c, index) => {
+        c.attachedTo = null;
+        c.zone = pileId;
+        c.faceDown = false;
+        c.tapped = false;
+        c.movedToPileAt = baseTime + index;
+    });
+
+    // Parent itself is newer than any child
+    parent.movedToPileAt = baseTime + attached.length + 10;
 }
 
 function moveAllAttachedTo(parentId, targetType) {
@@ -1526,6 +1671,9 @@ function openPileModal(playerKey, pileType) {
     const playerSuffix = playerKey === "player1" ? 1 : 2;
     const zoneId = `${pileType}_${playerSuffix}`;
     const pileCards = state.cards.filter(c => c.zone === zoneId);
+
+    // Sort pileCards descending by movedToPileAt so latest is displayed first
+    pileCards.sort((a, b) => (b.movedToPileAt || 0) - (a.movedToPileAt || 0));
 
     // Dynamic titles depending on pileType and layout
     let title = "";
@@ -1851,8 +1999,9 @@ function setupEventListeners() {
 
     $("#menu-to-grave").click(function() {
         if (!activeMenuCard) return;
-        detachAllChildren(activeMenuCard.instanceId);
-        activeMenuCard.zone = activeMenuCard.owner === "player1" ? "grave_1" : "grave_2";
+        const pileId = activeMenuCard.owner === "player1" ? "grave_1" : "grave_2";
+        sendAttachedCardsToPile(activeMenuCard.instanceId, pileId);
+        activeMenuCard.zone = pileId;
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
         renderAllCards();
