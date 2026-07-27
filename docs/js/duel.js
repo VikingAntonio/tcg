@@ -181,6 +181,10 @@ function initLayout() {
 // Fetch active user session or public/mock decks
 async function checkUserSessionAndPreload() {
     try {
+        if (typeof _supabase === 'undefined') {
+            loadMockDecks();
+            return;
+        }
         const { data: { session } } = await _supabase.auth.getSession();
         let loadedCustom = false;
 
@@ -283,6 +287,9 @@ function instantiateDeck(playerKey) {
             }
         }
 
+        // Get matching zone coordinates for initial positioning
+        const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetZone) || { x: 50, y: 30 };
+
         state.cards.push({
             instanceId: `card_${playerKey}_${Date.now()}_${index}_${Math.floor(Math.random() * 1000)}`,
             name: c.name || "Carta",
@@ -294,8 +301,8 @@ function instantiateDeck(playerKey) {
             tapped: false,
             counters: 0,
             attachedTo: null, // Keep track of attached card instances (Energies, Tools, Xyz materials)
-            x: 0,
-            y: 0,
+            x: zoneObj.x,
+            y: zoneObj.y,
             z: index + 1,
             isExtra: isExtra
         });
@@ -306,6 +313,19 @@ function instantiateDeck(playerKey) {
     }
 
     renderAllCards();
+}
+
+// Helper to move a card to a zone with a small random crooked/chueco offset so they stack naturally and can be easily dragged
+function setCardZoneWithCrookedOffset(cardObj, zoneId) {
+    cardObj.zone = zoneId;
+    const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === zoneId);
+    if (zoneObj) {
+        const offsetRange = 14; // max offset of 14px in any direction
+        const rx = Math.floor(Math.random() * (offsetRange * 2 + 1)) - offsetRange;
+        const ry = Math.floor(Math.random() * (offsetRange * 2 + 1)) - offsetRange;
+        cardObj.x = zoneObj.x + rx;
+        cardObj.y = zoneObj.y + ry;
+    }
 }
 
 // Multi-deck setup / Rendering
@@ -435,26 +455,40 @@ function renderAllCards() {
 
             if (topCard && topCard.instanceId === card.instanceId) {
                 $("#field-cards-container").append(cardHTML);
-                // Position card at zone coordinates
-                const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
-                if (zoneObj) {
-                    $(`#${card.instanceId}`).css({
-                        left: `${zoneObj.x}px`,
-                        top: `${zoneObj.y}px`
-                    });
+                // Position card exactly at its coordinates, but make sure it falls back to zone coordinates if not initialized
+                let finalX = card.x;
+                let finalY = card.y;
+                if (finalX === undefined || finalX === null || finalX === 0) {
+                    const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
+                    if (zoneObj) {
+                        finalX = zoneObj.x;
+                        finalY = zoneObj.y;
+                        card.x = finalX;
+                        card.y = finalY;
+                    }
                 }
+                $(`#${card.instanceId}`).css({
+                    left: `${finalX}px`,
+                    top: `${finalY}px`
+                });
             }
         } else {
             // Render freely on playmat
             $("#field-cards-container").append(cardHTML);
 
-            // Determine position
-            const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
+            // Determine position - render EXACTLY at card.x and card.y without snaps
             let finalX = card.x;
             let finalY = card.y;
-            if (zoneObj) {
-                finalX = zoneObj.x;
-                finalY = zoneObj.y;
+
+            // Fallback to zone if coordinates are missing/uninitialized
+            if (finalX === undefined || finalX === null) {
+                const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
+                if (zoneObj) {
+                    finalX = zoneObj.x;
+                    finalY = zoneObj.y;
+                    card.x = finalX;
+                    card.y = finalY;
+                }
             }
 
             $(`#${card.instanceId}`).css({
@@ -613,17 +647,17 @@ function bindCardDragEvents() {
                 showConfirmButton: false
             });
         } else if ($(this).hasClass("btn-grave")) {
-            cardObj.zone = `grave_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `grave_${playerSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             renderAllCards();
         } else if ($(this).hasClass("btn-deck")) {
-            cardObj.zone = `deck_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `deck_${playerSuffix}`);
             cardObj.faceDown = true;
             cardObj.tapped = false;
             renderAllCards();
         } else if ($(this).hasClass("btn-banish")) {
-            cardObj.zone = `banished_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `banished_${playerSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             renderAllCards();
@@ -661,7 +695,7 @@ function bindCardDragEvents() {
             if (cardObj.isExtra) {
                 // Return to Extra Deck face-down
                 const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
-                cardObj.zone = `extra_${playerSuffix}`;
+                setCardZoneWithCrookedOffset(cardObj, `extra_${playerSuffix}`);
                 cardObj.faceDown = true;
                 cardObj.tapped = false;
             } else {
@@ -671,14 +705,14 @@ function bindCardDragEvents() {
             renderAllCards();
         } else if ($(this).hasClass("btn-field-grave")) {
             detachAllChildren(cardObj.instanceId);
-            cardObj.zone = `grave_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `grave_${playerSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on discard
             renderAllCards();
         } else if ($(this).hasClass("btn-field-banish")) {
             detachAllChildren(cardObj.instanceId);
-            cardObj.zone = `banished_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `banished_${playerSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on banish
@@ -723,19 +757,24 @@ function bindCardDragEvents() {
         dragStartCoords = { x: pos.x, y: pos.y };
         dragStartTime = Date.now();
 
-        // Get parent offset so we can calculate relative starting coordinates
-        const parentOffset = dragCard.offsetParent().offset() || { left: 0, top: 0 };
+        // Get the card's screen coordinates and translate them relative to #playmat
         const cardOffset = dragCard.offset();
+        const matOffset = $("#playmat").offset();
+        const initialX = cardOffset.left - matOffset.left;
+        const initialY = cardOffset.top - matOffset.top;
+
+        // Decouple immediately from Hand Tray flexbox or any other parent and append to playmat container
+        $("#field-cards-container").append(dragCard);
 
         dragStartCardPos = {
-            left: cardOffset.left - parentOffset.left,
-            top: cardOffset.top - parentOffset.top
+            left: initialX,
+            top: initialY
         };
 
         dragCard.css({
             position: 'absolute',
-            left: `${dragStartCardPos.left}px`,
-            top: `${dragStartCardPos.top}px`
+            left: `${initialX}px`,
+            top: `${initialY}px`
         });
     });
 }
@@ -862,8 +901,10 @@ $(window).on('mouseup touchend', function(e) {
             cardObj.controller = "player2";
             cardObj.attachedTo = null;
         } else if (hoverZone) {
-            // Drop card inside target zone
+            // Drop card inside target zone and preserve exactly where the user drops it!
             cardObj.zone = hoverZone.id;
+            cardObj.x = relativeX;
+            cardObj.y = relativeY;
             cardObj.attachedTo = null; // Detach if dragged to a fresh board zone
         } else {
             // Check if dropped directly on top of another field card to attach it!
@@ -1038,7 +1079,7 @@ function setupPokemonPrizes(playerKey) {
     // Move top 6 cards to prize zones 1 to 6
     for (let i = 0; i < 6; i++) {
         const card = deckCards[i];
-        card.zone = `${prizePrefix}${i + 1}`;
+        setCardZoneWithCrookedOffset(card, `${prizePrefix}${i + 1}`);
         card.faceDown = true; // Prize cards are always face-down
         card.tapped = false;
     }
@@ -1180,7 +1221,7 @@ function startGraphicalTargeting(cardObj, actionType) {
 
         // Execute the targeted action on the selected zone!
         if (targetingCard) {
-            targetingCard.zone = zoneId;
+            setCardZoneWithCrookedOffset(targetingCard, zoneId);
 
             if (state.layout === "yugioh") {
                 // Symmetrical placement rules for Yu-Gi-Oh!
@@ -1379,15 +1420,15 @@ function openAttachedCardsModal(parentId) {
             cardObj.faceDown = false;
             cardObj.tapped = false;
         } else if ($(this).hasClass("btn-attached-grave")) {
-            cardObj.zone = `grave_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `grave_${playerSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
         } else if ($(this).hasClass("btn-attached-banish")) {
-            cardObj.zone = `banished_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `banished_${playerSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
         } else if ($(this).hasClass("btn-attached-deck")) {
-            cardObj.zone = `deck_${playerSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `deck_${playerSuffix}`);
             cardObj.faceDown = true;
             cardObj.tapped = false;
         }
@@ -1537,13 +1578,13 @@ function openSearchModal(playerKey) {
             $("#search-overlay").fadeOut(200);
             startAttachmentTargeting(cardObj);
         } else if ($(this).hasClass("btn-search-grave")) {
-            cardObj.zone = `grave_${pSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `grave_${pSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             renderAllCards();
             openSearchModal(playerKey); // refresh
         } else if ($(this).hasClass("btn-search-banish")) {
-            cardObj.zone = `banished_${pSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `banished_${pSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             renderAllCards();
@@ -1624,19 +1665,19 @@ function openPileModal(playerKey, pileType) {
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
         } else if ($(this).hasClass("btn-pile-deck")) {
-            cardObj.zone = `deck_${pSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `deck_${pSuffix}`);
             cardObj.faceDown = true;
             cardObj.tapped = false;
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
         } else if ($(this).hasClass("btn-pile-banish")) {
-            cardObj.zone = `banished_${pSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `banished_${pSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
         } else if ($(this).hasClass("btn-pile-grave")) {
-            cardObj.zone = `grave_${pSuffix}`;
+            setCardZoneWithCrookedOffset(cardObj, `grave_${pSuffix}`);
             cardObj.faceDown = false;
             cardObj.tapped = false;
             renderAllCards();
@@ -1883,7 +1924,7 @@ function setupEventListeners() {
     $("#menu-to-grave").click(function() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
-        activeMenuCard.zone = activeMenuCard.owner === "player1" ? "grave_1" : "grave_2";
+        setCardZoneWithCrookedOffset(activeMenuCard, activeMenuCard.owner === "player1" ? "grave_1" : "grave_2");
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
         renderAllCards();
@@ -1893,7 +1934,7 @@ function setupEventListeners() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
-        activeMenuCard.zone = targetZone;
+        setCardZoneWithCrookedOffset(activeMenuCard, targetZone);
         activeMenuCard.faceDown = true;
         activeMenuCard.tapped = false;
 
@@ -1908,7 +1949,7 @@ function setupEventListeners() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
-        activeMenuCard.zone = targetZone;
+        setCardZoneWithCrookedOffset(activeMenuCard, targetZone);
         activeMenuCard.faceDown = true;
         activeMenuCard.tapped = false;
 
