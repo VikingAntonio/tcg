@@ -678,12 +678,20 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-radius: 6px;
     display: none;
     flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 220px;
     gap: 4px;
     padding: 3px;
     z-index: 99999;
     box-shadow: 0 6px 16px rgba(0,0,0,0.8);
     transition: transform 0.2s;
     pointer-events: auto;
+    justify-content: center;
+}
+
+.field-card-actions.p2-card-actions {
+    top: calc(100% + 6px);
+    bottom: auto;
 }
 
 /* Hover bridge pseudo-element to guarantee zero-gap and prevent menu disappearing */
@@ -726,6 +734,28 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     background: #00d2ff;
     color: black;
     border-color: #ffffff;
+}
+
+/* Multi-select active state highlights */
+.duel-card.selected-for-batch {
+    outline: 3px solid #00d2ff !important;
+    box-shadow: 0 0 15px #00d2ff !important;
+    transform: scale(1.05) !important;
+}
+
+/* Hide action menus when multi-select mode is active */
+.hand-tray.hand-multi-select-active .hand-card-actions {
+    display: none !important;
+}
+
+#pile-overlay.pile-multi-select-active .pile-card-hover-overlay {
+    display: none !important;
+}
+
+.pile-card-container.selected-for-batch {
+    outline: 3px solid #00d2ff !important;
+    box-shadow: 0 0 15px #00d2ff !important;
+    transform: scale(1.05) !important;
 }
 
 /* Glowing flash activation effect */

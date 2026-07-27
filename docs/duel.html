@@ -55,6 +55,15 @@
 
             <!-- Player 2 Hand Tray (Invisible transparent workspace area at the top) -->
             <div class="hand-tray player-2" id="hand-tray-p2">
+                <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
+                    <label style="color: #ff1b6b; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; margin: 0;">
+                        <input type="checkbox" class="hand-multi-select-toggle" data-player="player2"> Selección Múltiple
+                    </label>
+                    <div class="hand-batch-actions" id="hand-batch-p2" style="display: none; gap: 5px;">
+                        <button class="batch-action-btn btn-batch-deck" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
+                        <button class="batch-action-btn btn-batch-grave" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
+                    </div>
+                </div>
                 <div class="hand-cards-container" id="hand-p2">
                     <!-- Cards inside P2 hand will be appended here -->
                 </div>
@@ -75,6 +84,15 @@
 
             <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
             <div class="hand-tray player-1" id="hand-tray-p1">
+                <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
+                    <label style="color: #00d2ff; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; margin: 0;">
+                        <input type="checkbox" class="hand-multi-select-toggle" data-player="player1"> Selección Múltiple
+                    </label>
+                    <div class="hand-batch-actions" id="hand-batch-p1" style="display: none; gap: 5px;">
+                        <button class="batch-action-btn btn-batch-deck" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
+                        <button class="batch-action-btn btn-batch-grave" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
+                    </div>
+                </div>
                 <div class="hand-cards-container" id="hand-p1">
                     <!-- Cards inside P1 hand will be appended here -->
                 </div>
@@ -122,8 +140,17 @@
     <!-- Pile Cards View Overlay/Modal (Graveyard / Banished) -->
     <div class="search-overlay" id="pile-overlay">
         <div class="search-modal">
-            <div class="search-header">
+            <div class="search-header" style="flex-wrap: wrap; gap: 10px;">
                 <h3 id="pile-modal-title">Cementerio / Desterrado</h3>
+                <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; margin-right: auto;">
+                    <label style="color: #00d2ff; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; margin: 0;">
+                        <input type="checkbox" id="pile-multi-select-toggle"> Selección Múltiple
+                    </label>
+                    <div id="pile-batch-actions" style="display: none; gap: 5px;">
+                        <button class="batch-action-btn btn-pile-batch-deck" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">A Deck</button>
+                        <button class="batch-action-btn btn-pile-batch-hand" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">A Mano</button>
+                    </div>
+                </div>
                 <button class="search-close-btn" id="btn-close-pile"><i class="fas fa-times"></i></button>
             </div>
             <div class="search-body" id="pile-cards-grid">
