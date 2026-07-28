@@ -412,6 +412,8 @@ function renderAllCards() {
             const fieldZoneClass = isFieldZone ? (card.zone === "field_1" ? "field-zone-right" : "field-zone-left") : "";
             fieldActionOverlayHTML = `
                 <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
+                    <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
+                    <button class="field-action-btn btn-field-direct" data-instance-id="${card.instanceId}">Atk Directo</button>
                     <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
                     <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
                     <button class="field-action-btn btn-field-control" data-instance-id="${card.instanceId}">Control</button>

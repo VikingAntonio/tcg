@@ -311,6 +311,26 @@
             animation: endTurnBlink 0.8s infinite alternate ease-in-out;
         }
 
+        /* SVG arrow rendering animations */
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -40;
+            }
+        }
+
+        .attack-line {
+            stroke: url(#attack-gradient);
+            stroke-width: 6;
+            stroke-dasharray: 10, 5;
+            animation: dash 1.5s linear infinite;
+            filter: url(#neon-glow);
+        }
+
+        .attack-head {
+            fill: #ff1b6b;
+            filter: url(#neon-glow);
+        }
+
         /* LP Counter Styling */
         .lp-counter-container {
             position: absolute;
@@ -324,20 +344,20 @@
             flex-direction: column;
             gap: 8px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
-            z-index: 90;
+            z-index: 102;
             pointer-events: auto;
         }
 
         .p1-lp-container {
-            bottom: 30px;
-            left: 190px;
+            bottom: 180px;
+            left: 20px;
             border-color: rgba(0, 210, 255, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 210, 255, 0.05);
         }
 
         .p2-lp-container {
-            top: 30px;
-            right: 190px;
+            top: 180px;
+            right: 20px;
             border-color: rgba(255, 27, 107, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 27, 107, 0.05);
         }
@@ -359,40 +379,65 @@
             color: var(--secondary-color);
         }
 
-        .lp-display-row {
-            display: flex;
-            justify-content: center;
+        .lp-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            margin: 2px 0;
+            color: #fff;
+            transition: all 0.3s ease;
         }
 
-        .lp-input {
+        .p1-lp-container .lp-number {
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .p2-lp-container .lp-number {
+            color: var(--secondary-color);
+            text-shadow: 0 0 10px var(--secondary-glow);
+        }
+
+        .lp-calc-row {
+            display: flex;
+            justify-content: center;
             width: 100%;
-            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .lp-calc-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
             border: 1px solid var(--glass-border);
             border-radius: 6px;
             color: #fff;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
             text-align: center;
             outline: none;
-            padding: 4px;
+            padding: 5px;
+            transition: all 0.2s;
         }
 
-        .p1-lp-container .lp-input {
-            border-color: rgba(0, 210, 255, 0.2);
+        .p1-lp-container .lp-calc-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px var(--primary-glow);
         }
 
-        .p2-lp-container .lp-input {
-            border-color: rgba(255, 27, 107, 0.2);
+        .p2-lp-container .lp-calc-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 8px var(--secondary-glow);
         }
 
-        /* Remove spin arrows on input number */
-        .lp-input::-webkit-outer-spin-button,
-        .lp-input::-webkit-inner-spin-button {
+        /* Remove spin buttons on number inputs */
+        .lp-calc-input::-webkit-outer-spin-button,
+        .lp-calc-input::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        .lp-input {
+        .lp-calc-input {
             -moz-appearance: textfield;
         }
 
@@ -407,9 +452,9 @@
             border: 1px solid var(--glass-border);
             color: #eee;
             font-family: 'Montserrat', sans-serif;
-            font-size: 0.65rem;
+            font-size: 0.8rem;
             font-weight: bold;
-            padding: 4px 0;
+            padding: 6px 0;
             border-radius: 4px;
             cursor: pointer;
             transition: all 0.15s ease;
@@ -509,36 +554,58 @@
                     <button class="end-turn-btn" id="btn-end-turn">End Turn</button>
                 </div>
 
-                <!-- LP Counters for Player 1 and Player 2 -->
-                <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
-                    <div class="lp-header">P1 LP</div>
-                    <div class="lp-display-row">
-                        <input type="number" class="lp-input" id="lp-val-p1" value="8000" min="0">
-                    </div>
-                    <div class="lp-controls-row">
-                        <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+100</button>
-                        <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-100</button>
-                        <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/2</button>
-                    </div>
-                </div>
-
-                <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
-                    <div class="lp-header">P2 LP</div>
-                    <div class="lp-display-row">
-                        <input type="number" class="lp-input" id="lp-val-p2" value="8000" min="0">
-                    </div>
-                    <div class="lp-controls-row">
-                        <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+100</button>
-                        <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-100</button>
-                        <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/2</button>
-                    </div>
-                </div>
-
                 <!-- Absolutely Positioned Cards on the field -->
                 <div id="field-cards-container"></div>
 
                 <!-- Floating pile card counters -->
                 <div id="pile-counters-container"></div>
+
+                <!-- SVG Canvas Overlay for rendering glowing attack arrows -->
+                <svg id="attack-arrows-overlay" style="position: absolute; top: 0; left: 0; width: 1120px; height: 600px; pointer-events: none; z-index: 101;">
+                    <defs>
+                        <!-- Neon glow filter for attack arrows -->
+                        <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="5" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                        <!-- Animated linear gradient for moving attack pulse -->
+                        <linearGradient id="attack-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#ff1b6b" />
+                            <stop offset="50%" stop-color="#ff8c00" />
+                            <stop offset="100%" stop-color="#ff1b6b" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+
+            <!-- LP Counters for Player 1 and Player 2 (Repositioned outside playmat) -->
+            <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
+                <div class="lp-header">P1 LP</div>
+                <div class="lp-number" id="lp-display-p1">8000</div>
+                <div class="lp-calc-row">
+                    <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
+                </div>
+                <div class="lp-controls-row">
+                    <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+</button>
+                    <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-</button>
+                    <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/</button>
+                </div>
+            </div>
+
+            <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
+                <div class="lp-header">P2 LP</div>
+                <div class="lp-number" id="lp-display-p2">8000</div>
+                <div class="lp-calc-row">
+                    <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
+                </div>
+                <div class="lp-controls-row">
+                    <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+</button>
+                    <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-</button>
+                    <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/</button>
+                </div>
             </div>
 
             <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
@@ -627,6 +694,9 @@
 
     <!-- Context Menu for Cards -->
     <div class="card-context-menu" id="card-menu">
+        <div class="menu-item" id="menu-attack"><i class="fas fa-bolt"></i> Atacar</div>
+        <div class="menu-item" id="menu-direct-attack"><i class="fas fa-crosshairs"></i> Atk Directo</div>
+        <hr>
         <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Voltear Boca Abajo/Arriba</div>
         <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> Girar/Girar Defensa</div>
         <hr>
@@ -640,6 +710,150 @@
         <hr>
         <div class="menu-item" id="menu-control"><i class="fas fa-exchange-alt"></i> Tomar Control</div>
     </div>
+
+    <!-- Click handler bindings for targeting attacks -->
+    <script>
+        $(document).ready(function() {
+            // Helper to start targeting mode for selecting attack target
+            window.startAttackTargetingMode = function(attackerCard) {
+                // Remove existing targeting bindings to prevent duplicates
+                $(".duel-card").off("click.attacktarget");
+
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Declarar Ataque',
+                    text: `Selecciona una carta objetivo en el campo para atacar con ${attackerCard.name}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3500,
+                    showConfirmButton: false
+                });
+
+                $("#playmat").addClass("selecting-zone");
+
+                setTimeout(() => {
+                    $(".duel-card").not(`#${attackerCard.instanceId}`).off("click.attacktarget").on("click.attacktarget", function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const targetId = $(this).data("instance-id");
+                        const targetCard = state.cards.find(c => c.instanceId === targetId);
+
+                        if (targetCard) {
+                            // Add attack entry
+                            state.attacks.push({
+                                attackerId: attackerCard.instanceId,
+                                targetId: targetCard.instanceId,
+                                isDirect: false
+                            });
+
+                            // Broadcast attack sync
+                            commChannel.send({
+                                type: 'broadcast',
+                                event: 'attack_sync',
+                                payload: { attacks: state.attacks }
+                            });
+
+                            // Log action
+                            sendGameAction(`Declaró ataque con ${attackerCard.name} hacia ${targetCard.name}`);
+
+                            if (typeof window.drawAttackArrows === "function") {
+                                window.drawAttackArrows();
+                            }
+                        }
+
+                        // Cleanup targeting state
+                        $("#playmat").removeClass("selecting-zone");
+                        $(".duel-card").off("click.attacktarget");
+                    });
+                }, 100);
+
+                // Cancel on escape or click on empty mat space
+                $(document).off("keydown.attacktarget").on("keydown.attacktarget", function(e) {
+                    if (e.key === "Escape") {
+                        $("#playmat").removeClass("selecting-zone");
+                        $(".duel-card").off("click.attacktarget");
+                    }
+                });
+            };
+
+            // Direct attack helper
+            window.performDirectAttack = function(attackerCard) {
+                state.attacks.push({
+                    attackerId: attackerCard.instanceId,
+                    targetId: null,
+                    isDirect: true
+                });
+
+                // Broadcast attack sync
+                commChannel.send({
+                    type: 'broadcast',
+                    event: 'attack_sync',
+                    payload: { attacks: state.attacks }
+                });
+
+                // Log action
+                sendGameAction(`Declaró Ataque Directo con ${attackerCard.name}`);
+
+                if (typeof window.drawAttackArrows === "function") {
+                    window.drawAttackArrows();
+                }
+            };
+
+            // Bind the field quick-menu click events for Attack
+            $(document).on("click", ".btn-field-attack", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const instId = $(this).data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (cardObj) {
+                    window.startAttackTargetingMode(cardObj);
+                }
+            });
+
+            // Bind direct attack quick action
+            $(document).on("click", ".btn-field-direct", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const instId = $(this).data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (cardObj) {
+                    window.performDirectAttack(cardObj);
+                }
+            });
+
+            // Bind context menu click handlers
+            $("#menu-attack").click(function() {
+                if (activeMenuCard) {
+                    window.startAttackTargetingMode(activeMenuCard);
+                }
+            });
+
+            $("#menu-direct-attack").click(function() {
+                if (activeMenuCard) {
+                    window.performDirectAttack(activeMenuCard);
+                }
+            });
+
+            // Double click playmat or deck reset clears all attack arrows
+            $("#playmat").click(function(e) {
+                // Clear active attack arrows if clicking on empty spot of playmat while not in targeting mode
+                if (!$(e.target).closest(".duel-card, .board-zone, .hand-tray, .lp-counter-container, .central-turn-bar").length && !$("#playmat").hasClass("selecting-zone")) {
+                    if (state.attacks.length > 0) {
+                        state.attacks = [];
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'attack_sync',
+                            payload: { attacks: [] }
+                        });
+                        if (typeof window.drawAttackArrows === "function") {
+                            window.drawAttackArrows();
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 
     <!-- Context Menu for Decks -->
     <div class="deck-context-menu" id="deck-menu">
@@ -768,6 +982,7 @@
             state.activeTurn = 'player1'; // 'player1' or 'player2'
             state.activePhase = 'DP'; // 'DP', 'SP', 'M1', 'BP', 'M2', 'EP'
             state.lp = { player1: 8000, player2: 8000 };
+            state.turnActionTaken = false; // Disable flashing of End Turn button once gameplay action is done
 
             // Helper to hide/show features depending on selected layout
             function updateLayoutFeatureVisibility() {
@@ -997,8 +1212,82 @@
                 $("#pending-response-box").slideUp(150);
             });
 
+            // Attack tracking state
+            state.attacks = []; // { attackerId, targetId, isDirect }
+
+            // Helper to render all active attack arrows
+            window.drawAttackArrows = function() {
+                const $overlay = $("#attack-arrows-overlay");
+                $overlay.find(".active-attack-element").remove();
+
+                state.attacks.forEach(atk => {
+                    const attackerObj = state.cards.find(c => c.instanceId === atk.attackerId);
+                    if (!attackerObj) return;
+
+                    // Get coordinates of attacker card center
+                    let startX = 0, startY = 0;
+                    const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === attackerObj.zone);
+                    if (zoneObj) {
+                        startX = zoneObj.x + 40;
+                        startY = zoneObj.y + 58;
+                    } else {
+                        startX = attackerObj.x + 40;
+                        startY = attackerObj.y + 58;
+                    }
+
+                    let endX = 0, endY = 0;
+                    if (atk.isDirect) {
+                        // Direct attack target coordinate goes directly to top/bottom of playmat depending on controller
+                        endX = startX;
+                        // Symmetrical direct attack goes straight to the other player's side
+                        endY = attackerObj.controller === "player1" ? 50 : 550;
+                    } else {
+                        const targetObj = state.cards.find(c => c.instanceId === atk.targetId);
+                        if (!targetObj) return;
+                        const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
+                        if (tZoneObj) {
+                            endX = tZoneObj.x + 40;
+                            endY = tZoneObj.y + 58;
+                        } else {
+                            endX = targetObj.x + 40;
+                            endY = targetObj.y + 58;
+                        }
+                    }
+
+                    // Calculate arrow angle to render the arrowhead properly
+                    const angle = Math.atan2(endY - startY, endX - startX);
+                    const arrowSize = 12;
+
+                    const headX1 = endX - arrowSize * Math.cos(angle - Math.PI / 6);
+                    const headY1 = endY - arrowSize * Math.sin(angle - Math.PI / 6);
+                    const headX2 = endX - arrowSize * Math.cos(angle + Math.PI / 6);
+                    const headY2 = endY - arrowSize * Math.sin(angle + Math.PI / 6);
+
+                    // Create path and polygon SVG elements
+                    const pathHTML = `<path class="attack-line active-attack-element" d="M ${startX} ${startY} L ${endX} ${endY}" />`;
+                    const headHTML = `<polygon class="attack-head active-attack-element" points="${endX},${endY} ${headX1},${headY1} ${headX2},${headY2}" />`;
+
+                    $overlay.append(pathHTML).append(headHTML);
+                });
+            };
+
+            // Trigger arrow redraw anytime cards are rendered or updated
+            const oldRenderAllCards = window.renderAllCards;
+            window.renderAllCards = function() {
+                oldRenderAllCards.apply(this, arguments);
+                if (typeof window.drawAttackArrows === "function") {
+                    window.drawAttackArrows();
+                }
+            };
+
             // 7. Subscribe to Broadcast channel events
             commChannel
+                .on('broadcast', { event: 'attack_sync' }, ({ payload }) => {
+                    state.attacks = payload.attacks || [];
+                    if (typeof window.drawAttackArrows === "function") {
+                        window.drawAttackArrows();
+                    }
+                })
                 .on('broadcast', { event: 'game_action' }, ({ payload }) => {
                     appendGameLog(payload.player, payload.action, payload.cardName, payload.username);
                     // Show response options to rival if action is marked important and sent by the other player
@@ -1070,6 +1359,7 @@
                     state.activeTurn = payload.activeTurn;
                     state.activePhase = payload.activePhase;
                     state.lp = payload.lp;
+                    state.turnActionTaken = payload.turnActionTaken || false;
                     updateTurnUI();
                 })
                 .subscribe(async (status) => {
@@ -1101,23 +1391,26 @@
                 $(`.phase-btn[data-phase="${state.activePhase}"]`).addClass("active");
 
                 // Update LP Inputs
-                $("#lp-val-p1").val(state.lp.player1);
-                $("#lp-val-p2").val(state.lp.player2);
+                $("#lp-display-p1").text(state.lp.player1);
+                $("#lp-display-p2").text(state.lp.player2);
 
                 // End Turn Blinking Logic:
                 const $endTurnBtn = $("#btn-end-turn");
                 $endTurnBtn.removeClass("flashing");
 
-                if (state.layout === 'yugioh') {
-                    // Blinks if the turn player has selected EP (End Phase), indicating the rival should click it
-                    if (state.activePhase === 'EP') {
-                        // The player who is NOT active should see the button flashing
-                        // Or if in single player practice mode, let it flash to prompt the transition
+                // Do not flash if the current player has performed any gameplay actions this turn
+                if (!state.turnActionTaken) {
+                    if (state.layout === 'yugioh') {
+                        // Blinks if the turn player has selected EP (End Phase), indicating the rival should click it
+                        if (state.activePhase === 'EP') {
+                            // The player who is NOT active should see the button flashing
+                            // Or if in single player practice mode, let it flash to prompt the transition
+                            $endTurnBtn.addClass("flashing");
+                        }
+                    } else {
+                        // For Pokemon, it just blinks until the rival/player touches it to swap turns
                         $endTurnBtn.addClass("flashing");
                     }
-                } else {
-                    // For Pokemon, it just blinks until the rival/player touches it to swap turns
-                    $endTurnBtn.addClass("flashing");
                 }
             }
 
@@ -1147,6 +1440,7 @@
                 state.activeTurn = state.activeTurn === 'player1' ? 'player2' : 'player1';
                 // Reset phase to DP
                 state.activePhase = 'DP';
+                state.turnActionTaken = false; // Reset action taken state for the next turn
                 updateTurnUI();
 
                 // Log turn change
@@ -1162,7 +1456,8 @@
                 const turnStateData = {
                     activeTurn: state.activeTurn,
                     activePhase: state.activePhase,
-                    lp: state.lp
+                    lp: state.lp,
+                    turnActionTaken: state.turnActionTaken
                 };
                 commChannel.send({
                     type: 'broadcast',
@@ -1171,32 +1466,25 @@
                 });
             }
 
-            // Life Points manual input change listener
-            $(".lp-input").on("input change", function() {
-                const val = parseInt($(this).val()) || 0;
-                const isP1 = $(this).attr("id") === "lp-val-p1";
-                if (isP1) {
-                    state.lp.player1 = val;
-                } else {
-                    state.lp.player2 = val;
-                }
-                sendTurnStateUpdate();
-            });
-
-            // Life Points button controls (+, -, /2)
+            // Life Points button controls (+, -, /2) with calculator entry
             $(".lp-btn").click(function() {
                 const player = $(this).data("player"); // "p1" or "p2"
                 const key = player === "p1" ? "player1" : "player2";
+                const calcInputId = player === "p1" ? "#lp-calc-p1" : "#lp-calc-p2";
+                const enteredValue = parseInt($(calcInputId).val()) || 0;
 
                 if ($(this).hasClass("lp-btn-add")) {
-                    state.lp[key] += 100;
-                    appendGameLog('SYS', `Sumó 100 LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                    state.lp[key] += enteredValue;
+                    appendGameLog('SYS', `Sumó ${enteredValue} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                    $(calcInputId).val(""); // Clear after calc
                 } else if ($(this).hasClass("lp-btn-sub")) {
-                    state.lp[key] = Math.max(0, state.lp[key] - 100);
-                    appendGameLog('SYS', `Restó 100 LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                    state.lp[key] = Math.max(0, state.lp[key] - enteredValue);
+                    appendGameLog('SYS', `Restó ${enteredValue} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                    $(calcInputId).val(""); // Clear after calc
                 } else if ($(this).hasClass("lp-btn-half")) {
+                    const originalLP = state.lp[key];
                     state.lp[key] = Math.ceil(state.lp[key] / 2);
-                    appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                    appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${originalLP} a ${state.lp[key]}`);
                 }
 
                 updateTurnUI();
@@ -1218,6 +1506,11 @@
 
                 originalDrawCards.apply(this, arguments);
 
+                // Turn action taken
+                if (typeof window.markTurnActionTaken === "function") {
+                    window.markTurnActionTaken();
+                }
+
                 setTimeout(() => { isDrawingAction = false; }, 600);
             };
 
@@ -1231,6 +1524,15 @@
             window.setupPokemonPrizes = function(playerKey) {
                 sendGameAction(`Colocó sus 6 cartas de Premio`);
                 originalSetupPokemonPrizes.apply(this, arguments);
+            };
+
+            // Trigger gameplay action check
+            window.markTurnActionTaken = function() {
+                if (!state.turnActionTaken) {
+                    state.turnActionTaken = true;
+                    updateTurnUI();
+                    sendTurnStateUpdate();
+                }
             };
 
             // 9. Card State Diff Tracker
@@ -1291,6 +1593,21 @@
                     previousCardStates = newStates;
                     originalRenderAllCards.apply(this, arguments);
                     return;
+                }
+
+                // If rendering or layout triggers, mark turn action if card locations changed
+                if (Object.keys(oldStates).length > 0) {
+                    let moved = false;
+                    Object.keys(newStates).forEach(instId => {
+                        const oldC = oldStates[instId];
+                        const newC = newStates[instId];
+                        if (oldC && newC && (oldC.zone !== newC.zone || oldC.faceDown !== newC.faceDown || oldC.tapped !== newC.tapped)) {
+                            moved = true;
+                        }
+                    });
+                    if (moved && typeof window.markTurnActionTaken === "function") {
+                        window.markTurnActionTaken();
+                    }
                 }
 
                 // Diff them
