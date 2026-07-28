@@ -217,7 +217,7 @@
         <aside class="duel-sidebar">
             <div class="sidebar-section">
                 <h3><i class="fas fa-th-large"></i> Tablero</h3>
-                <select id="select-board-layout" class="sidebar-select">
+                <select id="select-board-layout" class="sidebar-select" style="display: none;">
                     <option value="yugioh">Yu-Gi-Oh! Field</option>
                     <option value="pokemon">Pokémon Arena</option>
                 </select>
@@ -493,8 +493,11 @@
     <script>
         $(document).ready(function() {
             // 1. Initialize State & Room Connection
-            let currentRole = "player1"; // default to P1
             const params = new URLSearchParams(window.location.search);
+            state.mode = params.get('mode') || 'practice';
+            state.layout = params.get('layout') || 'yugioh';
+
+            let currentRole = params.get('role') || "player1"; // default to URL param
             let roomId = params.get('room');
             if (!roomId) {
                 roomId = 'R' + Math.floor(10000 + Math.random() * 90000);
@@ -503,6 +506,44 @@
             }
             state.roomId = roomId;
             $("#display-room-id").text(roomId);
+
+            // Fetch username for chat and logs
+            let myUsername = "Jugador";
+            async function fetchMyUsername() {
+                try {
+                    const { data: { session } } = await _supabase.auth.getSession();
+                    if (session && session.user) {
+                        const { data: userData } = await _supabase
+                            .from('usuarios')
+                            .select('username')
+                            .eq('id', session.user.id)
+                            .maybeSingle();
+                        if (userData && userData.username) {
+                            myUsername = userData.username;
+                        } else {
+                            myUsername = session.user.email.split('@')[0];
+                        }
+                    } else {
+                        myUsername = currentRole === "player1" ? "Jugador 1" : "Jugador 2";
+                    }
+                } catch (e) {
+                    console.error("Error fetching username:", e);
+                }
+            }
+
+            // Lock role and config UI in multiplayer mode
+            if (state.mode === "multiplayer") {
+                $(".role-btn").removeClass("active").css("pointer-events", "none");
+                $(`#btn-role-${currentRole}`).addClass("active");
+                $(".role-btn").click(function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            } else {
+                // Apply initial active role in practice mode
+                $(".role-btn").removeClass("active");
+                $(`#btn-role-${currentRole}`).addClass("active");
+            }
 
             // Copy room link
             $("#btn-copy-room").click(function() {
@@ -521,8 +562,9 @@
             // 2. Setup Supabase Realtime Channel
             const commChannel = _supabase.channel(`room:${roomId}`);
 
-            // 3. Role Picker Logic
+            // 3. Role Picker Logic (only active in practice mode)
             $(".role-btn").click(function() {
+                if (state.mode === "multiplayer") return;
                 $(".role-btn").removeClass("active");
                 $(this).addClass("active");
                 currentRole = $(this).data("role");
@@ -532,17 +574,18 @@
             });
 
             // 4. Game Log & Chat append utilities
-            function appendGameLog(player, action, cardName) {
+            function appendGameLog(player, action, cardName, username) {
                 const now = new Date();
                 const timeStr = now.toTimeString().split(' ')[0];
                 const playerClass = player === "player1" ? "p1-log" : (player === "player2" ? "p2-log" : "sys-log");
-                const playerPrefix = player === "player1" ? "P1" : (player === "player2" ? "P2" : "SYS");
+
+                const displayPrefix = username || (player === "player1" ? "P1" : (player === "player2" ? "P2" : "SYS"));
 
                 // Escaping variables strictly for perfect XSS safety
                 const escapedAction = action; // Actions are hardcoded strings, completely safe
                 const escapedCardName = escapeHtml(cardName);
 
-                let text = `<b>[${playerPrefix}]</b> ${escapedAction}`;
+                let text = `<b>[${displayPrefix}]</b> ${escapedAction}`;
                 if (escapedCardName) {
                     text += ` (<i>${escapedCardName}</i>)`;
                 }
@@ -558,13 +601,13 @@
                 $box.scrollTop($box[0].scrollHeight);
             }
 
-            function appendChatMessage(player, message) {
+            function appendChatMessage(player, message, username) {
                 const playerClass = player === "player1" ? "p1-msg" : "p2-msg";
-                const playerPrefix = player === "player1" ? "Jugador 1" : "Jugador 2";
+                const displayPrefix = username || (player === "player1" ? "Jugador 1" : "Jugador 2");
 
                 const chatHTML = `
                     <div class="chat-message ${playerClass}">
-                        <div class="message-header">${playerPrefix}</div>
+                        <div class="message-header">${displayPrefix}</div>
                         <div>${escapeHtml(message)}</div>
                     </div>
                 `;
@@ -597,10 +640,10 @@
 
             // 5. Broadcast helper functions
             function sendGameAction(action, cardName, isImportant = false) {
-                const actionData = { player: currentRole, action, cardName, isImportant };
+                const actionData = { player: currentRole, action, cardName, isImportant, username: myUsername };
 
                 // Append locally
-                appendGameLog(currentRole, action, cardName);
+                appendGameLog(currentRole, action, cardName, myUsername);
 
                 // Send via realtime
                 commChannel.send({
@@ -611,10 +654,10 @@
             }
 
             function sendChatMessage(message) {
-                const chatData = { player: currentRole, message };
+                const chatData = { player: currentRole, message, username: myUsername };
 
                 // Append locally
-                appendChatMessage(currentRole, message);
+                appendChatMessage(currentRole, message, myUsername);
 
                 // Send via realtime
                 commChannel.send({
@@ -625,10 +668,10 @@
             }
 
             function sendOpponentResponse(response) {
-                const responseData = { player: currentRole, response };
+                const responseData = { player: currentRole, response, username: myUsername };
 
                 // Append locally
-                appendGameLog(currentRole, `Responde a la acción anterior: <b>${escapeHtml(response)}</b>`);
+                appendGameLog(currentRole, `Responde a la acción anterior: <b>${escapeHtml(response)}</b>`, null, myUsername);
 
                 // Send via realtime
                 commChannel.send({
@@ -669,25 +712,73 @@
             // 7. Subscribe to Broadcast channel events
             commChannel
                 .on('broadcast', { event: 'game_action' }, ({ payload }) => {
-                    appendGameLog(payload.player, payload.action, payload.cardName);
+                    appendGameLog(payload.player, payload.action, payload.cardName, payload.username);
                     // Show response options to rival if action is marked important and sent by the other player
                     if (payload.isImportant && payload.player !== currentRole) {
                         $("#pending-response-box").slideDown(150);
                     }
                 })
                 .on('broadcast', { event: 'chat_msg' }, ({ payload }) => {
-                    appendChatMessage(payload.player, payload.message);
+                    appendChatMessage(payload.player, payload.message, payload.username);
                 })
                 .on('broadcast', { event: 'opponent_response' }, ({ payload }) => {
-                    appendGameLog(payload.player, `Responde a la acción anterior: <b>${escapeHtml(payload.response)}</b>`);
+                    appendGameLog(payload.player, `Responde a la acción anterior: <b>${escapeHtml(payload.response)}</b>`, null, payload.username);
                     // Clear flashing prompt if it was resolved
                     if (payload.player !== currentRole) {
                         $("#pending-response-box").slideUp(150);
                     }
                 })
-                .subscribe((status) => {
+                .on('broadcast', { event: 'player_joined' }, ({ payload }) => {
+                    const joinedRole = payload.role === "player1" ? "Jugador 1" : "Jugador 2";
+                    appendSystemMsg(`${payload.username} se ha unido como ${joinedRole}`);
+
+                    // If we are already connected, broadcast our current cards to the newcomer
+                    if (payload.role !== currentRole) {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'card_sync',
+                            payload: { cards: state.cards }
+                        });
+                    }
+                })
+                .on('broadcast', { event: 'card_sync' }, ({ payload }) => {
+                    window.isIncomingSync = true;
+                    try {
+                        payload.cards.forEach(remoteCard => {
+                            const localCard = state.cards.find(c => c.instanceId === remoteCard.instanceId);
+                            if (localCard) {
+                                localCard.x = remoteCard.x;
+                                localCard.y = remoteCard.y;
+                                localCard.z = remoteCard.z;
+                                localCard.zone = remoteCard.zone;
+                                localCard.faceDown = remoteCard.faceDown;
+                                localCard.tapped = remoteCard.tapped;
+                                localCard.counters = remoteCard.counters;
+                                localCard.attachedTo = remoteCard.attachedTo;
+                                localCard.controller = remoteCard.controller;
+                                localCard.isExtra = remoteCard.isExtra;
+                                localCard.tiltAngle = remoteCard.tiltAngle;
+                                localCard.attachedAt = remoteCard.attachedAt;
+                            } else {
+                                state.cards.push(remoteCard);
+                            }
+                        });
+                        window.renderAllCards();
+                    } finally {
+                        window.isIncomingSync = false;
+                    }
+                })
+                .subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
+                        await fetchMyUsername();
                         appendSystemMsg(`Conectado a la sala: ${roomId}`);
+
+                        // Send player_joined event to let the other player know
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'player_joined',
+                            payload: { role: currentRole, username: myUsername }
+                        });
                     }
                 });
 
@@ -893,6 +984,15 @@
 
                 // Run original render layout
                 originalRenderAllCards.apply(this, arguments);
+
+                // Broadcast cards state if in multiplayer mode and not an incoming sync
+                if (state.mode === "multiplayer" && !window.isIncomingSync) {
+                    commChannel.send({
+                        type: 'broadcast',
+                        event: 'card_sync',
+                        payload: { cards: state.cards }
+                    });
+                }
             };
 
             // Seed initial card states on load

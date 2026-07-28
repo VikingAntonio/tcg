@@ -100,10 +100,11 @@ const HIGH_FIDELITY_MOCKS = [
 ];
 
 // Application State
+const stateParams = new URLSearchParams(window.location.search);
 const state = {
-    roomId: null,
-    mode: "practice", // "practice" mode is fully enabled
-    layout: "yugioh",
+    roomId: stateParams.get('room') || null,
+    mode: stateParams.get('mode') || "practice",
+    layout: stateParams.get('layout') || "yugioh",
     cards: [], // All active card instances currently in game
     decks: { player1: [], player2: [] }, // Raw decks selected
     currentUser: null
@@ -190,50 +191,57 @@ function initLayout() {
 async function checkUserSessionAndPreload() {
     try {
         const { data: { session } } = await _supabase.auth.getSession();
-        let loadedCustom = false;
-
         if (session && session.user) {
             state.currentUser = session.user;
-            loadedCustom = await loadDecksForUser(session.user.id);
         }
 
-        if (!loadedCustom) {
-            // Preload high-fidelity mocks directly immediately!
-            loadMockDecks();
+        const params = new URLSearchParams(window.location.search);
+        const deck1Id = params.get('deck1');
+        const deck2Id = params.get('deck2');
+        const userRole = params.get('role') || 'player1';
+
+        if (state.mode === 'practice') {
+            // Load deck1 (Player 1)
+            if (deck1Id && deck1Id !== 'mock') {
+                await fetchDeckCards(deck1Id, 'player1');
+                instantiateDeck('player1');
+            } else {
+                state.decks['player1'] = [...HIGH_FIDELITY_MOCKS];
+                instantiateDeck('player1');
+            }
+
+            // Load deck2 (Player 2)
+            if (deck2Id && deck2Id !== 'mock') {
+                await fetchDeckCards(deck2Id, 'player2');
+                instantiateDeck('player2');
+            } else {
+                state.decks['player2'] = [...HIGH_FIDELITY_MOCKS];
+                instantiateDeck('player2');
+            }
+        } else {
+            // Multiplayer mode: only load the player's own deck based on their configured role
+            if (userRole === 'player1') {
+                if (deck1Id && deck1Id !== 'mock') {
+                    await fetchDeckCards(deck1Id, 'player1');
+                    instantiateDeck('player1');
+                } else {
+                    state.decks['player1'] = [...HIGH_FIDELITY_MOCKS];
+                    instantiateDeck('player1');
+                }
+            } else if (userRole === 'player2') {
+                if (deck2Id && deck2Id !== 'mock') {
+                    await fetchDeckCards(deck2Id, 'player2');
+                    instantiateDeck('player2');
+                } else {
+                    state.decks['player2'] = [...HIGH_FIDELITY_MOCKS];
+                    instantiateDeck('player2');
+                }
+            }
         }
     } catch (err) {
         console.error("Error checking user session:", err);
         loadMockDecks();
     }
-}
-
-// Load custom user decks specifically belonging to the active logged-in user
-async function loadDecksForUser(userId) {
-    try {
-        const { data: decks, error } = await _supabase
-            .from('decks')
-            .select('id, name')
-            .eq('user_id', userId);
-
-        if (error) throw error;
-
-        if (decks && decks.length > 0) {
-            // Search for a deck named "test"
-            const testDeck = decks.find(d => d.name.toLowerCase() === "test") || decks[0];
-            if (testDeck) {
-                await fetchDeckCards(testDeck.id, "player1");
-                instantiateDeck("player1");
-
-                // Duplicate for player 2 in practice mode to have an opponent deck pre-populated
-                state.decks["player2"] = [...state.decks["player1"]];
-                instantiateDeck("player2");
-                return true;
-            }
-        }
-    } catch (err) {
-        console.error("Error loading user decks:", err);
-    }
-    return false;
 }
 
 // Load Mock high-fidelity cards
