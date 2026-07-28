@@ -719,15 +719,12 @@
                 // Remove existing targeting bindings to prevent duplicates
                 $(".duel-card").off("click.attacktarget");
 
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Declarar Ataque',
-                    text: `Selecciona una carta objetivo en el campo para atacar con ${attackerCard.name}.`,
-                    toast: true,
-                    position: 'top-end',
-                    timer: 3500,
-                    showConfirmButton: false
-                });
+                // Display targeting instructions Toast Overlay (centered at bottom)
+                $("#zone-picker-overlay").html(`
+                    <div class="zone-picker-toast" style="background: linear-gradient(135deg, #ff1b6b, #ff8c00); box-shadow: 0 10px 30px rgba(255, 27, 107, 0.5);">
+                        <i class="fas fa-bolt animate-pulse"></i> Elige un monstruo/carta objetivo en el campo para atacar con ${attackerCard.name}
+                    </div>
+                `).fadeIn(200).css("display", "flex");
 
                 $("#playmat").addClass("selecting-zone");
 
@@ -765,6 +762,11 @@
                         // Cleanup targeting state
                         $("#playmat").removeClass("selecting-zone");
                         $(".duel-card").off("click.attacktarget");
+                        $("#zone-picker-overlay").fadeOut(150).html(`
+                            <div class="zone-picker-toast">
+                                <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+                            </div>
+                        `);
                     });
                 }, 100);
 
@@ -773,6 +775,11 @@
                     if (e.key === "Escape") {
                         $("#playmat").removeClass("selecting-zone");
                         $(".duel-card").off("click.attacktarget");
+                        $("#zone-picker-overlay").fadeOut(150).html(`
+                            <div class="zone-picker-toast">
+                                <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+                            </div>
+                        `);
                     }
                 });
             };
@@ -1390,9 +1397,42 @@
                 $(".phase-btn").removeClass("active");
                 $(`.phase-btn[data-phase="${state.activePhase}"]`).addClass("active");
 
-                // Update LP Inputs
-                $("#lp-display-p1").text(state.lp.player1);
-                $("#lp-display-p2").text(state.lp.player2);
+                // Animated LP transition (Anime-style ticker)
+                function animateLPCounter(elementId, startValue, endValue, duration = 800) {
+                    const $el = $(elementId);
+                    const startTime = performance.now();
+
+                    function update(currentTime) {
+                        const elapsed = currentTime - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+
+                        // Linear interpolation or ease-out
+                        const currentValue = Math.floor(startValue + (endValue - startValue) * progress);
+                        $el.text(currentValue);
+
+                        if (progress < 1) {
+                            requestAnimationFrame(update);
+                        } else {
+                            $el.text(endValue);
+                        }
+                    }
+                    requestAnimationFrame(update);
+                }
+
+                // Update LP Displays with anime-style counting animations
+                const currentP1Disp = parseInt($("#lp-display-p1").text()) || 0;
+                if (currentP1Disp !== state.lp.player1 && currentP1Disp !== 0) {
+                    animateLPCounter("#lp-display-p1", currentP1Disp, state.lp.player1);
+                } else {
+                    $("#lp-display-p1").text(state.lp.player1);
+                }
+
+                const currentP2Disp = parseInt($("#lp-display-p2").text()) || 0;
+                if (currentP2Disp !== state.lp.player2 && currentP2Disp !== 0) {
+                    animateLPCounter("#lp-display-p2", currentP2Disp, state.lp.player2);
+                } else {
+                    $("#lp-display-p2").text(state.lp.player2);
+                }
 
                 // End Turn Blinking Logic:
                 const $endTurnBtn = $("#btn-end-turn");
