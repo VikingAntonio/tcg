@@ -681,16 +681,15 @@ function bindCardDragEvents() {
             cardObj.tapped = !cardObj.tapped;
             renderAllCards();
         } else if ($(this).hasClass("btn-field-control")) {
-            // Swap owner/controller
-            cardObj.owner = cardObj.owner === "player1" ? "player2" : "player1";
-            cardObj.controller = cardObj.owner;
+            // Swap controller ONLY, leave owner intact!
+            cardObj.controller = cardObj.controller === "player1" ? "player2" : "player1";
             detachAllChildren(cardObj.instanceId);
             startGraphicalTargeting(cardObj, "summon");
 
             Swal.fire({
                 icon: 'info',
                 title: 'Control Cambiado',
-                text: `Ahora controlas a ${cardObj.name}. Selecciona una zona para colocarla.`,
+                text: `Ahora controlas a ${cardObj.name}. Selecciona una zona para colocarla de tu lado.`,
                 toast: true,
                 position: 'top-end',
                 timer: 2500,
@@ -707,29 +706,35 @@ function bindCardDragEvents() {
             }, 800);
         } else if ($(this).hasClass("btn-field-return")) {
             detachAllChildren(cardObj.instanceId);
+            const originalOwnerSuffix = cardObj.owner === "player1" ? 1 : 2;
             if (cardObj.isExtra) {
-                // Return to Extra Deck face-down
-                const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
-                cardObj.zone = `extra_${playerSuffix}`;
+                // Return to original owner's Extra Deck face-down
+                cardObj.zone = `extra_${originalOwnerSuffix}`;
                 cardObj.faceDown = true;
                 cardObj.tapped = false;
             } else {
-                cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+                // Return to original owner's Hand
+                cardObj.zone = `hand_${originalOwnerSuffix}`;
             }
+            cardObj.controller = cardObj.owner; // Reset controller back to owner
             cardObj.attachedTo = null; // detach on return
             renderAllCards();
         } else if ($(this).hasClass("btn-field-grave")) {
-            const pileId = `grave_${playerSuffix}`;
+            const originalOwnerSuffix = cardObj.owner === "player1" ? 1 : 2;
+            const pileId = `grave_${originalOwnerSuffix}`;
             sendAttachedCardsToPile(cardObj.instanceId, pileId);
             cardObj.zone = pileId;
+            cardObj.controller = cardObj.owner; // Reset controller back to owner
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on discard
             renderAllCards();
         } else if ($(this).hasClass("btn-field-banish")) {
-            const pileId = `banished_${playerSuffix}`;
+            const originalOwnerSuffix = cardObj.owner === "player1" ? 1 : 2;
+            const pileId = `banished_${originalOwnerSuffix}`;
             sendAttachedCardsToPile(cardObj.instanceId, pileId);
             cardObj.zone = pileId;
+            cardObj.controller = cardObj.owner; // Reset controller back to owner
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on banish
@@ -904,22 +909,28 @@ $(window).on('mouseup touchend', function(e) {
 
         const oldZone = cardObj.zone;
 
-        if (isOverP1Hand) {
-            // Return/move to Player 1 hand
-            cardObj.zone = "hand_1";
-            cardObj.controller = "player1";
-        } else if (isOverP2Hand) {
-            // Return/move to Player 2 hand
-            cardObj.zone = "hand_2";
-            cardObj.controller = "player2";
+        if (isOverP1Hand || isOverP2Hand) {
+            // Return/move to original owner's hand automatically
+            const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
+            cardObj.zone = `hand_${originalSuffix}`;
+            cardObj.controller = cardObj.owner; // Reset controller
         } else if (hoverZone) {
-            // If dropped on grave/banished pile, send attached cards too
+            // If dropped on grave, banished, or deck pile, route to original owner's corresponding zone
             if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
-                sendAttachedCardsToPile(cardObj.instanceId, hoverZone.id);
+                const zonePrefix = hoverZone.id.split("_")[0]; // "grave" or "banished"
+                const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
+                const targetPileId = `${zonePrefix}_${originalSuffix}`;
+                sendAttachedCardsToPile(cardObj.instanceId, targetPileId);
                 cardObj.movedToPileAt = Date.now() + Math.random();
+                cardObj.zone = targetPileId;
+                cardObj.controller = cardObj.owner; // Reset controller
+            } else if (hoverZone.id.startsWith("deck_")) {
+                const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
+                cardObj.zone = `deck_${originalSuffix}`;
+                cardObj.controller = cardObj.owner; // Reset controller
+            } else {
+                cardObj.zone = hoverZone.id;
             }
-            // Drop card inside target zone
-            cardObj.zone = hoverZone.id;
             cardObj.attachedTo = null; // Detach if dragged to a fresh board zone
             // Snap coordinates are mapped to zone centers automatically in render
 
@@ -2143,6 +2154,7 @@ function setupEventListeners() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
         activeMenuCard.zone = activeMenuCard.owner === "player1" ? "hand_1" : "hand_2";
+        activeMenuCard.controller = activeMenuCard.owner; // Reset controller
         renderAllCards();
     });
 
@@ -2151,6 +2163,7 @@ function setupEventListeners() {
         const pileId = activeMenuCard.owner === "player1" ? "grave_1" : "grave_2";
         sendAttachedCardsToPile(activeMenuCard.instanceId, pileId);
         activeMenuCard.zone = pileId;
+        activeMenuCard.controller = activeMenuCard.owner; // Reset controller
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
         renderAllCards();
@@ -2162,6 +2175,7 @@ function setupEventListeners() {
         const oldZone = activeMenuCard.zone;
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
+        activeMenuCard.controller = activeMenuCard.owner; // Reset controller
         activeMenuCard.faceDown = true;
         activeMenuCard.tapped = false;
 
@@ -2193,14 +2207,14 @@ function setupEventListeners() {
     $("#menu-control").click(function() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
-        activeMenuCard.owner = activeMenuCard.owner === "player1" ? "player2" : "player1";
-        activeMenuCard.controller = activeMenuCard.owner;
+        // Swap controller ONLY, leave owner intact!
+        activeMenuCard.controller = activeMenuCard.controller === "player1" ? "player2" : "player1";
         startGraphicalTargeting(activeMenuCard, "summon");
 
         Swal.fire({
             icon: 'info',
             title: 'Control Cambiado',
-            text: `Ahora controlas a ${activeMenuCard.name}. Selecciona una zona para colocarla.`,
+            text: `Ahora controlas a ${activeMenuCard.name}. Selecciona una zona para colocarla de tu lado.`,
             toast: true,
             position: 'top-end',
             timer: 2500,
@@ -2214,6 +2228,7 @@ function setupEventListeners() {
         const oldZone = activeMenuCard.zone;
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
+        activeMenuCard.controller = activeMenuCard.owner; // Reset controller
         activeMenuCard.faceDown = true;
         activeMenuCard.tapped = false;
 
