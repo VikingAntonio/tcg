@@ -865,6 +865,21 @@ $(window).on('mouseup touchend', function(e) {
     $(".board-zone").removeClass("highlighted");
 
     if (isClick) {
+        if ($("#playmat").hasClass("selecting-zone")) {
+            // Manually dispatch a click event to trigger targeting click listeners (which were blocked by mousedown preventDefault)
+            const targetEl = dragCard[0];
+            dragCard = null;
+            if (targetEl) {
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                targetEl.dispatchEvent(clickEvent);
+            }
+            return;
+        }
+
         // Check if hand multi-select mode is active for this card's zone
         const isHandCard = cardObj.zone.startsWith("hand_");
         if (isHandCard) {
