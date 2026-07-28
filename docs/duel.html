@@ -198,6 +198,234 @@
                 border-top: 1px solid var(--glass-border);
             }
         }
+
+        /* Central Turn and Phase Bar Styling */
+        .central-turn-bar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            background: rgba(10, 15, 22, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--glass-border);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            padding: 6px 16px;
+            gap: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.05);
+            pointer-events: auto;
+        }
+
+        .turn-indicator {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            padding: 4px 10px;
+            border-radius: 15px;
+            text-transform: uppercase;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .turn-indicator.p1-turn {
+            background: rgba(0, 210, 255, 0.2);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .turn-indicator.p2-turn {
+            background: rgba(255, 27, 107, 0.2);
+            color: var(--secondary-color);
+            border: 1px solid var(--secondary-color);
+            box-shadow: 0 0 10px var(--secondary-glow);
+        }
+
+        .phases-container {
+            display: flex;
+            gap: 5px;
+        }
+
+        .phase-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #ccc;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 5px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .phase-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .phase-btn.active {
+            background: var(--primary-color);
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        /* End Turn Button and Flashing Animation */
+        .end-turn-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1.5px solid #fff;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .end-turn-btn:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes endTurnBlink {
+            0% {
+                box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.1);
+                border-color: #fff;
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(0, 210, 255, 0.8), 0 0 30px rgba(0, 210, 255, 0.4);
+                background: rgba(0, 210, 255, 0.4);
+                border-color: #00d2ff;
+                color: #fff;
+            }
+        }
+
+        .end-turn-btn.flashing {
+            animation: endTurnBlink 0.8s infinite alternate ease-in-out;
+        }
+
+        /* LP Counter Styling */
+        .lp-counter-container {
+            position: absolute;
+            background: rgba(10, 15, 22, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1.5px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px;
+            width: 140px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+            z-index: 90;
+            pointer-events: auto;
+        }
+
+        .p1-lp-container {
+            bottom: 30px;
+            left: 190px;
+            border-color: rgba(0, 210, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 210, 255, 0.05);
+        }
+
+        .p2-lp-container {
+            top: 30px;
+            right: 190px;
+            border-color: rgba(255, 27, 107, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 27, 107, 0.05);
+        }
+
+        .lp-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .p1-lp-container .lp-header {
+            color: var(--primary-color);
+        }
+
+        .p2-lp-container .lp-header {
+            color: var(--secondary-color);
+        }
+
+        .lp-display-row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .lp-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            padding: 4px;
+        }
+
+        .p1-lp-container .lp-input {
+            border-color: rgba(0, 210, 255, 0.2);
+        }
+
+        .p2-lp-container .lp-input {
+            border-color: rgba(255, 27, 107, 0.2);
+        }
+
+        /* Remove spin arrows on input number */
+        .lp-input::-webkit-outer-spin-button,
+        .lp-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .lp-input {
+            -moz-appearance: textfield;
+        }
+
+        .lp-controls-row {
+            display: flex;
+            gap: 4px;
+        }
+
+        .lp-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #eee;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 4px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .p1-lp-container .lp-btn:hover {
+            background: var(--primary-color);
+            color: #000;
+            border-color: #fff;
+        }
+
+        .p2-lp-container .lp-btn:hover {
+            background: var(--secondary-color);
+            color: #fff;
+            border-color: #fff;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -266,6 +494,45 @@
                 <div class="board-grid-bg"></div>
                 <!-- Dynamic Zone slots will be rendered here via JS -->
                 <div id="dynamic-zones-container"></div>
+
+                <!-- Central Turn and Phase Selector Bar -->
+                <div id="central-turn-bar" class="central-turn-bar">
+                    <div class="turn-indicator" id="turn-display">P1</div>
+                    <div class="phases-container" id="phases-container">
+                        <button class="phase-btn" data-phase="DP" title="Draw Phase">DP</button>
+                        <button class="phase-btn" data-phase="SP" title="Standby Phase">SP</button>
+                        <button class="phase-btn" data-phase="M1" title="Main Phase 1">M1</button>
+                        <button class="phase-btn" data-phase="BP" title="Battle Phase">BP</button>
+                        <button class="phase-btn" data-phase="M2" title="Main Phase 2">M2</button>
+                        <button class="phase-btn" data-phase="EP" title="End Phase">EP</button>
+                    </div>
+                    <button class="end-turn-btn" id="btn-end-turn">End Turn</button>
+                </div>
+
+                <!-- LP Counters for Player 1 and Player 2 -->
+                <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
+                    <div class="lp-header">P1 LP</div>
+                    <div class="lp-display-row">
+                        <input type="number" class="lp-input" id="lp-val-p1" value="8000" min="0">
+                    </div>
+                    <div class="lp-controls-row">
+                        <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+100</button>
+                        <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-100</button>
+                        <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/2</button>
+                    </div>
+                </div>
+
+                <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
+                    <div class="lp-header">P2 LP</div>
+                    <div class="lp-display-row">
+                        <input type="number" class="lp-input" id="lp-val-p2" value="8000" min="0">
+                    </div>
+                    <div class="lp-controls-row">
+                        <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+100</button>
+                        <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-100</button>
+                        <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/2</button>
+                    </div>
+                </div>
 
                 <!-- Absolutely Positioned Cards on the field -->
                 <div id="field-cards-container"></div>
@@ -496,6 +763,27 @@
             const params = new URLSearchParams(window.location.search);
             state.mode = params.get('mode') || 'practice';
             state.layout = params.get('layout') || 'yugioh';
+
+            // Custom Game State Variables for turn, phase and life points
+            state.activeTurn = 'player1'; // 'player1' or 'player2'
+            state.activePhase = 'DP'; // 'DP', 'SP', 'M1', 'BP', 'M2', 'EP'
+            state.lp = { player1: 8000, player2: 8000 };
+
+            // Helper to hide/show features depending on selected layout
+            function updateLayoutFeatureVisibility() {
+                if (state.layout === 'yugioh') {
+                    // Show phases and show LP counters
+                    $("#phases-container").show();
+                    $("#lp-counter-p1").show();
+                    $("#lp-counter-p2").show();
+                } else {
+                    // Hide phases and hide LP counters (Pokémon layout has no phases or LP counters)
+                    $("#phases-container").hide();
+                    $("#lp-counter-p1").hide();
+                    $("#lp-counter-p2").hide();
+                }
+                updateTurnUI();
+            }
 
             let currentRole = params.get('role') || "player1"; // default to URL param
             let roomId = params.get('room');
@@ -732,12 +1020,22 @@
                     const joinedRole = payload.role === "player1" ? "Jugador 1" : "Jugador 2";
                     appendSystemMsg(`${payload.username} se ha unido como ${joinedRole}`);
 
-                    // If we are already connected, broadcast our current cards to the newcomer
+                    // If we are already connected, broadcast our current cards and turn state to the newcomer
                     if (payload.role !== currentRole) {
                         commChannel.send({
                             type: 'broadcast',
                             event: 'card_sync',
                             payload: { cards: state.cards }
+                        });
+                        // Send active turn state
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'turn_state_sync',
+                            payload: {
+                                activeTurn: state.activeTurn,
+                                activePhase: state.activePhase,
+                                lp: state.lp
+                            }
                         });
                     }
                 })
@@ -768,6 +1066,12 @@
                         window.isIncomingSync = false;
                     }
                 })
+                .on('broadcast', { event: 'turn_state_sync' }, ({ payload }) => {
+                    state.activeTurn = payload.activeTurn;
+                    state.activePhase = payload.activePhase;
+                    state.lp = payload.lp;
+                    updateTurnUI();
+                })
                 .subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
                         await fetchMyUsername();
@@ -781,6 +1085,123 @@
                         });
                     }
                 });
+
+            // UI updater for state variables
+            function updateTurnUI() {
+                // Update turn indicator text & style
+                const $turnDisplay = $("#turn-display");
+                if (state.activeTurn === 'player1') {
+                    $turnDisplay.text("P1").removeClass("p2-turn").addClass("p1-turn");
+                } else {
+                    $turnDisplay.text("P2").removeClass("p1-turn").addClass("p2-turn");
+                }
+
+                // Update phase button active state
+                $(".phase-btn").removeClass("active");
+                $(`.phase-btn[data-phase="${state.activePhase}"]`).addClass("active");
+
+                // Update LP Inputs
+                $("#lp-val-p1").val(state.lp.player1);
+                $("#lp-val-p2").val(state.lp.player2);
+
+                // End Turn Blinking Logic:
+                const $endTurnBtn = $("#btn-end-turn");
+                $endTurnBtn.removeClass("flashing");
+
+                if (state.layout === 'yugioh') {
+                    // Blinks if the turn player has selected EP (End Phase), indicating the rival should click it
+                    if (state.activePhase === 'EP') {
+                        // The player who is NOT active should see the button flashing
+                        // Or if in single player practice mode, let it flash to prompt the transition
+                        $endTurnBtn.addClass("flashing");
+                    }
+                } else {
+                    // For Pokemon, it just blinks until the rival/player touches it to swap turns
+                    $endTurnBtn.addClass("flashing");
+                }
+            }
+
+            // Hook layout change menu changes
+            $("#select-board-layout").on("change", function() {
+                // Read from menu option to align state
+                state.layout = $(this).val();
+                updateLayoutFeatureVisibility();
+            });
+
+            // Initial feature check
+            updateLayoutFeatureVisibility();
+
+            // Phase buttons manual selection
+            $(".phase-btn").click(function() {
+                const targetPhase = $(this).data("phase");
+                state.activePhase = targetPhase;
+                updateTurnUI();
+
+                // Broadcast phase change
+                sendTurnStateUpdate();
+            });
+
+            // End Turn Button Action
+            $("#btn-end-turn").click(function() {
+                // Swap Turn between player1 and player2
+                state.activeTurn = state.activeTurn === 'player1' ? 'player2' : 'player1';
+                // Reset phase to DP
+                state.activePhase = 'DP';
+                updateTurnUI();
+
+                // Log turn change
+                const turnLabel = state.activeTurn === 'player1' ? 'Jugador 1' : 'Jugador 2';
+                appendGameLog('SYS', `Turno de: ${turnLabel}`);
+
+                // Broadcast Turn/Phase change
+                sendTurnStateUpdate();
+            });
+
+            // Helper to broadcast custom state updates
+            function sendTurnStateUpdate() {
+                const turnStateData = {
+                    activeTurn: state.activeTurn,
+                    activePhase: state.activePhase,
+                    lp: state.lp
+                };
+                commChannel.send({
+                    type: 'broadcast',
+                    event: 'turn_state_sync',
+                    payload: turnStateData
+                });
+            }
+
+            // Life Points manual input change listener
+            $(".lp-input").on("input change", function() {
+                const val = parseInt($(this).val()) || 0;
+                const isP1 = $(this).attr("id") === "lp-val-p1";
+                if (isP1) {
+                    state.lp.player1 = val;
+                } else {
+                    state.lp.player2 = val;
+                }
+                sendTurnStateUpdate();
+            });
+
+            // Life Points button controls (+, -, /2)
+            $(".lp-btn").click(function() {
+                const player = $(this).data("player"); // "p1" or "p2"
+                const key = player === "p1" ? "player1" : "player2";
+
+                if ($(this).hasClass("lp-btn-add")) {
+                    state.lp[key] += 100;
+                    appendGameLog('SYS', `Sumó 100 LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                } else if ($(this).hasClass("lp-btn-sub")) {
+                    state.lp[key] = Math.max(0, state.lp[key] - 100);
+                    appendGameLog('SYS', `Restó 100 LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                } else if ($(this).hasClass("lp-btn-half")) {
+                    state.lp[key] = Math.ceil(state.lp[key] / 2);
+                    appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                }
+
+                updateTurnUI();
+                sendTurnStateUpdate();
+            });
 
             // 8. Decorate global helper functions in duel.js
             let isDrawingAction = false;
