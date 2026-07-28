@@ -314,15 +314,15 @@
             </div>
 
             <!-- Game Log Panel (Auto Logs Actions) -->
-            <div class="sidebar-section comm-panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 180px;">
+            <div class="sidebar-section comm-panel" style="height: 250px; max-height: 250px; display: flex; flex-direction: column; overflow: hidden;">
                 <h3><i class="fas fa-history"></i> Game Log</h3>
-                <div id="game-log-box" style="flex: 1; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 8px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; max-height: 100%;">
+                <div id="game-log-box" style="flex: 1; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 8px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px;">
                     <!-- Logs populated here -->
                 </div>
             </div>
 
             <!-- Player Chat Panel -->
-            <div class="sidebar-section comm-panel" style="flex: 1.2; display: flex; flex-direction: column; overflow: hidden; min-height: 220px;">
+            <div class="sidebar-section comm-panel" style="height: 340px; max-height: 340px; display: flex; flex-direction: column; overflow: hidden;">
                 <h3><i class="fas fa-comments"></i> Chat</h3>
                 <div id="chat-msg-box" style="flex: 1; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 8px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
                     <!-- Messages populated here -->
@@ -461,12 +461,8 @@
 
     <!-- External project config & logic scripts -->
     <script src="js/supabase-config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/duel.js"></script>
-
-    <!-- Communication, Chat, and Game Log integration -->
     <script>
-        // Global synchronization & XSS guard
+        // Global synchronization & XSS guard - Must be loaded before duel.js!
         window.isIncomingSync = false;
 
         // Monkey-patch _supabase.channel to automatically wrap all subscription callbacks
@@ -489,7 +485,12 @@
             };
             return channel;
         };
+    </script>
+    <script src="js/utils.js"></script>
+    <script src="js/duel.js"></script>
 
+    <!-- Communication, Chat, and Game Log integration -->
+    <script>
         $(document).ready(function() {
             // 1. Initialize State & Room Connection
             let currentRole = "player1"; // default to P1
@@ -627,20 +628,6 @@
                 const responseData = { player: currentRole, response };
 
                 // Append locally
-                appendGameLog(currentRole, `Responde a la acción anterior: <b>${response}</b>`);
-
-                // Send via realtime
-                commChannel.send({
-                    type: 'broadcast',
-                    event: 'opponent_response',
-                    payload: responseData
-                });
-            }
-
-            function sendOpponentResponse(response) {
-                const responseData = { player: currentRole, response };
-
-                // Append locally
                 appendGameLog(currentRole, `Responde a la acción anterior: <b>${escapeHtml(response)}</b>`);
 
                 // Send via realtime
@@ -736,6 +723,16 @@
 
             // 9. Card State Diff Tracker
             let previousCardStates = {};
+
+            function isFieldZone(zoneId) {
+                if (!zoneId) return false;
+                return !zoneId.startsWith("hand_") &&
+                       !zoneId.startsWith("deck_") &&
+                       !zoneId.startsWith("extra_") &&
+                       !zoneId.startsWith("prize_") &&
+                       !zoneId.startsWith("grave_") &&
+                       !zoneId.startsWith("banished_");
+            }
 
             function getZoneFriendlyName(zoneId) {
                 if (!zoneId) return "Campo";
@@ -842,45 +839,52 @@
                             }
                         }
                     }
-                    // B. Face-down status changes
-                    else if (oldC.faceDown !== newC.faceDown) {
-                        if (newC.faceDown) {
-                            sendGameAction(`volteó una carta boca abajo`);
-                        } else {
-                            sendGameAction(`volteó boca arriba a ${publicName}`, null, true);
+                    // B. Face-down status changes, tapped, counters, attachedTo, or controller switches
+                    // Only track these if the card is currently in a public field zone!
+                    else {
+                        if (!isFieldZone(newC.zone)) {
+                            return; // No peeking leaks for hands/deck/extra/prizes/etc.
                         }
-                    }
-                    // C. Tapped (Defense position) switches
-                    else if (oldC.tapped !== newC.tapped) {
-                        const posLabel = newC.tapped ? "Giro / Defensa" : "Vertical / Ataque";
-                        const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
-                        sendGameAction(`Cambió posición de ${nameToUse} a ${posLabel}`);
-                    }
-                    // D. Counter badge updates
-                    else if (oldC.counters !== newC.counters) {
-                        const diff = newC.counters - oldC.counters;
-                        const sign = diff > 0 ? `+${diff}` : `${diff}`;
-                        const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
-                        sendGameAction(`Modificó contadores de ${nameToUse} (${sign})`);
-                    }
-                    // E. Card attachment modifications
-                    else if (oldC.attachedTo !== newC.attachedTo) {
-                        if (newC.attachedTo) {
-                            const parentCard = state.cards.find(c => c.instanceId === newC.attachedTo);
-                            if (parentCard) {
-                                const childName = oldC.faceDown ? privateFaceDownName : publicName;
-                                const parentName = parentCard.faceDown ? privateFaceDownName : `<b>${escapeHtml(parentCard.name)}</b>`;
-                                sendGameAction(`Acopló ${childName} a ${parentName}`);
+
+                        if (oldC.faceDown !== newC.faceDown) {
+                            if (newC.faceDown) {
+                                sendGameAction(`volteó una carta boca abajo`);
+                            } else {
+                                sendGameAction(`volteó boca arriba a ${publicName}`, null, true);
                             }
-                        } else {
-                            const nameToUse = oldC.faceDown ? privateFaceDownName : publicName;
-                            sendGameAction(`Desacopló ${nameToUse}`);
                         }
-                    }
-                    // F. Card controller switches
-                    else if (oldC.controller !== newC.controller) {
-                        const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
-                        sendGameAction(`Tomó el control de ${nameToUse}`);
+                        // C. Tapped (Defense position) switches
+                        else if (oldC.tapped !== newC.tapped) {
+                            const posLabel = newC.tapped ? "Giro / Defensa" : "Vertical / Ataque";
+                            const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
+                            sendGameAction(`Cambió posición de ${nameToUse} a ${posLabel}`);
+                        }
+                        // D. Counter badge updates
+                        else if (oldC.counters !== newC.counters) {
+                            const diff = newC.counters - oldC.counters;
+                            const sign = diff > 0 ? `+${diff}` : `${diff}`;
+                            const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
+                            sendGameAction(`Modificó contadores de ${nameToUse} (${sign})`);
+                        }
+                        // E. Card attachment modifications
+                        else if (oldC.attachedTo !== newC.attachedTo) {
+                            if (newC.attachedTo) {
+                                const parentCard = state.cards.find(c => c.instanceId === newC.attachedTo);
+                                if (parentCard) {
+                                    const childName = oldC.faceDown ? privateFaceDownName : publicName;
+                                    const parentName = parentCard.faceDown ? privateFaceDownName : `<b>${escapeHtml(parentCard.name)}</b>`;
+                                    sendGameAction(`Acopló ${childName} a ${parentName}`);
+                                }
+                            } else {
+                                const nameToUse = oldC.faceDown ? privateFaceDownName : publicName;
+                                sendGameAction(`Desacopló ${nameToUse}`);
+                            }
+                        }
+                        // F. Card controller switches
+                        else if (oldC.controller !== newC.controller) {
+                            const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
+                            sendGameAction(`Tomó el control de ${nameToUse}`);
+                        }
                     }
                 });
 
