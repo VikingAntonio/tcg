@@ -25,19 +25,25 @@
             height: 100%;
         }
 
-        /* Inner scroll containers */
-        #game-log-box, #chat-msg-box {
-            scrollbar-width: thin;
-            scrollbar-color: var(--glass-border) transparent;
+        /* Inner scroll containers with fixed height and hidden scrollbar */
+        #game-log-box {
+            height: 240px;
+            max-height: 240px;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+        }
+
+        #chat-msg-box {
+            height: 320px;
+            max-height: 320px;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
         }
 
         #game-log-box::-webkit-scrollbar, #chat-msg-box::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        #game-log-box::-webkit-scrollbar-thumb, #chat-msg-box::-webkit-scrollbar-thumb {
-            background-color: var(--glass-border);
-            border-radius: 10px;
+            display: none; /* Chrome, Safari and Opera */
         }
 
         /* Chat Messages */
@@ -313,12 +319,6 @@
                 <div id="game-log-box" style="flex: 1; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 8px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; max-height: 100%;">
                     <!-- Logs populated here -->
                 </div>
-                <!-- Manual Action Utilities -->
-                <div class="log-utilities" style="display: flex; gap: 4px; margin-top: 8px;">
-                    <button class="util-btn" id="btn-util-turn" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px; padding: 4px; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-hourglass-end"></i> Turno</button>
-                    <button class="util-btn" id="btn-util-coin" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px; padding: 4px; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-coins"></i> Moneda</button>
-                    <button class="util-btn" id="btn-util-dice" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px; padding: 4px; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-dice"></i> Dado</button>
-                </div>
             </div>
 
             <!-- Player Chat Panel -->
@@ -466,6 +466,30 @@
 
     <!-- Communication, Chat, and Game Log integration -->
     <script>
+        // Global synchronization & XSS guard
+        window.isIncomingSync = false;
+
+        // Monkey-patch _supabase.channel to automatically wrap all subscription callbacks
+        const originalChannel = _supabase.channel;
+        _supabase.channel = function(...args) {
+            const channel = originalChannel.apply(this, args);
+            const originalOn = channel.on;
+            channel.on = function(type, filter, callback) {
+                const wrappedCallback = function(...args2) {
+                    window.isIncomingSync = true;
+                    try {
+                        return callback.apply(this, args2);
+                    } finally {
+                        setTimeout(() => {
+                            window.isIncomingSync = false;
+                        }, 0);
+                    }
+                };
+                return originalOn.call(this, type, filter, wrappedCallback);
+            };
+            return channel;
+        };
+
         $(document).ready(function() {
             // 1. Initialize State & Room Connection
             let currentRole = "player1"; // default to P1
@@ -513,9 +537,13 @@
                 const playerClass = player === "player1" ? "p1-log" : (player === "player2" ? "p2-log" : "sys-log");
                 const playerPrefix = player === "player1" ? "P1" : (player === "player2" ? "P2" : "SYS");
 
-                let text = `<b>[${playerPrefix}]</b> ${action}`;
-                if (cardName) {
-                    text += ` (<i>${cardName}</i>)`;
+                // Escaping variables strictly for perfect XSS safety
+                const escapedAction = action; // Actions are hardcoded strings, completely safe
+                const escapedCardName = escapeHtml(cardName);
+
+                let text = `<b>[${playerPrefix}]</b> ${escapedAction}`;
+                if (escapedCardName) {
+                    text += ` (<i>${escapedCardName}</i>)`;
                 }
 
                 const logHTML = `
@@ -548,7 +576,7 @@
             function appendSystemMsg(message) {
                 const chatHTML = `
                     <div class="chat-message system-msg">
-                        <div>${message}</div>
+                        <div>${escapeHtml(message)}</div>
                     </div>
                 `;
                 const $box = $("#chat-msg-box");
@@ -557,7 +585,8 @@
             }
 
             function escapeHtml(text) {
-                return text
+                if (!text) return "";
+                return String(text)
                     .replace(/&/g, "&amp;")
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;")
@@ -608,6 +637,20 @@
                 });
             }
 
+            function sendOpponentResponse(response) {
+                const responseData = { player: currentRole, response };
+
+                // Append locally
+                appendGameLog(currentRole, `Responde a la acción anterior: <b>${escapeHtml(response)}</b>`);
+
+                // Send via realtime
+                commChannel.send({
+                    type: 'broadcast',
+                    event: 'opponent_response',
+                    payload: responseData
+                });
+            }
+
             // 6. Action and Chat bindings
             $("#btn-send-chat").click(function() {
                 const msg = $("#chat-input").val().trim();
@@ -627,21 +670,6 @@
             $(".quick-btn").click(function() {
                 const msg = $(this).data("msg");
                 sendChatMessage(msg);
-            });
-
-            // Log utility buttons
-            $("#btn-util-turn").click(function() {
-                sendGameAction(`Terminó su turno. ¡Es tu turno!`, null, true);
-            });
-
-            $("#btn-util-coin").click(function() {
-                const flip = Math.random() < 0.5 ? "🪙 CARA" : "🪙 CRUZ";
-                sendGameAction(`Lanzó una moneda resultando en: <b>${flip}</b>`);
-            });
-
-            $("#btn-util-dice").click(function() {
-                const roll = Math.floor(1 + Math.random() * 6);
-                sendGameAction(`Tiró un dado resultando en: <b>🎲 ${roll}</b>`);
             });
 
             // Interactive response prompt button click handlers
@@ -664,7 +692,7 @@
                     appendChatMessage(payload.player, payload.message);
                 })
                 .on('broadcast', { event: 'opponent_response' }, ({ payload }) => {
-                    appendGameLog(payload.player, `Responde a la acción anterior: <b>${payload.response}</b>`);
+                    appendGameLog(payload.player, `Responde a la acción anterior: <b>${escapeHtml(payload.response)}</b>`);
                     // Clear flashing prompt if it was resolved
                     if (payload.player !== currentRole) {
                         $("#pending-response-box").slideUp(150);
@@ -749,6 +777,13 @@
                 const oldStates = previousCardStates;
                 const newStates = trackCardStates();
 
+                // If this render is triggered by a remote sync, do not log or broadcast!
+                if (window.isIncomingSync) {
+                    previousCardStates = newStates;
+                    originalRenderAllCards.apply(this, arguments);
+                    return;
+                }
+
                 // Diff them
                 Object.keys(newStates).forEach(instId => {
                     const oldC = oldStates[instId];
@@ -758,69 +793,94 @@
                     const cardObj = state.cards.find(c => c.instanceId === instId);
                     if (!cardObj) return;
 
+                    const wasPublic = !oldC.faceDown &&
+                                      !oldC.zone.startsWith("hand_") &&
+                                      !oldC.zone.startsWith("deck_") &&
+                                      !oldC.zone.startsWith("prize_") &&
+                                      !oldC.zone.startsWith("extra_");
+
+                    const isNewPublic = !newC.faceDown &&
+                                        !newC.zone.startsWith("hand_") &&
+                                        !newC.zone.startsWith("deck_") &&
+                                        !newC.zone.startsWith("prize_") &&
+                                        !newC.zone.startsWith("extra_");
+
+                    // Escape variables for XSS protection
+                    const escapedName = escapeHtml(cardObj.name);
+                    const publicName = `<b>${escapedName}</b>`;
+                    const privateName = "una carta";
+                    const privateFaceDownName = "una carta boca abajo";
+
                     // A. Zone changes
                     if (oldC.zone !== newC.zone) {
                         // Skip if drawing cards is handling the log
                         if (isDrawingAction && newC.zone.startsWith("hand_")) return;
 
-                        const cardName = cardObj.name;
                         const oldZoneName = getZoneFriendlyName(oldC.zone);
                         const newZoneName = getZoneFriendlyName(newC.zone);
 
-                        if (newC.zone.startsWith("grave_")) {
-                            sendGameAction(`Mando al Cementerio / Descarte a <b>${cardName}</b> (desde ${oldZoneName})`);
-                        } else if (newC.zone.startsWith("banished_")) {
-                            sendGameAction(`Desterró / Removió a <b>${cardName}</b> (desde ${oldZoneName})`);
-                        } else if (newC.zone.startsWith("hand_")) {
-                            sendGameAction(`Regresó a la mano a <b>${cardName}</b> (desde ${oldZoneName})`);
-                        } else if (newC.zone.startsWith("deck_") || newC.zone.startsWith("extra_")) {
-                            sendGameAction(`Regresó al Deck a <b>${cardName}</b> (desde ${oldZoneName})`);
-                        } else if (newC.zone.startsWith("prize_")) {
-                            sendGameAction(`Colocó a <b>${cardName}</b> como Premio (desde ${oldZoneName})`);
+                        if (newC.zone.startsWith("grave_") || newC.zone.startsWith("banished_")) {
+                            const nameToUse = (wasPublic || isNewPublic) ? publicName : privateName;
+                            const actionLabel = newC.zone.startsWith("grave_") ? "Cementerio / Descarte" : "Desterró / Removió";
+                            sendGameAction(`${actionLabel} a ${nameToUse} (desde ${oldZoneName})`);
+                        } else if (newC.zone.startsWith("hand_") || newC.zone.startsWith("deck_") || newC.zone.startsWith("extra_") || newC.zone.startsWith("prize_")) {
+                            const nameToUse = wasPublic ? publicName : privateName;
+                            let actionLabel = "Regresó";
+                            let destLabel = "";
+                            if (newC.zone.startsWith("hand_")) destLabel = "la mano";
+                            else if (newC.zone.startsWith("prize_")) destLabel = "zona de Premios";
+                            else destLabel = "el Deck";
+
+                            sendGameAction(`${actionLabel} ${nameToUse} a ${destLabel} (desde ${oldZoneName})`);
                         } else {
                             // Moved to field slots
                             const isSet = newC.faceDown;
-                            const actionVerb = isSet ? "Colocó boca abajo (Set)" : "Invocó / Colocó";
-                            // Mark important to trigger opponent response prompt
-                            sendGameAction(`${actionVerb} a <b>${cardName}</b> en ${newZoneName}`, null, !isSet);
+                            if (isSet) {
+                                sendGameAction(`Colocó una carta boca abajo (Set) en ${newZoneName}`);
+                            } else {
+                                sendGameAction(`Invocó / Colocó a ${publicName} en ${newZoneName}`, null, true);
+                            }
                         }
                     }
                     // B. Face-down status changes
                     else if (oldC.faceDown !== newC.faceDown) {
-                        const cardName = cardObj.name;
-                        const flipVerb = newC.faceDown ? "volteó boca abajo" : "volteó boca arriba";
-                        // Mark flipping face-up as important action
-                        sendGameAction(`${flipVerb} a <b>${cardName}</b>`, null, !newC.faceDown);
+                        if (newC.faceDown) {
+                            sendGameAction(`volteó una carta boca abajo`);
+                        } else {
+                            sendGameAction(`volteó boca arriba a ${publicName}`, null, true);
+                        }
                     }
                     // C. Tapped (Defense position) switches
                     else if (oldC.tapped !== newC.tapped) {
-                        const cardName = cardObj.name;
                         const posLabel = newC.tapped ? "Giro / Defensa" : "Vertical / Ataque";
-                        sendGameAction(`Cambió posición de <b>${cardName}</b> a ${posLabel}`);
+                        const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
+                        sendGameAction(`Cambió posición de ${nameToUse} a ${posLabel}`);
                     }
                     // D. Counter badge updates
                     else if (oldC.counters !== newC.counters) {
-                        const cardName = cardObj.name;
                         const diff = newC.counters - oldC.counters;
                         const sign = diff > 0 ? `+${diff}` : `${diff}`;
-                        sendGameAction(`Modificó contadores de <b>${cardName}</b> (${sign})`);
+                        const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
+                        sendGameAction(`Modificó contadores de ${nameToUse} (${sign})`);
                     }
                     // E. Card attachment modifications
                     else if (oldC.attachedTo !== newC.attachedTo) {
-                        const cardName = cardObj.name;
                         if (newC.attachedTo) {
                             const parentCard = state.cards.find(c => c.instanceId === newC.attachedTo);
                             if (parentCard) {
-                                sendGameAction(`Acopló <b>${cardName}</b> a <b>${parentCard.name}</b>`);
+                                const childName = oldC.faceDown ? privateFaceDownName : publicName;
+                                const parentName = parentCard.faceDown ? privateFaceDownName : `<b>${escapeHtml(parentCard.name)}</b>`;
+                                sendGameAction(`Acopló ${childName} a ${parentName}`);
                             }
                         } else {
-                            sendGameAction(`Desacopló <b>${cardName}</b>`);
+                            const nameToUse = oldC.faceDown ? privateFaceDownName : publicName;
+                            sendGameAction(`Desacopló ${nameToUse}`);
                         }
                     }
                     // F. Card controller switches
                     else if (oldC.controller !== newC.controller) {
-                        const cardName = cardObj.name;
-                        sendGameAction(`Tomó el control de <b>${cardName}</b>`);
+                        const nameToUse = newC.faceDown ? privateFaceDownName : publicName;
+                        sendGameAction(`Tomó el control de ${nameToUse}`);
                     }
                 });
 
