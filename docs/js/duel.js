@@ -406,6 +406,7 @@ function renderAllCards() {
                 <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
                     <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
                     <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
+                    <button class="field-action-btn btn-field-control" data-instance-id="${card.instanceId}">Control</button>
                     <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
                     <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">${returnBtnLabel}</button>
@@ -679,6 +680,22 @@ function bindCardDragEvents() {
         } else if ($(this).hasClass("btn-field-tap")) {
             cardObj.tapped = !cardObj.tapped;
             renderAllCards();
+        } else if ($(this).hasClass("btn-field-control")) {
+            // Swap owner/controller
+            cardObj.owner = cardObj.owner === "player1" ? "player2" : "player1";
+            cardObj.controller = cardObj.owner;
+            detachAllChildren(cardObj.instanceId);
+            startGraphicalTargeting(cardObj, "summon");
+
+            Swal.fire({
+                icon: 'info',
+                title: 'Control Cambiado',
+                text: `Ahora controlas a ${cardObj.name}. Selecciona una zona para colocarla.`,
+                toast: true,
+                position: 'top-end',
+                timer: 2500,
+                showConfirmButton: false
+            });
         } else if ($(this).hasClass("btn-field-attach")) {
             startAttachmentTargeting(cardObj);
         } else if ($(this).hasClass("btn-field-flash")) {
@@ -2170,6 +2187,24 @@ function setupEventListeners() {
             `,
             confirmButtonText: 'Entendido',
             confirmButtonColor: '#00d2ff'
+        });
+    });
+
+    $("#menu-control").click(function() {
+        if (!activeMenuCard) return;
+        detachAllChildren(activeMenuCard.instanceId);
+        activeMenuCard.owner = activeMenuCard.owner === "player1" ? "player2" : "player1";
+        activeMenuCard.controller = activeMenuCard.owner;
+        startGraphicalTargeting(activeMenuCard, "summon");
+
+        Swal.fire({
+            icon: 'info',
+            title: 'Control Cambiado',
+            text: `Ahora controlas a ${activeMenuCard.name}. Selecciona una zona para colocarla.`,
+            toast: true,
+            position: 'top-end',
+            timer: 2500,
+            showConfirmButton: false
         });
     });
 
