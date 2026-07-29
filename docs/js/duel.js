@@ -326,7 +326,16 @@ function instantiateDeck(playerKey) {
 }
 
 // Multi-deck setup / Rendering
+let insideRenderAllCards = false;
 function renderAllCards() {
+    if (window.renderAllCards && window.renderAllCards !== renderAllCards && !insideRenderAllCards) {
+        insideRenderAllCards = true;
+        try {
+            return window.renderAllCards.apply(this, arguments);
+        } finally {
+            insideRenderAllCards = false;
+        }
+    }
     // ENFORCE SANITIZATION RULES SECURELY
     state.cards.forEach(card => {
         // If attached, inherit zone of the parent card to stay logically in play
@@ -1128,7 +1137,16 @@ function shuffleDeckSilent(playerKey) {
 }
 
 // Shuffle deck piles
+let insideShuffleDeck = false;
 function shuffleDeck(playerKey) {
+    if (window.shuffleDeck && window.shuffleDeck !== shuffleDeck && !insideShuffleDeck) {
+        insideShuffleDeck = true;
+        try {
+            return window.shuffleDeck.apply(this, arguments);
+        } finally {
+            insideShuffleDeck = false;
+        }
+    }
     shuffleDeckSilent(playerKey);
     renderAllCards();
 
@@ -1144,7 +1162,16 @@ function shuffleDeck(playerKey) {
 }
 
 // Set up 6 face-down Prize Cards for Pokemon
+let insideSetupPokemonPrizes = false;
 function setupPokemonPrizes(playerKey) {
+    if (window.setupPokemonPrizes && window.setupPokemonPrizes !== setupPokemonPrizes && !insideSetupPokemonPrizes) {
+        insideSetupPokemonPrizes = true;
+        try {
+            return window.setupPokemonPrizes.apply(this, arguments);
+        } finally {
+            insideSetupPokemonPrizes = false;
+        }
+    }
     const playerSuffix = playerKey === "player1" ? 1 : 2;
     const deckZone = `deck_${playerSuffix}`;
     const prizePrefix = `prize_${playerSuffix}_`;
@@ -1185,7 +1212,16 @@ function setupPokemonPrizes(playerKey) {
 }
 
 // Draw cards from top deck with stunning flight motion animation
+let insideDrawCards = false;
 function drawCards(playerKey, count = 1) {
+    if (window.drawCards && window.drawCards !== drawCards && !insideDrawCards) {
+        insideDrawCards = true;
+        try {
+            return window.drawCards.apply(this, arguments);
+        } finally {
+            insideDrawCards = false;
+        }
+    }
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
     const targetHand = playerKey === "player1" ? "hand_1" : "hand_2";
 
@@ -2645,3 +2681,9 @@ function setupEventListeners() {
         });
     });
 }
+
+// Explicitly assign key functions to the window object to allow external wrapping and decoration
+window.renderAllCards = renderAllCards;
+window.drawCards = drawCards;
+window.shuffleDeck = shuffleDeck;
+window.setupPokemonPrizes = setupPokemonPrizes;
