@@ -199,30 +199,35 @@
             }
         }
 
-        /* Central Turn and Phase Bar Styling */
+        /* Central Turn and Phase Bar Styling - Repositioned to the right of the board, vertically aligned */
         .central-turn-bar {
             position: absolute;
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            right: -85px;
+            left: auto;
+            transform: translateY(-50%);
             z-index: 100;
             background: rgba(10, 15, 22, 0.95);
             backdrop-filter: blur(10px);
             border: 2px solid var(--glass-border);
-            border-radius: 30px;
+            border-radius: 25px;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            padding: 6px 16px;
+            padding: 16px 8px;
             gap: 12px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.05);
             pointer-events: auto;
+            width: 75px;
         }
 
         .turn-indicator {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 900;
-            padding: 4px 10px;
+            padding: 5px 0;
+            width: 44px;
+            text-align: center;
             border-radius: 15px;
             text-transform: uppercase;
             text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
@@ -245,7 +250,10 @@
 
         .phases-container {
             display: flex;
+            flex-direction: column;
             gap: 5px;
+            width: 100%;
+            align-items: center;
         }
 
         .phase-btn {
@@ -255,7 +263,9 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 0.7rem;
             font-weight: bold;
-            padding: 5px 8px;
+            padding: 5px 0;
+            width: 38px;
+            text-align: center;
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -280,11 +290,13 @@
             color: #fff;
             font-family: 'Montserrat', sans-serif;
             font-weight: 800;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 6px 14px;
-            border-radius: 20px;
+            letter-spacing: 0.5px;
+            padding: 6px 0;
+            width: 60px;
+            text-align: center;
+            border-radius: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -349,15 +361,17 @@
         }
 
         .p1-lp-container {
-            bottom: 180px;
-            left: 20px;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
             border-color: rgba(0, 210, 255, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 210, 255, 0.05);
         }
 
         .p2-lp-container {
-            top: 180px;
-            right: 20px;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
             border-color: rgba(255, 27, 107, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 27, 107, 0.05);
         }
@@ -507,6 +521,61 @@
             border: 2px solid #00d2ff !important;
             z-index: 9998 !important;
         }
+
+        /* Attack badges inside cards */
+        .attack-badge {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 15, 22, 0.95);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 900;
+            white-space: nowrap;
+            z-index: 10005;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            text-transform: uppercase;
+            animation: attackBadgeGlow 1s infinite alternate ease-in-out;
+        }
+
+        @keyframes attackBadgeGlow {
+            0% {
+                transform: translateX(-50%) scale(0.95);
+            }
+            100% {
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        .attacker-badge {
+            border: 1px solid #00d2ff;
+            color: #00d2ff;
+            text-shadow: 0 0 5px rgba(0, 210, 255, 0.8);
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
+        }
+
+        .target-badge {
+            border: 1px solid #ff1b6b;
+            color: #ff1b6b;
+            text-shadow: 0 0 5px rgba(255, 27, 107, 0.8);
+            box-shadow: 0 0 8px rgba(255, 27, 107, 0.3);
+        }
+
+        .direct-badge {
+            border: 1px solid #ff8c00;
+            color: #ff8c00;
+            text-shadow: 0 0 5px rgba(255, 140, 0, 0.8);
+            box-shadow: 0 0 8px rgba(255, 140, 0, 0.3);
+        }
+
+        .attack-line-text {
+            user-select: none;
+            pointer-events: none;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -555,6 +624,20 @@
 
             <!-- Player 2 Hand Tray (Invisible transparent workspace area at the top) -->
             <div class="hand-tray player-2" id="hand-tray-p2">
+                <!-- LP Counter for Player 2 (Moved inside hand tray) -->
+                <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
+                    <div class="lp-header">P2 LP</div>
+                    <div class="lp-number" id="lp-display-p2">8000</div>
+                    <div class="lp-calc-row">
+                        <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
+                    </div>
+                    <div class="lp-controls-row">
+                        <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+</button>
+                        <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-</button>
+                        <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/</button>
+                    </div>
+                </div>
+
                 <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
                     <label class="theme-switch p2-theme-switch" title="Selección Múltiple">
                         <input type="checkbox" class="hand-multi-select-toggle" data-player="player2">
@@ -617,35 +700,22 @@
                 </svg>
             </div>
 
-            <!-- LP Counters for Player 1 and Player 2 (Repositioned outside playmat) -->
-            <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
-                <div class="lp-header">P1 LP</div>
-                <div class="lp-number" id="lp-display-p1">8000</div>
-                <div class="lp-calc-row">
-                    <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
-                </div>
-                <div class="lp-controls-row">
-                    <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+</button>
-                    <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-</button>
-                    <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/</button>
-                </div>
-            </div>
-
-            <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
-                <div class="lp-header">P2 LP</div>
-                <div class="lp-number" id="lp-display-p2">8000</div>
-                <div class="lp-calc-row">
-                    <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
-                </div>
-                <div class="lp-controls-row">
-                    <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+</button>
-                    <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-</button>
-                    <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/</button>
-                </div>
-            </div>
-
             <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
             <div class="hand-tray player-1" id="hand-tray-p1">
+                <!-- LP Counter for Player 1 (Moved inside hand tray) -->
+                <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
+                    <div class="lp-header">P1 LP</div>
+                    <div class="lp-number" id="lp-display-p1">8000</div>
+                    <div class="lp-calc-row">
+                        <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
+                    </div>
+                    <div class="lp-controls-row">
+                        <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+</button>
+                        <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-</button>
+                        <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/</button>
+                    </div>
+                </div>
+
                 <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
                     <label class="theme-switch p1-theme-switch" title="Selección Múltiple">
                         <input type="checkbox" class="hand-multi-select-toggle" data-player="player1">
@@ -1263,15 +1333,50 @@
                 const $overlay = $("#attack-arrows-overlay");
                 $overlay.find(".active-attack-element").remove();
 
-                // Clear existing attack classes from all cards
+                // Clear existing attack classes and badges from all cards
                 $(".duel-card").removeClass("card-under-attack card-is-attacker");
+                $(".attack-badge").remove();
+
+                const isCardOnField = (card) => {
+                    if (!card) return false;
+                    const z = card.zone;
+                    if (!z) return false;
+                    if (z.startsWith("hand_") || z.startsWith("deck_") || z.startsWith("extra_") || z.startsWith("grave_") || z.startsWith("banished_")) {
+                        return false;
+                    }
+                    return true;
+                };
+
+                // Filter out attacks where cards left the active field
+                state.attacks = state.attacks.filter(atk => {
+                    const attackerObj = state.cards.find(c => c.instanceId === atk.attackerId);
+                    if (!attackerObj || !isCardOnField(attackerObj)) return false;
+                    if (!atk.isDirect) {
+                        const targetObj = state.cards.find(c => c.instanceId === atk.targetId);
+                        if (!targetObj || !isCardOnField(targetObj)) return false;
+                    }
+                    return true;
+                });
 
                 state.attacks.forEach(atk => {
                     const attackerObj = state.cards.find(c => c.instanceId === atk.attackerId);
                     if (!attackerObj) return;
 
+                    const $attackerCard = $(`#${attackerObj.instanceId}`);
+
                     // Add attacker glowing class
-                    $(`#${attackerObj.instanceId}`).addClass("card-is-attacker");
+                    $attackerCard.addClass("card-is-attacker");
+
+                    // Add attacker badge
+                    if (atk.isDirect) {
+                        if (!$attackerCard.find(".direct-badge").length) {
+                            $attackerCard.append(`<div class="attack-badge direct-badge active-attack-element">💥 ATK DIRECTO</div>`);
+                        }
+                    } else {
+                        if (!$attackerCard.find(".attacker-badge").length) {
+                            $attackerCard.append(`<div class="attack-badge attacker-badge active-attack-element">⚔️ ATACANDO</div>`);
+                        }
+                    }
 
                     // Get coordinates of attacker card center
                     let startX = 0, startY = 0;
@@ -1285,17 +1390,37 @@
                     }
 
                     let endX = 0, endY = 0;
+                    let labelHTML = "";
+
                     if (atk.isDirect) {
                         // Direct attack target coordinate goes directly to top/bottom of playmat depending on controller
                         endX = startX;
                         // Symmetrical direct attack goes straight to the other player's side
                         endY = attackerObj.controller === "player1" ? 50 : 550;
+
+                        // Add direct attack text label in SVG midway
+                        const midX = startX;
+                        const midY = (startY + endY) / 2;
+                        labelHTML = `
+                            <text class="attack-line-text active-attack-element" x="${midX}" y="${midY}"
+                                  fill="#ff8c00" font-family="'Orbitron', sans-serif" font-weight="900"
+                                  font-size="13px" text-anchor="middle" filter="url(#neon-glow)">
+                                ¡ATAQUE DIRECTO!
+                            </text>
+                        `;
                     } else {
                         const targetObj = state.cards.find(c => c.instanceId === atk.targetId);
                         if (!targetObj) return;
 
+                        const $targetCard = $(`#${targetObj.instanceId}`);
+
                         // Add target flashing class
-                        $(`#${targetObj.instanceId}`).addClass("card-under-attack");
+                        $targetCard.addClass("card-under-attack");
+
+                        // Add target badge
+                        if (!$targetCard.find(".target-badge").length) {
+                            $targetCard.append(`<div class="attack-badge target-badge active-attack-element">🛡️ BAJO ATAQUE</div>`);
+                        }
 
                         const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
                         if (tZoneObj) {
@@ -1305,6 +1430,17 @@
                             endX = targetObj.x + 40;
                             endY = targetObj.y + 58;
                         }
+
+                        // Add normal attack text label in SVG midway
+                        const midX = (startX + endX) / 2;
+                        const midY = (startY + endY) / 2;
+                        labelHTML = `
+                            <text class="attack-line-text active-attack-element" x="${midX}" y="${midY}"
+                                  fill="#ff1b6b" font-family="'Orbitron', sans-serif" font-weight="900"
+                                  font-size="11px" text-anchor="middle" filter="url(#neon-glow)">
+                                ¡ATACANDO!
+                            </text>
+                        `;
                     }
 
                     // Calculate arrow angle to render the arrowhead properly
@@ -1321,6 +1457,9 @@
                     const headHTML = `<polygon class="attack-head active-attack-element" points="${endX},${endY} ${headX1},${headY1} ${headX2},${headY2}" />`;
 
                     $overlay.append(pathHTML).append(headHTML);
+                    if (labelHTML) {
+                        $overlay.append(labelHTML);
+                    }
                 });
             };
 
