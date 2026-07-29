@@ -684,6 +684,11 @@ function bindCardDragEvents() {
 
     // Event handlers for Field Quick Actions (Overlays)
     $(".field-action-btn").off("click").on("click", function(e) {
+        if ($(this).hasClass("btn-field-attack") || $(this).hasClass("btn-field-direct")) {
+            // Let these bubble up to duel.html's attack handlers!
+            return;
+        }
+
         e.preventDefault();
         e.stopPropagation();
 
