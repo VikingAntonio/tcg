@@ -821,10 +821,12 @@
     <!-- Click handler bindings for targeting attacks -->
     <script>
         $(document).ready(function() {
+            // Global variables to track the active attack targeting state robustly
+            window.activeAttackSourceCard = null;
+
             // Helper to start targeting mode for selecting attack target
             window.startAttackTargetingMode = function(attackerCard) {
-                // Remove existing targeting bindings to prevent duplicates
-                $(".duel-card").off("click.attacktarget");
+                window.activeAttackSourceCard = attackerCard;
 
                 // Display targeting instructions Toast Overlay (centered at bottom)
                 $("#zone-picker-overlay").html(`
@@ -835,61 +837,65 @@
 
                 $("#playmat").addClass("selecting-zone");
 
-                setTimeout(() => {
-                    $(".duel-card").not(`#${attackerCard.instanceId}`).off("click.attacktarget").on("click.attacktarget", function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-
-                        const targetId = $(this).data("instance-id");
-                        const targetCard = state.cards.find(c => c.instanceId === targetId);
-
-                        if (targetCard) {
-                            // Add attack entry
-                            state.attacks.push({
-                                attackerId: attackerCard.instanceId,
-                                targetId: targetCard.instanceId,
-                                isDirect: false
-                            });
-
-                            // Broadcast attack sync
-                            commChannel.send({
-                                type: 'broadcast',
-                                event: 'attack_sync',
-                                payload: { attacks: state.attacks }
-                            });
-
-                            // Log action
-                            sendGameAction(`Declaró ataque con ${attackerCard.name} hacia ${targetCard.name}`);
-
-                            if (typeof window.drawAttackArrows === "function") {
-                                window.drawAttackArrows();
-                            }
-                        }
-
-                        // Cleanup targeting state
-                        $("#playmat").removeClass("selecting-zone");
-                        $(".duel-card").off("click.attacktarget");
-                        $("#zone-picker-overlay").fadeOut(150).html(`
-                            <div class="zone-picker-toast">
-                                <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
-                            </div>
-                        `);
-                    });
-                }, 100);
-
-                // Cancel on escape or click on empty mat space
+                // Cancel targeting on escape key
                 $(document).off("keydown.attacktarget").on("keydown.attacktarget", function(e) {
                     if (e.key === "Escape") {
-                        $("#playmat").removeClass("selecting-zone");
-                        $(".duel-card").off("click.attacktarget");
-                        $("#zone-picker-overlay").fadeOut(150).html(`
-                            <div class="zone-picker-toast">
-                                <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
-                            </div>
-                        `);
+                        window.stopAttackTargetingMode();
                     }
                 });
             };
+
+            window.stopAttackTargetingMode = function() {
+                window.activeAttackSourceCard = null;
+                $("#playmat").removeClass("selecting-zone");
+                $(document).off("keydown.attacktarget");
+                $("#zone-picker-overlay").fadeOut(150).html(`
+                    <div class="zone-picker-toast">
+                        <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+                    </div>
+                `);
+            };
+
+            // Delegated global click handler for target cards - Immune to any DOM refreshes or dynamic card rendering!
+            $(document).on("click", ".duel-card", function(e) {
+                if (window.activeAttackSourceCard) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const targetId = $(this).data("instance-id");
+
+                    // Prevent attacking itself
+                    if (targetId === window.activeAttackSourceCard.instanceId) {
+                        return;
+                    }
+
+                    const targetCard = state.cards.find(c => c.instanceId === targetId);
+                    if (targetCard) {
+                        // Add attack entry
+                        state.attacks.push({
+                            attackerId: window.activeAttackSourceCard.instanceId,
+                            targetId: targetCard.instanceId,
+                            isDirect: false
+                        });
+
+                        // Broadcast attack sync
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'attack_sync',
+                            payload: { attacks: state.attacks }
+                        });
+
+                        // Log action
+                        sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${targetCard.name}`);
+
+                        if (typeof window.drawAttackArrows === "function") {
+                            window.drawAttackArrows();
+                        }
+                    }
+
+                    window.stopAttackTargetingMode();
+                }
+            });
 
             // Direct attack helper
             window.performDirectAttack = function(attackerCard) {
@@ -914,7 +920,7 @@
                 }
             };
 
-            // Bind the field quick-menu click events for Attack
+            // Bind the field quick-menu click events for Attack using delegated document listeners
             $(document).on("click", ".btn-field-attack", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -952,7 +958,7 @@
             // Double click playmat or deck reset clears all attack arrows
             $("#playmat").click(function(e) {
                 // Clear active attack arrows if clicking on empty spot of playmat while not in targeting mode
-                if (!$(e.target).closest(".duel-card, .board-zone, .hand-tray, .lp-counter-container, .central-turn-bar").length && !$("#playmat").hasClass("selecting-zone")) {
+                if (!$(e.target).closest(".duel-card, .board-zone, .hand-tray, .lp-counter-container, .central-turn-bar").length && !$("#playmat").hasClass("selecting-zone") && !window.activeAttackSourceCard) {
                     if (state.attacks.length > 0) {
                         state.attacks = [];
                         commChannel.send({
