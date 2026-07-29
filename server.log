@@ -102,3 +102,28 @@
 127.0.0.1 - - [29/Jul/2026 13:36:32] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
 127.0.0.1 - - [29/Jul/2026 13:36:32] code 404, message File not found
 127.0.0.1 - - [29/Jul/2026 13:36:32] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [29/Jul/2026 15:09:36] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:09:36] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:09:36] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:09:37] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:09:37] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:09:37] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:09:38] code 404, message File not found
+127.0.0.1 - - [29/Jul/2026 15:09:38] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [29/Jul/2026 15:09:38] code 404, message File not found
+127.0.0.1 - - [29/Jul/2026 15:09:38] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [29/Jul/2026 15:10:15] "GET /configDuel.html HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:15] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:20] "GET /duel.html?mode=practice&layout=pokemon&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:20] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:20] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:20] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:20] "GET /img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:59] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:59] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:59] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:59] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:59] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:10:59] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 15:11:00] code 404, message File not found
+127.0.0.1 - - [29/Jul/2026 15:11:00] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
