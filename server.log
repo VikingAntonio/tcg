@@ -82,3 +82,23 @@
 127.0.0.1 - - [29/Jul/2026 05:25:31] "GET /js/utils.js HTTP/1.1" 200 -
 127.0.0.1 - - [29/Jul/2026 05:25:31] "GET /js/duel.js HTTP/1.1" 200 -
 127.0.0.1 - - [29/Jul/2026 05:25:31] "GET /img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:32:21] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:32:21] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:32:21] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:32:21] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:32:21] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:32:21] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:32:23] code 404, message File not found
+127.0.0.1 - - [29/Jul/2026 13:32:23] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [29/Jul/2026 13:32:23] code 404, message File not found
+127.0.0.1 - - [29/Jul/2026 13:32:23] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [29/Jul/2026 13:36:30] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:36:30] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:36:30] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:36:30] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:36:30] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:36:30] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 13:36:32] code 404, message File not found
+127.0.0.1 - - [29/Jul/2026 13:36:32] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [29/Jul/2026 13:36:32] code 404, message File not found
+127.0.0.1 - - [29/Jul/2026 13:36:32] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
