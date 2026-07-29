@@ -471,6 +471,42 @@
             color: #fff;
             border-color: #fff;
         }
+
+        /* Flashing under-attack card style (Anime-style target highlight) */
+        @keyframes attackTargetPulse {
+            0% {
+                box-shadow: 0 0 10px rgba(255, 27, 107, 0.4), inset 0 0 5px rgba(255, 27, 107, 0.2);
+                border-color: rgba(255, 27, 107, 0.5) !important;
+            }
+            100% {
+                box-shadow: 0 0 25px rgba(255, 27, 107, 1), 0 0 15px rgba(255, 27, 107, 0.6);
+                border-color: #ff1b6b !important;
+            }
+        }
+
+        .duel-card.card-under-attack {
+            animation: attackTargetPulse 0.5s infinite alternate ease-in-out !important;
+            border: 2px solid #ff1b6b !important;
+            z-index: 9999 !important;
+        }
+
+        /* Attacking card glowing cyan */
+        @keyframes attackerPulse {
+            0% {
+                box-shadow: 0 0 10px rgba(0, 210, 255, 0.4), inset 0 0 5px rgba(0, 210, 255, 0.2);
+                border-color: rgba(0, 210, 255, 0.5) !important;
+            }
+            100% {
+                box-shadow: 0 0 25px rgba(0, 210, 255, 1), 0 0 15px rgba(0, 210, 255, 0.6);
+                border-color: #00d2ff !important;
+            }
+        }
+
+        .duel-card.card-is-attacker {
+            animation: attackerPulse 0.5s infinite alternate ease-in-out !important;
+            border: 2px solid #00d2ff !important;
+            z-index: 9998 !important;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1227,9 +1263,15 @@
                 const $overlay = $("#attack-arrows-overlay");
                 $overlay.find(".active-attack-element").remove();
 
+                // Clear existing attack classes from all cards
+                $(".duel-card").removeClass("card-under-attack card-is-attacker");
+
                 state.attacks.forEach(atk => {
                     const attackerObj = state.cards.find(c => c.instanceId === atk.attackerId);
                     if (!attackerObj) return;
+
+                    // Add attacker glowing class
+                    $(`#${attackerObj.instanceId}`).addClass("card-is-attacker");
 
                     // Get coordinates of attacker card center
                     let startX = 0, startY = 0;
@@ -1251,6 +1293,10 @@
                     } else {
                         const targetObj = state.cards.find(c => c.instanceId === atk.targetId);
                         if (!targetObj) return;
+
+                        // Add target flashing class
+                        $(`#${targetObj.instanceId}`).addClass("card-under-attack");
+
                         const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
                         if (tZoneObj) {
                             endX = tZoneObj.x + 40;
@@ -1297,6 +1343,33 @@
                 })
                 .on('broadcast', { event: 'game_action' }, ({ payload }) => {
                     appendGameLog(payload.player, payload.action, payload.cardName, payload.username);
+
+                    // Show real-time attack alert warning to opponent
+                    if (payload.action.startsWith("Declaró ataque") || payload.action.startsWith("Declaró Ataque Directo")) {
+                        if (payload.player !== currentRole) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: '💥 ¡BAJO ATAQUE! 💥',
+                                html: `<div style="font-family: 'Montserrat', sans-serif;"><span style="color: #ff1b6b; font-weight: 800;">${payload.username}</span> está declarando un ataque:<br><br><b style="font-size: 1.05rem; color: #ff8c00;">${payload.action}</b></div>`,
+                                background: '#0a0508',
+                                color: '#fff',
+                                confirmButtonText: '⚡ Responder / Cadena',
+                                cancelButtonText: 'OK',
+                                showCancelButton: true,
+                                confirmButtonColor: '#ff1b6b',
+                                cancelButtonColor: '#222',
+                                customClass: {
+                                    popup: 'cyber-swal'
+                                }
+                            }).then((res) => {
+                                if (res.isConfirmed) {
+                                    // Slide down the response options bar instantly
+                                    $("#pending-response-box").slideDown(150);
+                                }
+                            });
+                        }
+                    }
+
                     // Show response options to rival if action is marked important and sent by the other player
                     if (payload.isImportant && payload.player !== currentRole) {
                         $("#pending-response-box").slideDown(150);
@@ -1481,6 +1554,18 @@
                 // Reset phase to DP
                 state.activePhase = 'DP';
                 state.turnActionTaken = false; // Reset action taken state for the next turn
+
+                // Clear all active attack arrows automatically on turn swap
+                state.attacks = [];
+                commChannel.send({
+                    type: 'broadcast',
+                    event: 'attack_sync',
+                    payload: { attacks: [] }
+                });
+                if (typeof window.drawAttackArrows === "function") {
+                    window.drawAttackArrows();
+                }
+
                 updateTurnUI();
 
                 // Log turn change
