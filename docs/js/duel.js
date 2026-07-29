@@ -770,9 +770,52 @@ function bindCardDragEvents() {
     });
 
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
+        // If clicking on any quick-action button or menu, do NOT drag or intercept!
+        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn').length) {
+            return;
+        }
+
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
+
+        // If we are in attack targeting mode, handle selection directly on mousedown for perfect touch/mouse click feedback!
+        if ($("#playmat").hasClass("selecting-zone") && typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (instId !== window.activeAttackSourceCard.instanceId) {
+                // Add attack entry
+                state.attacks.push({
+                    attackerId: window.activeAttackSourceCard.instanceId,
+                    targetId: cardObj.instanceId,
+                    isDirect: false
+                });
+
+                // Broadcast attack sync if multiplayer
+                if (typeof commChannel !== "undefined" && commChannel) {
+                    commChannel.send({
+                        type: 'broadcast',
+                        event: 'attack_sync',
+                        payload: { attacks: state.attacks }
+                    });
+                }
+
+                // Log action
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${cardObj.name}`);
+                }
+
+                if (typeof window.drawAttackArrows === "function") {
+                    window.drawAttackArrows();
+                }
+
+                if (typeof window.stopAttackTargetingMode === "function") {
+                    window.stopAttackTargetingMode();
+                }
+            }
+            return;
+        }
 
         // Prevent dragging deck cards or attached cards
         if (cardObj.zone.startsWith("deck_") || cardObj.attachedTo) {
