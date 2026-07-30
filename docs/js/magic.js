@@ -75,6 +75,7 @@ $(document).ready(async function() {
     setupGlobalEvents();
     makeLandingZonesDraggableAndResizable();
     bindDropdownContextMenus();
+    bindBatchSelectionHandlers();
 
     // Load Decks
     Swal.fire({
@@ -191,7 +192,7 @@ function createPileElement($parent, id, label, x, y, owner, type) {
     `;
     $parent.append(html);
 
-    // Make piles draggable
+    // Make piles draggable OR support pulling the top card visually
     const $el = $(`#zone-${id}`);
     $el.on("mousedown touchstart", function(e) {
         if ($(e.target).hasClass("pile-menu-trigger") || $(e.target).closest(".pile-menu-trigger").length) return;
@@ -200,6 +201,83 @@ function createPileElement($parent, id, label, x, y, owner, type) {
         const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
         const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
 
+        const clickedBadgeOrLabel = $(e.target).hasClass("pile-count-badge") || $(e.target).hasClass("pile-label");
+
+        // If it's the deck and they clicked the card area (not label/badge), we pull the top card face-down cleanly!
+        if (type === "deck" && !clickedBadgeOrLabel) {
+            const deck = state.decks[owner];
+            const mainCards = deck.filter(c => c.section !== "Extra");
+            if (mainCards.length === 0) {
+                Swal.fire('Deck Vacío', 'No quedan cartas en el Main Deck para arrastrar.', 'warning');
+                return;
+            }
+
+            // Pop top card
+            const idx = deck.findIndex(c => c.section !== "Extra");
+            const cardData = deck.splice(idx, 1)[0];
+
+            const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+            const offset = $el.offset();
+
+            const newCardObj = {
+                id: cardId,
+                name: cardData.name,
+                image_url: cardData.image_url,
+                desc: cardData.desc || "",
+                x: offset.left,
+                y: offset.top,
+                faceUp: false, // Starts face-down cleanly!
+                tapped: false,
+                counters: { glass: 0, poke: 0 },
+                owner: owner,
+                section: cardData.section || "Main"
+            };
+
+            state.cards.push(newCardObj);
+            renderAllCards();
+            updatePileCounts();
+
+            // Transition directly into dragging state for the pulled card!
+            dragCard = newCardObj;
+            const $cardEl = $(`#${cardId}`);
+            $cardEl.addClass("dragging");
+
+            dragOffset.x = clientX - dragCard.x;
+            dragOffset.y = clientY - dragCard.y;
+
+            $(document).on("mousemove.carddrag touchmove.carddrag", function(moveEvent) {
+                if (!dragCard) return;
+
+                const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+                let targetX = mX - dragOffset.x;
+                let targetY = mY - dragOffset.y;
+
+                targetX = Math.max(0, Math.min(window.innerWidth - 150, targetX));
+                targetY = Math.max(0, Math.min(window.innerHeight - 218, targetY));
+
+                dragCard.x = targetX;
+                dragCard.y = targetY;
+
+                $(`#${dragCard.id}`).css({ left: targetX, top: targetY });
+                updateLandingHoverState(targetX, targetY);
+            });
+
+            $(document).on("mouseup.carddrag touchend.carddrag", function() {
+                if (dragCard) {
+                    $(`#${dragCard.id}`).removeClass("dragging");
+                    $(".magic-landing-zone").removeClass("drag-over");
+                    updateLandingZoneCounts();
+                }
+                dragCard = null;
+                $(document).off(".carddrag");
+            });
+
+            return;
+        }
+
+        // Standard pile dragging behavior (moves the pile zone container itself)
         const offset = $el.offset();
         const startX = offset.left;
         const startY = offset.top;
@@ -214,7 +292,6 @@ function createPileElement($parent, id, label, x, y, owner, type) {
             let finalX = mX - deltaX;
             let finalY = mY - deltaY;
 
-            // Constrain within viewport bounds
             finalX = Math.max(10, Math.min(window.innerWidth - 160, finalX));
             finalY = Math.max(10, Math.min(window.innerHeight - 230, finalY));
 
@@ -392,7 +469,7 @@ function drawCards(owner, amount) {
     updatePileCounts();
 }
 
-// Search Modal operations
+// Search Modal operations (A Mano, Invocar, Al Cementerio, Al Destierro)
 function openSearchModal(owner) {
     const deck = state.decks[owner];
     const mainCards = deck.filter(c => c.section !== "Extra");
@@ -401,6 +478,9 @@ function openSearchModal(owner) {
         Swal.fire('Mazo Vacío', 'No hay cartas para buscar en el Main Deck.', 'warning');
         return;
     }
+
+    // Reset multiselect state
+    $("#pile-multi-select-toggle").prop("checked", false).trigger("change");
 
     $("#pile-modal-title").text(`Buscador de Deck: ${owner === "player1" ? "Jugador 1" : "Jugador 2"}`);
     const $grid = $("#pile-cards-grid");
@@ -414,7 +494,8 @@ function openSearchModal(owner) {
                     <div class="pile-card-menu">
                         <button class="pile-card-action-btn search-to-hand">A Mano</button>
                         <button class="pile-card-action-btn search-to-field">Invocar</button>
-                        <button class="pile-card-action-btn search-to-field-set">Colocar Set</button>
+                        <button class="pile-card-action-btn search-to-grave">Al Cementerio</button>
+                        <button class="pile-card-action-btn search-to-banish">Al Destierro</button>
                     </div>
                 </div>
             </div>
@@ -425,7 +506,7 @@ function openSearchModal(owner) {
     $("#pile-overlay").fadeIn(200);
 }
 
-// Extra Modal operations
+// Extra Modal operations (Invocar Only)
 function openExtraModal(owner) {
     const deck = state.decks[owner];
     const extraCards = deck.filter(c => c.section === "Extra");
@@ -445,9 +526,7 @@ function openExtraModal(owner) {
                 <img src="${card.image_url}" alt="${card.name}">
                 <div class="pile-card-hover-overlay">
                     <div class="pile-card-menu">
-                        <button class="pile-card-action-btn search-to-hand">A Mano</button>
                         <button class="pile-card-action-btn search-to-field">Invocar</button>
-                        <button class="pile-card-action-btn search-to-field-set">Colocar Set</button>
                     </div>
                 </div>
             </div>
@@ -468,6 +547,8 @@ $(document).on("click", ".search-to-hand", function(e) {
     e.stopPropagation();
 
     const $container = $(this).closest(".pile-card-container");
+    if ($("#pile-multi-select-toggle").is(":checked")) return; // handled by multi-select click
+
     const idx = parseInt($container.attr("data-index"));
     const owner = $container.attr("data-owner");
     const source = $container.attr("data-source");
@@ -509,15 +590,16 @@ $(document).on("click", ".search-to-hand", function(e) {
     updatePileCounts();
 });
 
-$(document).on("click", ".search-to-field, .search-to-field-set", function(e) {
+$(document).on("click", ".search-to-field", function(e) {
     e.preventDefault();
     e.stopPropagation();
 
     const $container = $(this).closest(".pile-card-container");
+    if ($("#pile-multi-select-toggle").is(":checked")) return; // handled by multi-select click
+
     const idx = parseInt($container.attr("data-index"));
     const owner = $container.attr("data-owner");
     const source = $container.attr("data-source");
-    const isSet = $(this).hasClass("search-to-field-set");
 
     const deck = state.decks[owner];
     const filtered = deck.filter(c => source === "extra" ? c.section === "Extra" : c.section !== "Extra");
@@ -541,7 +623,7 @@ $(document).on("click", ".search-to-field, .search-to-field-set", function(e) {
         desc: cardData.desc || "",
         x: spawnX,
         y: spawnY,
-        faceUp: !isSet,
+        faceUp: true,
         tapped: false,
         counters: { glass: 0, poke: 0 },
         owner: owner,
@@ -553,6 +635,153 @@ $(document).on("click", ".search-to-field, .search-to-field-set", function(e) {
     renderAllCards();
     updatePileCounts();
 });
+
+// Al Cementerio and Al Destierro inside Search Modal list
+$(document).on("click", ".search-to-grave, .search-to-banish", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const $container = $(this).closest(".pile-card-container");
+    if ($("#pile-multi-select-toggle").is(":checked")) return; // handled by multi-select click
+
+    const idx = parseInt($container.attr("data-index"));
+    const owner = $container.attr("data-owner");
+    const isBanish = $(this).hasClass("search-to-banish");
+
+    const deck = state.decks[owner];
+    const filtered = deck.filter(c => c.section !== "Extra");
+    const cardData = filtered[idx];
+
+    // Remove from deck source
+    const exactIdx = deck.indexOf(cardData);
+    if (exactIdx > -1) {
+        deck.splice(exactIdx, 1);
+    }
+
+    // Spawn card
+    const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+    const newCard = {
+        id: cardId,
+        name: cardData.name,
+        image_url: cardData.image_url,
+        desc: cardData.desc || "",
+        x: window.innerWidth / 2 - 75,
+        y: window.innerHeight / 2 - 109,
+        faceUp: true,
+        tapped: false,
+        counters: { glass: 0, poke: 0 },
+        owner: owner,
+        section: cardData.section || "Main"
+    };
+
+    state.cards.push(newCard);
+    sendCardToZone(newCard, isBanish ? "banish" : "grave");
+
+    $("#pile-overlay").fadeOut(200);
+    renderAllCards();
+    updatePileCounts();
+});
+
+// Bind Multi-Selection toggle logic in Search modals
+function bindBatchSelectionHandlers() {
+    $(document).on("change", "#pile-multi-select-toggle", function() {
+        const active = $(this).is(":checked");
+        if (active) {
+            $("#pile-overlay").addClass("pile-multi-select-active");
+            $("#pile-batch-actions").css("display", "flex");
+        } else {
+            $("#pile-overlay").removeClass("pile-multi-select-active");
+            $("#pile-batch-actions").hide();
+            $(".pile-card-container").removeClass("selected-for-batch");
+        }
+    });
+
+    $(document).on("click", ".pile-card-container", function(e) {
+        if ($("#pile-multi-select-toggle").is(":checked")) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).toggleClass("selected-for-batch");
+        }
+    });
+
+    // Batch add to Hand handler with visual SweetAlert popup display of cards!
+    $(document).on("click", ".btn-pile-batch-hand", function() {
+        const $selected = $(".pile-card-container.selected-for-batch");
+        if ($selected.length === 0) {
+            Swal.fire('Sin Selección', 'Por favor selecciona al menos una carta.', 'warning');
+            return;
+        }
+
+        const addedNames = [];
+        const windowW = window.innerWidth;
+        const windowH = window.innerHeight;
+
+        const items = [];
+        $selected.each(function() {
+            const idx = parseInt($(this).attr("data-index"));
+            const owner = $(this).attr("data-owner");
+            const source = $(this).attr("data-source");
+            items.push({ idx, owner, source, $el: $(this) });
+        });
+
+        // Sort descending by index to avoid splice index shifts
+        items.sort((a, b) => b.idx - a.idx);
+
+        items.forEach(item => {
+            const deck = state.decks[item.owner];
+            const filtered = deck.filter(c => item.source === "extra" ? c.section === "Extra" : c.section !== "Extra");
+            const cardData = filtered[item.idx];
+
+            const exactIdx = deck.indexOf(cardData);
+            if (exactIdx > -1) {
+                deck.splice(exactIdx, 1);
+            }
+
+            const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+            const targetX = windowW * 0.15 + 50 + (state.cards.filter(c => getCardCurrentZone(c) === (item.owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
+            const targetY = (item.owner === "player1") ? (windowH - 180) : 40;
+
+            state.cards.push({
+                id: cardId,
+                name: cardData.name,
+                image_url: cardData.image_url,
+                desc: cardData.desc || "",
+                x: targetX,
+                y: targetY,
+                faceUp: true,
+                tapped: false,
+                counters: { glass: 0, poke: 0 },
+                owner: item.owner,
+                section: cardData.section || "Main"
+            });
+
+            addedNames.push(cardData.name);
+        });
+
+        // Turn off toggle and close search overlay
+        $("#pile-multi-select-toggle").prop("checked", false).trigger("change");
+        $("#pile-overlay").fadeOut(200);
+
+        renderAllCards();
+        updatePileCounts();
+
+        // Beautiful SweetAlert popup display of all cards added to hand
+        Swal.fire({
+            title: 'Cartas Agregadas a la Mano',
+            html: `
+                <p>Se agregaron con éxito las siguientes cartas a tu mano:</p>
+                <ul style="text-align: left; margin-top: 15px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; list-style-type: none;">
+                    ${addedNames.map(name => `<li style="margin-bottom: 5px; color: #00d2ff; font-weight: bold;">🃏 ${name}</li>`).join('')}
+                </ul>
+            `,
+            icon: 'success',
+            background: '#12181e',
+            color: '#fff',
+            confirmButtonColor: '#00d2ff',
+            confirmButtonText: 'Excelente'
+        });
+    });
+}
 
 
 // Core drag-and-drop implementation (Absolute Playmat coordinates)
