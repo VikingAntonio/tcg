@@ -4,7 +4,7 @@
 const HIGH_FIDELITY_MOCKS = [
     // Yu-Gi-Oh! Mock Cards
     { name: "Dragón Blanco de Ojos Azules", image_url: "https://images.ygoprodeck.com/images/cards/89631139.jpg", section: "Main", desc: "Este legendario dragón es una poderosa máquina de destrucción. Prácticamente invencible, muy pocos se han enfrentado a esta magnífica criatura y han vivido para contarlo." },
-    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg", section: "Main", desc: "El más grande de los magos en lo referente al ataque y la defensa." },
+    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg", section: "Main", desc: "El más grande de los magos en lo referente al ataque and la defensa." },
     { name: "Chica Maga Oscura", image_url: "https://images.ygoprodeck.com/images/cards/31755083.jpg", section: "Main", desc: "Gana 300 ATK por cada 'Mago Oscuro' o 'Mago de la Ilusión Negra' en los Cementerios." },
     { name: "Dragón Negro de Ojos Rojos", image_url: "https://images.ygoprodeck.com/images/cards/74677422.jpg", section: "Main", desc: "Un dragón feroz con un ataque mortífero." },
     { name: "Olla de la Codicia", image_url: "https://images.ygoprodeck.com/images/cards/55144522.jpg", section: "Main", desc: "Roba 2 cartas de tu Deck." },
@@ -39,6 +39,7 @@ const dragOffset = { x: 0, y: 0 };
 let dragStartCoords = { x: 0, y: 0 };
 let dragStartTime = 0;
 let targetingCard = null;
+let activeMenuCard = null;
 
 // Initialize Magic Engine
 $(document).ready(async function() {
@@ -69,6 +70,7 @@ $(document).ready(async function() {
     setupLPTrackers();
     setupCardInteractions();
     setupGlobalEvents();
+    makeLandingZonesDraggableAndResizable();
 
     // Load Decks
     Swal.fire({
@@ -86,7 +88,6 @@ $(document).ready(async function() {
             await fetchDeckCards(deck1Id, "player1");
         } else {
             state.decks.player1 = JSON.parse(JSON.stringify(defaultMocks));
-            logEvent("Sistema", "Mazo preestablecido cargado para el Jugador 1.");
         }
 
         // Player 2 Deck load
@@ -95,7 +96,6 @@ $(document).ready(async function() {
                 await fetchDeckCards(deck2Id, "player2");
             } else {
                 state.decks.player2 = JSON.parse(JSON.stringify(defaultMocks));
-                logEvent("Sistema", "Mazo preestablecido cargado para el Jugador 2.");
             }
         }
 
@@ -107,7 +107,6 @@ $(document).ready(async function() {
 
         Swal.close();
         renderAllCards();
-        logEvent("Sistema", "¡La Arena Libre Magic está lista! Arrastra cartas a cualquier parte de la pantalla.");
 
     } catch (err) {
         console.error(err);
@@ -119,39 +118,27 @@ $(document).ready(async function() {
 async function fetchDeckCards(deckId, playerKey) {
     const { data: deckCards, error: deckErr } = await _supabase
         .from('deck_cards')
-        .select(`
-            id,
-            card_slots (
-                id,
-                name,
-                image_url,
-                section,
-                description
-            )
-        `)
+        .select('*')
         .eq('deck_id', deckId);
 
     if (deckErr) throw deckErr;
 
     if (!deckCards || deckCards.length === 0) {
-        logEvent("Sistema", `El mazo del ${playerKey} está vacío. Cargando cartas de prueba...`);
         const defaultMocks = (state.layout === "pokemon") ? POKE_MOCKS : HIGH_FIDELITY_MOCKS;
         state.decks[playerKey] = JSON.parse(JSON.stringify(defaultMocks));
         return;
     }
 
     const formatted = deckCards.map(item => {
-        const slot = item.card_slots;
         return {
-            name: slot.name,
-            image_url: slot.image_url || "https://via.placeholder.com/150x218?text=Vikingdev+TCG",
-            section: slot.section || "Main",
-            desc: slot.description || ""
+            name: item.name,
+            image_url: item.image_url || "https://via.placeholder.com/150x218?text=Vikingdev+TCG",
+            section: item.section || "Main",
+            desc: item.description || item.effect || item.desc || item.text || ""
         };
     });
 
     state.decks[playerKey] = formatted;
-    logEvent("Sistema", `Mazo personalizado (${formatted.length} cartas) cargado para ${playerKey === 'player1' ? 'Jugador 1' : 'Jugador 2'}.`);
 }
 
 // Initialize Physical Draggable Pile Sources (Main and Extra Decks only)
@@ -168,9 +155,9 @@ function initializePiles() {
     const p1_extra_x = 35;
     const p1_extra_y = height - 485;
 
-    const p2_deck_x = width - 185;
+    const p2_deck_x = width - 530;
     const p2_deck_y = 25;
-    const p2_extra_x = width - 185;
+    const p2_extra_x = width - 530;
     const p2_extra_y = 265;
 
     // Render P1 Deck
@@ -190,7 +177,6 @@ function initializePiles() {
 
 function createPileElement($parent, id, label, x, y, owner, type) {
     const themeClass = owner === "player1" ? "p1-pile" : "p2-pile";
-    const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
 
     const html = `
         <div class="magic-pile-zone ${themeClass}" id="zone-${id}" style="left: ${x}px; top: ${y}px;">
@@ -378,7 +364,6 @@ function shuffleDeck(owner) {
         [deck[i], deck[j]] = [deck[j], deck[i]];
     }
     updatePileCounts();
-    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", "Barajó su Main Deck.");
 }
 
 // Drawing cards to Hand Zone coordinates
@@ -424,7 +409,6 @@ function drawCards(owner, amount) {
 
     renderAllCards();
     updatePileCounts();
-    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", `Robó ${actualDraw} carta(s) a la mano.`);
 }
 
 // Search Modal operations
@@ -534,7 +518,6 @@ $(document).on("click", ".search-to-hand, .extra-to-hand", function() {
     $("#extra-overlay").fadeOut(200);
     renderAllCards();
     updatePileCounts();
-    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", `Buscó e introdujo a su mano: ${cardData.name}`);
 });
 
 $(document).on("click", ".search-to-field, .extra-to-field", function() {
@@ -576,7 +559,6 @@ $(document).on("click", ".search-to-field, .extra-to-field", function() {
     $("#extra-overlay").fadeOut(200);
     renderAllCards();
     updatePileCounts();
-    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", `Invocó al campo directamente: ${cardData.name}`);
 });
 
 
@@ -645,12 +627,6 @@ function setupCardInteractions() {
                 if (distance < 8 && duration < 250) {
                     // Click trigger: show card sidebar preview & toggle orientation parameters
                     updatePreview(dragCard);
-                } else {
-                    // End of drag coordinates check
-                    const finalZone = getCardCurrentZone(dragCard);
-                    if (finalZone) {
-                        logEvent(dragCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Colocó ${dragCard.name} en ${finalZone.toUpperCase().replace('_', ' ')}`);
-                    }
                 }
 
                 // Remove landing hover states
@@ -703,15 +679,16 @@ function setupGlobalEvents() {
         }
     });
 
-    // P1 accessories sliding edge tab deployer
+    // Accessories body toggle interaction inside sidebar
     $("#toggle-acc-btn").click(function() {
-        const collapsed = $("#p1-accessories").hasClass("collapsed");
-        if (collapsed) {
-            $("#p1-accessories").removeClass("collapsed");
-            $("#toggle-acc-btn i").attr("class", "fas fa-chevron-left");
+        const $body = $("#acc-body-container");
+        const isCollapsed = $body.is(":visible");
+        if (isCollapsed) {
+            $body.slideUp(200);
+            $("#toggle-acc-btn i").attr("class", "fas fa-chevron-up");
         } else {
-            $("#p1-accessories").addClass("collapsed");
-            $("#toggle-acc-btn i").attr("class", "fas fa-chevron-right");
+            $body.slideDown(200);
+            $("#toggle-acc-btn i").attr("class", "fas fa-chevron-down");
         }
     });
 
@@ -755,10 +732,8 @@ $(document).on("click", ".context-opt", function() {
 
     if (action === "flip") {
         activeMenuCard.faceUp = !activeMenuCard.faceUp;
-        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Volteó ${activeMenuCard.name} boca ${activeMenuCard.faceUp ? 'arriba' : 'abajo'}.`);
     } else if (action === "rotate") {
         activeMenuCard.tapped = !activeMenuCard.tapped;
-        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Giró/Tappeó ${activeMenuCard.name}.`);
     } else if (action === "add-glass") {
         activeMenuCard.counters.glass++;
     } else if (action === "add-poke") {
@@ -776,31 +751,13 @@ $(document).on("click", ".context-opt", function() {
         });
         state.cards = state.cards.filter(c => c.id !== activeMenuCard.id);
         updatePileCounts();
-        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Devolvió ${activeMenuCard.name} al fondo del mazo.`);
     } else if (action === "delete") {
         state.cards = state.cards.filter(c => c.id !== activeMenuCard.id);
-        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Eliminó ${activeMenuCard.name} de la arena.`);
     }
 
     renderAllCards();
     activeMenuCard = null;
 });
-
-// Real-time Event Logging
-function logEvent(sender, message) {
-    const $msgContainer = $("#game-log-messages");
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const cssClass = sender === "Sistema" ? "system-msg" : sender === "Jugador 1" ? "p1-msg" : "p2-msg";
-
-    const html = `
-        <div class="log-message ${cssClass}" style="margin-bottom: 6px; font-size: 0.8rem; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
-            <span style="color: #666; font-size: 0.7rem; margin-right: 4px;">[${timestamp}]</span>
-            <strong style="font-family: 'Orbitron';">${sender}:</strong> ${message}
-        </div>
-    `;
-    $msgContainer.append(html);
-    $msgContainer.scrollTop($msgContainer[0].scrollHeight);
-}
 
 // Side Image-only Preview
 function updatePreview(card) {
@@ -814,7 +771,6 @@ function setupAccessories() {
     // Dice 3D
     $("#btn-roll-dice").click(function() {
         const val = Math.floor(Math.random() * 6) + 1;
-        logEvent("Sistema", `🎲 Tirada de Dado: ¡Obtuvo un ${val}!`);
         Swal.fire({
             title: `Dado: ${val}`,
             text: `¡Lanzaste un dado de 6 caras!`,
@@ -827,7 +783,6 @@ function setupAccessories() {
     // Flip Coin
     $("#btn-flip-coin").click(function() {
         const side = Math.random() < 0.5 ? "Cara" : "Cruz";
-        logEvent("Sistema", `🪙 Lanzamiento de Moneda: ¡Cayó ${side}!`);
         Swal.fire({
             title: `Moneda: ${side}`,
             text: `¡Lanzaste una moneda al aire!`,
@@ -858,7 +813,6 @@ function setupAccessories() {
         });
 
         renderAllCards();
-        logEvent("Sistema", "Invocó una Ficha/Token de Yu-Gi-Oh! en el campo.");
     });
 
     // Generar Esfera de Vidrio Cian
@@ -906,8 +860,6 @@ function setupLPTrackers() {
 
         $display.text(current);
         $input.val('');
-
-        logEvent(player === "p1" ? "Jugador 1" : "Jugador 2", `Actualizó sus Puntos de Vida a ${current} LP.`);
     });
 }
 
@@ -943,4 +895,84 @@ function renderAllCards() {
     });
 
     updateLandingZoneCounts();
+}
+
+// Implement draggable and resizable logic on Landing Zones
+function makeLandingZonesDraggableAndResizable() {
+    $(".magic-landing-zone").each(function() {
+        const $zone = $(this);
+
+        // Draggable logic (apply to all zones)
+        $zone.css("pointer-events", "auto");
+
+        $zone.on("mousedown touchstart", function(e) {
+            // Ignore if clicking on a resize handle, buttons, or child content inputs
+            if ($(e.target).closest(".resize-handle").length || $(e.target).closest("button").length || $(e.target).closest("input").length) return;
+            e.preventDefault();
+
+            const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+            const offset = $zone.offset();
+            const startX = offset.left;
+            const startY = offset.top;
+
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
+
+            $(document).on("mousemove.zonedrag touchmove.zonedrag", function(moveEvent) {
+                const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+                let finalX = mX - deltaX;
+                let finalY = mY - deltaY;
+
+                // Move container freely in absolute page coordinates
+                $zone.css({
+                    left: finalX + "px",
+                    top: finalY + "px",
+                    bottom: "auto",
+                    right: "auto"
+                });
+            });
+
+            $(document).on("mouseup.zonedrag touchend.zonedrag", function() {
+                $(document).off(".zonedrag");
+                updateLandingZoneCounts();
+            });
+        });
+
+        // Resizable logic for zones containing a .resize-handle
+        const $handle = $zone.find(".resize-handle");
+        if ($handle.length) {
+            $handle.on("mousedown touchstart", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const startWidth = $zone.outerWidth();
+                const startHeight = $zone.outerHeight();
+
+                const startX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+                const startY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+                $(document).on("mousemove.zoneresize touchmove.zoneresize", function(moveEvent) {
+                    const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                    const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+                    const newWidth = Math.max(150, startWidth + (mX - startX));
+                    const newHeight = Math.max(150, startHeight + (mY - startY));
+
+                    $zone.css({
+                        width: newWidth + "px",
+                        height: newHeight + "px"
+                    });
+                });
+
+                $(document).on("mouseup.zoneresize touchend.zoneresize", function() {
+                    $(document).off(".zoneresize");
+                    updateLandingZoneCounts();
+                });
+            });
+        }
+    });
 }
