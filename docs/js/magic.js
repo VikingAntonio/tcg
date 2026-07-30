@@ -309,8 +309,15 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                 if (dragCard) {
                     $(`#${dragCard.id}`).removeClass("dragging");
                     $(".magic-landing-zone").removeClass("drag-over");
+
+                    // Automatically flip card face-up if dropped inside J1 or J2 Hand zones!
+                    const currentZone = getCardCurrentZone(dragCard);
+                    if (currentZone === "hand_p1" || currentZone === "hand_p2") {
+                        dragCard.faceUp = true;
+                    }
+
                     updateLandingZoneCounts();
-                    renderAllCards(); // Recalculate size instantly in real-time!
+                    renderAllCards(); // Re-render instantly on mouse up to recalculate card sizes!
                 }
                 dragCard = null;
                 $(document).off(".carddrag");
@@ -472,7 +479,7 @@ function drawCards(owner, amount) {
             desc: cardData.desc || "",
             x: cardX,
             y: targetY,
-            faceUp: (owner === "player1" || state.layout === "pokemon"), // Pokemon is always faceup in sandbox
+            faceUp: true, // Automatically flip cards face-up in the hand!
             tapped: false,
             counters: { glass: 0, poke: 0 },
             owner: owner,
@@ -592,7 +599,7 @@ $(document).on("click", ".search-to-hand", function(e) {
         desc: cardData.desc || "",
         x: targetX,
         y: targetY,
-        faceUp: true,
+        faceUp: true, // Automatically flip cards face-up in hand!
         tapped: false,
         counters: { glass: 0, poke: 0 },
         owner: owner,
@@ -763,7 +770,7 @@ function bindBatchSelectionHandlers() {
                 desc: cardData.desc || "",
                 x: targetX,
                 y: targetY,
-                faceUp: true,
+                faceUp: true, // Automatically flip cards face-up in hand!
                 tapped: false,
                 counters: { glass: 0, poke: 0 },
                 owner: item.owner,
@@ -867,6 +874,12 @@ function setupCardInteractions() {
                 if (distance < 8 && duration < 250) {
                     // Click trigger: show card sidebar preview & toggle orientation parameters
                     updatePreview(dragCard);
+                }
+
+                // Automatically flip card face-up if dropped inside J1 or J2 Hand zones!
+                const currentZone = getCardCurrentZone(dragCard);
+                if (currentZone === "hand_p1" || currentZone === "hand_p2") {
+                    dragCard.faceUp = true;
                 }
 
                 // Remove landing hover states
@@ -1274,6 +1287,7 @@ function renderAllCards() {
                     <button class="field-action-btn btn-field-set" data-id="${card.id}">Set</button>
                     <button class="field-action-btn btn-field-flip" data-id="${card.id}">Voltear</button>
                     <button class="field-action-btn btn-field-tap" data-id="${card.id}">Girar</button>
+                    <button class="field-action-btn btn-field-flash" data-id="${card.id}">Efecto</button>
                 </div>
                 `}
             </div>
@@ -1685,6 +1699,20 @@ $(document).on("click", ".btn-field-tap", function(e) {
     if (card) {
         card.tapped = !card.tapped;
         renderAllCards();
+    }
+});
+
+// Flash Activation visual effects trigger
+$(document).on("click", ".btn-field-flash", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-id");
+    const $card = $(`#${cardId}`);
+    if ($card.length) {
+        $card.addClass("activating-flash");
+        setTimeout(() => {
+            $card.removeClass("activating-flash");
+        }, 800);
     }
 });
 
