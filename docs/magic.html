@@ -19,10 +19,39 @@
         <div class="board-grid-bg"></div>
         <div id="layout-guide-bg" class="layout-guide-bg"></div>
 
+        <!-- Transparent Bordered Landing Zones for Hand, Graveyard and Banish (P1 & P2) -->
+        <!-- Player 1 landing zones -->
+        <div class="magic-landing-zone p1-theme landing-zone-hand-p1" id="zone-hand-p1">
+            <div class="zone-counter-badge"><i class="fas fa-hand-holding"></i> Mano: <span id="count-hand-p1">0</span></div>
+            <div class="zone-label-text">Mano J1</div>
+        </div>
+        <div class="magic-landing-zone p1-theme landing-zone-grave-p1" id="zone-grave-p1">
+            <div class="zone-counter-badge"><i class="fas fa-box-archive"></i> Descarte: <span id="count-grave-p1">0</span></div>
+            <div class="zone-label-text">Descarte J1</div>
+        </div>
+        <div class="magic-landing-zone p1-theme landing-zone-banish-p1" id="zone-banish-p1">
+            <div class="zone-counter-badge"><i class="fas fa-ban"></i> Destierro: <span id="count-banish-p1">0</span></div>
+            <div class="zone-label-text">Destierro J1</div>
+        </div>
+
+        <!-- Player 2 landing zones (Only displayed when active) -->
+        <div class="magic-landing-zone p2-theme landing-zone-hand-p2" id="zone-hand-p2" style="display: none;">
+            <div class="zone-counter-badge"><i class="fas fa-hand-holding"></i> Mano: <span id="count-hand-p2">0</span></div>
+            <div class="zone-label-text">Mano J2</div>
+        </div>
+        <div class="magic-landing-zone p2-theme landing-zone-grave-p2" id="zone-grave-p2" style="display: none;">
+            <div class="zone-counter-badge"><i class="fas fa-box-archive"></i> Descarte: <span id="count-grave-p2">0</span></div>
+            <div class="zone-label-text">Descarte J2</div>
+        </div>
+        <div class="magic-landing-zone p2-theme landing-zone-banish-p2" id="zone-banish-p2" style="display: none;">
+            <div class="zone-counter-badge"><i class="fas fa-ban"></i> Destierro: <span id="count-banish-p2">0</span></div>
+            <div class="zone-label-text">Destierro J2</div>
+        </div>
+
         <!-- Absolutely Positioned Cards on the field -->
         <div id="field-cards-container"></div>
 
-        <!-- Draggable Piles (Deck, Extra, Grave, Banish) will be dynamically initialized and appended here -->
+        <!-- Draggable Piles (Deck, Extra) will be dynamically initialized and appended here -->
         <div id="piles-container"></div>
 
         <!-- SVG Canvas Overlay for rendering attack arrows -->
@@ -30,40 +59,36 @@
         </svg>
     </div>
 
-    <!-- Collapsible Sidebar for Detailed Preview & Match Log -->
+    <!-- Collapsible Sidebar for Detailed Preview (Only High-Res Image, no description) & Match Log -->
     <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Mostrar/Ocultar Panel Lateral">
         <i class="fas fa-chevron-left"></i>
     </button>
 
     <aside class="magic-sidebar" id="magic-sidebar">
-        <!-- Detailed Card Preview Panel -->
+        <!-- Detailed Card Preview Panel (Image Only) -->
         <div class="sidebar-section preview-panel">
             <h3><i class="fas fa-search-plus"></i> Vista Detallada</h3>
             <div class="card-detailed-preview" id="card-detail-view">
                 <div class="preview-img-container">
-                    <img id="detail-card-img" src="https://via.placeholder.com/300x440?text=Pasa+el+cursor" alt="Preview">
-                </div>
-                <div class="preview-info">
-                    <h4 id="detail-card-name">Selecciona una carta</h4>
-                    <p id="detail-card-desc">Pasa el cursor o haz clic en cualquier carta para ver sus detalles en alta resolución.</p>
+                    <img id="detail-card-img" src="https://via.placeholder.com/150x218?text=Pasa+el+cursor" alt="Preview">
                 </div>
             </div>
         </div>
 
         <!-- Real-time Game Log & local actions -->
-        <div class="sidebar-section log-panel">
+        <div class="sidebar-section log-panel" style="flex: 1; display: flex; flex-direction: column;">
             <h3><i class="fas fa-scroll"></i> Historial del Juego</h3>
-            <div class="chat-messages" id="game-log-messages">
+            <div class="chat-messages" id="game-log-messages" style="flex: 1; overflow-y: auto;">
                 <div class="log-message system-msg">Iniciando Arena Magic...</div>
             </div>
         </div>
     </aside>
 
-    <!-- Floating Accessories Controls -->
-    <div class="floating-accessories-panel" id="p1-accessories">
+    <!-- Edge-Sliding Accessories Controls (Deployed from Left Edge) -->
+    <div class="floating-accessories-panel collapsed" id="p1-accessories">
         <div class="acc-header">
             <span>Accesorios</span>
-            <button class="btn-toggle-acc" id="toggle-acc-btn"><i class="fas fa-chevron-down"></i></button>
+            <button class="btn-toggle-acc" id="toggle-acc-btn"><i class="fas fa-chevron-right"></i></button>
         </div>
         <div class="acc-body" id="acc-body-container">
             <div class="acc-row">
@@ -71,7 +96,7 @@
                 <button class="acc-btn" id="btn-flip-coin"><i class="fas fa-coins"></i> Moneda</button>
             </div>
             <div class="acc-row">
-                <button class="acc-btn btn-spawn-token" id="btn-spawn-token"><i class="fas fa-ghost"></i> Spawner Token YGO</button>
+                <button class="acc-btn btn-spawn-token" id="btn-spawn-token"><i class="fas fa-ghost"></i> Token YGO</button>
             </div>
             <!-- Interactive Counter Creators -->
             <div class="acc-counter-creator">
@@ -111,50 +136,6 @@
         </div>
     </div>
 
-    <!-- Collapsible Player 1 Hand Tray (At the bottom of the screen) -->
-    <div class="magic-hand-tray player-1" id="hand-tray-p1">
-        <div class="tray-toggle-header" id="hand-header-p1">
-            <span>MANO JUGADOR 1</span>
-            <div class="tray-controls" style="display: flex; gap: 10px; align-items: center;">
-                <label class="theme-switch p1-theme-switch" title="Selección Múltiple">
-                    <input type="checkbox" class="hand-multi-select-toggle" data-player="player1">
-                    <span class="theme-slider"></span>
-                </label>
-                <div class="hand-batch-actions" id="hand-batch-p1" style="display: none; gap: 5px;">
-                    <button class="batch-action-btn btn-batch-deck" data-player="player1">A Deck</button>
-                    <button class="batch-action-btn btn-batch-grave" data-player="player1">A Descarte</button>
-                </div>
-                <button class="btn-toggle-tray" data-target="hand-tray-p1"><i class="fas fa-chevron-up"></i></button>
-            </div>
-        </div>
-        <div class="hand-cards-container" id="hand-p1">
-            <!-- Cards inside P1 hand will be appended here -->
-        </div>
-    </div>
-
-    <!-- Collapsible Player 2 Hand Tray (At the top of the screen - Only shown if 2 Decks loaded) -->
-    <div class="magic-hand-tray player-2" id="hand-tray-p2" style="display: none;">
-        <div class="tray-toggle-header" id="hand-header-p2">
-            <span>MANO JUGADOR 2</span>
-            <div class="tray-controls" style="display: flex; gap: 10px; align-items: center;">
-                <label class="theme-switch p2-theme-switch" title="Selección Múltiple">
-                    <input type="checkbox" class="hand-multi-select-toggle" data-player="player2">
-                    <span class="theme-slider"></span>
-                </label>
-                <div class="hand-batch-actions" id="hand-batch-p2" style="display: none; gap: 5px;">
-                    <button class="batch-action-btn btn-batch-deck" data-player="player2">A Deck</button>
-                    <button class="batch-action-btn btn-batch-grave" data-player="player2">A Descarte</button>
-                </div>
-                <button class="btn-toggle-tray" data-target="hand-tray-p2"><i class="fas fa-chevron-down"></i></button>
-            </div>
-        </div>
-        <div class="hand-cards-container" id="hand-p2">
-            <!-- Cards inside P2 hand will be appended here -->
-        </div>
-    </div>
-
-    <!-- MODALS & OVERLAYS (Identical structures to preserve all functionalities) -->
-
     <!-- Pile Cards View Overlay/Modal (Graveyard / Banished / Deck Search) -->
     <div class="search-overlay" id="pile-overlay">
         <div class="search-modal">
@@ -188,33 +169,6 @@
             <div class="search-body" id="extra-cards-grid">
                 <!-- Extra Deck cards will render here -->
             </div>
-        </div>
-    </div>
-
-    <!-- Attached Cards View Overlay/Modal -->
-    <div class="search-overlay" id="attached-overlay">
-        <div class="search-modal">
-            <div class="search-header">
-                <h3 id="attached-modal-title">Cartas Acopladas</h3>
-                <button class="search-close-btn" id="btn-close-attached"><i class="fas fa-times"></i></button>
-            </div>
-            <!-- Dynamic Bulk operations ribbon inside the header area -->
-            <div class="attached-bulk-actions" style="display: flex; gap: 8px; justify-content: center; padding: 10px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
-                <button class="bulk-action-btn" id="bulk-to-hand" style="background: var(--primary-color); color: #000; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-hand-holding"></i> Todas a Mano</button>
-                <button class="bulk-action-btn" id="bulk-to-grave" style="background: #ff1b6b; color: #fff; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-trash-alt"></i> Todas a Cementerio</button>
-                <button class="bulk-action-btn" id="bulk-to-banish" style="background: #ff8c00; color: #fff; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-ban"></i> Todas a Removido</button>
-                <button class="bulk-action-btn" id="bulk-to-deck" style="background: #999; color: #000; font-weight: bold; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-folder"></i> Todas a Deck</button>
-            </div>
-            <div class="search-body" id="attached-cards-grid">
-                <!-- Attached cards will render here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Graphical Target Zone Picker Overlay -->
-    <div class="zone-picker-overlay" id="zone-picker-overlay">
-        <div class="zone-picker-toast">
-            <i class="fas fa-bullseye animate-pulse"></i> Haz clic en cualquier parte del tablero para colocar la carta
         </div>
     </div>
 

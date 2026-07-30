@@ -42,8 +42,8 @@ def run_verification(page):
     page.wait_for_selector("#playmat")
     page.wait_for_selector("#piles-container", state="attached")
     page.wait_for_selector(".magic-pile-zone")
-    page.wait_for_selector("#hand-tray-p1")
-    page.wait_for_selector("#hand-tray-p2") # Since deck2 is loaded
+    page.wait_for_selector("#zone-hand-p1")
+    page.wait_for_selector("#zone-hand-p2") # Since deck2 is loaded
 
     page.screenshot(path="verification/screenshots/magic_loaded.png")
     page.wait_for_timeout(1000)
@@ -67,10 +67,11 @@ def run_verification(page):
     page.wait_for_timeout(1500)
     page.screenshot(path="verification/screenshots/magic_card_drawn.png")
 
-    print("Checking that a card was added to P1 hand...")
-    cards_in_hand = page.locator("#hand-p1 .duel-card").count()
-    print(f"Cards in hand: {cards_in_hand}")
-    assert cards_in_hand == 1, f"Expected 1 card in P1 hand, got {cards_in_hand}"
+    print("Checking that a card was added to P1 hand landing zone...")
+    # Get the text value of the Mano: 1 counter badge
+    hand_counter_text = page.locator("#count-hand-p1").inner_text()
+    print(f"Hand counter value: {hand_counter_text}")
+    assert hand_counter_text == "1", f"Expected '1' card counted in P1 hand, got {hand_counter_text}"
 
     print("Success! Frontend verification passed!")
 
