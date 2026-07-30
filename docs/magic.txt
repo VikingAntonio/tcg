@@ -1,17 +1,17 @@
-Explicacion de desajustes anteriores y correcciones implementadas:
+Explicación de desajustes anteriores y correcciones implementadas para la Arena Magic (Modo Libre):
 
-1. El panel lateral de previsualizacion detallada (vista detallada) mantenia textos de titulo y descripcion. El usuario indico explicitamente que este panel debe mostrar exclusivamente la imagen de la carta para maximizar el espacio de visualizacion.
-   - Correccion: Se han eliminado los textos redundantes y simplificado a una previsualizacion con imagen exclusivamente en la etiqueta de imagen de alta calidad de la carta.
+1. Remoción del Historial de Juego (Game Log):
+   - Desajuste: Se había incluido de forma no solicitada un panel de registro/historial de eventos ("Historial del Juego") en la barra lateral, lo cual sobrecargaba la interfaz y desviaba la atención de las funcionalidades requeridas.
+   - Corrección: Se ha eliminado por completo el contenedor de mensajes, sus estilos asociados y todas las llamadas a la función `logEvent` en el código JavaScript.
 
-2. Tamano de cartas y dimension del tapete: Las cartas anteriores tenian un tamano reducido de 80x116px que se sentian demasiado pequenas en un tapete a pantalla completa y libre.
-   - Correccion: Se ha ampliado el tamano de las cartas a aprox. 150x218px para ofrecer una experiencia sandbox de alta legibilidad, similar a un simulador fisico real.
+2. Reubicación del Panel de Accesorios:
+   - Desajuste: Anteriormente, el panel de accesorios se había colocado en una pestaña deslizable en el borde izquierdo de la pantalla. Dicha pestaña presentaba problemas de interacción y no se abría correctamente.
+   - Corrección: Se ha removido en su totalidad el panel deslizante del borde izquierdo. Ahora, la sección de accesorios está integrada de manera fija y limpia dentro de la barra lateral derecha (#magic-sidebar), directamente debajo del recuadro de previsualización de imágenes de las cartas. El botón de colapso `#toggle-acc-btn` se ha conservado dentro de la cabecera de esta sección para permitir colapsar/expandir el área de accesorios de manera interactiva sin interferir con la navegación lateral.
 
-3. Restricciones e inestabilidad de la mano del jugador: Anteriormente, se mantenia una bandeja de mano rigida y con estructura flex. Al arrastrar una carta fuera de esta bandeja, las coordenadas calculadas en base a absolute offset del tapete causaban que la carta saltara y brincara abruptamente de posicion.
-   - Correccion: Toda la pantalla y todo el tapete 'magic.html' se maneja bajo un sistema de coordenadas absolutas homogeneo. Se ha removido la bandeja flex fisica. La mano del jugador es ahora una zona transparente con borde sutil en la parte inferior (y superior si es multijugador) sobre la cual se pueden arrastrar cartas con total libertad, manejandose por deteccion de colision en coordenadas.
+3. Rediseño de las Zonas de Cementerio (Descarte) y Banish (Destierro):
+   - Desajuste: Se necesitaban contenedores amplios capaces de almacenar gran cantidad de cartas sin que se amontonen o se oculten, estructurados como cuadrados (tamaño aproximado de 4 cartas: 2x2, es decir, ~300x436px).
+   - Corrección: Se han rediseñado las zonas de Cementerio y Banish para que por defecto se sitúen en el extremo derecho de la pantalla (Banish arriba a la derecha, Cementerio abajo a la derecha). Tienen un tamaño inicial cuadrado grande (~300px x 300px) y se les ha incorporado un tirador o tirante en la esquina inferior derecha (`.resize-handle`) que permite al usuario redimensionar y arrastrar las zonas libremente de forma interactiva.
 
-4. Zonas de Cementerio y Banish: Se habian establecido slots especificos que escondian las cartas apiladas. El usuario requirio zonas amplias transparentes con bordes de aterrizaje donde se puedan semi-apilar cartas y visualizarlas, mostrando ademas un contador dinamico.
-   - Correccion: Se disenaron zonas transparentes amplias y simetricas con bordes diferenciados (azul cian para P1 y rosa/rojo para P2) que actuan como contenedores virtuales de colision para el descarte y el destierro, mostrando contadores dinamicos de cartas en tiempo real segun colision geometrica.
-
-5. Panel de Accesorios flotante: En lugar de flotar a mitad de pantalla, se ha alineado y configurado el panel de accesorios para que se despliegue y deslice de forma mas limpia desde los bordes laterales del navegador.
-
-6. Sistema de Acople Manual (Sin ventanas modales): Se eliminaron los molestos overlays interactivos o popups modales para acoplar o desacoplar cartas. El acople en magic.html es puramente manual y visual por apilado semi-superpuesto o posicionamiento libre en el tapete virtual.
+4. Corrección del Bug de Carga de Decks:
+   - Desajuste: Los decks no se cargaban debido a una consulta errónea de Supabase que intentaba hacer un join anidado con `card_slots` (`.select('..., card_slots(...)')`), cuando la tabla `deck_cards` ya almacena de forma directa las propiedades de las cartas.
+   - Corrección: Se ha corregido la función `fetchDeckCards` en `magic.js` para que consulte directamente la tabla `deck_cards` mediante `.select('*')`, mapeando correctamente las propiedades del deck para el modo libre.
