@@ -87,11 +87,24 @@
             </div>
             <div class="acc-body" id="acc-body-container">
                 <div class="acc-row" style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <button class="acc-btn" id="btn-roll-dice" style="flex: 1; padding: 10px 5px;"><i class="fas fa-dice"></i> Dado 3D</button>
-                    <button class="acc-btn" id="btn-flip-coin" style="flex: 1; padding: 10px 5px;"><i class="fas fa-coins"></i> Moneda</button>
+                    <button class="acc-btn" id="btn-roll-dice" style="flex: 1; padding: 10px 5px;"><i class="fas fa-dice"></i> Lanzar Dado</button>
+                    <button class="acc-btn" id="btn-flip-coin" style="flex: 1; padding: 10px 5px;"><i class="fas fa-coins"></i> Lanzar Moneda</button>
                 </div>
+
+                <!-- Visual inline display for dice & coin results with spinning/flip animations -->
+                <div class="acc-visuals-container" style="display: flex; justify-content: space-around; align-items: center; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1.5px solid rgba(255,255,255,0.05);">
+                    <!-- Interactive Dice 3D Element -->
+                    <div id="visual-dice-wrapper" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #00d2ff; text-shadow: 0 0 10px rgba(0,210,255,0.5); transition: transform 0.6s ease-out; perspective: 1000px;">
+                        <i class="fas fa-dice-one" id="visual-dice-icon"></i>
+                    </div>
+                    <!-- Interactive Coin Element -->
+                    <div id="visual-coin-wrapper" style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 0.8rem; border: 3px solid #ff1b6b; background: rgba(255, 27, 107, 0.1); color: #ff1b6b; text-shadow: 0 0 8px rgba(255,27,107,0.5); box-shadow: 0 0 10px rgba(255,27,107,0.3); transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                        <span id="visual-coin-text">CARA</span>
+                    </div>
+                </div>
+
                 <div class="acc-row" style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <button class="acc-btn btn-spawn-token" id="btn-spawn-token" style="flex: 1; padding: 10px 5px;"><i class="fas fa-ghost"></i> Token YGO</button>
+                    <button class="acc-btn btn-spawn-token" id="btn-spawn-token" style="width: 100%; padding: 10px 5px;"><i class="fas fa-ghost"></i> Token YGO</button>
                 </div>
                 <!-- Interactive Counter Creators -->
                 <div class="acc-counter-creator" style="margin-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
@@ -166,6 +179,34 @@
                 <!-- Extra Deck cards will render here -->
             </div>
         </div>
+    </div>
+
+    <!-- Custom Absolute Context Menu containers -->
+    <div class="deck-context-menu" id="deck-ctx-menu">
+        <div class="menu-item" id="menu-deck-draw1"><i class="fas fa-hand-holding"></i> Robar 1 Carta</div>
+        <div class="menu-item" id="menu-deck-draw5"><i class="fas fa-hand-holding"></i> Robar 5 Cartas</div>
+        <div class="menu-item" id="menu-deck-shuffle"><i class="fas fa-random"></i> Barajar Deck</div>
+        <div class="menu-item" id="menu-deck-search"><i class="fas fa-search"></i> Ver / Buscar Deck</div>
+    </div>
+
+    <div class="deck-context-menu" id="extra-ctx-menu">
+        <div class="menu-item" id="menu-extra-search"><i class="fas fa-search"></i> Ver / Buscar Extra Deck</div>
+    </div>
+
+    <div class="card-context-menu" id="card-ctx-menu">
+        <div class="menu-item" id="menu-card-flip"><i class="fas fa-sync"></i> Voltear (Cara Arriba/Abajo)</div>
+        <div class="menu-item" id="menu-card-tap"><i class="fas fa-redo"></i> Girar (Posición Defensa)</div>
+        <hr>
+        <div class="menu-item" id="menu-card-counter-glass"><i class="fas fa-gem" style="color: #00d2ff;"></i> +1 Esfera Vidrio</div>
+        <div class="menu-item" id="menu-card-counter-damage"><i class="fas fa-heart-pulse" style="color: #ff1b6b;"></i> +10 Daño Pokémon</div>
+        <div class="menu-item" id="menu-card-counter-clear"><i class="fas fa-eraser"></i> Limpiar Contadores</div>
+        <hr>
+        <div class="menu-item" id="menu-card-deck-bottom"><i class="fas fa-download"></i> Devolver al Deck (Abajo)</div>
+        <div class="menu-item" id="menu-card-deck-top"><i class="fas fa-upload"></i> Devolver al Deck (Arriba)</div>
+        <div class="menu-item" id="menu-card-grave"><i class="fas fa-box-archive"></i> Enviar al Descarte</div>
+        <div class="menu-item" id="menu-card-banish"><i class="fas fa-ban"></i> Enviar al Destierro</div>
+        <hr>
+        <div class="menu-item" id="menu-card-delete" style="color: #ff1b6b;"><i class="fas fa-trash-alt" style="color: #ff1b6b;"></i> Eliminar de la Arena</div>
     </div>
 
     <!-- Javascript Dependencies -->
