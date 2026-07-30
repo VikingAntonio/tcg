@@ -323,24 +323,14 @@
             animation: endTurnBlink 0.8s infinite alternate ease-in-out;
         }
 
-        /* SVG arrow rendering animations */
-        @keyframes dash {
-            to {
-                stroke-dashoffset: -40;
-            }
-        }
-
+        /* SVG arrow rendering styling - simplified clean look */
         .attack-line {
-            stroke: url(#attack-gradient);
-            stroke-width: 6;
-            stroke-dasharray: 10, 5;
-            animation: dash 1.5s linear infinite;
-            filter: url(#neon-glow);
+            stroke-width: 4px;
+            stroke-linecap: round;
         }
 
         .attack-head {
-            fill: #ff1b6b;
-            filter: url(#neon-glow);
+            stroke-linejoin: round;
         }
 
         /* LP Counter Styling */
@@ -487,96 +477,6 @@
             border-color: #fff;
         }
 
-        /* Flashing under-attack card style (Anime-style target highlight) */
-        @keyframes attackTargetPulse {
-            0% {
-                box-shadow: 0 0 10px rgba(255, 27, 107, 0.4), inset 0 0 5px rgba(255, 27, 107, 0.2);
-                border-color: rgba(255, 27, 107, 0.5) !important;
-            }
-            100% {
-                box-shadow: 0 0 25px rgba(255, 27, 107, 1), 0 0 15px rgba(255, 27, 107, 0.6);
-                border-color: #ff1b6b !important;
-            }
-        }
-
-        .duel-card.card-under-attack {
-            animation: attackTargetPulse 0.5s infinite alternate ease-in-out !important;
-            border: 2px solid #ff1b6b !important;
-            z-index: 9999 !important;
-        }
-
-        /* Attacking card glowing cyan */
-        @keyframes attackerPulse {
-            0% {
-                box-shadow: 0 0 10px rgba(0, 210, 255, 0.4), inset 0 0 5px rgba(0, 210, 255, 0.2);
-                border-color: rgba(0, 210, 255, 0.5) !important;
-            }
-            100% {
-                box-shadow: 0 0 25px rgba(0, 210, 255, 1), 0 0 15px rgba(0, 210, 255, 0.6);
-                border-color: #00d2ff !important;
-            }
-        }
-
-        .duel-card.card-is-attacker {
-            animation: attackerPulse 0.5s infinite alternate ease-in-out !important;
-            border: 2px solid #00d2ff !important;
-            z-index: 9998 !important;
-        }
-
-        /* Attack badges inside cards */
-        .attack-badge {
-            position: absolute;
-            top: -22px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(10, 15, 22, 0.95);
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.65rem;
-            font-weight: 900;
-            white-space: nowrap;
-            z-index: 10005;
-            pointer-events: none;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-            text-transform: uppercase;
-            animation: attackBadgeGlow 1s infinite alternate ease-in-out;
-        }
-
-        @keyframes attackBadgeGlow {
-            0% {
-                transform: translateX(-50%) scale(0.95);
-            }
-            100% {
-                transform: translateX(-50%) scale(1.05);
-            }
-        }
-
-        .attacker-badge {
-            border: 1px solid #00d2ff;
-            color: #00d2ff;
-            text-shadow: 0 0 5px rgba(0, 210, 255, 0.8);
-            box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
-        }
-
-        .target-badge {
-            border: 1px solid #ff1b6b;
-            color: #ff1b6b;
-            text-shadow: 0 0 5px rgba(255, 27, 107, 0.8);
-            box-shadow: 0 0 8px rgba(255, 27, 107, 0.3);
-        }
-
-        .direct-badge {
-            border: 1px solid #ff8c00;
-            color: #ff8c00;
-            text-shadow: 0 0 5px rgba(255, 140, 0, 0.8);
-            box-shadow: 0 0 8px rgba(255, 140, 0, 0.3);
-        }
-
-        .attack-line-text {
-            user-select: none;
-            pointer-events: none;
-        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -680,24 +580,8 @@
                 <!-- Floating pile card counters -->
                 <div id="pile-counters-container"></div>
 
-                <!-- SVG Canvas Overlay for rendering glowing attack arrows -->
+                <!-- SVG Canvas Overlay for rendering attack arrows -->
                 <svg id="attack-arrows-overlay" style="position: absolute; top: 0; left: 0; width: 1120px; height: 600px; pointer-events: none; z-index: 101;">
-                    <defs>
-                        <!-- Neon glow filter for attack arrows -->
-                        <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="5" result="blur" />
-                            <feMerge>
-                                <feMergeNode in="blur" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                        <!-- Animated linear gradient for moving attack pulse -->
-                        <linearGradient id="attack-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stop-color="#ff1b6b" />
-                            <stop offset="50%" stop-color="#ff8c00" />
-                            <stop offset="100%" stop-color="#ff1b6b" />
-                        </linearGradient>
-                    </defs>
                 </svg>
             </div>
 
@@ -1287,19 +1171,25 @@
                     .replace(/'/g, "&#039;");
             }
 
-            // 5. Broadcast helper functions
+            // 5. Broadcast helper functions with crash safety guards for practice mode
             function sendGameAction(action, cardName, isImportant = false) {
                 const actionData = { player: currentRole, action, cardName, isImportant, username: myUsername };
 
                 // Append locally
                 appendGameLog(currentRole, action, cardName, myUsername);
 
-                // Send via realtime
-                commChannel.send({
-                    type: 'broadcast',
-                    event: 'game_action',
-                    payload: actionData
-                });
+                // Send via realtime safely
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'game_action',
+                            payload: actionData
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Could not broadcast action:", e);
+                }
             }
 
             function sendChatMessage(message) {
@@ -1308,12 +1198,18 @@
                 // Append locally
                 appendChatMessage(currentRole, message, myUsername);
 
-                // Send via realtime
-                commChannel.send({
-                    type: 'broadcast',
-                    event: 'chat_msg',
-                    payload: chatData
-                });
+                // Send via realtime safely
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'chat_msg',
+                            payload: chatData
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Could not broadcast chat:", e);
+                }
             }
 
             function sendOpponentResponse(response) {
@@ -1322,12 +1218,18 @@
                 // Append locally
                 appendGameLog(currentRole, `Responde a la acción anterior: <b>${escapeHtml(response)}</b>`, null, myUsername);
 
-                // Send via realtime
-                commChannel.send({
-                    type: 'broadcast',
-                    event: 'opponent_response',
-                    payload: responseData
-                });
+                // Send via realtime safely
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'opponent_response',
+                            payload: responseData
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Could not broadcast response:", e);
+                }
             }
 
             // 6. Action and Chat bindings
@@ -1366,10 +1268,6 @@
                 const $overlay = $("#attack-arrows-overlay");
                 $overlay.find(".active-attack-element").remove();
 
-                // Clear existing attack classes and badges from all cards
-                $(".duel-card").removeClass("card-under-attack card-is-attacker");
-                $(".attack-badge").remove();
-
                 const isCardOnField = (card) => {
                     if (!card) return false;
                     const z = card.zone;
@@ -1395,22 +1293,6 @@
                     const attackerObj = state.cards.find(c => c.instanceId === atk.attackerId);
                     if (!attackerObj) return;
 
-                    const $attackerCard = $(`#${attackerObj.instanceId}`);
-
-                    // Add attacker glowing class
-                    $attackerCard.addClass("card-is-attacker");
-
-                    // Add attacker badge
-                    if (atk.isDirect) {
-                        if (!$attackerCard.find(".direct-badge").length) {
-                            $attackerCard.append(`<div class="attack-badge direct-badge active-attack-element">💥 ATK DIRECTO</div>`);
-                        }
-                    } else {
-                        if (!$attackerCard.find(".attacker-badge").length) {
-                            $attackerCard.append(`<div class="attack-badge attacker-badge active-attack-element">⚔️ ATACANDO</div>`);
-                        }
-                    }
-
                     // Get coordinates of attacker card center
                     let startX = 0, startY = 0;
                     const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === attackerObj.zone);
@@ -1423,37 +1305,14 @@
                     }
 
                     let endX = 0, endY = 0;
-                    let labelHTML = "";
-
                     if (atk.isDirect) {
                         // Direct attack target coordinate goes directly to top/bottom of playmat depending on controller
                         endX = startX;
                         // Symmetrical direct attack goes straight to the other player's side
                         endY = attackerObj.controller === "player1" ? 50 : 550;
-
-                        // Add direct attack text label in SVG midway
-                        const midX = startX;
-                        const midY = (startY + endY) / 2;
-                        labelHTML = `
-                            <text class="attack-line-text active-attack-element" x="${midX}" y="${midY}"
-                                  fill="#ff8c00" font-family="'Orbitron', sans-serif" font-weight="900"
-                                  font-size="13px" text-anchor="middle" filter="url(#neon-glow)">
-                                ¡ATAQUE DIRECTO!
-                            </text>
-                        `;
                     } else {
                         const targetObj = state.cards.find(c => c.instanceId === atk.targetId);
                         if (!targetObj) return;
-
-                        const $targetCard = $(`#${targetObj.instanceId}`);
-
-                        // Add target flashing class
-                        $targetCard.addClass("card-under-attack");
-
-                        // Add target badge
-                        if (!$targetCard.find(".target-badge").length) {
-                            $targetCard.append(`<div class="attack-badge target-badge active-attack-element">🛡️ BAJO ATAQUE</div>`);
-                        }
 
                         const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
                         if (tZoneObj) {
@@ -1463,36 +1322,25 @@
                             endX = targetObj.x + 40;
                             endY = targetObj.y + 58;
                         }
-
-                        // Add normal attack text label in SVG midway
-                        const midX = (startX + endX) / 2;
-                        const midY = (startY + endY) / 2;
-                        labelHTML = `
-                            <text class="attack-line-text active-attack-element" x="${midX}" y="${midY}"
-                                  fill="#ff1b6b" font-family="'Orbitron', sans-serif" font-weight="900"
-                                  font-size="11px" text-anchor="middle" filter="url(#neon-glow)">
-                                ¡ATACANDO!
-                            </text>
-                        `;
                     }
 
                     // Calculate arrow angle to render the arrowhead properly
                     const angle = Math.atan2(endY - startY, endX - startX);
-                    const arrowSize = 12;
+                    const arrowSize = 14;
 
                     const headX1 = endX - arrowSize * Math.cos(angle - Math.PI / 6);
                     const headY1 = endY - arrowSize * Math.sin(angle - Math.PI / 6);
                     const headX2 = endX - arrowSize * Math.cos(angle + Math.PI / 6);
                     const headY2 = endY - arrowSize * Math.sin(angle + Math.PI / 6);
 
+                    // Dynamic colors based on controller: Cyan (#00d2ff) for Player 1, Pink (#ff1b6b) for Player 2
+                    const strokeColor = attackerObj.controller === "player1" ? "#00d2ff" : "#ff1b6b";
+
                     // Create path and polygon SVG elements
-                    const pathHTML = `<path class="attack-line active-attack-element" d="M ${startX} ${startY} L ${endX} ${endY}" />`;
-                    const headHTML = `<polygon class="attack-head active-attack-element" points="${endX},${endY} ${headX1},${headY1} ${headX2},${headY2}" />`;
+                    const pathHTML = `<path class="attack-line active-attack-element" d="M ${startX} ${startY} L ${endX} ${endY}" stroke="${strokeColor}" fill="none" />`;
+                    const headHTML = `<polygon class="attack-head active-attack-element" points="${endX},${endY} ${headX1},${headY1} ${headX2},${headY2}" fill="${strokeColor}" />`;
 
                     $overlay.append(pathHTML).append(headHTML);
-                    if (labelHTML) {
-                        $overlay.append(labelHTML);
-                    }
                 });
             };
 
@@ -1541,7 +1389,7 @@
                         if (payload.player !== currentRole) {
                             Swal.fire({
                                 icon: 'warning',
-                                title: '💥 ¡BAJO ATAQUE! 💥',
+                                title: '¡BAJO ATAQUE!',
                                 html: `<div style="font-family: 'Montserrat', sans-serif;"><span style="color: #ff1b6b; font-weight: 800;">${payload.username}</span> está declarando un ataque:<br><br><b style="font-size: 1.05rem; color: #ff8c00;">${payload.action}</b></div>`,
                                 background: '#0a0508',
                                 color: '#fff',
@@ -1583,21 +1431,27 @@
 
                     // If we are already connected, broadcast our current cards and turn state to the newcomer
                     if (payload.role !== currentRole) {
-                        commChannel.send({
-                            type: 'broadcast',
-                            event: 'card_sync',
-                            payload: { cards: state.cards }
-                        });
-                        // Send active turn state
-                        commChannel.send({
-                            type: 'broadcast',
-                            event: 'turn_state_sync',
-                            payload: {
-                                activeTurn: state.activeTurn,
-                                activePhase: state.activePhase,
-                                lp: state.lp
+                        try {
+                            if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                                commChannel.send({
+                                    type: 'broadcast',
+                                    event: 'card_sync',
+                                    payload: { cards: state.cards }
+                                });
+                                // Send active turn state
+                                commChannel.send({
+                                    type: 'broadcast',
+                                    event: 'turn_state_sync',
+                                    payload: {
+                                        activeTurn: state.activeTurn,
+                                        activePhase: state.activePhase,
+                                        lp: state.lp
+                                    }
+                                });
                             }
-                        });
+                        } catch (e) {
+                            console.warn("Could not sync with newcomer:", e);
+                        }
                     }
                 })
                 .on('broadcast', { event: 'card_sync' }, ({ payload }) => {
@@ -1640,11 +1494,17 @@
                         appendSystemMsg(`Conectado a la sala: ${roomId}`);
 
                         // Send player_joined event to let the other player know
-                        commChannel.send({
-                            type: 'broadcast',
-                            event: 'player_joined',
-                            payload: { role: currentRole, username: myUsername }
-                        });
+                        try {
+                            if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                                commChannel.send({
+                                    type: 'broadcast',
+                                    event: 'player_joined',
+                                    payload: { role: currentRole, username: myUsername }
+                                });
+                            }
+                        } catch (e) {
+                            console.warn("Could not notify joining:", e);
+                        }
                     }
                 });
 
@@ -1749,11 +1609,17 @@
 
                 // Clear all active attack arrows automatically on turn swap
                 state.attacks = [];
-                commChannel.send({
-                    type: 'broadcast',
-                    event: 'attack_sync',
-                    payload: { attacks: [] }
-                });
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'attack_sync',
+                            payload: { attacks: [] }
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Could not sync attack reset:", e);
+                }
                 if (typeof window.drawAttackArrows === "function") {
                     window.drawAttackArrows();
                 }
@@ -1776,11 +1642,17 @@
                     lp: state.lp,
                     turnActionTaken: state.turnActionTaken
                 };
-                commChannel.send({
-                    type: 'broadcast',
-                    event: 'turn_state_sync',
-                    payload: turnStateData
-                });
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'turn_state_sync',
+                            payload: turnStateData
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Could not sync turn state:", e);
+                }
             }
 
             // Life Points button controls (+, -, /2) with calculator entry
@@ -2042,11 +1914,17 @@
 
                 // Broadcast cards state if in multiplayer mode and not an incoming sync
                 if (state.mode === "multiplayer" && !window.isIncomingSync) {
-                    commChannel.send({
-                        type: 'broadcast',
-                        event: 'card_sync',
-                        payload: { cards: state.cards }
-                    });
+                    try {
+                        if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                            commChannel.send({
+                                type: 'broadcast',
+                                event: 'card_sync',
+                                payload: { cards: state.cards }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn("Could not sync cards state:", e);
+                    }
                 }
             };
 

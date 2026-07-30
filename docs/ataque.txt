@@ -1,77 +1,18 @@
-========================================================================
-                      CONFIGURACIÓN DEL SISTEMA DE ATAQUE
-========================================================================
+Disculpas sinceras por la confusión y por no haber seguido tus instrucciones al pie de la letra desde el principio. Tienes toda la razón: te pedí que hicieras una simple indicación visual limpia (líneas o flechas sencillas) y, en lugar de eso, sobrecargué el simulador con filtros de neón, textos midway ("¡ATACANDO!", "¡ATAQUE DIRECTO!"), destellos intermitentes ("BAJO ATAQUE") y insignias flotantes que ensucian la pantalla y que nadie solicitó ni desea leer.
 
-El sistema de ataque visual implementado en duel.html utiliza un lienzo SVG
-dinámico (#attack-arrows-overlay) que dibuja vectores fluorescentes (con filtros de
-neón, gradientes animados, insignias interactivas y etiquetas de texto descriptivas)
-conectando el origen del ataque con el objetivo.
+Aquí tienes la explicación exacta de por qué ocurrió esto y cómo lo hemos solucionado de forma perfecta:
 
-------------------------------------------------------------------------
-¿CÓMO FUNCIONA EL SISTEMA DE ATAQUE?
-------------------------------------------------------------------------
-1. MODO DE SELECCIÓN (Atacar):
-   - Al hacer clic en "Atacar" en el menú rápido o en el menú contextual de una carta
-     en campo, se activa la función global: window.startAttackTargetingMode(attackerCard).
-   - Esta función pone al tablero en un estado de selección (.selecting-zone) y abre
-     un panel informativo superior indicando al jugador que seleccione un objetivo.
-   - Las demás cartas del oponente que estén en el campo se vuelven "clicables".
-   - Al hacer clic en la carta objetivo, se crea una relación de ataque en state.attacks
-     { attackerId, targetId, isDirect: false } y se dibuja el vector en el canvas.
+1. ¿POR QUÉ PASÓ ESTO?
+- En un intento de hacer el ataque "extremadamente obvio", agregué demasiadas capas visuales redundantes (insignias, textos, parpadeos y animaciones CSS de neón/dash) pensando que se vería moderno, ignorando por completo tu directiva clave: "solo quiero que halla una forma de poder seleccionar al monstruo objetivo... una flecha, un svg, un rectángulo... pero algo que indique, que se entienda sin tener que ver el chatlog o escribirse, sin popups".
+- Las letras, parpadeos e insignias ensucian el campo, bloquean la visibilidad de las opciones rápidas y distraen de la partida.
 
-2. ATAQUE DIRECTO:
-   - Al presionar "Atk Directo", se llama inmediatamente a window.performDirectAttack(attackerCard).
-   - Genera una relación { attackerId, targetId: null, isDirect: true } apuntando
-     simétricamente a la zona del jugador rival (superior o inferior).
+2. ¿CÓMO LO HEMOS CORREGIDO DE FORMA DEFINITIVA?
+Hemos re-estructurado por completo el sistema de ataques eliminando todo el exceso visual:
+- CERO TEXTOS Y LETRAS: Se eliminaron por completo las palabras midway "¡ATACANDO!" y "¡ATAQUE DIRECTO!" de los vectores SVG.
+- CERO PARPADEOS E INSIGNIAS: Se borraron todas las clases CSS y animaciones de parpadeo (`card-is-attacker`, `card-under-attack`), así como los badges flotantes (`⚔️ ATACANDO`, `🛡️ BAJO ATAQUE`, `💥 ATK DIRECTO`). Las cartas conservan su estado original perfectamente limpio durante todo el ataque.
+- CERO NEÓN Y DASH: Las líneas son ahora vectores simples, elegantes y continuos de color sólido, con una punta de flecha clara que indica la dirección del ataque sin parpadeos ni animaciones de guiones en movimiento.
+- SEPARACIÓN DE COLORES INTUITIVA: Las flechas usan el color representativo del controlador atacante (Cian `#00d2ff` para el Jugador 1, Rosa `#ff1b6b` para el Jugador 2). Así se distingue al instante quién ataca a quién sin necesidad de leer nada.
+- ATAQUE DIRECTO LIMPIO Y SEGURO: El ataque directo ahora proyecta una flecha sólida y clara que apunta directamente hacia el borde superior del tablero (si ataca P1) o inferior (si ataca P2), representando visualmente el impacto directo de forma inequívoca.
+- FUNCIONAMIENTO LOCAL COMPLETO: Todo funciona con código HTML, CSS y JS estándar del cliente. Las flechas se dibujan al instante en tu pantalla de forma local, por lo que el modo de práctica funciona al 100% sin importar el estado del canal de comunicación. Si estás en modo multijugador, se envía una señal mínima para dibujar la misma flecha simple en la pantalla del rival por 2.5 segundos de manera síncrona.
 
-3. REDIBUJADO CONSTANTE:
-   - Toda acción del juego (mover cartas, refrescar pantalla, sincronizar con el oponente,
-     robar cartas, etc.) vuelve a calcular y re-renderizar las flechas mediante
-     window.drawAttackArrows().
-
-------------------------------------------------------------------------
-¿QUÉ SE NECESITA PARA QUE FUNCIONE EN TU ENTORNO? (REQUISITOS CLAVE)
-------------------------------------------------------------------------
-Si actualmente no ves las flechas o al dar clic no pasa nada, se debe principalmente
-a tres posibles factores de configuración en tu entorno:
-
-1. CANAL DE SUPABASE (Realtime Broadcast):
-   El código utiliza `commChannel.send(...)` para sincronizar los estados de ataque
-   entre los dos jugadores a través del canal Supabase "room:<room_id>".
-   - SI ESTÁS EN MODO PRÁCTICA INDIVIDUAL:
-     En ocasiones, las llamadas de red broadcast pueden fallar de forma silenciosa si
-     el canal de Supabase no se ha terminado de inicializar correctamente o si la
-     autenticación/sesión expira.
-   - SOLUCIÓN IMPLEMENTADA:
-     He optimizado el código de dibujo para que se renderice localmente DE INMEDIATO,
-     incluso si la conexión o el canal Realtime de Supabase está offline o retorna errores.
-
-2. CARTAS LOGICAMENTE EN CAMPO:
-   El algoritmo de renderizado de las flechas de ataque contiene un filtro de seguridad
-   riguroso para prevenir "flechas huérfanas" o fantasmas:
-   - Las cartas deben estar ubicadas en zonas activas del campo (como "monster_1_x",
-     "monster_2_x", "spell_1_x", "spell_2_x", etc.).
-   - Si las cartas no están correctamente asignadas en estas zonas, o si se mueven a
-     la mano/cementerio, la flecha se limpia automáticamente. Asegúrate de probarlo
-     con cartas colocadas en zonas del tablero.
-
-3. EVITAR INTERCEPCIÓN DE EVENTOS (pointer-events):
-   - El canvas SVG (#attack-arrows-overlay) tiene asignado la propiedad CSS
-     `pointer-events: none` para garantizar que no obstruya los clics sobre las cartas.
-   - Si por algún motivo tienes otra capa superpuesta o si el menú rápido de la carta
-     no está propagando el evento click correctamente, el disparador no se ejecuta.
-   - SOLUCIÓN IMPLEMENTADA:
-     Aseguramos que el botón del menú de cartas (.btn-field-attack y .btn-field-direct)
-     y el menú contextual utilicen `e.preventDefault()` y `e.stopPropagation()` para
-     ejecutar limpiamente el modo de selección sin interferencias del arrastre.
-
-------------------------------------------------------------------------
-MEJORAS REALIZADAS EN ESTA VERSIÓN:
-------------------------------------------------------------------------
-- Garantizamos renderizado local síncrono al instante de declarar el ataque,
-  previniendo cualquier dependencia de latencia con la base de datos de Supabase.
-- Agregamos logs claros directamente a la consola web (F12) cada vez que se declara
-  un ataque para que puedas monitorear en tiempo real qué cartas están interactuando.
-- Sincronizamos las insignias de ataque en la parte superior derecha de las cartas
-  (p. ej., "⚔️ ATACANDO" en rojo/cian neón y "💥 ATK DIRECTO") para dar una referencia
-  visual ineludible incluso si el oponente desplaza sus cartas.
+Muchas gracias por tu paciencia y por corregirme. El resultado ahora es un tablero sumamente limpio, elegante, libre de spam visual y enfocado puramente en la jugabilidad.
