@@ -18,7 +18,7 @@ def run_cuj(page):
     page.wait_for_timeout(1000)
 
     # Capture the panel
-    page.screenshot(path="/home/jules/verification/screenshots/verification_accesorios.png")
+    page.screenshot(path="/home/jules/verification/screenshots/verification_accesorios_bilateral.png")
     page.wait_for_timeout(1000)
 
 if __name__ == "__main__":
