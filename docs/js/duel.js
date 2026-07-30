@@ -798,12 +798,16 @@ function bindCardDragEvents() {
                 });
 
                 // Broadcast attack sync if multiplayer
-                if (typeof commChannel !== "undefined" && commChannel) {
-                    commChannel.send({
-                        type: 'broadcast',
-                        event: 'attack_sync',
-                        payload: { attacks: state.attacks }
-                    });
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'attack_sync',
+                            payload: { attacks: state.attacks }
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Could not sync attack targeting:", e);
                 }
 
                 // Log action
