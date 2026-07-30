@@ -477,41 +477,52 @@
             border-color: #fff;
         }
 
-        /* Accessories Collapsible Panel Styles */
+        /* Bilateral Collapsible Accessories Panel Styles */
         .tcg-accessories-panel {
-            position: fixed;
-            left: 0;
-            top: 15%;
-            width: 250px;
-            background: rgba(10, 15, 22, 0.95);
+            position: absolute;
+            left: -240px;
+            width: 240px;
+            background: rgba(10, 15, 22, 0.98);
             backdrop-filter: blur(20px);
             border: 1.5px solid var(--glass-border);
-            border-left: none;
-            border-radius: 0 16px 16px 0;
-            z-index: 9999;
-            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 12px;
+            z-index: 106;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
         }
-        .tcg-accessories-panel.collapsed {
-            transform: translateX(-250px);
+        .tcg-accessories-panel.active {
+            left: 10px;
+        }
+        .tcg-accessories-panel.p1-accessories {
+            bottom: 10px;
+        }
+        .tcg-accessories-panel.p2-accessories {
+            top: 10px;
         }
         .accessories-tab {
             position: absolute;
             right: -42px;
-            top: 50px;
-            background: rgba(10, 15, 22, 0.95);
+            background: rgba(10, 15, 22, 0.98);
             backdrop-filter: blur(20px);
             border: 1.5px solid var(--glass-border);
             border-left: none;
             border-radius: 0 8px 8px 0;
-            padding: 15px 10px;
+            padding: 12px 10px;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 8px;
-            color: var(--primary-color);
             box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+        }
+        .p1-accessories .accessories-tab {
+            bottom: 20px;
+            color: var(--primary-color);
+        }
+        .p2-accessories .accessories-tab {
+            top: 20px;
+            color: var(--secondary-color);
         }
         .accessories-tab span {
             writing-mode: vertical-lr;
@@ -522,10 +533,10 @@
             letter-spacing: 1.5px;
         }
         .accessories-content {
-            padding: 15px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
         .accessories-content h3 {
             font-family: 'Orbitron', sans-serif;
@@ -723,13 +734,14 @@
         .poke-counter-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
+            gap: 6px;
             margin-top: 8px;
         }
         .poke-counter-source {
-            width: 28px;
-            height: 28px;
-            font-size: 0.55rem;
+            width: 34px;
+            height: 34px;
+            font-size: 0.65rem;
+            font-weight: bold;
             border-radius: 50%;
         }
         .poke-counter-source.dmg-10, .poke-counter-source.dmg-20, .poke-counter-source.dmg-30, .poke-counter-source.dmg-40 {
@@ -772,9 +784,30 @@
             pointer-events: auto; /* Allow hovering/clicking counters specifically */
             z-index: 150;
         }
+        /* Top-left static damage counter total label for Pokemon cards */
+        .pokemon-damage-badge {
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            background: linear-gradient(135deg, #ff1b6b, #ff8c00);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.65rem;
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 27, 107, 0.8);
+            z-index: 160;
+            animation: counterPulse 1.5s infinite alternate;
+        }
         .stacked-counter-bead {
-            width: 14px;
-            height: 14px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             border: 1px solid white;
             cursor: pointer;
@@ -852,24 +885,23 @@
         <div class="blob blob-2"></div>
     </div>
 
-    <!-- Collapsible Accessories Panel -->
-    <div class="tcg-accessories-panel collapsed" id="accessories-panel">
-        <div class="accessories-tab" id="accessories-tab-btn">
+    <!-- Collapsible Accessories Panel for Player 1 (Bottom Left) -->
+    <div class="tcg-accessories-panel p1-accessories" id="accessories-panel-p1">
+        <div class="accessories-tab" id="accessories-tab-btn-p1">
             <i class="fas fa-toolbox"></i>
-            <span>Accesorios</span>
+            <span>Accesorios P1</span>
         </div>
         <div class="accessories-content">
-            <!-- Dice and Coin Section -->
             <div class="accessories-section">
-                <h3>Suerte</h3>
+                <h3>Suerte (P1)</h3>
                 <div class="acc-row">
                     <div class="acc-tool-box">
                         <span class="tool-label">Dado</span>
-                        <div class="tcg-dice" id="accessories-dice">1</div>
+                        <div class="tcg-dice dice-action-btn" data-player="p1">1</div>
                     </div>
                     <div class="acc-tool-box">
                         <span class="tool-label">Moneda</span>
-                        <div class="tcg-coin" id="accessories-coin">
+                        <div class="tcg-coin coin-action-btn" data-player="p1">
                             <div class="coin-inner">
                                 <div class="coin-front">Cara</div>
                                 <div class="coin-back">Cruz</div>
@@ -879,26 +911,78 @@
                 </div>
             </div>
 
-            <!-- Token Section (Yu-Gi-Oh!) -->
             <div class="accessories-section ygo-only-tool">
                 <h3>Tokens (YGO)</h3>
-                <button class="btn-spawn-token" id="btn-spawn-ygo-token">
+                <button class="btn-spawn-token token-action-btn" data-player="p1">
                     <i class="fas fa-ghost"></i> Invocar Token
                 </button>
             </div>
 
-            <!-- Counters Selection Section -->
-            <div class="accessories-section" id="accessories-counters-section">
-                <h3 id="accessories-counters-title">Contadores</h3>
-                <!-- Yu-Gi-Oh! Counter Source -->
+            <div class="accessories-section" id="accessories-counters-section-p1">
+                <h3 class="counter-section-title">Contadores</h3>
                 <div class="ygo-only-tool counter-source-wrapper">
-                    <div class="counter-source ygo-counter-source" id="ygo-counter-src" draggable="true">
+                    <div class="counter-source ygo-counter-source" draggable="true">
                         +1
                         <div class="pulse-ring"></div>
                     </div>
                 </div>
+                <div class="pokemon-only-tool poke-counter-grid" style="display: none;">
+                    <div class="counter-source poke-counter-source dmg-10" data-val="10" draggable="true">10</div>
+                    <div class="counter-source poke-counter-source dmg-20" data-val="20" draggable="true">20</div>
+                    <div class="counter-source poke-counter-source dmg-30" data-val="30" draggable="true">30</div>
+                    <div class="counter-source poke-counter-source dmg-40" data-val="40" draggable="true">40</div>
+                    <div class="counter-source poke-counter-source dmg-50" data-val="50" draggable="true">50</div>
+                    <div class="counter-source poke-counter-source dmg-60" data-val="60" draggable="true">60</div>
+                    <div class="counter-source poke-counter-source dmg-70" data-val="70" draggable="true">70</div>
+                    <div class="counter-source poke-counter-source dmg-80" data-val="80" draggable="true">80</div>
+                    <div class="counter-source poke-counter-source dmg-90" data-val="90" draggable="true">90</div>
+                    <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Pokémon Damage Counter Sources -->
+    <!-- Collapsible Accessories Panel for Player 2 (Top Left) -->
+    <div class="tcg-accessories-panel p2-accessories" id="accessories-panel-p2">
+        <div class="accessories-tab" id="accessories-tab-btn-p2">
+            <i class="fas fa-toolbox"></i>
+            <span>Accesorios P2</span>
+        </div>
+        <div class="accessories-content">
+            <div class="accessories-section">
+                <h3>Suerte (P2)</h3>
+                <div class="acc-row">
+                    <div class="acc-tool-box">
+                        <span class="tool-label">Dado</span>
+                        <div class="tcg-dice dice-action-btn" data-player="p2">1</div>
+                    </div>
+                    <div class="acc-tool-box">
+                        <span class="tool-label">Moneda</span>
+                        <div class="tcg-coin coin-action-btn" data-player="p2">
+                            <div class="coin-inner">
+                                <div class="coin-front">Cara</div>
+                                <div class="coin-back">Cruz</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessories-section ygo-only-tool">
+                <h3>Tokens (YGO)</h3>
+                <button class="btn-spawn-token token-action-btn" data-player="p2">
+                    <i class="fas fa-ghost"></i> Invocar Token
+                </button>
+            </div>
+
+            <div class="accessories-section" id="accessories-counters-section-p2">
+                <h3 class="counter-section-title">Contadores</h3>
+                <div class="ygo-only-tool counter-source-wrapper">
+                    <div class="counter-source ygo-counter-source" draggable="true">
+                        +1
+                        <div class="pulse-ring"></div>
+                    </div>
+                </div>
                 <div class="pokemon-only-tool poke-counter-grid" style="display: none;">
                     <div class="counter-source poke-counter-source dmg-10" data-val="10" draggable="true">10</div>
                     <div class="counter-source poke-counter-source dmg-20" data-val="20" draggable="true">20</div>
@@ -2075,27 +2159,36 @@
                 if (state.layout === 'yugioh') {
                     $(".ygo-only-tool").show();
                     $(".pokemon-only-tool").hide();
-                    $("#accessories-counters-title").text("Contadores YGO");
+                    $(".counter-section-title").text("Contadores YGO");
                 } else {
                     $(".ygo-only-tool").hide();
                     $(".pokemon-only-tool").show();
-                    $("#accessories-counters-title").text("Daño Pokémon");
+                    $(".counter-section-title").text("Daño Pokémon");
                 }
             };
             updateLayoutFeatureVisibility();
 
-            // Accessories Collapsible Drawer Toggle
-            $("#accessories-tab-btn").click(function() {
-                $("#accessories-panel").toggleClass("collapsed");
+            // Accessories Collapsible Drawers Toggles
+            $("#accessories-tab-btn-p1").click(function() {
+                $("#accessories-panel-p1").toggleClass("active");
+                // Close P2 panel to keep screen clear
+                $("#accessories-panel-p2").removeClass("active");
+            });
+
+            $("#accessories-tab-btn-p2").click(function() {
+                $("#accessories-panel-p2").toggleClass("active");
+                // Close P1 panel
+                $("#accessories-panel-p1").removeClass("active");
             });
 
             // 1. Dice Roll Logic
-            $("#accessories-dice").click(function() {
+            $(".dice-action-btn").click(function() {
                 const $dice = $(this);
                 if ($dice.hasClass("rolling")) return;
 
+                const playerSuffix = $dice.data("player").toUpperCase();
                 $dice.addClass("rolling");
-                sendGameAction("Está lanzando un dado...");
+                sendGameAction(`[${playerSuffix}] Está lanzando un dado...`);
 
                 let rollInterval = setInterval(() => {
                     $dice.text(Math.floor(Math.random() * 6) + 1);
@@ -2105,34 +2198,34 @@
                     clearInterval(rollInterval);
                     const finalRoll = Math.floor(Math.random() * 6) + 1;
                     $dice.text(finalRoll).removeClass("rolling");
-                    sendGameAction(`Lanzó un dado y obtuvo: 🎲 ${finalRoll}`);
+                    sendGameAction(`[${playerSuffix}] Lanzó un dado y obtuvo: 🎲 ${finalRoll}`);
                 }, 600);
             });
 
             // 2. Coin Flip Logic
-            $("#accessories-coin").click(function() {
+            $(".coin-action-btn").click(function() {
                 const $coin = $(this);
                 if ($coin.hasClass("flipping")) return;
 
+                const playerSuffix = $coin.data("player").toUpperCase();
                 $coin.addClass("flipping");
-                sendGameAction("Está lanzando una moneda...");
+                sendGameAction(`[${playerSuffix}] Está lanzando una moneda...`);
 
                 setTimeout(() => {
                     $coin.removeClass("flipping");
                     const isHeads = Math.random() < 0.5;
                     const finalResult = isHeads ? "Cara" : "Cruz";
 
-                    // Rotate coin inner container to face correctly
                     if (isHeads) {
                         $coin.find(".coin-inner").css("transform", "rotateY(0deg)");
                     } else {
                         $coin.find(".coin-inner").css("transform", "rotateY(180deg)");
                     }
-                    sendGameAction(`Lanzó una moneda y obtuvo: 🪙 ${finalResult}`);
+                    sendGameAction(`[${playerSuffix}] Lanzó una moneda y obtuvo: 🪙 ${finalResult}`);
                 }, 800);
             });
 
-            // 3. Spawning Token Cards (Yu-Gi-Oh!)
+            // 3. Spawning Token Cards with Selective Zone Placing (Yu-Gi-Oh!)
             let cachedTokens = [];
             async function fetchTokensList() {
                 try {
@@ -2147,10 +2240,14 @@
             }
             fetchTokensList();
 
-            $("#btn-spawn-ygo-token").click(function() {
+            $(".token-action-btn").click(function() {
+                const spawnerPlayer = $(this).data("player"); // "p1" or "p2"
+                const activeRoleKey = spawnerPlayer === "p1" ? "player1" : "player2";
+                const pSuffix = spawnerPlayer === "p1" ? 1 : 2;
+
                 let tokenName = "Ficha de Monstruo (Token)";
-                let tokenImg = "https://images.ygoprodeck.com/images/cards/10000000.jpg"; // Default Sheep Token or placeholder
-                let tokenDesc = "Esta carta puede ser usada como cualquier Ficha / Token.";
+                let tokenImg = "https://images.ygoprodeck.com/images/cards/10000000.jpg";
+                let tokenDesc = "Esta ficha puede ser invocada en cualquier zona seleccionada.";
 
                 if (cachedTokens.length > 0) {
                     const randomToken = cachedTokens[Math.floor(Math.random() * cachedTokens.length)];
@@ -2159,41 +2256,34 @@
                     tokenDesc = randomToken.desc || "Ficha Especial.";
                 }
 
-                // Place on playmat as a live token card
-                const playerSuffix = currentRole === "player1" ? 1 : 2;
-                const freeZone = `monster_${playerSuffix}_3`; // Summon at central monster slot ideally
+                // Close active panel first so they can see playmat clearly
+                $(`#accessories-panel-${spawnerPlayer}`).removeClass("active");
 
                 const newTokenObj = {
                     instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                     name: tokenName,
                     imageUrl: tokenImg,
-                    owner: currentRole,
-                    controller: currentRole,
-                    zone: freeZone,
+                    owner: activeRoleKey,
+                    controller: activeRoleKey,
+                    zone: `monster_${pSuffix}_3`, // placeholder
                     faceDown: false,
                     tapped: false,
                     counters: 0,
                     attachedTo: null,
-                    x: playerSuffix === 1 ? 430 : 430, // Centered coordinate matches monster_X_3
-                    y: playerSuffix === 1 ? 320 : 160,
+                    x: 430,
+                    y: pSuffix === 1 ? 320 : 160,
                     z: state.cards.length + 10,
                     isExtra: false,
                     description: tokenDesc
                 };
 
                 state.cards.push(newTokenObj);
-                window.renderAllCards();
-                sendGameAction(`Invocó de forma especial un Token: 🌟 ${tokenName}`);
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Token Invocado',
-                    text: `Se ha creado el token "${tokenName}" en tu campo.`,
-                    toast: true,
-                    position: 'top-end',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
+                // Let user visually select exactly where on the playmat to place this newly spawned Token!
+                setTimeout(() => {
+                    startGraphicalTargeting(newTokenObj, "summon");
+                    sendGameAction(`Está invocando de forma especial un Token: 🌟 ${tokenName}`);
+                }, 200);
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
@@ -2359,7 +2449,9 @@
                                 beadsHtml += `<div class="stacked-counter-bead poke-bead ${colorClass}" style="transform: translateX(${i * -4}px) translateY(${i * -2}px); z-index: ${10 - i};" data-idx="${i}">${val}</div>`;
                             }
 
+                            // Inject visible damage total badge on top left of the card in addition to details
                             $card.append(`
+                                <div class="pokemon-damage-badge">${totalDmg}</div>
                                 <div class="card-counter-container" data-instance-id="${card.instanceId}">
                                     ${beadsHtml}
                                     <div class="counter-tooltip">Daño Total: ${totalDmg}</div>
@@ -2393,6 +2485,24 @@
                 }
 
                 window.renderAllCards();
+            });
+
+            // Remove/Click static Pokemon damage total badge directly clears latest or heals 10
+            $(document).on("click", ".pokemon-damage-badge", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const instId = $(this).closest(".duel-card").data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (!cardObj) return;
+
+                const dmgArray = cardObj.pokemonDamageCounters || [];
+                if (dmgArray.length > 0) {
+                    const removedDmg = dmgArray.pop();
+                    const totalDmg = dmgArray.reduce((a, b) => a + b, 0);
+                    sendGameAction(`Quitó un contador de daño de ${removedDmg} a ${cardObj.name} (Daño restante: ${totalDmg})`);
+                    window.renderAllCards();
+                }
             });
 
             // Phase buttons manual selection
