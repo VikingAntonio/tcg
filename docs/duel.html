@@ -525,53 +525,62 @@
         /* Bilateral Collapsible Accessories Panel Styles */
         .tcg-accessories-panel {
             position: absolute;
-            left: -240px;
-            width: 240px;
+            width: 250px;
+            height: 310px;
             background: rgba(10, 15, 22, 0.98);
             backdrop-filter: blur(20px);
             border: 1.5px solid var(--glass-border);
             border-radius: 12px;
             z-index: 106;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: auto;
         }
-        .tcg-accessories-panel.active {
-            left: 10px;
-        }
         .tcg-accessories-panel.p1-accessories {
+            bottom: -310px;
+            right: 345px;
+            transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .tcg-accessories-panel.p1-accessories.active {
             bottom: 10px;
         }
         .tcg-accessories-panel.p2-accessories {
+            top: -310px;
+            left: 310px;
+            transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .tcg-accessories-panel.p2-accessories.active {
             top: 10px;
         }
         .accessories-tab {
             position: absolute;
-            right: -42px;
             background: rgba(10, 15, 22, 0.98);
             backdrop-filter: blur(20px);
             border: 1.5px solid var(--glass-border);
-            border-left: none;
-            border-radius: 0 8px 8px 0;
-            padding: 12px 10px;
+            padding: 8px 16px;
             cursor: pointer;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             gap: 8px;
-            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
         }
         .p1-accessories .accessories-tab {
-            bottom: 20px;
+            top: -38px;
+            right: 20px;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
             color: var(--primary-color);
         }
         .p2-accessories .accessories-tab {
-            top: 20px;
+            bottom: -38px;
+            left: 20px;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
             color: var(--secondary-color);
         }
         .accessories-tab span {
-            writing-mode: vertical-lr;
-            text-orientation: mixed;
+            writing-mode: horizontal-tb;
             font-size: 0.75rem;
             font-weight: bold;
             text-transform: uppercase;
