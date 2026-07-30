@@ -669,3 +669,28 @@ body.magic-mode .card-context-menu,
 body.magic-mode .deck-context-menu {
     z-index: 100000 !important;
 }
+
+/* Miniature card class inside descarte/grave and destierro/banish zones */
+body.magic-mode .duel-card.miniature-card {
+    width: 80px !important;
+    height: 116px !important;
+    z-index: 5;
+}
+body.magic-mode .duel-card.miniature-card .card-counter-container {
+    transform: scale(0.6);
+}
+
+/* Custom embedded submenu display on hover */
+body.magic-mode .counter-submenu-trigger:hover .counter-submenu {
+    display: flex !important;
+}
+
+/* Specific styling for the visual drag handle inside pile zones */
+body.magic-mode .pile-drag-handle {
+    opacity: 0.5;
+    transition: opacity 0.2s, transform 0.2s;
+}
+body.magic-mode .pile-drag-handle:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
