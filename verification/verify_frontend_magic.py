@@ -6,39 +6,37 @@ def run_cuj(page):
     page.goto("http://localhost:8000/configMagic.html")
     page.wait_for_timeout(1000)
 
-    # Take screenshot of config page
-    page.screenshot(path="/home/jules/verification/screenshots/config_magic.png")
-    page.wait_for_timeout(500)
-
-    # Select Pokémon guide layout and player 2 mock deck
+    # Configure
     page.select_option("#magic-layout", "pokemon")
     page.wait_for_timeout(500)
     page.select_option("#magic-deck2", "mock")
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(1000)
 
-    # Start Magic mode
+    # Click start Magic Mode
     page.click("#btn-start-magic")
-    page.wait_for_timeout(2000)
+    page.wait_for_timeout(1500)
 
-    print(f"Loaded page: {page.url}")
-
-    # Toggle sidebar panel
+    # Toggle sidebar
     page.click("#sidebar-toggle-btn")
     page.wait_for_timeout(1000)
 
-    # Open deck action menu and draw a card
+    # Toggle accessories panel
+    page.click("#toggle-acc-btn")
+    page.wait_for_timeout(1000)
+
+    # Draw 5 cards for player 1
     page.click("#zone-deck_1 .pile-menu-trigger")
     page.wait_for_timeout(1000)
-    page.screenshot(path="/home/jules/verification/screenshots/deck_menu.png")
+    page.click("text=Robar 5 Cartas")
+    page.wait_for_timeout(2000)
 
-    page.click("text=Robar 1 Carta")
-    page.wait_for_timeout(1000)
-
-    # Take screenshot of key moment (card drawn)
-    page.screenshot(path="/home/jules/verification/screenshots/verification.png")
+    # Take screenshot at the key moment
+    os.makedirs("/home/jules/verification/screenshots", exist_ok=True)
+    page.screenshot(path="/home/jules/verification/screenshots/verification_magic.png")
     page.wait_for_timeout(1000)
 
 if __name__ == "__main__":
+    os.makedirs("/home/jules/verification/videos", exist_ok=True)
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
@@ -46,9 +44,8 @@ if __name__ == "__main__":
         )
         page = context.new_page()
         try:
-            # Start local server inside Python context if needed, but it's already running on 8000 from bash
             run_cuj(page)
         finally:
             context.close()
             browser.close()
-            print("Finished frontend verification!")
+            print("Successfully completed the CUJ verification script!")

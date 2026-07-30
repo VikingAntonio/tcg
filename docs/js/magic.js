@@ -4,7 +4,7 @@
 const HIGH_FIDELITY_MOCKS = [
     // Yu-Gi-Oh! Mock Cards
     { name: "Dragón Blanco de Ojos Azules", image_url: "https://images.ygoprodeck.com/images/cards/89631139.jpg", section: "Main", desc: "Este legendario dragón es una poderosa máquina de destrucción. Prácticamente invencible, muy pocos se han enfrentado a esta magnífica criatura y han vivido para contarlo." },
-    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg", section: "Main", desc: "El más grande de los magos en lo referente al ataque y la defense." },
+    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg", section: "Main", desc: "El más grande de los magos en lo referente al ataque y la defensa." },
     { name: "Chica Maga Oscura", image_url: "https://images.ygoprodeck.com/images/cards/31755083.jpg", section: "Main", desc: "Gana 300 ATK por cada 'Mago Oscuro' o 'Mago de la Ilusión Negra' en los Cementerios." },
     { name: "Dragón Negro de Ojos Rojos", image_url: "https://images.ygoprodeck.com/images/cards/74677422.jpg", section: "Main", desc: "Un dragón feroz con un ataque mortífero." },
     { name: "Olla de la Codicia", image_url: "https://images.ygoprodeck.com/images/cards/55144522.jpg", section: "Main", desc: "Roba 2 cartas de tu Deck." },
@@ -22,16 +22,15 @@ const POKE_MOCKS = [
     { name: "Investigación de Profesores", image_url: "https://images.pokemontcg.io/swsh1/178_hires.png", section: "Main", desc: "Partidario: Descarta tu mano y roba 7 cartas." },
     { name: "Energía Fuego", image_url: "https://images.pokemontcg.io/sve/2_hires.png", section: "Main", desc: "Energía básica de tipo Fuego." },
     { name: "Energía Rayo", image_url: "https://images.pokemontcg.io/sve/4_hires.png", section: "Main", desc: "Energía básica de tipo Rayo." },
-    { name: "Caramelo Raro", image_url: "https://images.pokemontcg.io/sv1/191_hires.png", section: "Objeto: Evoluciona uno de tus Pokémon." }
+    { name: "Caramelo Raro", image_url: "https://images.pokemontcg.io/sv1/191_hires.png", section: "Main", desc: "Objeto: Evoluciona uno de tus Pokémon." }
 ];
 
 // Local state configuration
 const state = {
     layout: "none", // none, yugioh, pokemon
-    cards: [],
+    cards: [], // Array of card instances { id, name, image_url, x, y, faceUp, tapped, counters: { glass: 0, poke: 0 }, owner: 'player1'/'player2' }
     decks: { player1: [], player2: [] },
-    attacks: [],
-    pileCoords: {}
+    attacks: []
 };
 
 let hasPlayer2 = false;
@@ -40,9 +39,6 @@ const dragOffset = { x: 0, y: 0 };
 let dragStartCoords = { x: 0, y: 0 };
 let dragStartTime = 0;
 let targetingCard = null;
-let targetActionType = null; // summon, set
-let xyzCard = null;
-let activeMenuCard = null;
 
 // Initialize Magic Engine
 $(document).ready(async function() {
@@ -62,27 +58,17 @@ $(document).ready(async function() {
 
     // Hide/Show P2 components
     if (hasPlayer2) {
-        $("#hand-tray-p2").css("display", "block");
+        $("#zone-hand-p2").css("display", "flex");
+        $("#zone-grave-p2").css("display", "flex");
+        $("#zone-banish-p2").css("display", "flex");
         $("#lp-widget-p2").css("display", "block");
     }
 
-    // Initialize Default Pile Coordinates dynamically centered based on viewport dimensions
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    state.pileCoords = {
-        deck_1: { x: 20, y: height - 165 },
-        extra_1: { x: 20, y: height - 310 },
-        grave_1: { x: width - 110, y: height - 165 },
-        banished_1: { x: width - 110, y: height - 310 },
-        deck_2: { x: width - 110, y: 55 },
-        extra_2: { x: width - 110, y: 200 },
-        grave_2: { x: 20, y: 55 },
-        banished_2: { x: 20, y: 200 }
-    };
-
-    initializePileZones();
+    initializePiles();
     setupAccessories();
     setupLPTrackers();
+    setupCardInteractions();
+    setupGlobalEvents();
 
     // Load Decks
     Swal.fire({
@@ -99,1385 +85,862 @@ $(document).ready(async function() {
         if (deck1Id && deck1Id !== "mock") {
             await fetchDeckCards(deck1Id, "player1");
         } else {
-            state.decks["player1"] = JSON.parse(JSON.stringify(defaultMocks));
+            state.decks.player1 = JSON.parse(JSON.stringify(defaultMocks));
+            logEvent("Sistema", "Mazo preestablecido cargado para el Jugador 1.");
         }
-        instantiateDeck("player1");
 
         // Player 2 Deck load
         if (hasPlayer2) {
-            if (deck2Id && deck2Id !== "mock") {
+            if (deck2Id !== "mock") {
                 await fetchDeckCards(deck2Id, "player2");
             } else {
-                state.decks["player2"] = JSON.parse(JSON.stringify(defaultMocks));
+                state.decks.player2 = JSON.parse(JSON.stringify(defaultMocks));
+                logEvent("Sistema", "Mazo preestablecido cargado para el Jugador 2.");
             }
-            instantiateDeck("player2");
+        }
+
+        // Shuffle decks on startup
+        shuffleDeck("player1");
+        if (hasPlayer2) {
+            shuffleDeck("player2");
         }
 
         Swal.close();
-        logGameMessage("⚡ Arena Magic cargada correctamente. ¡Disfruta el juego libre!");
-    } catch (e) {
-        console.error(e);
-        Swal.fire("Error", "No se pudieron inicializar los mazos.", "error");
+        renderAllCards();
+        logEvent("Sistema", "¡La Arena Libre Magic está lista! Arrastra cartas a cualquier parte de la pantalla.");
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Error', 'No se pudieron cargar los mazos de la base de datos.', 'error');
     }
-
-    // Bind Collapsible triggers for Hand Trays
-    $(".btn-toggle-tray").click(function(e) {
-        e.stopPropagation();
-        const targetId = $(this).data("target");
-        const $tray = $(`#${targetId}`);
-        $tray.toggleClass("collapsed");
-    });
-
-    // Sidebar panel toggle
-    $("#sidebar-toggle-btn").click(function() {
-        $("#magic-sidebar").toggleClass("collapsed");
-        $(this).toggleClass("collapsed");
-        $("body").toggleClass("sidebar-collapsed-body");
-    });
-
-    // Close Modals / Overlays
-    $("#btn-close-pile").click(() => $("#pile-overlay").fadeOut(150));
-    $("#btn-close-extra").click(() => $("#extra-overlay").fadeOut(150));
-    $("#btn-close-attached").click(() => $("#attached-overlay").fadeOut(150));
-
-    // Handle generic clicks on playmat to clear targeting modes or active attack arrows
-    $("#playmat").on("click", function(e) {
-        if ($(e.target).closest(".duel-card, .magic-pile-zone").length === 0) {
-            // Clicked empty ground on playmat
-            if ($("#playmat").hasClass("selecting-zone")) {
-                stopGraphicalTargeting();
-            }
-            // Clear attack arrows
-            state.attacks = [];
-            drawAttackArrows();
-        }
-    });
 });
 
-// Fetch raw cards from Supabase db
+// Fetch cards from Supabase schema
 async function fetchDeckCards(deckId, playerKey) {
-    try {
-        const { data: cards, error } = await _supabase
-            .from('deck_cards')
-            .select('*')
-            .eq('deck_id', deckId)
-            .order('position', { ascending: true });
+    const { data: deckCards, error: deckErr } = await _supabase
+        .from('deck_cards')
+        .select(`
+            id,
+            card_slots (
+                id,
+                name,
+                image_url,
+                section,
+                description
+            )
+        `)
+        .eq('deck_id', deckId);
 
-        if (error) throw error;
-        state.decks[playerKey] = cards || [];
-    } catch (err) {
-        console.error("Error loading deck cards:", err);
-        state.decks[playerKey] = [];
+    if (deckErr) throw deckErr;
+
+    if (!deckCards || deckCards.length === 0) {
+        logEvent("Sistema", `El mazo del ${playerKey} está vacío. Cargando cartas de prueba...`);
+        const defaultMocks = (state.layout === "pokemon") ? POKE_MOCKS : HIGH_FIDELITY_MOCKS;
+        state.decks[playerKey] = JSON.parse(JSON.stringify(defaultMocks));
+        return;
     }
-}
 
-// Populate cards in state
-function instantiateDeck(playerKey) {
-    const deckCards = state.decks[playerKey];
-    if (!deckCards || deckCards.length === 0) return;
-
-    // Filter out previously loaded cards of this player
-    state.cards = state.cards.filter(c => c.owner !== playerKey);
-    const playerSuffix = playerKey === "player1" ? 1 : 2;
-
-    deckCards.forEach((c, index) => {
-        const section = c.section || "Main";
-        if (section === "Side") return; // Ignore Side completely
-
-        let targetZone = `deck_${playerSuffix}`;
-        let isExtra = false;
-        if (section === "Extra") {
-            if (state.layout === "yugioh") {
-                targetZone = `extra_${playerSuffix}`;
-                isExtra = true;
-            } else {
-                targetZone = `deck_${playerSuffix}`;
-            }
-        }
-
-        state.cards.push({
-            instanceId: `card_${playerKey}_${Date.now()}_${index}_${Math.floor(Math.random() * 1000)}`,
-            name: c.name || "Carta",
-            imageUrl: c.image_url || "https://vikingtcg.xyz/favi.png",
-            owner: playerKey,
-            controller: playerKey,
-            zone: targetZone,
-            faceDown: true,
-            tapped: false,
-            counters: 0,
-            attachedTo: null,
-            x: 0,
-            y: 0,
-            z: index + 1,
-            isExtra: isExtra,
-            description: c.description || c.effect || c.desc || c.text || ""
-        });
+    const formatted = deckCards.map(item => {
+        const slot = item.card_slots;
+        return {
+            name: slot.name,
+            image_url: slot.image_url || "https://via.placeholder.com/150x218?text=Vikingdev+TCG",
+            section: slot.section || "Main",
+            desc: slot.description || ""
+        };
     });
 
-    if (state.layout === "pokemon") {
-        shuffleDeckSilent(playerKey);
-    }
-
-    renderAllCards();
+    state.decks[playerKey] = formatted;
+    logEvent("Sistema", `Mazo personalizado (${formatted.length} cartas) cargado para ${playerKey === 'player1' ? 'Jugador 1' : 'Jugador 2'}.`);
 }
 
-// Render Draggable Piles (HTML slots)
-function initializePileZones() {
-    $("#piles-container").empty();
-    const piles = [
-        { id: "deck_1", label: "Deck P1", class: "p1-pile" },
-        { id: "extra_1", label: "Extra P1", class: "p1-pile" },
-        { id: "grave_1", label: "Grave P1", class: "p1-pile" },
-        { id: "banished_1", label: "Banish P1", class: "p1-pile" }
-    ];
+// Initialize Physical Draggable Pile Sources (Main and Extra Decks only)
+function initializePiles() {
+    const $container = $("#piles-container");
+    $container.empty();
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Deck & Extra coordinates
+    const p1_deck_x = 35;
+    const p1_deck_y = height - 245;
+    const p1_extra_x = 35;
+    const p1_extra_y = height - 485;
+
+    const p2_deck_x = width - 185;
+    const p2_deck_y = 25;
+    const p2_extra_x = width - 185;
+    const p2_extra_y = 265;
+
+    // Render P1 Deck
+    createPileElement($container, "deck_1", "Main Deck J1", p1_deck_x, p1_deck_y, "player1", "deck");
+    // Render P1 Extra
+    createPileElement($container, "extra_1", "Extra Deck J1", p1_extra_x, p1_extra_y, "player1", "extra");
 
     if (hasPlayer2) {
-        piles.push(
-            { id: "deck_2", label: "Deck P2", class: "p2-pile" },
-            { id: "extra_2", label: "Extra P2", class: "p2-pile" },
-            { id: "grave_2", label: "Grave P2", class: "p2-pile" },
-            { id: "banished_2", label: "Banish P2", class: "p2-pile" }
-        );
+        // Render P2 Deck
+        createPileElement($container, "deck_2", "Main Deck J2", p2_deck_x, p2_deck_y, "player2", "deck");
+        // Render P2 Extra
+        createPileElement($container, "extra_2", "Extra Deck J2", p2_extra_x, p2_extra_y, "player2", "extra");
     }
 
-    piles.forEach(p => {
-        const coords = state.pileCoords[p.id];
-        const menuIconClass = p.id.startsWith("deck_") ? "fa-bars" : "fa-ellipsis-v";
-        $("#piles-container").append(`
-            <div class="magic-pile-zone ${p.class}" id="zone-${p.id}" data-id="${p.id}" style="left: ${coords.x}px; top: ${coords.y}px;">
-                <span class="pile-label" id="label-${p.id}">${p.label}</span>
-                <button class="pile-menu-trigger" data-id="${p.id}"><i class="fas ${menuIconClass}"></i></button>
-                <div class="pile-count-badge" id="count-${p.id}">0</div>
-            </div>
-        `);
-    });
+    updatePileCounts();
+}
 
-    // Draggable pile zones themselves!
-    $(".magic-pile-zone").off("mousedown touchstart").on("mousedown touchstart", function(e) {
-        if ($(e.target).closest(".pile-menu-trigger").length) return;
+function createPileElement($parent, id, label, x, y, owner, type) {
+    const themeClass = owner === "player1" ? "p1-pile" : "p2-pile";
+    const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
+
+    const html = `
+        <div class="magic-pile-zone ${themeClass}" id="zone-${id}" style="left: ${x}px; top: ${y}px;">
+            <div class="pile-count-badge" id="count-${id}">0</div>
+            <div class="pile-label">${label}</div>
+            <button class="pile-menu-trigger" data-pile="${id}"><i class="fas fa-ellipsis-h"></i> Acciones</button>
+        </div>
+    `;
+    $parent.append(html);
+
+    // Make piles draggable
+    const $el = $(`#zone-${id}`);
+    $el.on("mousedown touchstart", function(e) {
+        if ($(e.target).hasClass("pile-menu-trigger")) return;
         e.preventDefault();
-        e.stopPropagation();
 
-        const pileId = $(this).data("id");
-        const $pile = $(this);
-        const startPos = getEventCoords(e);
-        const offset = $pile.offset();
+        const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
 
-        // DELEGATE DRAG START TO TOP CARD IF PILE NOT EMPTY & DRAGGED BY INNER FACE (NOT LABEL)
-        const isDraggingLabel = $(e.target).closest(".pile-label").length > 0;
-        const pileCards = state.cards.filter(c => c.zone === pileId);
+        const offset = $el.offset();
+        const startX = offset.left;
+        const startY = offset.top;
 
-        if (pileCards.length > 0 && !isDraggingLabel) {
-            // Drag the TOP CARD instead!
-            const topCard = pileCards[pileCards.length - 1];
-            topCard.zone = "field_free";
-            topCard.x = state.pileCoords[pileId].x;
-            topCard.y = state.pileCoords[pileId].y;
+        const deltaX = clientX - startX;
+        const deltaY = clientY - startY;
 
-            // Make that card the active dragCard
-            dragCard = $(`#${topCard.instanceId}`);
-            if (!dragCard.length) {
-                // If top card element not rendered yet, render first
-                renderAllCards();
-                dragCard = $(`#${topCard.instanceId}`);
-            }
+        $(document).on("mousemove.piledrag touchmove.piledrag", function(moveEvent) {
+            const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+            const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
 
-            if (dragCard.length) {
-                dragCard.addClass("dragging").removeClass("snapping");
-                const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                topCard.z = maxZ + 1;
-                dragCard.css("z-index", topCard.z);
+            let finalX = mX - deltaX;
+            let finalY = mY - deltaY;
 
-                const cardOffset = dragCard.offset();
-                dragOffset.x = startPos.x - cardOffset.left;
-                dragOffset.y = startPos.y - cardOffset.top;
-                dragStartCoords = { x: startPos.x, y: startPos.y };
-                dragStartTime = Date.now();
-                return;
-            }
-        }
+            // Constrain within viewport bounds
+            finalX = Math.max(10, Math.min(window.innerWidth - 160, finalX));
+            finalY = Math.max(10, Math.min(window.innerHeight - 230, finalY));
 
-        // Otherwise, drag the empty/labeled pile zone itself!
-        $(window).on("mousemove.pile_drag touchmove.pile_drag", function(me) {
-            me.preventDefault();
-            const pos = getEventCoords(me);
-            const dx = pos.x - startPos.x;
-            const dy = pos.y - startPos.y;
-
-            let finalX = offset.left + dx;
-            let finalY = offset.top + dy;
-
-            // boundaries
-            finalX = Math.max(10, Math.min(window.innerWidth - 90, finalX));
-            finalY = Math.max(10, Math.min(window.innerHeight - 130, finalY));
-
-            state.pileCoords[pileId].x = finalX;
-            state.pileCoords[pileId].y = finalY;
-
-            $pile.css({ left: `${finalX}px`, top: `${finalY}px` });
-            renderAllCards();
+            $el.css({ left: finalX, top: finalY });
         });
 
-        $(window).on("mouseup.pile_drag touchend.pile_drag", function() {
-            $(window).off(".pile_drag");
+        $(document).on("mouseup.piledrag touchend.piledrag", function() {
+            $(document).off(".piledrag");
         });
     });
-
-    // Click trigger on pile menu
-    $(".pile-menu-trigger").off("click").on("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const pileId = $(this).data("id");
-        openPileActionMenu(pileId);
-    });
 }
 
-// Render All Cards
-function renderAllCards() {
-    $("#field-cards-container").empty();
-    $("#hand-p1").empty();
-    $("#hand-p2").empty();
+// Update counts on visual piles and landing zones
+function updatePileCounts() {
+    // Deck counts
+    const p1Deck = state.decks.player1.filter(c => c.section !== "Extra").length;
+    const p1Extra = state.decks.player1.filter(c => c.section === "Extra").length;
+    $("#count-deck_1").text(p1Deck);
+    $("#count-extra_1").text(p1Extra);
 
-    // Attached cards logic inheritance
-    state.cards.forEach(card => {
-        if (card.attachedTo) {
-            const parent = state.cards.find(c => c.instanceId === card.attachedTo);
-            if (parent) {
-                card.zone = parent.zone;
-                card.faceDown = parent.faceDown;
-            } else {
-                card.attachedTo = null; // cleanup
-            }
-        }
-        // Force hands to face-up
-        if (card.zone.startsWith("hand_")) {
-            card.faceDown = false;
-            card.attachedTo = null;
-        }
-    });
+    if (hasPlayer2) {
+        const p2Deck = state.decks.player2.filter(c => c.section !== "Extra").length;
+        const p2Extra = state.decks.player2.filter(c => c.section === "Extra").length;
+        $("#count-deck_2").text(p2Deck);
+        $("#count-extra_2").text(p2Extra);
+    }
 
-    const zoneCounts = {};
+    // Refresh landing zone counts based on absolute cards coordinates
+    updateLandingZoneCounts();
+}
 
-    // Sort cards by z-index
-    state.cards.sort((a, b) => a.z - b.z);
+// Calculate containing zone geometrically
+function updateLandingZoneCounts() {
+    const counts = {
+        hand_p1: 0, grave_p1: 0, banish_p1: 0,
+        hand_p2: 0, grave_p2: 0, banish_p2: 0
+    };
 
     state.cards.forEach(card => {
-        if (card.attachedTo) return; // Cascades separately below
-
-        const isHand = card.zone.startsWith("hand_");
-        const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("grave_") || card.zone.startsWith("banished_") || card.zone.startsWith("extra_");
-
-        if (isPile) {
-            zoneCounts[card.zone] = (zoneCounts[card.zone] || 0) + 1;
-        }
-
-        let handOverlayHTML = "";
-        let fieldOverlayHTML = "";
-
-        const attachedCount = state.cards.filter(c => c.attachedTo === card.instanceId).length;
-
-        if (isHand) {
-            handOverlayHTML = `
-                <div class="hand-card-actions">
-                    <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}">Invocar</button>
-                    ${state.layout === 'pokemon' ?
-                        `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>` :
-                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
-                    }
-                    <button class="hand-action-btn btn-attach" data-instance-id="${card.instanceId}">Acoplar</button>
-                    <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}">Descarte</button>
-                    <button class="hand-action-btn btn-banish" data-instance-id="${card.instanceId}">Remover</button>
-                    <button class="hand-action-btn btn-deck" data-instance-id="${card.instanceId}">Deck</button>
-                </div>
-            `;
-        } else if (!isPile) {
-            const returnLabel = card.isExtra ? "Deck" : "Mano";
-            const isP2 = card.owner === "player2" || card.zone.endsWith("_2") || card.zone === "hand_2";
-            const p2Class = isP2 ? "p2-card-actions" : "";
-            fieldOverlayHTML = `
-                <div class="field-card-actions ${p2Class}">
-                    <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
-                    <button class="field-action-btn btn-field-direct" data-instance-id="${card.instanceId}">Atk Directo</button>
-                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
-                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
-                    <button class="field-action-btn btn-field-control" data-instance-id="${card.instanceId}">Control</button>
-                    <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
-                    <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
-                    <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">${returnLabel}</button>
-                    <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}">Descarte</button>
-                    <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}">Remover</button>
-                </div>
-            `;
-        }
-
-        const attachedBadgeHTML = attachedCount > 0 ? `<div class="card-attached-badge">📎${attachedCount}</div>` : "";
-        const zStyle = isHand ? "" : `z-index: ${card.z};`;
-
-        const cardHTML = `
-            <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
-                 id="${card.instanceId}"
-                 data-instance-id="${card.instanceId}"
-                 style="--tilt: ${card.tiltAngle || 0}deg; ${zStyle}">
-                <div class="card-img-wrapper">
-                    <img src="${card.imageUrl}" alt="${card.name}">
-                </div>
-                ${card.counters > 0 ? `<div class="card-counter">${card.counters}</div>` : ""}
-                ${attachedBadgeHTML}
-                ${handOverlayHTML}
-                ${fieldOverlayHTML}
-            </div>
-        `;
-
-        if (isHand) {
-            const tray = card.zone === "hand_1" ? "#hand-p1" : "#hand-p2";
-            $(tray).append(cardHTML);
-        } else if (isPile) {
-            // Only render top-most card of the pile
-            const cardsInThisZone = state.cards.filter(c => c.zone === card.zone);
-            const topCard = cardsInThisZone[cardsInThisZone.length - 1];
-
-            if (topCard && topCard.instanceId === card.instanceId) {
-                $("#field-cards-container").append(cardHTML);
-                const pileCoords = state.pileCoords[card.zone];
-                if (pileCoords) {
-                    $(`#${card.instanceId}`).css({
-                        left: `${pileCoords.x}px`,
-                        top: `${pileCoords.y}px`
-                    });
-                }
-            }
-        } else {
-            // Render free floating card on field
-            $("#field-cards-container").append(cardHTML);
-            $(`#${card.instanceId}`).css({
-                left: `${card.x}px`,
-                top: `${card.y}px`
-            });
-
-            // Cascaded attachments
-            const attachedCards = state.cards.filter(c => c.attachedTo === card.instanceId);
-            attachedCards.sort((a, b) => (a.attachedAt || 0) - (b.attachedAt || 0));
-
-            let cumulativeOffset = 0;
-            attachedCards.forEach((child, idx) => {
-                if (idx < 2) cumulativeOffset += 14;
-                const childZ = card.z - 14 * (idx + 1);
-
-                const childHTML = `
-                    <div class="duel-card attached-card-cascade ${child.faceDown ? 'face-down' : ''} ${child.tapped ? 'tapped' : ''}"
-                         id="${child.instanceId}"
-                         data-instance-id="${child.instanceId}"
-                         data-parent-id="${card.instanceId}"
-                         style="left: ${card.x + cumulativeOffset}px; top: ${card.y + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${child.tiltAngle || 0}deg;">
-                        <div class="card-img-wrapper">
-                            <img src="${child.imageUrl}" alt="${child.name}">
-                        </div>
-                    </div>
-                `;
-                $("#field-cards-container").append(childHTML);
-            });
+        const zone = getCardCurrentZone(card);
+        if (zone) {
+            counts[zone]++;
         }
     });
 
-    // Update pile badge counts
-    const pileIds = ["deck_1", "extra_1", "grave_1", "banished_1", "deck_2", "extra_2", "grave_2", "banished_2"];
-    pileIds.forEach(pId => {
-        const count = zoneCounts[pId] || 0;
-        $(`#count-${pId}`).text(count);
-    });
+    $("#count-hand-p1").text(counts.hand_p1);
+    $("#count-grave-p1").text(counts.grave_p1);
+    $("#count-banish-p1").text(counts.banish_p1);
 
-    bindCardDragAndEvents();
+    if (hasPlayer2) {
+        $("#count-hand-p2").text(counts.hand_p2);
+        $("#count-grave-p2").text(counts.grave_p2);
+        $("#count-banish-p2").text(counts.banish_p2);
+    }
 }
 
-// Bind Card Event Handlers
-function bindCardDragAndEvents() {
-    const cards = $(".duel-card");
+// Fetch bounding boxes dynamically
+function getCardCurrentZone(card) {
+    const cardMidX = card.x + 75;
+    const cardMidY = card.y + 109;
 
-    cards.off('mouseenter').on('mouseenter', function() {
-        const instId = $(this).data("instance-id");
-        const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (cardObj) {
-            updatePreview(cardObj);
-        }
-    });
+    // Hand P1
+    if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p1")) return "hand_p1";
+    // Grave P1
+    if (isPointInElement(cardMidX, cardMidY, "#zone-grave-p1")) return "grave_p1";
+    // Banish P1
+    if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p1")) return "banish_p1";
 
-    // Hand Buttons click events
-    $(".hand-action-btn").off("click").on("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const instId = $(this).data("instance-id");
-        const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (!cardObj) return;
-
-        if ($(this).hasClass("btn-summon") || $(this).hasClass("btn-activate")) {
-            startGraphicalTargeting(cardObj, "summon");
-        } else if ($(this).hasClass("btn-set")) {
-            startGraphicalTargeting(cardObj, "set");
-        } else if ($(this).hasClass("btn-attach")) {
-            startXYZTargeting(cardObj);
-        } else if ($(this).hasClass("btn-grave")) {
-            moveCardToPile(cardObj, `grave_${cardObj.owner === "player1" ? 1 : 2}`);
-        } else if ($(this).hasClass("btn-banish")) {
-            moveCardToPile(cardObj, `banished_${cardObj.owner === "player1" ? 1 : 2}`);
-        } else if ($(this).hasClass("btn-deck")) {
-            moveCardToPile(cardObj, `deck_${cardObj.owner === "player1" ? 1 : 2}`);
-        }
-    });
-
-    // Field Buttons click events
-    $(".field-action-btn").off("click").on("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const instId = $(this).data("instance-id");
-        const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (!cardObj) return;
-
-        if ($(this).hasClass("btn-field-attack")) {
-            window.activeAttackSourceCard = cardObj;
-            $("#playmat").addClass("selecting-zone");
-            logGameMessage(`🎯 Seleccionando objetivo para ataque con: ${cardObj.name}`);
-        } else if ($(this).hasClass("btn-field-direct")) {
-            logGameMessage(`⚔️ Direct Attack con ${cardObj.name}!`);
-            createDirectAttackLine(cardObj);
-        } else if ($(this).hasClass("btn-field-flip")) {
-            cardObj.faceDown = !cardObj.faceDown;
-            logGameMessage(`🔄 Volteó a ${cardObj.faceDown ? "Boca Abajo" : "Boca Arriba"} la carta: ${cardObj.name}`);
-            renderAllCards();
-        } else if ($(this).hasClass("btn-field-tap")) {
-            cardObj.tapped = !cardObj.tapped;
-            logGameMessage(`📐 Giró la carta: ${cardObj.name} a modo ${cardObj.tapped ? "Defensa / Horizontal" : "Vertical / Ataque"}`);
-            renderAllCards();
-        } else if ($(this).hasClass("btn-field-control")) {
-            cardObj.controller = (cardObj.controller === "player1") ? "player2" : "player1";
-            logGameMessage(`👑 Cambió control de: ${cardObj.name} al ${cardObj.controller === "player1" ? "Jugador 1" : "Jugador 2"}`);
-            renderAllCards();
-        } else if ($(this).hasClass("btn-field-attach")) {
-            startXYZTargeting(cardObj);
-        } else if ($(this).hasClass("btn-field-flash")) {
-            triggerVfxFlash(cardObj.instanceId);
-        } else if ($(this).hasClass("btn-field-return")) {
-            const isHand = $(this).text().trim() === "Mano";
-            if (isHand) {
-                cardObj.zone = `hand_${cardObj.owner === "player1" ? 1 : 2}`;
-                cardObj.controller = cardObj.owner;
-                logGameMessage(`📥 Retornó a Mano la carta: ${cardObj.name}`);
-            } else {
-                moveCardToPile(cardObj, `deck_${cardObj.owner === "player1" ? 1 : 2}`);
-            }
-            renderAllCards();
-        } else if ($(this).hasClass("btn-field-grave")) {
-            moveCardToPile(cardObj, `grave_${cardObj.owner === "player1" ? 1 : 2}`);
-        } else if ($(this).hasClass("btn-field-banish")) {
-            moveCardToPile(cardObj, `banished_${cardObj.owner === "player1" ? 1 : 2}`);
-        }
-    });
-
-    // Dragon/Dnd Physics engine mapping
-    cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
-        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn').length) {
-            return;
-        }
-
-        const instId = $(this).data("instance-id");
-        const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (!cardObj) return;
-
-        // Interactive attack targeting clicking mechanics
-        if ($("#playmat").hasClass("selecting-zone") && window.activeAttackSourceCard) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (instId !== window.activeAttackSourceCard.instanceId) {
-                logGameMessage(`⚔️ Declaró ataque de ${window.activeAttackSourceCard.name} hacia ${cardObj.name}`);
-                state.attacks.push({
-                    attackerId: window.activeAttackSourceCard.instanceId,
-                    targetId: cardObj.instanceId,
-                    isDirect: false,
-                    timestamp: Date.now()
-                });
-                drawAttackArrows();
-                stopGraphicalTargeting();
-            }
-            return;
-        }
-
-        // Prevent dragging deck cards or attached cards directly
-        if (cardObj.attachedTo) {
-            // Redirect drag event to parent card instead!
-            const parent = state.cards.find(c => c.instanceId === cardObj.attachedTo);
-            if (parent) {
-                openAttachedCardsModal(parent.instanceId);
-            }
-            return;
-        }
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        updatePreview(cardObj);
-
-        dragCard = $(this);
-        dragCard.addClass("dragging").removeClass("snapping");
-
-        // Set top z-index physically
-        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-        cardObj.z = maxZ + 1;
-        dragCard.css("z-index", cardObj.z);
-
-        const pos = getEventCoords(e);
-        const cardOffset = dragCard.offset();
-
-        dragOffset.x = pos.x - cardOffset.left;
-        dragOffset.y = pos.y - cardOffset.top;
-        dragStartCoords = { x: pos.x, y: pos.y };
-        dragStartTime = Date.now();
-    });
-}
-
-// Window Arrastre Listeners
-$(window).off("pointermove mousemove touchmove").on("mousemove touchmove", function(e) {
-    if (!dragCard) return;
-    e.preventDefault();
-
-    const instId = dragCard.data("instance-id");
-    const cardObj = state.cards.find(c => c.instanceId === instId);
-    if (!cardObj) return;
-
-    const pos = getEventCoords(e);
-    const matOffset = $("#playmat").offset();
-
-    const x = pos.x - matOffset.left - dragOffset.x;
-    const y = pos.y - matOffset.top - dragOffset.y;
-
-    // Boundary constraints
-    const boundedX = Math.max(-10, Math.min(window.innerWidth - 70, x));
-    const boundedY = Math.max(-10, Math.min(window.innerHeight - 100, y));
-
-    cardObj.x = boundedX;
-    cardObj.y = boundedY;
-
-    dragCard.css({
-        left: `${boundedX}px`,
-        top: `${boundedY}px`
-    });
-});
-
-$(window).off("pointerup mouseup touchend").on("mouseup touchend", function(e) {
-    if (!dragCard) return;
-
-    const instId = dragCard.data("instance-id");
-    const cardObj = state.cards.find(c => c.instanceId === instId);
-    if (!cardObj) return;
-
-    const endPos = getEventCoords(e);
-    const dx = endPos.x - dragStartCoords.x;
-    const dy = endPos.y - dragStartCoords.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const duration = Date.now() - dragStartTime;
-
-    const isClick = (dist < 15 && duration < 500);
-
-    dragCard.removeClass("dragging").addClass("snapping");
-
-    if (isClick) {
-        // Toggle tilt on click
-        const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
-        if (isField) {
-            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
-            if (hasAttached) {
-                openAttachedCardsModal(cardObj.instanceId);
-            } else {
-                if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
-                    cardObj.tiltAngle = 0;
-                } else {
-                    const sign = Math.random() < 0.5 ? -1 : 1;
-                    const angle = sign * (4 + Math.random() * 5);
-                    cardObj.tiltAngle = Math.round(angle);
-                }
-            }
-        }
-    } else {
-        // Card was dragged and dropped!
-        const oldZone = cardObj.zone;
-
-        // 1. Check if dropped over hand tray
-        const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
-        const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
-
-        if (isOverP1Hand) {
-            cardObj.zone = "hand_1";
-            cardObj.controller = "player1";
-            logGameMessage(`📥 Arrastró a Mano 1 la carta: ${cardObj.name}`);
-        } else if (isOverP2Hand && hasPlayer2) {
-            cardObj.zone = "hand_2";
-            cardObj.controller = "player2";
-            logGameMessage(`📥 Arrastró a Mano 2 la carta: ${cardObj.name}`);
-        } else {
-            // 2. Check if dropped over a pile zone
-            const centerCoords = {
-                x: cardObj.x + 40,
-                y: cardObj.y + 58
-            };
-            const hitPileId = findOverlappingPile(centerCoords);
-
-            if (hitPileId) {
-                moveCardToPile(cardObj, hitPileId);
-            } else {
-                // 3. Check if dropped over another card to Attach
-                const parentCard = findOverlappingCard(centerCoords, cardObj.instanceId);
-                if (parentCard) {
-                    // attach all attached materials as well
-                    state.cards.forEach(c => {
-                        if (c.attachedTo === cardObj.instanceId) {
-                            c.attachedTo = parentCard.instanceId;
-                        }
-                    });
-
-                    const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                    parentCard.z = maxZ + 1;
-
-                    cardObj.attachedTo = parentCard.instanceId;
-                    cardObj.attachedAt = Date.now() + Math.random();
-                    cardObj.zone = parentCard.zone;
-
-                    logGameMessage(`📎 Acopló ${cardObj.name} debajo de ${parentCard.name}`);
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Carta Acoplada',
-                        text: `${cardObj.name} acoplada a ${parentCard.name}.`,
-                        toast: true,
-                        position: 'top-end',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                } else {
-                    // Dropped freely on field
-                    cardObj.zone = "field_free";
-                    cardObj.attachedTo = null;
-                }
-            }
-        }
+    if (hasPlayer2) {
+        if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p2")) return "hand_p2";
+        if (isPointInElement(cardMidX, cardMidY, "#zone-grave-p2")) return "grave_p2";
+        if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p2")) return "banish_p2";
     }
 
-    dragCard = null;
-    renderAllCards();
-});
-
-// Coordinate helper
-function getEventCoords(e) {
-    if (e.type.startsWith('touch')) {
-        const t = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-        return { x: t.clientX, y: t.clientY };
-    }
-    return { x: e.clientX, y: e.clientY };
-}
-
-// Bounding box checks
-function checkHandTrayHover(e, selector) {
-    const $tray = $(selector);
-    if (!$tray.length || $tray.hasClass("collapsed")) return false;
-
-    const coords = getEventCoords(e);
-    const offset = $tray.offset();
-    const w = $tray.width();
-    const h = $tray.height();
-
-    return (coords.x >= offset.left && coords.x <= offset.left + w &&
-            coords.y >= offset.top && coords.y <= offset.top + h);
-}
-
-// Overlapping piles checker
-function findOverlappingPile(coords) {
-    const pileKeys = Object.keys(state.pileCoords);
-    for (let i = 0; i < pileKeys.length; i++) {
-        const key = pileKeys[i];
-        if (!hasPlayer2 && key.endsWith("_2")) continue; // ignore disabled P2 piles
-
-        const pc = state.pileCoords[key];
-        // Pile is 80x116
-        if (coords.x >= pc.x && coords.x <= pc.x + 80 &&
-            coords.y >= pc.y && coords.y <= pc.y + 116) {
-            return key;
-        }
-    }
     return null;
 }
 
-// Overlapping card checker
-function findOverlappingCard(coords, excludeId) {
-    const candidates = state.cards.filter(c =>
-        c.instanceId !== excludeId &&
-        !c.attachedTo &&
-        !c.zone.startsWith("hand_") &&
-        !c.zone.startsWith("deck_") &&
-        !c.zone.startsWith("extra_") &&
-        !c.zone.startsWith("grave_") &&
-        !c.zone.startsWith("banished_")
-    );
+function isPointInElement(x, y, selector) {
+    const $el = $(selector);
+    if (!$el.length || $el.css("display") === "none") return false;
 
-    for (let i = candidates.length - 1; i >= 0; i--) {
-        const c = candidates[i];
-        const $el = $(`#${c.instanceId}`);
-        if ($el.length) {
-            const offset = $el.offset();
-            const matOffset = $("#playmat").offset();
-            const x = offset.left - matOffset.left;
-            const y = offset.top - matOffset.top;
+    const offset = $el.offset();
+    const w = $el.outerWidth();
+    const h = $el.outerHeight();
 
-            if (coords.x >= x && coords.x <= x + 80 &&
-                coords.y >= y && coords.y <= y + 116) {
-                return c;
-            }
-        }
-    }
-    return null;
+    return (x >= offset.left && x <= offset.left + w && y >= offset.top && y <= offset.top + h);
 }
 
-// Move card to specific pile (and send attached cards to grave)
-function moveCardToPile(cardObj, pileId) {
-    const suffix = cardObj.owner === "player1" ? 1 : 2;
+// Deck Pile operations and context menus
+$(document).on("click", ".pile-menu-trigger", function(e) {
+    e.stopPropagation();
+    const pileId = $(this).attr("data-pile");
+    const owner = pileId.endsWith("_1") ? "player1" : "player2";
+    const type = pileId.startsWith("deck") ? "deck" : "extra";
 
-    // Send any attached cards to Graveyard
-    const attached = state.cards.filter(c => c.attachedTo === cardObj.instanceId);
-    attached.forEach(c => {
-        c.attachedTo = null;
-        c.zone = `grave_${suffix}`;
-        c.movedToPileAt = Date.now() + Math.random();
-    });
-
-    cardObj.zone = pileId;
-    cardObj.attachedTo = null;
-    cardObj.movedToPileAt = Date.now() + Math.random();
-
-    logGameMessage(`📦 Envió a ${pileId.toUpperCase()} la carta: ${cardObj.name}`);
-}
-
-// Anti-cheat detailed sidebar previewer
-function updatePreview(card) {
-    const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("grave_") || card.zone.startsWith("banished_");
-    let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
-
-    if (isFaceDown && card.owner === "player1" && !isPile) {
-        isFaceDown = false; // Player 1 can view its own face-down field cards
-    }
-
-    if (isPile || isFaceDown) {
-        const backImg = state.layout === "pokemon" ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
-        $("#detail-card-img").attr("src", backImg);
-        $("#detail-card-name").text("Carta Oculta");
-        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\n\n[Contenido oculto en pilas/boca-abajo]`);
-    } else {
-        $("#detail-card-img").attr("src", card.imageUrl);
-        $("#detail-card-name").text(card.name);
-        let desc = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada)" : "Boca Arriba"}\nContadores: ${card.counters}`;
-        if (card.description) {
-            desc += `\n\nEfecto:\n${card.description}`;
-        }
-        $("#detail-card-desc").text(desc);
-    }
-}
-
-// Graphical click-to-place summoning targeting
-function startGraphicalTargeting(cardObj, actionType) {
-    targetingCard = cardObj;
-    targetActionType = actionType;
-
-    $("#zone-picker-overlay").fadeIn(150).css("display", "flex");
-    $("#playmat").addClass("selecting-zone");
-
-    // Click on playmat to summon
-    $("#playmat").off("click.targeting").on("click.targeting", function(e) {
-        if ($(e.target).closest(".magic-pile-zone").length) return; // avoid pile zone collision clicks
-        e.preventDefault();
-        e.stopPropagation();
-
-        const offset = $(this).offset();
-        const clickX = e.clientX - offset.left;
-        const clickY = e.clientY - offset.top;
-
-        if (targetingCard) {
-            targetingCard.zone = "field_free";
-            targetingCard.x = Math.max(10, Math.min(window.innerWidth - 90, clickX - 40));
-            targetingCard.y = Math.max(10, Math.min(window.innerHeight - 130, clickY - 58));
-            targetingCard.attachedTo = null;
-
-            if (targetActionType === "set") {
-                targetingCard.faceDown = true;
-                targetingCard.tapped = true;
-            } else {
-                targetingCard.faceDown = false;
-                targetingCard.tapped = false;
-            }
-
-            logGameMessage(`🚀 Colocó libremente en el campo (${targetingCard.x}x, ${targetingCard.y}y): ${targetingCard.name}`);
-            renderAllCards();
-        }
-
-        stopGraphicalTargeting();
-    });
-}
-
-function stopGraphicalTargeting() {
-    targetingCard = null;
-    targetActionType = null;
-    $("#zone-picker-overlay").fadeOut(150);
-    $("#playmat").removeClass("selecting-zone");
-    $("#playmat").off("click.targeting");
-    window.activeAttackSourceCard = null;
-}
-
-// Card Attachment mode
-function startXYZTargeting(cardObj) {
-    xyzCard = cardObj;
-
-    Swal.fire({
-        icon: 'info',
-        title: 'Acoplar Carta',
-        text: 'Haz clic en la carta destino en el campo para acoplar esta debajo.',
-        toast: true,
-        position: 'top-end',
-        timer: 3000,
-        showConfirmButton: false
-    });
-
-    $("#playmat").addClass("selecting-zone");
-
-    // Bind temporary click onto any field card
-    setTimeout(() => {
-        $(".duel-card").off("click.xyz").on("click.xyz", function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const targetId = $(this).data("instance-id");
-            const targetObj = state.cards.find(c => c.instanceId === targetId);
-
-            if (targetObj && xyzCard && targetObj.instanceId !== xyzCard.instanceId) {
-                // transfer attached cards
-                state.cards.forEach(c => {
-                    if (c.attachedTo === xyzCard.instanceId) {
-                        c.attachedTo = targetObj.instanceId;
-                    }
-                });
-
-                xyzCard.attachedTo = targetObj.instanceId;
-                xyzCard.attachedAt = Date.now() + Math.random();
-                xyzCard.zone = targetObj.zone;
-
-                logGameMessage(`📎 Acopló ${xyzCard.name} debajo de ${targetObj.name}`);
-                renderAllCards();
-            }
-
-            $("#playmat").removeClass("selecting-zone");
-            $(".duel-card").off("click.xyz");
-            xyzCard = null;
-        });
-    }, 100);
-}
-
-// Access-menu on piles click
-function openPileActionMenu(pileId) {
-    const isP1 = pileId.endsWith("_1");
-    const playerKey = isP1 ? "player1" : "player2";
-    const title = pileId.toUpperCase().replace("_", " ");
-
-    let menuHTML = `<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">`;
-
-    if (pileId.startsWith("deck_")) {
-        menuHTML += `
-            <button class="btn-play btn-play-practice" onclick="drawCardFromDeck('${playerKey}')">Robar 1 Carta</button>
-            <button class="btn-play btn-play-practice" onclick="drawFiveFromDeck('${playerKey}')">Robar 5 Cartas</button>
-            <button class="btn-play btn-play-practice" onclick="shuffleDeck('${playerKey}')">Barajar Mazo</button>
-            <button class="btn-play btn-play-practice" onclick="openSearchModal('${pileId}')">Ver / Buscar en Deck</button>
-            ${state.layout === 'pokemon' ? `<button class="btn-play btn-play-practice" onclick="setupPokemonPrizes('${playerKey}')">Colocar Premios (6 Cartas)</button>` : ""}
+    let menuHtml = "";
+    if (type === "deck") {
+        menuHtml = `
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="draw1" data-owner="${owner}" style="background-color: var(--primary-color); color: #000; margin: 0; font-weight: bold;">Robar 1 Carta</button>
+                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="draw5" data-owner="${owner}" style="background-color: var(--primary-color); color: #000; margin: 0; font-weight: bold;">Robar 5 Cartas</button>
+                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="shuffle" data-owner="${owner}" style="background-color: #3085d6; margin: 0;">Barajar Todo el Deck</button>
+                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="search" data-owner="${owner}" style="background-color: #444; margin: 0;">Buscar en el Deck</button>
+            </div>
         `;
     } else {
-        menuHTML += `
-            <button class="btn-play btn-play-practice" onclick="openSearchModal('${pileId}')">Ver / Buscar en ${title}</button>
+        menuHtml = `
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="openExtra" data-owner="${owner}" style="background-color: var(--primary-color); color: #000; margin: 0; font-weight: bold;">Ver Extra Deck</button>
+            </div>
         `;
     }
 
-    menuHTML += `</div>`;
-
     Swal.fire({
-        title: `Menú ${title}`,
-        html: menuHTML,
+        title: type === "deck" ? "Acciones de Deck" : "Acciones de Extra Deck",
+        html: menuHtml,
         showConfirmButton: false,
-        showCloseButton: true
+        showCancelButton: true,
+        cancelButtonText: "Cancelar",
+        background: "#12181e",
+        color: "#fff"
     });
-}
+});
 
-// Robar cards
-window.drawCardFromDeck = function(playerKey) {
+// Delegate Pile SwAl interactions
+$(document).on("click", ".pile-action-btn", function() {
+    const action = $(this).attr("data-action");
+    const owner = $(this).attr("data-owner");
     Swal.close();
-    const suffix = playerKey === "player1" ? 1 : 2;
-    const deckZone = `deck_${suffix}`;
-    const deckCards = state.cards.filter(c => c.zone === deckZone);
 
-    if (deckCards.length === 0) {
-        Swal.fire("Mazo vacío", "No quedan cartas en el Deck.", "warning");
-        return;
+    if (action === "draw1") {
+        drawCards(owner, 1);
+    } else if (action === "draw5") {
+        drawCards(owner, 5);
+    } else if (action === "shuffle") {
+        shuffleDeck(owner);
+        Swal.fire('Barajado', 'El mazo se ha barajado con éxito.', 'success');
+    } else if (action === "search") {
+        openSearchModal(owner);
+    } else if (action === "openExtra") {
+        openExtraModal(owner);
     }
+});
 
-    // Top card is last element
-    const cardObj = deckCards[deckCards.length - 1];
-    cardObj.zone = `hand_${suffix}`;
-    cardObj.controller = playerKey;
-    cardObj.faceDown = false;
-
-    logGameMessage(`🃏 Robó 1 carta del Deck: ${cardObj.name}`);
-    renderAllCards();
-};
-
-window.drawFiveFromDeck = function(playerKey) {
-    Swal.close();
-    const suffix = playerKey === "player1" ? 1 : 2;
-    const deckZone = `deck_${suffix}`;
-
-    for (let i = 0; i < 5; i++) {
-        const deckCards = state.cards.filter(c => c.zone === deckZone);
-        if (deckCards.length === 0) break;
-        const cardObj = deckCards[deckCards.length - 1];
-        cardObj.zone = `hand_${suffix}`;
-        cardObj.controller = playerKey;
-        cardObj.faceDown = false;
-    }
-
-    logGameMessage(`🃏 Robó 5 cartas de su Deck.`);
-    renderAllCards();
-};
-
-window.shuffleDeck = function(playerKey) {
-    Swal.close();
-    shuffleDeckSilent(playerKey);
-    logGameMessage(`🔀 Barajó el Deck.`);
-    Swal.fire({
-        icon: 'success',
-        title: 'Mazo Barajado',
-        toast: true,
-        position: 'top-end',
-        timer: 1500,
-        showConfirmButton: false
-    });
-};
-
-function shuffleDeckSilent(playerKey) {
-    const suffix = playerKey === "player1" ? 1 : 2;
-    const deckZone = `deck_${suffix}`;
-    const deckCards = state.cards.filter(c => c.zone === deckZone);
-
-    for (let i = deckCards.length - 1; i > 0; i--) {
+// Shuffling logic
+function shuffleDeck(owner) {
+    const deck = state.decks[owner];
+    // Fisher-Yates
+    for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        const tempZ = deckCards[i].z;
-        deckCards[i].z = deckCards[j].z;
-        deckCards[j].z = tempZ;
+        [deck[i], deck[j]] = [deck[j], deck[i]];
     }
+    updatePileCounts();
+    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", "Barajó su Main Deck.");
 }
 
-// Pokemon setup prizes
-window.setupPokemonPrizes = function(playerKey) {
-    Swal.close();
-    const suffix = playerKey === "player1" ? 1 : 2;
-    const deckCards = state.cards.filter(c => c.zone === `deck_${suffix}`);
+// Drawing cards to Hand Zone coordinates
+function drawCards(owner, amount) {
+    const deck = state.decks[owner];
+    const mainCards = deck.filter(c => c.section !== "Extra");
 
-    if (deckCards.length < 6) {
-        Swal.fire("Cartas insuficientes", "No hay suficientes cartas para colocar los premios.", "warning");
+    if (mainCards.length === 0) {
+        Swal.fire('Deck Vacío', 'No quedan cartas en el Main Deck para robar.', 'warning');
         return;
     }
 
-    // Draw top 6 as prizes
-    for (let i = 0; i < 6; i++) {
-        const cardObj = deckCards[deckCards.length - 1 - i];
-        cardObj.zone = `field_free`; // Place them on field freely
-        cardObj.faceDown = true;
-        // spread coordinates nicely
-        cardObj.x = suffix === 1 ? 50 + i * 25 : window.innerWidth - 200 - i * 25;
-        cardObj.y = suffix === 1 ? window.innerHeight - 450 : 250;
+    const actualDraw = Math.min(amount, mainCards.length);
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+
+    // Coordinates landing within transparent hand borders
+    const targetXBase = windowW * 0.15 + 50;
+    const targetY = (owner === "player1") ? (windowH - 180) : 40;
+
+    for (let i = 0; i < actualDraw; i++) {
+        // Find and remove first main card
+        const idx = deck.findIndex(c => c.section !== "Extra");
+        const cardData = deck.splice(idx, 1)[0];
+
+        const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+        const cardX = targetXBase + (state.cards.filter(c => getCardCurrentZone(c) === (owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
+
+        state.cards.push({
+            id: cardId,
+            name: cardData.name,
+            image_url: cardData.image_url,
+            desc: cardData.desc || "",
+            x: cardX,
+            y: targetY,
+            faceUp: (owner === "player1" || state.layout === "pokemon"), // Pokemon is always faceup in sandbox
+            tapped: false,
+            counters: { glass: 0, poke: 0 },
+            owner: owner,
+            section: cardData.section || "Main"
+        });
     }
 
-    logGameMessage(`🎁 Colocó 6 Premios boca abajo en la arena.`);
     renderAllCards();
-};
+    updatePileCounts();
+    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", `Robó ${actualDraw} carta(s) a la mano.`);
+}
 
-// Interactive Search Modal inside piles
-window.openSearchModal = function(pileId) {
-    Swal.close();
-    const title = pileId.toUpperCase().replace("_", " ");
-    $("#pile-modal-title").text(`Buscador: ${title}`);
+// Search Modal operations
+function openSearchModal(owner) {
+    const deck = state.decks[owner];
+    const mainCards = deck.filter(c => c.section !== "Extra");
 
-    // Grab all cards in this pile
-    const pileCards = state.cards.filter(c => c.zone === pileId);
-    pileCards.sort((a, b) => (b.movedToPileAt || 0) - (a.movedToPileAt || 0));
+    if (mainCards.length === 0) {
+        Swal.fire('Mazo Vacío', 'No hay cartas para buscar en el Main Deck.', 'warning');
+        return;
+    }
 
+    $("#pile-modal-title").text(`Buscador de Deck: ${owner === "player1" ? "Jugador 1" : "Jugador 2"}`);
     const $grid = $("#pile-cards-grid");
     $grid.empty();
 
-    if (pileCards.length === 0) {
-        $grid.append(`<div style="color: #666; font-style: italic; width: 100%; text-align: center; padding: 20px;">Esta pila está vacía.</div>`);
-    } else {
-        pileCards.forEach(card => {
-            $grid.append(`
-                <div class="search-card-item" style="display: flex; flex-direction: column; align-items: center; gap: 8px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                    <img src="${card.imageUrl}" style="width: 100px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />
-                    <span style="font-size: 0.75rem; text-align: center; font-weight: bold; height: 32px; overflow: hidden; text-overflow: ellipsis;">${card.name}</span>
-                    <div style="display: flex; gap: 5px; width: 100%; justify-content: center; flex-wrap: wrap;">
-                        <button class="lp-widget-btn" onclick="retrieveCardFromPile('${card.instanceId}', 'hand')" style="font-size:0.65rem; padding: 2px 6px;">Mano</button>
-                        <button class="lp-widget-btn" onclick="retrieveCardFromPile('${card.instanceId}', 'summon')" style="font-size:0.65rem; padding: 2px 6px;">Invocar</button>
-                    </div>
-                </div>
-            `);
-        });
-    }
-
-    $("#pile-overlay").fadeIn(150);
-};
-
-window.retrieveCardFromPile = function(instanceId, action) {
-    const cardObj = state.cards.find(c => c.instanceId === instanceId);
-    if (!cardObj) return;
-
-    $("#pile-overlay").fadeOut(150);
-
-    const suffix = cardObj.owner === "player1" ? 1 : 2;
-
-    if (action === "hand") {
-        cardObj.zone = `hand_${suffix}`;
-        cardObj.controller = cardObj.owner;
-        cardObj.faceDown = false;
-        logGameMessage(`📥 Añadió a Mano la carta: ${cardObj.name} desde la pila.`);
-        renderAllCards();
-    } else if (action === "summon") {
-        startGraphicalTargeting(cardObj, "summon");
-    }
-};
-
-// Attached materials list modal
-function openAttachedCardsModal(parentId) {
-    const parent = state.cards.find(c => c.instanceId === parentId);
-    if (!parent) return;
-
-    $("#attached-modal-title").text(`Materiales: ${parent.name}`);
-
-    const attached = state.cards.filter(c => c.attachedTo === parentId);
-    const $grid = $("#attached-cards-grid");
-    $grid.empty();
-
-    attached.forEach(card => {
-        $grid.append(`
-            <div class="search-card-item" style="display: flex; flex-direction: column; align-items: center; gap: 8px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                <img src="${card.imageUrl}" style="width: 100px; border-radius: 6px;" />
-                <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">${card.name}</span>
-                <div style="display: flex; gap: 5px; width: 100%; justify-content: center;">
-                    <button class="lp-widget-btn" onclick="detachIndividualCard('${card.instanceId}', 'hand')" style="font-size:0.65rem; padding: 2px 6px;">Mano</button>
-                    <button class="lp-widget-btn" onclick="detachIndividualCard('${card.instanceId}', 'grave')" style="font-size:0.65rem; padding: 2px 6px;">Cementerio</button>
+    mainCards.forEach((card, index) => {
+        const html = `
+            <div class="search-card-wrapper" data-index="${index}" data-owner="${owner}">
+                <img src="${card.image_url}" alt="${card.name}">
+                <div class="search-card-overlay">
+                    <button class="search-action-btn search-to-hand" title="Añadir a la mano"><i class="fas fa-hand-holding"></i> Mano</button>
+                    <button class="search-action-btn search-to-field" title="Invocar al campo"><i class="fas fa-play"></i> Campo</button>
                 </div>
             </div>
-        `);
+        `;
+        $grid.append(html);
     });
 
-    // Bulk actions
-    $("#bulk-to-hand").off("click").on("click", () => {
-        attached.forEach(c => {
-            c.attachedTo = null;
-            c.zone = `hand_${c.owner === "player1" ? 1 : 2}`;
-        });
-        $("#attached-overlay").fadeOut(150);
-        logGameMessage(`📥 Desacopló todos los materiales a la Mano de: ${parent.name}`);
-        renderAllCards();
-    });
-
-    $("#bulk-to-grave").off("click").on("click", () => {
-        attached.forEach(c => {
-            c.attachedTo = null;
-            c.zone = `grave_${c.owner === "player1" ? 1 : 2}`;
-            c.movedToPileAt = Date.now() + Math.random();
-        });
-        $("#attached-overlay").fadeOut(150);
-        logGameMessage(`📥 Desacopló todos los materiales al Descarte de: ${parent.name}`);
-        renderAllCards();
-    });
-
-    $("#attached-overlay").fadeIn(150);
+    // Close on escape/click
+    $("#pile-overlay").fadeIn(200);
 }
 
-window.detachIndividualCard = function(instanceId, dest) {
-    const cardObj = state.cards.find(c => c.instanceId === instanceId);
-    if (!cardObj) return;
+// Extra Modal operations
+function openExtraModal(owner) {
+    const deck = state.decks[owner];
+    const extraCards = deck.filter(c => c.section === "Extra");
 
-    $("#attached-overlay").fadeOut(150);
-    cardObj.attachedTo = null;
-
-    if (dest === "hand") {
-        cardObj.zone = `hand_${cardObj.owner === "player1" ? 1 : 2}`;
-        logGameMessage(`📥 Desacopló y regresó a mano la carta: ${cardObj.name}`);
-    } else {
-        cardObj.zone = `grave_${cardObj.owner === "player1" ? 1 : 2}`;
-        cardObj.movedToPileAt = Date.now() + Math.random();
-        logGameMessage(`📥 Desacopló y envió al Cementerio la carta: ${cardObj.name}`);
+    if (extraCards.length === 0) {
+        Swal.fire('Extra Deck Vacío', 'No hay cartas en el Extra Deck.', 'warning');
+        return;
     }
+
+    $("#extra-modal-title").text(`Extra Deck: ${owner === "player1" ? "Jugador 1" : "Jugador 2"}`);
+    const $grid = $("#extra-cards-grid");
+    $grid.empty();
+
+    extraCards.forEach((card, index) => {
+        const html = `
+            <div class="search-card-wrapper" data-index="${index}" data-owner="${owner}">
+                <img src="${card.image_url}" alt="${card.name}">
+                <div class="search-card-overlay">
+                    <button class="search-action-btn extra-to-hand" title="Añadir a la mano"><i class="fas fa-hand-holding"></i> Mano</button>
+                    <button class="search-action-btn extra-to-field" title="Invocar al campo"><i class="fas fa-play"></i> Campo</button>
+                </div>
+            </div>
+        `;
+        $grid.append(html);
+    });
+
+    $("#extra-overlay").fadeIn(200);
+}
+
+// Close overlays
+$("#btn-close-pile").click(() => $("#pile-overlay").fadeOut(200));
+$("#btn-close-extra").click(() => $("#extra-overlay").fadeOut(200));
+
+// Handle modal actions
+$(document).on("click", ".search-to-hand, .extra-to-hand", function() {
+    const $wrapper = $(this).closest(".search-card-wrapper");
+    const idx = parseInt($wrapper.attr("data-index"));
+    const owner = $wrapper.attr("data-owner");
+    const isExtra = $(this).hasClass("extra-to-hand");
+
+    const deck = state.decks[owner];
+    const filtered = deck.filter(c => isExtra ? c.section === "Extra" : c.section !== "Extra");
+    const cardData = filtered[idx];
+
+    // Remove from array source
+    const exactIdx = deck.indexOf(cardData);
+    if (exactIdx > -1) {
+        deck.splice(exactIdx, 1);
+    }
+
+    // Add to state cards
+    const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+    const targetX = windowW * 0.15 + 50 + (state.cards.filter(c => getCardCurrentZone(c) === (owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
+    const targetY = (owner === "player1") ? (windowH - 180) : 40;
+
+    state.cards.push({
+        id: cardId,
+        name: cardData.name,
+        image_url: cardData.image_url,
+        desc: cardData.desc || "",
+        x: targetX,
+        y: targetY,
+        faceUp: true,
+        tapped: false,
+        counters: { glass: 0, poke: 0 },
+        owner: owner,
+        section: cardData.section || "Main"
+    });
+
+    $("#pile-overlay").fadeOut(200);
+    $("#extra-overlay").fadeOut(200);
     renderAllCards();
-};
+    updatePileCounts();
+    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", `Buscó e introdujo a su mano: ${cardData.name}`);
+});
 
-// Floating LP Trackers logic
-function setupLPTrackers() {
-    $(".lp-widget-btn").click(function() {
-        const player = $(this).data("player"); // p1, p2
-        const suffix = player === "p1" ? 1 : 2;
-        const calcVal = parseInt($(`#lp-calc-${player}`).val()) || 0;
-        const currentLP = parseInt($(`#lp-display-${player}`).text()) || 0;
+$(document).on("click", ".search-to-field, .extra-to-field", function() {
+    const $wrapper = $(this).closest(".search-card-wrapper");
+    const idx = parseInt($wrapper.attr("data-index"));
+    const owner = $wrapper.attr("data-owner");
+    const isExtra = $(this).hasClass("extra-to-field");
 
-        let finalLP = currentLP;
+    const deck = state.decks[owner];
+    const filtered = deck.filter(c => isExtra ? c.section === "Extra" : c.section !== "Extra");
+    const cardData = filtered[idx];
 
-        if ($(this).hasClass("lp-btn-add")) {
-            finalLP = currentLP + calcVal;
-            logGameMessage(`💚 Jugador ${suffix} aumentó LP: +${calcVal} (${finalLP})`);
-        } else if ($(this).hasClass("lp-btn-sub")) {
-            finalLP = Math.max(0, currentLP - calcVal);
-            logGameMessage(`💔 Jugador ${suffix} restó LP: -${calcVal} (${finalLP})`);
-        } else if ($(this).hasClass("lp-btn-half")) {
-            finalLP = Math.round(currentLP / 2);
-            logGameMessage(`💔 Jugador ${suffix} dividió sus LP a la mitad (${finalLP})`);
-        }
+    // Remove from source
+    const exactIdx = deck.indexOf(cardData);
+    if (exactIdx > -1) {
+        deck.splice(exactIdx, 1);
+    }
 
-        $(`#lp-display-${player}`).text(finalLP);
-        $(`#lp-calc-${player}`).val("");
+    // Spawn centered on viewport
+    const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+    const spawnX = window.innerWidth / 2 - 75;
+    const spawnY = window.innerHeight / 2 - 109;
+
+    state.cards.push({
+        id: cardId,
+        name: cardData.name,
+        image_url: cardData.image_url,
+        desc: cardData.desc || "",
+        x: spawnX,
+        y: spawnY,
+        faceUp: true,
+        tapped: false,
+        counters: { glass: 0, poke: 0 },
+        owner: owner,
+        section: cardData.section || "Main"
+    });
+
+    $("#pile-overlay").fadeOut(200);
+    $("#extra-overlay").fadeOut(200);
+    renderAllCards();
+    updatePileCounts();
+    logEvent(owner === "player1" ? "Jugador 1" : "Jugador 2", `Invocó al campo directamente: ${cardData.name}`);
+});
+
+
+// Core drag-and-drop implementation (Absolute Playmat coordinates)
+function setupCardInteractions() {
+    const $field = $("#field-cards-container");
+
+    $field.on("mousedown touchstart", ".duel-card", function(e) {
+        // Prevent trigger during context triggers or submenu interaction
+        if ($(e.target).closest(".card-quick-actions").length || $(e.target).hasClass("card-counter-badge")) return;
+
+        e.preventDefault();
+        const cardId = $(this).attr("id");
+        dragCard = state.cards.find(c => c.id === cardId);
+
+        if (!dragCard) return;
+
+        const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+        dragOffset.x = clientX - dragCard.x;
+        dragOffset.y = clientY - dragCard.y;
+
+        dragStartCoords.x = dragCard.x;
+        dragStartCoords.y = dragCard.y;
+        dragStartTime = Date.now();
+
+        $(this).addClass("dragging");
+
+        // Put active card on top z-index hierarchy
+        state.cards = state.cards.filter(c => c.id !== cardId).concat([dragCard]);
+        renderAllCards();
+
+        $(document).on("mousemove.carddrag touchmove.carddrag", function(moveEvent) {
+            if (!dragCard) return;
+
+            const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+            const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+            let targetX = mX - dragOffset.x;
+            let targetY = mY - dragOffset.y;
+
+            // Restrict coordinates inside viewport
+            targetX = Math.max(0, Math.min(window.innerWidth - 150, targetX));
+            targetY = Math.max(0, Math.min(window.innerHeight - 218, targetY));
+
+            dragCard.x = targetX;
+            dragCard.y = targetY;
+
+            // Reposition element instantaneously in real-time
+            $(`#${dragCard.id}`).css({ left: targetX, top: targetY });
+
+            // Highlight hover targets
+            updateLandingHoverState(targetX, targetY);
+        });
+
+        $(document).on("mouseup.carddrag touchend.carddrag", function() {
+            if (dragCard) {
+                const $el = $(`#${dragCard.id}`);
+                $el.removeClass("dragging");
+
+                // Check click vs drag threshold
+                const distance = Math.hypot(dragCard.x - dragStartCoords.x, dragCard.y - dragStartCoords.y);
+                const duration = Date.now() - dragStartTime;
+
+                if (distance < 8 && duration < 250) {
+                    // Click trigger: show card sidebar preview & toggle orientation parameters
+                    updatePreview(dragCard);
+                } else {
+                    // End of drag coordinates check
+                    const finalZone = getCardCurrentZone(dragCard);
+                    if (finalZone) {
+                        logEvent(dragCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Colocó ${dragCard.name} en ${finalZone.toUpperCase().replace('_', ' ')}`);
+                    }
+                }
+
+                // Remove landing hover states
+                $(".magic-landing-zone").removeClass("drag-over");
+                updateLandingZoneCounts();
+            }
+
+            dragCard = null;
+            $(document).off(".carddrag");
+        });
     });
 }
 
-// Spawner Accessories & Tokens
-function setupAccessories() {
-    // 1. Spawner Tokens (YGOPRODeck)
-    let cachedTokens = [];
-    async function fetchTokens() {
-        try {
-            const res = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?type=Token");
-            const data = await res.json();
-            if (data && data.data) cachedTokens = data.data;
-        } catch (e) {
-            console.warn("Could not fetch tokens list from YGOPRODeck:", e);
+function updateLandingHoverState(x, y) {
+    const cardMidX = x + 75;
+    const cardMidY = y + 109;
+
+    $(".magic-landing-zone").removeClass("drag-over");
+
+    if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p1")) {
+        $("#zone-hand-p1").addClass("drag-over");
+    } else if (isPointInElement(cardMidX, cardMidY, "#zone-grave-p1")) {
+        $("#zone-grave-p1").addClass("drag-over");
+    } else if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p1")) {
+        $("#zone-banish-p1").addClass("drag-over");
+    } else if (hasPlayer2) {
+        if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p2")) {
+            $("#zone-hand-p2").addClass("drag-over");
+        } else if (isPointInElement(cardMidX, cardMidY, "#zone-grave-p2")) {
+            $("#zone-grave-p2").addClass("drag-over");
+        } else if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p2")) {
+            $("#zone-banish-p2").addClass("drag-over");
         }
     }
-    fetchTokens();
+}
 
-    $("#btn-spawn-token").click(function() {
-        let tName = "Monster Token";
-        let tImg = "https://images.ygoprodeck.com/images/cards/10000000.jpg";
-        let tDesc = "Token invocado de forma especial.";
-
-        if (cachedTokens.length > 0) {
-            const random = cachedTokens[Math.floor(Math.random() * cachedTokens.length)];
-            tName = random.name;
-            tImg = random.card_images[0].image_url;
-            tDesc = random.desc || "Token Especial.";
+// Side-Collapsible Sidebar & Accessories animations
+function setupGlobalEvents() {
+    // Sidebar toggle button slide interaction
+    $("#sidebar-toggle-btn").click(function() {
+        const collapsed = $("#magic-sidebar").hasClass("collapsed");
+        if (collapsed) {
+            $("#magic-sidebar").removeClass("collapsed");
+            $(this).removeClass("collapsed");
+            $("body").removeClass("sidebar-collapsed-body");
+        } else {
+            $("#magic-sidebar").addClass("collapsed");
+            $(this).addClass("collapsed");
+            $("body").addClass("sidebar-collapsed-body");
         }
-
-        const newToken = {
-            instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            name: tName,
-            imageUrl: tImg,
-            owner: "player1",
-            controller: "player1",
-            zone: "field_free",
-            faceDown: false,
-            tapped: false,
-            counters: 0,
-            attachedTo: null,
-            x: 100,
-            y: 100,
-            z: state.cards.length + 1,
-            isExtra: false,
-            description: tDesc
-        };
-
-        state.cards.push(newToken);
-        startGraphicalTargeting(newToken, "summon");
-        logGameMessage(`🌟 Invocando de Forma Especial Token: ${tName}`);
     });
 
-    // 2. Roll 3D Dice / Coins
+    // P1 accessories sliding edge tab deployer
+    $("#toggle-acc-btn").click(function() {
+        const collapsed = $("#p1-accessories").hasClass("collapsed");
+        if (collapsed) {
+            $("#p1-accessories").removeClass("collapsed");
+            $("#toggle-acc-btn i").attr("class", "fas fa-chevron-left");
+        } else {
+            $("#p1-accessories").addClass("collapsed");
+            $("#toggle-acc-btn i").attr("class", "fas fa-chevron-right");
+        }
+    });
+
+    // Right-click context menus for manual operations
+    $(document).on("contextmenu", ".duel-card", function(e) {
+        e.preventDefault();
+        const cardId = $(this).attr("id");
+        const card = state.cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        activeMenuCard = card;
+
+        // Custom sandbox context actions
+        Swal.fire({
+            title: card.name,
+            html: `
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="swal2-confirm swal2-styled context-opt" data-action="flip" style="background-color: #3085d6; margin: 0;">Voltear Carta (Cara ${card.faceUp ? 'Abajo' : 'Arriba'})</button>
+                    <button class="swal2-confirm swal2-styled context-opt" data-action="rotate" style="background-color: #3085d6; margin: 0;">Girar (Modo Defensa/Tapped)</button>
+                    <button class="swal2-confirm swal2-styled context-opt" data-action="add-glass" style="background-color: #00d2ff; color:#000; margin: 0; font-weight: bold;">+1 Contador Esfera</button>
+                    <button class="swal2-confirm swal2-styled context-opt" data-action="add-poke" style="background-color: #ff1b6b; margin: 0; font-weight: bold;">+1 Contador Daño (+10)</button>
+                    <button class="swal2-confirm swal2-styled context-opt" data-action="clear-counters" style="background-color: #777; margin: 0;">Remover Contadores</button>
+                    <button class="swal2-confirm swal2-styled context-opt" data-action="send-deck" style="background-color: #e5a93b; color:#000; margin: 0; font-weight: bold;">Devolver al Deck (Fondo)</button>
+                    <button class="swal2-confirm swal2-styled context-opt" data-action="delete" style="background-color: #ff1b6b; margin: 0;">Eliminar de la Arena</button>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: "Cerrar",
+            background: "#12181e",
+            color: "#fff"
+        });
+    });
+}
+
+// Handle context triggers
+$(document).on("click", ".context-opt", function() {
+    if (!activeMenuCard) return;
+    const action = $(this).attr("data-action");
+    Swal.close();
+
+    if (action === "flip") {
+        activeMenuCard.faceUp = !activeMenuCard.faceUp;
+        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Volteó ${activeMenuCard.name} boca ${activeMenuCard.faceUp ? 'arriba' : 'abajo'}.`);
+    } else if (action === "rotate") {
+        activeMenuCard.tapped = !activeMenuCard.tapped;
+        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Giró/Tappeó ${activeMenuCard.name}.`);
+    } else if (action === "add-glass") {
+        activeMenuCard.counters.glass++;
+    } else if (action === "add-poke") {
+        activeMenuCard.counters.poke += 10;
+    } else if (action === "clear-counters") {
+        activeMenuCard.counters.glass = 0;
+        activeMenuCard.counters.poke = 0;
+    } else if (action === "send-deck") {
+        // Return to deck storage array
+        state.decks[activeMenuCard.owner].push({
+            name: activeMenuCard.name,
+            image_url: activeMenuCard.image_url,
+            desc: activeMenuCard.desc,
+            section: activeMenuCard.section
+        });
+        state.cards = state.cards.filter(c => c.id !== activeMenuCard.id);
+        updatePileCounts();
+        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Devolvió ${activeMenuCard.name} al fondo del mazo.`);
+    } else if (action === "delete") {
+        state.cards = state.cards.filter(c => c.id !== activeMenuCard.id);
+        logEvent(activeMenuCard.owner === "player1" ? "Jugador 1" : "Jugador 2", `Eliminó ${activeMenuCard.name} de la arena.`);
+    }
+
+    renderAllCards();
+    activeMenuCard = null;
+});
+
+// Real-time Event Logging
+function logEvent(sender, message) {
+    const $msgContainer = $("#game-log-messages");
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const cssClass = sender === "Sistema" ? "system-msg" : sender === "Jugador 1" ? "p1-msg" : "p2-msg";
+
+    const html = `
+        <div class="log-message ${cssClass}" style="margin-bottom: 6px; font-size: 0.8rem; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+            <span style="color: #666; font-size: 0.7rem; margin-right: 4px;">[${timestamp}]</span>
+            <strong style="font-family: 'Orbitron';">${sender}:</strong> ${message}
+        </div>
+    `;
+    $msgContainer.append(html);
+    $msgContainer.scrollTop($msgContainer[0].scrollHeight);
+}
+
+// Side Image-only Preview
+function updatePreview(card) {
+    const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
+    const src = card.faceUp ? card.image_url : backImg;
+    $("#detail-card-img").attr("src", src);
+}
+
+// Global Accessories (Coin / Dice / Token spawning)
+function setupAccessories() {
+    // Dice 3D
     $("#btn-roll-dice").click(function() {
-        const result = Math.floor(Math.random() * 6) + 1;
-        logGameMessage(`🎲 Dado: Salió un magnífico ${result}`);
+        const val = Math.floor(Math.random() * 6) + 1;
+        logEvent("Sistema", `🎲 Tirada de Dado: ¡Obtuvo un ${val}!`);
         Swal.fire({
-            title: `Dado: ${result}`,
-            text: `¡Salió el número ${result}!`,
+            title: `Dado: ${val}`,
+            text: `¡Lanzaste un dado de 6 caras!`,
             icon: 'info',
-            timer: 1500,
-            showConfirmButton: false
+            background: "#12181e",
+            color: "#fff"
         });
     });
 
+    // Flip Coin
     $("#btn-flip-coin").click(function() {
-        const isHeads = Math.random() < 0.5;
-        const result = isHeads ? "CARA" : "CRUZ";
-        logGameMessage(`🪙 Moneda: Salió ${result}`);
+        const side = Math.random() < 0.5 ? "Cara" : "Cruz";
+        logEvent("Sistema", `🪙 Lanzamiento de Moneda: ¡Cayó ${side}!`);
         Swal.fire({
-            title: `Moneda: ${result}`,
-            text: `¡Salió ${result}!`,
+            title: `Moneda: ${side}`,
+            text: `¡Lanzaste una moneda al aire!`,
             icon: 'info',
-            timer: 1500,
-            showConfirmButton: false
+            background: "#12181e",
+            color: "#fff"
         });
     });
 
-    // 3. Counter Generation
+    // YGO Token Spawner directly centered on field
+    $("#btn-spawn-token").click(function() {
+        const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+        const spawnX = window.innerWidth / 2 - 75;
+        const spawnY = window.innerHeight / 2 - 109;
+
+        state.cards.push({
+            id: cardId,
+            name: "Ficha / Token",
+            image_url: "https://images.ygoprodeck.com/images/cards/73915051.jpg",
+            desc: "Ficha generada para el campo libre.",
+            x: spawnX,
+            y: spawnY,
+            faceUp: true,
+            tapped: false,
+            counters: { glass: 0, poke: 0 },
+            owner: "player1",
+            section: "Main"
+        });
+
+        renderAllCards();
+        logEvent("Sistema", "Invocó una Ficha/Token de Yu-Gi-Oh! en el campo.");
+    });
+
+    // Generar Esfera de Vidrio Cian
     $(".btn-add-glass-counter").click(function() {
         Swal.fire({
+            title: 'Contador Esfera',
+            text: 'Haz clic en una carta de la arena para agregar un contador, o usa el menú secundario derecho.',
             icon: 'info',
-            title: 'Agregar Contadores (YGO)',
-            text: 'Haz clic en cualquier carta del campo para agregarle un contador de vidrio cian.',
-            toast: true,
-            position: 'top-end',
-            timer: 3000,
-            showConfirmButton: false
-        });
-
-        $(".duel-card").off("click.counter").on("click.counter", function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const instId = $(this).data("instance-id");
-            const cardObj = state.cards.find(c => c.instanceId === instId);
-            if (cardObj) {
-                cardObj.counters = (cardObj.counters || 0) + 1;
-                logGameMessage(`💎 Agregó 1 contador a ${cardObj.name} (Total: ${cardObj.counters})`);
-                renderAllCards();
-            }
-
-            $(".duel-card").off("click.counter");
+            background: "#12181e",
+            color: "#fff"
         });
     });
 
+    // Generar Chip de Daño Pokemon
     $(".btn-add-poke-counter").click(function() {
         Swal.fire({
+            title: 'Contador de Daño',
+            text: 'Usa el botón secundario derecho en cualquier carta para añadir puntos de daño acumulativo.',
             icon: 'info',
-            title: 'Agregar Daño Pokémon',
-            text: 'Haz clic en una carta del campo para sumarle +10 de daño.',
-            toast: true,
-            position: 'top-end',
-            timer: 3000,
-            showConfirmButton: false
-        });
-
-        $(".duel-card").off("click.counter").on("click.counter", function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const instId = $(this).data("instance-id");
-            const cardObj = state.cards.find(c => c.instanceId === instId);
-            if (cardObj) {
-                cardObj.counters = (cardObj.counters || 0) + 10;
-                logGameMessage(`🩹 Agregó +10 de Daño a ${cardObj.name} (Total Daño: ${cardObj.counters})`);
-                renderAllCards();
-            }
-
-            $(".duel-card").off("click.counter");
+            background: "#12181e",
+            color: "#fff"
         });
     });
+}
 
-    // Toggle counters on field cards directly to heal/remove counters
-    $(document).on("click", ".card-counter", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+// Setup LP Floating Trackers logic
+function setupLPTrackers() {
+    $(".lp-widget-btn").click(function() {
+        const player = $(this).attr("data-player");
+        const action = $(this).hasClass("lp-btn-add") ? "add" : $(this).hasClass("lp-btn-sub") ? "sub" : "half";
 
-        const instId = $(this).closest(".duel-card").data("instance-id");
-        const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (cardObj) {
-            if (state.layout === "pokemon") {
-                cardObj.counters = Math.max(0, cardObj.counters - 10);
-                logGameMessage(`❤️ Curó -10 de Daño a ${cardObj.name} (Total Daño: ${cardObj.counters})`);
-            } else {
-                cardObj.counters = Math.max(0, cardObj.counters - 1);
-                logGameMessage(`💎 Removió 1 contador de ${cardObj.name} (Total: ${cardObj.counters})`);
-            }
-            renderAllCards();
+        const $input = $(`#lp-calc-${player}`);
+        const $display = $(`#lp-display-${player}`);
+
+        let val = parseInt($input.val()) || 0;
+        let current = parseInt($display.text()) || 0;
+
+        if (action === "add") {
+            current += val;
+        } else if (action === "sub") {
+            current = Math.max(0, current - val);
+        } else {
+            current = Math.ceil(current / 2);
         }
+
+        $display.text(current);
+        $input.val('');
+
+        logEvent(player === "p1" ? "Jugador 1" : "Jugador 2", `Actualizó sus Puntos de Vida a ${current} LP.`);
     });
-
-    // Toggle accessories collapsible menu
-    $("#toggle-acc-btn").click(function() {
-        $("#acc-body-container").toggle(200);
-        $(this).toggleClass("collapsed");
-    });
 }
 
-// Log actions
-function logGameMessage(msg) {
-    const $container = $("#game-log-messages");
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    $container.append(`
-        <div class="log-message">
-            <span class="log-time">[${timestamp}]</span> ${msg}
-        </div>
-    `);
-    // auto scroll
-    $container.scrollTop($container[0].scrollHeight);
-}
+// Re-render whole card stack on workspace
+function renderAllCards() {
+    const $field = $("#field-cards-container");
+    $field.empty();
 
-// Direct attack visual canvas indicator
-function createDirectAttackLine(cardObj) {
-    const $overlay = $("#attack-arrows-overlay");
-    $overlay.empty();
+    const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
 
-    const $card = $(`#${cardObj.instanceId}`);
-    if (!$card.length) return;
+    state.cards.forEach(card => {
+        const rotationClass = card.tapped ? "tapped" : "";
+        const faceClass = card.faceUp ? "" : "face-down";
+        const srcImg = card.faceUp ? card.image_url : backImg;
 
-    const offset = $card.offset();
-    const startX = offset.left + 40;
-    const startY = offset.top + 58;
-
-    // Direct attacks flow to top border
-    const endX = startX;
-    const endY = 20;
-
-    $overlay.append(`
-        <line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"
-              stroke="#ff1b6b" stroke-width="4" stroke-dasharray="8 6"
-              style="filter: drop-shadow(0 0 8px rgba(255, 27, 107, 0.85)); animation: flowAttack 1s linear infinite;" />
-        <circle cx="${endX}" cy="${endY}" r="10" fill="#ff1b6b"
-                style="filter: drop-shadow(0 0 10px rgba(255, 27, 107, 0.9));" />
-    `);
-
-    setTimeout(() => { $overlay.empty(); }, 8000);
-}
-
-// Multi-targeting attack arrows renderer
-function drawAttackArrows() {
-    const $overlay = $("#attack-arrows-overlay");
-    $overlay.empty();
-
-    state.attacks.forEach(atk => {
-        const $att = $(`#${atk.attackerId}`);
-        const $tar = $(`#${atk.targetId}`);
-
-        if ($att.length && $tar.length) {
-            const attOff = $att.offset();
-            const tarOff = $tar.offset();
-
-            const x1 = attOff.left + 40;
-            const y1 = attOff.top + 58;
-            const x2 = tarOff.left + 40;
-            const y2 = tarOff.top + 58;
-
-            $overlay.append(`
-                <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-                      stroke="#00d2ff" stroke-width="4" stroke-dasharray="8 6"
-                      style="filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.85)); animation: flowAttack 1s linear infinite;" />
-                <polygon points="${x2},${y2} ${x2-8},${y2-14} ${x2+8},${y2-14}" fill="#00d2ff"
-                         transform="rotate(${Math.atan2(y2-y1, x2-x1)*180/Math.PI + 90} ${x2} ${y2})"
-                         style="filter: drop-shadow(0 0 6px rgba(0, 210, 255, 0.9));" />
-            `);
+        let counterHtml = "";
+        if (card.counters.glass > 0) {
+            counterHtml += `<div class="card-counter-badge glass-counter"><i class="fas fa-gem"></i> ${card.counters.glass}</div>`;
         }
+        if (card.counters.poke > 0) {
+            counterHtml += `<div class="card-counter-badge poke-counter"><i class="fas fa-heart-pulse"></i> +${card.counters.poke}</div>`;
+        }
+
+        const html = `
+            <div class="duel-card ${faceClass} ${rotationClass}" id="${card.id}" style="left: ${card.x}px; top: ${card.y}px;">
+                <div class="card-counter-container">${counterHtml}</div>
+                <div class="card-img-wrapper" style="${card.tapped ? 'transform: rotate(90deg);' : ''}">
+                    <img class="card-img" src="${srcImg}" alt="${card.name}">
+                </div>
+            </div>
+        `;
+        $field.append(html);
     });
-}
 
-// Flash visual effect
-function triggerVfxFlash(id) {
-    const $el = $(`#${id}`);
-    if (!$el.length) return;
-
-    $el.addClass("vfx-flash-active");
-    logGameMessage(`✨ Activó Efecto Visual Destello en la carta.`);
-    setTimeout(() => { $el.removeClass("vfx-flash-active"); }, 1200);
+    updateLandingZoneCounts();
 }
