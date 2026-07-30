@@ -325,12 +325,57 @@
 
         /* SVG arrow rendering styling - simplified clean look */
         .attack-line {
-            stroke-width: 4px;
+            stroke-width: 5px;
             stroke-linecap: round;
+            stroke-dasharray: 8 4;
+            animation: attackLineFlow 1s linear infinite;
+        }
+
+        .attack-line[stroke="#ff1b6b"] {
+            filter: drop-shadow(0 0 6px #ff1b6b) !important;
+        }
+        .attack-line[stroke="#00d2ff"] {
+            filter: drop-shadow(0 0 6px #00d2ff) !important;
+        }
+
+        @keyframes attackLineFlow {
+            from { stroke-dashoffset: 12; }
+            to { stroke-dashoffset: 0; }
         }
 
         .attack-head {
             stroke-linejoin: round;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.5)) !important;
+        }
+
+        /* Float badges on top of cards during attacks - updated premium neon */
+        .attack-text-badge {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 15, 22, 0.95) !important;
+            color: #00d2ff !important;
+            border: 1.5px solid #00d2ff !important;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.7) !important;
+            padding: 3px 10px !important;
+            border-radius: 12px !important;
+            font-size: 0.7rem !important;
+            font-weight: 900 !important;
+            font-family: 'Orbitron', sans-serif !important;
+            text-transform: uppercase !important;
+            z-index: 100000 !important;
+            pointer-events: none !important;
+            white-space: nowrap !important;
+            letter-spacing: 0.5px !important;
+            text-shadow: 0 0 5px rgba(0, 210, 255, 0.5) !important;
+        }
+
+        .attack-text-badge.defender {
+            color: #ff1b6b !important;
+            border-color: #ff1b6b !important;
+            box-shadow: 0 0 12px rgba(255, 27, 107, 0.7) !important;
+            text-shadow: 0 0 5px rgba(255, 27, 107, 0.5) !important;
         }
 
         /* LP Counter Styling */
@@ -1134,6 +1179,14 @@
             // Global variables to track the active attack targeting state robustly
             window.activeAttackSourceCard = null;
 
+            // Intercept mousedown and touchstart to prevent drag-and-drop from blocking the native click during targeting mode
+            $(document).on("mousedown touchstart", ".duel-card", function(e) {
+                if (window.activeAttackSourceCard) {
+                    // Stop other handlers (including duel.js drag-and-drop) from seeing this event
+                    e.stopImmediatePropagation();
+                }
+            });
+
             // Helper to start targeting mode for selecting attack target
             window.startAttackTargetingMode = function(attackerCard) {
                 window.activeAttackSourceCard = attackerCard;
@@ -1205,14 +1258,6 @@
                         if (typeof window.drawAttackArrows === "function") {
                             window.drawAttackArrows();
                         }
-
-                        // Auto-clear after 10 seconds (transient visual indicator)
-                        setTimeout(() => {
-                            state.attacks = state.attacks.filter(atk => atk !== newAtk);
-                            if (typeof window.drawAttackArrows === "function") {
-                                window.drawAttackArrows();
-                            }
-                        }, 10000);
                     }
 
                     window.stopAttackTargetingMode();
@@ -1244,14 +1289,6 @@
                 if (typeof window.drawAttackArrows === "function") {
                     window.drawAttackArrows();
                 }
-
-                // Auto-clear after 10 seconds (transient visual indicator)
-                setTimeout(() => {
-                    state.attacks = state.attacks.filter(atk => atk !== newAtk);
-                    if (typeof window.drawAttackArrows === "function") {
-                        window.drawAttackArrows();
-                    }
-                }, 10000);
             };
 
             // Bind the field quick-menu click events for Attack using delegated document listeners
@@ -1276,40 +1313,55 @@
                 }
             });
 
-            // Bind context menu click handlers
-            $("#menu-attack").click(function() {
+            // Bind context menu click handlers with propagation stopped
+            $("#menu-attack").click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 if (activeMenuCard) {
                     window.startAttackTargetingMode(activeMenuCard);
                 }
+                $("#card-menu").removeClass("active");
             });
 
-            $("#menu-direct-attack").click(function() {
+            $("#menu-direct-attack").click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 if (activeMenuCard) {
                     window.performDirectAttack(activeMenuCard);
                 }
+                $("#card-menu").removeClass("active");
             });
 
-            // Clicking ANYWHERE on the screen (cards, zones, playmat, menus, etc.) clears the active attack arrows, neon glow, and text badges
+            // Clicking on the playmat background or a board card clears the active attack arrows (ignoring chat, sidebar, etc.)
             $(document).on("click", function(e) {
-                // Do not clear if we are currently selecting an attack target, or if we just clicked the attack button
-                if (!$("#playmat").hasClass("selecting-zone") && !window.activeAttackSourceCard) {
-                    if ($(e.target).closest(".btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack").length) {
-                        return;
-                    }
-                    if (state.attacks.length > 0) {
-                        state.attacks = [];
-                        try {
-                            if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
-                                commChannel.send({
-                                    type: 'broadcast',
-                                    event: 'attack_sync',
-                                    payload: { attacks: [] }
-                                });
-                            }
-                        } catch (err) {}
-                        if (typeof window.drawAttackArrows === "function") {
-                            window.drawAttackArrows();
+                if (state.attacks.length === 0) return;
+
+                // Do not clear if we are currently selecting an attack target
+                if ($("#playmat").hasClass("selecting-zone") || window.activeAttackSourceCard) {
+                    return;
+                }
+
+                // Do not clear if we clicked an attack trigger button/menu
+                if ($(e.target).closest(".btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack").length) {
+                    return;
+                }
+
+                // Check if the click occurred inside the playmat board (including zones/cards on playmat)
+                const isPlaymatClick = $(e.target).closest("#playmat").length > 0;
+
+                if (isPlaymatClick) {
+                    state.attacks = [];
+                    try {
+                        if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                            commChannel.send({
+                                type: 'broadcast',
+                                event: 'attack_sync',
+                                payload: { attacks: [] }
+                            });
                         }
+                    } catch (err) {}
+                    if (typeof window.drawAttackArrows === "function") {
+                        window.drawAttackArrows();
                     }
                 }
             });
@@ -1778,7 +1830,7 @@
 
                             // Add defender neon class and badge
                             $tgtEl.addClass("card-under-attack");
-                            $tgtEl.append(`<div class="attack-text-badge defender">🛡️ Objetivo</div>`);
+                            $tgtEl.append(`<div class="attack-text-badge defender">🎯 Atacando</div>`);
                         } else {
                             const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
                             if (tZoneObj) {
@@ -1847,12 +1899,6 @@
                         const exists = state.attacks.some(atk => atk.attackerId === incomingAtk.attackerId && atk.targetId === incomingAtk.targetId && atk.isDirect === incomingAtk.isDirect);
                         if (!exists) {
                             state.attacks.push(incomingAtk);
-                            setTimeout(() => {
-                                state.attacks = state.attacks.filter(atk => !(atk.attackerId === incomingAtk.attackerId && atk.targetId === incomingAtk.targetId && atk.isDirect === incomingAtk.isDirect));
-                                if (typeof window.drawAttackArrows === "function") {
-                                    window.drawAttackArrows();
-                                }
-                            }, 10000);
                         }
                     });
                     if (typeof window.drawAttackArrows === "function") {
