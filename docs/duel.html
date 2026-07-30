@@ -780,13 +780,13 @@
                             window.drawAttackArrows();
                         }
 
-                        // Auto-clear after 2.5 seconds (transient visual indicator)
+                        // Auto-clear after 10 seconds (transient visual indicator)
                         setTimeout(() => {
                             state.attacks = state.attacks.filter(atk => atk !== newAtk);
                             if (typeof window.drawAttackArrows === "function") {
                                 window.drawAttackArrows();
                             }
-                        }, 2500);
+                        }, 10000);
                     }
 
                     window.stopAttackTargetingMode();
@@ -819,13 +819,13 @@
                     window.drawAttackArrows();
                 }
 
-                // Auto-clear after 2.5 seconds (transient visual indicator)
+                // Auto-clear after 10 seconds (transient visual indicator)
                 setTimeout(() => {
                     state.attacks = state.attacks.filter(atk => atk !== newAtk);
                     if (typeof window.drawAttackArrows === "function") {
                         window.drawAttackArrows();
                     }
-                }, 2500);
+                }, 10000);
             };
 
             // Bind the field quick-menu click events for Attack using delegated document listeners
@@ -863,19 +863,24 @@
                 }
             });
 
-            // Double click playmat or deck reset clears all attack arrows
-            $("#playmat").click(function(e) {
-                // Clear active attack arrows if clicking on empty spot of playmat while not in targeting mode
-                if (!$(e.target).closest(".duel-card, .board-zone, .hand-tray, .lp-counter-container, .central-turn-bar").length && !$("#playmat").hasClass("selecting-zone") && !window.activeAttackSourceCard) {
+            // Clicking ANYWHERE on the screen (cards, zones, playmat, menus, etc.) clears the active attack arrows, neon glow, and text badges
+            $(document).on("click", function(e) {
+                // Do not clear if we are currently selecting an attack target, or if we just clicked the attack button
+                if (!$("#playmat").hasClass("selecting-zone") && !window.activeAttackSourceCard) {
+                    if ($(e.target).closest(".btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack").length) {
+                        return;
+                    }
                     if (state.attacks.length > 0) {
                         state.attacks = [];
-                        if (typeof commChannel !== "undefined" && commChannel) {
-                            commChannel.send({
-                                type: 'broadcast',
-                                event: 'attack_sync',
-                                payload: { attacks: [] }
-                            });
-                        }
+                        try {
+                            if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                                commChannel.send({
+                                    type: 'broadcast',
+                                    event: 'attack_sync',
+                                    payload: { attacks: [] }
+                                });
+                            }
+                        } catch (err) {}
                         if (typeof window.drawAttackArrows === "function") {
                             window.drawAttackArrows();
                         }
@@ -1263,10 +1268,14 @@
             // Attack tracking state
             state.attacks = []; // { attackerId, targetId, isDirect }
 
-            // Helper to render all active attack arrows
+            // Helper to render all active attack arrows, neon glow and badges
             window.drawAttackArrows = function() {
                 const $overlay = $("#attack-arrows-overlay");
                 $overlay.find(".active-attack-element").remove();
+
+                // Clear any existing badges and glowing classes
+                $(".attack-text-badge, .attack-direct-badge").remove();
+                $(".duel-card").removeClass("card-is-attacker card-under-attack");
 
                 const isCardOnField = (card) => {
                     if (!card) return false;
@@ -1293,40 +1302,72 @@
                     const attackerObj = state.cards.find(c => c.instanceId === atk.attackerId);
                     if (!attackerObj) return;
 
-                    // Get coordinates of attacker card center
+                    // Get coordinates of attacker card center relative to playmat
                     let startX = 0, startY = 0;
-                    const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === attackerObj.zone);
-                    if (zoneObj) {
-                        startX = zoneObj.x + 40;
-                        startY = zoneObj.y + 58;
+                    const $atkEl = $(`#${attackerObj.instanceId}`);
+                    if ($atkEl.length) {
+                        const pos = $atkEl.position();
+                        startX = pos.left + $atkEl.outerWidth() / 2;
+                        startY = pos.top + $atkEl.outerHeight() / 2;
                     } else {
-                        startX = attackerObj.x + 40;
-                        startY = attackerObj.y + 58;
+                        const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === attackerObj.zone);
+                        if (zoneObj) {
+                            startX = zoneObj.x + 40;
+                            startY = zoneObj.y + 58;
+                        } else {
+                            startX = attackerObj.x + 40;
+                            startY = attackerObj.y + 58;
+                        }
+                    }
+
+                    // Add attacker neon class and badge
+                    if ($atkEl.length) {
+                        $atkEl.addClass("card-is-attacker");
+                        $atkEl.append(`<div class="attack-text-badge">⚔️ Atacante</div>`);
                     }
 
                     let endX = 0, endY = 0;
                     if (atk.isDirect) {
                         // Direct attack target coordinate goes directly to top/bottom of playmat depending on controller
                         endX = startX;
-                        // Symmetrical direct attack goes straight to the other player's side
-                        endY = attackerObj.controller === "player1" ? 50 : 550;
+                        endY = attackerObj.controller === "player1" ? 30 : 570;
+
+                        // Add a beautiful direct attack badge floating on the screen
+                        const badgeLeft = startX;
+                        const badgeTop = attackerObj.controller === "player1" ? startY - 100 : startY + 60;
+                        $("#playmat").append(`
+                            <div class="attack-direct-badge" style="left: ${badgeLeft - 80}px; top: ${badgeTop}px;">
+                                💥 Ataque Directo
+                            </div>
+                        `);
                     } else {
                         const targetObj = state.cards.find(c => c.instanceId === atk.targetId);
                         if (!targetObj) return;
 
-                        const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
-                        if (tZoneObj) {
-                            endX = tZoneObj.x + 40;
-                            endY = tZoneObj.y + 58;
+                        const $tgtEl = $(`#${targetObj.instanceId}`);
+                        if ($tgtEl.length) {
+                            const pos = $tgtEl.position();
+                            endX = pos.left + $tgtEl.outerWidth() / 2;
+                            endY = pos.top + $tgtEl.outerHeight() / 2;
+
+                            // Add defender neon class and badge
+                            $tgtEl.addClass("card-under-attack");
+                            $tgtEl.append(`<div class="attack-text-badge defender">🛡️ Objetivo</div>`);
                         } else {
-                            endX = targetObj.x + 40;
-                            endY = targetObj.y + 58;
+                            const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
+                            if (tZoneObj) {
+                                endX = tZoneObj.x + 40;
+                                endY = tZoneObj.y + 58;
+                            } else {
+                                endX = targetObj.x + 40;
+                                endY = targetObj.y + 58;
+                            }
                         }
                     }
 
                     // Calculate arrow angle to render the arrowhead properly
                     const angle = Math.atan2(endY - startY, endX - startX);
-                    const arrowSize = 14;
+                    const arrowSize = 16;
 
                     const headX1 = endX - arrowSize * Math.cos(angle - Math.PI / 6);
                     const headY1 = endY - arrowSize * Math.sin(angle - Math.PI / 6);
@@ -1336,11 +1377,22 @@
                     // Dynamic colors based on controller: Cyan (#00d2ff) for Player 1, Pink (#ff1b6b) for Player 2
                     const strokeColor = attackerObj.controller === "player1" ? "#00d2ff" : "#ff1b6b";
 
-                    // Create path and polygon SVG elements
-                    const pathHTML = `<path class="attack-line active-attack-element" d="M ${startX} ${startY} L ${endX} ${endY}" stroke="${strokeColor}" fill="none" />`;
-                    const headHTML = `<polygon class="attack-head active-attack-element" points="${endX},${endY} ${headX1},${headY1} ${headX2},${headY2}" fill="${strokeColor}" />`;
+                    // Create path and polygon SVG elements using the CORRECT SVG namespace
+                    const svgNamespace = "http://www.w3.org/2000/svg";
 
-                    $overlay.append(pathHTML).append(headHTML);
+                    const path = document.createElementNS(svgNamespace, "path");
+                    path.setAttribute("class", "attack-line active-attack-element");
+                    path.setAttribute("d", `M ${startX} ${startY} L ${endX} ${endY}`);
+                    path.setAttribute("stroke", strokeColor);
+                    path.setAttribute("fill", "none");
+
+                    const head = document.createElementNS(svgNamespace, "polygon");
+                    head.setAttribute("class", "attack-head active-attack-element");
+                    head.setAttribute("points", `${endX},${endY} ${headX1},${headY1} ${headX2},${headY2}`);
+                    head.setAttribute("fill", strokeColor);
+
+                    $overlay[0].appendChild(path);
+                    $overlay[0].appendChild(head);
                 });
             };
 
@@ -1374,7 +1426,7 @@
                                 if (typeof window.drawAttackArrows === "function") {
                                     window.drawAttackArrows();
                                 }
-                            }, 2500);
+                            }, 10000);
                         }
                     });
                     if (typeof window.drawAttackArrows === "function") {

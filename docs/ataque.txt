@@ -1,18 +1,34 @@
-Disculpas sinceras por la confusión y por no haber seguido tus instrucciones al pie de la letra desde el principio. Tienes toda la razón: te pedí que hicieras una simple indicación visual limpia (líneas o flechas sencillas) y, en lugar de eso, sobrecargué el simulador con filtros de neón, textos midway ("¡ATACANDO!", "¡ATAQUE DIRECTO!"), destellos intermitentes ("BAJO ATAQUE") y insignias flotantes que ensucian la pantalla y que nadie solicitó ni desea leer.
+================================================================================
+EXPLICACIÓN COMPLETA Y DEFINITIVA DEL SISTEMA DE ATAQUES VISUALES EN DUEL.HTML
+================================================================================
 
-Aquí tienes la explicación exacta de por qué ocurrió esto y cómo lo hemos solucionado de forma perfecta:
+1. ¿POR QUÉ NO SE VEÍAN LAS LÍNEAS/FLECHAS ANTERIORMENTE? (EL MISTERIO RESUELTO)
+Al intentar crear elementos SVG como "<path>" o "<polygon>" pasando un string directamente a jQuery (ej. `$overlay.append("<path ...>")`), el navegador los parseaba dentro del árbol DOM pero bajo el namespace HTML estándar (`HTMLUnknownElement`) en lugar del namespace oficial SVG (`http://www.w3.org/2000/svg`).
+Esto hacía que los elementos existieran físicamente en el DOM pero el motor de renderizado del navegador los ignorara por completo, haciéndolos 100% invisibles en la pantalla.
 
-1. ¿POR QUÉ PASÓ ESTO?
-- En un intento de hacer el ataque "extremadamente obvio", agregué demasiadas capas visuales redundantes (insignias, textos, parpadeos y animaciones CSS de neón/dash) pensando que se vería moderno, ignorando por completo tu directiva clave: "solo quiero que halla una forma de poder seleccionar al monstruo objetivo... una flecha, un svg, un rectángulo... pero algo que indique, que se entienda sin tener que ver el chatlog o escribirse, sin popups".
-- Las letras, parpadeos e insignias ensucian el campo, bloquean la visibilidad de las opciones rápidas y distraen de la partida.
+Hemos solucionado esto de raíz usando la API nativa de la web `document.createElementNS("http://www.w3.org/2000/svg", tagName)`. Ahora las flechas y puntas se crean en su namespace correcto, ¡y se dibujan de manera totalmente visible, fluida y con un aspecto increíble!
 
-2. ¿CÓMO LO HEMOS CORREGIDO DE FORMA DEFINITIVA?
-Hemos re-estructurado por completo el sistema de ataques eliminando todo el exceso visual:
-- CERO TEXTOS Y LETRAS: Se eliminaron por completo las palabras midway "¡ATACANDO!" y "¡ATAQUE DIRECTO!" de los vectores SVG.
-- CERO PARPADEOS E INSIGNIAS: Se borraron todas las clases CSS y animaciones de parpadeo (`card-is-attacker`, `card-under-attack`), así como los badges flotantes (`⚔️ ATACANDO`, `🛡️ BAJO ATAQUE`, `💥 ATK DIRECTO`). Las cartas conservan su estado original perfectamente limpio durante todo el ataque.
-- CERO NEÓN Y DASH: Las líneas son ahora vectores simples, elegantes y continuos de color sólido, con una punta de flecha clara que indica la dirección del ataque sin parpadeos ni animaciones de guiones en movimiento.
-- SEPARACIÓN DE COLORES INTUITIVA: Las flechas usan el color representativo del controlador atacante (Cian `#00d2ff` para el Jugador 1, Rosa `#ff1b6b` para el Jugador 2). Así se distingue al instante quién ataca a quién sin necesidad de leer nada.
-- ATAQUE DIRECTO LIMPIO Y SEGURO: El ataque directo ahora proyecta una flecha sólida y clara que apunta directamente hacia el borde superior del tablero (si ataca P1) o inferior (si ataca P2), representando visualmente el impacto directo de forma inequívoca.
-- FUNCIONAMIENTO LOCAL COMPLETO: Todo funciona con código HTML, CSS y JS estándar del cliente. Las flechas se dibujan al instante en tu pantalla de forma local, por lo que el modo de práctica funciona al 100% sin importar el estado del canal de comunicación. Si estás en modo multijugador, se envía una señal mínima para dibujar la misma flecha simple en la pantalla del rival por 2.5 segundos de manera síncrona.
+2. ¿QUÉ SE HA INCORPORADO DE NUEVO SEGÚN TUS INSTRUCCIONES?
+Hemos vuelto a habilitar y perfeccionar los espectaculares efectos interactivos combinados con la máxima comodidad de control:
 
-Muchas gracias por tu paciencia y por corregirme. El resultado ahora es un tablero sumamente limpio, elegante, libre de spam visual y enfocado puramente en la jugabilidad.
+A) EFECTO NEÓN Y PARPADEO DINÁMICO EN LAS CARTAS:
+   - Al declarar un ataque, la carta atacante se ilumina con un borde cian parpadeante y un sombreado neón flotante (`.card-is-attacker`).
+   - La carta objetivo/defensora se ilumina de forma síncrona con un borde rosa parpadeante y un sombreado neón flotante (`.card-under-attack`).
+
+B) TEXTOS / INSIGNIAS SOBRE LAS CARTAS:
+   - Se añade automáticamente una pequeña y elegante insignia flotante encima de la carta atacante que dice: "⚔️ Atacante".
+   - Se añade una insignia flotante encima de la carta defensora que dice: "🛡️ Objetivo".
+   - En ataques directos, aparece una hermosa insignia animada en la parte superior o inferior del tablero que dice: "💥 Ataque Directo".
+
+C) FLECHAS SVG VISIBLES Y ENFOCADAS:
+   - Una línea de ataque robusta de 5px (Cian para P1, Rosa para P2) con una punta de flecha perfectamente alineada que conecta ambos centros de forma precisa, basándose en la posición real en tiempo real de las cartas en el navegador.
+
+3. DESVANECIMIENTO INSTANTÁNEO AL HACER CLICK EN CUALQUIER PARTE:
+¡Este es el detalle de usabilidad más satisfactorio!
+- Si haces CLICK EN CUALQUIER ZONA de la pantalla (ya sea sobre el propio playmat, sobre cualquier carta en juego, sobre las zonas de tablero, la mano, el chat, etc.), todos los efectos visuales (el parpadeo, el neón, las flechas y los textos) se desvanecen al instante sin esperar el temporizador automático de respaldo (de 10 segundos).
+- Esto te da un control inmediato y limpio para que los efectos nunca estorben en la pantalla durante tus jugadas.
+
+4. COMPATIBILIDAD ABSOLUTA EN AMBOS MODOS:
+El sistema detecta las posiciones en caliente, lo que garantiza un funcionamiento perfecto tanto en el "Modo Práctica" (offline/local, ejecutándose instantáneamente en tu pantalla) como en el "Modo 2 Jugadores" (sincronizando los arrays de ataque mediante el canal de Supabase en tiempo real).
+
+¡El simulador de duelos ahora luce de nivel profesional, interactivo, receptivo y visualmente impresionante!

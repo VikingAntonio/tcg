@@ -791,11 +791,13 @@ function bindCardDragEvents() {
 
             if (instId !== window.activeAttackSourceCard.instanceId) {
                 // Add attack entry
-                state.attacks.push({
+                const newAtk = {
                     attackerId: window.activeAttackSourceCard.instanceId,
                     targetId: cardObj.instanceId,
-                    isDirect: false
-                });
+                    isDirect: false,
+                    timestamp: Date.now()
+                };
+                state.attacks.push(newAtk);
 
                 // Broadcast attack sync if multiplayer
                 try {
@@ -818,6 +820,14 @@ function bindCardDragEvents() {
                 if (typeof window.drawAttackArrows === "function") {
                     window.drawAttackArrows();
                 }
+
+                // Auto-clear after 10 seconds
+                setTimeout(() => {
+                    state.attacks = state.attacks.filter(atk => atk !== newAtk);
+                    if (typeof window.drawAttackArrows === "function") {
+                        window.drawAttackArrows();
+                    }
+                }, 10000);
 
                 if (typeof window.stopAttackTargetingMode === "function") {
                     window.stopAttackTargetingMode();
