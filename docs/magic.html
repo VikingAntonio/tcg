@@ -19,6 +19,13 @@
         <div class="board-grid-bg"></div>
         <div id="layout-guide-bg" class="layout-guide-bg"></div>
 
+        <!-- Perspective Switcher for Anti-Peeking -->
+        <div class="perspective-switcher" style="position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 2000; background: rgba(18,24,30,0.85); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 30px; padding: 6px 12px; display: flex; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px);">
+            <span style="font-size: 0.75rem; font-weight: 800; color: #888; text-transform: uppercase; align-self: center; letter-spacing: 0.5px; margin-right: 5px;">Perspectiva:</span>
+            <button class="perspective-btn active" id="btn-perspective-p1" data-player="player1" style="background: rgba(0,210,255,0.15); border: 1.5px solid #00d2ff; color: #00d2ff; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">JUGADOR 1</button>
+            <button class="perspective-btn" id="btn-perspective-p2" data-player="player2" style="background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15); color: #fff; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">JUGADOR 2</button>
+        </div>
+
         <!-- Transparent Bordered Landing Zones for Hand, Graveyard and Banish (P1 & P2) -->
         <!-- Player 1 landing zones -->
         <div class="magic-landing-zone p1-theme landing-zone-hand-p1" id="zone-hand-p1">
@@ -26,12 +33,18 @@
             <div class="zone-label-text">Mano J1</div>
         </div>
         <div class="magic-landing-zone p1-theme landing-zone-grave-p1" id="zone-grave-p1">
-            <div class="zone-counter-badge"><i class="fas fa-box-archive"></i> Descarte: <span id="count-grave-p1">0</span></div>
+            <div class="zone-counter-badge">
+                <i class="fas fa-box-archive"></i> Descarte J1: <span id="count-grave-p1">0</span>
+                <button class="btn-view-list" data-zone="grave_1" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer;"><i class="fas fa-list"></i> Lista</button>
+            </div>
             <div class="zone-label-text">Descarte J1</div>
             <div class="resize-handle"></div>
         </div>
         <div class="magic-landing-zone p1-theme landing-zone-banish-p1" id="zone-banish-p1">
-            <div class="zone-counter-badge"><i class="fas fa-ban"></i> Destierro: <span id="count-banish-p1">0</span></div>
+            <div class="zone-counter-badge">
+                <i class="fas fa-ban"></i> Destierro J1: <span id="count-banish-p1">0</span>
+                <button class="btn-view-list" data-zone="banish_1" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer;"><i class="fas fa-list"></i> Lista</button>
+            </div>
             <div class="zone-label-text">Destierro J1</div>
             <div class="resize-handle"></div>
         </div>
@@ -42,12 +55,18 @@
             <div class="zone-label-text">Mano J2</div>
         </div>
         <div class="magic-landing-zone p2-theme landing-zone-grave-p2" id="zone-grave-p2" style="display: none;">
-            <div class="zone-counter-badge"><i class="fas fa-box-archive"></i> Descarte: <span id="count-grave-p2">0</span></div>
+            <div class="zone-counter-badge">
+                <i class="fas fa-box-archive"></i> Descarte J2: <span id="count-grave-p2">0</span>
+                <button class="btn-view-list" data-zone="grave_2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer;"><i class="fas fa-list"></i> Lista</button>
+            </div>
             <div class="zone-label-text">Descarte J2</div>
             <div class="resize-handle"></div>
         </div>
         <div class="magic-landing-zone p2-theme landing-zone-banish-p2" id="zone-banish-p2" style="display: none;">
-            <div class="zone-counter-badge"><i class="fas fa-ban"></i> Destierro: <span id="count-banish-p2">0</span></div>
+            <div class="zone-counter-badge">
+                <i class="fas fa-ban"></i> Destierro J2: <span id="count-banish-p2">0</span>
+                <button class="btn-view-list" data-zone="banish_2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer;"><i class="fas fa-list"></i> Lista</button>
+            </div>
             <div class="zone-label-text">Destierro J2</div>
             <div class="resize-handle"></div>
         </div>
@@ -198,7 +217,23 @@
         <div class="menu-item" id="menu-card-tap"><i class="fas fa-redo"></i> Girar (Posición Defensa)</div>
         <hr>
         <div class="menu-item" id="menu-card-counter-glass"><i class="fas fa-gem" style="color: #00d2ff;"></i> +1 Esfera Vidrio</div>
-        <div class="menu-item" id="menu-card-counter-damage"><i class="fas fa-heart-pulse" style="color: #ff1b6b;"></i> +10 Daño Pokémon</div>
+        <div class="menu-item counter-submenu-trigger" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+            <span><i class="fas fa-heart-pulse" style="color: #ff1b6b;"></i> Añadir Daño Pokémon</span>
+            <i class="fas fa-chevron-right" style="font-size: 0.7rem; color: #888;"></i>
+            <!-- Embedded dropdown list on hover -->
+            <div class="counter-submenu" style="position: absolute; left: 100%; top: 0; background: rgba(18,25,33,0.98); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; display: none; flex-direction: column; width: 120px; z-index: 100100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); padding: 4px 0;">
+                <div class="menu-item menu-card-counter-dmg" data-val="10">+10 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="20">+20 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="30">+30 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="40">+40 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="50">+50 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="60">+60 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="70">+70 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="80">+80 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="90">+90 Daño</div>
+                <div class="menu-item menu-card-counter-dmg" data-val="100">+100 Daño</div>
+            </div>
+        </div>
         <div class="menu-item" id="menu-card-counter-clear"><i class="fas fa-eraser"></i> Limpiar Contadores</div>
         <hr>
         <div class="menu-item" id="menu-card-deck-bottom"><i class="fas fa-download"></i> Devolver al Deck (Abajo)</div>

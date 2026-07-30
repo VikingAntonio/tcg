@@ -30,7 +30,8 @@ const state = {
     layout: "none", // none, yugioh, pokemon
     cards: [], // Array of card instances { id, name, image_url, x, y, faceUp, tapped, counters: { glass: 0, poke: 0 }, owner: 'player1'/'player2' }
     decks: { player1: [], player2: [] },
-    attacks: []
+    attacks: [],
+    viewPerspective: "player1" // player1 or player2 perspective for anti-peeking
 };
 
 let hasPlayer2 = false;
@@ -76,6 +77,7 @@ $(document).ready(async function() {
     makeLandingZonesDraggableAndResizable();
     bindDropdownContextMenus();
     bindBatchSelectionHandlers();
+    setupPerspectiveSwitcher();
 
     // Load Decks
     Swal.fire({
@@ -185,6 +187,7 @@ function createPileElement($parent, id, label, x, y, owner, type) {
 
     const html = `
         <div class="magic-pile-zone ${themeClass}" id="zone-${id}" style="left: ${x}px; top: ${y}px;">
+            <i class="fas fa-arrows-alt pile-drag-handle" style="position: absolute; top: 10px; left: 10px; color: rgba(255,255,255,0.4); cursor: move; font-size: 0.85rem; z-index: 405;"></i>
             <div class="pile-count-badge" id="count-${id}">0</div>
             <div class="pile-label">${label}</div>
             <button class="pile-menu-trigger" data-pile="${id}"><i class="fas fa-ellipsis-h"></i> Acciones</button>
@@ -196,15 +199,44 @@ function createPileElement($parent, id, label, x, y, owner, type) {
     const $el = $(`#zone-${id}`);
     $el.on("mousedown touchstart", function(e) {
         if ($(e.target).hasClass("pile-menu-trigger") || $(e.target).closest(".pile-menu-trigger").length) return;
-        e.preventDefault();
 
         const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
         const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
 
-        const clickedBadgeOrLabel = $(e.target).hasClass("pile-count-badge") || $(e.target).hasClass("pile-label");
+        const isHandle = $(e.target).hasClass("pile-drag-handle") || $(e.target).closest(".pile-drag-handle").length;
 
-        // If it's the deck and they clicked the card area (not label/badge), we pull the top card face-down cleanly!
-        if (type === "deck" && !clickedBadgeOrLabel) {
+        // If they dragged the explicit handle, drag the pile container cleanly!
+        if (isHandle) {
+            e.preventDefault();
+            const offset = $el.offset();
+            const startX = offset.left;
+            const startY = offset.top;
+
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
+
+            $(document).on("mousemove.piledrag touchmove.piledrag", function(moveEvent) {
+                const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+                let finalX = mX - deltaX;
+                let finalY = mY - deltaY;
+
+                finalX = Math.max(10, Math.min(window.innerWidth - 160, finalX));
+                finalY = Math.max(10, Math.min(window.innerHeight - 230, finalY));
+
+                $el.css({ left: finalX, top: finalY });
+            });
+
+            $(document).on("mouseup.piledrag touchend.piledrag", function() {
+                $(document).off(".piledrag");
+            });
+            return;
+        }
+
+        // Otherwise (clicking anywhere else on the pile container), pull top card!
+        if (type === "deck") {
+            e.preventDefault();
             const deck = state.decks[owner];
             const mainCards = deck.filter(c => c.section !== "Extra");
             if (mainCards.length === 0) {
@@ -273,34 +305,7 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                 dragCard = null;
                 $(document).off(".carddrag");
             });
-
-            return;
         }
-
-        // Standard pile dragging behavior (moves the pile zone container itself)
-        const offset = $el.offset();
-        const startX = offset.left;
-        const startY = offset.top;
-
-        const deltaX = clientX - startX;
-        const deltaY = clientY - startY;
-
-        $(document).on("mousemove.piledrag touchmove.piledrag", function(moveEvent) {
-            const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
-            const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
-
-            let finalX = mX - deltaX;
-            let finalY = mY - deltaY;
-
-            finalX = Math.max(10, Math.min(window.innerWidth - 160, finalX));
-            finalY = Math.max(10, Math.min(window.innerHeight - 230, finalY));
-
-            $el.css({ left: finalX, top: finalY });
-        });
-
-        $(document).on("mouseup.piledrag touchend.piledrag", function() {
-            $(document).off(".piledrag");
-        });
     });
 }
 
@@ -916,6 +921,88 @@ function setupGlobalEvents() {
             $("#toggle-acc-btn i").attr("class", "fas fa-chevron-down");
         }
     });
+
+    // Interactive button inside Graveyard and Banish landing zones to view list
+    $(document).on("click", ".btn-view-list", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const zoneKey = $(this).attr("data-zone"); // e.g., "grave_1"
+        const isP1 = zoneKey.endsWith("_1");
+        const isBanish = zoneKey.startsWith("banish");
+
+        // Gather all cards geometrically inside this target landing zone
+        const targetZoneId = isBanish ? (isP1 ? "banish_p1" : "banish_p2") : (isP1 ? "grave_p1" : "grave_p2");
+        const listCards = state.cards.filter(c => getCardCurrentZone(c) === targetZoneId);
+
+        if (listCards.length === 0) {
+            Swal.fire('Zona Vacía', 'No hay cartas apiladas en esta zona para listar.', 'info');
+            return;
+        }
+
+        $("#pile-modal-title").text(isBanish ? "Lista de Cartas en Destierro" : "Lista de Cartas en Descarte");
+        const $grid = $("#pile-cards-grid");
+        $grid.empty();
+
+        listCards.forEach((card, index) => {
+            // Find global card index in state
+            const globalIndex = state.cards.findIndex(c => c.id === card.id);
+            const html = `
+                <div class="pile-card-container" data-card-id="${card.id}">
+                    <img src="${card.image_url}" alt="${card.name}">
+                    <div class="pile-card-hover-overlay">
+                        <div class="pile-card-menu">
+                            <button class="pile-card-action-btn search-list-to-hand">A Mano</button>
+                            <button class="pile-card-action-btn search-list-to-field">Invocar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $grid.append(html);
+        });
+
+        $("#pile-overlay").fadeIn(200);
+    });
+
+    // Handle search-list actions
+    $(document).on("click", ".search-list-to-hand", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const cardId = $(this).closest(".pile-card-container").attr("data-card-id");
+        const cardObj = state.cards.find(c => c.id === cardId);
+        if (cardObj) {
+            const windowW = window.innerWidth;
+            const windowH = window.innerHeight;
+            const targetX = windowW * 0.15 + 50 + (state.cards.filter(c => getCardCurrentZone(c) === (cardObj.owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
+            const targetY = (cardObj.owner === "player1") ? (windowH - 180) : 40;
+
+            cardObj.x = targetX;
+            cardObj.y = targetY;
+            cardObj.faceUp = true;
+            cardObj.tapped = false;
+
+            $("#pile-overlay").fadeOut(200);
+            renderAllCards();
+        }
+    });
+
+    $(document).on("click", ".search-list-to-field", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const cardId = $(this).closest(".pile-card-container").attr("data-card-id");
+        const cardObj = state.cards.find(c => c.id === cardId);
+        if (cardObj) {
+            cardObj.x = window.innerWidth / 2 - 75;
+            cardObj.y = window.innerHeight / 2 - 109;
+            cardObj.faceUp = true;
+            cardObj.tapped = false;
+
+            $("#pile-overlay").fadeOut(200);
+            renderAllCards();
+        }
+    });
 }
 
 // Side Image-only Preview
@@ -1088,6 +1175,24 @@ function setupLPTrackers() {
     });
 }
 
+// Setup Perspective Switcher for single screen Anti-Peeking
+function setupPerspectiveSwitcher() {
+    $(".perspective-btn").click(function() {
+        $(".perspective-btn").removeClass("active").css("background", "rgba(255,255,255,0.05)").css("color", "#fff").css("border-color", "rgba(255,255,255,0.15)");
+        $(this).addClass("active");
+
+        state.viewPerspective = $(this).attr("data-player");
+
+        if (state.viewPerspective === "player1") {
+            $(this).css("background", "rgba(0,210,255,0.15)").css("color", "#00d2ff").css("border-color", "#00d2ff");
+        } else {
+            $(this).css("background", "rgba(255,27,107,0.15)").css("color", "#ff1b6b").css("border-color", "#ff1b6b");
+        }
+
+        renderAllCards();
+    });
+}
+
 // Re-render whole card stack on workspace
 function renderAllCards() {
     const $field = $("#field-cards-container");
@@ -1096,25 +1201,50 @@ function renderAllCards() {
     const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
 
     state.cards.forEach(card => {
+        const currentZone = getCardCurrentZone(card);
+        const inGraveOrBanish = (currentZone === "grave_p1" || currentZone === "grave_p2" || currentZone === "banish_p1" || currentZone === "banish_p2");
+        const sizeClass = inGraveOrBanish ? "miniature-card" : "";
+
+        // Anti-peeking logic
+        let isMaskedAsBack = false;
+
+        // If card is inside hands
+        if (currentZone === "hand_p1") {
+            if (state.viewPerspective !== "player1") isMaskedAsBack = true;
+        } else if (currentZone === "hand_p2") {
+            if (state.viewPerspective !== "player2") isMaskedAsBack = true;
+        }
+
+        // If card is placed face-down on the playmat/field
+        if (!card.faceUp && !currentZone) {
+            // Check if card belongs to P1 or P2
+            if (card.owner === "player1" && state.viewPerspective !== "player1") {
+                isMaskedAsBack = true;
+            } else if (card.owner === "player2" && state.viewPerspective !== "player2") {
+                isMaskedAsBack = true;
+            }
+        }
+
         const rotationClass = card.tapped ? "tapped" : "";
-        const faceClass = card.faceUp ? "" : "face-down";
-        const srcImg = card.faceUp ? card.image_url : backImg;
+        const faceClass = (card.faceUp && !isMaskedAsBack) ? "" : "face-down";
+        const srcImg = (card.faceUp && !isMaskedAsBack) ? card.image_url : backImg;
 
         let counterHtml = "";
         if (card.counters.glass > 0) {
-            counterHtml += `<div class="card-counter-badge glass-counter"><i class="fas fa-gem"></i> ${card.counters.glass}</div>`;
+            counterHtml += `<div class="card-counter-badge glass-counter" data-type="glass" data-card-id="${card.id}"><i class="fas fa-gem"></i> ${card.counters.glass}</div>`;
         }
         if (card.counters.poke > 0) {
-            counterHtml += `<div class="card-counter-badge poke-counter"><i class="fas fa-heart-pulse"></i> +${card.counters.poke}</div>`;
+            counterHtml += `<div class="card-counter-badge poke-counter" data-type="poke" data-card-id="${card.id}"><i class="fas fa-heart-pulse"></i> +${card.counters.poke}</div>`;
         }
 
         const html = `
-            <div class="duel-card ${faceClass} ${rotationClass}" id="${card.id}" style="left: ${card.x}px; top: ${card.y}px;">
+            <div class="duel-card ${faceClass} ${rotationClass} ${sizeClass}" id="${card.id}" style="left: ${card.x}px; top: ${card.y}px;">
                 <div class="card-counter-container">${counterHtml}</div>
                 <div class="card-img-wrapper" style="${card.tapped ? 'transform: rotate(90deg);' : ''}">
                     <img class="card-img" src="${srcImg}" alt="${card.name}">
                 </div>
-                <!-- Dynamic Horizontal quick actions bar on hover -->
+                <!-- Dynamic Horizontal quick actions bar on hover (hidden if Miniature) -->
+                ${inGraveOrBanish ? '' : `
                 <div class="field-card-actions">
                     <button class="field-action-btn btn-field-attack" data-id="${card.id}">Atacar</button>
                     <button class="field-action-btn btn-field-direct" data-id="${card.id}">Atk Directo</button>
@@ -1122,6 +1252,7 @@ function renderAllCards() {
                     <button class="field-action-btn btn-field-flip" data-id="${card.id}">Voltear</button>
                     <button class="field-action-btn btn-field-tap" data-id="${card.id}">Girar</button>
                 </div>
+                `}
             </div>
         `;
         $field.append(html);
@@ -1372,10 +1503,15 @@ function bindDropdownContextMenus() {
         $("#card-ctx-menu").removeClass("active");
     });
 
-    $("#menu-card-counter-damage").click(function() {
+    // Dynamic Pokémon multiple damage selections
+    $(document).on("click", ".menu-card-counter-dmg", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const data = $("#card-ctx-menu").data("context-data");
         if (data && data.card) {
-            data.card.counters.poke += 10;
+            const val = parseInt($(this).attr("data-val"));
+            data.card.counters.poke += val;
             renderAllCards();
         }
         $("#card-ctx-menu").removeClass("active");
@@ -1527,6 +1663,78 @@ $(document).on("click", ".btn-field-tap", function(e) {
         card.tapped = !card.tapped;
         renderAllCards();
     }
+});
+
+// Drag-to-delete counter badge logic: Dragging any counter badge outside its card removes it cleanly!
+$(document).on("mousedown touchstart", ".card-counter-badge", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const $badge = $(this);
+    const cardId = $badge.attr("data-card-id");
+    const counterType = $badge.attr("data-type"); // "glass" or "poke"
+
+    const card = state.cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    const startX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+    const startY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+    const offset = $badge.offset();
+    const $clone = $badge.clone().css({
+        position: "fixed",
+        left: offset.left,
+        top: offset.top,
+        "pointer-events": "none",
+        "z-index": 110000
+    }).appendTo("body");
+
+    $badge.css("opacity", 0.3);
+
+    $(document).on("mousemove.counterdrag touchmove.counterdrag", function(moveEvent) {
+        const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+        const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+        $clone.css({
+            left: mX - 10,
+            top: mY - 10
+        });
+    });
+
+    $(document).on("mouseup.counterdrag touchend.counterdrag", function(upEvent) {
+        $(document).off(".counterdrag");
+        $clone.remove();
+        $badge.css("opacity", 1);
+
+        const endX = upEvent.type === "touchend" ? upEvent.changedTouches[0].clientX : upEvent.clientX;
+        const endY = upEvent.type === "touchend" ? upEvent.changedTouches[0].clientY : upEvent.clientY;
+
+        // Calculate distance from card center coordinate
+        const cardMidX = card.x + 75;
+        const cardMidY = card.y + 109;
+
+        const distance = Math.hypot(endX - cardMidX, endY - cardMidY);
+
+        // If dragged outside the card boundary (threshold 100px from card center)
+        if (distance > 105) {
+            if (counterType === "glass") {
+                card.counters.glass = 0;
+            } else {
+                card.counters.poke = 0;
+            }
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Contadores eliminados',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+
+        renderAllCards();
+    });
 });
 
 // Attack targeting arrow renderer system
