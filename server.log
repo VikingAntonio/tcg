@@ -1,51 +1,72 @@
-127.0.0.1 - - [30/Jul/2026 06:33:31] "HEAD /duel.html HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:34:01] "GET /duel.html HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:34:01] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:34:01] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:34:01] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:34:01] "GET /js/duel.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:34:02] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:34:03] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:34:03] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:34:03] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:34:03] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:35:56] "GET /duel.html HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:35:56] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:35:56] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:35:56] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:35:56] "GET /js/duel.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:35:57] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:35:58] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:35:58] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:35:58] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:35:58] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:38:07] "GET /duel.html HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:07] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:07] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:07] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:07] "GET /js/duel.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:07] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:09] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:38:09] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:38:09] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:38:09] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:38:43] "GET /duel.html HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:44] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:44] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:44] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:44] "GET /js/duel.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:44] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:38:45] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:38:45] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:38:45] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:38:45] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:40:46] "GET /duel.html HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:40:46] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:40:46] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:40:46] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:40:46] "GET /js/duel.js HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:40:46] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [30/Jul/2026 06:40:47] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:40:47] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [30/Jul/2026 06:40:47] code 404, message File not found
-127.0.0.1 - - [30/Jul/2026 06:40:47] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 07:55:41] "GET /configMagic.html HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:42] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:47] "GET /magic.html?layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:47] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:47] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:47] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:47] "GET /css/magic.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:47] "GET /js/magic.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:55:48] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 07:55:48] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 07:55:48] "GET /img/tablero_ygo_template.png HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 07:55:48] "GET /img/tablero_ygo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 07:56:50] "GET /configMagic.html HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:50] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /magic.html?layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /css/magic.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /js/magic.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /img/tablero_ygo_template.png HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 07:56:55] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 07:56:55] "GET /img/tablero_ygo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 07:58:29] "GET /configMagic.html HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:29] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /magic.html?layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /css/magic.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /js/magic.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /img/tablero_ygo_template.png HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 07:58:34] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 07:58:34] "GET /img/tablero_ygo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 08:01:05] "GET /configMagic.html HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:05] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /magic.html?layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /css/magic.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /js/magic.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /img/tablero_ygo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 08:01:10] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 08:01:10] "GET /img/tablero_ygo_template.png HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 08:04:32] "GET /configMagic.html HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:32] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /magic.html?layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /css/magic.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /js/magic.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /img/tablero_ygo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 08:04:37] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 08:04:37] "GET /img/tablero_ygo_template.png HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 08:08:13] "GET /configMagic.html HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:13] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /magic.html?layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /css/magic.css HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /js/magic.js HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /img/tablero_ygo_template.png HTTP/1.1" 404 -
+127.0.0.1 - - [30/Jul/2026 08:08:17] code 404, message File not found
+127.0.0.1 - - [30/Jul/2026 08:08:17] "GET /img/tablero_ygo.jpg HTTP/1.1" 404 -
