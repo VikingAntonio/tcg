@@ -28,6 +28,7 @@ const POKE_MOCKS = [
 // Local state configuration
 const state = {
     layout: "none", // none, yugioh, pokemon
+    mode: "practice", // practice, multiplayer
     cards: [], // Array of card instances { id, name, image_url, x, y, faceUp, tapped, counters: { glass: 0, poke: 0 }, owner: 'player1'/'player2' }
     decks: { player1: [], player2: [] },
     attacks: [],
@@ -45,6 +46,7 @@ let targetingCard = null;
 $(document).ready(async function() {
     const urlParams = new URLSearchParams(window.location.search);
     state.layout = urlParams.get("layout") || "none";
+    state.mode = urlParams.get("mode") || "practice";
     const deck1Id = urlParams.get("deck1");
     const deck2Id = urlParams.get("deck2");
 
@@ -59,6 +61,13 @@ $(document).ready(async function() {
         $("body").addClass("layout-pokemon").removeClass("layout-yugioh");
     } else {
         $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
+    }
+
+    // Hide/Show perspective switcher
+    if (state.mode === "practice") {
+        $(".perspective-switcher").hide();
+    } else {
+        $(".perspective-switcher").show();
     }
 
     // Hide/Show P2 components
@@ -301,6 +310,7 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                     $(`#${dragCard.id}`).removeClass("dragging");
                     $(".magic-landing-zone").removeClass("drag-over");
                     updateLandingZoneCounts();
+                    renderAllCards(); // Recalculate size instantly in real-time!
                 }
                 dragCard = null;
                 $(document).off(".carddrag");
@@ -862,6 +872,7 @@ function setupCardInteractions() {
                 // Remove landing hover states
                 $(".magic-landing-zone").removeClass("drag-over");
                 updateLandingZoneCounts();
+                renderAllCards(); // Re-render instantly on mouse up to recalculate card sizes!
             }
 
             dragCard = null;
@@ -945,8 +956,6 @@ function setupGlobalEvents() {
         $grid.empty();
 
         listCards.forEach((card, index) => {
-            // Find global card index in state
-            const globalIndex = state.cards.findIndex(c => c.id === card.id);
             const html = `
                 <div class="pile-card-container" data-card-id="${card.id}">
                     <img src="${card.image_url}" alt="${card.name}">
@@ -1005,10 +1014,22 @@ function setupGlobalEvents() {
     });
 }
 
-// Side Image-only Preview
+// Side Image-only Preview (respects anti-peeking masking)
 function updatePreview(card) {
     const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
-    const src = card.faceUp ? card.image_url : backImg;
+
+    let isMasked = false;
+    if (state.mode === "multiplayer") {
+        const zone = getCardCurrentZone(card);
+        if (zone === "hand_p1" && state.viewPerspective !== "player1") isMasked = true;
+        if (zone === "hand_p2" && state.viewPerspective !== "player2") isMasked = true;
+        if (!card.faceUp && !zone) {
+            if (card.owner === "player1" && state.viewPerspective !== "player1") isMasked = true;
+            if (card.owner === "player2" && state.viewPerspective !== "player2") isMasked = true;
+        }
+    }
+
+    const src = isMasked ? backImg : card.image_url;
     $("#detail-card-img").attr("src", src);
 }
 
@@ -1208,20 +1229,22 @@ function renderAllCards() {
         // Anti-peeking logic
         let isMaskedAsBack = false;
 
-        // If card is inside hands
-        if (currentZone === "hand_p1") {
-            if (state.viewPerspective !== "player1") isMaskedAsBack = true;
-        } else if (currentZone === "hand_p2") {
-            if (state.viewPerspective !== "player2") isMaskedAsBack = true;
-        }
+        if (state.mode === "multiplayer") {
+            // If card is inside hands
+            if (currentZone === "hand_p1") {
+                if (state.viewPerspective !== "player1") isMaskedAsBack = true;
+            } else if (currentZone === "hand_p2") {
+                if (state.viewPerspective !== "player2") isMaskedAsBack = true;
+            }
 
-        // If card is placed face-down on the playmat/field
-        if (!card.faceUp && !currentZone) {
-            // Check if card belongs to P1 or P2
-            if (card.owner === "player1" && state.viewPerspective !== "player1") {
-                isMaskedAsBack = true;
-            } else if (card.owner === "player2" && state.viewPerspective !== "player2") {
-                isMaskedAsBack = true;
+            // If card is placed face-down on the playmat/field
+            if (!card.faceUp && !currentZone) {
+                // Check if card belongs to P1 or P2
+                if (card.owner === "player1" && state.viewPerspective !== "player1") {
+                    isMaskedAsBack = true;
+                } else if (card.owner === "player2" && state.viewPerspective !== "player2") {
+                    isMaskedAsBack = true;
+                }
             }
         }
 

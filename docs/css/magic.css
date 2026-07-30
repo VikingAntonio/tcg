@@ -687,10 +687,17 @@ body.magic-mode .counter-submenu-trigger:hover .counter-submenu {
 
 /* Specific styling for the visual drag handle inside pile zones */
 body.magic-mode .pile-drag-handle {
-    opacity: 0.5;
-    transition: opacity 0.2s, transform 0.2s;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 4px;
+    padding: 4px 6px;
+    opacity: 0.7;
+    transition: all 0.2s;
 }
 body.magic-mode .pile-drag-handle:hover {
+    background: rgba(0, 210, 255, 0.2);
+    border-color: #00d2ff;
+    color: #00d2ff;
     opacity: 1;
-    transform: scale(1.15);
+    transform: scale(1.1);
 }

@@ -327,6 +327,14 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Modo de Juego <span>*</span></label>
+                    <select id="magic-mode-type" class="select-input">
+                        <option value="practice">Modo Práctica (Ambas manos/sets visibles)</option>
+                        <option value="multiplayer">Modo Dos Jugadores (Ocultar cartas al rival / Anti-Peeking)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Tu Primer Deck (Mazo 1) <span>*</span></label>
                     <select id="magic-deck1" class="select-input">
                         <option value="mock">Cargando decks...</option>
@@ -438,8 +446,9 @@
                 const layout = $("#magic-layout").val();
                 const deck1 = $("#magic-deck1").val();
                 const deck2 = $("#magic-deck2").val();
+                const mode = $("#magic-mode-type").val();
 
-                window.location.href = `magic.html?layout=${layout}&deck1=${deck1}&deck2=${deck2}`;
+                window.location.href = `magic.html?layout=${layout}&deck1=${deck1}&deck2=${deck2}&mode=${mode}`;
             });
         });
     </script>
