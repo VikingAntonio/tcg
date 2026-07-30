@@ -792,6 +792,25 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* SVG Attack overlay arrows style */
+#attack-arrows-overlay {
+    pointer-events: none !important;
+    z-index: 999999 !important; /* Ensure it floats above absolutely everything including cards, menus, and playmats */
+}
+
+.attack-line {
+    stroke-width: 5px !important; /* Extremely visible, solid line */
+    stroke-linecap: round !important;
+    stroke-dasharray: none !important; /* Solid line, no dashed style */
+    opacity: 0.95 !important;
+    filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.8)) !important; /* Make it pop against any playmat color */
+}
+
+.attack-head {
+    opacity: 0.95 !important;
+    filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.8)) !important;
+}
+
 /* Card highlighter in attack targeting mode */
 .playmat-board.selecting-zone .duel-card:not(.card-is-attacker) {
     cursor: crosshair !important;
