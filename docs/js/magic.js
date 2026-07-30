@@ -4,7 +4,7 @@
 const HIGH_FIDELITY_MOCKS = [
     // Yu-Gi-Oh! Mock Cards
     { name: "Dragón Blanco de Ojos Azules", image_url: "https://images.ygoprodeck.com/images/cards/89631139.jpg", section: "Main", desc: "Este legendario dragón es una poderosa máquina de destrucción. Prácticamente invencible, muy pocos se han enfrentado a esta magnífica criatura y han vivido para contarlo." },
-    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg", section: "Main", desc: "El más grande de los magos en lo referente al ataque and la defensa." },
+    { name: "Mago Oscuro", image_url: "https://images.ygoprodeck.com/images/cards/46986414.jpg", section: "Main", desc: "El más grande de los magos en lo referente al ataque y la defensa." },
     { name: "Chica Maga Oscura", image_url: "https://images.ygoprodeck.com/images/cards/31755083.jpg", section: "Main", desc: "Gana 300 ATK por cada 'Mago Oscuro' o 'Mago de la Ilusión Negra' en los Cementerios." },
     { name: "Dragón Negro de Ojos Rojos", image_url: "https://images.ygoprodeck.com/images/cards/74677422.jpg", section: "Main", desc: "Un dragón feroz con un ataque mortífero." },
     { name: "Olla de la Codicia", image_url: "https://images.ygoprodeck.com/images/cards/55144522.jpg", section: "Main", desc: "Roba 2 cartas de tu Deck." },
@@ -39,7 +39,6 @@ const dragOffset = { x: 0, y: 0 };
 let dragStartCoords = { x: 0, y: 0 };
 let dragStartTime = 0;
 let targetingCard = null;
-let activeMenuCard = null;
 
 // Initialize Magic Engine
 $(document).ready(async function() {
@@ -50,11 +49,15 @@ $(document).ready(async function() {
 
     hasPlayer2 = (deck2Id && deck2Id !== "none");
 
-    // Apply layout guide visual
+    // Apply layout guide visual and body theme classes
     if (state.layout === "yugioh") {
         $("#layout-guide-bg").addClass("yugioh");
+        $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
     } else if (state.layout === "pokemon") {
         $("#layout-guide-bg").addClass("pokemon");
+        $("body").addClass("layout-pokemon").removeClass("layout-yugioh");
+    } else {
+        $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
     }
 
     // Hide/Show P2 components
@@ -71,6 +74,7 @@ $(document).ready(async function() {
     setupCardInteractions();
     setupGlobalEvents();
     makeLandingZonesDraggableAndResizable();
+    bindDropdownContextMenus();
 
     // Load Decks
     Swal.fire({
@@ -141,7 +145,7 @@ async function fetchDeckCards(deckId, playerKey) {
     state.decks[playerKey] = formatted;
 }
 
-// Initialize Physical Draggable Pile Sources (Main and Extra Decks only)
+// Initialize Physical Draggable Pile Sources
 function initializePiles() {
     const $container = $("#piles-container");
     $container.empty();
@@ -190,7 +194,7 @@ function createPileElement($parent, id, label, x, y, owner, type) {
     // Make piles draggable
     const $el = $(`#zone-${id}`);
     $el.on("mousedown touchstart", function(e) {
-        if ($(e.target).hasClass("pile-menu-trigger")) return;
+        if ($(e.target).hasClass("pile-menu-trigger") || $(e.target).closest(".pile-menu-trigger").length) return;
         e.preventDefault();
 
         const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
@@ -226,20 +230,53 @@ function createPileElement($parent, id, label, x, y, owner, type) {
 // Update counts on visual piles and landing zones
 function updatePileCounts() {
     // Deck counts
-    const p1Deck = state.decks.player1.filter(c => c.section !== "Extra").length;
-    const p1Extra = state.decks.player1.filter(c => c.section === "Extra").length;
+    const p1Deck = (state.decks.player1 || []).filter(c => c.section !== "Extra").length;
+    const p1Extra = (state.decks.player1 || []).filter(c => c.section === "Extra").length;
     $("#count-deck_1").text(p1Deck);
     $("#count-extra_1").text(p1Extra);
 
-    if (hasPlayer2) {
-        const p2Deck = state.decks.player2.filter(c => c.section !== "Extra").length;
-        const p2Extra = state.decks.player2.filter(c => c.section === "Extra").length;
+    let p2Deck = 0;
+    let p2Extra = 0;
+    if (hasPlayer2 && state.decks.player2) {
+        p2Deck = state.decks.player2.filter(c => c.section !== "Extra").length;
+        p2Extra = state.decks.player2.filter(c => c.section === "Extra").length;
         $("#count-deck_2").text(p2Deck);
         $("#count-extra_2").text(p2Extra);
     }
 
+    // Assign appropriate card-back backgrounds to decks physically
+    const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
+
+    togglePileBackground("#zone-deck_1", p1Deck, backImg);
+    togglePileBackground("#zone-extra_1", p1Extra, backImg);
+    if (hasPlayer2) {
+        togglePileBackground("#zone-deck_2", p2Deck, backImg);
+        togglePileBackground("#zone-extra_2", p2Extra, backImg);
+    }
+
     // Refresh landing zone counts based on absolute cards coordinates
     updateLandingZoneCounts();
+}
+
+function togglePileBackground(selector, count, imgUrl) {
+    const $el = $(selector);
+    if (count > 0) {
+        $el.css({
+            "background-image": `url('${imgUrl}')`,
+            "background-size": "cover",
+            "background-position": "center",
+            "border-style": "solid",
+            "border-color": "rgba(255, 255, 255, 0.15)",
+            "box-shadow": "0 10px 20px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.05)"
+        });
+    } else {
+        $el.css({
+            "background-image": "none",
+            "border-style": "dashed",
+            "border-color": "rgba(255, 255, 255, 0.25)",
+            "box-shadow": "none"
+        });
+    }
 }
 
 // Calculate containing zone geometrically
@@ -298,62 +335,6 @@ function isPointInElement(x, y, selector) {
 
     return (x >= offset.left && x <= offset.left + w && y >= offset.top && y <= offset.top + h);
 }
-
-// Deck Pile operations and context menus
-$(document).on("click", ".pile-menu-trigger", function(e) {
-    e.stopPropagation();
-    const pileId = $(this).attr("data-pile");
-    const owner = pileId.endsWith("_1") ? "player1" : "player2";
-    const type = pileId.startsWith("deck") ? "deck" : "extra";
-
-    let menuHtml = "";
-    if (type === "deck") {
-        menuHtml = `
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="draw1" data-owner="${owner}" style="background-color: var(--primary-color); color: #000; margin: 0; font-weight: bold;">Robar 1 Carta</button>
-                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="draw5" data-owner="${owner}" style="background-color: var(--primary-color); color: #000; margin: 0; font-weight: bold;">Robar 5 Cartas</button>
-                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="shuffle" data-owner="${owner}" style="background-color: #3085d6; margin: 0;">Barajar Todo el Deck</button>
-                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="search" data-owner="${owner}" style="background-color: #444; margin: 0;">Buscar en el Deck</button>
-            </div>
-        `;
-    } else {
-        menuHtml = `
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="swal2-confirm swal2-styled pile-action-btn" data-action="openExtra" data-owner="${owner}" style="background-color: var(--primary-color); color: #000; margin: 0; font-weight: bold;">Ver Extra Deck</button>
-            </div>
-        `;
-    }
-
-    Swal.fire({
-        title: type === "deck" ? "Acciones de Deck" : "Acciones de Extra Deck",
-        html: menuHtml,
-        showConfirmButton: false,
-        showCancelButton: true,
-        cancelButtonText: "Cancelar",
-        background: "#12181e",
-        color: "#fff"
-    });
-});
-
-// Delegate Pile SwAl interactions
-$(document).on("click", ".pile-action-btn", function() {
-    const action = $(this).attr("data-action");
-    const owner = $(this).attr("data-owner");
-    Swal.close();
-
-    if (action === "draw1") {
-        drawCards(owner, 1);
-    } else if (action === "draw5") {
-        drawCards(owner, 5);
-    } else if (action === "shuffle") {
-        shuffleDeck(owner);
-        Swal.fire('Barajado', 'El mazo se ha barajado con éxito.', 'success');
-    } else if (action === "search") {
-        openSearchModal(owner);
-    } else if (action === "openExtra") {
-        openExtraModal(owner);
-    }
-});
 
 // Shuffling logic
 function shuffleDeck(owner) {
@@ -427,18 +408,20 @@ function openSearchModal(owner) {
 
     mainCards.forEach((card, index) => {
         const html = `
-            <div class="search-card-wrapper" data-index="${index}" data-owner="${owner}">
+            <div class="pile-card-container" data-index="${index}" data-owner="${owner}" data-source="deck">
                 <img src="${card.image_url}" alt="${card.name}">
-                <div class="search-card-overlay">
-                    <button class="search-action-btn search-to-hand" title="Añadir a la mano"><i class="fas fa-hand-holding"></i> Mano</button>
-                    <button class="search-action-btn search-to-field" title="Invocar al campo"><i class="fas fa-play"></i> Campo</button>
+                <div class="pile-card-hover-overlay">
+                    <div class="pile-card-menu">
+                        <button class="pile-card-action-btn search-to-hand">A Mano</button>
+                        <button class="pile-card-action-btn search-to-field">Invocar</button>
+                        <button class="pile-card-action-btn search-to-field-set">Colocar Set</button>
+                    </div>
                 </div>
             </div>
         `;
         $grid.append(html);
     });
 
-    // Close on escape/click
     $("#pile-overlay").fadeIn(200);
 }
 
@@ -458,11 +441,14 @@ function openExtraModal(owner) {
 
     extraCards.forEach((card, index) => {
         const html = `
-            <div class="search-card-wrapper" data-index="${index}" data-owner="${owner}">
+            <div class="pile-card-container" data-index="${index}" data-owner="${owner}" data-source="extra">
                 <img src="${card.image_url}" alt="${card.name}">
-                <div class="search-card-overlay">
-                    <button class="search-action-btn extra-to-hand" title="Añadir a la mano"><i class="fas fa-hand-holding"></i> Mano</button>
-                    <button class="search-action-btn extra-to-field" title="Invocar al campo"><i class="fas fa-play"></i> Campo</button>
+                <div class="pile-card-hover-overlay">
+                    <div class="pile-card-menu">
+                        <button class="pile-card-action-btn search-to-hand">A Mano</button>
+                        <button class="pile-card-action-btn search-to-field">Invocar</button>
+                        <button class="pile-card-action-btn search-to-field-set">Colocar Set</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -476,24 +462,27 @@ function openExtraModal(owner) {
 $("#btn-close-pile").click(() => $("#pile-overlay").fadeOut(200));
 $("#btn-close-extra").click(() => $("#extra-overlay").fadeOut(200));
 
-// Handle modal actions
-$(document).on("click", ".search-to-hand, .extra-to-hand", function() {
-    const $wrapper = $(this).closest(".search-card-wrapper");
-    const idx = parseInt($wrapper.attr("data-index"));
-    const owner = $wrapper.attr("data-owner");
-    const isExtra = $(this).hasClass("extra-to-hand");
+// Handle search and extra operations
+$(document).on("click", ".search-to-hand", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const $container = $(this).closest(".pile-card-container");
+    const idx = parseInt($container.attr("data-index"));
+    const owner = $container.attr("data-owner");
+    const source = $container.attr("data-source");
 
     const deck = state.decks[owner];
-    const filtered = deck.filter(c => isExtra ? c.section === "Extra" : c.section !== "Extra");
+    const filtered = deck.filter(c => source === "extra" ? c.section === "Extra" : c.section !== "Extra");
     const cardData = filtered[idx];
 
-    // Remove from array source
+    // Remove from deck source
     const exactIdx = deck.indexOf(cardData);
     if (exactIdx > -1) {
         deck.splice(exactIdx, 1);
     }
 
-    // Add to state cards
+    // Add card to hand zone coordinates
     const cardId = "card_" + Math.random().toString(36).substr(2, 9);
     const windowW = window.innerWidth;
     const windowH = window.innerHeight;
@@ -520,23 +509,27 @@ $(document).on("click", ".search-to-hand, .extra-to-hand", function() {
     updatePileCounts();
 });
 
-$(document).on("click", ".search-to-field, .extra-to-field", function() {
-    const $wrapper = $(this).closest(".search-card-wrapper");
-    const idx = parseInt($wrapper.attr("data-index"));
-    const owner = $wrapper.attr("data-owner");
-    const isExtra = $(this).hasClass("extra-to-field");
+$(document).on("click", ".search-to-field, .search-to-field-set", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const $container = $(this).closest(".pile-card-container");
+    const idx = parseInt($container.attr("data-index"));
+    const owner = $container.attr("data-owner");
+    const source = $container.attr("data-source");
+    const isSet = $(this).hasClass("search-to-field-set");
 
     const deck = state.decks[owner];
-    const filtered = deck.filter(c => isExtra ? c.section === "Extra" : c.section !== "Extra");
+    const filtered = deck.filter(c => source === "extra" ? c.section === "Extra" : c.section !== "Extra");
     const cardData = filtered[idx];
 
-    // Remove from source
+    // Remove from deck source
     const exactIdx = deck.indexOf(cardData);
     if (exactIdx > -1) {
         deck.splice(exactIdx, 1);
     }
 
-    // Spawn centered on viewport
+    // Spawn at center of the viewport
     const cardId = "card_" + Math.random().toString(36).substr(2, 9);
     const spawnX = window.innerWidth / 2 - 75;
     const spawnY = window.innerHeight / 2 - 109;
@@ -548,7 +541,7 @@ $(document).on("click", ".search-to-field, .extra-to-field", function() {
         desc: cardData.desc || "",
         x: spawnX,
         y: spawnY,
-        faceUp: true,
+        faceUp: !isSet,
         tapped: false,
         counters: { glass: 0, poke: 0 },
         owner: owner,
@@ -568,7 +561,10 @@ function setupCardInteractions() {
 
     $field.on("mousedown touchstart", ".duel-card", function(e) {
         // Prevent trigger during context triggers or submenu interaction
-        if ($(e.target).closest(".card-quick-actions").length || $(e.target).hasClass("card-counter-badge")) return;
+        if ($(e.target).closest(".field-card-actions").length || $(e.target).hasClass("card-counter-badge")) return;
+
+        // Prevent dragging when in targeting mode
+        if (targetingCard) return;
 
         e.preventDefault();
         const cardId = $(this).attr("id");
@@ -691,73 +687,7 @@ function setupGlobalEvents() {
             $("#toggle-acc-btn i").attr("class", "fas fa-chevron-down");
         }
     });
-
-    // Right-click context menus for manual operations
-    $(document).on("contextmenu", ".duel-card", function(e) {
-        e.preventDefault();
-        const cardId = $(this).attr("id");
-        const card = state.cards.find(c => c.id === cardId);
-        if (!card) return;
-
-        activeMenuCard = card;
-
-        // Custom sandbox context actions
-        Swal.fire({
-            title: card.name,
-            html: `
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="swal2-confirm swal2-styled context-opt" data-action="flip" style="background-color: #3085d6; margin: 0;">Voltear Carta (Cara ${card.faceUp ? 'Abajo' : 'Arriba'})</button>
-                    <button class="swal2-confirm swal2-styled context-opt" data-action="rotate" style="background-color: #3085d6; margin: 0;">Girar (Modo Defensa/Tapped)</button>
-                    <button class="swal2-confirm swal2-styled context-opt" data-action="add-glass" style="background-color: #00d2ff; color:#000; margin: 0; font-weight: bold;">+1 Contador Esfera</button>
-                    <button class="swal2-confirm swal2-styled context-opt" data-action="add-poke" style="background-color: #ff1b6b; margin: 0; font-weight: bold;">+1 Contador Daño (+10)</button>
-                    <button class="swal2-confirm swal2-styled context-opt" data-action="clear-counters" style="background-color: #777; margin: 0;">Remover Contadores</button>
-                    <button class="swal2-confirm swal2-styled context-opt" data-action="send-deck" style="background-color: #e5a93b; color:#000; margin: 0; font-weight: bold;">Devolver al Deck (Fondo)</button>
-                    <button class="swal2-confirm swal2-styled context-opt" data-action="delete" style="background-color: #ff1b6b; margin: 0;">Eliminar de la Arena</button>
-                </div>
-            `,
-            showConfirmButton: false,
-            showCancelButton: true,
-            cancelButtonText: "Cerrar",
-            background: "#12181e",
-            color: "#fff"
-        });
-    });
 }
-
-// Handle context triggers
-$(document).on("click", ".context-opt", function() {
-    if (!activeMenuCard) return;
-    const action = $(this).attr("data-action");
-    Swal.close();
-
-    if (action === "flip") {
-        activeMenuCard.faceUp = !activeMenuCard.faceUp;
-    } else if (action === "rotate") {
-        activeMenuCard.tapped = !activeMenuCard.tapped;
-    } else if (action === "add-glass") {
-        activeMenuCard.counters.glass++;
-    } else if (action === "add-poke") {
-        activeMenuCard.counters.poke += 10;
-    } else if (action === "clear-counters") {
-        activeMenuCard.counters.glass = 0;
-        activeMenuCard.counters.poke = 0;
-    } else if (action === "send-deck") {
-        // Return to deck storage array
-        state.decks[activeMenuCard.owner].push({
-            name: activeMenuCard.name,
-            image_url: activeMenuCard.image_url,
-            desc: activeMenuCard.desc,
-            section: activeMenuCard.section
-        });
-        state.cards = state.cards.filter(c => c.id !== activeMenuCard.id);
-        updatePileCounts();
-    } else if (action === "delete") {
-        state.cards = state.cards.filter(c => c.id !== activeMenuCard.id);
-    }
-
-    renderAllCards();
-    activeMenuCard = null;
-});
 
 // Side Image-only Preview
 function updatePreview(card) {
@@ -766,30 +696,96 @@ function updatePreview(card) {
     $("#detail-card-img").attr("src", src);
 }
 
-// Global Accessories (Coin / Dice / Token spawning)
+// Global Accessories (Coin / Dice / Token spawning with visual inline animations)
 function setupAccessories() {
-    // Dice 3D
+    // Dice 3D rolling animation
+    let isDiceRolling = false;
     $("#btn-roll-dice").click(function() {
+        if (isDiceRolling) return;
+        isDiceRolling = true;
+
+        const $dice = $("#visual-dice-wrapper");
+        const $icon = $("#visual-dice-icon");
+
+        // Random roll value
         const val = Math.floor(Math.random() * 6) + 1;
-        Swal.fire({
-            title: `Dado: ${val}`,
-            text: `¡Lanzaste un dado de 6 caras!`,
-            icon: 'info',
-            background: "#12181e",
-            color: "#fff"
+        const diceClasses = [
+            "fa-dice-one",
+            "fa-dice-two",
+            "fa-dice-three",
+            "fa-dice-four",
+            "fa-dice-five",
+            "fa-dice-six"
+        ];
+
+        // Start spinning rotation
+        $dice.css({
+            "transform": "rotateX(720deg) rotateY(720deg) scale(1.15)",
+            "transition": "transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28)"
         });
+
+        // Rapidly change icons during spin
+        let interval = setInterval(() => {
+            const tempVal = Math.floor(Math.random() * 6);
+            $icon.attr("class", "fas " + diceClasses[tempVal]);
+        }, 80);
+
+        setTimeout(() => {
+            clearInterval(interval);
+            // Set final value class
+            $icon.attr("class", "fas " + diceClasses[val - 1]);
+            $dice.css({
+                "transform": "rotateX(0deg) rotateY(0deg) scale(1)",
+                "transition": "transform 0.1s"
+            });
+            isDiceRolling = false;
+        }, 600);
     });
 
-    // Flip Coin
+    // Flip Coin animation
+    let isCoinFlipping = false;
     $("#btn-flip-coin").click(function() {
-        const side = Math.random() < 0.5 ? "Cara" : "Cruz";
-        Swal.fire({
-            title: `Moneda: ${side}`,
-            text: `¡Lanzaste una moneda al aire!`,
-            icon: 'info',
-            background: "#12181e",
-            color: "#fff"
+        if (isCoinFlipping) return;
+        isCoinFlipping = true;
+
+        const $coin = $("#visual-coin-wrapper");
+        const $text = $("#visual-coin-text");
+
+        const isHeads = Math.random() < 0.5;
+
+        // Add spin and perspective
+        $coin.css({
+            "transform": "rotateY(1080deg) scale(1.15)",
+            "transition": "transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28)"
         });
+
+        setTimeout(() => {
+            if (isHeads) {
+                $text.text("CARA");
+                $coin.css({
+                    "border-color": "#00d2ff",
+                    "background": "rgba(0, 210, 255, 0.15)",
+                    "color": "#00d2ff",
+                    "text-shadow": "0 0 8px rgba(0,210,255,0.5)",
+                    "box-shadow": "0 0 12px rgba(0,210,255,0.4)"
+                });
+            } else {
+                $text.text("CRUZ");
+                $coin.css({
+                    "border-color": "#ff1b6b",
+                    "background": "rgba(255, 27, 107, 0.15)",
+                    "color": "#ff1b6b",
+                    "text-shadow": "0 0 8px rgba(255,27,107,0.5)",
+                    "box-shadow": "0 0 12px rgba(255,27,107,0.4)"
+                });
+            }
+
+            $coin.css({
+                "transform": "rotateY(0deg) scale(1)",
+                "transition": "transform 0.1s"
+            });
+            isCoinFlipping = false;
+        }, 600);
     });
 
     // YGO Token Spawner directly centered on field
@@ -815,22 +811,22 @@ function setupAccessories() {
         renderAllCards();
     });
 
-    // Generar Esfera de Vidrio Cian
+    // Generar Esfera de Vidrio Cian info
     $(".btn-add-glass-counter").click(function() {
         Swal.fire({
             title: 'Contador Esfera',
-            text: 'Haz clic en una carta de la arena para agregar un contador, o usa el menú secundario derecho.',
+            text: 'Usa el menú secundario (clic derecho) en cualquier carta para añadir esferas de vidrio.',
             icon: 'info',
             background: "#12181e",
             color: "#fff"
         });
     });
 
-    // Generar Chip de Daño Pokemon
+    // Generar Chip de Daño Pokemon info
     $(".btn-add-poke-counter").click(function() {
         Swal.fire({
             title: 'Contador de Daño',
-            text: 'Usa el botón secundario derecho en cualquier carta para añadir puntos de daño acumulativo.',
+            text: 'Usa el menú secundario (clic derecho) en cualquier carta para añadir puntos de daño acumulativo.',
             icon: 'info',
             background: "#12181e",
             color: "#fff"
@@ -889,12 +885,21 @@ function renderAllCards() {
                 <div class="card-img-wrapper" style="${card.tapped ? 'transform: rotate(90deg);' : ''}">
                     <img class="card-img" src="${srcImg}" alt="${card.name}">
                 </div>
+                <!-- Dynamic Horizontal quick actions bar on hover -->
+                <div class="field-card-actions">
+                    <button class="field-action-btn btn-field-attack" data-id="${card.id}">Atacar</button>
+                    <button class="field-action-btn btn-field-direct" data-id="${card.id}">Atk Directo</button>
+                    <button class="field-action-btn btn-field-set" data-id="${card.id}">Set</button>
+                    <button class="field-action-btn btn-field-flip" data-id="${card.id}">Voltear</button>
+                    <button class="field-action-btn btn-field-tap" data-id="${card.id}">Girar</button>
+                </div>
             </div>
         `;
         $field.append(html);
     });
 
     updateLandingZoneCounts();
+    drawAttackArrows();
 }
 
 // Implement draggable and resizable logic on Landing Zones
@@ -974,5 +979,457 @@ function makeLandingZonesDraggableAndResizable() {
                 });
             });
         }
+    });
+}
+
+// Reusable inline context menu positioner
+function showContextMenu(menuId, x, y, contextData = {}) {
+    // Hide all context menus first
+    $(".card-context-menu, .deck-context-menu").removeClass("active");
+
+    const $menu = $(menuId);
+    $menu.data("context-data", contextData);
+
+    const menuW = $menu.outerWidth() || 230;
+    const menuH = $menu.outerHeight() || 300;
+
+    let posX = x;
+    let posY = y;
+
+    if (posX + menuW > window.innerWidth) {
+        posX = window.innerWidth - menuW - 10;
+    }
+    if (posY + menuH > window.innerHeight) {
+        posY = window.innerHeight - menuH - 10;
+    }
+
+    $menu.css({
+        left: posX + "px",
+        top: posY + "px"
+    }).addClass("active");
+}
+
+// Clear active context menus on outer click
+$(document).on("click mousedown", function(e) {
+    if (!$(e.target).closest(".card-context-menu, .deck-context-menu, .pile-menu-trigger").length) {
+        $(".card-context-menu, .deck-context-menu").removeClass("active");
+    }
+});
+
+// Align context triggers with inline dropdown placements
+function bindDropdownContextMenus() {
+    // Handle pile menu trigger or right click on piles
+    $(document).on("click", ".pile-menu-trigger", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const pileId = $(this).attr("data-pile");
+        const owner = pileId.endsWith("_1") ? "player1" : "player2";
+        const type = pileId.startsWith("deck") ? "deck" : "extra";
+
+        const offset = $(this).offset();
+        const x = offset.left;
+        const y = offset.top + $(this).outerHeight();
+
+        if (type === "deck") {
+            showContextMenu("#deck-ctx-menu", x, y, { owner: owner });
+        } else {
+            showContextMenu("#extra-ctx-menu", x, y, { owner: owner });
+        }
+    });
+
+    $(document).on("contextmenu", ".magic-pile-zone", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const pileId = $(this).attr("id").replace("zone-", "");
+        const owner = pileId.endsWith("_1") ? "player1" : "player2";
+        const type = pileId.startsWith("deck") ? "deck" : "extra";
+
+        if (type === "deck") {
+            showContextMenu("#deck-ctx-menu", e.clientX, e.clientY, { owner: owner });
+        } else {
+            showContextMenu("#extra-ctx-menu", e.clientX, e.clientY, { owner: owner });
+        }
+    });
+
+    // Handle card right-clicks
+    $(document).on("contextmenu", ".duel-card", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const cardId = $(this).attr("id");
+        const card = state.cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        showContextMenu("#card-ctx-menu", e.clientX, e.clientY, { card: card });
+    });
+
+    // Deck dropdown item triggers
+    $("#menu-deck-draw1").click(function() {
+        const data = $("#deck-ctx-menu").data("context-data");
+        if (data && data.owner) {
+            drawCards(data.owner, 1);
+        }
+        $("#deck-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-deck-draw5").click(function() {
+        const data = $("#deck-ctx-menu").data("context-data");
+        if (data && data.owner) {
+            drawCards(data.owner, 5);
+        }
+        $("#deck-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-deck-shuffle").click(function() {
+        const data = $("#deck-ctx-menu").data("context-data");
+        if (data && data.owner) {
+            shuffleDeck(data.owner);
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Deck barajado',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+        $("#deck-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-deck-search").click(function() {
+        const data = $("#deck-ctx-menu").data("context-data");
+        if (data && data.owner) {
+            openSearchModal(data.owner);
+        }
+        $("#deck-ctx-menu").removeClass("active");
+    });
+
+    // Extra actions
+    $("#menu-extra-search").click(function() {
+        const data = $("#extra-ctx-menu").data("context-data");
+        if (data && data.owner) {
+            openExtraModal(data.owner);
+        }
+        $("#extra-ctx-menu").removeClass("active");
+    });
+
+    // Card actions
+    $("#menu-card-flip").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            data.card.faceUp = !data.card.faceUp;
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-tap").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            data.card.tapped = !data.card.tapped;
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-counter-glass").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            data.card.counters.glass++;
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-counter-damage").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            data.card.counters.poke += 10;
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-counter-clear").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            data.card.counters.glass = 0;
+            data.card.counters.poke = 0;
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-deck-bottom").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            state.decks[data.card.owner].push({
+                name: data.card.name,
+                image_url: data.card.image_url,
+                desc: data.card.desc,
+                section: data.card.section
+            });
+            state.cards = state.cards.filter(c => c.id !== data.card.id);
+            updatePileCounts();
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-deck-top").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            state.decks[data.card.owner].unshift({
+                name: data.card.name,
+                image_url: data.card.image_url,
+                desc: data.card.desc,
+                section: data.card.section
+            });
+            state.cards = state.cards.filter(c => c.id !== data.card.id);
+            updatePileCounts();
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-grave").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            sendCardToZone(data.card, "grave");
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-banish").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            sendCardToZone(data.card, "banish");
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-delete").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            state.cards = state.cards.filter(c => c.id !== data.card.id);
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+}
+
+function sendCardToZone(card, zoneType) {
+    let selector = "";
+    if (card.owner === "player1") {
+        selector = zoneType === "grave" ? "#zone-grave-p1" : "#zone-banish-p1";
+    } else {
+        selector = zoneType === "grave" ? "#zone-grave-p2" : "#zone-banish-p2";
+    }
+
+    const $zone = $(selector);
+    if ($zone.length) {
+        const offset = $zone.offset();
+        const w = $zone.outerWidth();
+        const h = $zone.outerHeight();
+        // Place card centered in landing zone
+        card.x = offset.left + (w / 2) - 75;
+        card.y = offset.top + (h / 2) - 109;
+        renderAllCards();
+    }
+}
+
+// Horizontal Quick-Action Ribbon Menu events
+$(document).on("click", ".btn-field-attack", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-id");
+    const card = state.cards.find(c => c.id === cardId);
+    if (card) {
+        startAttackTargeting(card);
+    }
+});
+
+$(document).on("click", ".btn-field-direct", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-id");
+    const card = state.cards.find(c => c.id === cardId);
+    if (card) {
+        // Direct attack registered
+        state.attacks.push({
+            attackerId: card.id,
+            targetId: null,
+            isDirect: true
+        });
+        drawAttackArrows();
+    }
+});
+
+$(document).on("click", ".btn-field-set", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-id");
+    const card = state.cards.find(c => c.id === cardId);
+    if (card) {
+        card.faceUp = false;
+        renderAllCards();
+    }
+});
+
+$(document).on("click", ".btn-field-flip", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-id");
+    const card = state.cards.find(c => c.id === cardId);
+    if (card) {
+        card.faceUp = !card.faceUp;
+        renderAllCards();
+    }
+});
+
+$(document).on("click", ".btn-field-tap", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-id");
+    const card = state.cards.find(c => c.id === cardId);
+    if (card) {
+        card.tapped = !card.tapped;
+        renderAllCards();
+    }
+});
+
+// Attack targeting arrow renderer system
+function startAttackTargeting(card) {
+    targetingCard = card;
+    $("#playmat").addClass("selecting-zone");
+
+    // Show instruction toast
+    Swal.fire({
+        toast: true,
+        position: 'bottom',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        icon: 'info',
+        title: 'Elige el objetivo del ataque en la arena',
+        background: '#12181e',
+        color: '#fff'
+    });
+}
+
+$(document).on("click", ".duel-card", function(e) {
+    if (targetingCard) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const targetId = $(this).attr("id");
+        if (targetId !== targetingCard.id) {
+            // Register attack target
+            state.attacks.push({
+                attackerId: targetingCard.id,
+                targetId: targetId,
+                isDirect: false
+            });
+            targetingCard = null;
+            $("#playmat").removeClass("selecting-zone");
+            drawAttackArrows();
+        }
+    }
+});
+
+$(document).on("click", "#playmat", function(e) {
+    if ($(e.target).closest(".duel-card, .field-card-actions, .pile-menu-trigger").length) return;
+
+    if (targetingCard) {
+        targetingCard = null;
+        $("#playmat").removeClass("selecting-zone");
+        return;
+    }
+
+    // Clear active attacks
+    state.attacks = [];
+    drawAttackArrows();
+});
+
+function drawAttackArrows() {
+    const $overlay = $("#attack-arrows-overlay");
+    $overlay.empty();
+
+    // Clear any existing badges and glowing classes
+    $(".attack-text-badge, .attack-direct-badge").remove();
+    $(".duel-card").removeClass("card-is-attacker card-under-attack");
+
+    state.attacks.forEach(atk => {
+        const attackerObj = state.cards.find(c => c.id === atk.attackerId);
+        if (!attackerObj) return;
+
+        const $atkEl = $(`#${attackerObj.id}`);
+        if (!$atkEl.length) return;
+
+        // Start coords (center of attacker)
+        const atkPos = $atkEl.position();
+        const startX = atkPos.left + $atkEl.outerWidth() / 2;
+        const startY = atkPos.top + $atkEl.outerHeight() / 2;
+
+        // Add highlight class
+        $atkEl.addClass("card-is-attacker");
+        $atkEl.append(`<div class="attack-text-badge">⚔️ Atacante</div>`);
+
+        let endX = 0, endY = 0;
+        if (atk.isDirect) {
+            endX = startX;
+            endY = attackerObj.owner === "player1" ? 40 : window.innerHeight - 100;
+
+            const badgeLeft = startX;
+            const badgeTop = attackerObj.owner === "player1" ? startY - 100 : startY + 60;
+            $("#playmat").append(`
+                <div class="attack-direct-badge" style="left: ${badgeLeft - 80}px; top: ${badgeTop}px;">
+                    💥 Ataque Directo
+                </div>
+            `);
+        } else {
+            const targetObj = state.cards.find(c => c.id === atk.targetId);
+            if (!targetObj) return;
+
+            const $tgtEl = $(`#${targetObj.id}`);
+            if (!$tgtEl.length) return;
+
+            const tgtPos = $tgtEl.position();
+            endX = tgtPos.left + $tgtEl.outerWidth() / 2;
+            endY = tgtPos.top + $tgtEl.outerHeight() / 2;
+
+            $tgtEl.addClass("card-under-attack");
+            $tgtEl.append(`<div class="attack-text-badge defender">🎯 Atacando</div>`);
+        }
+
+        // Draw SVG line
+        const angle = Math.atan2(endY - startY, endX - startX);
+        const arrowSize = 16;
+
+        const headX1 = endX - arrowSize * Math.cos(angle - Math.PI / 6);
+        const headY1 = endY - arrowSize * Math.sin(angle - Math.PI / 6);
+        const headX2 = endX - arrowSize * Math.cos(angle + Math.PI / 6);
+        const headY2 = endY - arrowSize * Math.sin(angle + Math.PI / 6);
+
+        const strokeColor = attackerObj.owner === "player1" ? "#00d2ff" : "#ff1b6b";
+        const svgNamespace = "http://www.w3.org/2000/svg";
+
+        // Create line
+        const path = document.createElementNS(svgNamespace, "path");
+        path.setAttribute("class", "attack-line");
+        path.setAttribute("d", `M ${startX} ${startY} L ${endX} ${endY}`);
+        path.setAttribute("stroke", strokeColor);
+        path.setAttribute("fill", "none");
+
+        // Create arrowhead
+        const head = document.createElementNS(svgNamespace, "polygon");
+        head.setAttribute("class", "attack-head");
+        head.setAttribute("points", `${endX},${endY} ${headX1},${headY1} ${headX2},${headY2}`);
+        head.setAttribute("fill", strokeColor);
+
+        $overlay[0].appendChild(path);
+        $overlay[0].appendChild(head);
     });
 }
