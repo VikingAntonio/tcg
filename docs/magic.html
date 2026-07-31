@@ -199,7 +199,7 @@
                         <button class="batch-action-btn btn-pile-batch-hand" style="background: rgba(0,210,255,0.15); border: 1.5px solid #00d2ff; color: #00d2ff; text-shadow: 0 0 5px rgba(0,210,255,0.5); border-radius: 6px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s ease;">A Mano</button>
                     </div>
                 </div>
-                <button class="search-close-btn" id="btn-close-pile-modal"><i class="fas fa-times"></i></button>
+                <button class="search-close-btn" id="btn-close-pile"><i class="fas fa-times"></i></button>
             </div>
             <div class="search-body" id="pile-cards-grid">
                 <!-- Cards will render here -->
@@ -212,29 +212,10 @@
         <div class="search-modal">
             <div class="search-header">
                 <h3 id="extra-modal-title">Extra Deck</h3>
-                <button class="search-close-btn" id="btn-close-extra-modal"><i class="fas fa-times"></i></button>
+                <button class="search-close-btn" id="btn-close-extra"><i class="fas fa-times"></i></button>
             </div>
             <div class="search-body" id="extra-cards-grid">
                 <!-- Extra Deck cards will render here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Attached Cards View Overlay/Modal -->
-    <div class="search-overlay" id="attached-overlay">
-        <div class="search-modal">
-            <div class="search-header" style="flex-wrap: wrap; gap: 10px;">
-                <h3 id="attached-modal-title">Materiales Acoplados</h3>
-                <div style="display: flex; gap: 8px; margin-left: auto; margin-right: 15px;">
-                    <button class="batch-action-btn" id="bulk-to-hand" style="background: rgba(0,210,255,0.15); border: 1.5px solid #00d2ff; color: #00d2ff; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">Todos a Mano</button>
-                    <button class="batch-action-btn" id="bulk-to-grave" style="background: rgba(0,210,255,0.15); border: 1.5px solid #00d2ff; color: #00d2ff; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">Todos a Grave</button>
-                    <button class="batch-action-btn" id="bulk-to-banish" style="background: rgba(255,27,107,0.15); border: 1.5px solid #ff1b6b; color: #ff1b6b; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">Todos a Banish</button>
-                    <button class="batch-action-btn" id="bulk-to-deck" style="background: rgba(0,210,255,0.15); border: 1.5px solid #00d2ff; color: #00d2ff; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">Todos a Deck</button>
-                </div>
-                <button class="search-close-btn" id="btn-close-attached-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="search-body" id="attached-cards-grid">
-                <!-- Attached cards will render here -->
             </div>
         </div>
     </div>
@@ -253,8 +234,6 @@
     </div>
 
     <div class="card-context-menu" id="card-ctx-menu">
-        <div class="menu-item" id="menu-card-attach"><i class="fas fa-link"></i> Acoplar (Establecer como Material)</div>
-        <div class="menu-item" id="menu-card-attached-view" style="display: none;"><i class="fas fa-paperclip"></i> Ver Cartas Acopladas</div>
         <div class="menu-item" id="menu-card-flip"><i class="fas fa-sync"></i> Voltear (Cara Arriba/Abajo)</div>
         <div class="menu-item" id="menu-card-tap"><i class="fas fa-redo"></i> Girar (Posición Defensa)</div>
         <hr>
