@@ -1073,8 +1073,9 @@
             <div class="sidebar-section preview-panel">
                 <h3><i class="fas fa-search-plus"></i> Vista Detallada</h3>
                 <div class="card-detailed-preview" id="card-detail-view">
-                    <div class="preview-img-container">
+                    <div class="preview-img-container" style="position: relative;">
                         <img id="detail-card-img" src="https://via.placeholder.com/300x440?text=Hover+o+Click" alt="Preview">
+                        <button id="btn-magnify-preview" title="Ampliar y leer efecto" style="position: absolute; bottom: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; background: rgba(18,24,30,0.85); border: 1.5px solid #00d2ff; color: #00d2ff; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.6); z-index: 10; transition: all 0.2s;"><i class="fas fa-search-plus" style="font-size: 1rem;"></i></button>
                     </div>
                     <div class="preview-info">
                         <h4 id="detail-card-name">Selecciona una carta</h4>
@@ -2739,16 +2740,184 @@
                 return currentStates;
             }
 
+            // Redefine updatePreview globally
+            window.updatePreview = function(card) {
+                // Keep track of the active previewed card globally
+                window.activePreviewCard = card;
+
+                const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
+                let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+
+                if (state.mode === "multiplayer") {
+                    // Seteadas de mi lado (currentRole) se pueden ver en el preview
+                    if (isFaceDown && card.owner === currentRole && !isPile) {
+                        isFaceDown = false;
+                    }
+                    // Opponent's hand is masked in multiplayer
+                    const isOpponentHand = (currentRole === "player1" && card.zone === "hand_2") || (currentRole === "player2" && card.zone === "hand_1");
+                    if (isOpponentHand) {
+                        isFaceDown = true;
+                    }
+                } else {
+                    // Practice mode: allow viewing everything (no masking)
+                    isFaceDown = false;
+                }
+
+                if ((isPile && state.mode === "multiplayer") || isFaceDown) {
+                    const backImg = state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+                    $("#detail-card-img").attr("src", backImg);
+                    $("#detail-card-name").text("Carta Boca Abajo");
+                    $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
+                } else {
+                    $("#detail-card-img").attr("src", card.imageUrl);
+                    $("#detail-card-name").text(card.name);
+                    let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada para ti)" : "Boca Arriba"}\nContadores: ${card.counters}`;
+                    if (card.customAtk !== undefined || card.customDef !== undefined) {
+                        descText += `\n[ATK/DEF Modificado]: ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}`;
+                    }
+                    if (card.description) {
+                        descText += `\n\nEfecto:\n${card.description}`;
+                    }
+                    $("#detail-card-desc").text(descText);
+                }
+            };
+
+            // Redefine openExtraDeckModal globally to respect masking
+            window.openExtraDeckModal = function(playerKey) {
+                const extraZone = playerKey === "player1" ? "extra_1" : "extra_2";
+                const extraCards = state.cards.filter(c => c.zone === extraZone);
+
+                $("#extra-modal-title").text(`Extra Deck: ${playerKey === "player1" ? "P1" : "P2"}`);
+                $("#extra-cards-grid").empty();
+
+                if (extraCards.length === 0) {
+                    $("#extra-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Extra Deck.</p>');
+                } else {
+                    extraCards.forEach(card => {
+                        let isMasked = false;
+                        if (state.mode === "multiplayer") {
+                            // Face-down cards in the Extra Deck are only visible to their owner.
+                            // Non-owner sees them as masked (card back).
+                            if (card.faceDown && card.owner !== currentRole) {
+                                isMasked = true;
+                            }
+                        } else {
+                            // Practice mode: allow viewing everything
+                            isMasked = false;
+                        }
+
+                        const imgUrl = isMasked ?
+                            (state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg") :
+                            card.imageUrl;
+
+                        const cardHTML = `
+                            <div class="extra-deck-card-container" data-instance-id="${card.instanceId}">
+                                <img src="${imgUrl}" alt="${isMasked ? 'Boca Abajo' : card.name}">
+                                <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 6px;">
+                                    ${isMasked ? '' : `
+                                        <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                                        <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                        $("#extra-cards-grid").append(cardHTML);
+                    });
+                }
+
+                $("#extra-overlay").fadeIn(200).css("display", "flex");
+
+                // Click Invocar button to start targeting mode on the field
+                $(".btn-extra-summon").off("click").on("click", function() {
+                    const instId = $(this).data("instance-id");
+                    const cardObj = state.cards.find(c => c.instanceId === instId);
+                    if (cardObj) {
+                        $("#extra-overlay").fadeOut(200);
+                        startGraphicalTargeting(cardObj, "summon");
+                    }
+                });
+
+                // Click XYZ button to start XYZ targeting mode on the field
+                $(".btn-extra-xyz").off("click").on("click", function() {
+                    const instId = $(this).data("instance-id");
+                    const cardObj = state.cards.find(c => c.instanceId === instId);
+                    if (cardObj) {
+                        $("#extra-overlay").fadeOut(200);
+                        startGraphicalTargeting(cardObj, "xyz");
+                    }
+                });
+            };
+
             // Wrap renderAllCards to perform automatic action logging on diff
             const originalRenderAllCards = window.renderAllCards;
             window.renderAllCards = function() {
                 const oldStates = previousCardStates;
+
+                // Handle graveyard and banished stack top card ordering on transition
+                if (Object.keys(oldStates).length > 0) {
+                    state.cards.forEach(card => {
+                        const oldC = oldStates[card.instanceId];
+                        if (oldC && oldC.zone !== card.zone) {
+                            if (card.zone.startsWith("grave_") || card.zone.startsWith("banished_") || card.zone.startsWith("extra_") || card.zone.startsWith("deck_")) {
+                                // If card already has a very recent movedToPileAt set, do not overwrite it!
+                                const isRecent = card.movedToPileAt && (Math.abs(Date.now() - card.movedToPileAt) < 1000);
+                                if (!isRecent) {
+                                    card.movedToPileAt = Date.now();
+                                }
+
+                                const zoneCards = state.cards.filter(c => c.zone === card.zone && c.instanceId !== card.instanceId);
+                                const maxZ = zoneCards.length > 0 ? Math.max(...zoneCards.map(c => c.z)) : 100;
+                                card.z = maxZ + 10;
+                            }
+                        }
+                    });
+                }
+
                 const newStates = trackCardStates();
 
                 // If this render is triggered by a remote sync, do not log or broadcast!
                 if (window.isIncomingSync) {
                     previousCardStates = newStates;
+
+                    // Apply card masking before rendering during incoming sync as well!
+                    const originalFaceDowns = new Map();
+                    if (state.mode === "multiplayer") {
+                        state.cards.forEach(card => {
+                            const isOpponentHand = (currentRole === "player1" && card.zone === "hand_2") || (currentRole === "player2" && card.zone === "hand_1");
+                            const isOpponentFaceDown = card.faceDown && (card.owner !== currentRole);
+                            if (isOpponentHand || isOpponentFaceDown) {
+                                originalFaceDowns.set(card.instanceId, card.faceDown);
+                                card.faceDown = true;
+                            }
+                        });
+                    }
+
                     originalRenderAllCards.apply(this, arguments);
+
+                    // Restore original face-down states
+                    if (state.mode === "multiplayer") {
+                        state.cards.forEach(card => {
+                            if (originalFaceDowns.has(card.instanceId)) {
+                                card.faceDown = originalFaceDowns.get(card.instanceId);
+                            }
+                        });
+                    }
+
+                    // Append custom stats badges to cards
+                    state.cards.forEach(card => {
+                        if (card.customAtk !== undefined || card.customDef !== undefined) {
+                            const $cardEl = $(`#${card.instanceId}`);
+                            if ($cardEl.length) {
+                                $cardEl.find(".card-custom-stats-badge").remove();
+                                $cardEl.append(`
+                                    <div class="card-custom-stats-badge" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(15, 20, 26, 0.9); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); text-shadow: 0 0 2px #00d2ff;">
+                                        ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}
+                                    </div>
+                                `);
+                            }
+                        }
+                    });
+
                     return;
                 }
 
@@ -2877,8 +3046,45 @@
                 // Keep previous states up to date
                 previousCardStates = newStates;
 
+                // Apply card masking before rendering
+                const originalFaceDowns = new Map();
+                if (state.mode === "multiplayer") {
+                    state.cards.forEach(card => {
+                        const isOpponentHand = (currentRole === "player1" && card.zone === "hand_2") || (currentRole === "player2" && card.zone === "hand_1");
+                        const isOpponentFaceDown = card.faceDown && (card.owner !== currentRole);
+                        if (isOpponentHand || isOpponentFaceDown) {
+                            originalFaceDowns.set(card.instanceId, card.faceDown);
+                            card.faceDown = true;
+                        }
+                    });
+                }
+
                 // Run original render layout
                 originalRenderAllCards.apply(this, arguments);
+
+                // Restore original face-down states
+                if (state.mode === "multiplayer") {
+                    state.cards.forEach(card => {
+                        if (originalFaceDowns.has(card.instanceId)) {
+                            card.faceDown = originalFaceDowns.get(card.instanceId);
+                        }
+                    });
+                }
+
+                // Append custom stats badges to cards
+                state.cards.forEach(card => {
+                    if (card.customAtk !== undefined || card.customDef !== undefined) {
+                        const $cardEl = $(`#${card.instanceId}`);
+                        if ($cardEl.length) {
+                            $cardEl.find(".card-custom-stats-badge").remove();
+                            $cardEl.append(`
+                                <div class="card-custom-stats-badge" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(15, 20, 26, 0.9); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); text-shadow: 0 0 2px #00d2ff;">
+                                    ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}
+                                </div>
+                            `);
+                        }
+                    }
+                });
 
                 // Broadcast cards state if in multiplayer mode and not an incoming sync
                 if (state.mode === "multiplayer" && !window.isIncomingSync) {
