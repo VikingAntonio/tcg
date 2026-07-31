@@ -21,11 +21,11 @@ def run_cuj(page):
     page.wait_for_timeout(1000)
 
     # Toggle accessories panel
-    page.click("#toggle-acc-btn", force=True)
+    page.click("#toggle-acc-btn")
     page.wait_for_timeout(1000)
 
     # Draw 5 cards for player 1
-    page.click("#zone-deck_1 .pile-menu-trigger", force=True)
+    page.click("#zone-deck_1 .pile-menu-trigger")
     page.wait_for_timeout(1000)
     page.click("text=Robar 5 Cartas")
     page.wait_for_timeout(2000)
@@ -40,7 +40,6 @@ if __name__ == "__main__":
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            viewport={"width": 1600, "height": 900},
             record_video_dir="/home/jules/verification/videos"
         )
         page = context.new_page()
