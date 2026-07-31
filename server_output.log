@@ -1,19 +1,11 @@
-127.0.0.1 - - [31/Jul/2026 06:43:58] "GET /configMagic.html HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:43:58] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:44:03] "GET /magic.html?layout=yugioh&deck1=mock&deck2=mock&mode=practice HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:44:03] "GET /css/style.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:44:03] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:44:03] "GET /css/magic.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:44:03] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:44:03] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:44:03] "GET /js/magic.js HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:40] "GET /configMagic.html HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:40] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /magic.html?layout=pokemon&deck1=mock&deck2=mock&mode=practice HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /css/magic.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /css/style.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /js/magic.js HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 06:45:43] "GET /img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:50] "GET /configDuel.html HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:50] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:52] "GET /duel.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:52] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:52] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:52] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:52] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [31/Jul/2026 14:23:55] code 404, message File not found
+127.0.0.1 - - [31/Jul/2026 14:23:55] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [31/Jul/2026 14:23:55] code 404, message File not found
+127.0.0.1 - - [31/Jul/2026 14:23:55] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
