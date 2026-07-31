@@ -49,6 +49,15 @@
             <div class="resize-handle"></div>
         </div>
 
+        <div class="magic-landing-zone p1-theme landing-zone-prizes-p1" id="zone-prizes-p1" style="display: none;">
+            <div class="zone-counter-badge">
+                <i class="fas fa-gift"></i> Premios J1: <span id="count-prizes-p1">0</span>
+                <button class="btn-view-list" data-zone="prizes_1" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer;"><i class="fas fa-list"></i> Lista</button>
+            </div>
+            <div class="zone-label-text">Premios J1</div>
+            <div class="resize-handle"></div>
+        </div>
+
         <!-- Player 2 landing zones (Only displayed when active) -->
         <div class="magic-landing-zone p2-theme landing-zone-hand-p2" id="zone-hand-p2" style="display: none;">
             <div class="zone-counter-badge"><i class="fas fa-hand-holding"></i> Mano: <span id="count-hand-p2">0</span></div>
@@ -68,6 +77,15 @@
                 <button class="btn-view-list" data-zone="banish_2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer;"><i class="fas fa-list"></i> Lista</button>
             </div>
             <div class="zone-label-text">Destierro J2</div>
+            <div class="resize-handle"></div>
+        </div>
+
+        <div class="magic-landing-zone p2-theme landing-zone-prizes-p2" id="zone-prizes-p2" style="display: none;">
+            <div class="zone-counter-badge">
+                <i class="fas fa-gift"></i> Premios J2: <span id="count-prizes-p2">0</span>
+                <button class="btn-view-list" data-zone="prizes_2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer;"><i class="fas fa-list"></i> Lista</button>
+            </div>
+            <div class="zone-label-text">Premios J2</div>
             <div class="resize-handle"></div>
         </div>
 
@@ -93,7 +111,7 @@
             <h3><i class="fas fa-search-plus"></i> Vista Detallada</h3>
             <div class="card-detailed-preview" id="card-detail-view" style="position: relative;">
                 <div class="preview-img-container" style="position: relative;">
-                    <img id="detail-card-img" src="https://via.placeholder.com/150x218?text=Pasa+el+cursor" alt="Preview">
+                    <img id="detail-card-img" src="img/bocabajo.jpg" alt="Preview">
                     <!-- Magnifying glass overlay icon -->
                     <button id="btn-magnify-preview" title="Ampliar y leer efecto" style="position: absolute; bottom: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; background: rgba(18,24,30,0.85); border: 1.5px solid var(--primary-color); color: var(--primary-color); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.6); z-index: 10; transition: all 0.2s;"><i class="fas fa-search-plus" style="font-size: 1rem;"></i></button>
                 </div>
@@ -208,6 +226,7 @@
         <div class="menu-item" id="menu-deck-draw5"><i class="fas fa-hand-holding"></i> Robar 5 Cartas</div>
         <div class="menu-item" id="menu-deck-shuffle"><i class="fas fa-random"></i> Barajar Deck</div>
         <div class="menu-item" id="menu-deck-search"><i class="fas fa-search"></i> Ver / Buscar Deck</div>
+        <div class="menu-item pokemon-only-item" id="menu-deck-prizes" style="display: none;"><i class="fas fa-gift"></i> Colocar Premios (6 Cartas)</div>
     </div>
 
     <div class="deck-context-menu" id="extra-ctx-menu">

@@ -27,7 +27,7 @@ const POKE_MOCKS = [
 
 // Local state configuration
 const state = {
-    layout: "none", // none, yugioh, pokemon
+    layout: "yugioh", // yugioh, pokemon
     mode: "practice", // practice, multiplayer
     cards: [], // Array of card instances { id, name, image_url, x, y, faceUp, tapped, counters: { glass: 0, poke: 0 }, owner: 'player1'/'player2' }
     decks: { player1: [], player2: [] },
@@ -45,22 +45,24 @@ let targetingCard = null;
 // Initialize Magic Engine
 $(document).ready(async function() {
     const urlParams = new URLSearchParams(window.location.search);
-    state.layout = urlParams.get("layout") || "none";
+    state.layout = urlParams.get("layout") || "yugioh";
     state.mode = urlParams.get("mode") || "practice";
     const deck1Id = urlParams.get("deck1");
     const deck2Id = urlParams.get("deck2");
 
     hasPlayer2 = (deck2Id && deck2Id !== "none");
 
-    // Apply layout guide visual and body theme classes
-    if (state.layout === "yugioh") {
-        $("#layout-guide-bg").addClass("yugioh");
-        $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
-    } else if (state.layout === "pokemon") {
-        $("#layout-guide-bg").addClass("pokemon");
+    // Body theme classes (No background guide images inside magic.html)
+    if (state.layout === "pokemon") {
         $("body").addClass("layout-pokemon").removeClass("layout-yugioh");
+        $("#zone-prizes-p1").css("display", "flex");
+        if (hasPlayer2) {
+            $("#zone-prizes-p2").css("display", "flex");
+        }
+        $(".floating-lp-widget").hide(); // Pokémon format has no Life Points widgets
     } else {
         $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
+        $(".floating-lp-widget").show();
     }
 
     // Hide/Show perspective switcher
@@ -75,8 +77,11 @@ $(document).ready(async function() {
         $("#zone-hand-p2").css("display", "flex");
         $("#zone-grave-p2").css("display", "flex");
         $("#zone-banish-p2").css("display", "flex");
-        $("#lp-widget-p2").css("display", "block");
     }
+
+    // Set initial card preview image depending on layout format
+    const defaultBackImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
+    $("#detail-card-img").attr("src", defaultBackImg);
 
     initializePiles();
     setupAccessories();
@@ -167,25 +172,31 @@ function initializePiles() {
 
     // Deck & Extra coordinates
     const p1_deck_x = 35;
-    const p1_deck_y = height - 245;
+    const p1_deck_y = height - 195;
     const p1_extra_x = 35;
-    const p1_extra_y = height - 485;
+    const p1_extra_y = height - 395;
 
     const p2_deck_x = width - 530;
     const p2_deck_y = 25;
     const p2_extra_x = width - 530;
-    const p2_extra_y = 265;
+    const p2_extra_y = 215;
 
     // Render P1 Deck
     createPileElement($container, "deck_1", "Main Deck J1", p1_deck_x, p1_deck_y, "player1", "deck");
-    // Render P1 Extra
-    createPileElement($container, "extra_1", "Extra Deck J1", p1_extra_x, p1_extra_y, "player1", "extra");
+
+    // Render P1 Extra only if layout is not Pokémon
+    if (state.layout !== "pokemon") {
+        createPileElement($container, "extra_1", "Extra Deck J1", p1_extra_x, p1_extra_y, "player1", "extra");
+    }
 
     if (hasPlayer2) {
         // Render P2 Deck
         createPileElement($container, "deck_2", "Main Deck J2", p2_deck_x, p2_deck_y, "player2", "deck");
-        // Render P2 Extra
-        createPileElement($container, "extra_2", "Extra Deck J2", p2_extra_x, p2_extra_y, "player2", "extra");
+
+        // Render P2 Extra only if layout is not Pokémon
+        if (state.layout !== "pokemon") {
+            createPileElement($container, "extra_2", "Extra Deck J2", p2_extra_x, p2_extra_y, "player2", "extra");
+        }
     }
 
     updatePileCounts();
@@ -295,8 +306,8 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                 let targetX = mX - dragOffset.x;
                 let targetY = mY - dragOffset.y;
 
-                targetX = Math.max(0, Math.min(window.innerWidth - 150, targetX));
-                targetY = Math.max(0, Math.min(window.innerHeight - 218, targetY));
+                targetX = Math.max(0, Math.min(window.innerWidth - 110, targetX));
+                targetY = Math.max(0, Math.min(window.innerHeight - 160, targetY));
 
                 dragCard.x = targetX;
                 dragCard.y = targetY;
@@ -310,7 +321,7 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                     $(`#${dragCard.id}`).removeClass("dragging");
                     $(".magic-landing-zone").removeClass("drag-over");
 
-                    // Automatically flip card face-up if dropped inside J1 or J2 Hand zones!
+                    // Automatically flip card face-up if dropped inside J1 or J2 Hand / Graveyard zones!
                     const currentZone = getCardCurrentZone(dragCard);
                     if (currentZone === "hand_p1" || currentZone === "hand_p2") {
                         dragCard.faceUp = true;
@@ -350,10 +361,14 @@ function updatePileCounts() {
     const backImg = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
 
     togglePileBackground("#zone-deck_1", p1Deck, backImg);
-    togglePileBackground("#zone-extra_1", p1Extra, backImg);
+    if (state.layout !== "pokemon") {
+        togglePileBackground("#zone-extra_1", p1Extra, backImg);
+    }
     if (hasPlayer2) {
         togglePileBackground("#zone-deck_2", p2Deck, backImg);
-        togglePileBackground("#zone-extra_2", p2Extra, backImg);
+        if (state.layout !== "pokemon") {
+            togglePileBackground("#zone-extra_2", p2Extra, backImg);
+        }
     }
 
     // Refresh landing zone counts based on absolute cards coordinates
@@ -384,8 +399,8 @@ function togglePileBackground(selector, count, imgUrl) {
 // Calculate containing zone geometrically
 function updateLandingZoneCounts() {
     const counts = {
-        hand_p1: 0, grave_p1: 0, banish_p1: 0,
-        hand_p2: 0, grave_p2: 0, banish_p2: 0
+        hand_p1: 0, grave_p1: 0, banish_p1: 0, prizes_p1: 0,
+        hand_p2: 0, grave_p2: 0, banish_p2: 0, prizes_p2: 0
     };
 
     state.cards.forEach(card => {
@@ -398,18 +413,20 @@ function updateLandingZoneCounts() {
     $("#count-hand-p1").text(counts.hand_p1);
     $("#count-grave-p1").text(counts.grave_p1);
     $("#count-banish-p1").text(counts.banish_p1);
+    $("#count-prizes-p1").text(counts.prizes_p1);
 
     if (hasPlayer2) {
         $("#count-hand-p2").text(counts.hand_p2);
         $("#count-grave-p2").text(counts.grave_p2);
         $("#count-banish-p2").text(counts.banish_p2);
+        $("#count-prizes-p2").text(counts.prizes_p2);
     }
 }
 
 // Fetch bounding boxes dynamically
 function getCardCurrentZone(card) {
-    const cardMidX = card.x + 75;
-    const cardMidY = card.y + 109;
+    const cardMidX = card.x + 55;
+    const cardMidY = card.y + 80;
 
     // Hand P1
     if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p1")) return "hand_p1";
@@ -417,11 +434,14 @@ function getCardCurrentZone(card) {
     if (isPointInElement(cardMidX, cardMidY, "#zone-grave-p1")) return "grave_p1";
     // Banish P1
     if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p1")) return "banish_p1";
+    // Prizes P1
+    if (isPointInElement(cardMidX, cardMidY, "#zone-prizes-p1")) return "prizes_p1";
 
     if (hasPlayer2) {
         if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p2")) return "hand_p2";
         if (isPointInElement(cardMidX, cardMidY, "#zone-grave-p2")) return "grave_p2";
         if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p2")) return "banish_p2";
+        if (isPointInElement(cardMidX, cardMidY, "#zone-prizes-p2")) return "prizes_p2";
     }
 
     return null;
@@ -483,6 +503,47 @@ function drawCards(owner, amount) {
             x: cardX,
             y: targetY,
             faceUp: true, // Automatically flip cards face-up in the hand!
+            tapped: false,
+            counters: { glass: 0, poke: 0 },
+            owner: owner,
+            section: cardData.section || "Main"
+        });
+    }
+
+    renderAllCards();
+    updatePileCounts();
+}
+
+// Pokémon Prize Placement (6 top cards)
+function setupPokemonPrizes(owner) {
+    const deck = state.decks[owner];
+    const mainCards = deck.filter(c => c.section !== "Extra");
+    if (mainCards.length < 6) {
+        Swal.fire('No hay suficientes cartas', 'Quedan menos de 6 cartas en el Deck para colocar como Premios.', 'warning');
+        return;
+    }
+
+    const selector = owner === "player1" ? "#zone-prizes-p1" : "#zone-prizes-p2";
+    const $zone = $(selector);
+    if (!$zone.length) return;
+    const offset = $zone.offset();
+
+    for (let i = 0; i < 6; i++) {
+        const idx = deck.findIndex(c => c.section !== "Extra");
+        const cardData = deck.splice(idx, 1)[0];
+
+        const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+        const cardX = offset.left + (i * 24) + 15;
+        const cardY = offset.top + 15;
+
+        state.cards.push({
+            id: cardId,
+            name: cardData.name,
+            image_url: cardData.image_url,
+            desc: cardData.desc || "",
+            x: cardX,
+            y: cardY,
+            faceUp: false, // Prizes are always placed face-down cleanly!
             tapped: false,
             counters: { glass: 0, poke: 0 },
             owner: owner,
@@ -638,8 +699,8 @@ $(document).on("click", ".search-to-field", function(e) {
 
     // Spawn at center of the viewport
     const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-    const spawnX = window.innerWidth / 2 - 75;
-    const spawnY = window.innerHeight / 2 - 109;
+    const spawnX = window.innerWidth / 2 - 55;
+    const spawnY = window.innerHeight / 2 - 80;
 
     state.cards.push({
         id: cardId,
@@ -690,8 +751,8 @@ $(document).on("click", ".search-to-grave, .search-to-banish", function(e) {
         name: cardData.name,
         image_url: cardData.image_url,
         desc: cardData.desc || "",
-        x: window.innerWidth / 2 - 75,
-        y: window.innerHeight / 2 - 109,
+        x: window.innerWidth / 2 - 55,
+        y: window.innerHeight / 2 - 80,
         faceUp: true,
         tapped: false,
         counters: { glass: 0, poke: 0 },
@@ -815,7 +876,7 @@ function setupCardInteractions() {
 
     $field.on("mousedown touchstart", ".duel-card", function(e) {
         // Prevent trigger during context triggers or submenu interaction
-        if ($(e.target).closest(".field-card-actions").length || $(e.target).hasClass("card-counter-badge")) return;
+        if ($(e.target).closest(".field-card-actions").length || $(e.target).hasClass("card-counter-badge") || $(e.target).closest(".stacked-counter-bead").length) return;
 
         // Prevent dragging when in targeting mode
         if (targetingCard) return;
@@ -851,9 +912,12 @@ function setupCardInteractions() {
             let targetX = mX - dragOffset.x;
             let targetY = mY - dragOffset.y;
 
-            // Restrict coordinates inside viewport
-            targetX = Math.max(0, Math.min(window.innerWidth - 150, targetX));
-            targetY = Math.max(0, Math.min(window.innerHeight - 218, targetY));
+            // Restrict coordinates inside viewport (allowing dragging closer to bottom edges)
+            const cardH = $(`#${dragCard.id}`).outerHeight() || 160;
+            const cardW = $(`#${dragCard.id}`).outerWidth() || 110;
+
+            targetX = Math.max(0, Math.min(window.innerWidth - cardW, targetX));
+            targetY = Math.max(0, Math.min(window.innerHeight - cardH, targetY));
 
             dragCard.x = targetX;
             dragCard.y = targetY;
@@ -901,8 +965,8 @@ function setupCardInteractions() {
 }
 
 function updateLandingHoverState(x, y) {
-    const cardMidX = x + 75;
-    const cardMidY = y + 109;
+    const cardMidX = x + 55;
+    const cardMidY = y + 80;
 
     $(".magic-landing-zone").removeClass("drag-over");
 
@@ -912,6 +976,8 @@ function updateLandingHoverState(x, y) {
         $("#zone-grave-p1").addClass("drag-over");
     } else if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p1")) {
         $("#zone-banish-p1").addClass("drag-over");
+    } else if (isPointInElement(cardMidX, cardMidY, "#zone-prizes-p1")) {
+        $("#zone-prizes-p1").addClass("drag-over");
     } else if (hasPlayer2) {
         if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p2")) {
             $("#zone-hand-p2").addClass("drag-over");
@@ -919,6 +985,8 @@ function updateLandingHoverState(x, y) {
             $("#zone-grave-p2").addClass("drag-over");
         } else if (isPointInElement(cardMidX, cardMidY, "#zone-banish-p2")) {
             $("#zone-banish-p2").addClass("drag-over");
+        } else if (isPointInElement(cardMidX, cardMidY, "#zone-prizes-p2")) {
+            $("#zone-prizes-p2").addClass("drag-over");
         }
     }
 }
@@ -984,9 +1052,14 @@ function setupGlobalEvents() {
         const zoneKey = $(this).attr("data-zone"); // e.g., "grave_1"
         const isP1 = zoneKey.endsWith("_1");
         const isBanish = zoneKey.startsWith("banish");
+        const isPrizes = zoneKey.startsWith("prizes");
 
         // Gather all cards geometrically inside this target landing zone
-        const targetZoneId = isBanish ? (isP1 ? "banish_p1" : "banish_p2") : (isP1 ? "grave_p1" : "grave_p2");
+        let targetZoneId = "";
+        if (isBanish) targetZoneId = isP1 ? "banish_p1" : "banish_p2";
+        else if (isPrizes) targetZoneId = isP1 ? "prizes_p1" : "prizes_p2";
+        else targetZoneId = isP1 ? "grave_p1" : "grave_p2";
+
         const listCards = state.cards.filter(c => getCardCurrentZone(c) === targetZoneId);
 
         if (listCards.length === 0) {
@@ -994,7 +1067,12 @@ function setupGlobalEvents() {
             return;
         }
 
-        $("#pile-modal-title").text(isBanish ? "Lista de Cartas en Destierro" : "Lista de Cartas en Cementerio");
+        let title = "Lista de Cartas";
+        if (isBanish) title = "Lista de Cartas en Destierro";
+        else if (isPrizes) title = "Lista de Cartas en Premios";
+        else title = "Lista de Cartas en Cementerio";
+
+        $("#pile-modal-title").text(title);
         const $grid = $("#pile-cards-grid");
         $grid.empty();
 
@@ -1046,8 +1124,8 @@ function setupGlobalEvents() {
         const cardId = $(this).closest(".pile-card-container").attr("data-card-id");
         const cardObj = state.cards.find(c => c.id === cardId);
         if (cardObj) {
-            cardObj.x = window.innerWidth / 2 - 75;
-            cardObj.y = window.innerHeight / 2 - 109;
+            cardObj.x = window.innerWidth / 2 - 55;
+            cardObj.y = window.innerHeight / 2 - 80;
             cardObj.faceUp = true;
             cardObj.tapped = false;
 
@@ -1171,8 +1249,8 @@ function setupAccessories() {
     // YGO Token Spawner directly centered on field
     $("#btn-spawn-token").click(function() {
         const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-        const spawnX = window.innerWidth / 2 - 75;
-        const spawnY = window.innerHeight / 2 - 109;
+        const spawnX = window.innerWidth / 2 - 55;
+        const spawnY = window.innerHeight / 2 - 80;
 
         state.cards.push({
             id: cardId,
@@ -1268,7 +1346,8 @@ function renderAllCards() {
         const currentZone = getCardCurrentZone(card);
         const inGraveOrBanish = (currentZone === "grave_p1" || currentZone === "grave_p2" || currentZone === "banish_p1" || currentZone === "banish_p2");
         const inHand = (currentZone === "hand_p1" || currentZone === "hand_p2");
-        const sizeClass = (inGraveOrBanish || inHand) ? "miniature-card" : "";
+        const inPrizes = (currentZone === "prizes_p1" || currentZone === "prizes_p2");
+        const sizeClass = (inGraveOrBanish || inHand || inPrizes) ? "miniature-card" : "";
 
         // Anti-peeking logic
         let isMaskedAsBack = false;
@@ -1297,11 +1376,45 @@ function renderAllCards() {
         const srcImg = (card.faceUp && !isMaskedAsBack) ? card.image_url : backImg;
 
         let counterHtml = "";
-        if (card.counters.glass > 0) {
-            counterHtml += `<div class="card-counter-badge glass-counter" data-type="glass" data-card-id="${card.id}"><i class="fas fa-gem"></i> ${card.counters.glass}</div>`;
+
+        // YGO Glass spheres
+        if (state.layout !== "pokemon" && card.counters.glass > 0) {
+            let beadsHtml = "";
+            for (let i = 0; i < card.counters.glass; i++) {
+                beadsHtml += `<div class="stacked-counter-bead ygo-bead" data-card-id="${card.id}" style="z-index: ${10 + i}; margin-left: -5px;"></div>`;
+            }
+            counterHtml += `
+                <div class="card-counter-badge glass-total" data-type="glass" data-card-id="${card.id}" style="display: flex; align-items: center; gap: 4px; padding: 4px 8px;">
+                    <i class="fas fa-gem" style="color: #00d2ff;"></i> ${card.counters.glass}
+                    <div style="display: flex; margin-left: 5px;">${beadsHtml}</div>
+                </div>
+            `;
         }
-        if (card.counters.poke > 0) {
-            counterHtml += `<div class="card-counter-badge poke-counter" data-type="poke" data-card-id="${card.id}"><i class="fas fa-heart-pulse"></i> +${card.counters.poke}</div>`;
+
+        // Pokemon Damage chips
+        if (state.layout === "pokemon" && card.counters.poke > 0) {
+            let tempPoke = card.counters.poke;
+            let chips = [];
+            // Greedy chip splitter
+            while (tempPoke >= 100) { chips.push(100); tempPoke -= 100; }
+            while (tempPoke >= 50) { chips.push(50); tempPoke -= 50; }
+            while (tempPoke >= 10) { chips.push(10); tempPoke -= 10; }
+
+            let chipsHtml = "";
+            chips.forEach((val, i) => {
+                let colorClass = "dmg-10";
+                if (val >= 50 && val < 100) colorClass = "dmg-50";
+                else if (val >= 100) colorClass = "dmg-100";
+
+                chipsHtml += `<div class="stacked-counter-bead poke-bead ${colorClass}" data-card-id="${card.id}" data-val="${val}" style="z-index: ${10 + i}; margin-left: -5px;">${val}</div>`;
+            });
+
+            counterHtml += `
+                <div class="card-counter-badge poke-total" data-type="poke" data-card-id="${card.id}" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px;">
+                    <div class="pokemon-damage-badge-text" style="font-size: 0.65rem; font-weight: 900; color: #fff; text-shadow: 0 0 6px #ff1b6b;">💥 Total: ${card.counters.poke}</div>
+                    <div style="display: flex; margin-top: 2px;">${chipsHtml}</div>
+                </div>
+            `;
         }
 
         const html = `
@@ -1311,7 +1424,7 @@ function renderAllCards() {
                     <img class="card-img" src="${srcImg}" alt="${card.name}">
                 </div>
                 <!-- Dynamic Horizontal quick actions bar on hover (hidden if Miniature) -->
-                ${inGraveOrBanish ? '' : `
+                ${(inGraveOrBanish || inPrizes) ? '' : `
                 <div class="field-card-actions">
                     <button class="field-action-btn btn-field-attack" data-id="${card.id}">Atacar</button>
                     <button class="field-action-btn btn-field-direct" data-id="${card.id}">Atk Directo</button>
@@ -1461,6 +1574,11 @@ function bindDropdownContextMenus() {
 
         if (type === "deck") {
             showContextMenu("#deck-ctx-menu", x, y, { owner: owner });
+            if (state.layout === "pokemon") {
+                $("#menu-deck-prizes").show();
+            } else {
+                $("#menu-deck-prizes").hide();
+            }
         } else {
             showContextMenu("#extra-ctx-menu", x, y, { owner: owner });
         }
@@ -1476,6 +1594,11 @@ function bindDropdownContextMenus() {
 
         if (type === "deck") {
             showContextMenu("#deck-ctx-menu", e.clientX, e.clientY, { owner: owner });
+            if (state.layout === "pokemon") {
+                $("#menu-deck-prizes").show();
+            } else {
+                $("#menu-deck-prizes").hide();
+            }
         } else {
             showContextMenu("#extra-ctx-menu", e.clientX, e.clientY, { owner: owner });
         }
@@ -1530,6 +1653,14 @@ function bindDropdownContextMenus() {
         const data = $("#deck-ctx-menu").data("context-data");
         if (data && data.owner) {
             openSearchModal(data.owner);
+        }
+        $("#deck-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-deck-prizes").click(function() {
+        const data = $("#deck-ctx-menu").data("context-data");
+        if (data && data.owner) {
+            setupPokemonPrizes(data.owner);
         }
         $("#deck-ctx-menu").removeClass("active");
     });
@@ -1676,8 +1807,8 @@ function sendCardToZone(card, zoneType) {
         const w = $zone.outerWidth();
         const h = $zone.outerHeight();
         // Place card centered in landing zone
-        card.x = offset.left + (w / 2) - 75;
-        card.y = offset.top + (h / 2) - 109;
+        card.x = offset.left + (w / 2) - 40;
+        card.y = offset.top + (h / 2) - 58;
 
         // Force faceUp and untap/vertical cleanly inside Cementerio/Graveyard
         if (zoneType === "grave") {
@@ -1763,6 +1894,31 @@ $(document).on("click", ".btn-field-flash", function(e) {
     }
 });
 
+// Direct individual YGO counter bead click subtraction
+$(document).on("click", ".stacked-counter-bead.ygo-bead", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-card-id");
+    const cardObj = state.cards.find(c => c.id === cardId);
+    if (cardObj) {
+        cardObj.counters.glass = Math.max(0, cardObj.counters.glass - 1);
+        renderAllCards();
+    }
+});
+
+// Direct individual Pokémon chip click subtraction
+$(document).on("click", ".stacked-counter-bead.poke-bead", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardId = $(this).attr("data-card-id");
+    const cardObj = state.cards.find(c => c.id === cardId);
+    const chipVal = parseInt($(this).attr("data-val"));
+    if (cardObj) {
+        cardObj.counters.poke = Math.max(0, cardObj.counters.poke - chipVal);
+        renderAllCards();
+    }
+});
+
 // Drag-to-delete counter badge logic: Dragging any counter badge outside its card removes it cleanly!
 $(document).on("mousedown touchstart", ".card-counter-badge", function(e) {
     e.preventDefault();
@@ -1808,13 +1964,13 @@ $(document).on("mousedown touchstart", ".card-counter-badge", function(e) {
         const endY = upEvent.type === "touchend" ? upEvent.changedTouches[0].clientY : upEvent.clientY;
 
         // Calculate distance from card center coordinate
-        const cardMidX = card.x + 75;
-        const cardMidY = card.y + 109;
+        const cardMidX = card.x + 55;
+        const cardMidY = card.y + 80;
 
         const distance = Math.hypot(endX - cardMidX, endY - cardMidY);
 
         // If dragged outside the card boundary (threshold 100px from card center)
-        if (distance > 105) {
+        if (distance > 95) {
             if (counterType === "glass") {
                 card.counters.glass = 0;
             } else {
