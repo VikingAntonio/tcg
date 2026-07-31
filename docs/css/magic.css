@@ -771,18 +771,15 @@ body.magic-mode .stacked-counter-bead.ygo-bead {
 body.magic-mode .stacked-counter-bead.poke-bead {
     color: white;
 }
-body.magic-mode .stacked-counter-bead.poke-bead.dmg-10,
-body.magic-mode .stacked-counter-bead.poke-bead.val-10 {
+body.magic-mode .stacked-counter-bead.poke-bead.dmg-10 {
     background: radial-gradient(circle at center, rgba(255, 211, 45, 0.85) 0%, rgba(128, 10, 0, 0.95) 100%);
     border-color: #ffd32d;
 }
-body.magic-mode .stacked-counter-bead.poke-bead.dmg-50,
-body.magic-mode .stacked-counter-bead.poke-bead.val-50 {
+body.magic-mode .stacked-counter-bead.poke-bead.dmg-50 {
     background: radial-gradient(circle at center, rgba(255, 140, 0, 0.85) 0%, rgba(128, 60, 0, 0.95) 100%);
     border-color: #ff8c00;
 }
-body.magic-mode .stacked-counter-bead.poke-bead.dmg-100,
-body.magic-mode .stacked-counter-bead.poke-bead.val-100 {
+body.magic-mode .stacked-counter-bead.poke-bead.dmg-100 {
     background: radial-gradient(circle at center, rgba(255, 27, 107, 0.85) 0%, rgba(128, 10, 50, 0.95) 100%);
     border-color: #ff1b6b;
 }
