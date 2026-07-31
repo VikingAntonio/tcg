@@ -267,7 +267,7 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                 desc: cardData.desc || "",
                 x: offset.left,
                 y: offset.top,
-                faceUp: false, // Starts face-down cleanly!
+                faceUp: true, // Automatically flip cards face-up when added/drawn/pulled!
                 tapped: false,
                 counters: { glass: 0, poke: 0 },
                 owner: owner,
@@ -314,6 +314,9 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                     const currentZone = getCardCurrentZone(dragCard);
                     if (currentZone === "hand_p1" || currentZone === "hand_p2") {
                         dragCard.faceUp = true;
+                    } else if (currentZone === "grave_p1" || currentZone === "grave_p2") {
+                        dragCard.faceUp = true;
+                        dragCard.tapped = false; // Always upright in Cementerio
                     }
 
                     updateLandingZoneCounts();
@@ -876,10 +879,13 @@ function setupCardInteractions() {
                     updatePreview(dragCard);
                 }
 
-                // Automatically flip card face-up if dropped inside J1 or J2 Hand zones!
+                // Automatically flip card face-up if dropped inside J1 or J2 Hand / Graveyard zones!
                 const currentZone = getCardCurrentZone(dragCard);
                 if (currentZone === "hand_p1" || currentZone === "hand_p2") {
                     dragCard.faceUp = true;
+                } else if (currentZone === "grave_p1" || currentZone === "grave_p2") {
+                    dragCard.faceUp = true;
+                    dragCard.tapped = false; // Always upright in Cementerio
                 }
 
                 // Remove landing hover states
@@ -946,6 +952,30 @@ function setupGlobalEvents() {
         }
     });
 
+    // Centered SweetAlert full detail viewer when clicking magnifying glass icon
+    $("#btn-magnify-preview").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const src = $("#detail-card-img").attr("src");
+        const card = state.cards.find(c => c.image_url === src) || state.cards.find(c => src.includes(c.image_url)) || {};
+        const name = card.name || "Detalles de Carta";
+        const desc = card.desc || "Sin descripción disponible.";
+
+        Swal.fire({
+            title: name,
+            html: `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; font-family: 'Montserrat', sans-serif;">
+                    <img src="${src}" style="width: 250px; max-width: 90%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" alt="Card Image">
+                    <p style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; font-size: 0.9rem; line-height: 1.5; text-align: left; width: 100%; max-height: 180px; overflow-y: auto; white-space: pre-wrap; color: #eee; border: 1px solid rgba(255,255,255,0.08);">${desc}</p>
+                </div>
+            `,
+            showCloseButton: true,
+            showConfirmButton: false,
+            background: "#12181e",
+            color: "#fff"
+        });
+    });
+
     // Interactive button inside Graveyard and Banish landing zones to view list
     $(document).on("click", ".btn-view-list", function(e) {
         e.preventDefault();
@@ -964,7 +994,7 @@ function setupGlobalEvents() {
             return;
         }
 
-        $("#pile-modal-title").text(isBanish ? "Lista de Cartas en Destierro" : "Lista de Cartas en Descarte");
+        $("#pile-modal-title").text(isBanish ? "Lista de Cartas en Destierro" : "Lista de Cartas en Cementerio");
         const $grid = $("#pile-cards-grid");
         $grid.empty();
 
@@ -1237,7 +1267,8 @@ function renderAllCards() {
     state.cards.forEach(card => {
         const currentZone = getCardCurrentZone(card);
         const inGraveOrBanish = (currentZone === "grave_p1" || currentZone === "grave_p2" || currentZone === "banish_p1" || currentZone === "banish_p2");
-        const sizeClass = inGraveOrBanish ? "miniature-card" : "";
+        const inHand = (currentZone === "hand_p1" || currentZone === "hand_p2");
+        const sizeClass = (inGraveOrBanish || inHand) ? "miniature-card" : "";
 
         // Anti-peeking logic
         let isMaskedAsBack = false;
@@ -1540,6 +1571,15 @@ function bindDropdownContextMenus() {
         $("#card-ctx-menu").removeClass("active");
     });
 
+    $("#menu-card-counter-glass-sub").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            data.card.counters.glass = Math.max(0, data.card.counters.glass - 1);
+            renderAllCards();
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
     // Dynamic Pokémon multiple damage selections
     $(document).on("click", ".menu-card-counter-dmg", function(e) {
         e.preventDefault();
@@ -1548,7 +1588,7 @@ function bindDropdownContextMenus() {
         const data = $("#card-ctx-menu").data("context-data");
         if (data && data.card) {
             const val = parseInt($(this).attr("data-val"));
-            data.card.counters.poke += val;
+            data.card.counters.poke = Math.max(0, data.card.counters.poke + val);
             renderAllCards();
         }
         $("#card-ctx-menu").removeClass("active");
@@ -1638,6 +1678,13 @@ function sendCardToZone(card, zoneType) {
         // Place card centered in landing zone
         card.x = offset.left + (w / 2) - 75;
         card.y = offset.top + (h / 2) - 109;
+
+        // Force faceUp and untap/vertical cleanly inside Cementerio/Graveyard
+        if (zoneType === "grave") {
+            card.faceUp = true;
+            card.tapped = false;
+        }
+
         renderAllCards();
     }
 }

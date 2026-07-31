@@ -49,10 +49,10 @@ body.magic-mode {
     opacity: 0.22;
 }
 
-/* Absolutely Positioned Cards styling on Playmat */
+/* Absolutely Positioned Cards styling on Playmat - Calibrated to 110x160px for space comfort */
 body.magic-mode .duel-card {
-    width: 150px !important;
-    height: 218px !important;
+    width: 110px !important;
+    height: 160px !important;
     position: absolute !important;
     transition: transform 0.2s, box-shadow 0.2s;
     user-select: none;
@@ -71,7 +71,7 @@ body.magic-mode .duel-card.dragging {
 body.magic-mode .card-img-wrapper {
     width: 100% !important;
     height: 100% !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     overflow: hidden;
     position: relative;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
@@ -104,9 +104,9 @@ body.magic-mode .duel-card.face-down .card-img {
 /* Draggable Pile Zones (Deck & Extra Deck Only) */
 .magic-pile-zone {
     position: absolute;
-    width: 150px;
-    height: 218px;
-    border-radius: 10px;
+    width: 110px;
+    height: 160px;
+    border-radius: 8px;
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(4px);
     border: 2px dashed rgba(255, 255, 255, 0.25);
@@ -148,7 +148,7 @@ body.magic-mode .duel-card.face-down .card-img {
 
 .magic-pile-zone .pile-label {
     font-family: 'Orbitron', sans-serif;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: bold;
     letter-spacing: 0.5px;
     color: #888;
@@ -203,8 +203,8 @@ body.magic-mode .duel-card.face-down .card-img {
     border-radius: 4px;
     color: #fff;
     cursor: pointer;
-    font-size: 0.75rem;
-    padding: 3px 8px;
+    font-size: 0.65rem;
+    padding: 3px 6px;
     opacity: 0.9;
     transition: opacity 0.2s, background-color 0.2s;
     position: absolute;
@@ -252,6 +252,17 @@ body.magic-mode .duel-card.face-down .card-img {
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+.zone-counter-badge button {
+    pointer-events: auto; /* Let buttons inside badges receive click events! */
+}
+
+/* Zone Counters specific views */
+.btn-view-list:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-color: #00d2ff !important;
+    color: #00d2ff !important;
 }
 
 /* Zone Labels */
@@ -326,14 +337,14 @@ body.magic-mode .duel-card.face-down .card-img {
     bottom: 15px;
     left: 15%;
     width: 45%;
-    height: 200px;
+    height: 150px;
     cursor: move;
 }
 .landing-zone-hand-p2 {
     top: 15px;
     left: 15%;
     width: 45%;
-    height: 200px;
+    height: 150px;
     cursor: move;
 }
 
@@ -575,6 +586,13 @@ body.magic-mode .duel-card.face-down .card-img {
     object-fit: fill;
 }
 
+#btn-magnify-preview:hover {
+    transform: scale(1.1);
+    background: var(--primary-color) !important;
+    color: #000 !important;
+    box-shadow: 0 0 12px var(--primary-color);
+}
+
 /* Floating neon/glowing card counters over elements */
 body.magic-mode .card-counter-container {
     position: absolute;
@@ -596,6 +614,7 @@ body.magic-mode .card-counter-badge {
     padding: 2px 6px;
     border-radius: 4px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    pointer-events: auto !important; /* Allow dragging to remove! */
 }
 
 body.magic-mode .card-counter-badge.glass-counter {
@@ -670,7 +689,7 @@ body.magic-mode .deck-context-menu {
     z-index: 100000 !important;
 }
 
-/* Miniature card class inside descarte/grave and destierro/banish zones */
+/* Miniature card class inside descarte/grave, hand, and destierro/banish zones */
 body.magic-mode .duel-card.miniature-card {
     width: 80px !important;
     height: 116px !important;
