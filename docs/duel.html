@@ -1221,6 +1221,15 @@
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
                 </div>
             </div>
+
+            <div class="accessories-section" id="custom-stats-section-p1">
+                <h3>Custom ATK / DEF</h3>
+                <div class="acc-row" style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                </div>
+                <button class="btn-apply-custom-stats" style="width: 100%; background: #00d2ff; color: #000; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
+            </div>
         </div>
     </div>
 
@@ -1277,6 +1286,15 @@
                     <div class="counter-source poke-counter-source dmg-90" data-val="90" draggable="true">90</div>
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
                 </div>
+            </div>
+
+            <div class="accessories-section" id="custom-stats-section-p2">
+                <h3>Custom ATK / DEF</h3>
+                <div class="acc-row" style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                </div>
+                <button class="btn-apply-custom-stats" style="width: 100%; background: #ff007f; color: #fff; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255, 0, 127, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
             </div>
         </div>
     </div>
@@ -1493,8 +1511,12 @@
         <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
+        <div class="menu-item" id="menu-to-extra-face-up"><i class="fas fa-arrow-up"></i> Al Extra Deck (Boca Arriba)</div>
+        <div class="menu-item" id="menu-to-extra-face-down"><i class="fas fa-arrow-down"></i> Al Extra Deck (Boca Abajo)</div>
         <hr>
         <div class="menu-item" id="menu-control"><i class="fas fa-exchange-alt"></i> Tomar Control</div>
+        <hr>
+        <div class="menu-item" id="menu-custom-stats"><i class="fas fa-edit"></i> Modificar ATK/DEF</div>
     </div>
 
     <!-- Click handler bindings for targeting attacks -->
@@ -3103,6 +3125,18 @@
                         }
                     });
                 }
+
+                // Stable sort state.cards by movedToPileAt so the latest card sent to any pile is positioned last in its zone's list!
+                state.cards.sort((a, b) => {
+                    if (a.zone !== b.zone) return 0;
+                    const isPile = a.zone.startsWith("deck_") || a.zone.startsWith("grave_") || a.zone.startsWith("banished_") || a.zone.startsWith("extra_");
+                    if (isPile) {
+                        const timeA = a.movedToPileAt || 0;
+                        const timeB = b.movedToPileAt || 0;
+                        return timeA - timeB;
+                    }
+                    return 0;
+                });
 
                 const newStates = trackCardStates();
 
