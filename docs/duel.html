@@ -929,6 +929,11 @@
 
         /* Mobile responsive stylesheet */
         @media (max-width: 1024px) {
+            /* Secure containment: strictly hide leaked overlays from breaking layout */
+            .overlay, #mask-editor-overlay {
+                display: none !important;
+            }
+
             /* Keep workspace as a landscape horizontal layout */
             .duel-workspace {
                 flex-direction: row !important;
@@ -941,14 +946,14 @@
                 display: none !important;
             }
 
-            /* Consolidated single right tabbed sidebar on mobile */
+            /* Consolidated single right tabbed sidebar on mobile: slightly narrower to maximize playmat area */
             .duel-communication-sidebar {
-                width: 290px !important;
-                min-width: 290px !important;
-                max-width: 290px !important;
+                width: 260px !important;
+                min-width: 260px !important;
+                max-width: 260px !important;
                 height: 100vh !important;
-                padding: 10px !important;
-                gap: 8px !important;
+                padding: 8px !important;
+                gap: 6px !important;
                 border-left: 1px solid var(--glass-border) !important;
                 border-top: none !important;
                 z-index: 1000 !important;
@@ -1007,7 +1012,7 @@
 
             /* Make preview elements smaller to fit sidebar nicely */
             .preview-img-container {
-                max-height: 140px !important;
+                max-height: 120px !important;
                 border-radius: 8px !important;
             }
             .preview-info h4 {
@@ -1015,14 +1020,14 @@
             }
             .preview-info p {
                 font-size: 0.65rem !important;
-                max-height: 90px !important;
+                max-height: 80px !important;
             }
 
             /* Arena and layout resizing for landscape */
             .duel-arena-wrapper {
                 flex: 1 !important;
                 height: 100vh !important;
-                padding: 5px !important;
+                padding: 4px !important;
                 gap: 2px !important;
                 overflow: hidden !important;
                 justify-content: space-around !important;
@@ -1030,102 +1035,95 @@
 
             /* Make hand trays ultra thin */
             .hand-tray {
-                padding: 2px 0 !important;
+                padding: 0 !important;
                 margin: 0 !important;
                 background: transparent !important;
                 border: none !important;
+                height: 50px !important;
             }
 
             .hand-cards-container {
-                min-height: 80px !important;
-                padding: 2px !important;
-                gap: 6px !important;
+                min-height: 50px !important;
+                height: 50px !important;
+                padding: 1px !important;
+                gap: 4px !important;
             }
 
-            /* Miniature cards inside hands on mobile */
+            /* Miniature cards inside hands on mobile - optimized for screen constraints */
             .hand-cards-container .duel-card {
-                width: 48px !important;
-                height: 70px !important;
+                width: 35px !important;
+                height: 50px !important;
             }
 
             /* Scale hand tray LP counters so they fit beautifully */
             .lp-counter-container {
-                width: 100px !important;
-                padding: 4px !important;
-                gap: 4px !important;
+                width: 90px !important;
+                padding: 3px !important;
+                gap: 3px !important;
                 border-radius: 8px !important;
             }
             .lp-header {
-                font-size: 0.6rem !important;
+                font-size: 0.55rem !important;
             }
             .lp-number {
-                font-size: 1.1rem !important;
+                font-size: 0.95rem !important;
             }
             .lp-calc-input {
-                font-size: 0.75rem !important;
-                padding: 2px !important;
+                font-size: 0.7rem !important;
+                padding: 1px !important;
             }
             .lp-btn {
-                font-size: 0.65rem !important;
-                padding: 3px 0 !important;
+                font-size: 0.6rem !important;
+                padding: 2px 0 !important;
             }
 
-            /* Collapsible Accessories drawer panels: position tabs on mobile */
+            /* Disable original floating drawers on mobile as they are integrated inside the tabs panel */
             .tcg-accessories-panel {
-                width: 220px !important;
-                height: 240px !important;
+                display: none !important;
             }
-            .tcg-accessories-panel.p1-accessories {
-                bottom: -240px !important;
-                right: 300px !important;
-            }
-            .tcg-accessories-panel.p1-accessories.active {
-                bottom: 10px !important;
-            }
-            .tcg-accessories-panel.p2-accessories {
-                top: -240px !important;
-                left: 10px !important;
-            }
-            .tcg-accessories-panel.p2-accessories.active {
-                top: 10px !important;
-            }
-            .accessories-tab {
-                padding: 5px 10px !important;
-                gap: 5px !important;
-            }
-            .accessories-tab span {
-                font-size: 0.65rem !important;
-            }
+
+            /* Adjust accessories content layout inside the sidebar tab */
             .accessories-content {
-                padding: 8px !important;
-                gap: 6px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                padding: 4px !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: transparent !important;
             }
             .accessories-section {
                 padding: 6px !important;
+                background: rgba(255, 255, 255, 0.02) !important;
+                border: 1px solid var(--glass-border) !important;
+                border-radius: 8px !important;
+                margin-bottom: 4px;
             }
             .acc-row {
-                gap: 6px !important;
+                gap: 4px !important;
+                flex-wrap: wrap !important;
+                justify-content: flex-start !important;
             }
             .tcg-dice, .tcg-coin {
-                width: 32px !important;
-                height: 32px !important;
-                font-size: 1rem !important;
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 0.85rem !important;
             }
             .coin-front, .coin-back {
-                font-size: 0.55rem !important;
+                font-size: 0.5rem !important;
             }
             .btn-spawn-token {
-                padding: 5px !important;
-                font-size: 0.65rem !important;
+                padding: 4px !important;
+                font-size: 0.6rem !important;
             }
             .poke-counter-grid {
                 grid-template-columns: repeat(5, 1fr) !important;
-                gap: 4px !important;
+                gap: 3px !important;
             }
             .poke-counter-source {
-                width: 26px !important;
-                height: 26px !important;
-                font-size: 0.55rem !important;
+                width: 22px !important;
+                height: 22px !important;
+                font-size: 0.5rem !important;
             }
 
             /* Adjust Game Log & Chat boxes heights on mobile tabs */
@@ -3633,20 +3631,31 @@
                         <button class="m-tab-btn active" data-tab="m-tab-preview"><i class="fas fa-search-plus"></i> Vista</button>
                         <button class="m-tab-btn" data-tab="m-tab-log"><i class="fas fa-history"></i> Log</button>
                         <button class="m-tab-btn" data-tab="m-tab-chat"><i class="fas fa-comments"></i> Chat</button>
+                        <button class="m-tab-btn" data-tab="m-tab-acc"><i class="fas fa-toolbox"></i> Acc</button>
                     </div>
                 `);
 
                 const $tabPreview = $('<div id="m-tab-preview" class="m-tab-content active-content"></div>');
                 const $tabLog = $('<div id="m-tab-log" class="m-tab-content" style="display:none;"></div>');
                 const $tabChat = $('<div id="m-tab-chat" class="m-tab-content" style="display:none;"></div>');
+                const $tabAcc = $('<div id="m-tab-acc" class="m-tab-content" style="display:none; overflow-y:auto; height:100%;"></div>');
 
                 // Move elements dynamically from left sidebar and original panels
                 $tabPreview.append($(".duel-sidebar .sidebar-section"));
                 $tabLog.append($(".duel-communication-sidebar .comm-panel").eq(0));
                 $tabChat.append($(".duel-communication-sidebar .comm-panel").eq(1));
 
+                // Extract accessories contents nicely
+                const $p1Title = $('<h4 style="font-size:0.75rem; color:#00d2ff; font-family:\'Orbitron\', sans-serif; margin: 4px 0 2px 0;">Accesorios P1</h4>');
+                const $p2Title = $('<h4 style="font-size:0.75rem; color:#ff007f; font-family:\'Orbitron\', sans-serif; margin: 8px 0 2px 0;">Accesorios P2</h4>');
+
+                const $p1Content = $("#accessories-panel-p1 .accessories-content");
+                const $p2Content = $("#accessories-panel-p2 .accessories-content");
+
+                $tabAcc.append($p1Title).append($p1Content).append($p2Title).append($p2Content);
+
                 const $roomControls = $(".room-controls");
-                $sidebar.empty().append($roomControls).append($tabBar).append($tabPreview).append($tabLog).append($tabChat);
+                $sidebar.empty().append($roomControls).append($tabBar).append($tabPreview).append($tabLog).append($tabChat).append($tabAcc);
 
                 // Bind tab buttons click actions
                 $(".m-tab-btn").click(function() {
