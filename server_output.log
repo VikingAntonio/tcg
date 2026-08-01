@@ -224,3 +224,12 @@
 127.0.0.1 - - [01/Aug/2026 14:41:13] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
 127.0.0.1 - - [01/Aug/2026 14:41:13] code 404, message File not found
 127.0.0.1 - - [01/Aug/2026 14:41:13] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [01/Aug/2026 18:07:21] "GET /configDuel.html HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 18:07:21] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 18:07:22] "GET /duel.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 18:07:22] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 18:07:22] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 18:07:22] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 18:07:22] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 18:07:26] code 404, message File not found
+127.0.0.1 - - [01/Aug/2026 18:07:26] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
