@@ -927,6 +927,12 @@
             opacity: 1;
         }
 
+        /* Permanently hide hover ribbons */
+        .hand-card-actions, .field-card-actions, .extra-deck-card-hover-overlay {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -993,6 +999,15 @@
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
                 </div>
             </div>
+
+            <div class="accessories-section" id="custom-stats-section-p1">
+                <h3>Custom ATK / DEF</h3>
+                <div class="acc-row" style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                </div>
+                <button class="btn-apply-custom-stats" style="width: 100%; background: #00d2ff; color: #000; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
+            </div>
         </div>
     </div>
 
@@ -1049,6 +1064,15 @@
                     <div class="counter-source poke-counter-source dmg-90" data-val="90" draggable="true">90</div>
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
                 </div>
+            </div>
+
+            <div class="accessories-section" id="custom-stats-section-p2">
+                <h3>Custom ATK / DEF</h3>
+                <div class="acc-row" style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
+                </div>
+                <button class="btn-apply-custom-stats" style="width: 100%; background: #ff007f; color: #fff; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255, 0, 127, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
             </div>
         </div>
     </div>
@@ -1263,8 +1287,12 @@
         <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
+        <div class="menu-item" id="menu-to-extra-face-up"><i class="fas fa-arrow-up"></i> Al Extra Deck (Boca Arriba)</div>
+        <div class="menu-item" id="menu-to-extra-face-down"><i class="fas fa-arrow-down"></i> Al Extra Deck (Boca Abajo)</div>
         <hr>
         <div class="menu-item" id="menu-control"><i class="fas fa-exchange-alt"></i> Tomar Control</div>
+        <hr>
+        <div class="menu-item" id="menu-custom-stats"><i class="fas fa-edit"></i> Modificar ATK/DEF</div>
     </div>
 
     <!-- Click handler bindings for targeting attacks -->
@@ -2873,6 +2901,18 @@
                     });
                 }
 
+                // Stable sort state.cards by movedToPileAt so the latest card sent to any pile is positioned last in its zone's list!
+                state.cards.sort((a, b) => {
+                    if (a.zone !== b.zone) return 0;
+                    const isPile = a.zone.startsWith("deck_") || a.zone.startsWith("grave_") || a.zone.startsWith("banished_") || a.zone.startsWith("extra_");
+                    if (isPile) {
+                        const timeA = a.movedToPileAt || 0;
+                        const timeB = b.movedToPileAt || 0;
+                        return timeA - timeB;
+                    }
+                    return 0;
+                });
+
                 const newStates = trackCardStates();
 
                 // If this render is triggered by a remote sync, do not log or broadcast!
@@ -3106,6 +3146,216 @@
             setTimeout(() => {
                 previousCardStates = trackCardStates();
             }, 1000);
+
+            // Handle Accessories Panel "Aplicar a Carta" button
+            $(document).on("click", ".btn-apply-custom-stats", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const $sec = $(this).closest(".accessories-section");
+                const atkVal = $sec.find(".custom-atk-input").val();
+                const defVal = $sec.find(".custom-def-input").val();
+
+                window.activeStatsTargeting = {
+                    atk: (atkVal !== "" && atkVal !== null) ? parseInt(atkVal) : undefined,
+                    def: (defVal !== "" && defVal !== null) ? parseInt(defVal) : undefined
+                };
+
+                Swal.fire({
+                    toast: true,
+                    position: 'bottom',
+                    showConfirmButton: false,
+                    timer: 5000,
+                    timerProgressBar: true,
+                    icon: 'info',
+                    title: 'Haz click en una carta para aplicar los stats customizados',
+                    background: '#12181e',
+                    color: '#fff'
+                });
+            });
+
+            // Handle Context Menu "Modificar ATK/DEF" option
+            $(document).on("click", "#menu-custom-stats", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $("#card-menu").removeClass("active");
+                if (!activeMenuCard) return;
+
+                Swal.fire({
+                    title: 'Modificar ATK / DEF',
+                    html: `
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="color: #fff; font-family: 'Orbitron'; min-width: 80px;">ATK:</label>
+                                <input id="swal-atk" type="number" class="swal2-input" value="${activeMenuCard.customAtk !== undefined ? activeMenuCard.customAtk : ''}" style="margin: 0; background: #12181e; color: #fff; border: 1px solid #00d2ff; font-family: 'Orbitron'; width: 140px; text-align: center;">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="color: #fff; font-family: 'Orbitron'; min-width: 80px;">DEF:</label>
+                                <input id="swal-def" type="number" class="swal2-input" value="${activeMenuCard.customDef !== undefined ? activeMenuCard.customDef : ''}" style="margin: 0; background: #12181e; color: #fff; border: 1px solid #00d2ff; font-family: 'Orbitron'; width: 140px; text-align: center;">
+                            </div>
+                        </div>
+                    `,
+                    background: '#12181e',
+                    color: '#fff',
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#00d2ff',
+                    cancelButtonColor: '#ff007f',
+                    preConfirm: () => {
+                        return {
+                            atk: document.getElementById('swal-atk').value,
+                            def: document.getElementById('swal-def').value
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const { atk, def } = result.value;
+                        activeMenuCard.customAtk = (atk !== "" && atk !== null) ? parseInt(atk) : undefined;
+                        activeMenuCard.customDef = (def !== "" && def !== null) ? parseInt(def) : undefined;
+                        renderAllCards();
+                    }
+                });
+            });
+
+            // Handle Context Menu "Enviar al Extra Deck Face Up" option
+            $(document).on("click", "#menu-to-extra-face-up", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $("#card-menu").removeClass("active");
+                if (!activeMenuCard) return;
+
+                activeMenuCard.zone = activeMenuCard.owner === "player1" ? "extra_1" : "extra_2";
+                activeMenuCard.faceDown = false;
+                activeMenuCard.tapped = false;
+                activeMenuCard.attachedTo = null;
+                renderAllCards();
+            });
+
+            // Handle Context Menu "Enviar al Extra Deck Face Down" option
+            $(document).on("click", "#menu-to-extra-face-down", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $("#card-menu").removeClass("active");
+                if (!activeMenuCard) return;
+
+                activeMenuCard.zone = activeMenuCard.owner === "player1" ? "extra_1" : "extra_2";
+                activeMenuCard.faceDown = true;
+                activeMenuCard.tapped = false;
+                activeMenuCard.attachedTo = null;
+                renderAllCards();
+            });
+
+            // Handle Magnifying Glass zoom modal popups
+            $("#btn-magnify-preview").on("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const card = window.activePreviewCard;
+                if (!card) {
+                    Swal.fire({
+                        title: 'Ninguna carta seleccionada',
+                        text: 'Pasa el cursor o haz click sobre una carta antes de ampliarla.',
+                        icon: 'info',
+                        background: '#12181e',
+                        color: '#fff',
+                        confirmButtonColor: '#00d2ff'
+                    });
+                    return;
+                }
+
+                // If card is masked (e.g. opponent's face-down card in multiplayer)
+                const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
+                let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+
+                if (state.mode === "multiplayer") {
+                    if (isFaceDown && card.owner === currentRole && !isPile) {
+                        isFaceDown = false;
+                    }
+                    const isOpponentHand = (currentRole === "player1" && card.zone === "hand_2") || (currentRole === "player2" && card.zone === "hand_1");
+                    if (isOpponentHand) {
+                        isFaceDown = true;
+                    }
+                } else {
+                    isFaceDown = false;
+                }
+
+                const isMasked = (isPile && state.mode === "multiplayer") || isFaceDown;
+                const imgUrl = isMasked ?
+                    (state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg") :
+                    card.imageUrl;
+
+                const nameText = isMasked ? "Carta Boca Abajo" : card.name;
+                let descText = isMasked ?
+                    `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\n\n[Detalles ocultos para evitar trampas]` :
+                    `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada para ti)" : "Boca Arriba"}\nContadores: ${card.counters}`;
+
+                if (!isMasked) {
+                    if (card.customAtk !== undefined || card.customDef !== undefined) {
+                        descText += `\n[ATK/DEF Modificado]: ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}`;
+                    }
+                    if (card.description) {
+                        descText += `\n\nEfecto / Descripción:\n${card.description}`;
+                    }
+                }
+
+                Swal.fire({
+                    width: '640px',
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    background: '#12181e',
+                    color: '#fff',
+                    html: `
+                        <div style="display: flex; gap: 20px; align-items: flex-start; text-align: left; margin-top: 20px;">
+                            <img src="${imgUrl}" alt="${nameText}" style="width: 260px; height: 380px; object-fit: cover; border-radius: 8px; border: 2px solid #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);">
+                            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                                <h2 style="margin: 0; color: #00d2ff; font-family: 'Orbitron'; font-size: 1.5rem; text-shadow: 0 0 10px rgba(0,210,255,0.4); border-bottom: 1px solid rgba(0,210,255,0.2); padding-bottom: 8px;">${nameText}</h2>
+                                <p style="margin: 0; font-family: 'Montserrat'; font-size: 13px; line-height: 1.6; color: #e0e6ed; white-space: pre-wrap; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); max-height: 280px; overflow-y: auto;">${descText}</p>
+                            </div>
+                        </div>
+                    `
+                });
+            });
+
+            // Left-click on a card to open the same context menu OR apply custom stats
+            $(document).on("click", ".duel-card", function(e) {
+                if ($("#playmat").hasClass("selecting-zone")) return;
+
+                const instId = $(this).data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (!cardObj) return;
+
+                // Handle active stats targeting from accessories panel
+                if (window.activeStatsTargeting !== undefined && window.activeStatsTargeting !== null) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    cardObj.customAtk = window.activeStatsTargeting.atk;
+                    cardObj.customDef = window.activeStatsTargeting.def;
+                    window.activeStatsTargeting = null;
+                    renderAllCards();
+                    return;
+                }
+
+                if (window.activeAttackSourceCard) return; // let attack targeting handle click
+
+                // Only handle normal cards (on hand or on playmat field slots)
+                const isPile = cardObj.zone.startsWith("deck_") ||
+                               cardObj.zone.startsWith("extra_") ||
+                               cardObj.zone.startsWith("grave_") ||
+                               cardObj.zone.startsWith("banished_");
+
+                if (!isPile) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    activeMenuCard = cardObj;
+                    $("#deck-menu").removeClass("active");
+                    $("#card-menu").css({
+                        left: `${e.clientX}px`,
+                        top: `${e.clientY}px`
+                    }).addClass("active");
+                }
+            });
         });
     </script>
 </body>
