@@ -925,6 +925,41 @@ $(window).on('mouseup touchend', function(e) {
             }
         }
 
+        // Show PC right-click context menu on mobile tap
+        if (window.innerWidth <= 1024) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // If card is inside a deck zone, open deck menu
+            if (cardObj.zone.startsWith("deck_")) {
+                activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+                $("#card-menu").removeClass("active");
+                $("#deck-menu").css({
+                    left: `${endPos.x}px`,
+                    top: `${endPos.y}px`
+                }).addClass("active");
+                dragCard = null;
+                return;
+            }
+
+            // If card is in extra, grave, banished, let standard click events handle them (they open modals)
+            if (cardObj.zone.startsWith("extra_") || cardObj.zone.startsWith("grave_") || cardObj.zone.startsWith("banished_")) {
+                dragCard = null;
+                return;
+            }
+
+            // For hand and field cards, open the PC context menu
+            activeMenuCard = cardObj;
+            $("#deck-menu").removeClass("active");
+            $("#card-menu").css({
+                left: `${endPos.x}px`,
+                top: `${endPos.y}px`
+            }).addClass("active");
+
+            dragCard = null;
+            return;
+        }
+
         // This is a click!
         // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
         const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
