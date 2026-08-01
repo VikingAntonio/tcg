@@ -934,6 +934,10 @@
                 display: none !important;
             }
 
+            .mobile-only-btn {
+                display: flex !important;
+            }
+
             /* Keep workspace as a landscape horizontal layout */
             .duel-workspace {
                 flex-direction: row !important;
@@ -946,17 +950,29 @@
                 display: none !important;
             }
 
-            /* Consolidated single right tabbed sidebar on mobile: slightly narrower to maximize playmat area */
+            /* Consolidated single right tabbed sidebar on mobile: slide-out overlay drawer */
             .duel-communication-sidebar {
-                width: 260px !important;
-                min-width: 260px !important;
-                max-width: 260px !important;
+                position: fixed !important;
+                top: 0 !important;
+                right: 0 !important;
+                width: 280px !important;
+                min-width: 280px !important;
+                max-width: 280px !important;
                 height: 100vh !important;
                 padding: 8px !important;
                 gap: 6px !important;
                 border-left: 1px solid var(--glass-border) !important;
                 border-top: none !important;
-                z-index: 1000 !important;
+                z-index: 10000 !important;
+                background: var(--panel-bg) !important;
+                backdrop-filter: blur(15px) !important;
+                transform: translateX(100%) !important;
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important;
+            }
+
+            .duel-communication-sidebar.active {
+                transform: translateX(0) !important;
             }
 
             /* Responsive and premium tab styles */
@@ -1027,54 +1043,89 @@
             .duel-arena-wrapper {
                 flex: 1 !important;
                 height: 100vh !important;
-                padding: 4px !important;
-                gap: 2px !important;
+                padding: 2px !important;
+                gap: 0px !important;
                 overflow: hidden !important;
-                justify-content: space-around !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
             }
 
-            /* Make hand trays ultra thin */
+            /* Hide hand controls and make hand trays ultra thin and draw them closer */
+            .hand-controls {
+                display: none !important;
+            }
+
             .hand-tray {
                 padding: 0 !important;
                 margin: 0 !important;
                 background: transparent !important;
                 border: none !important;
-                height: 50px !important;
+                height: 40px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
 
             .hand-cards-container {
-                min-height: 50px !important;
-                height: 50px !important;
-                padding: 1px !important;
-                gap: 4px !important;
+                min-height: 40px !important;
+                height: 40px !important;
+                padding: 0 !important;
+                gap: 2px !important;
             }
 
             /* Miniature cards inside hands on mobile - optimized for screen constraints */
             .hand-cards-container .duel-card {
-                width: 35px !important;
-                height: 50px !important;
+                width: 28px !important;
+                height: 40px !important;
             }
 
-            /* Scale hand tray LP counters so they fit beautifully */
+            /* Scale hand tray LP counters so they fit beautifully as floating corner badges */
             .lp-counter-container {
-                width: 90px !important;
-                padding: 3px !important;
-                gap: 3px !important;
-                border-radius: 8px !important;
+                position: fixed !important;
+                top: 10px !important;
+                width: 75px !important;
+                height: auto !important;
+                padding: 4px 6px !important;
+                gap: 2px !important;
+                border-radius: 6px !important;
+                z-index: 10001 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                cursor: pointer !important;
+                background: rgba(10, 15, 22, 0.95) !important;
+                backdrop-filter: blur(5px) !important;
             }
+
+            #lp-counter-p1 {
+                left: 10px !important;
+                right: auto !important;
+                bottom: auto !important;
+                transform: none !important;
+            }
+
+            #lp-counter-p2 {
+                right: 60px !important;
+                left: auto !important;
+                bottom: auto !important;
+                transform: none !important;
+            }
+
             .lp-header {
-                font-size: 0.55rem !important;
+                font-size: 0.5rem !important;
+                margin: 0 !important;
+                line-height: 1 !important;
             }
             .lp-number {
-                font-size: 0.95rem !important;
+                font-size: 0.9rem !important;
+                margin: 0 !important;
+                line-height: 1.1 !important;
             }
-            .lp-calc-input {
-                font-size: 0.7rem !important;
-                padding: 1px !important;
-            }
-            .lp-btn {
-                font-size: 0.6rem !important;
-                padding: 2px 0 !important;
+            .lp-calc-row, .lp-controls-row {
+                display: none !important;
             }
 
             /* Disable original floating drawers on mobile as they are integrated inside the tabs panel */
@@ -1161,6 +1212,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="duel-body">
+    <!-- Mobile Sidebar Toggle Button -->
+    <button id="btn-toggle-sidebar-mobile" class="mobile-only-btn" style="position: fixed; top: 10px; right: 10px; z-index: 10005; background: rgba(10, 15, 22, 0.95); border: 1.5px solid var(--primary-color); color: var(--primary-color); border-radius: 6px; width: 40px; height: 40px; display: none; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; box-shadow: 0 0 10px var(--primary-glow);"><i class="fas fa-bars"></i></button>
+
     <!-- Cosmic background elements -->
     <div class="bg-blobs">
         <div class="blob blob-1"></div>
@@ -3364,7 +3418,7 @@
 
                 // Margins/height reserved for hand trays
                 const availableWidth = container.width() - 10;
-                const availableHeight = container.height() - 165;
+                const availableHeight = window.innerWidth <= 1024 ? (container.height() - 90) : (container.height() - 165);
 
                 const naturalWidth = 1120;
                 const naturalHeight = 600;
@@ -3665,6 +3719,90 @@
                     const targetTab = $(this).data("tab");
                     $(".m-tab-content").hide().removeClass("active-content");
                     $(`#${targetTab}`).show().addClass("active-content");
+                });
+
+                // Mobile sidebar toggle button listener
+                $("#btn-toggle-sidebar-mobile").click(function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $(".duel-communication-sidebar").toggleClass("active");
+                    const $icon = $(this).find("i");
+                    if ($(".duel-communication-sidebar").hasClass("active")) {
+                        $icon.removeClass("fa-bars").addClass("fa-times");
+                    } else {
+                        $icon.removeClass("fa-times").addClass("fa-bars");
+                    }
+                });
+
+                // Close mobile sidebar on clicking outside
+                $(document).on("click", function(e) {
+                    if (window.innerWidth <= 1024) {
+                        if (!$(e.target).closest(".duel-communication-sidebar, #btn-toggle-sidebar-mobile, .swal2-container").length) {
+                            if ($(".duel-communication-sidebar").hasClass("active")) {
+                                $(".duel-communication-sidebar").removeClass("active");
+                                $("#btn-toggle-sidebar-mobile i").removeClass("fa-times").addClass("fa-bars");
+                            }
+                        }
+                    }
+                });
+
+                // Mobile click/tap handler for compact LP badges
+                $(document).on("click", ".lp-counter-container", function(e) {
+                    if (window.innerWidth > 1024) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const player = $(this).attr("id").includes("p2") ? "p2" : "p1";
+                    const key = player === "p1" ? "player1" : "player2";
+                    const currentLP = state.lp[key];
+
+                    Swal.fire({
+                        title: `Modificar LP (${player.toUpperCase()})`,
+                        background: '#12181e',
+                        color: '#fff',
+                        html: `
+                            <div style="margin-bottom: 15px; font-weight: bold; font-family: 'Orbitron', sans-serif;">LP Actual: <span style="color: #00d2ff; font-size: 1.8rem; text-shadow: 0 0 10px rgba(0,210,255,0.4);">${currentLP}</span></div>
+                            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                                <button id="swal-lp-add" class="btn" style="background: #2ec4b6; color: #000; flex: 1; font-weight: 800;">SUMAR</button>
+                                <button id="swal-lp-sub" class="btn" style="background: #ff1b6b; color: #fff; flex: 1; font-weight: 800;">RESTAR</button>
+                                <button id="swal-lp-half" class="btn" style="background: #555; color: #fff; flex: 1; font-weight: 800;">MITAD</button>
+                            </div>
+                            <input id="swal-lp-input" type="number" class="swal2-input" placeholder="Cantidad (ej: 1000)" style="margin: 0 auto; display: block; width: 85%; background: #000; color: #fff; border: 1.5px solid rgba(255,255,255,0.15); height: 42px; border-radius: 8px; text-align: center; font-size: 1.1rem; font-family: 'Orbitron', sans-serif; font-weight: bold; outline: none;" />
+                        `,
+                        showConfirmButton: false,
+                        showCancelButton: true,
+                        cancelButtonText: 'Cerrar',
+                        cancelButtonColor: '#333',
+                        didOpen: () => {
+                            const $input = $("#swal-lp-input");
+                            $input.focus();
+
+                            $("#swal-lp-add").click(function() {
+                                const val = parseInt($input.val()) || 0;
+                                state.lp[key] += val;
+                                appendGameLog('SYS', `Sumó ${val} LP a ${player.toUpperCase()} (Total: ${state.lp[key]})`);
+                                updateTurnUI();
+                                sendTurnStateUpdate();
+                                Swal.close();
+                            });
+                            $("#swal-lp-sub").click(function() {
+                                const val = parseInt($input.val()) || 0;
+                                state.lp[key] = Math.max(0, state.lp[key] - val);
+                                appendGameLog('SYS', `Restó ${val} LP a ${player.toUpperCase()} (Total: ${state.lp[key]})`);
+                                updateTurnUI();
+                                sendTurnStateUpdate();
+                                Swal.close();
+                            });
+                            $("#swal-lp-half").click(function() {
+                                const originalLP = state.lp[key];
+                                state.lp[key] = Math.ceil(state.lp[key] / 2);
+                                appendGameLog('SYS', `Dividió a la mitad los LP de ${player.toUpperCase()} de ${originalLP} a ${state.lp[key]}`);
+                                updateTurnUI();
+                                sendTurnStateUpdate();
+                                Swal.close();
+                            });
+                        }
+                    });
                 });
             }
 
