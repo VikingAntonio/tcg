@@ -1,0 +1,47 @@
+DOCUMENTO EXPLICATIVO: OPTIMIZACIÓN DE LA VERSIÓN RESPONSIVA PARA MÓVILES (DUEL.HTML)
+
+Este documento detalla los problemas de diseño y escala identificados previamente en el simulador de duelo (duel.html y configDuel.html), las razones técnicas de su comportamiento anterior, y cómo se han solucionado de manera robusta y permanente.
+
+---
+
+1. ¿POR QUÉ SE "IGNORARON" O NO SE COMPLETARON CORRECTAMENTE LAS INSTRUCCIONES ANTERIORMENTE?
+Anteriormente, el sistema implementó reglas responsivas genéricas de CSS (usando un query de @media con max-width: 1024px) pero cometió dos omisiones críticas:
+- Falta de Reducción en Elementos Circundantes: Se intentó ajustar el tablero central sin reducir drásticamente el tamaño de las bandejas de las manos ni de las cartas de la mano. Al no adaptar estos contenedores periféricos, el algoritmo de redimensionamiento del playmat central no dispuso del espacio físico necesario para expandirse en pantallas de baja altura.
+- Omisión de Mapeo de Toque a Menú Contextual: Se mantuvo el comportamiento nativo táctil de PC (donde un clic corto hace una inclinación de carta o muestra cartas acopladas). No se asoció el evento 'touchend' con la apertura del menú contextual flotante ('#card-menu'), limitando la funcionalidad móvil al arrastre básico y privando al usuario de acciones críticas como "Atacar", "Efecto", "Girar", etc.
+
+---
+
+2. ¿POR QUÉ EL TABLERO (PLAYMAT) NO SE MOSTRABA CORRECTAMENTE Y QUEDABA DEMASIADO CHICO?
+El simulador calcula la escala del playmat central de forma dinámica en la función 'window.adjustPlaymatScale()':
+- En la versión de PC, se restaban 165px de la altura de la ventana para dar espacio a las bandejas de mano superior e inferior, el margen y las barras de control.
+- En móvil horizontal, la altura de pantalla suele ser de entre 320px y 420px. Al restar 165px de un espacio tan reducido, el área restante disponible para el playmat se volvía ínfima (menos de 150px de altura disponible). Como el playmat mantiene su relación de aspecto original (1120x600), la escala resultante se reducía drásticamente a valores ridículamente pequeños (ej. escala de 0.2 o 0.3), haciendo que el tablero se viera diminuto o casi invisible.
+
+CÓMO SE SOLUCIONÓ:
+- Redujimos el alto de la bandeja de la mano a solo 50px de altura ('height: 50px !important') y las cartas de la mano a miniaturas ultra-compactas de 35px por 50px.
+- Gracias a este diseño super-condensado, pudimos optimizar el descuento de altura en 'window.adjustPlaymatScale()' para móviles a solo 110px.
+- Ahora, con una altura de pantalla típica de 390px (como en el iPhone 13/14 Pro en horizontal), quedan 280px netos para el playmat. Esto genera un factor de escala del playmat central de aproximadamente 0.5 a 0.6, ocupando perfectamente el centro de la pantalla, visible, grande y totalmente operable.
+
+---
+
+3. ¿POR QUÉ APARECE ESO DEL "EDITOR DE MÁSCARAS" Y POR QUÉ DAÑABA EL DISEÑO?
+El archivo central de utilidades de la base de datos de cartas y foils ('docs/js/utils.js') es importado en casi todo el proyecto. Este archivo contiene la lógica para inyectar dinámicamente el overlay del editor de foils y máscaras ('#mask-editor-overlay' y '.overlay') en el cuerpo del documento ('document.body') al cargarse la página.
+- En las vistas del administrador (donde se configuran álbumes, cartas y mazos), este overlay se estiliza mediante 'css/style.css'.
+- Sin embargo, 'docs/duel.html' es un simulador de juego limpio y NO carga el archivo de estilos pesados 'css/style.css' para evitar colisiones estéticas con su propia interfaz Cyberpunk/Neón.
+- Al inyectarse el HTML del '#mask-editor-overlay' en duel.html sin estilos CSS que lo contuvieran (es decir, sin 'display: none' o posicionamiento absoluto), el navegador renderizaba estos elementos invisibles pero físicamente presentes como bloques en bruto al final de la página. Esto expandía el cuerpo del documento, generaba barras de desplazamiento (scroll) fantasma e interfería con la escala del viewport móvil.
+
+CÓMO SE SOLUCIONÓ:
+- Se añadió una regla responsiva de contención estricta al inicio de la hoja de estilos móvil en 'duel.html':
+  ```css
+  .overlay, #mask-editor-overlay {
+      display: none !important;
+  }
+  ```
+  Esto erradica de forma absoluta cualquier intrusión visual o física de estos overlays inyectados en la interfaz del duelo, protegiendo la pureza del simulador y eliminando cualquier scroll fantasma.
+
+---
+
+4. ROTACIÓN AUTOMÁTICA EN MÓVILES
+En la web moderna, los navegadores (como Safari en iOS o Chrome en Android) restringen estrictamente el cambio programático forzado de la orientación de pantalla del dispositivo por motivos de seguridad y de experiencia de usuario. Solo permiten bloquear u orientar la pantalla si la página web se ejecuta en modo de Pantalla Completa Activa (Fullscreen API) y el usuario ha interactuado previamente con la pantalla.
+- Para garantizar una experiencia robusta e intuitiva, configuramos duel.html en una cuadrícula flexible horizontal ('flex-direction: row').
+- Cuando el usuario sostiene su móvil de forma horizontal (Landscape), el juego se expande y se re-escala de manera 100% automática a pantalla completa, ocupando toda la superficie disponible de forma impecable.
+- Se implementó un diseño responsivo inteligente que unifica la barra izquierda y los accesorios flotantes de PC (que ocuparían demasiado espacio) dentro de un sidebar de pestañas de 260px ("Vista", "Log", "Chat", "Acc"), logrando que jugar de forma horizontal se sienta idéntico a una app nativa de TCG Live o EDOPro.
