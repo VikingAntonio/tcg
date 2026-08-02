@@ -1282,7 +1282,10 @@
                     <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
                     <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
                 </div>
-                <button class="btn-apply-custom-stats" style="width: 100%; background: #00d2ff; color: #000; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
+                <button class="btn-apply-custom-stats" style="width: 100%; background: #00d2ff; color: #000; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px; margin-bottom: 8px;">Aplicar a Carta</button>
+                <div class="stats-draggable-badge" draggable="true" data-player="p1" style="width: 100%; border: 2px dashed #00d2ff; border-radius: 6px; background: rgba(0, 210, 255, 0.1); padding: 8px; text-align: center; color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 10px; cursor: grab; font-weight: bold;">
+                    ARRÁSTRAME A UNA CARTA
+                </div>
             </div>
         </div>
     </div>
@@ -1348,7 +1351,10 @@
                     <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
                     <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
                 </div>
-                <button class="btn-apply-custom-stats" style="width: 100%; background: #ff007f; color: #fff; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255, 0, 127, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
+                <button class="btn-apply-custom-stats" style="width: 100%; background: #ff007f; color: #fff; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255, 0, 127, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px; margin-bottom: 8px;">Aplicar a Carta</button>
+                <div class="stats-draggable-badge" draggable="true" data-player="p2" style="width: 100%; border: 2px dashed #ff007f; border-radius: 6px; background: rgba(255, 0, 127, 0.1); padding: 8px; text-align: center; color: #ff007f; font-family: 'Orbitron', sans-serif; font-size: 10px; cursor: grab; font-weight: bold;">
+                    ARRÁSTRAME A UNA CARTA
+                </div>
             </div>
         </div>
     </div>
@@ -2645,8 +2651,9 @@
                 }, 200);
             });
 
-            // 4. Custom Drag-and-Drop Counter Handlers
+            // 4. Custom Drag-and-Drop Counter and Stats Handlers
             let activeCounterDragVal = null; // null for YGO, integer (10, 20... 100) for Pokémon
+            window.activeStatsDrag = null;
 
             $(document).on("dragstart", ".counter-source", function(e) {
                 // Determine counter type
@@ -2662,6 +2669,56 @@
                 }
             });
 
+            $(document).on("dragstart", ".stats-draggable-badge", function(e) {
+                const $section = $(this).closest(".accessories-section");
+                const atk = parseInt($section.find(".custom-atk-input").val() || "0");
+                const def = parseInt($section.find(".custom-def-input").val() || "0");
+                window.activeStatsDrag = { atk: atk, def: def };
+
+                if (e.originalEvent.dataTransfer) {
+                    e.originalEvent.dataTransfer.setData("text/plain", "stats");
+                }
+            });
+
+            $(document).on("input", ".custom-atk-input, .custom-def-input", function() {
+                const $section = $(this).closest(".accessories-section");
+                const atk = $section.find(".custom-atk-input").val() || "0";
+                const def = $section.find(".custom-def-input").val() || "0";
+                $section.find(".stats-draggable-badge").text(`⚔️ ${atk} / 🛡️ ${def}`);
+            });
+
+            $(document).on("click", ".btn-apply-custom-stats", function() {
+                const $section = $(this).closest(".accessories-section");
+                const atk = parseInt($section.find(".custom-atk-input").val() || "0");
+                const def = parseInt($section.find(".custom-def-input").val() || "0");
+
+                if (window.activePreviewCard) {
+                    window.activePreviewCard.customAtk = atk;
+                    window.activePreviewCard.customDef = def;
+                    sendGameAction(`Colocó stats ATK/DEF en ${window.activePreviewCard.name} (⚔️ ${atk} / 🛡️ ${def})`);
+                    window.renderAllCards();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Stats Aplicados',
+                        text: `ATK/DEF aplicados a ${window.activePreviewCard.name}.`,
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Ninguna Carta Seleccionada',
+                        text: 'Selecciona primero una carta para aplicarle los stats.',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            });
+
             // Allow drop targets
             $(document).on("dragover", ".duel-card", function(e) {
                 e.preventDefault();
@@ -2674,6 +2731,15 @@
                 const instId = $(this).data("instance-id");
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
+
+                if (window.activeStatsDrag) {
+                    cardObj.customAtk = window.activeStatsDrag.atk;
+                    cardObj.customDef = window.activeStatsDrag.def;
+                    sendGameAction(`Colocó stats ATK/DEF en ${cardObj.name} (⚔️ ${cardObj.customAtk} / 🛡️ ${cardObj.customDef})`);
+                    window.activeStatsDrag = null;
+                    window.renderAllCards();
+                    return;
+                }
 
                 if (activeCounterDragVal === "YGO") {
                     if (state.layout !== 'yugioh') return;
@@ -2699,10 +2765,17 @@
             let activeTouchDragSource = null;
             let $activeTouchDragClone = null;
 
-            $(document).on("touchstart", ".counter-source", function(e) {
+            $(document).on("touchstart", ".counter-source, .stats-draggable-badge", function(e) {
                 activeTouchDragSource = $(this);
-                const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
-                activeCounterDragVal = isYGO ? "YGO" : parseInt(activeTouchDragSource.data("val"));
+                if (activeTouchDragSource.hasClass("stats-draggable-badge")) {
+                    const $section = activeTouchDragSource.closest(".accessories-section");
+                    const atk = parseInt($section.find(".custom-atk-input").val() || "0");
+                    const def = parseInt($section.find(".custom-def-input").val() || "0");
+                    window.activeStatsDrag = { atk: atk, def: def };
+                } else {
+                    const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
+                    activeCounterDragVal = isYGO ? "YGO" : parseInt(activeTouchDragSource.data("val"));
+                }
 
                 const coords = getEventCoords(e);
                 $activeTouchDragClone = activeTouchDragSource.clone()
@@ -2738,7 +2811,12 @@
                     const instId = cardElem.data("instance-id");
                     const cardObj = state.cards.find(c => c.instanceId === instId);
                     if (cardObj) {
-                        if (activeCounterDragVal === "YGO") {
+                        if (window.activeStatsDrag) {
+                            cardObj.customAtk = window.activeStatsDrag.atk;
+                            cardObj.customDef = window.activeStatsDrag.def;
+                            sendGameAction(`Colocó stats ATK/DEF en ${cardObj.name} (⚔️ ${cardObj.customAtk} / 🛡️ ${cardObj.customDef})`);
+                            window.activeStatsDrag = null;
+                        } else if (activeCounterDragVal === "YGO") {
                             if (state.layout === 'yugioh') {
                                 cardObj.counters = (cardObj.counters || 0) + 1;
                                 sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
@@ -2759,6 +2837,7 @@
 
                 activeTouchDragSource = null;
                 activeCounterDragVal = null;
+                window.activeStatsDrag = null;
             });
 
             // Override original renderAllCards to draw our stacked counters overlay cleanly
@@ -3150,7 +3229,7 @@
                     const cardObj = state.cards.find(c => c.instanceId === instId);
                     if (cardObj) {
                         $("#extra-overlay").fadeOut(200);
-                        startGraphicalTargeting(cardObj, "xyz");
+                        startXYZTargeting(cardObj);
                     }
                 });
             };
@@ -3229,8 +3308,16 @@
                             if ($cardEl.length) {
                                 $cardEl.find(".card-custom-stats-badge").remove();
                                 $cardEl.append(`
-                                    <div class="card-custom-stats-badge" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(15, 20, 26, 0.9); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); text-shadow: 0 0 2px #00d2ff;">
-                                        ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}
+                                    <div class="card-custom-stats-badge" style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(10, 15, 22, 0.95); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 4px; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); display: flex; justify-content: space-around; align-items: center; gap: 4px;">
+                                        <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                                            <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">ATK</span>
+                                            <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customAtk !== undefined ? card.customAtk : 0}</span>
+                                        </div>
+                                        <div style="border-left: 1px solid rgba(255,255,255,0.15); height: 14px;"></div>
+                                        <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                                            <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">DEF</span>
+                                            <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customDef !== undefined ? card.customDef : 0}</span>
+                                        </div>
                                     </div>
                                 `);
                             }
@@ -3397,8 +3484,16 @@
                         if ($cardEl.length) {
                             $cardEl.find(".card-custom-stats-badge").remove();
                             $cardEl.append(`
-                                <div class="card-custom-stats-badge" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(15, 20, 26, 0.9); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); text-shadow: 0 0 2px #00d2ff;">
-                                    ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}
+                                <div class="card-custom-stats-badge" style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(10, 15, 22, 0.95); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 4px; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); display: flex; justify-content: space-around; align-items: center; gap: 4px;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                                        <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">ATK</span>
+                                        <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customAtk !== undefined ? card.customAtk : 0}</span>
+                                    </div>
+                                    <div style="border-left: 1px solid rgba(255,255,255,0.15); height: 14px;"></div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                                        <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">DEF</span>
+                                        <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customDef !== undefined ? card.customDef : 0}</span>
+                                    </div>
                                 </div>
                             `);
                         }
