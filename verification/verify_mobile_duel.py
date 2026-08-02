@@ -7,7 +7,7 @@ def run_cuj(page):
     page.set_viewport_size({"width": 844, "height": 390})
 
     print("Navigating to configDuel.html...")
-    page.goto("http://localhost:8000/configDuel.html")
+    page.goto("http://localhost:3000/configDuel.html")
     page.wait_for_timeout(1000)
 
     # Screenshot of mobile config
