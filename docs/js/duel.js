@@ -143,29 +143,6 @@ let xyzCard = null;
 
 // Configure Playmat Field Zones & Scale
 function initLayout() {
-    // Inject global styles to absolutely prevent scrollbars and remove hover menus
-    $("head").append(`
-        <style>
-            html, body {
-                overflow: hidden !important;
-                overflow-x: hidden !important;
-                overflow-y: hidden !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
-            }
-            .duel-workspace, .duel-arena-wrapper, #playmat, .playmat-wrapper {
-                overflow: hidden !important;
-            }
-            .field-card-actions {
-                display: none !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-            }
-        </style>
-    `);
-
     $("#dynamic-zones-container").empty();
 
     // Add central separator
@@ -436,8 +413,26 @@ function renderAllCards() {
                 </div>
             `;
         } else if (!isPile) {
-            // Hover-based field actions menu is removed as per user request
-            fieldActionOverlayHTML = "";
+            // Cards on active playmat slots get a quick field action horizontal ribbon bar - Text only (No icons)
+            const returnBtnLabel = card.isExtra ? "Deck" : "Mano";
+            const isP2 = card.owner === "player2" || card.zone.endsWith("_2") || card.zone === "hand_2";
+            const p2Class = isP2 ? "p2-card-actions" : "";
+            const isFieldZone = card.zone === "field_1" || card.zone === "field_2" || card.zone === "stadium_1" || card.zone === "stadium_2";
+            const fieldZoneClass = isFieldZone ? (card.zone === "field_1" ? "field-zone-right" : "field-zone-left") : "";
+            fieldActionOverlayHTML = `
+                <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
+                    <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
+                    <button class="field-action-btn btn-field-direct" data-instance-id="${card.instanceId}">Atk Directo</button>
+                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
+                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
+                    <button class="field-action-btn btn-field-control" data-instance-id="${card.instanceId}">Control</button>
+                    <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
+                    <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
+                    <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">${returnBtnLabel}</button>
+                    <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}">Cementerio</button>
+                    <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}">Remover</button>
+                </div>
+            `;
         }
 
         // Attached badge for visual tracking of quantity
@@ -930,61 +925,30 @@ $(window).on('mouseup touchend', function(e) {
             }
         }
 
-        // If card is in extra, grave, banished, open correct modal directly (handles both PC and mobile touch)
-        if (cardObj.zone.startsWith("extra_") || cardObj.zone.startsWith("grave_") || cardObj.zone.startsWith("banished_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone.endsWith("_1") ? "player1" : "player2";
-            if (cardObj.zone.startsWith("extra_")) {
-                openExtraDeckModal(playerKey);
-            } else if (cardObj.zone.startsWith("grave_")) {
-                openPileModal(playerKey, "grave");
-            } else if (cardObj.zone.startsWith("banished_")) {
-                openPileModal(playerKey, "banished");
-            }
-            dragCard = null;
-            return;
-        }
-
-        // If card is inside a deck zone, open deck menu directly
-        if (cardObj.zone.startsWith("deck_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
-            $("#card-menu").removeClass("active");
-            $("#deck-menu").css({
-                left: `${endPos.x}px`,
-                top: `${endPos.y}px`
-            }).addClass("active");
-            dragCard = null;
-            return;
-        }
-
-        // If card is on the playmat field, open the #card-menu on left click and touch tap (unified with right click)
-        const isField = !cardObj.zone.startsWith("hand_") &&
-                        !cardObj.zone.startsWith("deck_") &&
-                        !cardObj.zone.startsWith("extra_") &&
-                        !cardObj.zone.startsWith("grave_") &&
-                        !cardObj.zone.startsWith("banished_") &&
-                        !cardObj.zone.startsWith("prize_");
-        if (isField) {
-            e.preventDefault();
-            e.stopPropagation();
-            activeMenuCard = cardObj;
-            $("#deck-menu").removeClass("active");
-            $("#card-menu").css({
-                left: `${endPos.x}px`,
-                top: `${endPos.y}px`
-            }).addClass("active");
-            dragCard = null;
-            return;
-        }
-
-        // Show PC right-click context menu on mobile tap for other cards (e.g. hand cards)
+        // Show PC right-click context menu on mobile tap
         if (window.innerWidth <= 1024) {
             e.preventDefault();
             e.stopPropagation();
 
+            // If card is inside a deck zone, open deck menu
+            if (cardObj.zone.startsWith("deck_")) {
+                activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+                $("#card-menu").removeClass("active");
+                $("#deck-menu").css({
+                    left: `${endPos.x}px`,
+                    top: `${endPos.y}px`
+                }).addClass("active");
+                dragCard = null;
+                return;
+            }
+
+            // If card is in extra, grave, banished, let standard click events handle them (they open modals)
+            if (cardObj.zone.startsWith("extra_") || cardObj.zone.startsWith("grave_") || cardObj.zone.startsWith("banished_")) {
+                dragCard = null;
+                return;
+            }
+
+            // For hand and field cards, open the PC context menu
             activeMenuCard = cardObj;
             $("#deck-menu").removeClass("active");
             $("#card-menu").css({
@@ -994,6 +958,26 @@ $(window).on('mouseup touchend', function(e) {
 
             dragCard = null;
             return;
+        }
+
+        // This is a click!
+        // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
+        const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
+        if (isField) {
+            // Check if this card has attached cards!
+            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
+            if (hasAttached) {
+                openAttachedCardsModal(cardObj.instanceId);
+            } else {
+                if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
+                    cardObj.tiltAngle = 0;
+                } else {
+                    // Set a small random angle between -8 and 8 (excluding -2 to 2)
+                    const sign = Math.random() < 0.5 ? -1 : 1;
+                    const angle = sign * (4 + Math.random() * 5); // 4 to 9 degrees
+                    cardObj.tiltAngle = Math.round(angle);
+                }
+            }
         }
     } else {
         // Center point of dropped card
