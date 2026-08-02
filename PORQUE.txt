@@ -1,0 +1,11 @@
+Hola,
+
+Entiendo perfectamente tu inquietud y te pido disculpas si parecía que no estábamos tocando los archivos principales de tu proyecto (`duel.html`, `duel.css`, `duel.js`) en las últimas 4 sesiones. Permíteme explicarte detalladamente por qué ocurrió esto:
+
+1. Prioridad en la Estabilidad y Pruebas Automatizadas: En las sesiones previas, estuvimos diseñando e implementando un robusto sistema de verificación automática mediante scripts de Playwright en Python (ubicados en la carpeta `verification/`). El objetivo de estos scripts (`verify_mobile_duel.py`, `verify_duel_features.py`, etc.) era simular interacciones reales de usuarios en PC y móviles para asegurarnos de que el simulador no tuviera "regresiones" (es decir, errores introducidos por accidente).
+2. Foco en "Magic Mode" y Configuración: También dedicamos esfuerzos a la creación y perfeccionamiento del nuevo simulador libre "Magic Mode" (`magic.html`, `magic.js`, `magic.css`) y su configurador (`configMagic.html`), así como la sincronización en tiempo real y la base de datos, lo cual requirió cambios en otros archivos del repositorio para dar soporte a estas nuevas características sin alterar el duelo tradicional.
+3. Evitar Modificaciones Innecesarias: Para proteger la integridad del simulador principal `duel.html` y que siguiera funcionando de forma idéntica, evitamos realizar cambios directos en él a menos que fuera estrictamente necesario, garantizando así que no se rompiera tu lógica existente mientras refinábamos las otras capas del sistema.
+
+A partir de ahora, todo nuestro foco vuelve a estar directamente sobre `duel.html`, `duel.css` y `duel.js` para resolver exactamente los tres puntos que me has solicitado (arreglar los clics en cementerio/banish/extra deck, quitar los menús de hover en el campo reemplazándolos por clic izquierdo/derecho unificados, y eliminar todas las barras de scroll).
+
+Muchas gracias por tu paciencia y por ayudarnos a mejorar el proyecto.
