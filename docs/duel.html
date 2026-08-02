@@ -1108,29 +1108,34 @@
             }
 
             .hand-cards-container {
-                min-height: 65px !important;
-                height: 65px !important;
+                min-height: 70px !important;
+                height: 70px !important;
                 padding: 0 10px !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
                 gap: 0px !important;
+                perspective: 600px !important;
+                transform-style: preserve-3d !important;
             }
 
-            /* Standing vertical miniature cards inside hands on mobile - portrait ratio, beautifully visible */
+            /* Standing vertical miniature cards inside hands on mobile - portrait ratio, beautifully visible with 3D standing perspective */
             .hand-cards-container .duel-card {
                 width: 45px !important;
                 height: 64px !important;
                 margin-left: -12px !important;
                 position: relative !important;
-                transition: transform 0.2s, z-index 0.2s !important;
-                box-shadow: -2px 0 5px rgba(0,0,0,0.5) !important;
+                transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), z-index 0.2s !important;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.4), -2px 0 5px rgba(0,0,0,0.3) !important;
+                transform: perspective(400px) rotateX(18deg) translateZ(0) !important;
+                transform-origin: bottom center !important;
             }
 
             .hand-cards-container .duel-card:hover,
             .hand-cards-container .duel-card:active {
-                transform: translateY(-8px) scale(1.15) !important;
+                transform: translateY(-15px) scale(1.25) perspective(400px) rotateX(0deg) translateZ(20px) !important;
                 z-index: 10000 !important;
+                box-shadow: 0 12px 24px rgba(0,0,0,0.6), 0 0 15px rgba(0, 210, 255, 0.5) !important;
             }
 
             .hand-cards-container .duel-card:first-child {
@@ -1164,10 +1169,19 @@
             }
 
             #lp-counter-p2 {
-                right: 60px !important;
+                right: 10px !important;
                 left: auto !important;
                 bottom: auto !important;
                 transform: none !important;
+            }
+
+            #btn-toggle-sidebar-mobile {
+                position: fixed !important;
+                top: auto !important;
+                bottom: 15px !important;
+                right: 15px !important;
+                display: flex !important;
+                z-index: 10005 !important;
             }
 
             .lp-header {
@@ -1251,14 +1265,73 @@
                 background: transparent !important;
             }
 
-            /* Context menus on mobile: increase font size for touch comfort */
+            /* Context menus on mobile: compact yet touch-friendly and scrollable */
             .menu-item {
-                padding: 12px 18px !important;
-                font-size: 0.9rem !important;
+                padding: 8px 14px !important;
+                font-size: 0.8rem !important;
             }
 
             .card-context-menu, .deck-context-menu {
+                max-height: calc(100vh - 20px) !important;
+                overflow-y: auto !important;
+                width: 200px !important;
                 z-index: 1000000 !important;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(0, 210, 255, 0.3) rgba(0, 0, 0, 0.2);
+            }
+            .card-context-menu::-webkit-scrollbar,
+            .deck-context-menu::-webkit-scrollbar {
+                width: 4px;
+            }
+            .card-context-menu::-webkit-scrollbar-thumb,
+            .deck-context-menu::-webkit-scrollbar-thumb {
+                background: rgba(0, 210, 255, 0.4);
+                border-radius: 4px;
+            }
+
+            /* Overlays & Modals scaling for mobile landscape */
+            .search-modal {
+                width: 95% !important;
+                max-width: 95% !important;
+                max-height: 90vh !important;
+                border-radius: 10px !important;
+            }
+
+            .search-header {
+                padding: 10px !important;
+            }
+
+            .search-header h3 {
+                font-size: 0.9rem !important;
+            }
+
+            .search-body {
+                padding: 10px !important;
+                gap: 10px !important;
+                grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)) !important;
+            }
+
+            /* Scale pile cards inside overlay on mobile landscapes */
+            .pile-card-container {
+                width: 55px !important;
+                height: 80px !important;
+                border-radius: 4px !important;
+            }
+
+            .pile-card-hover-overlay {
+                padding: 1px !important;
+            }
+
+            .pile-card-menu {
+                gap: 2px !important;
+                padding: 1px !important;
+            }
+
+            .pile-card-action-btn {
+                font-size: 0.42rem !important;
+                padding: 2px 1px !important;
+                border-radius: 3px !important;
+                line-height: 1.1 !important;
             }
 
             /* Absolute centering and containment of playmat in mobile */
@@ -3510,15 +3583,29 @@
             // Helper to clamp context menus coordinates within viewport bounds
             function clampMenuCoords(x, y, menuSelector) {
                 const $menu = $(menuSelector);
-                const menuWidth = $menu.outerWidth() || 200;
-                const menuHeight = $menu.outerHeight() || 320;
+                const isCardMenu = menuSelector.includes("card");
+                const defaultW = isCardMenu ? 200 : 200;
+                const defaultH = isCardMenu ? 320 : 220;
 
-                const maxX = window.innerWidth - menuWidth - 10;
-                const maxY = window.innerHeight - menuHeight - 10;
+                let menuWidth = $menu.outerWidth() || defaultW;
+                let menuHeight = $menu.outerHeight() || defaultH;
+
+                if (menuWidth < 50) menuWidth = defaultW;
+                if (menuHeight < 50) menuHeight = defaultH;
+
+                if (window.innerWidth <= 1024) {
+                    const maxMobileH = window.innerHeight - 20;
+                    if (menuHeight > maxMobileH) {
+                        menuHeight = maxMobileH;
+                    }
+                }
+
+                const maxX = window.innerWidth - menuWidth - 15;
+                const maxY = window.innerHeight - menuHeight - 15;
 
                 return {
-                    x: Math.max(10, Math.min(x, maxX)),
-                    y: Math.max(10, Math.min(y, maxY))
+                    x: Math.max(15, Math.min(x, maxX)),
+                    y: Math.max(15, Math.min(y, maxY))
                 };
             }
 
