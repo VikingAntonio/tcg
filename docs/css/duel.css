@@ -23,6 +23,10 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+    overflow: hidden !important;
+}
+
 body.duel-body {
     background-color: var(--bg-color);
     background-image: radial-gradient(circle at center, #111a2e 0%, #06090e 100%);
@@ -31,7 +35,7 @@ body.duel-body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden !important;
 }
 
 /* Background Cosmic Blobs */
@@ -73,7 +77,7 @@ body.duel-body {
 .duel-workspace {
     display: flex;
     flex: 1;
-    overflow: hidden;
+    overflow: hidden !important;
     position: relative;
     height: 100vh;
 }
@@ -220,7 +224,7 @@ body.duel-body {
     padding: 10px;
     gap: 8px;
     background: radial-gradient(circle at center, rgba(16, 28, 43, 0.4) 0%, rgba(5, 8, 12, 0.8) 100%);
-    overflow: auto;
+    overflow: hidden !important;
     position: relative;
     align-items: center;
     justify-content: space-between;
@@ -684,6 +688,7 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
 
 /* Quick Action Hover Bar for Cards placed on the field */
 .field-card-actions {
+    display: none !important;
     position: absolute;
     top: -32px;
     left: 50%;
