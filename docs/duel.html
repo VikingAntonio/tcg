@@ -1283,8 +1283,16 @@
                     <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
                 </div>
                 <button class="btn-apply-custom-stats" style="width: 100%; background: #00d2ff; color: #000; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px; margin-bottom: 8px;">Aplicar a Carta</button>
-                <div class="stats-draggable-badge" draggable="true" data-player="p1" style="width: 100%; border: 2px dashed #00d2ff; border-radius: 6px; background: rgba(0, 210, 255, 0.1); padding: 8px; text-align: center; color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 10px; cursor: grab; font-weight: bold;">
-                    ARRÁSTRAME A UNA CARTA
+                <div class="stats-draggable-badge" draggable="true" data-player="p1" style="width: 100px; height: 50px; margin: 8px auto; border: 2px dashed #00d2ff; border-radius: 8px; background: rgba(0, 210, 255, 0.15); display: flex; justify-content: space-around; align-items: center; color: #00d2ff; font-family: 'Orbitron', sans-serif; cursor: grab; padding: 4px; box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);">
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                        <span style="font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase;">ATK</span>
+                        <span class="draggable-atk-val" style="font-size: 16px; font-weight: bold; color: #fff;">0</span>
+                    </div>
+                    <div style="border-left: 1px solid rgba(0, 210, 255, 0.4); height: 28px;"></div>
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                        <span style="font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase;">DEF</span>
+                        <span class="draggable-def-val" style="font-size: 16px; font-weight: bold; color: #fff;">0</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1352,8 +1360,16 @@
                     <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
                 </div>
                 <button class="btn-apply-custom-stats" style="width: 100%; background: #ff007f; color: #fff; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255, 0, 127, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px; margin-bottom: 8px;">Aplicar a Carta</button>
-                <div class="stats-draggable-badge" draggable="true" data-player="p2" style="width: 100%; border: 2px dashed #ff007f; border-radius: 6px; background: rgba(255, 0, 127, 0.1); padding: 8px; text-align: center; color: #ff007f; font-family: 'Orbitron', sans-serif; font-size: 10px; cursor: grab; font-weight: bold;">
-                    ARRÁSTRAME A UNA CARTA
+                <div class="stats-draggable-badge" draggable="true" data-player="p2" style="width: 100px; height: 50px; margin: 8px auto; border: 2px dashed #ff007f; border-radius: 8px; background: rgba(255, 0, 127, 0.15); display: flex; justify-content: space-around; align-items: center; color: #ff007f; font-family: 'Orbitron', sans-serif; cursor: grab; padding: 4px; box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);">
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                        <span style="font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase;">ATK</span>
+                        <span class="draggable-atk-val" style="font-size: 16px; font-weight: bold; color: #fff;">0</span>
+                    </div>
+                    <div style="border-left: 1px solid rgba(255, 0, 127, 0.4); height: 28px;"></div>
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                        <span style="font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase;">DEF</span>
+                        <span class="draggable-def-val" style="font-size: 16px; font-weight: bold; color: #fff;">0</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2684,7 +2700,8 @@
                 const $section = $(this).closest(".accessories-section");
                 const atk = $section.find(".custom-atk-input").val() || "0";
                 const def = $section.find(".custom-def-input").val() || "0";
-                $section.find(".stats-draggable-badge").text(`⚔️ ${atk} / 🛡️ ${def}`);
+                $section.find(".draggable-atk-val").text(atk);
+                $section.find(".draggable-def-val").text(def);
             });
 
             $(document).on("click", ".btn-apply-custom-stats", function() {

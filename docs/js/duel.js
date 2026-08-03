@@ -537,16 +537,16 @@ function renderAllCards() {
 
 // Bind custom touch/mouse drag handlers on freshly rendered cards
 function bindCardDragEvents() {
-    const cards = $(".duel-card");
-
-    // Hover preview update
-    cards.off('mouseenter').on('mouseenter', function() {
+    // Hover preview update on all duel-cards
+    $(".duel-card").off('mouseenter').on('mouseenter', function() {
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (cardObj) {
             updatePreview(cardObj);
         }
     });
+
+    const cards = $(".duel-card").not(".attached-card-cascade");
 
     // Event handlers for Hand Quick Actions
     $(".hand-action-btn").off("click").on("click", function(e) {
@@ -748,8 +748,8 @@ function bindCardDragEvents() {
         }
     });
 
-    // Click / Contextmenu on attached card cascade to open the Attached Cards Modal
-    $(".attached-card-cascade").off("click contextmenu").on("click contextmenu", function(e) {
+    // Click / Contextmenu / touchstart on attached card cascade to open the Attached Cards Modal
+    $(".attached-card-cascade").off("click contextmenu touchstart").on("click contextmenu touchstart", function(e) {
         e.preventDefault();
         e.stopPropagation();
         const parentId = $(this).data("parent-id");
@@ -2074,98 +2074,16 @@ function setupEventListeners() {
         });
     });
 
-    // Right click context menu overrides on card items
+    // Prevent default contextmenu and click events on cards so they go entirely through the unified mouseup/touchend flow
     $(document).on("contextmenu", ".duel-card", function(e) {
-        // If targeting mode is active, do not interrupt
-        if ($("#playmat").hasClass("selecting-zone")) return;
-
-        const instId = $(this).data("instance-id");
-        const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (!cardObj) return;
-
-        // If card is inside a deck zone, open the deck menu instead of card menu
-        if (cardObj.zone.startsWith("deck_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
-            $("#card-menu").removeClass("active");
-            $("#deck-menu").css({
-                left: `${e.clientX}px`,
-                top: `${e.clientY}px`
-            }).addClass("active");
-            return;
-        }
-
-        // If card is inside an extra deck zone, open the Extra Deck overlay instead
-        if (cardObj.zone.startsWith("extra_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
-            openExtraDeckModal(playerKey);
-            return;
-        }
-
-        // If card is inside a graveyard zone, open the Graveyard Pile modal viewer instead
-        if (cardObj.zone.startsWith("grave_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
-            openPileModal(playerKey, "grave");
-            return;
-        }
-
-        // If card is inside a banished zone, open the Banished Pile modal viewer instead
-        if (cardObj.zone.startsWith("banished_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
-            openPileModal(playerKey, "banished");
-            return;
-        }
-
         e.preventDefault();
         e.stopPropagation();
-        activeMenuCard = cardObj;
-        $("#deck-menu").removeClass("active");
-        $("#card-menu").css({
-            left: `${e.clientX}px`,
-            top: `${e.clientY}px`
-        }).addClass("active");
     });
 
-    // Handle left click directly on a deck, extra deck, grave, or banished card to toggle correct overlays/menus
     $(document).on("click", ".duel-card", function(e) {
         if ($("#playmat").hasClass("selecting-zone")) return;
-
-        const instId = $(this).data("instance-id");
-        const cardObj = state.cards.find(c => c.instanceId === instId);
-        if (!cardObj) return;
-
-        if (cardObj.zone.startsWith("deck_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
-            $("#card-menu").removeClass("active");
-            $("#deck-menu").css({
-                left: `${e.clientX}px`,
-                top: `${e.clientY}px`
-            }).addClass("active");
-        } else if (cardObj.zone.startsWith("extra_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
-            openExtraDeckModal(playerKey);
-        } else if (cardObj.zone.startsWith("grave_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
-            openPileModal(playerKey, "grave");
-        } else if (cardObj.zone.startsWith("banished_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
-            openPileModal(playerKey, "banished");
-        }
+        e.preventDefault();
+        e.stopPropagation();
     });
 
     // Left or Right click context menu on Deck Zone elements
