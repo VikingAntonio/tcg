@@ -865,12 +865,20 @@ $(window).on('mouseup touchend', function(e) {
     const dist = Math.sqrt(dx * dx + dy * dy);
     const duration = Date.now() - dragStartTime;
 
-    let isClick = (dist < 15 && duration < 500);
+    let isClick = (dist < 15 && duration < 500) || (dist < 10);
 
     dragCard.removeClass("dragging").addClass("snapping");
     $(".board-zone").removeClass("highlighted");
 
     if (isClick) {
+        if (cardObj.attachedTo) {
+            e.preventDefault();
+            e.stopPropagation();
+            openAttachedCardsModal(cardObj.attachedTo);
+            dragCard = null;
+            return;
+        }
+
         if ($("#playmat").hasClass("selecting-zone") || $("#playmat").hasClass("targeting-attack")) {
             // Manually dispatch a click event to trigger targeting click listeners (which were blocked by mousedown preventDefault)
             const targetEl = dragCard[0];
@@ -2083,6 +2091,14 @@ function setupEventListeners() {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
+        // If card is attached, open the Attached Cards list modal
+        if (cardObj.attachedTo) {
+            e.preventDefault();
+            e.stopPropagation();
+            openAttachedCardsModal(cardObj.attachedTo);
+            return;
+        }
+
         // If card is inside a deck zone, open the deck menu instead of card menu
         if (cardObj.zone.startsWith("deck_")) {
             e.preventDefault();
@@ -2141,6 +2157,14 @@ function setupEventListeners() {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
+        // If card is attached, open the Attached Cards list modal
+        if (cardObj.attachedTo) {
+            e.preventDefault();
+            e.stopPropagation();
+            openAttachedCardsModal(cardObj.attachedTo);
+            return;
+        }
+
         if (cardObj.zone.startsWith("deck_")) {
             e.preventDefault();
             e.stopPropagation();
@@ -2165,6 +2189,19 @@ function setupEventListeners() {
             e.stopPropagation();
             const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
             openPileModal(playerKey, "banished");
+        } else {
+            // Also handle left click on on-field cards
+            const isField = !cardObj.zone.startsWith("hand_");
+            if (isField) {
+                e.preventDefault();
+                e.stopPropagation();
+                activeMenuCard = cardObj;
+                $("#deck-menu").removeClass("active");
+                $("#card-menu").css({
+                    left: `${e.clientX}px`,
+                    top: `${e.clientY}px`
+                }).addClass("active");
+            }
         }
     });
 
