@@ -1272,26 +1272,24 @@
             // Global variables to track the active attack targeting state robustly
             window.activeAttackSourceCard = null;
 
-            // Intercept mousedown and touchstart to prevent drag-and-drop from blocking the native click during targeting mode
-            $(document).on("mousedown touchstart", ".duel-card", function(e) {
-                if (window.activeAttackSourceCard) {
-                    // Stop other handlers (including duel.js drag-and-drop) from seeing this event
-                    e.stopImmediatePropagation();
-                }
-            });
-
             // Helper to start targeting mode for selecting attack target
             window.startAttackTargetingMode = function(attackerCard) {
                 window.activeAttackSourceCard = attackerCard;
 
-                // Display targeting instructions Toast Overlay (centered at bottom)
-                $("#zone-picker-overlay").html(`
-                    <div class="zone-picker-toast" style="background: linear-gradient(135deg, #ff1b6b, #ff8c00); box-shadow: 0 10px 30px rgba(255, 27, 107, 0.5);">
-                        <i class="fas fa-bolt animate-pulse"></i> Elige un monstruo/carta objetivo en el campo para atacar con ${attackerCard.name}
-                    </div>
-                `).fadeIn(200).css("display", "flex");
+                // Show clean and beautiful instruction toast using Swal (SweetAlert2) exactly like magic.html!
+                Swal.fire({
+                    toast: true,
+                    position: 'bottom',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    icon: 'info',
+                    title: `Elige el objetivo del ataque para ${attackerCard.name}`,
+                    background: '#12181e',
+                    color: '#fff'
+                });
 
-                $("#playmat").addClass("selecting-zone");
+                $("#playmat").addClass("targeting-attack");
 
                 // Cancel targeting on escape key
                 $(document).off("keydown.attacktarget").on("keydown.attacktarget", function(e) {
@@ -1303,13 +1301,8 @@
 
             window.stopAttackTargetingMode = function() {
                 window.activeAttackSourceCard = null;
-                $("#playmat").removeClass("selecting-zone");
+                $("#playmat").removeClass("targeting-attack");
                 $(document).off("keydown.attacktarget");
-                $("#zone-picker-overlay").fadeOut(150).html(`
-                    <div class="zone-picker-toast">
-                        <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
-                    </div>
-                `);
             };
 
             // Delegated global click handler for target cards - Immune to any DOM refreshes or dynamic card rendering!
@@ -1318,7 +1311,7 @@
                     e.preventDefault();
                     e.stopPropagation();
 
-                    const targetId = $(this).data("instance-id");
+                    const targetId = $(this).data("instance-id") || $(this).attr("id");
 
                     // Prevent attacking itself
                     if (targetId === window.activeAttackSourceCard.instanceId) {
@@ -1337,8 +1330,8 @@
                         state.attacks.push(newAtk);
 
                         // Broadcast attack sync
-                        if (typeof commChannel !== "undefined" && commChannel) {
-                            commChannel.send({
+                        if (typeof window.commChannel !== "undefined" && window.commChannel) {
+                            window.commChannel.send({
                                 type: 'broadcast',
                                 event: 'attack_sync',
                                 payload: { attacks: state.attacks }
@@ -1346,7 +1339,9 @@
                         }
 
                         // Log action
-                        sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${targetCard.name}`);
+                        if (typeof sendGameAction === "function") {
+                            sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${targetCard.name}`);
+                        }
 
                         if (typeof window.drawAttackArrows === "function") {
                             window.drawAttackArrows();
@@ -1368,8 +1363,8 @@
                 state.attacks.push(newAtk);
 
                 // Broadcast attack sync
-                if (typeof commChannel !== "undefined" && commChannel) {
-                    commChannel.send({
+                if (typeof window.commChannel !== "undefined" && window.commChannel) {
+                    window.commChannel.send({
                         type: 'broadcast',
                         event: 'attack_sync',
                         payload: { attacks: state.attacks }
@@ -1377,7 +1372,9 @@
                 }
 
                 // Log action
-                sendGameAction(`Declaró Ataque Directo con ${attackerCard.name}`);
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Declaró Ataque Directo con ${attackerCard.name}`);
+                }
 
                 if (typeof window.drawAttackArrows === "function") {
                     window.drawAttackArrows();
@@ -1425,28 +1422,27 @@
                 $("#card-menu").removeClass("active");
             });
 
-            // Clicking on the playmat background or a board card clears the active attack arrows (ignoring chat, sidebar, etc.)
+            // Clicking outside of cards, menus, or trigger buttons cancels targeting or clears active attacks (from anywhere on the web page!)
             $(document).on("click", function(e) {
-                if (state.attacks.length === 0) return;
-
-                // Do not clear if we are currently selecting an attack target
-                if ($("#playmat").hasClass("selecting-zone") || window.activeAttackSourceCard) {
+                // If we are currently selecting an attack target, let's cancel if we click outside the target card
+                if (window.activeAttackSourceCard) {
+                    if (!$(e.target).closest(".duel-card, .field-card-actions, .pile-menu-trigger, .btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack, #card-menu").length) {
+                        window.stopAttackTargetingMode();
+                    }
                     return;
                 }
 
-                // Do not clear if we clicked an attack trigger button/menu
-                if ($(e.target).closest(".btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack").length) {
+                // Do not clear if we clicked an attack trigger button/menu or a card
+                if ($(e.target).closest(".duel-card, .field-card-actions, .pile-menu-trigger, .btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack, #card-menu").length) {
                     return;
                 }
 
-                // Check if the click occurred inside the playmat board (including zones/cards on playmat)
-                const isPlaymatClick = $(e.target).closest("#playmat").length > 0;
-
-                if (isPlaymatClick) {
+                // Clear active attacks
+                if (state.attacks.length > 0) {
                     state.attacks = [];
                     try {
-                        if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
-                            commChannel.send({
+                        if (typeof window.commChannel !== "undefined" && window.commChannel && typeof window.commChannel.send === "function") {
+                            window.commChannel.send({
                                 type: 'broadcast',
                                 event: 'attack_sync',
                                 payload: { attacks: [] }
