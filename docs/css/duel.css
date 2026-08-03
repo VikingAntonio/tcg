@@ -902,19 +902,6 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border: 1.5px solid #ff1b6b !important;
 }
 
-/* Premium Card highlighter in unified targeting-attack mode */
-.playmat-board.targeting-attack .duel-card:not(.card-is-attacker) {
-    cursor: crosshair !important;
-    box-shadow: 0 0 12px rgba(0, 210, 255, 0.5);
-    border: 1px dashed rgba(0, 210, 255, 0.8);
-    transition: all 0.2s ease;
-}
-.playmat-board.targeting-attack .duel-card:not(.card-is-attacker):hover {
-    transform: scale(1.05) !important;
-    box-shadow: 0 0 20px #00d2ff, 0 0 30px rgba(0, 210, 255, 0.5) !important;
-    border: 1.5px solid #00d2ff !important;
-}
-
 /* Custom Sleek Switch Toggles */
 .theme-switch {
     position: relative;
