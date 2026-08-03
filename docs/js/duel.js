@@ -44,6 +44,7 @@ const BOARD_LAYOUTS = {
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
         { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
         { id: "grave_2", name: "P2 Descarte", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: -95, y: 30, type: "banished" },
         { id: "active_2", name: "P2 Activo", player: 2, x: 590, y: 160, type: "active" },
         { id: "bench_2_5", name: "P2 Banca 5", player: 2, x: 350, y: 30, type: "bench" },
         { id: "bench_2_4", name: "P2 Banca 4", player: 2, x: 470, y: 30, type: "bench" },
@@ -71,7 +72,8 @@ const BOARD_LAYOUTS = {
         { id: "bench_1_4", name: "P1 Banca 4", player: 1, x: 710, y: 450, type: "bench" },
         { id: "bench_1_5", name: "P1 Banca 5", player: 1, x: 830, y: 450, type: "bench" },
         { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
-        { id: "grave_1", name: "P1 Descarte", player: 1, x: 990, y: 320, type: "grave" }
+        { id: "grave_1", name: "P1 Descarte", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 1135, y: 450, type: "banished" }
     ]
 };
 
@@ -2076,6 +2078,21 @@ function setupEventListeners() {
         e.stopPropagation();
         activeMenuCard = cardObj;
         $("#deck-menu").removeClass("active");
+
+        // Dynamically toggle and adjust pokemon/yugioh menu items
+        const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
+        if (state.layout === "pokemon" && isPokeFieldCard) {
+            $("#menu-swap-active-bench").show();
+        } else {
+            $("#menu-swap-active-bench").hide();
+        }
+
+        if (state.layout === 'yugioh') {
+            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
+        } else {
+            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+        }
+
         $("#card-menu").css({
             left: `${e.clientX}px`,
             top: `${e.clientY}px`
@@ -2243,6 +2260,106 @@ function setupEventListeners() {
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
         renderAllCards();
+    });
+
+    $("#menu-to-banish").click(function() {
+        if (!activeMenuCard) return;
+        const pileId = activeMenuCard.owner === "player1" ? "banished_1" : "banished_2";
+        sendAttachedCardsToPile(activeMenuCard.instanceId, pileId);
+        activeMenuCard.zone = pileId;
+        activeMenuCard.controller = activeMenuCard.owner; // Reset controller
+        activeMenuCard.faceDown = false;
+        activeMenuCard.tapped = false;
+        renderAllCards();
+    });
+
+    $("#menu-swap-active-bench").click(function() {
+        if (!activeMenuCard) return;
+
+        const currentZone = activeMenuCard.zone;
+        const playerSuffix = currentZone.includes("_1") ? 1 : 2;
+
+        const slots = [
+            { id: `active_${playerSuffix}`, label: "Activo" },
+            { id: `bench_${playerSuffix}_1`, label: "Banca 1" },
+            { id: `bench_${playerSuffix}_2`, label: "Banca 2" },
+            { id: `bench_${playerSuffix}_3`, label: "Banca 3" },
+            { id: `bench_${playerSuffix}_4`, label: "Banca 4" },
+            { id: `bench_${playerSuffix}_5`, label: "Banca 5" }
+        ];
+
+        // Filter out the slot the card is currently in
+        const otherSlots = slots.filter(s => s.id !== currentZone);
+
+        // Build HTML for SweetAlert
+        let htmlContent = '<div class="swal-swap-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">';
+        otherSlots.forEach(slot => {
+            // Find card in this slot (if any)
+            const targetCard = state.cards.find(c => c.zone === slot.id && !c.attachedTo);
+            if (targetCard) {
+                htmlContent += `
+                    <button class="swal-swap-btn" data-target-zone="${slot.id}" data-target-card-id="${targetCard.instanceId}" style="background: rgba(255, 27, 107, 0.15); border: 1px solid var(--secondary-color); color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; text-align: left; font-weight: 600; font-size: 0.9rem; width: 100%; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-sync-alt" style="margin-right: 8px; color: var(--secondary-color);"></i> Intercambiar con ${targetCard.name}</span>
+                        <span style="font-size: 0.75rem; background: var(--secondary-color); padding: 2px 6px; border-radius: 4px;">${slot.label}</span>
+                    </button>
+                `;
+            } else {
+                htmlContent += `
+                    <button class="swal-swap-btn" data-target-zone="${slot.id}" data-target-card-id="" style="background: rgba(0, 210, 255, 0.15); border: 1px solid var(--primary-color); color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; text-align: left; font-weight: 600; font-size: 0.9rem; width: 100%; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-arrow-right" style="margin-right: 8px; color: var(--primary-color);"></i> Mover a ${slot.label}</span>
+                        <span style="font-size: 0.75rem; background: var(--primary-color); padding: 2px 6px; border-radius: 4px;">Vacío</span>
+                    </button>
+                `;
+            }
+        });
+        htmlContent += '</div>';
+
+        Swal.fire({
+            title: 'Cambiar de Lugar (Activo / Banca)',
+            html: htmlContent,
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            customClass: {
+                popup: 'swal-swap-popup'
+            }
+        });
+    });
+
+    $(document).on("click", ".swal-swap-btn", function() {
+        if (!activeMenuCard) {
+            Swal.close();
+            return;
+        }
+
+        const targetZone = $(this).data("target-zone");
+        const targetCardId = $(this).data("target-card-id");
+        const currentZone = activeMenuCard.zone;
+
+        if (targetCardId) {
+            // Find target card and swap zones
+            const targetCard = state.cards.find(c => c.instanceId === targetCardId);
+            if (targetCard) {
+                targetCard.zone = currentZone;
+                activeMenuCard.zone = targetZone;
+            }
+        } else {
+            // Move active card to empty zone
+            activeMenuCard.zone = targetZone;
+        }
+
+        renderAllCards();
+        Swal.close();
+
+        // Show quick toast success
+        Swal.fire({
+            icon: 'success',
+            title: 'Posición Cambiada',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
+        });
     });
 
     $("#menu-to-deck-top").click(function() {

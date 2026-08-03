@@ -792,6 +792,27 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* Invisible/discreet styling for Pokémon layout banished zones */
+body.layout-pokemon .zone-type-banished {
+    border: 1px dashed rgba(255, 255, 255, 0.12) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+body.layout-pokemon .zone-type-banished .zone-label {
+    display: none !important;
+}
+body.layout-pokemon .zone-type-banished .zone-card-count {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 0.7rem !important;
+}
+body.layout-pokemon #floating-count-banished_1,
+body.layout-pokemon #floating-count-banished_2 {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+    background: rgba(12, 15, 18, 0.6) !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
 /* Card Attack & Defense Blinking Neon Glow effects */
 .card-is-attacker {
     animation: neonBlinkAttacker 1s infinite alternate !important;

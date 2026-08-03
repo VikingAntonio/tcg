@@ -1254,12 +1254,14 @@
         <hr>
         <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Voltear Boca Abajo/Arriba</div>
         <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> Girar/Girar Defensa</div>
+        <div class="menu-item pokemon-only-item" id="menu-swap-active-bench" style="display: none;"><i class="fas fa-exchange-alt"></i> Activo / Banca</div>
         <hr>
         <div class="menu-item" id="menu-add-counter"><i class="fas fa-plus-circle"></i> Agregar Contador (+1)</div>
         <div class="menu-item" id="menu-sub-counter"><i class="fas fa-minus-circle"></i> Quitar Contador (-1)</div>
         <hr>
         <div class="menu-item" id="menu-to-hand"><i class="fas fa-hand-paper"></i> Enviar a la Mano</div>
         <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio</div>
+        <div class="menu-item" id="menu-to-banish"><i class="fas fa-ban"></i> Enviar a Removido</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
         <hr>
@@ -2211,10 +2213,12 @@
                     $(".ygo-only-tool").show();
                     $(".pokemon-only-tool").hide();
                     $(".counter-section-title").text("Contadores YGO");
+                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
                 } else {
                     $(".ygo-only-tool").hide();
                     $(".pokemon-only-tool").show();
                     $(".counter-section-title").text("Daño Pokémon");
+                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
                 }
             };
             updateLayoutFeatureVisibility();
