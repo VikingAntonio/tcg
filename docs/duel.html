@@ -2015,10 +2015,8 @@
                 `;
 
                 const $box = $("#game-log-box");
-                if ($box.length) {
-                    $box.append(logHTML);
-                    if ($box[0]) $box.scrollTop($box[0].scrollHeight);
-                }
+                $box.append(logHTML);
+                $box.scrollTop($box[0].scrollHeight);
             }
 
             function appendChatMessage(player, message, username) {
@@ -2033,10 +2031,8 @@
                 `;
 
                 const $box = $("#chat-msg-box");
-                if ($box.length) {
-                    $box.append(chatHTML);
-                    if ($box[0]) $box.scrollTop($box[0].scrollHeight);
-                }
+                $box.append(chatHTML);
+                $box.scrollTop($box[0].scrollHeight);
             }
 
             function appendSystemMsg(message) {
@@ -2046,10 +2042,8 @@
                     </div>
                 `;
                 const $box = $("#chat-msg-box");
-                if ($box.length) {
-                    $box.append(chatHTML);
-                    if ($box[0]) $box.scrollTop($box[0].scrollHeight);
-                }
+                $box.append(chatHTML);
+                $box.scrollTop($box[0].scrollHeight);
             }
 
             function escapeHtml(text) {
@@ -3314,15 +3308,15 @@
                             if ($cardEl.length) {
                                 $cardEl.find(".card-custom-stats-badge").remove();
                                 $cardEl.append(`
-                                    <div class="card-custom-stats-badge" style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(5, 10, 15, 0.92); border: 1.5px solid #00d2ff; border-radius: 4px; padding: 1px 2px; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; box-shadow: 0 0 10px rgba(0, 210, 255, 0.8); display: flex; justify-content: space-around; align-items: center; gap: 2px;">
+                                    <div class="card-custom-stats-badge" style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(10, 15, 22, 0.95); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 4px; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); display: flex; justify-content: space-around; align-items: center; gap: 4px;">
                                         <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
-                                            <span style="font-size: 7px; color: #a0a0a0; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">ATK</span>
-                                            <span style="font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 0 3px #00d2ff;">${card.customAtk !== undefined ? card.customAtk : 0}</span>
+                                            <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">ATK</span>
+                                            <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customAtk !== undefined ? card.customAtk : 0}</span>
                                         </div>
-                                        <div style="border-left: 1.5px solid rgba(0, 210, 255, 0.3); height: 16px;"></div>
+                                        <div style="border-left: 1px solid rgba(255,255,255,0.15); height: 14px;"></div>
                                         <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
-                                            <span style="font-size: 7px; color: #a0a0a0; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">DEF</span>
-                                            <span style="font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 0 3px #00d2ff;">${card.customDef !== undefined ? card.customDef : 0}</span>
+                                            <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">DEF</span>
+                                            <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customDef !== undefined ? card.customDef : 0}</span>
                                         </div>
                                     </div>
                                 `);
@@ -3490,15 +3484,15 @@
                         if ($cardEl.length) {
                             $cardEl.find(".card-custom-stats-badge").remove();
                             $cardEl.append(`
-                                <div class="card-custom-stats-badge" style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(5, 10, 15, 0.92); border: 1.5px solid #00d2ff; border-radius: 4px; padding: 1px 2px; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; box-shadow: 0 0 10px rgba(0, 210, 255, 0.8); display: flex; justify-content: space-around; align-items: center; gap: 2px;">
+                                <div class="card-custom-stats-badge" style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(10, 15, 22, 0.95); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 4px; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); display: flex; justify-content: space-around; align-items: center; gap: 4px;">
                                     <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
-                                        <span style="font-size: 7px; color: #a0a0a0; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">ATK</span>
-                                        <span style="font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 0 3px #00d2ff;">${card.customAtk !== undefined ? card.customAtk : 0}</span>
+                                        <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">ATK</span>
+                                        <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customAtk !== undefined ? card.customAtk : 0}</span>
                                     </div>
-                                    <div style="border-left: 1.5px solid rgba(0, 210, 255, 0.3); height: 16px;"></div>
+                                    <div style="border-left: 1px solid rgba(255,255,255,0.15); height: 14px;"></div>
                                     <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
-                                        <span style="font-size: 7px; color: #a0a0a0; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">DEF</span>
-                                        <span style="font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 0 3px #00d2ff;">${card.customDef !== undefined ? card.customDef : 0}</span>
+                                        <span style="font-size: 6px; color: #a0a0a0; text-transform: uppercase;">DEF</span>
+                                        <span style="font-size: 11px; font-weight: bold; color: #fff;">${card.customDef !== undefined ? card.customDef : 0}</span>
                                     </div>
                                 </div>
                             `);
