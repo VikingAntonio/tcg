@@ -1945,6 +1945,7 @@ function openPileModal(playerKey, pileType) {
                                 `<button class="pile-card-action-btn btn-pile-banish" data-instance-id="${card.instanceId}">Remover</button>` :
                                 `<button class="pile-card-action-btn btn-pile-grave" data-instance-id="${card.instanceId}">Cementerio</button>`
                             }
+                            <button class="pile-card-action-btn btn-pile-effect" data-instance-id="${card.instanceId}" style="background: #2ec4b6 !important; color: white !important;">Efecto</button>
                         </div>
                     </div>
                 </div>
@@ -2027,6 +2028,23 @@ function openPileModal(playerKey, pileType) {
             cardObj.tapped = false;
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
+        } else if ($(this).hasClass("btn-pile-effect")) {
+            $("#pile-overlay").fadeOut(200);
+            cardObj.movedToPileAt = Date.now() + Math.random();
+            renderAllCards();
+
+            // Visual activation animation
+            const $cardElem = $(`#${cardObj.instanceId}`);
+            $cardElem.addClass("activating-flash");
+            setTimeout(() => {
+                $cardElem.removeClass("activating-flash");
+            }, 800);
+
+            // Log and broadcast effect activation
+            if (typeof window.sendGameAction === "function") {
+                const zoneName = pileType === "grave" ? "el Cementerio" : "el Desterrado";
+                window.sendGameAction(`Activó el efecto de ${cardObj.name} desde ${zoneName}`, null, true);
+            }
         }
     });
 }
