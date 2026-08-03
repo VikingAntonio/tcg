@@ -927,294 +927,12 @@
             opacity: 1;
         }
 
-        /* Mobile responsive stylesheet */
-        @media (max-width: 1024px) {
-            /* Secure containment: strictly hide leaked overlays from breaking layout */
-            .overlay, #mask-editor-overlay {
-                display: none !important;
-            }
-
-            .mobile-only-btn {
-                display: flex !important;
-            }
-
-            /* Keep workspace as a landscape horizontal layout */
-            .duel-workspace {
-                flex-direction: row !important;
-                height: 100vh !important;
-                overflow: hidden !important;
-            }
-
-            /* Hide PC-only left sidebar */
-            .duel-sidebar {
-                display: none !important;
-            }
-
-            /* Consolidated single right tabbed sidebar on mobile: slide-out overlay drawer */
-            .duel-communication-sidebar {
-                position: fixed !important;
-                top: 0 !important;
-                right: 0 !important;
-                width: 280px !important;
-                min-width: 280px !important;
-                max-width: 280px !important;
-                height: 100vh !important;
-                padding: 8px !important;
-                gap: 6px !important;
-                border-left: 1px solid var(--glass-border) !important;
-                border-top: none !important;
-                z-index: 10000 !important;
-                background: var(--panel-bg) !important;
-                backdrop-filter: blur(15px) !important;
-                transform: translateX(100%) !important;
-                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-                box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important;
-            }
-
-            .duel-communication-sidebar.active {
-                transform: translateX(0) !important;
-            }
-
-            /* Responsive and premium tab styles */
-            .mobile-tabs-bar {
-                display: flex !important;
-                background: rgba(0, 0, 0, 0.4);
-                border: 1px solid var(--glass-border);
-                border-radius: 10px;
-                padding: 3px;
-                gap: 3px;
-                margin-bottom: 5px;
-            }
-
-            .m-tab-btn {
-                flex: 1;
-                background: none;
-                border: none;
-                color: #888;
-                padding: 8px 3px;
-                font-size: 0.7rem;
-                font-weight: bold;
-                font-family: 'Orbitron', sans-serif;
-                cursor: pointer;
-                border-radius: 8px;
-                transition: all 0.2s;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 5px;
-                text-transform: uppercase;
-            }
-
-            .m-tab-btn.active {
-                background: rgba(0, 210, 255, 0.15);
-                color: var(--primary-color);
-                border: 1px solid rgba(0, 210, 255, 0.3);
-            }
-
-            .m-tab-content {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                flex: 1;
-                overflow-y: auto;
-            }
-
-            .sidebar-section {
-                padding: 8px !important;
-                border-radius: 10px !important;
-                margin-bottom: 0 !important;
-                background: rgba(0,0,0,0.4) !important;
-            }
-
-            /* Make preview elements smaller to fit sidebar nicely */
-            .preview-img-container {
-                max-height: 120px !important;
-                border-radius: 8px !important;
-            }
-            .preview-info h4 {
-                font-size: 0.75rem !important;
-            }
-            .preview-info p {
-                font-size: 0.65rem !important;
-                max-height: 80px !important;
-            }
-
-            /* Arena and layout resizing for landscape */
-            .duel-arena-wrapper {
-                flex: 1 !important;
-                height: 100vh !important;
-                padding: 2px !important;
-                gap: 0px !important;
-                overflow: hidden !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: center !important;
-                align-items: center !important;
-            }
-
-            /* Hide hand controls and make hand trays ultra thin and draw them closer */
-            .hand-controls {
-                display: none !important;
-            }
-
-            .hand-tray {
-                padding: 0 !important;
-                margin: 0 !important;
-                background: transparent !important;
-                border: none !important;
-                height: 40px !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-
-            .hand-cards-container {
-                min-height: 40px !important;
-                height: 40px !important;
-                padding: 0 !important;
-                gap: 2px !important;
-            }
-
-            /* Miniature cards inside hands on mobile - optimized for screen constraints */
-            .hand-cards-container .duel-card {
-                width: 28px !important;
-                height: 40px !important;
-            }
-
-            /* Scale hand tray LP counters so they fit beautifully as floating corner badges */
-            .lp-counter-container {
-                position: fixed !important;
-                top: 10px !important;
-                width: 75px !important;
-                height: auto !important;
-                padding: 4px 6px !important;
-                gap: 2px !important;
-                border-radius: 6px !important;
-                z-index: 10001 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: center !important;
-                justify-content: center !important;
-                cursor: pointer !important;
-                background: rgba(10, 15, 22, 0.95) !important;
-                backdrop-filter: blur(5px) !important;
-            }
-
-            #lp-counter-p1 {
-                left: 10px !important;
-                right: auto !important;
-                bottom: auto !important;
-                transform: none !important;
-            }
-
-            #lp-counter-p2 {
-                right: 60px !important;
-                left: auto !important;
-                bottom: auto !important;
-                transform: none !important;
-            }
-
-            .lp-header {
-                font-size: 0.5rem !important;
-                margin: 0 !important;
-                line-height: 1 !important;
-            }
-            .lp-number {
-                font-size: 0.9rem !important;
-                margin: 0 !important;
-                line-height: 1.1 !important;
-            }
-            .lp-calc-row, .lp-controls-row {
-                display: none !important;
-            }
-
-            /* Disable original floating drawers on mobile as they are integrated inside the tabs panel */
-            .tcg-accessories-panel {
-                display: none !important;
-            }
-
-            /* Adjust accessories content layout inside the sidebar tab */
-            .accessories-content {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 8px !important;
-                padding: 4px !important;
-                height: auto !important;
-                overflow: visible !important;
-                background: transparent !important;
-            }
-            .accessories-section {
-                padding: 6px !important;
-                background: rgba(255, 255, 255, 0.02) !important;
-                border: 1px solid var(--glass-border) !important;
-                border-radius: 8px !important;
-                margin-bottom: 4px;
-            }
-            .acc-row {
-                gap: 4px !important;
-                flex-wrap: wrap !important;
-                justify-content: flex-start !important;
-            }
-            .tcg-dice, .tcg-coin {
-                width: 28px !important;
-                height: 28px !important;
-                font-size: 0.85rem !important;
-            }
-            .coin-front, .coin-back {
-                font-size: 0.5rem !important;
-            }
-            .btn-spawn-token {
-                padding: 4px !important;
-                font-size: 0.6rem !important;
-            }
-            .poke-counter-grid {
-                grid-template-columns: repeat(5, 1fr) !important;
-                gap: 3px !important;
-            }
-            .poke-counter-source {
-                width: 22px !important;
-                height: 22px !important;
-                font-size: 0.5rem !important;
-            }
-
-            /* Adjust Game Log & Chat boxes heights on mobile tabs */
-            #game-log-box {
-                height: 100% !important;
-                max-height: calc(100vh - 120px) !important;
-                flex: 1 !important;
-            }
-            #chat-msg-box {
-                height: 100% !important;
-                max-height: calc(100vh - 230px) !important;
-                flex: 1 !important;
-            }
-            .comm-panel {
-                height: 100% !important;
-                max-height: none !important;
-                border: none !important;
-                background: transparent !important;
-            }
-
-            /* Context menus on mobile: increase font size for touch comfort */
-            .menu-item {
-                padding: 12px 18px !important;
-                font-size: 0.9rem !important;
-            }
-
-            .card-context-menu, .deck-context-menu {
-                z-index: 1000000 !important;
-            }
-        }
-
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="duel-body">
-    <!-- Mobile Sidebar Toggle Button -->
-    <button id="btn-toggle-sidebar-mobile" class="mobile-only-btn" style="position: fixed; top: 10px; right: 10px; z-index: 10005; background: rgba(10, 15, 22, 0.95); border: 1.5px solid var(--primary-color); color: var(--primary-color); border-radius: 6px; width: 40px; height: 40px; display: none; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; box-shadow: 0 0 10px var(--primary-glow);"><i class="fas fa-bars"></i></button>
-
     <!-- Cosmic background elements -->
     <div class="bg-blobs">
         <div class="blob blob-1"></div>
@@ -1275,15 +993,6 @@
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
                 </div>
             </div>
-
-            <div class="accessories-section" id="custom-stats-section-p1">
-                <h3>Custom ATK / DEF</h3>
-                <div class="acc-row" style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
-                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #00d2ff; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
-                </div>
-                <button class="btn-apply-custom-stats" style="width: 100%; background: #00d2ff; color: #000; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
-            </div>
         </div>
     </div>
 
@@ -1341,15 +1050,6 @@
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
                 </div>
             </div>
-
-            <div class="accessories-section" id="custom-stats-section-p2">
-                <h3>Custom ATK / DEF</h3>
-                <div class="acc-row" style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
-                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 70px; background: #12181e; border: 1px solid #ff007f; color: #fff; padding: 4px; border-radius: 4px; text-align: center; font-size: 12px; font-family: 'Orbitron', sans-serif;">
-                </div>
-                <button class="btn-apply-custom-stats" style="width: 100%; background: #ff007f; color: #fff; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255, 0, 127, 0.4); font-family: 'Orbitron', sans-serif; font-size: 11px;">Aplicar a Carta</button>
-            </div>
         </div>
     </div>
 
@@ -1373,9 +1073,8 @@
             <div class="sidebar-section preview-panel">
                 <h3><i class="fas fa-search-plus"></i> Vista Detallada</h3>
                 <div class="card-detailed-preview" id="card-detail-view">
-                    <div class="preview-img-container" style="position: relative;">
+                    <div class="preview-img-container">
                         <img id="detail-card-img" src="https://via.placeholder.com/300x440?text=Hover+o+Click" alt="Preview">
-                        <button id="btn-magnify-preview" title="Ampliar y leer efecto" style="position: absolute; bottom: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; background: rgba(18,24,30,0.85); border: 1.5px solid #00d2ff; color: #00d2ff; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.6); z-index: 10; transition: all 0.2s;"><i class="fas fa-search-plus" style="font-size: 1rem;"></i></button>
                     </div>
                     <div class="preview-info">
                         <h4 id="detail-card-name">Selecciona una carta</h4>
@@ -1553,8 +1252,6 @@
         <div class="menu-item" id="menu-attack"><i class="fas fa-bolt"></i> Atacar</div>
         <div class="menu-item" id="menu-direct-attack"><i class="fas fa-crosshairs"></i> Atk Directo</div>
         <hr>
-        <div class="menu-item" id="menu-effect"><i class="fas fa-magic"></i> Efecto</div>
-        <hr>
         <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Voltear Boca Abajo/Arriba</div>
         <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> Girar/Girar Defensa</div>
         <hr>
@@ -1565,12 +1262,8 @@
         <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
-        <div class="menu-item" id="menu-to-extra-face-up"><i class="fas fa-arrow-up"></i> Al Extra Deck (Boca Arriba)</div>
-        <div class="menu-item" id="menu-to-extra-face-down"><i class="fas fa-arrow-down"></i> Al Extra Deck (Boca Abajo)</div>
         <hr>
         <div class="menu-item" id="menu-control"><i class="fas fa-exchange-alt"></i> Tomar Control</div>
-        <hr>
-        <div class="menu-item" id="menu-custom-stats"><i class="fas fa-edit"></i> Modificar ATK/DEF</div>
     </div>
 
     <!-- Click handler bindings for targeting attacks -->
@@ -1579,24 +1272,26 @@
             // Global variables to track the active attack targeting state robustly
             window.activeAttackSourceCard = null;
 
+            // Intercept mousedown and touchstart to prevent drag-and-drop from blocking the native click during targeting mode
+            $(document).on("mousedown touchstart", ".duel-card", function(e) {
+                if (window.activeAttackSourceCard) {
+                    // Stop other handlers (including duel.js drag-and-drop) from seeing this event
+                    e.stopImmediatePropagation();
+                }
+            });
+
             // Helper to start targeting mode for selecting attack target
             window.startAttackTargetingMode = function(attackerCard) {
                 window.activeAttackSourceCard = attackerCard;
 
-                // Show clean and beautiful instruction toast using Swal (SweetAlert2) exactly like magic.html!
-                Swal.fire({
-                    toast: true,
-                    position: 'bottom',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    icon: 'info',
-                    title: `Elige el objetivo del ataque para ${attackerCard.name}`,
-                    background: '#12181e',
-                    color: '#fff'
-                });
+                // Display targeting instructions Toast Overlay (centered at bottom)
+                $("#zone-picker-overlay").html(`
+                    <div class="zone-picker-toast" style="background: linear-gradient(135deg, #ff1b6b, #ff8c00); box-shadow: 0 10px 30px rgba(255, 27, 107, 0.5);">
+                        <i class="fas fa-bolt animate-pulse"></i> Elige un monstruo/carta objetivo en el campo para atacar con ${attackerCard.name}
+                    </div>
+                `).fadeIn(200).css("display", "flex");
 
-                $("#playmat").addClass("targeting-attack");
+                $("#playmat").addClass("selecting-zone");
 
                 // Cancel targeting on escape key
                 $(document).off("keydown.attacktarget").on("keydown.attacktarget", function(e) {
@@ -1608,8 +1303,13 @@
 
             window.stopAttackTargetingMode = function() {
                 window.activeAttackSourceCard = null;
-                $("#playmat").removeClass("targeting-attack");
+                $("#playmat").removeClass("selecting-zone");
                 $(document).off("keydown.attacktarget");
+                $("#zone-picker-overlay").fadeOut(150).html(`
+                    <div class="zone-picker-toast">
+                        <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+                    </div>
+                `);
             };
 
             // Delegated global click handler for target cards - Immune to any DOM refreshes or dynamic card rendering!
@@ -1618,7 +1318,7 @@
                     e.preventDefault();
                     e.stopPropagation();
 
-                    const targetId = $(this).data("instance-id") || $(this).attr("id");
+                    const targetId = $(this).data("instance-id");
 
                     // Prevent attacking itself
                     if (targetId === window.activeAttackSourceCard.instanceId) {
@@ -1637,8 +1337,8 @@
                         state.attacks.push(newAtk);
 
                         // Broadcast attack sync
-                        if (typeof window.commChannel !== "undefined" && window.commChannel) {
-                            window.commChannel.send({
+                        if (typeof commChannel !== "undefined" && commChannel) {
+                            commChannel.send({
                                 type: 'broadcast',
                                 event: 'attack_sync',
                                 payload: { attacks: state.attacks }
@@ -1646,9 +1346,7 @@
                         }
 
                         // Log action
-                        if (typeof sendGameAction === "function") {
-                            sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${targetCard.name}`);
-                        }
+                        sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${targetCard.name}`);
 
                         if (typeof window.drawAttackArrows === "function") {
                             window.drawAttackArrows();
@@ -1670,8 +1368,8 @@
                 state.attacks.push(newAtk);
 
                 // Broadcast attack sync
-                if (typeof window.commChannel !== "undefined" && window.commChannel) {
-                    window.commChannel.send({
+                if (typeof commChannel !== "undefined" && commChannel) {
+                    commChannel.send({
                         type: 'broadcast',
                         event: 'attack_sync',
                         payload: { attacks: state.attacks }
@@ -1679,9 +1377,7 @@
                 }
 
                 // Log action
-                if (typeof sendGameAction === "function") {
-                    sendGameAction(`Declaró Ataque Directo con ${attackerCard.name}`);
-                }
+                sendGameAction(`Declaró Ataque Directo con ${attackerCard.name}`);
 
                 if (typeof window.drawAttackArrows === "function") {
                     window.drawAttackArrows();
@@ -1729,27 +1425,28 @@
                 $("#card-menu").removeClass("active");
             });
 
-            // Clicking outside of cards, menus, or trigger buttons cancels targeting or clears active attacks (from anywhere on the web page!)
+            // Clicking on the playmat background or a board card clears the active attack arrows (ignoring chat, sidebar, etc.)
             $(document).on("click", function(e) {
-                // If we are currently selecting an attack target, let's cancel if we click outside the target card
-                if (window.activeAttackSourceCard) {
-                    if (!$(e.target).closest(".duel-card, .field-card-actions, .pile-menu-trigger, .btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack, #card-menu").length) {
-                        window.stopAttackTargetingMode();
-                    }
+                if (state.attacks.length === 0) return;
+
+                // Do not clear if we are currently selecting an attack target
+                if ($("#playmat").hasClass("selecting-zone") || window.activeAttackSourceCard) {
                     return;
                 }
 
-                // Do not clear if we clicked an attack trigger button/menu or a card
-                if ($(e.target).closest(".duel-card, .field-card-actions, .pile-menu-trigger, .btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack, #card-menu").length) {
+                // Do not clear if we clicked an attack trigger button/menu
+                if ($(e.target).closest(".btn-field-attack, .btn-field-direct, #menu-attack, #menu-direct-attack").length) {
                     return;
                 }
 
-                // Clear active attacks
-                if (state.attacks.length > 0) {
+                // Check if the click occurred inside the playmat board (including zones/cards on playmat)
+                const isPlaymatClick = $(e.target).closest("#playmat").length > 0;
+
+                if (isPlaymatClick) {
                     state.attacks = [];
                     try {
-                        if (typeof window.commChannel !== "undefined" && window.commChannel && typeof window.commChannel.send === "function") {
-                            window.commChannel.send({
+                        if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                            commChannel.send({
                                 type: 'broadcast',
                                 event: 'attack_sync',
                                 payload: { attacks: [] }
@@ -2070,7 +1767,6 @@
                     console.warn("Could not broadcast action:", e);
                 }
             }
-            window.sendGameAction = sendGameAction;
 
             function sendChatMessage(message) {
                 const chatData = { player: currentRole, message, username: myUsername };
@@ -3047,196 +2743,16 @@
                 return currentStates;
             }
 
-            // Redefine updatePreview globally
-            window.updatePreview = function(card) {
-                // Keep track of the active previewed card globally
-                window.activePreviewCard = card;
-
-                const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
-                let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
-
-                if (state.mode === "multiplayer") {
-                    // Seteadas de mi lado (currentRole) se pueden ver en el preview
-                    if (isFaceDown && card.owner === currentRole && !isPile) {
-                        isFaceDown = false;
-                    }
-                    // Opponent's hand is masked in multiplayer
-                    const isOpponentHand = (currentRole === "player1" && card.zone === "hand_2") || (currentRole === "player2" && card.zone === "hand_1");
-                    if (isOpponentHand) {
-                        isFaceDown = true;
-                    }
-                } else {
-                    // Practice mode: allow viewing everything (no masking)
-                    isFaceDown = false;
-                }
-
-                if ((isPile && state.mode === "multiplayer") || isFaceDown) {
-                    const backImg = state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
-                    $("#detail-card-img").attr("src", backImg);
-                    $("#detail-card-name").text("Carta Boca Abajo");
-                    $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
-                } else {
-                    $("#detail-card-img").attr("src", card.imageUrl);
-                    $("#detail-card-name").text(card.name);
-                    let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada para ti)" : "Boca Arriba"}\nContadores: ${card.counters}`;
-                    if (card.customAtk !== undefined || card.customDef !== undefined) {
-                        descText += `\n[ATK/DEF Modificado]: ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}`;
-                    }
-                    if (card.description) {
-                        descText += `\n\nEfecto:\n${card.description}`;
-                    }
-                    $("#detail-card-desc").text(descText);
-                }
-            };
-
-            // Redefine openExtraDeckModal globally to respect masking
-            window.openExtraDeckModal = function(playerKey) {
-                const extraZone = playerKey === "player1" ? "extra_1" : "extra_2";
-                const extraCards = state.cards.filter(c => c.zone === extraZone);
-
-                $("#extra-modal-title").text(`Extra Deck: ${playerKey === "player1" ? "P1" : "P2"}`);
-                $("#extra-cards-grid").empty();
-
-                if (extraCards.length === 0) {
-                    $("#extra-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Extra Deck.</p>');
-                } else {
-                    extraCards.forEach(card => {
-                        let isMasked = false;
-                        if (state.mode === "multiplayer") {
-                            // Face-down cards in the Extra Deck are only visible to their owner.
-                            // Non-owner sees them as masked (card back).
-                            if (card.faceDown && card.owner !== currentRole) {
-                                isMasked = true;
-                            }
-                        } else {
-                            // Practice mode: allow viewing everything
-                            isMasked = false;
-                        }
-
-                        const imgUrl = isMasked ?
-                            (state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg") :
-                            card.imageUrl;
-
-                        const cardHTML = `
-                            <div class="extra-deck-card-container" data-instance-id="${card.instanceId}">
-                                <img src="${imgUrl}" alt="${isMasked ? 'Boca Abajo' : card.name}">
-                                <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 6px;">
-                                    ${isMasked ? '' : `
-                                        <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
-                                        <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
-                                    `}
-                                </div>
-                            </div>
-                        `;
-                        $("#extra-cards-grid").append(cardHTML);
-                    });
-                }
-
-                $("#extra-overlay").fadeIn(200).css("display", "flex");
-
-                // Click Invocar button to start targeting mode on the field
-                $(".btn-extra-summon").off("click").on("click", function() {
-                    const instId = $(this).data("instance-id");
-                    const cardObj = state.cards.find(c => c.instanceId === instId);
-                    if (cardObj) {
-                        $("#extra-overlay").fadeOut(200);
-                        startGraphicalTargeting(cardObj, "summon");
-                    }
-                });
-
-                // Click XYZ button to start XYZ targeting mode on the field
-                $(".btn-extra-xyz").off("click").on("click", function() {
-                    const instId = $(this).data("instance-id");
-                    const cardObj = state.cards.find(c => c.instanceId === instId);
-                    if (cardObj) {
-                        $("#extra-overlay").fadeOut(200);
-                        startGraphicalTargeting(cardObj, "xyz");
-                    }
-                });
-            };
-
             // Wrap renderAllCards to perform automatic action logging on diff
             const originalRenderAllCards = window.renderAllCards;
             window.renderAllCards = function() {
                 const oldStates = previousCardStates;
-
-                // Handle graveyard and banished stack top card ordering on transition
-                if (Object.keys(oldStates).length > 0) {
-                    state.cards.forEach(card => {
-                        const oldC = oldStates[card.instanceId];
-                        if (oldC && oldC.zone !== card.zone) {
-                            if (card.zone.startsWith("grave_") || card.zone.startsWith("banished_") || card.zone.startsWith("extra_") || card.zone.startsWith("deck_")) {
-                                // If card already has a very recent movedToPileAt set, do not overwrite it!
-                                const isRecent = card.movedToPileAt && (Math.abs(Date.now() - card.movedToPileAt) < 1000);
-                                if (!isRecent) {
-                                    card.movedToPileAt = Date.now();
-                                }
-
-                                const zoneCards = state.cards.filter(c => c.zone === card.zone && c.instanceId !== card.instanceId);
-                                const maxZ = zoneCards.length > 0 ? Math.max(...zoneCards.map(c => c.z)) : 100;
-                                card.z = maxZ + 10;
-                            }
-                        }
-                    });
-                }
-
-                // Stable sort state.cards by movedToPileAt so the latest card sent to any pile is positioned last in its zone's list!
-                state.cards.sort((a, b) => {
-                    if (a.zone !== b.zone) return 0;
-                    const isPile = a.zone.startsWith("deck_") || a.zone.startsWith("grave_") || a.zone.startsWith("banished_") || a.zone.startsWith("extra_");
-                    if (isPile) {
-                        const timeA = a.movedToPileAt || 0;
-                        const timeB = b.movedToPileAt || 0;
-                        return timeA - timeB;
-                    }
-                    return 0;
-                });
-
                 const newStates = trackCardStates();
 
                 // If this render is triggered by a remote sync, do not log or broadcast!
                 if (window.isIncomingSync) {
                     previousCardStates = newStates;
-
-                    // Apply card masking before rendering during incoming sync as well!
-                    const originalFaceDowns = new Map();
-                    if (state.mode === "multiplayer") {
-                        state.cards.forEach(card => {
-                            const isOpponentHand = (currentRole === "player1" && card.zone === "hand_2") || (currentRole === "player2" && card.zone === "hand_1");
-                            const isOpponentFaceDown = card.faceDown && (card.owner !== currentRole);
-                            if (isOpponentHand || isOpponentFaceDown) {
-                                originalFaceDowns.set(card.instanceId, card.faceDown);
-                                card.faceDown = true;
-                            }
-                        });
-                    }
-
                     originalRenderAllCards.apply(this, arguments);
-
-                    // Restore original face-down states
-                    if (state.mode === "multiplayer") {
-                        state.cards.forEach(card => {
-                            if (originalFaceDowns.has(card.instanceId)) {
-                                card.faceDown = originalFaceDowns.get(card.instanceId);
-                            }
-                        });
-                    }
-
-                    // Append custom stats badges to cards
-                    state.cards.forEach(card => {
-                        if (card.customAtk !== undefined || card.customDef !== undefined) {
-                            const $cardEl = $(`#${card.instanceId}`);
-                            if ($cardEl.length) {
-                                $cardEl.find(".card-custom-stats-badge").remove();
-                                $cardEl.append(`
-                                    <div class="card-custom-stats-badge" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(15, 20, 26, 0.9); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); text-shadow: 0 0 2px #00d2ff;">
-                                        ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}
-                                    </div>
-                                `);
-                            }
-                        }
-                    });
-
                     return;
                 }
 
@@ -3365,45 +2881,8 @@
                 // Keep previous states up to date
                 previousCardStates = newStates;
 
-                // Apply card masking before rendering
-                const originalFaceDowns = new Map();
-                if (state.mode === "multiplayer") {
-                    state.cards.forEach(card => {
-                        const isOpponentHand = (currentRole === "player1" && card.zone === "hand_2") || (currentRole === "player2" && card.zone === "hand_1");
-                        const isOpponentFaceDown = card.faceDown && (card.owner !== currentRole);
-                        if (isOpponentHand || isOpponentFaceDown) {
-                            originalFaceDowns.set(card.instanceId, card.faceDown);
-                            card.faceDown = true;
-                        }
-                    });
-                }
-
                 // Run original render layout
                 originalRenderAllCards.apply(this, arguments);
-
-                // Restore original face-down states
-                if (state.mode === "multiplayer") {
-                    state.cards.forEach(card => {
-                        if (originalFaceDowns.has(card.instanceId)) {
-                            card.faceDown = originalFaceDowns.get(card.instanceId);
-                        }
-                    });
-                }
-
-                // Append custom stats badges to cards
-                state.cards.forEach(card => {
-                    if (card.customAtk !== undefined || card.customDef !== undefined) {
-                        const $cardEl = $(`#${card.instanceId}`);
-                        if ($cardEl.length) {
-                            $cardEl.find(".card-custom-stats-badge").remove();
-                            $cardEl.append(`
-                                <div class="card-custom-stats-badge" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(15, 20, 26, 0.9); border: 1px solid #00d2ff; border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); text-shadow: 0 0 2px #00d2ff;">
-                                    ⚔️ ${card.customAtk !== undefined ? card.customAtk : 0} / 🛡️ ${card.customDef !== undefined ? card.customDef : 0}
-                                </div>
-                            `);
-                        }
-                    }
-                });
 
                 // Broadcast cards state if in multiplayer mode and not an incoming sync
                 if (state.mode === "multiplayer" && !window.isIncomingSync) {
@@ -3425,467 +2904,6 @@
             setTimeout(() => {
                 previousCardStates = trackCardStates();
             }, 1000);
-
-            // --- MOBILE RESPONSIVE OVERRIDES ---
-
-            // Helper to get playmat scale factor
-            window.getPlaymatScale = function() {
-                const el = document.getElementById("playmat");
-                if (!el || window.innerWidth > 1024) return 1;
-                const rect = el.getBoundingClientRect();
-                return rect.width / 1120 || 1;
-            };
-
-            // Dynamic scale adjustment function
-            window.adjustPlaymatScale = function() {
-                if (window.innerWidth > 1024) {
-                    $("#playmat").css({
-                        "transform": "none",
-                        "margin": "0 95px 0 0"
-                    });
-                    return;
-                }
-
-                const container = $(".duel-arena-wrapper");
-                const playmat = $("#playmat");
-                if (!container.length || !playmat.length) return;
-
-                // Margins/height reserved for hand trays
-                const availableWidth = container.width() - 10;
-                const availableHeight = window.innerWidth <= 1024 ? (container.height() - 90) : (container.height() - 165);
-
-                const naturalWidth = 1120;
-                const naturalHeight = 600;
-
-                const scaleX = availableWidth / naturalWidth;
-                const scaleY = availableHeight / naturalHeight;
-
-                const scale = Math.min(scaleX, scaleY, 1);
-
-                playmat.css({
-                    "transform": `scale(${scale})`,
-                    "transform-origin": "center center",
-                    "margin": "0"
-                });
-            };
-
-            // Bind resize trigger
-            $(window).on("resize", window.adjustPlaymatScale);
-            setTimeout(window.adjustPlaymatScale, 200);
-
-            // Redefine window.findOverlappingCard to support playmat scaling
-            window.findOverlappingCard = function(coords, excludeInstanceId) {
-                const scale = window.getPlaymatScale();
-                const candidates = state.cards.filter(c =>
-                    c.instanceId !== excludeInstanceId &&
-                    !c.attachedTo &&
-                    !c.zone.startsWith("hand_") &&
-                    !c.zone.startsWith("deck_") &&
-                    !c.zone.startsWith("extra_") &&
-                    !c.zone.startsWith("grave_") &&
-                    !c.zone.startsWith("banished_") &&
-                    !c.zone.startsWith("prize_")
-                );
-
-                for (let i = candidates.length - 1; i >= 0; i--) {
-                    const c = candidates[i];
-                    const $elem = $(`#${c.instanceId}`);
-                    if ($elem.length) {
-                        const offset = $elem.offset();
-                        const matOffset = $("#playmat").offset();
-                        const x = (offset.left - matOffset.left) / scale;
-                        const y = (offset.top - matOffset.top) / scale;
-
-                        if (coords.x >= x && coords.x <= x + 80 &&
-                            coords.y >= y && coords.y <= y + 116) {
-                            return c;
-                        }
-                    }
-                }
-                return null;
-            };
-
-            // Unbind original window-level drag handlers
-            $(window).off('mousemove touchmove');
-            $(window).off('mouseup touchend');
-
-            // Re-bind scaled mousemove/touchmove drag-and-drop listener
-            $(window).on('mousemove touchmove', function(e) {
-                if (!dragCard) return;
-                e.preventDefault();
-
-                const instId = dragCard.data("instance-id");
-                const cardObj = state.cards.find(c => c.instanceId === instId);
-                if (!cardObj) return;
-
-                const pos = getEventCoords(e);
-                const matOffset = $("#playmat").offset();
-                const scale = window.getPlaymatScale();
-
-                // Convert screen mouse coordinates into unscaled playmat relative coordinates
-                const x = (pos.x - matOffset.left - dragOffset.x) / scale;
-                const y = (pos.y - matOffset.top - dragOffset.y) / scale;
-
-                const boundedX = Math.max(-10, Math.min(1120 - 70, x));
-                const boundedY = Math.max(-10, Math.min(600 - 100, y));
-
-                cardObj.x = boundedX;
-                cardObj.y = boundedY;
-
-                dragCard.css({
-                    left: `${boundedX}px`,
-                    top: `${boundedY}px`
-                });
-
-                const centerCoords = {
-                    x: boundedX + 40,
-                    y: boundedY + 58
-                };
-
-                $(".board-zone").removeClass("highlighted");
-                const overlappingZone = findOverlappingZone(centerCoords);
-                if (overlappingZone) {
-                    $(`#zone-${overlappingZone.id}`).addClass("highlighted");
-                }
-            });
-
-            // Re-bind scaled and mobile-friendly mouseup/touchend listener
-            $(window).on('mouseup touchend', function(e) {
-                if (!dragCard) return;
-
-                const instId = dragCard.data("instance-id");
-                const cardObj = state.cards.find(c => c.instanceId === instId);
-                if (!cardObj) return;
-
-                const endPos = getEventCoords(e);
-                const dx = endPos.x - dragStartCoords.x;
-                const dy = endPos.y - dragStartCoords.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const duration = Date.now() - dragStartTime;
-
-                let isClick = (dist < 15 && duration < 500);
-
-                dragCard.removeClass("dragging").addClass("snapping");
-                $(".board-zone").removeClass("highlighted");
-
-                if (isClick) {
-                    if ($("#playmat").hasClass("selecting-zone") || $("#playmat").hasClass("targeting-attack")) {
-                        const targetEl = dragCard[0];
-                        dragCard = null;
-                        if (targetEl) {
-                            const clickEvent = new MouseEvent('click', {
-                                bubbles: true,
-                                cancelable: true,
-                                view: window
-                            });
-                            targetEl.dispatchEvent(clickEvent);
-                        }
-                        return;
-                    }
-
-                    // Check if hand multi-select mode is active for this card's zone
-                    const isHandCard = cardObj.zone.startsWith("hand_");
-                    if (isHandCard) {
-                        const playerKey = cardObj.zone === "hand_1" ? "player1" : "player2";
-                        const $toggle = $(`.hand-multi-select-toggle[data-player="${playerKey}"]`);
-                        if ($toggle.is(":checked")) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const idx = selectedHandCards[playerKey].indexOf(cardObj.instanceId);
-                            if (idx > -1) {
-                                selectedHandCards[playerKey].splice(idx, 1);
-                                $(`#${cardObj.instanceId}`).removeClass("selected-for-batch");
-                            } else {
-                                selectedHandCards[playerKey].push(cardObj.instanceId);
-                                $(`#${cardObj.instanceId}`).addClass("selected-for-batch");
-                            }
-                            dragCard = null;
-                            return;
-                        }
-                    }
-
-                    // This is a click! (Fallback to standard tilt on PC)
-                    const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
-                    if (isField) {
-                        const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
-                        if (hasAttached) {
-                            openAttachedCardsModal(cardObj.instanceId);
-                        } else {
-                            if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
-                                cardObj.tiltAngle = 0;
-                            } else {
-                                const sign = Math.random() < 0.5 ? -1 : 1;
-                                const angle = sign * (4 + Math.random() * 5);
-                                cardObj.tiltAngle = Math.round(angle);
-                            }
-                        }
-                    }
-                } else {
-                    const centerCoords = {
-                        x: cardObj.x + 40,
-                        y: cardObj.y + 58
-                    };
-
-                    const hoverZone = findOverlappingZone(centerCoords);
-                    const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
-                    const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
-
-                    const oldZone = cardObj.zone;
-
-                    if (isOverP1Hand || isOverP2Hand) {
-                        const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
-                        cardObj.zone = `hand_${originalSuffix}`;
-                        cardObj.controller = cardObj.owner;
-                    } else if (hoverZone) {
-                        if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
-                            const zonePrefix = hoverZone.id.split("_")[0];
-                            const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
-                            const targetPileId = `${zonePrefix}_${originalSuffix}`;
-                            sendAttachedCardsToPile(cardObj.instanceId, targetPileId);
-                            cardObj.movedToPileAt = Date.now() + Math.random();
-                            cardObj.zone = targetPileId;
-                            cardObj.controller = cardObj.owner;
-                        } else if (hoverZone.id.startsWith("deck_")) {
-                            const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
-                            cardObj.zone = `deck_${originalSuffix}`;
-                            cardObj.controller = cardObj.owner;
-                        } else {
-                            cardObj.zone = hoverZone.id;
-                        }
-                        cardObj.attachedTo = null;
-
-                        if (hoverZone.id.startsWith("deck_")) {
-                            const isFromGrave = oldZone.startsWith("grave_");
-                            const isFromBanish = oldZone.startsWith("banished_");
-                            const isFromHand = oldZone.startsWith("hand_");
-                            if (isFromGrave || isFromBanish || isFromHand) {
-                                const sourceLabel = isFromGrave ? "el Cementerio" : (isFromBanish ? "el Desterrado" : "la Mano");
-                                Swal.fire({
-                                    title: '¡Carta enviada al Deck!',
-                                    html: `
-                                        <p style="margin-bottom: 15px; font-weight: 600;">Se ha enviado esta carta desde ${sourceLabel} al Deck:</p>
-                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                            <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
-                                            <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
-                                        </div>
-                                    `,
-                                    confirmButtonText: 'Entendido',
-                                    confirmButtonColor: '#00d2ff'
-                                });
-                            }
-                        }
-                    } else {
-                        const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
-                        if (droppedOnCard) {
-                            state.cards.forEach(c => {
-                                if (c.attachedTo === cardObj.instanceId) {
-                                    c.attachedTo = droppedOnCard.instanceId;
-                                }
-                            });
-
-                            const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                            droppedOnCard.z = maxZ + 1;
-
-                            cardObj.attachedTo = droppedOnCard.instanceId;
-                            cardObj.attachedAt = Date.now() + Math.random();
-                            cardObj.zone = droppedOnCard.zone;
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Carta Acoplada',
-                                text: `${cardObj.name} ha sido acoplada a ${droppedOnCard.name}.`,
-                                toast: true,
-                                position: 'top-end',
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                        } else {
-                            cardObj.zone = "field_free";
-                            cardObj.attachedTo = null;
-                        }
-                    }
-                }
-
-                dragCard = null;
-                renderAllCards();
-            });
-
-            // Restructure sidebars into clean tabbed panel on mobile landscape viewports
-            if (window.innerWidth <= 1024) {
-                const $sidebar = $(".duel-communication-sidebar");
-
-                const $tabBar = $(`
-                    <div class="mobile-tabs-bar">
-                        <button class="m-tab-btn active" data-tab="m-tab-preview"><i class="fas fa-search-plus"></i> Vista</button>
-                        <button class="m-tab-btn" data-tab="m-tab-log"><i class="fas fa-history"></i> Log</button>
-                        <button class="m-tab-btn" data-tab="m-tab-chat"><i class="fas fa-comments"></i> Chat</button>
-                        <button class="m-tab-btn" data-tab="m-tab-acc"><i class="fas fa-toolbox"></i> Acc</button>
-                    </div>
-                `);
-
-                const $tabPreview = $('<div id="m-tab-preview" class="m-tab-content active-content"></div>');
-                const $tabLog = $('<div id="m-tab-log" class="m-tab-content" style="display:none;"></div>');
-                const $tabChat = $('<div id="m-tab-chat" class="m-tab-content" style="display:none;"></div>');
-                const $tabAcc = $('<div id="m-tab-acc" class="m-tab-content" style="display:none; overflow-y:auto; height:100%;"></div>');
-
-                // Move elements dynamically from left sidebar and original panels
-                $tabPreview.append($(".duel-sidebar .sidebar-section"));
-                $tabLog.append($(".duel-communication-sidebar .comm-panel").eq(0));
-                $tabChat.append($(".duel-communication-sidebar .comm-panel").eq(1));
-
-                // Extract accessories contents nicely
-                const $p1Title = $('<h4 style="font-size:0.75rem; color:#00d2ff; font-family:\'Orbitron\', sans-serif; margin: 4px 0 2px 0;">Accesorios P1</h4>');
-                const $p2Title = $('<h4 style="font-size:0.75rem; color:#ff007f; font-family:\'Orbitron\', sans-serif; margin: 8px 0 2px 0;">Accesorios P2</h4>');
-
-                const $p1Content = $("#accessories-panel-p1 .accessories-content");
-                const $p2Content = $("#accessories-panel-p2 .accessories-content");
-
-                $tabAcc.append($p1Title).append($p1Content).append($p2Title).append($p2Content);
-
-                const $roomControls = $(".room-controls");
-                $sidebar.empty().append($roomControls).append($tabBar).append($tabPreview).append($tabLog).append($tabChat).append($tabAcc);
-
-                // Bind tab buttons click actions
-                $(".m-tab-btn").click(function() {
-                    $(".m-tab-btn").removeClass("active");
-                    $(this).addClass("active");
-
-                    const targetTab = $(this).data("tab");
-                    $(".m-tab-content").hide().removeClass("active-content");
-                    $(`#${targetTab}`).show().addClass("active-content");
-                });
-
-                // Mobile sidebar toggle button listener
-                $("#btn-toggle-sidebar-mobile").click(function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $(".duel-communication-sidebar").toggleClass("active");
-                    const $icon = $(this).find("i");
-                    if ($(".duel-communication-sidebar").hasClass("active")) {
-                        $icon.removeClass("fa-bars").addClass("fa-times");
-                    } else {
-                        $icon.removeClass("fa-times").addClass("fa-bars");
-                    }
-                });
-
-                // Close mobile sidebar on clicking outside
-                $(document).on("click", function(e) {
-                    if (window.innerWidth <= 1024) {
-                        if (!$(e.target).closest(".duel-communication-sidebar, #btn-toggle-sidebar-mobile, .swal2-container").length) {
-                            if ($(".duel-communication-sidebar").hasClass("active")) {
-                                $(".duel-communication-sidebar").removeClass("active");
-                                $("#btn-toggle-sidebar-mobile i").removeClass("fa-times").addClass("fa-bars");
-                            }
-                        }
-                    }
-                });
-
-                // Mobile click/tap handler for compact LP badges
-                $(document).on("click", ".lp-counter-container", function(e) {
-                    if (window.innerWidth > 1024) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const player = $(this).attr("id").includes("p2") ? "p2" : "p1";
-                    const key = player === "p1" ? "player1" : "player2";
-                    const currentLP = state.lp[key];
-
-                    Swal.fire({
-                        title: `Modificar LP (${player.toUpperCase()})`,
-                        background: '#12181e',
-                        color: '#fff',
-                        html: `
-                            <div style="margin-bottom: 15px; font-weight: bold; font-family: 'Orbitron', sans-serif;">LP Actual: <span style="color: #00d2ff; font-size: 1.8rem; text-shadow: 0 0 10px rgba(0,210,255,0.4);">${currentLP}</span></div>
-                            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                                <button id="swal-lp-add" class="btn" style="background: #2ec4b6; color: #000; flex: 1; font-weight: 800;">SUMAR</button>
-                                <button id="swal-lp-sub" class="btn" style="background: #ff1b6b; color: #fff; flex: 1; font-weight: 800;">RESTAR</button>
-                                <button id="swal-lp-half" class="btn" style="background: #555; color: #fff; flex: 1; font-weight: 800;">MITAD</button>
-                            </div>
-                            <input id="swal-lp-input" type="number" class="swal2-input" placeholder="Cantidad (ej: 1000)" style="margin: 0 auto; display: block; width: 85%; background: #000; color: #fff; border: 1.5px solid rgba(255,255,255,0.15); height: 42px; border-radius: 8px; text-align: center; font-size: 1.1rem; font-family: 'Orbitron', sans-serif; font-weight: bold; outline: none;" />
-                        `,
-                        showConfirmButton: false,
-                        showCancelButton: true,
-                        cancelButtonText: 'Cerrar',
-                        cancelButtonColor: '#333',
-                        didOpen: () => {
-                            const $input = $("#swal-lp-input");
-                            $input.focus();
-
-                            $("#swal-lp-add").click(function() {
-                                const val = parseInt($input.val()) || 0;
-                                state.lp[key] += val;
-                                appendGameLog('SYS', `Sumó ${val} LP a ${player.toUpperCase()} (Total: ${state.lp[key]})`);
-                                updateTurnUI();
-                                sendTurnStateUpdate();
-                                Swal.close();
-                            });
-                            $("#swal-lp-sub").click(function() {
-                                const val = parseInt($input.val()) || 0;
-                                state.lp[key] = Math.max(0, state.lp[key] - val);
-                                appendGameLog('SYS', `Restó ${val} LP a ${player.toUpperCase()} (Total: ${state.lp[key]})`);
-                                updateTurnUI();
-                                sendTurnStateUpdate();
-                                Swal.close();
-                            });
-                            $("#swal-lp-half").click(function() {
-                                const originalLP = state.lp[key];
-                                state.lp[key] = Math.ceil(state.lp[key] / 2);
-                                appendGameLog('SYS', `Dividió a la mitad los LP de ${player.toUpperCase()} de ${originalLP} a ${state.lp[key]}`);
-                                updateTurnUI();
-                                sendTurnStateUpdate();
-                                Swal.close();
-                            });
-                        }
-                    });
-                });
-            }
-
-            // Click action binding for "Efecto" option inside #card-menu
-            $(document).on("click", "#menu-effect", function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!activeMenuCard) return;
-
-                // Visual activation animation
-                const $cardElem = $(`#${activeMenuCard.instanceId}`);
-                $cardElem.addClass("activating-flash");
-                setTimeout(() => {
-                    $cardElem.removeClass("activating-flash");
-                }, 800);
-
-                // Log and broadcast effect activation
-                if (typeof window.sendGameAction === "function") {
-                    window.sendGameAction(`Activó el efecto de ${activeMenuCard.name}`, null, true);
-                }
-
-                $("#card-menu").removeClass("active");
-            });
-
-            // Mobile click listener: Show context menu immediately on mobile tap/touch
-            $(document).on("click", ".duel-card", function(e) {
-                if (window.innerWidth <= 1024) {
-                    const instId = $(this).data("instance-id");
-                    const cardObj = state.cards.find(c => c.instanceId === instId);
-                    if (cardObj) {
-                        const isPile = cardObj.zone.startsWith("deck_") || cardObj.zone.startsWith("extra_") || cardObj.zone.startsWith("grave_") || cardObj.zone.startsWith("banished_") || cardObj.zone.startsWith("prize_");
-                        if (!isPile) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            activeMenuCard = cardObj;
-                            $("#deck-menu").removeClass("active");
-
-                            // Get click coordinates accurately
-                            const clickX = e.clientX || e.originalEvent?.touches?.[0]?.clientX || e.pageX;
-                            const clickY = e.clientY || e.originalEvent?.touches?.[0]?.clientY || e.pageY;
-
-                            $("#card-menu").css({
-                                left: `${clickX}px`,
-                                top: `${clickY}px`
-                            }).addClass("active");
-                        }
-                    }
-                }
-            });
         });
     </script>
 </body>
