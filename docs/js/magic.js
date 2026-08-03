@@ -60,9 +60,13 @@ $(document).ready(async function() {
             $("#zone-prizes-p2").css("display", "flex");
         }
         $(".floating-lp-widget").hide(); // Pokémon format has no Life Points widgets
+        $(".btn-add-glass-counter").hide();
+        $(".btn-add-poke-counter").show();
     } else {
         $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
         $(".floating-lp-widget").show();
+        $(".btn-add-glass-counter").show();
+        $(".btn-add-poke-counter").hide();
     }
 
     // Hide/Show perspective switcher
@@ -306,8 +310,8 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                 let targetX = mX - dragOffset.x;
                 let targetY = mY - dragOffset.y;
 
-                targetX = Math.max(0, Math.min(window.innerWidth - 110, targetX));
-                targetY = Math.max(0, Math.min(window.innerHeight - 160, targetY));
+                targetX = Math.max(0, Math.min(window.innerWidth - 85, targetX));
+                targetY = Math.max(0, Math.min(window.innerHeight - 124, targetY));
 
                 dragCard.x = targetX;
                 dragCard.y = targetY;
@@ -913,8 +917,8 @@ function setupCardInteractions() {
             let targetY = mY - dragOffset.y;
 
             // Restrict coordinates inside viewport (allowing dragging closer to bottom edges)
-            const cardH = $(`#${dragCard.id}`).outerHeight() || 160;
-            const cardW = $(`#${dragCard.id}`).outerWidth() || 110;
+            const cardH = $(`#${dragCard.id}`).outerHeight() || 124;
+            const cardW = $(`#${dragCard.id}`).outerWidth() || 85;
 
             targetX = Math.max(0, Math.min(window.innerWidth - cardW, targetX));
             targetY = Math.max(0, Math.min(window.innerHeight - cardH, targetY));
@@ -965,8 +969,8 @@ function setupCardInteractions() {
 }
 
 function updateLandingHoverState(x, y) {
-    const cardMidX = x + 55;
-    const cardMidY = y + 80;
+    const cardMidX = x + 42.5;
+    const cardMidY = y + 62;
 
     $(".magic-landing-zone").removeClass("drag-over");
 
@@ -1392,29 +1396,63 @@ function renderAllCards() {
         }
 
         // Pokemon Damage chips
-        if (state.layout === "pokemon" && card.counters.poke > 0) {
-            let tempPoke = card.counters.poke;
-            let chips = [];
-            // Greedy chip splitter
-            while (tempPoke >= 100) { chips.push(100); tempPoke -= 100; }
-            while (tempPoke >= 50) { chips.push(50); tempPoke -= 50; }
-            while (tempPoke >= 10) { chips.push(10); tempPoke -= 10; }
+        let pokeBeadsHtml = "";
+        if (state.layout === "pokemon") {
+            if (!card.counters.poke_items) {
+                card.counters.poke_items = [];
+            }
+            let currentSum = card.counters.poke_items.reduce((s, item) => s + item.val, 0);
+            if (currentSum < card.counters.poke) {
+                let diff = card.counters.poke - currentSum;
+                while (diff >= 100) {
+                    card.counters.poke_items.push({ id: 'poke_' + Math.random().toString(36).substr(2, 9), val: 100, x: Math.random() * 45 + 10, y: Math.random() * 65 + 20 });
+                    diff -= 100;
+                }
+                while (diff >= 50) {
+                    card.counters.poke_items.push({ id: 'poke_' + Math.random().toString(36).substr(2, 9), val: 50, x: Math.random() * 45 + 10, y: Math.random() * 65 + 20 });
+                    diff -= 50;
+                }
+                while (diff >= 10) {
+                    card.counters.poke_items.push({ id: 'poke_' + Math.random().toString(36).substr(2, 9), val: 10, x: Math.random() * 45 + 10, y: Math.random() * 65 + 20 });
+                    diff -= 10;
+                }
+            } else if (currentSum > card.counters.poke) {
+                let diff = currentSum - card.counters.poke;
+                while (diff > 0 && card.counters.poke_items.length > 0) {
+                    let bestIndex = card.counters.poke_items.findIndex(item => item.val <= diff);
+                    if (bestIndex === -1) {
+                        bestIndex = card.counters.poke_items.length - 1;
+                    }
+                    let removed = card.counters.poke_items.splice(bestIndex, 1)[0];
+                    diff -= removed.val;
+                }
+                card.counters.poke = card.counters.poke_items.reduce((s, item) => s + item.val, 0);
+            }
 
-            let chipsHtml = "";
-            chips.forEach((val, i) => {
-                let colorClass = "dmg-10";
-                if (val >= 50 && val < 100) colorClass = "dmg-50";
-                else if (val >= 100) colorClass = "dmg-100";
+            if (card.counters.poke > 0) {
+                counterHtml += `
+                    <div class="card-counter-badge poke-total" data-type="poke" data-card-id="${card.id}" style="display: flex; align-items: center; gap: 4px; padding: 4px 8px;">
+                        <div class="pokemon-damage-badge-text" style="font-size: 0.65rem; font-weight: 900; color: #fff; text-shadow: 0 0 6px #ff1b6b;">💥 Total: ${card.counters.poke}</div>
+                    </div>
+                `;
 
-                chipsHtml += `<div class="stacked-counter-bead poke-bead ${colorClass}" data-card-id="${card.id}" data-val="${val}" style="z-index: ${10 + i}; margin-left: -5px;">${val}</div>`;
-            });
+                card.counters.poke_items.forEach(item => {
+                    let colorClass = "dmg-10";
+                    if (item.val >= 50 && item.val < 100) colorClass = "dmg-50";
+                    else if (item.val >= 100) colorClass = "dmg-100";
 
-            counterHtml += `
-                <div class="card-counter-badge poke-total" data-type="poke" data-card-id="${card.id}" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px;">
-                    <div class="pokemon-damage-badge-text" style="font-size: 0.65rem; font-weight: 900; color: #fff; text-shadow: 0 0 6px #ff1b6b;">💥 Total: ${card.counters.poke}</div>
-                    <div style="display: flex; margin-top: 2px;">${chipsHtml}</div>
-                </div>
-            `;
+                    pokeBeadsHtml += `
+                        <div class="stacked-counter-bead poke-bead draggable-poke-bead ${colorClass}"
+                             data-bead-id="${item.id}"
+                             data-card-id="${card.id}"
+                             data-val="${item.val}"
+                             title="Daño: ${item.val}"
+                             style="position: absolute; left: ${item.x}px; top: ${item.y}px; z-index: 40; margin: 0; pointer-events: auto;">
+                             ${item.val}
+                        </div>
+                    `;
+                });
+            }
         }
 
         const html = `
@@ -1423,6 +1461,7 @@ function renderAllCards() {
                 <div class="card-img-wrapper" style="${card.tapped ? 'transform: rotate(90deg);' : ''}">
                     <img class="card-img" src="${srcImg}" alt="${card.name}">
                 </div>
+                ${pokeBeadsHtml}
                 <!-- Dynamic Horizontal quick actions bar on hover (hidden if Miniature) -->
                 ${(inGraveOrBanish || inPrizes) ? '' : `
                 <div class="field-card-actions">
@@ -1530,6 +1569,18 @@ function showContextMenu(menuId, x, y, contextData = {}) {
 
     const $menu = $(menuId);
     $menu.data("context-data", contextData);
+
+    if (menuId === "#card-ctx-menu") {
+        if (state.layout === "pokemon") {
+            $("#menu-card-counter-glass").hide();
+            $("#menu-card-counter-glass-sub").hide();
+            $(".counter-submenu-trigger").show();
+        } else {
+            $("#menu-card-counter-glass").show();
+            $("#menu-card-counter-glass-sub").show();
+            $(".counter-submenu-trigger").hide();
+        }
+    }
 
     const menuW = $menu.outerWidth() || 230;
     const menuH = $menu.outerHeight() || 300;
@@ -1730,6 +1781,7 @@ function bindDropdownContextMenus() {
         if (data && data.card) {
             data.card.counters.glass = 0;
             data.card.counters.poke = 0;
+            data.card.counters.poke_items = [];
             renderAllCards();
         }
         $("#card-ctx-menu").removeClass("active");
@@ -1910,13 +1962,96 @@ $(document).on("click", ".stacked-counter-bead.ygo-bead", function(e) {
 $(document).on("click", ".stacked-counter-bead.poke-bead", function(e) {
     e.preventDefault();
     e.stopPropagation();
+    if ($(this).hasClass("was-dragging")) {
+        $(this).removeClass("was-dragging");
+        return;
+    }
     const cardId = $(this).attr("data-card-id");
+    const beadId = $(this).attr("data-bead-id");
     const cardObj = state.cards.find(c => c.id === cardId);
-    const chipVal = parseInt($(this).attr("data-val"));
     if (cardObj) {
-        cardObj.counters.poke = Math.max(0, cardObj.counters.poke - chipVal);
+        const beadVal = parseInt($(this).attr("data-val"));
+        if (beadId) {
+            cardObj.counters.poke_items = cardObj.counters.poke_items.filter(item => item.id !== beadId);
+            cardObj.counters.poke = cardObj.counters.poke_items.reduce((sum, item) => sum + item.val, 0);
+        } else {
+            cardObj.counters.poke = Math.max(0, cardObj.counters.poke - beadVal);
+        }
         renderAllCards();
     }
+});
+
+// Dragging individual Pokémon damage counter beads freely on the card
+$(document).on("mousedown touchstart", ".draggable-poke-bead", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const $bead = $(this);
+    const cardId = $bead.attr("data-card-id");
+    const beadId = $bead.attr("data-bead-id");
+    const beadVal = parseInt($bead.attr("data-val"));
+
+    const cardObj = state.cards.find(c => c.id === cardId);
+    if (!cardObj) return;
+
+    const beadObj = cardObj.counters.poke_items.find(item => item.id === beadId);
+    if (!beadObj) return;
+
+    const startClientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+    const startClientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+    const startBeadX = beadObj.x;
+    const startBeadY = beadObj.y;
+
+    let moved = false;
+
+    $(document).on("mousemove.beaddrag touchmove.beaddrag", function(moveEvent) {
+        const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+        const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+        const deltaX = mX - startClientX;
+        const deltaY = mY - startClientY;
+
+        if (Math.hypot(deltaX, deltaY) > 5) {
+            moved = true;
+            $bead.addClass("was-dragging");
+        }
+
+        let newX = startBeadX + deltaX;
+        let newY = startBeadY + deltaY;
+
+        beadObj.x = newX;
+        beadObj.y = newY;
+
+        $bead.css({ left: newX + "px", top: newY + "px" });
+    });
+
+    $(document).on("mouseup.beaddrag touchend.beaddrag", function(upEvent) {
+        $(document).off(".beaddrag");
+
+        const $card = $(`#${cardId}`);
+        const cardWidth = $card.outerWidth() || 85;
+        const cardHeight = $card.outerHeight() || 124;
+
+        // Check if dragged outside the card boundary
+        const isOutside = (beadObj.x < -15 || beadObj.x > cardWidth - 5 || beadObj.y < -15 || beadObj.y > cardHeight - 5);
+
+        if (isOutside) {
+            cardObj.counters.poke_items = cardObj.counters.poke_items.filter(item => item.id !== beadId);
+            cardObj.counters.poke = cardObj.counters.poke_items.reduce((sum, item) => sum + item.val, 0);
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: `Contador de ${beadVal} eliminado`,
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+
+        renderAllCards();
+    });
 });
 
 // Drag-to-delete counter badge logic: Dragging any counter badge outside its card removes it cleanly!
@@ -1964,13 +2099,13 @@ $(document).on("mousedown touchstart", ".card-counter-badge", function(e) {
         const endY = upEvent.type === "touchend" ? upEvent.changedTouches[0].clientY : upEvent.clientY;
 
         // Calculate distance from card center coordinate
-        const cardMidX = card.x + 55;
-        const cardMidY = card.y + 80;
+        const cardMidX = card.x + 42.5;
+        const cardMidY = card.y + 62;
 
         const distance = Math.hypot(endX - cardMidX, endY - cardMidY);
 
-        // If dragged outside the card boundary (threshold 100px from card center)
-        if (distance > 95) {
+        // If dragged outside the card boundary (threshold 70px from card center for 85x124)
+        if (distance > 70) {
             if (counterType === "glass") {
                 card.counters.glass = 0;
             } else {
