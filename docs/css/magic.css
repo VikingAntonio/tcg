@@ -49,10 +49,10 @@ body.magic-mode {
     opacity: 0.22;
 }
 
-/* Absolutely Positioned Cards styling on Playmat - Calibrated to 110x160px for space comfort */
+/* Absolutely Positioned Cards styling on Playmat - Calibrated to 85x124px for space comfort */
 body.magic-mode .duel-card {
-    width: 110px !important;
-    height: 160px !important;
+    width: 85px !important;
+    height: 124px !important;
     position: absolute !important;
     transition: transform 0.2s, box-shadow 0.2s;
     user-select: none;
@@ -104,8 +104,8 @@ body.magic-mode .duel-card.face-down .card-img {
 /* Draggable Pile Zones (Deck & Extra Deck Only) */
 .magic-pile-zone {
     position: absolute;
-    width: 110px;
-    height: 160px;
+    width: 85px;
+    height: 124px;
     border-radius: 8px;
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(4px);
