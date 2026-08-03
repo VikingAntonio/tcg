@@ -784,8 +784,55 @@ function bindCardDragEvents() {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
-        // If we are in attack targeting mode, bypass dragging and click handling in mousedown
-        if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
+        // If we are in attack targeting mode, handle selection directly on mousedown for perfect touch/mouse click feedback!
+        if ($("#playmat").hasClass("selecting-zone") && typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (instId !== window.activeAttackSourceCard.instanceId) {
+                // Add attack entry
+                const newAtk = {
+                    attackerId: window.activeAttackSourceCard.instanceId,
+                    targetId: cardObj.instanceId,
+                    isDirect: false,
+                    timestamp: Date.now()
+                };
+                state.attacks.push(newAtk);
+
+                // Broadcast attack sync if multiplayer
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'attack_sync',
+                            payload: { attacks: state.attacks }
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Could not sync attack targeting:", e);
+                }
+
+                // Log action
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${cardObj.name}`);
+                }
+
+                if (typeof window.drawAttackArrows === "function") {
+                    window.drawAttackArrows();
+                }
+
+                // Auto-clear after 10 seconds
+                setTimeout(() => {
+                    state.attacks = state.attacks.filter(atk => atk !== newAtk);
+                    if (typeof window.drawAttackArrows === "function") {
+                        window.drawAttackArrows();
+                    }
+                }, 10000);
+
+                if (typeof window.stopAttackTargetingMode === "function") {
+                    window.stopAttackTargetingMode();
+                }
+            }
             return;
         }
 
@@ -889,7 +936,7 @@ $(window).on('mouseup touchend', function(e) {
     $(".board-zone").removeClass("highlighted");
 
     if (isClick) {
-        if ($("#playmat").hasClass("selecting-zone") || $("#playmat").hasClass("targeting-attack")) {
+        if ($("#playmat").hasClass("selecting-zone")) {
             // Manually dispatch a click event to trigger targeting click listeners (which were blocked by mousedown preventDefault)
             const targetEl = dragCard[0];
             dragCard = null;
@@ -923,41 +970,6 @@ $(window).on('mouseup touchend', function(e) {
                 dragCard = null; // Clean up drag state
                 return;
             }
-        }
-
-        // Show PC right-click context menu on mobile tap
-        if (window.innerWidth <= 1024) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // If card is inside a deck zone, open deck menu
-            if (cardObj.zone.startsWith("deck_")) {
-                activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
-                $("#card-menu").removeClass("active");
-                $("#deck-menu").css({
-                    left: `${endPos.x}px`,
-                    top: `${endPos.y}px`
-                }).addClass("active");
-                dragCard = null;
-                return;
-            }
-
-            // If card is in extra, grave, banished, let standard click events handle them (they open modals)
-            if (cardObj.zone.startsWith("extra_") || cardObj.zone.startsWith("grave_") || cardObj.zone.startsWith("banished_")) {
-                dragCard = null;
-                return;
-            }
-
-            // For hand and field cards, open the PC context menu
-            activeMenuCard = cardObj;
-            $("#deck-menu").removeClass("active");
-            $("#card-menu").css({
-                left: `${endPos.x}px`,
-                top: `${endPos.y}px`
-            }).addClass("active");
-
-            dragCard = null;
-            return;
         }
 
         // This is a click!
