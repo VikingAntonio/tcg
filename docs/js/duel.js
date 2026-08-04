@@ -488,6 +488,7 @@ function renderAllCards() {
 
             // Check if this card is indeed the top card in pile
             const cardsInThisZone = state.cards.filter(c => c.zone === card.zone);
+            cardsInThisZone.sort((a, b) => (a.movedToPileAt || 0) - (b.movedToPileAt || 0));
             const topCard = cardsInThisZone[cardsInThisZone.length - 1];
 
             if (topCard && topCard.instanceId === card.instanceId) {
@@ -799,8 +800,8 @@ function bindCardDragEvents() {
     });
 
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
-        // If clicking on any quick-action button or menu, do NOT drag or intercept!
-        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn').length) {
+        // If clicking on any quick-action button, menu, or counter container, do NOT drag or intercept!
+        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container').length) {
             return;
         }
 
@@ -1167,9 +1168,6 @@ function updatePreview(card) {
         $("#detail-card-img").attr("src", card.imageUrl);
         $("#detail-card-name").text(card.name);
         let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada para ti)" : "Boca Arriba"}\nContadores: ${card.counters}`;
-        if (card.description) {
-            descText += `\n\nEfecto:\n${card.description}`;
-        }
         $("#detail-card-desc").text(descText);
     }
 }
@@ -2084,6 +2082,7 @@ function openPileModal(playerKey, pileType) {
                                 `<button class="pile-card-action-btn btn-pile-banish" data-instance-id="${card.instanceId}">Remover</button>` :
                                 `<button class="pile-card-action-btn btn-pile-grave" data-instance-id="${card.instanceId}">Cementerio</button>`
                             }
+                            <button class="pile-card-action-btn btn-pile-effect" data-instance-id="${card.instanceId}">Efecto</button>
                         </div>
                     </div>
                 </div>
@@ -2166,11 +2165,55 @@ function openPileModal(playerKey, pileType) {
             cardObj.tapped = false;
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
+        } else if ($(this).hasClass("btn-pile-effect")) {
+            $("#pile-overlay").fadeOut(200);
+
+            // Bring card to top of the pile on the playmat
+            cardObj.movedToPileAt = Date.now() + 10000;
+            renderAllCards();
+
+            // Trigger beautiful temporary activation glow animation on the playmat card element
+            setTimeout(() => {
+                const $cardElem = $(`#${cardObj.instanceId}`);
+                if ($cardElem.length) {
+                    $cardElem.addClass("activating-flash");
+                    setTimeout(() => {
+                        $cardElem.removeClass("activating-flash");
+                    }, 800);
+                }
+            }, 100);
+
+            if (typeof sendGameAction === "function") {
+                const sourceLabel = pileType === "grave" ? "el Cementerio" : "el Desterrado";
+                sendGameAction(`Activó el efecto de ${cardObj.name} desde ${sourceLabel}`);
+            }
         }
     });
 }
 
 function setupEventListeners() {
+    // Click listener for detailed preview magnifying glass zoom popup
+    $("#btn-magnify-preview").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const src = $("#detail-card-img").attr("src");
+        if (!src || src.includes("placeholder") || src.includes("via.placeholder.com")) {
+            return;
+        }
+        Swal.fire({
+            html: `
+                <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
+                    <img src="${src}" style="max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
+                </div>
+            `,
+            showCloseButton: true,
+            showConfirmButton: false,
+            background: "transparent",
+            backdrop: "rgba(0, 0, 0, 0.85)",
+            width: "auto"
+        });
+    });
+
     // Menu layout toggle
     $("#select-board-layout").change(async function() {
         state.layout = $(this).val();
