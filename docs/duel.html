@@ -526,7 +526,7 @@
         .tcg-accessories-panel {
             position: absolute;
             width: 250px;
-            height: 310px;
+            height: 410px;
             background: rgba(10, 15, 22, 0.98);
             backdrop-filter: blur(20px);
             border: 1.5px solid var(--glass-border);
@@ -534,9 +534,12 @@
             z-index: 106;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             pointer-events: auto;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
         }
         .tcg-accessories-panel.p1-accessories {
-            bottom: -310px;
+            bottom: -410px;
             right: 345px;
             transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -544,7 +547,7 @@
             bottom: 10px;
         }
         .tcg-accessories-panel.p2-accessories {
-            top: -310px;
+            top: -410px;
             left: 310px;
             transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -2335,115 +2338,137 @@
                 const activeRoleKey = spawnerPlayer === "p1" ? "player1" : "player2";
                 const pSuffix = spawnerPlayer === "p1" ? 1 : 2;
 
-                // Determine the available tokens (deck, cached api, or default)
-                let tokensToUse = [];
-                if (state.deckTokens && state.deckTokens[activeRoleKey] && state.deckTokens[activeRoleKey].length > 0) {
-                    tokensToUse = state.deckTokens[activeRoleKey];
-                } else if (cachedTokens && cachedTokens.length > 0) {
-                    tokensToUse = cachedTokens.map(t => ({
-                        name: t.name,
-                        imageUrl: t.card_images[0].image_url,
-                        description: t.desc || "Ficha Especial."
-                    }));
-                } else {
-                    tokensToUse = DEFAULT_TOKENS;
-                }
-
-                // Close accessories panel so the playmat and dialog are clear
+                // Close accessories panel so the playmat is clear
                 $(`#accessories-panel-${spawnerPlayer}`).removeClass("active");
 
-                Swal.fire({
-                    title: 'Invocar Token',
-                    html: `
-                        <div style="margin-bottom: 15px; text-align: left;">
-                            <label for="token-select" style="display:block; margin-bottom: 5px; color:#ffd32d; font-weight:bold; font-size: 0.9rem;">Selecciona un Token:</label>
-                            <select id="token-select" class="swal2-select" style="display: block; width: 100%; box-sizing: border-box; margin: 0 auto; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 8px;">
-                                <!-- populated via JS -->
-                            </select>
-                        </div>
-                        <div style="margin-bottom: 15px; text-align: center;">
-                            <img id="token-preview-img" style="max-height: 180px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;" src="" alt="Token Preview" />
-                        </div>
-                        <div style="text-align: left;">
-                            <label style="display:block; margin-bottom: 5px; color:#ffd32d; font-weight:bold; font-size: 0.9rem;">Posición de Invocación:</label>
-                            <div style="display: flex; justify-content: space-around; margin-top: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
-                                <label style="color:#fff; cursor:pointer; font-size: 0.85rem;"><input type="radio" name="token-pos" value="summon" checked style="margin-right: 5px; vertical-align: middle;"> Ataque (Posición Vertical)</label>
-                                <label style="color:#fff; cursor:pointer; font-size: 0.85rem;"><input type="radio" name="token-pos" value="defense" style="margin-right: 5px; vertical-align: middle;"> Defensa (Posición Horizontal)</label>
+                const userTokens = state.deckTokens && state.deckTokens[activeRoleKey] ? state.deckTokens[activeRoleKey] : [];
+
+                if (userTokens.length > 0) {
+                    // Show a SweetAlert2 dialog with ONLY their configured deck tokens to choose from
+                    Swal.fire({
+                        title: 'Invocar Token',
+                        html: `
+                            <div style="margin-bottom: 15px; text-align: left;">
+                                <label for="token-select" style="display:block; margin-bottom: 5px; color:#ffd32d; font-weight:bold; font-size: 0.9rem;">Selecciona un Token de tu Deck:</label>
+                                <select id="token-select" class="swal2-select" style="display: block; width: 100%; box-sizing: border-box; margin: 0 auto; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 8px;">
+                                    <!-- populated via JS -->
+                                </select>
                             </div>
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Seleccionar',
-                    cancelButtonText: 'Cancelar',
-                    background: '#12181e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd32d',
-                    cancelButtonColor: '#ff4a4a',
-                    didOpen: () => {
-                        const select = document.getElementById('token-select');
-                        const img = document.getElementById('token-preview-img');
+                            <div style="margin-bottom: 15px; text-align: center;">
+                                <img id="token-preview-img" style="max-height: 180px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;" src="" alt="Token Preview" />
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Invocar',
+                        cancelButtonText: 'Cancelar',
+                        background: '#12181e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd32d',
+                        cancelButtonColor: '#ff4a4a',
+                        didOpen: () => {
+                            const select = document.getElementById('token-select');
+                            const img = document.getElementById('token-preview-img');
 
-                        tokensToUse.forEach((t, i) => {
-                            const opt = document.createElement('option');
-                            opt.value = i;
-                            opt.textContent = t.name;
-                            select.appendChild(opt);
-                        });
+                            userTokens.forEach((t, i) => {
+                                const opt = document.createElement('option');
+                                opt.value = i;
+                                opt.textContent = t.name;
+                                select.appendChild(opt);
+                            });
 
-                        const updatePreview = () => {
+                            const updatePreview = () => {
+                                const selectedIdx = select.value;
+                                if (userTokens[selectedIdx]) {
+                                    img.src = userTokens[selectedIdx].imageUrl;
+                                    img.style.display = 'inline-block';
+                                } else {
+                                    img.style.display = 'none';
+                                }
+                            };
+
+                            select.addEventListener('change', updatePreview);
+                            updatePreview();
+                        },
+                        preConfirm: () => {
+                            const select = document.getElementById('token-select');
                             const selectedIdx = select.value;
-                            if (tokensToUse[selectedIdx]) {
-                                img.src = tokensToUse[selectedIdx].imageUrl;
-                                img.style.display = 'inline-block';
-                            } else {
-                                img.style.display = 'none';
-                            }
-                        };
+                            return userTokens[selectedIdx];
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed && result.value) {
+                            const token = result.value;
 
-                        select.addEventListener('change', updatePreview);
-                        updatePreview();
-                    },
-                    preConfirm: () => {
-                        const select = document.getElementById('token-select');
-                        const selectedIdx = select.value;
-                        const pos = document.querySelector('input[name="token-pos"]:checked').value;
-                        return {
-                            token: tokensToUse[selectedIdx],
-                            position: pos
-                        };
+                            const newTokenObj = {
+                                instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                                name: token.name,
+                                imageUrl: token.imageUrl,
+                                owner: activeRoleKey,
+                                controller: activeRoleKey,
+                                zone: `monster_${pSuffix}_3`, // placeholder
+                                faceDown: false,
+                                tapped: false, // Default to Attack Position
+                                counters: 0,
+                                attachedTo: null,
+                                x: 430,
+                                y: pSuffix === 1 ? 320 : 160,
+                                z: state.cards.length + 10,
+                                isExtra: false,
+                                isToken: true,
+                                description: token.description
+                            };
+
+                            state.cards.push(newTokenObj);
+
+                            setTimeout(() => {
+                                startGraphicalTargeting(newTokenObj, "summon");
+                                sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
+                            }, 200);
+                        }
+                    });
+                } else {
+                    // No tokens configured: summon a random token automatically, exactly as before
+                    let tokenName = "Ficha de Monstruo (Token)";
+                    let tokenImg = "https://images.ygoprodeck.com/images/cards/10000000.jpg";
+                    let tokenDesc = "Esta ficha puede ser invocada en cualquier zona seleccionada.";
+
+                    if (cachedTokens.length > 0) {
+                        const randomToken = cachedTokens[Math.floor(Math.random() * cachedTokens.length)];
+                        tokenName = randomToken.name;
+                        tokenImg = randomToken.card_images[0].image_url;
+                        tokenDesc = randomToken.desc || "Ficha Especial.";
+                    } else {
+                        const randomToken = DEFAULT_TOKENS[Math.floor(Math.random() * DEFAULT_TOKENS.length)];
+                        tokenName = randomToken.name;
+                        tokenImg = randomToken.imageUrl;
+                        tokenDesc = randomToken.description;
                     }
-                }).then((result) => {
-                    if (result.isConfirmed && result.value) {
-                        const { token, position } = result.value;
 
-                        const newTokenObj = {
-                            instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                            name: token.name,
-                            imageUrl: token.imageUrl,
-                            owner: activeRoleKey,
-                            controller: activeRoleKey,
-                            zone: `monster_${pSuffix}_3`, // placeholder
-                            faceDown: false,
-                            tapped: position === "defense",
-                            counters: 0,
-                            attachedTo: null,
-                            x: 430,
-                            y: pSuffix === 1 ? 320 : 160,
-                            z: state.cards.length + 10,
-                            isExtra: false,
-                            isToken: true,
-                            description: token.description
-                        };
+                    const newTokenObj = {
+                        instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                        name: tokenName,
+                        imageUrl: tokenImg,
+                        owner: activeRoleKey,
+                        controller: activeRoleKey,
+                        zone: `monster_${pSuffix}_3`, // placeholder
+                        faceDown: false,
+                        tapped: false, // Default to Attack Position
+                        counters: 0,
+                        attachedTo: null,
+                        x: 430,
+                        y: pSuffix === 1 ? 320 : 160,
+                        z: state.cards.length + 10,
+                        isExtra: false,
+                        isToken: true,
+                        description: tokenDesc
+                    };
 
-                        state.cards.push(newTokenObj);
+                    state.cards.push(newTokenObj);
 
-                        // Let user visually select exactly where on the playmat to place this newly spawned Token!
-                        setTimeout(() => {
-                            startGraphicalTargeting(newTokenObj, position);
-                            sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name} (${position === "summon" ? "Ataque" : "Defensa"})`);
-                        }, 200);
-                    }
-                });
+                    setTimeout(() => {
+                        startGraphicalTargeting(newTokenObj, "summon");
+                        sendGameAction(`Está invocando de forma especial un Token: 🌟 ${tokenName}`);
+                    }, 200);
+                }
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
