@@ -281,11 +281,28 @@ function instantiateDeck(playerKey) {
 
     const playerSuffix = playerKey === "player1" ? 1 : 2;
 
+    // Initialize tokens array for this player
+    if (!state.deckTokens) {
+        state.deckTokens = { player1: [], player2: [] };
+    }
+    state.deckTokens[playerKey] = [];
+
     // Create virtual card instances with exact section mapping
     deckCards.forEach((c, index) => {
         const section = c.section || "Main";
         if (section === "Side") {
             // Ignore Side deck completely according to instructions
+            return;
+        }
+
+        // Match Tokens or Token case-insensitively
+        const normalizedSection = section.trim().toLowerCase();
+        if (normalizedSection === "tokens" || normalizedSection === "token") {
+            state.deckTokens[playerKey].push({
+                name: c.name || "Token",
+                imageUrl: c.image_url || "https://vikingtcg.xyz/favi.png",
+                description: c.description || c.effect || c.desc || c.text || "Ficha Especial."
+            });
             return;
         }
 
@@ -957,6 +974,19 @@ $(window).on('mouseup touchend', function(e) {
         const hoverZone = findOverlappingZone(centerCoords);
         const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
         const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+
+        // Token specific check: delete if dragged out of active field
+        if (cardObj.isToken) {
+            if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || hoverZone.id.startsWith("extra_") || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
+                state.cards = state.cards.filter(c => c.instanceId !== cardObj.instanceId);
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Desapareció Token: ${cardObj.name} al salir del campo`);
+                }
+                dragCard = null;
+                renderAllCards();
+                return;
+            }
+        }
 
         const oldZone = cardObj.zone;
 
@@ -2081,7 +2111,7 @@ function setupEventListeners() {
 
         // Dynamically toggle and adjust pokemon/yugioh menu items
         const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
-        if (state.layout === "pokemon" && isPokeFieldCard) {
+        if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
             $("#menu-swap-active-bench").show();
         } else {
             $("#menu-swap-active-bench").hide();
@@ -2091,6 +2121,34 @@ function setupEventListeners() {
             $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
         } else {
             $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+        }
+
+        // Token specific menu items adjustment
+        if (cardObj.isToken) {
+            $("#menu-destroy-token").show();
+            $("#menu-to-hand").hide();
+            $("#menu-to-grave").hide();
+            $("#menu-to-banish").hide();
+            $("#menu-to-deck-top").hide();
+            $("#menu-to-deck-bottom").hide();
+            $("#menu-control").hide();
+            $("#menu-detach").hide();
+        } else {
+            $("#menu-destroy-token").hide();
+            $("#menu-to-hand").show();
+            $("#menu-to-grave").show();
+            $("#menu-to-banish").show();
+            $("#menu-to-deck-top").show();
+            $("#menu-to-deck-bottom").show();
+            $("#menu-control").show();
+
+            // Check if there are attached cards to show detach option
+            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
+            if (hasAttached) {
+                $("#menu-detach").show();
+            } else {
+                $("#menu-detach").hide();
+            }
         }
 
         $("#card-menu").css({
@@ -2259,6 +2317,22 @@ function setupEventListeners() {
         activeMenuCard.controller = activeMenuCard.owner; // Reset controller
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
+        renderAllCards();
+    });
+
+    $(document).on("click", "#menu-destroy-token", function() {
+        if (!activeMenuCard) return;
+        const tokenName = activeMenuCard.name;
+
+        // Remove from state.cards completely
+        state.cards = state.cards.filter(c => c.instanceId !== activeMenuCard.instanceId);
+
+        // Broadcast / Log the action
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Destruyó Token: 💥 ${tokenName}`);
+        }
+
+        $("#card-menu").removeClass("active");
         renderAllCards();
     });
 
