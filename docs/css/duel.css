@@ -220,7 +220,7 @@ body.duel-body {
     padding: 10px;
     gap: 8px;
     background: radial-gradient(circle at center, rgba(16, 28, 43, 0.4) 0%, rgba(5, 8, 12, 0.8) 100%);
-    overflow: auto;
+    overflow: hidden !important;
     position: relative;
     align-items: center;
     justify-content: space-between;
@@ -234,8 +234,8 @@ body.duel-body {
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: 10px 0;
-    margin: 5px 0;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -247,11 +247,11 @@ body.duel-body {
 .hand-cards-container {
     display: flex;
     gap: 16px;
-    min-height: 135px;
+    min-height: 116px;
     align-items: center;
     justify-content: center;
     overflow: visible;
-    padding: 10px;
+    padding: 5px;
 }
 
 /* Playmat Board Element */
@@ -266,6 +266,10 @@ body.duel-body {
     overflow: visible;
     flex-shrink: 0;
     margin-right: 95px; /* Reserve safe horizontal space for the vertical phase bar on the right */
+    transform: scale(0.72);
+    transform-origin: center center;
+    margin-top: -84px;
+    margin-bottom: -84px;
 }
 
 .playmat-board.pokemon-active {

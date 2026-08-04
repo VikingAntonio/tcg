@@ -833,11 +833,13 @@ function bindCardDragEvents() {
         dragCard.css("z-index", cardObj.z);
 
         const pos = getEventCoords(e);
-        const cardOffset = dragCard.offset();
+        const matOffset = $("#playmat").offset();
+        const rect = $("#playmat")[0].getBoundingClientRect();
+        const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
-        // Calculate offset relative to mouse/touch position
-        dragOffset.x = pos.x - cardOffset.left;
-        dragOffset.y = pos.y - cardOffset.top;
+        // Calculate offset in internal coordinates relative to mouse/touch position
+        dragOffset.x = (pos.x - matOffset.left) / scale - cardObj.x;
+        dragOffset.y = (pos.y - matOffset.top) / scale - cardObj.y;
         dragStartCoords = { x: pos.x, y: pos.y };
         dragStartTime = Date.now();
     });
@@ -863,10 +865,12 @@ $(window).on('mousemove touchmove', function(e) {
 
     const pos = getEventCoords(e);
     const matOffset = $("#playmat").offset();
+    const rect = $("#playmat")[0].getBoundingClientRect();
+    const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
     // Free movement boundaries relative to playmat container
-    const x = pos.x - matOffset.left - dragOffset.x;
-    const y = pos.y - matOffset.top - dragOffset.y;
+    const x = (pos.x - matOffset.left) / scale - dragOffset.x;
+    const y = (pos.y - matOffset.top) / scale - dragOffset.y;
 
     // Constrain inside mat viewport boundaries + offset spacing (scaled to 1120x600 playmat, card is 80x116)
     const boundedX = Math.max(-10, Math.min(1120 - 70, x));
