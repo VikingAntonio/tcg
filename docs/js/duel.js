@@ -438,6 +438,8 @@ function renderAllCards() {
             const p2Class = isP2 ? "p2-card-actions" : "";
             const isFieldZone = card.zone === "field_1" || card.zone === "field_2" || card.zone === "stadium_1" || card.zone === "stadium_2";
             const fieldZoneClass = isFieldZone ? (card.zone === "field_1" ? "field-zone-right" : "field-zone-left") : "";
+            const isPokeFieldCard = state.layout === "pokemon" && card.zone && (card.zone.startsWith("active_") || card.zone.startsWith("bench_"));
+            const swapBtnHTML = isPokeFieldCard ? `<button class="field-action-btn btn-field-swap" data-instance-id="${card.instanceId}">Activo/Banca</button>` : "";
             fieldActionOverlayHTML = `
                 <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
                     <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
@@ -448,6 +450,7 @@ function renderAllCards() {
                     <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
                     <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">${returnBtnLabel}</button>
+                    ${swapBtnHTML}
                     <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}">Cementerio</button>
                     <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}">Remover</button>
                 </div>
@@ -772,6 +775,8 @@ function bindCardDragEvents() {
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on discard
             renderAllCards();
+        } else if ($(this).hasClass("btn-field-swap")) {
+            startPokemonSwapTargeting(cardObj);
         } else if ($(this).hasClass("btn-field-banish")) {
             const originalOwnerSuffix = cardObj.owner === "player1" ? 1 : 2;
             const pileId = `banished_${originalOwnerSuffix}`;
@@ -1810,6 +1815,137 @@ function stopAttachmentTargeting() {
     $(document).off("keydown.attach");
 }
 
+let activeSwapSourceCard = null;
+
+function startPokemonSwapTargeting(cardObj) {
+    activeSwapSourceCard = cardObj;
+
+    // Close any open menus
+    $("#card-menu").removeClass("active");
+
+    // Display targeting instructions Toast
+    $("#zone-picker-overlay").html(`
+        <div class="zone-picker-toast" style="background: linear-gradient(135deg, #a855f7, #6366f1); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5); padding: 12px 24px; border-radius: 8px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-exchange-alt animate-pulse"></i> Elige un Pokémon o zona (Activo/Banca) de tu lado para cambiar posición
+        </div>
+    `).fadeIn(200).css("display", "flex");
+
+    $("#playmat").addClass("selecting-zone");
+
+    // Bind click to zones and other cards
+    setTimeout(() => {
+        // Prevent clicking the same card
+        $(".duel-card").not(`#${cardObj.instanceId}`).off("click.swap").on("click.swap", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetInstId = $(this).data("instance-id");
+            const targetCardObj = state.cards.find(c => c.instanceId === targetInstId);
+
+            if (targetCardObj && activeSwapSourceCard) {
+                const playerSuffix = activeSwapSourceCard.owner === "player1" ? 1 : 2;
+                // We check if target is inside P1/P2 active or bench zones
+                const targetZone = targetCardObj.zone;
+                const isTargetValid = targetZone === `active_${playerSuffix}` || targetZone.startsWith(`bench_${playerSuffix}_`);
+
+                if (isTargetValid) {
+                    const tempZone = activeSwapSourceCard.zone;
+                    activeSwapSourceCard.zone = targetZone;
+                    targetCardObj.zone = tempZone;
+                    renderAllCards();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Posición Cambiada',
+                        text: `${activeSwapSourceCard.name} se intercambió con ${targetCardObj.name}.`,
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Zona Inválida',
+                        text: 'Solo puedes cambiar posición con Pokémon de tu lado (Activo/Banca).',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                }
+            }
+            stopPokemonSwapTargeting();
+        });
+
+        // Click empty zone
+        $(".board-zone").off("click.swap").on("click.swap", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const zoneId = $(this).data("id");
+            if (activeSwapSourceCard) {
+                const playerSuffix = activeSwapSourceCard.owner === "player1" ? 1 : 2;
+                const isTargetValid = zoneId === `active_${playerSuffix}` || zoneId.startsWith(`bench_${playerSuffix}_`);
+
+                if (isTargetValid) {
+                    activeSwapSourceCard.zone = zoneId;
+                    renderAllCards();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Posición Cambiada',
+                        text: `${activeSwapSourceCard.name} se movió a la zona seleccionada.`,
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Zona Inválida',
+                        text: 'Solo puedes mover el Pokémon a tu lado del campo (Activo/Banca).',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                }
+            }
+            stopPokemonSwapTargeting();
+        });
+    }, 100);
+
+    // Cancel on click outside cards/zones
+    $(document).off("click.swap_cancel").on("click.swap_cancel", function(e) {
+        if (!$(e.target).closest(".duel-card, .board-zone, .field-card-actions, #card-menu").length) {
+            stopPokemonSwapTargeting();
+        }
+    });
+
+    // Cancel on ESC
+    $(document).off("keydown.swap").on("keydown.swap", function(e) {
+        if (e.key === "Escape") {
+            stopPokemonSwapTargeting();
+        }
+    });
+}
+
+function stopPokemonSwapTargeting() {
+    activeSwapSourceCard = null;
+    $("#zone-picker-overlay").fadeOut(150).html(`
+        <div class="zone-picker-toast">
+            <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+        </div>
+    `);
+    $("#playmat").removeClass("selecting-zone");
+    $(".duel-card").off("click.swap");
+    $(".board-zone").off("click.swap");
+    $(document).off("click.swap_cancel");
+    $(document).off("keydown.swap");
+}
+
 // Search and extract from deck (UPGRADED WITH COMPREHENSIVE MULTI-ACTIONS)
 function openSearchModal(playerKey) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
@@ -2349,91 +2485,7 @@ function setupEventListeners() {
 
     $("#menu-swap-active-bench").click(function() {
         if (!activeMenuCard) return;
-
-        const currentZone = activeMenuCard.zone;
-        const playerSuffix = currentZone.includes("_1") ? 1 : 2;
-
-        const slots = [
-            { id: `active_${playerSuffix}`, label: "Activo" },
-            { id: `bench_${playerSuffix}_1`, label: "Banca 1" },
-            { id: `bench_${playerSuffix}_2`, label: "Banca 2" },
-            { id: `bench_${playerSuffix}_3`, label: "Banca 3" },
-            { id: `bench_${playerSuffix}_4`, label: "Banca 4" },
-            { id: `bench_${playerSuffix}_5`, label: "Banca 5" }
-        ];
-
-        // Filter out the slot the card is currently in
-        const otherSlots = slots.filter(s => s.id !== currentZone);
-
-        // Build HTML for SweetAlert
-        let htmlContent = '<div class="swal-swap-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">';
-        otherSlots.forEach(slot => {
-            // Find card in this slot (if any)
-            const targetCard = state.cards.find(c => c.zone === slot.id && !c.attachedTo);
-            if (targetCard) {
-                htmlContent += `
-                    <button class="swal-swap-btn" data-target-zone="${slot.id}" data-target-card-id="${targetCard.instanceId}" style="background: rgba(255, 27, 107, 0.15); border: 1px solid var(--secondary-color); color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; text-align: left; font-weight: 600; font-size: 0.9rem; width: 100%; display: flex; align-items: center; justify-content: space-between;">
-                        <span><i class="fas fa-sync-alt" style="margin-right: 8px; color: var(--secondary-color);"></i> Intercambiar con ${targetCard.name}</span>
-                        <span style="font-size: 0.75rem; background: var(--secondary-color); padding: 2px 6px; border-radius: 4px;">${slot.label}</span>
-                    </button>
-                `;
-            } else {
-                htmlContent += `
-                    <button class="swal-swap-btn" data-target-zone="${slot.id}" data-target-card-id="" style="background: rgba(0, 210, 255, 0.15); border: 1px solid var(--primary-color); color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; text-align: left; font-weight: 600; font-size: 0.9rem; width: 100%; display: flex; align-items: center; justify-content: space-between;">
-                        <span><i class="fas fa-arrow-right" style="margin-right: 8px; color: var(--primary-color);"></i> Mover a ${slot.label}</span>
-                        <span style="font-size: 0.75rem; background: var(--primary-color); padding: 2px 6px; border-radius: 4px;">Vacío</span>
-                    </button>
-                `;
-            }
-        });
-        htmlContent += '</div>';
-
-        Swal.fire({
-            title: 'Cambiar de Lugar (Activo / Banca)',
-            html: htmlContent,
-            showConfirmButton: false,
-            showCancelButton: true,
-            cancelButtonText: 'Cancelar',
-            customClass: {
-                popup: 'swal-swap-popup'
-            }
-        });
-    });
-
-    $(document).on("click", ".swal-swap-btn", function() {
-        if (!activeMenuCard) {
-            Swal.close();
-            return;
-        }
-
-        const targetZone = $(this).data("target-zone");
-        const targetCardId = $(this).data("target-card-id");
-        const currentZone = activeMenuCard.zone;
-
-        if (targetCardId) {
-            // Find target card and swap zones
-            const targetCard = state.cards.find(c => c.instanceId === targetCardId);
-            if (targetCard) {
-                targetCard.zone = currentZone;
-                activeMenuCard.zone = targetZone;
-            }
-        } else {
-            // Move active card to empty zone
-            activeMenuCard.zone = targetZone;
-        }
-
-        renderAllCards();
-        Swal.close();
-
-        // Show quick toast success
-        Swal.fire({
-            icon: 'success',
-            title: 'Posición Cambiada',
-            toast: true,
-            position: 'top-end',
-            timer: 2000,
-            showConfirmButton: false
-        });
+        startPokemonSwapTargeting(activeMenuCard);
     });
 
     $("#menu-to-deck-top").click(function() {
