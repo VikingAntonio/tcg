@@ -86,8 +86,10 @@ body.duel-body {
     border-right: 1px solid var(--glass-border);
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow-y: scroll; /* Force vertical scrollbar to be always visible to avoid layout shifts */
+    scrollbar-gutter: stable; /* Reserve space for scrollbar */
     padding: 15px;
+    padding-bottom: 50px; /* Add comfortable bottom margin/padding for accessories */
     gap: 15px;
     z-index: 5;
     box-shadow: 5px 0 15px rgba(0,0,0,0.4);
@@ -95,6 +97,10 @@ body.duel-body {
 
 .duel-sidebar::-webkit-scrollbar {
     width: 6px;
+}
+
+.duel-sidebar::-webkit-scrollbar-track {
+    background: transparent; /* Make track fully transparent */
 }
 
 .duel-sidebar::-webkit-scrollbar-thumb {
@@ -178,6 +184,8 @@ body.duel-body {
 
 .preview-img-container {
     width: 100%;
+    max-width: 244px;
+    height: 342px; /* Lock height to prevent layout shifting */
     aspect-ratio: 2.5 / 3.5;
     background: #000;
     border: 1px solid var(--glass-border);
@@ -553,11 +561,11 @@ body.duel-body {
 }
 
 body.layout-yugioh .duel-card.face-down .card-img-wrapper {
-    background-image: url('../img/bocabajo.jpg') !important;
+    background-image: var(--custom-sleeve, url('../img/bocabajo.jpg')) !important;
 }
 
 body.layout-pokemon .duel-card.face-down .card-img-wrapper {
-    background-image: url('../img/pokeBocaAbajo.jpg') !important;
+    background-image: var(--custom-sleeve, url('../img/pokeBocaAbajo.jpg')) !important;
 }
 
 /* Counter indicator badges */
@@ -830,7 +838,7 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
 }
 
 .custom-atk-def-badge .atk-val {
-    color: #ff4a4a;
+    color: #00d2ff;
 }
 
 .custom-atk-def-badge .def-val {

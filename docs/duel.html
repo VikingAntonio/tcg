@@ -397,8 +397,8 @@
 
         .p1-lp-container {
             left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 15px;
+            transform: none;
             border-color: rgba(0, 210, 255, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 210, 255, 0.05);
         }
@@ -406,8 +406,8 @@
         .p2-lp-container {
             right: 15px;
             left: auto;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 15px;
+            transform: none;
             border-color: rgba(255, 27, 107, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 27, 107, 0.05);
         }
@@ -611,7 +611,7 @@
             background: rgba(0,0,0,0.4);
             border: 1px solid var(--glass-border);
             border-radius: 10px;
-            padding: 10px;
+            padding: 6px 10px;
         }
         .acc-row {
             display: flex;
@@ -975,10 +975,10 @@
                 <hr style="border: 0; border-top: 1.5px solid rgba(255, 255, 255, 0.15); margin: 15px 0;">
 
                 <!-- Unified Accessories Panel for both players -->
-                <div class="sidebar-accessories" id="sidebar-accessories-container" style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="sidebar-accessories" id="sidebar-accessories-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px;">
                     <!-- Luck/Suerte tools -->
                     <div class="accessories-section">
-                        <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: #ffd32d;"><i class="fas fa-dice"></i> Dados y Monedas</h3>
+                        <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #ffd32d;"><i class="fas fa-dice"></i> Dados y Monedas</h3>
                         <div class="acc-row" style="display: flex; gap: 12px; justify-content: center; align-items: center;">
                             <div class="acc-tool-box" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
                                 <span class="tool-label" style="font-size: 0.7rem; color: #aaa;">Dado</span>
@@ -998,7 +998,7 @@
 
                     <!-- Tokens (YGO) Section -->
                     <div class="accessories-section ygo-only-tool">
-                        <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: #2ec4b6;"><i class="fas fa-ghost"></i> Tokens (YGO)</h3>
+                        <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #2ec4b6;"><i class="fas fa-ghost"></i> Tokens (YGO)</h3>
                         <button class="btn-spawn-token token-action-btn" id="unified-token-btn" style="width: 100%; padding: 8px; font-size: 0.75rem;">
                             <i class="fas fa-ghost"></i> Invocar Token
                         </button>
@@ -1006,7 +1006,7 @@
 
                     <!-- Counters/Contadores Section -->
                     <div class="accessories-section" id="accessories-counters-section-unified">
-                        <h3 class="counter-section-title" style="font-size: 0.9rem; margin-bottom: 8px; color: #00d2ff;">Contadores</h3>
+                        <h3 class="counter-section-title" style="font-size: 0.9rem; margin-bottom: 4px; color: #00d2ff;">Contadores</h3>
                         <div class="ygo-only-tool counter-source-wrapper" style="display: flex; justify-content: center;">
                             <div class="counter-source ygo-counter-source" draggable="true">
                                 +1
@@ -1028,8 +1028,8 @@
                     </div>
 
                     <!-- Custom ATK/DEF Section -->
-                    <div class="accessories-section" style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
-                        <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: #ff1b6b;">ATK/DEF Custom</h3>
+                    <div class="accessories-section" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+                        <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #ff1b6b;">ATK/DEF Custom</h3>
                         <div class="atk-def-custom-inputs" style="display: flex; gap: 6px; margin-bottom: 8px; justify-content: center;">
                             <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
                             <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
@@ -1047,21 +1047,36 @@
         <!-- Playmat Arena Area -->
         <main class="duel-arena-wrapper">
 
+            <!-- LP Counter for Player 2 (Moved to top right) -->
+            <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
+                <div class="lp-header">P2 LP</div>
+                <div class="lp-number" id="lp-display-p2">8000</div>
+                <div class="lp-calc-row">
+                    <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
+                </div>
+                <div class="lp-controls-row">
+                    <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+</button>
+                    <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-</button>
+                    <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/</button>
+                </div>
+            </div>
+
+            <!-- LP Counter for Player 1 (Moved to top left) -->
+            <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
+                <div class="lp-header">P1 LP</div>
+                <div class="lp-number" id="lp-display-p1">8000</div>
+                <div class="lp-calc-row">
+                    <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
+                </div>
+                <div class="lp-controls-row">
+                    <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+</button>
+                    <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-</button>
+                    <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/</button>
+                </div>
+            </div>
+
             <!-- Player 2 Hand Tray (Invisible transparent workspace area at the top) -->
             <div class="hand-tray player-2" id="hand-tray-p2">
-                <!-- LP Counter for Player 2 (Moved inside hand tray) -->
-                <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
-                    <div class="lp-header">P2 LP</div>
-                    <div class="lp-number" id="lp-display-p2">8000</div>
-                    <div class="lp-calc-row">
-                        <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
-                    </div>
-                    <div class="lp-controls-row">
-                        <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+</button>
-                        <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-</button>
-                        <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/</button>
-                    </div>
-                </div>
 
                 <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
                     <label class="theme-switch p2-theme-switch" title="Selección Múltiple">
@@ -1111,19 +1126,6 @@
 
             <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
             <div class="hand-tray player-1" id="hand-tray-p1">
-                <!-- LP Counter for Player 1 (Moved inside hand tray) -->
-                <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
-                    <div class="lp-header">P1 LP</div>
-                    <div class="lp-number" id="lp-display-p1">8000</div>
-                    <div class="lp-calc-row">
-                        <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
-                    </div>
-                    <div class="lp-controls-row">
-                        <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+</button>
-                        <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-</button>
-                        <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/</button>
-                    </div>
-                </div>
 
                 <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
                     <label class="theme-switch p1-theme-switch" title="Selección Múltiple">

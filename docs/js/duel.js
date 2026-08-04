@@ -109,6 +109,7 @@ const state = {
     layout: stateParams.get('layout') || "yugioh",
     cards: [], // All active card instances currently in game
     decks: { player1: [], player2: [] }, // Raw decks selected
+    deckSleeves: { player1: null, player2: null }, // Store selected sleeve URL for each player
     currentUser: null
 };
 
@@ -265,6 +266,23 @@ async function fetchDeckCards(deckId, playerKey) {
 
         if (error) throw error;
         state.decks[playerKey] = cards || [];
+
+        // Fetch deck custom sleeve metadata safely
+        try {
+            const { data: deckMeta, error: deckErr } = await _supabase
+                .from('decks')
+                .select('sleeves')
+                .eq('id', deckId)
+                .single();
+            if (!deckErr && deckMeta && deckMeta.sleeves) {
+                state.deckSleeves[playerKey] = deckMeta.sleeves;
+            } else {
+                state.deckSleeves[playerKey] = null;
+            }
+        } catch (metaE) {
+            console.warn("Error fetching deck sleeves, fallback to default card back:", metaE);
+            state.deckSleeves[playerKey] = null;
+        }
     } catch (err) {
         console.error("Error loading deck cards:", err);
     }
@@ -462,11 +480,14 @@ function renderAllCards() {
 
         const zIndexStyle = isHand ? "" : `z-index: ${card.z};`;
 
+        const sleeveUrl = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : "";
+        const sleeveStyle = sleeveUrl ? `--custom-sleeve: url('${sleeveUrl}');` : "";
+
         const cardHTML = `
             <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
                  id="${card.instanceId}"
                  data-instance-id="${card.instanceId}"
-                 style="--tilt: ${card.tiltAngle || 0}deg; ${zIndexStyle}">
+                 style="--tilt: ${card.tiltAngle || 0}deg; ${sleeveStyle} ${zIndexStyle}">
                 <div class="card-img-wrapper">
                     <img src="${card.imageUrl}" alt="${card.name}">
                 </div>
@@ -540,12 +561,15 @@ function renderAllCards() {
                 }
                 const childZ = card.z - 14 * (idx + 1); // Maintain correct stacking order below the parent and each other
 
+                const childSleeveUrl = (childCard.owner && state.deckSleeves && state.deckSleeves[childCard.owner]) ? state.deckSleeves[childCard.owner] : "";
+                const childSleeveStyle = childSleeveUrl ? `--custom-sleeve: url('${childSleeveUrl}');` : "";
+
                 const childCardHTML = `
                     <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''}"
                          id="${childCard.instanceId}"
                          data-instance-id="${childCard.instanceId}"
                          data-parent-id="${card.instanceId}"
-                         style="left: ${finalX + cumulativeOffset}px; top: ${finalY + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg;">
+                         style="left: ${finalX + cumulativeOffset}px; top: ${finalY + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg; ${childSleeveStyle}">
                         <div class="card-img-wrapper">
                             <img src="${childCard.imageUrl}" alt="${childCard.name}">
                         </div>
@@ -1160,7 +1184,8 @@ function updatePreview(card) {
     }
 
     if (isPile || isFaceDown) {
-        const backImg = state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const defaultBack = state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
         $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
