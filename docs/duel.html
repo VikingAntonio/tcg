@@ -1090,7 +1090,7 @@
         <!-- Left Sidebar: Only the Card Preview & Minimal Utilities -->
         <aside class="duel-sidebar">
             <div class="sidebar-section">
-                <h3><i class="fas fa-th-large"></i> Tablero</h3>
+                <h3 style="display: none;"><i class="fas fa-th-large"></i> Tablero</h3>
                 <select id="select-board-layout" class="sidebar-select" style="display: none;">
                     <option value="yugioh">Yu-Gi-Oh! Field</option>
                     <option value="pokemon">Pokémon Arena</option>
@@ -1102,10 +1102,11 @@
 
             <!-- Detailed Card Preview Panel -->
             <div class="sidebar-section preview-panel">
-                <h3><i class="fas fa-search-plus"></i> Vista Detallada</h3>
+                <h3 style="display: none;"><i class="fas fa-search-plus"></i> Vista Detallada</h3>
                 <div class="card-detailed-preview" id="card-detail-view">
-                    <div class="preview-img-container">
+                    <div class="preview-img-container" style="position: relative;">
                         <img id="detail-card-img" src="https://via.placeholder.com/300x440?text=Hover+o+Click" alt="Preview">
+                        <button id="btn-magnify-preview" title="Ampliar y ver carta" style="position: absolute; bottom: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; background: rgba(18,24,30,0.85); border: 1.5px solid var(--primary-color, #00d2ff); color: var(--primary-color, #00d2ff); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.6); z-index: 10; transition: all 0.2s;"><i class="fas fa-search-plus" style="font-size: 1rem;"></i></button>
                     </div>
                     <div class="preview-info">
                         <h4 id="detail-card-name">Selecciona una carta</h4>
@@ -2686,6 +2687,10 @@
                     $card.find(".card-counter-container").remove();
                     $card.find(".counter-tooltip").remove();
 
+                    const styleOverride = card.counterPosition
+                        ? `style="left: ${card.counterPosition.left}px; top: ${card.counterPosition.top}px; bottom: auto; transform: none;"`
+                        : "";
+
                     if (state.layout === 'yugioh') {
                         if (card.counters && card.counters > 0) {
                             let beadsHtml = "";
@@ -2695,7 +2700,7 @@
                             }
 
                             $card.append(`
-                                <div class="card-counter-container" data-instance-id="${card.instanceId}">
+                                <div class="card-counter-container" data-instance-id="${card.instanceId}" ${styleOverride}>
                                     ${beadsHtml}
                                     <div class="counter-tooltip">Contadores: ${card.counters}</div>
                                 </div>
@@ -2721,7 +2726,7 @@
                             // Inject visible damage total badge on top left of the card in addition to details
                             $card.append(`
                                 <div class="pokemon-damage-badge">${totalDmg}</div>
-                                <div class="card-counter-container" data-instance-id="${card.instanceId}">
+                                <div class="card-counter-container" data-instance-id="${card.instanceId}" ${styleOverride}>
                                     ${beadsHtml}
                                     <div class="counter-tooltip">Daño Total: ${totalDmg}</div>
                                 </div>
@@ -3177,6 +3182,77 @@
                     }
                 }
             };
+
+            // Helper to get touch/mouse coordinates locally
+            function getEventCoordsLocal(e) {
+                const oe = e.originalEvent || e;
+                if (oe.touches && oe.touches.length > 0) {
+                    return { x: oe.touches[0].clientX, y: oe.touches[0].clientY };
+                }
+                if (oe.changedTouches && oe.changedTouches.length > 0) {
+                    return { x: oe.changedTouches[0].clientX, y: oe.changedTouches[0].clientY };
+                }
+                return { x: e.clientX || oe.clientX, y: e.clientY || oe.clientY };
+            }
+
+            // Custom mouse and touch drag listeners for .card-counter-container to allow free relative positioning inside the card
+            $(document).on("mousedown touchstart", ".card-counter-container", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const $container = $(this);
+                const instId = $container.data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (!cardObj) return;
+
+                const $card = $container.closest(".duel-card");
+                const startCoords = getEventCoordsLocal(e);
+
+                // Calculate initial position of the container relative to its offsetParent
+                const containerPos = $container.position();
+                const startLeft = containerPos.left;
+                const startTop = containerPos.top;
+
+                $(document).on("mousemove.counterdrag touchmove.counterdrag", function(ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+
+                    const currentCoords = getEventCoordsLocal(ev);
+                    const dx = currentCoords.x - startCoords.x;
+                    const dy = currentCoords.y - startCoords.y;
+
+                    let newLeft = startLeft + dx;
+                    let newTop = startTop + dy;
+
+                    // Standard card dimension constraints (card is 80x116 usually)
+                    const cardW = $card.width() || 80;
+                    const cardH = $card.height() || 116;
+
+                    // Allow dragging slightly outside boundaries for more flexible placement
+                    newLeft = Math.max(-15, Math.min(cardW - 15, newLeft));
+                    newTop = Math.max(-15, Math.min(cardH - 15, newTop));
+
+                    $container.css({
+                        left: `${newLeft}px`,
+                        top: `${newTop}px`,
+                        bottom: 'auto',
+                        transform: 'none'
+                    });
+                });
+
+                $(document).on("mouseup.counterdrag touchend.counterdrag", function(ev) {
+                    $(document).off(".counterdrag");
+
+                    const pos = $container.position();
+                    cardObj.counterPosition = {
+                        left: pos.left,
+                        top: pos.top
+                    };
+
+                    // Re-render and sync to broadcast state.cards to other players
+                    window.renderAllCards();
+                });
+            });
 
             // Seed initial card states on load
             setTimeout(() => {
