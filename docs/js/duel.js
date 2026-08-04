@@ -44,6 +44,7 @@ const BOARD_LAYOUTS = {
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
         { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
         { id: "grave_2", name: "P2 Descarte", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: -95, y: 30, type: "banished" },
         { id: "active_2", name: "P2 Activo", player: 2, x: 590, y: 160, type: "active" },
         { id: "bench_2_5", name: "P2 Banca 5", player: 2, x: 350, y: 30, type: "bench" },
         { id: "bench_2_4", name: "P2 Banca 4", player: 2, x: 470, y: 30, type: "bench" },
@@ -71,7 +72,8 @@ const BOARD_LAYOUTS = {
         { id: "bench_1_4", name: "P1 Banca 4", player: 1, x: 710, y: 450, type: "bench" },
         { id: "bench_1_5", name: "P1 Banca 5", player: 1, x: 830, y: 450, type: "bench" },
         { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
-        { id: "grave_1", name: "P1 Descarte", player: 1, x: 990, y: 320, type: "grave" }
+        { id: "grave_1", name: "P1 Descarte", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 1135, y: 450, type: "banished" }
     ]
 };
 
@@ -279,11 +281,28 @@ function instantiateDeck(playerKey) {
 
     const playerSuffix = playerKey === "player1" ? 1 : 2;
 
+    // Initialize tokens array for this player
+    if (!state.deckTokens) {
+        state.deckTokens = { player1: [], player2: [] };
+    }
+    state.deckTokens[playerKey] = [];
+
     // Create virtual card instances with exact section mapping
     deckCards.forEach((c, index) => {
         const section = c.section || "Main";
         if (section === "Side") {
             // Ignore Side deck completely according to instructions
+            return;
+        }
+
+        // Match Tokens or Token case-insensitively
+        const normalizedSection = section.trim().toLowerCase();
+        if (normalizedSection === "tokens" || normalizedSection === "token") {
+            state.deckTokens[playerKey].push({
+                name: c.name || "Token",
+                imageUrl: c.image_url || "https://vikingtcg.xyz/favi.png",
+                description: c.description || c.effect || c.desc || c.text || "Ficha Especial."
+            });
             return;
         }
 
@@ -419,6 +438,8 @@ function renderAllCards() {
             const p2Class = isP2 ? "p2-card-actions" : "";
             const isFieldZone = card.zone === "field_1" || card.zone === "field_2" || card.zone === "stadium_1" || card.zone === "stadium_2";
             const fieldZoneClass = isFieldZone ? (card.zone === "field_1" ? "field-zone-right" : "field-zone-left") : "";
+            const isPokeFieldCard = state.layout === "pokemon" && card.zone && (card.zone.startsWith("active_") || card.zone.startsWith("bench_"));
+            const swapBtnHTML = isPokeFieldCard ? `<button class="field-action-btn btn-field-swap" data-instance-id="${card.instanceId}">Activo/Banca</button>` : "";
             fieldActionOverlayHTML = `
                 <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
                     <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
@@ -429,6 +450,7 @@ function renderAllCards() {
                     <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
                     <button class="field-action-btn btn-field-return" data-instance-id="${card.instanceId}">${returnBtnLabel}</button>
+                    ${swapBtnHTML}
                     <button class="field-action-btn btn-field-grave" data-instance-id="${card.instanceId}">Cementerio</button>
                     <button class="field-action-btn btn-field-banish" data-instance-id="${card.instanceId}">Remover</button>
                 </div>
@@ -753,6 +775,8 @@ function bindCardDragEvents() {
             cardObj.tapped = false;
             cardObj.attachedTo = null; // detach on discard
             renderAllCards();
+        } else if ($(this).hasClass("btn-field-swap")) {
+            startPokemonSwapTargeting(cardObj);
         } else if ($(this).hasClass("btn-field-banish")) {
             const originalOwnerSuffix = cardObj.owner === "player1" ? 1 : 2;
             const pileId = `banished_${originalOwnerSuffix}`;
@@ -955,6 +979,19 @@ $(window).on('mouseup touchend', function(e) {
         const hoverZone = findOverlappingZone(centerCoords);
         const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
         const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+
+        // Token specific check: delete if dragged out of active field
+        if (cardObj.isToken) {
+            if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || hoverZone.id.startsWith("extra_") || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
+                state.cards = state.cards.filter(c => c.instanceId !== cardObj.instanceId);
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Desapareció Token: ${cardObj.name} al salir del campo`);
+                }
+                dragCard = null;
+                renderAllCards();
+                return;
+            }
+        }
 
         const oldZone = cardObj.zone;
 
@@ -1778,6 +1815,137 @@ function stopAttachmentTargeting() {
     $(document).off("keydown.attach");
 }
 
+let activeSwapSourceCard = null;
+
+function startPokemonSwapTargeting(cardObj) {
+    activeSwapSourceCard = cardObj;
+
+    // Close any open menus
+    $("#card-menu").removeClass("active");
+
+    // Display targeting instructions Toast
+    $("#zone-picker-overlay").html(`
+        <div class="zone-picker-toast" style="background: linear-gradient(135deg, #a855f7, #6366f1); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5); padding: 12px 24px; border-radius: 8px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-exchange-alt animate-pulse"></i> Elige un Pokémon o zona (Activo/Banca) de tu lado para cambiar posición
+        </div>
+    `).fadeIn(200).css("display", "flex");
+
+    $("#playmat").addClass("selecting-zone");
+
+    // Bind click to zones and other cards
+    setTimeout(() => {
+        // Prevent clicking the same card
+        $(".duel-card").not(`#${cardObj.instanceId}`).off("click.swap").on("click.swap", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetInstId = $(this).data("instance-id");
+            const targetCardObj = state.cards.find(c => c.instanceId === targetInstId);
+
+            if (targetCardObj && activeSwapSourceCard) {
+                const playerSuffix = activeSwapSourceCard.owner === "player1" ? 1 : 2;
+                // We check if target is inside P1/P2 active or bench zones
+                const targetZone = targetCardObj.zone;
+                const isTargetValid = targetZone === `active_${playerSuffix}` || targetZone.startsWith(`bench_${playerSuffix}_`);
+
+                if (isTargetValid) {
+                    const tempZone = activeSwapSourceCard.zone;
+                    activeSwapSourceCard.zone = targetZone;
+                    targetCardObj.zone = tempZone;
+                    renderAllCards();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Posición Cambiada',
+                        text: `${activeSwapSourceCard.name} se intercambió con ${targetCardObj.name}.`,
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Zona Inválida',
+                        text: 'Solo puedes cambiar posición con Pokémon de tu lado (Activo/Banca).',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                }
+            }
+            stopPokemonSwapTargeting();
+        });
+
+        // Click empty zone
+        $(".board-zone").off("click.swap").on("click.swap", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const zoneId = $(this).data("id");
+            if (activeSwapSourceCard) {
+                const playerSuffix = activeSwapSourceCard.owner === "player1" ? 1 : 2;
+                const isTargetValid = zoneId === `active_${playerSuffix}` || zoneId.startsWith(`bench_${playerSuffix}_`);
+
+                if (isTargetValid) {
+                    activeSwapSourceCard.zone = zoneId;
+                    renderAllCards();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Posición Cambiada',
+                        text: `${activeSwapSourceCard.name} se movió a la zona seleccionada.`,
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Zona Inválida',
+                        text: 'Solo puedes mover el Pokémon a tu lado del campo (Activo/Banca).',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                }
+            }
+            stopPokemonSwapTargeting();
+        });
+    }, 100);
+
+    // Cancel on click outside cards/zones
+    $(document).off("click.swap_cancel").on("click.swap_cancel", function(e) {
+        if (!$(e.target).closest(".duel-card, .board-zone, .field-card-actions, #card-menu").length) {
+            stopPokemonSwapTargeting();
+        }
+    });
+
+    // Cancel on ESC
+    $(document).off("keydown.swap").on("keydown.swap", function(e) {
+        if (e.key === "Escape") {
+            stopPokemonSwapTargeting();
+        }
+    });
+}
+
+function stopPokemonSwapTargeting() {
+    activeSwapSourceCard = null;
+    $("#zone-picker-overlay").fadeOut(150).html(`
+        <div class="zone-picker-toast">
+            <i class="fas fa-bullseye animate-pulse"></i> Selecciona la zona del tablero para colocar la carta
+        </div>
+    `);
+    $("#playmat").removeClass("selecting-zone");
+    $(".duel-card").off("click.swap");
+    $(".board-zone").off("click.swap");
+    $(document).off("click.swap_cancel");
+    $(document).off("keydown.swap");
+}
+
 // Search and extract from deck (UPGRADED WITH COMPREHENSIVE MULTI-ACTIONS)
 function openSearchModal(playerKey) {
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
@@ -2076,6 +2244,49 @@ function setupEventListeners() {
         e.stopPropagation();
         activeMenuCard = cardObj;
         $("#deck-menu").removeClass("active");
+
+        // Dynamically toggle and adjust pokemon/yugioh menu items
+        const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
+        if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
+            $("#menu-swap-active-bench").show();
+        } else {
+            $("#menu-swap-active-bench").hide();
+        }
+
+        if (state.layout === 'yugioh') {
+            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
+        } else {
+            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+        }
+
+        // Token specific menu items adjustment
+        if (cardObj.isToken) {
+            $("#menu-destroy-token").show();
+            $("#menu-to-hand").hide();
+            $("#menu-to-grave").hide();
+            $("#menu-to-banish").hide();
+            $("#menu-to-deck-top").hide();
+            $("#menu-to-deck-bottom").hide();
+            $("#menu-control").hide();
+            $("#menu-detach").hide();
+        } else {
+            $("#menu-destroy-token").hide();
+            $("#menu-to-hand").show();
+            $("#menu-to-grave").show();
+            $("#menu-to-banish").show();
+            $("#menu-to-deck-top").show();
+            $("#menu-to-deck-bottom").show();
+            $("#menu-control").show();
+
+            // Check if there are attached cards to show detach option
+            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
+            if (hasAttached) {
+                $("#menu-detach").show();
+            } else {
+                $("#menu-detach").hide();
+            }
+        }
+
         $("#card-menu").css({
             left: `${e.clientX}px`,
             top: `${e.clientY}px`
@@ -2243,6 +2454,38 @@ function setupEventListeners() {
         activeMenuCard.faceDown = false; // face up in grave
         activeMenuCard.tapped = false;
         renderAllCards();
+    });
+
+    $(document).on("click", "#menu-destroy-token", function() {
+        if (!activeMenuCard) return;
+        const tokenName = activeMenuCard.name;
+
+        // Remove from state.cards completely
+        state.cards = state.cards.filter(c => c.instanceId !== activeMenuCard.instanceId);
+
+        // Broadcast / Log the action
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Destruyó Token: 💥 ${tokenName}`);
+        }
+
+        $("#card-menu").removeClass("active");
+        renderAllCards();
+    });
+
+    $("#menu-to-banish").click(function() {
+        if (!activeMenuCard) return;
+        const pileId = activeMenuCard.owner === "player1" ? "banished_1" : "banished_2";
+        sendAttachedCardsToPile(activeMenuCard.instanceId, pileId);
+        activeMenuCard.zone = pileId;
+        activeMenuCard.controller = activeMenuCard.owner; // Reset controller
+        activeMenuCard.faceDown = false;
+        activeMenuCard.tapped = false;
+        renderAllCards();
+    });
+
+    $("#menu-swap-active-bench").click(function() {
+        if (!activeMenuCard) return;
+        startPokemonSwapTargeting(activeMenuCard);
     });
 
     $("#menu-to-deck-top").click(function() {
