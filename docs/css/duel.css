@@ -792,68 +792,6 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
-/* Custom ATK/DEF Badge styling */
-.custom-atk-def-badge {
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(12, 19, 26, 0.95);
-    border: 1px dashed #00d2ff;
-    border-radius: 4px;
-    padding: 2px 5px;
-    display: flex;
-    gap: 6px;
-    font-size: 0.65rem;
-    color: #fff;
-    font-family: 'Orbitron', sans-serif;
-    white-space: nowrap;
-    z-index: 100;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
-    cursor: grab;
-    transition: all 0.2s ease;
-}
-
-.custom-atk-def-badge:hover {
-    transform: translateX(-50%) scale(1.2);
-    border-style: solid;
-    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.5);
-    background: rgba(12, 19, 26, 1);
-}
-
-.custom-atk-def-badge span {
-    font-weight: bold;
-}
-
-.custom-atk-def-badge .atk-val {
-    color: #ff4a4a;
-}
-
-.custom-atk-def-badge .def-val {
-    color: #00d2ff;
-}
-
-/* Invisible/discreet styling for Pokémon layout banished zones */
-body.layout-pokemon .zone-type-banished {
-    border: 1px dashed rgba(255, 255, 255, 0.12) !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-body.layout-pokemon .zone-type-banished .zone-label {
-    display: none !important;
-}
-body.layout-pokemon .zone-type-banished .zone-card-count {
-    color: rgba(255, 255, 255, 0.4) !important;
-    font-size: 0.7rem !important;
-}
-body.layout-pokemon #floating-count-banished_1,
-body.layout-pokemon #floating-count-banished_2 {
-    border-color: rgba(255, 255, 255, 0.2) !important;
-    box-shadow: none !important;
-    background: rgba(12, 15, 18, 0.6) !important;
-    color: rgba(255, 255, 255, 0.5) !important;
-}
-
 /* Card Attack & Defense Blinking Neon Glow effects */
 .card-is-attacker {
     animation: neonBlinkAttacker 1s infinite alternate !important;
@@ -1130,7 +1068,6 @@ body.layout-pokemon #floating-count-banished_2 {
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     padding: 6px 0;
-    padding-bottom: 120px; /* Space for scroll-past blank space */
     width: 230px;
     z-index: 1000;
     user-select: none;
@@ -1138,15 +1075,6 @@ body.layout-pokemon #floating-count-banished_2 {
     transform: scale(0.9) translate3d(0, 10px, 0);
     pointer-events: none;
     transition: opacity 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    /* Scrollability and invisible scrollbar support */
-    max-height: 380px;
-    overflow-y: auto;
-    scrollbar-width: none; /* Firefox */
-}
-
-.card-context-menu::-webkit-scrollbar, .deck-context-menu::-webkit-scrollbar {
-    display: none; /* WebKit/Blink (Chrome, Safari, Edge) */
 }
 
 .card-context-menu.active, .deck-context-menu.active {
