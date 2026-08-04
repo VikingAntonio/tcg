@@ -953,7 +953,8 @@
             <div class="sidebar-section">
                 <h3 style="display: none;"><i class="fas fa-th-large"></i> Tablero</h3>
                 <select id="select-board-layout" class="sidebar-select" style="display: none;">
-                    <option value="yugioh">Yu-Gi-Oh! Field</option>
+                    <option value="yugioh">Yu-Gi-Oh! Time Wizard</option>
+                    <option value="yugioh_advanced">Yu-Gi-Oh! Avanzado</option>
                     <option value="pokemon">Pokémon Arena</option>
                 </select>
                 <button class="btn btn-danger" id="btn-reset-game" style="width: 100%;">
@@ -1553,7 +1554,7 @@
 
             // Helper to hide/show features depending on selected layout
             function updateLayoutFeatureVisibility() {
-                if (state.layout === 'yugioh') {
+                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
                     // Show phases and show LP counters
                     $("#phases-container").show();
                     $("#lp-counter-p1").show();
@@ -1834,25 +1835,20 @@
                     const attackerObj = state.cards.find(c => c.instanceId === atk.attackerId);
                     if (!attackerObj) return;
 
-                    // Get coordinates of attacker card center relative to playmat
+                    // Calculate exact mathematical center in unscaled 1120x600 coordinates
                     let startX = 0, startY = 0;
-                    const $atkEl = $(`#${attackerObj.instanceId}`);
-                    if ($atkEl.length) {
-                        const pos = $atkEl.position();
-                        startX = pos.left + $atkEl.outerWidth() / 2;
-                        startY = pos.top + $atkEl.outerHeight() / 2;
-                    } else {
-                        const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === attackerObj.zone);
-                        if (zoneObj) {
-                            startX = zoneObj.x + 40;
-                            startY = zoneObj.y + 58;
-                        } else {
-                            startX = attackerObj.x + 40;
-                            startY = attackerObj.y + 58;
-                        }
+                    const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === attackerObj.zone);
+                    let finalX = attackerObj.x;
+                    let finalY = attackerObj.y;
+                    if (zoneObj) {
+                        finalX = zoneObj.x;
+                        finalY = zoneObj.y;
                     }
+                    startX = finalX + 40;
+                    startY = finalY + 58;
 
-                    // Add attacker neon class and badge
+                    // Add attacker neon class and badge if element is loaded on field
+                    const $atkEl = $(`#${attackerObj.instanceId}`);
                     if ($atkEl.length) {
                         $atkEl.addClass("card-is-attacker");
                         $atkEl.append(`<div class="attack-text-badge">⚔️ Atacante</div>`);
@@ -1876,24 +1872,21 @@
                         const targetObj = state.cards.find(c => c.instanceId === atk.targetId);
                         if (!targetObj) return;
 
+                        const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
+                        let finalTX = targetObj.x;
+                        let finalTY = targetObj.y;
+                        if (tZoneObj) {
+                            finalTX = tZoneObj.x;
+                            finalTY = tZoneObj.y;
+                        }
+                        endX = finalTX + 40;
+                        endY = finalTY + 58;
+
                         const $tgtEl = $(`#${targetObj.instanceId}`);
                         if ($tgtEl.length) {
-                            const pos = $tgtEl.position();
-                            endX = pos.left + $tgtEl.outerWidth() / 2;
-                            endY = pos.top + $tgtEl.outerHeight() / 2;
-
                             // Add defender neon class and badge
                             $tgtEl.addClass("card-under-attack");
                             $tgtEl.append(`<div class="attack-text-badge defender">🎯 Atacando</div>`);
-                        } else {
-                            const tZoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetObj.zone);
-                            if (tZoneObj) {
-                                endX = tZoneObj.x + 40;
-                                endY = tZoneObj.y + 58;
-                            } else {
-                                endX = targetObj.x + 40;
-                                endY = targetObj.y + 58;
-                            }
                         }
                     }
 
@@ -2144,7 +2137,7 @@
 
                 // Do not flash if the current player has performed any gameplay actions this turn
                 if (!state.turnActionTaken) {
-                    if (state.layout === 'yugioh') {
+                    if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
                         // Blinks if the turn player has selected EP (End Phase), indicating the rival should click it
                         if (state.activePhase === 'EP') {
                             // The player who is NOT active should see the button flashing
@@ -2172,7 +2165,7 @@
             const baseUpdateLayoutFeatureVisibility = updateLayoutFeatureVisibility;
             updateLayoutFeatureVisibility = function() {
                 baseUpdateLayoutFeatureVisibility();
-                if (state.layout === 'yugioh') {
+                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
                     $(".ygo-only-tool").show();
                     $(".pokemon-only-tool").hide();
                     $(".counter-section-title").text("Contadores YGO");
@@ -2433,7 +2426,7 @@
                         sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                     }
                 } else if (activeCounterDragVal === "YGO") {
-                    if (state.layout !== 'yugioh') return;
+                    if (state.layout !== 'yugioh' && state.layout !== 'yugioh_advanced') return;
                     cardObj.counters = (cardObj.counters || 0) + 1;
                     sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                 } else if (typeof activeCounterDragVal === "number") {
@@ -2522,7 +2515,7 @@
                                 sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                             }
                         } else if (activeCounterDragVal === "YGO") {
-                            if (state.layout === 'yugioh') {
+                            if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
                                 cardObj.counters = (cardObj.counters || 0) + 1;
                                 sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                             }
@@ -2573,7 +2566,7 @@
                         ? `style="left: ${card.counterPosition.left}px; top: ${card.counterPosition.top}px; bottom: auto; transform: none;"`
                         : "";
 
-                    if (state.layout === 'yugioh') {
+                    if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
                         if (card.counters && card.counters > 0) {
                             let beadsHtml = "";
                             const visibleBeadsCount = Math.min(card.counters, 5); // Limit stacked nodes visually to 5 beads maximum
@@ -2691,7 +2684,7 @@
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
 
-                if (state.layout === 'yugioh') {
+                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
                     cardObj.counters = Math.max(0, (cardObj.counters || 0) - 1);
                     sendGameAction(`Quitó un contador de ${cardObj.name} (Total restante: ${cardObj.counters})`);
                 } else {
@@ -2879,10 +2872,10 @@
                 if (zoneId.startsWith("deck_")) return "el Deck";
                 if (zoneId.startsWith("extra_")) return "el Extra Deck";
                 if (zoneId.startsWith("grave_")) {
-                    return state.layout === "yugioh" ? "el Cementerio" : "la zona de Descarte";
+                    return (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "el Cementerio" : "la zona de Descarte";
                 }
                 if (zoneId.startsWith("banished_")) {
-                    return state.layout === "yugioh" ? "la zona Desterrado" : "zona Removido";
+                    return (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "la zona Desterrado" : "zona Removido";
                 }
                 if (zoneId.startsWith("prize_")) return "la zona de Premios";
 
