@@ -792,6 +792,47 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* Custom ATK/DEF Badge styling */
+.custom-atk-def-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(12, 19, 26, 0.95);
+    border: 1px dashed #00d2ff;
+    border-radius: 4px;
+    padding: 2px 5px;
+    display: flex;
+    gap: 6px;
+    font-size: 0.65rem;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.custom-atk-def-badge:hover {
+    transform: translateX(-50%) scale(1.2);
+    border-style: solid;
+    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.5);
+    background: rgba(12, 19, 26, 1);
+}
+
+.custom-atk-def-badge span {
+    font-weight: bold;
+}
+
+.custom-atk-def-badge .atk-val {
+    color: #ff4a4a;
+}
+
+.custom-atk-def-badge .def-val {
+    color: #00d2ff;
+}
+
 /* Invisible/discreet styling for Pokémon layout banished zones */
 body.layout-pokemon .zone-type-banished {
     border: 1px dashed rgba(255, 255, 255, 0.12) !important;
