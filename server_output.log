@@ -4,3 +4,17 @@
 127.0.0.1 - - [03/Aug/2026 23:19:55] "GET /docs/js/utils.js HTTP/1.1" 200 -
 127.0.0.1 - - [03/Aug/2026 23:19:55] "GET /docs/js/duel.js HTTP/1.1" 200 -
 127.0.0.1 - - [03/Aug/2026 23:19:55] "GET /docs/img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:09] "GET /docs/duel.html?layout=pokemon&mode=practice HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:09] "GET /docs/css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:09] "GET /docs/js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:09] "GET /docs/js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:09] "GET /docs/js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:10] "GET /docs/img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:18] "GET /docs/duel.html?layout=yugioh&mode=practice HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:19:18] "GET /docs/img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:20:34] "GET /docs/duel.html?layout=pokemon&mode=practice HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:20:34] "GET /docs/css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:20:34] "GET /docs/js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:20:34] "GET /docs/js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:20:34] "GET /docs/js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 06:20:34] "GET /docs/img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
