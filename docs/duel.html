@@ -534,7 +534,9 @@
             z-index: 106;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             pointer-events: auto;
-            overflow: visible;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
         }
         .tcg-accessories-panel.p1-accessories {
             bottom: -410px;
@@ -592,10 +594,6 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            height: 100%;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
         }
         .accessories-content h3 {
             font-family: 'Orbitron', sans-serif;
@@ -1106,9 +1104,6 @@
                 <div class="card-detailed-preview" id="card-detail-view">
                     <div class="preview-img-container">
                         <img id="detail-card-img" src="https://via.placeholder.com/300x440?text=Hover+o+Click" alt="Preview">
-                        <button class="preview-zoom-btn" id="btn-zoom-preview" title="Ampliar carta">
-                            <i class="fas fa-search-plus"></i>
-                        </button>
                     </div>
                     <div class="preview-info">
                         <h4 id="detail-card-name">Selecciona una carta</h4>
@@ -1640,7 +1635,6 @@
             }
 
             let currentRole = params.get('role') || "player1"; // default to URL param
-            state.userRole = currentRole; // Keep synchronized on load!
             let roomId = params.get('room');
             if (!roomId) {
                 roomId = 'R' + Math.floor(10000 + Math.random() * 90000);
@@ -1711,15 +1705,6 @@
                 $(".role-btn").removeClass("active");
                 $(this).addClass("active");
                 currentRole = $(this).data("role");
-                state.userRole = currentRole; // Keep synchronized when they switch roles!
-
-                // Re-render playmat and refresh active preview for instant visual responsiveness!
-                if (window.renderAllCards) {
-                    window.renderAllCards();
-                }
-                if (window.activePreviewCard && typeof updatePreview === "function") {
-                    updatePreview(window.activePreviewCard);
-                }
 
                 // Visual feedback of my own role changes
                 appendSystemMsg(`Te has conectado como ${currentRole === 'player1' ? 'Jugador 1' : 'Jugador 2'}`);
@@ -3197,13 +3182,5 @@
             }, 1000);
         });
     </script>
-
-    <!-- Large Card Zoom Modal Popup -->
-    <div id="zoom-modal" class="zoom-modal-overlay" style="display: none;">
-        <div class="zoom-modal-content">
-            <span id="close-zoom-modal" class="zoom-modal-close">&times;</span>
-            <img id="zoom-modal-img" src="" alt="Large Card Preview">
-        </div>
-    </div>
 </body>
 </html>
