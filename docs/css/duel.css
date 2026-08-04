@@ -266,7 +266,7 @@ body.duel-body {
     overflow: visible;
     flex-shrink: 0;
     margin-right: 95px; /* Reserve safe horizontal space for the vertical phase bar on the right */
-    transform: scale(0.72);
+    transform: scale(0.82);
     transform-origin: center center;
     margin-top: -84px;
     margin-bottom: -84px;
