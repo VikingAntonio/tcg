@@ -534,9 +534,7 @@
             z-index: 106;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             pointer-events: auto;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+            overflow: visible;
         }
         .tcg-accessories-panel.p1-accessories {
             bottom: -410px;
@@ -594,6 +592,10 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            height: 100%;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
         }
         .accessories-content h3 {
             font-family: 'Orbitron', sans-serif;
