@@ -556,6 +556,72 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     background-image: url('../img/pokeBocaAbajo.jpg') !important;
 }
 
+/* Face Down Revealed for Owners (Breathing Opacity & Glowing Borders) */
+.duel-card.face-down-revealed {
+    border-radius: 8px;
+    overflow: visible; /* to allow the glow shadow to display fully */
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.duel-card.face-down-revealed img {
+    visibility: visible !important;
+}
+
+.duel-card.face-down-revealed .card-img-wrapper {
+    background-image: none !important;
+}
+
+.duel-card.face-down-revealed:hover {
+    animation-play-state: paused !important;
+    opacity: 1 !important;
+}
+
+/* Pulse animation for Player 1 */
+@keyframes pulse-face-down-p1 {
+    0% {
+        opacity: 0.55;
+        box-shadow: 0 0 6px rgba(0, 210, 255, 0.4);
+    }
+    50% {
+        opacity: 0.85;
+        box-shadow: 0 0 16px rgba(0, 210, 255, 0.8), 0 0 6px rgba(0, 210, 255, 0.4);
+    }
+    100% {
+        opacity: 0.55;
+        box-shadow: 0 0 6px rgba(0, 210, 255, 0.4);
+    }
+}
+
+/* Pulse animation for Player 2 */
+@keyframes pulse-face-down-p2 {
+    0% {
+        opacity: 0.55;
+        box-shadow: 0 0 6px rgba(255, 27, 107, 0.4);
+    }
+    50% {
+        opacity: 0.85;
+        box-shadow: 0 0 16px rgba(255, 27, 107, 0.8), 0 0 6px rgba(255, 27, 107, 0.4);
+    }
+    100% {
+        opacity: 0.55;
+        box-shadow: 0 0 6px rgba(255, 27, 107, 0.4);
+    }
+}
+
+.duel-card.face-down-revealed.owner-p1 {
+    animation: pulse-face-down-p1 3s infinite ease-in-out;
+}
+.duel-card.face-down-revealed.owner-p1 .card-img-wrapper {
+    border: 2px dashed #00d2ff !important;
+}
+
+.duel-card.face-down-revealed.owner-p2 {
+    animation: pulse-face-down-p2 3s infinite ease-in-out;
+}
+.duel-card.face-down-revealed.owner-p2 .card-img-wrapper {
+    border: 2px dashed #ff1b6b !important;
+}
+
 /* Counter indicator badges */
 .card-counter {
     position: absolute;
@@ -790,6 +856,112 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     background: #00d2ff;
     color: black;
     border-color: #ffffff;
+}
+
+/* Zoom Button & Large Card Popup Styles */
+.preview-img-container {
+    position: relative; /* Ensure container is positioned relatively */
+}
+
+.preview-zoom-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--primary-color, #00d2ff);
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    outline: none;
+}
+
+.preview-zoom-btn:hover {
+    background: var(--primary-color, #00d2ff);
+    color: #000;
+    box-shadow: 0 0 12px var(--primary-color, #00d2ff);
+    transform: scale(1.15);
+}
+
+.zoom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 10000000; /* Extremely high to overlay everything */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoom-modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: zoomInPopup 0.25s ease-out;
+}
+
+@keyframes zoomInPopup {
+    from {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.zoom-modal-content img {
+    max-width: 90vw;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px var(--primary-color, #00d2ff);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.zoom-modal-close {
+    position: absolute;
+    top: -50px;
+    right: -10px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 45px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-shadow: 0 0 10px #000;
+    line-height: 1;
+}
+
+.zoom-modal-close:hover {
+    color: #ff1b6b;
+    transform: scale(1.15);
+}
+
+/* Responsive adjustment for small screens */
+@media (max-width: 768px) {
+    .zoom-modal-close {
+        top: -45px;
+        right: 5px;
+        font-size: 40px;
+    }
 }
 
 /* Custom ATK/DEF Badge styling */
