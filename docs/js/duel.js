@@ -40,6 +40,45 @@ const BOARD_LAYOUTS = {
         { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 550, y: 450, type: "spell" },
         { id: "spell_1_5", name: "P1 Magia/Trampa 5", player: 1, x: 670, y: 450, type: "spell" }
     ],
+    yugioh_advanced: [
+        // Player 2 (Top Half, Mirrored) - Red/Pink Theme
+        { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 880, y: 160, type: "banished" },
+        { id: "extra_2", name: "P2 Extra", player: 2, x: 990, y: 30, type: "extra" },
+        { id: "field_2", name: "P2 Campo", player: 2, x: 990, y: 160, type: "field" },
+        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 190, y: 160, type: "monster" },
+        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 310, y: 160, type: "monster" },
+        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 430, y: 160, type: "monster" },
+        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 550, y: 160, type: "monster" },
+        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 670, y: 160, type: "monster" },
+        { id: "spell_2_5", name: "P2 Péndulo Izq", player: 2, x: 190, y: 30, type: "spell" },
+        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 310, y: 30, type: "spell" },
+        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 430, y: 30, type: "spell" },
+        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 550, y: 30, type: "spell" },
+        { id: "spell_2_1", name: "P2 Péndulo Der", player: 2, x: 670, y: 30, type: "spell" },
+
+        // Shared Extra Monster Zones placed in the middle
+        { id: "extra_monster_2", name: "Extra Monstruo 2", player: 2, x: 310, y: 242, type: "monster" },
+        { id: "extra_monster_1", name: "Extra Monstruo 1", player: 1, x: 550, y: 242, type: "monster" },
+
+        // Player 1 (Bottom Half) - Blue Theme
+        { id: "extra_1", name: "P1 Extra", player: 1, x: 50, y: 450, type: "extra" },
+        { id: "field_1", name: "P1 Campo", player: 1, x: 50, y: 320, type: "field" },
+        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 880, y: 320, type: "banished" },
+        { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
+        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 190, y: 320, type: "monster" },
+        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 310, y: 320, type: "monster" },
+        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 430, y: 320, type: "monster" },
+        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 550, y: 320, type: "monster" },
+        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 670, y: 320, type: "monster" },
+        { id: "spell_1_1", name: "P1 Péndulo Izq", player: 1, x: 190, y: 450, type: "spell" },
+        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 310, y: 450, type: "spell" },
+        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 430, y: 450, type: "spell" },
+        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 550, y: 450, type: "spell" },
+        { id: "spell_1_5", name: "P1 Péndulo Der", player: 1, x: 670, y: 450, type: "spell" }
+    ],
     pokemon: [
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
         { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
@@ -152,7 +191,7 @@ function initLayout() {
     $("#dynamic-zones-container").append('<div class="playmat-divider"></div>');
 
     // DYNAMIC CARD BACK SETTING BASED ON THE SELECTED LAYOUT
-    if (state.layout === "yugioh") {
+    if (state.layout === "yugioh" || state.layout === "yugioh_advanced") {
         $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
         document.body.style.setProperty('--card-back-url', "url('img/bocabajo.jpg')");
     } else {
@@ -166,8 +205,20 @@ function initLayout() {
     zones.forEach(zone => {
         const playerClass = zone.player === 1 ? "zone-player-1" : "zone-player-2";
         const typeClass = `zone-type-${zone.type}`;
+
+        let customClass = "";
+        if (state.layout === "yugioh_advanced") {
+            if (zone.id === "spell_1_1" || zone.id === "spell_2_5") {
+                customClass = "zone-pendulum-blue";
+            } else if (zone.id === "spell_1_5" || zone.id === "spell_2_1") {
+                customClass = "zone-pendulum-red";
+            } else if (zone.id === "extra_monster_1" || zone.id === "extra_monster_2") {
+                customClass = "zone-extra-monster";
+            }
+        }
+
         const zoneHTML = `
-            <div class="board-zone ${playerClass} ${typeClass}" id="zone-${zone.id}" style="left: ${zone.x}px; top: ${zone.y}px;" data-id="${zone.id}" data-player="${zone.player}">
+            <div class="board-zone ${playerClass} ${typeClass} ${customClass}" id="zone-${zone.id}" style="left: ${zone.x}px; top: ${zone.y}px;" data-id="${zone.id}" data-player="${zone.player}">
                 <div class="zone-label">${zone.name}</div>
                 ${(zone.type === "deck" || zone.type === "grave" || zone.type === "extra" || zone.type === "banished") ? `<div class="zone-card-count" id="count-${zone.id}">0</div>` : ""}
             </div>
@@ -327,7 +378,7 @@ function instantiateDeck(playerKey) {
         let targetZone = `deck_${playerSuffix}`; // Default is Main Deck
         let isExtra = false;
         if (section === "Extra") {
-            if (state.layout === "yugioh") {
+            if (state.layout === "yugioh" || state.layout === "yugioh_advanced") {
                 targetZone = `extra_${playerSuffix}`; // Extra Deck pile
                 isExtra = true;
             } else {
@@ -1184,7 +1235,7 @@ function updatePreview(card) {
     }
 
     if (isPile || isFaceDown) {
-        const defaultBack = state.layout === "yugioh" ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
@@ -1436,7 +1487,7 @@ function startGraphicalTargeting(cardObj, actionType) {
         if (targetingCard) {
             targetingCard.zone = zoneId;
 
-            if (state.layout === "yugioh") {
+            if (state.layout === "yugioh" || state.layout === "yugioh_advanced") {
                 // Symmetrical placement rules for Yu-Gi-Oh!
                 if (zoneObj && zoneObj.type === "monster") {
                     if (targetActionType === "set") {
@@ -2081,9 +2132,9 @@ function openPileModal(playerKey, pileType) {
     // Dynamic titles depending on pileType and layout
     let title = "";
     if (pileType === "grave") {
-        title = state.layout === "yugioh" ? "Cementerio" : "Descarte";
+        title = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "Cementerio" : "Descarte";
     } else {
-        title = state.layout === "yugioh" ? "Desterrado" : "Mano de Premios / Removido";
+        title = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "Desterrado" : "Mano de Premios / Removido";
     }
 
     $("#pile-modal-title").text(`${title} (${playerKey === "player1" ? "P1" : "P2"})`);
@@ -2852,7 +2903,7 @@ function setupEventListeners() {
             </div>
         `).join('');
 
-        const destLabel = state.layout === "yugioh" ? "Cementerio" : "Descarte";
+        const destLabel = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "Cementerio" : "Descarte";
         Swal.fire({
             title: `¡Cartas enviadas al ${destLabel}!`,
             html: `

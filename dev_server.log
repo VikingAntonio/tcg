@@ -1,11 +1,19 @@
-127.0.0.1 - - [04/Aug/2026 08:00:19] "HEAD /duel.html HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:24] "GET /duel.html?mode=practice&layout=yugioh HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:24] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:24] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:24] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:24] "GET /js/duel.js HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:49] "GET /duel.html?mode=practice&layout=yugioh HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:49] "GET /css/duel.css HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:49] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:49] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 08:01:49] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:20] "GET /configDuel.html HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:20] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:22] "GET /duel.html?mode=practice&layout=yugioh_advanced&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:22] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:22] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:22] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:23] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:25] code 404, message File not found
+127.0.0.1 - - [04/Aug/2026 22:15:25] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [04/Aug/2026 22:15:25] code 404, message File not found
+127.0.0.1 - - [04/Aug/2026 22:15:25] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [04/Aug/2026 22:15:30] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:30] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:30] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:30] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:30] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:30] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 22:15:31] code 404, message File not found
+127.0.0.1 - - [04/Aug/2026 22:15:31] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
