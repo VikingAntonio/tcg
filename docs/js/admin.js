@@ -3973,7 +3973,7 @@ function initNexusSortables() {
     }
 
     // Deck sections reordering and moving between them
-    ['nexus-grid-main', 'nexus-grid-extra', 'nexus-grid-side'].forEach(id => {
+    ['nexus-grid-main', 'nexus-grid-extra', 'nexus-grid-side', 'nexus-grid-tokens'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         Sortable.create(el, {
@@ -4006,7 +4006,7 @@ function initNexusSortables() {
 
 function syncNexusCardsFromDOM() {
     const updatedCards = [];
-    ['Main', 'Extra', 'Side'].forEach(section => {
+    ['Main', 'Extra', 'Side', 'Tokens'].forEach(section => {
         const gridId = 'nexus-grid-' + section.toLowerCase();
         const el = document.getElementById(gridId);
         if (!el) return;
@@ -4031,14 +4031,14 @@ function syncNexusCardsFromDOM() {
 }
 
 function updateNexusCounts() {
-    ['Main', 'Extra', 'Side'].forEach(s => {
+    ['Main', 'Extra', 'Side', 'Tokens'].forEach(s => {
         const count = localDeckCards.filter(c => (c.section || 'Main') === s).length;
         $('#nexus-count-' + s.toLowerCase()).text(count);
     });
 }
 
 function renderNexusDeck() {
-    ['Main', 'Extra', 'Side'].forEach(section => {
+    ['Main', 'Extra', 'Side', 'Tokens'].forEach(section => {
         const $grid = $('#nexus-grid-' + section.toLowerCase());
         if (!$grid.length) return;
         $grid.empty();
