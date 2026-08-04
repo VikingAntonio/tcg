@@ -526,7 +526,7 @@
         .tcg-accessories-panel {
             position: absolute;
             width: 250px;
-            height: 410px;
+            height: 310px;
             background: rgba(10, 15, 22, 0.98);
             backdrop-filter: blur(20px);
             border: 1.5px solid var(--glass-border);
@@ -534,10 +534,9 @@
             z-index: 106;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             pointer-events: auto;
-            overflow: visible;
         }
         .tcg-accessories-panel.p1-accessories {
-            bottom: -410px;
+            bottom: -310px;
             right: 345px;
             transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -545,7 +544,7 @@
             bottom: 10px;
         }
         .tcg-accessories-panel.p2-accessories {
-            top: -410px;
+            top: -310px;
             left: 310px;
             transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -592,10 +591,6 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            height: 100%;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
         }
         .accessories-content h3 {
             font-family: 'Orbitron', sans-serif;
@@ -998,19 +993,6 @@
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
                 </div>
             </div>
-
-            <div class="accessories-section" style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
-                <h3 style="margin-bottom: 8px;">ATK/DEF Custom</h3>
-                <div class="atk-def-custom-inputs" style="display: flex; gap: 6px; margin-bottom: 8px; justify-content: center;">
-                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
-                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
-                </div>
-                <div style="text-align: center;">
-                    <div class="custom-atk-def-source" draggable="true" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1b2838, #2a475e); border: 2px dashed #00d2ff; border-radius: 6px; color: #fff; cursor: grab; font-weight: bold; text-align: center; font-size: 0.75rem; box-shadow: 0 0 5px rgba(0, 210, 255, 0.3);">
-                        <i class="fas fa-arrows-alt"></i> Arrastrar ATK/DEF
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1066,19 +1048,6 @@
                     <div class="counter-source poke-counter-source dmg-80" data-val="80" draggable="true">80</div>
                     <div class="counter-source poke-counter-source dmg-90" data-val="90" draggable="true">90</div>
                     <div class="counter-source poke-counter-source dmg-100" data-val="100" draggable="true">100</div>
-                </div>
-            </div>
-
-            <div class="accessories-section" style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
-                <h3 style="margin-bottom: 8px;">ATK/DEF Custom</h3>
-                <div class="atk-def-custom-inputs" style="display: flex; gap: 6px; margin-bottom: 8px; justify-content: center;">
-                    <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
-                    <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
-                </div>
-                <div style="text-align: center;">
-                    <div class="custom-atk-def-source" draggable="true" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1b2838, #2a475e); border: 2px dashed #00d2ff; border-radius: 6px; color: #fff; cursor: grab; font-weight: bold; text-align: center; font-size: 0.75rem; box-shadow: 0 0 5px rgba(0, 210, 255, 0.3);">
-                        <i class="fas fa-arrows-alt"></i> Arrastrar ATK/DEF
-                    </div>
                 </div>
             </div>
         </div>
@@ -1285,17 +1254,14 @@
         <hr>
         <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Voltear Boca Abajo/Arriba</div>
         <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> Girar/Girar Defensa</div>
-        <div class="menu-item pokemon-only-item" id="menu-swap-active-bench" style="display: none;"><i class="fas fa-exchange-alt"></i> Activo / Banca</div>
         <hr>
         <div class="menu-item" id="menu-add-counter"><i class="fas fa-plus-circle"></i> Agregar Contador (+1)</div>
         <div class="menu-item" id="menu-sub-counter"><i class="fas fa-minus-circle"></i> Quitar Contador (-1)</div>
         <hr>
         <div class="menu-item" id="menu-to-hand"><i class="fas fa-hand-paper"></i> Enviar a la Mano</div>
         <div class="menu-item" id="menu-to-grave"><i class="fas fa-skull"></i> Enviar al Cementerio</div>
-        <div class="menu-item" id="menu-to-banish"><i class="fas fa-ban"></i> Enviar a Removido</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
-        <div class="menu-item" id="menu-destroy-token" style="display: none; color: #ff4a4a; font-weight: bold;"><i class="fas fa-trash-alt"></i> Destruir Ficha (Token)</div>
         <hr>
         <div class="menu-item" id="menu-control"><i class="fas fa-exchange-alt"></i> Tomar Control</div>
     </div>
@@ -2245,12 +2211,10 @@
                     $(".ygo-only-tool").show();
                     $(".pokemon-only-tool").hide();
                     $(".counter-section-title").text("Contadores YGO");
-                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
                 } else {
                     $(".ygo-only-tool").hide();
                     $(".pokemon-only-tool").show();
                     $(".counter-section-title").text("Daño Pokémon");
-                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
                 }
             };
             updateLayoutFeatureVisibility();
@@ -2327,205 +2291,72 @@
             }
             fetchTokensList();
 
-            const DEFAULT_TOKENS = [
-                { name: "Ficha de Monstruo (Token)", imageUrl: "https://images.ygoprodeck.com/images/cards/10000000.jpg", description: "Ficha Especial." },
-                { name: "Ficha de Chivo Expiatorio (Scapegoat)", imageUrl: "https://images.ygoprodeck.com/images/cards/73915051.jpg", description: "Ficha Especial invocada por Chivo Expiatorio." },
-                { name: "Ficha de Kuriboh", imageUrl: "https://images.ygoprodeck.com/images/cards/40640051.jpg", description: "Ficha Especial de Kuriboh." },
-                { name: "Ficha de Planta (Plant)", imageUrl: "https://images.ygoprodeck.com/images/cards/11384281.jpg", description: "Ficha Especial tipo Planta." },
-                { name: "Ficha de Dragón (Dragon)", imageUrl: "https://images.ygoprodeck.com/images/cards/84687107.jpg", description: "Ficha Especial tipo Dragón." }
-            ];
-
             $(".token-action-btn").click(function() {
                 const spawnerPlayer = $(this).data("player"); // "p1" or "p2"
                 const activeRoleKey = spawnerPlayer === "p1" ? "player1" : "player2";
                 const pSuffix = spawnerPlayer === "p1" ? 1 : 2;
 
-                // Close accessories panel so the playmat is clear
+                let tokenName = "Ficha de Monstruo (Token)";
+                let tokenImg = "https://images.ygoprodeck.com/images/cards/10000000.jpg";
+                let tokenDesc = "Esta ficha puede ser invocada en cualquier zona seleccionada.";
+
+                if (cachedTokens.length > 0) {
+                    const randomToken = cachedTokens[Math.floor(Math.random() * cachedTokens.length)];
+                    tokenName = randomToken.name;
+                    tokenImg = randomToken.card_images[0].image_url;
+                    tokenDesc = randomToken.desc || "Ficha Especial.";
+                }
+
+                // Close active panel first so they can see playmat clearly
                 $(`#accessories-panel-${spawnerPlayer}`).removeClass("active");
 
-                const userTokens = state.deckTokens && state.deckTokens[activeRoleKey] ? state.deckTokens[activeRoleKey] : [];
+                const newTokenObj = {
+                    instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                    name: tokenName,
+                    imageUrl: tokenImg,
+                    owner: activeRoleKey,
+                    controller: activeRoleKey,
+                    zone: `monster_${pSuffix}_3`, // placeholder
+                    faceDown: false,
+                    tapped: false,
+                    counters: 0,
+                    attachedTo: null,
+                    x: 430,
+                    y: pSuffix === 1 ? 320 : 160,
+                    z: state.cards.length + 10,
+                    isExtra: false,
+                    description: tokenDesc
+                };
 
-                if (userTokens.length > 0) {
-                    // Show a SweetAlert2 dialog with ONLY their configured deck tokens to choose from
-                    Swal.fire({
-                        title: 'Invocar Token',
-                        html: `
-                            <div style="margin-bottom: 15px; text-align: left;">
-                                <label for="token-select" style="display:block; margin-bottom: 5px; color:#ffd32d; font-weight:bold; font-size: 0.9rem;">Selecciona un Token de tu Deck:</label>
-                                <select id="token-select" class="swal2-select" style="display: block; width: 100%; box-sizing: border-box; margin: 0 auto; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 8px;">
-                                    <!-- populated via JS -->
-                                </select>
-                            </div>
-                            <div style="margin-bottom: 15px; text-align: center;">
-                                <img id="token-preview-img" style="max-height: 180px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;" src="" alt="Token Preview" />
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        confirmButtonText: 'Invocar',
-                        cancelButtonText: 'Cancelar',
-                        background: '#12181e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd32d',
-                        cancelButtonColor: '#ff4a4a',
-                        didOpen: () => {
-                            const select = document.getElementById('token-select');
-                            const img = document.getElementById('token-preview-img');
+                state.cards.push(newTokenObj);
 
-                            userTokens.forEach((t, i) => {
-                                const opt = document.createElement('option');
-                                opt.value = i;
-                                opt.textContent = t.name;
-                                select.appendChild(opt);
-                            });
-
-                            const updatePreview = () => {
-                                const selectedIdx = select.value;
-                                if (userTokens[selectedIdx]) {
-                                    img.src = userTokens[selectedIdx].imageUrl;
-                                    img.style.display = 'inline-block';
-                                } else {
-                                    img.style.display = 'none';
-                                }
-                            };
-
-                            select.addEventListener('change', updatePreview);
-                            updatePreview();
-                        },
-                        preConfirm: () => {
-                            const select = document.getElementById('token-select');
-                            const selectedIdx = select.value;
-                            return userTokens[selectedIdx];
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed && result.value) {
-                            const token = result.value;
-
-                            const newTokenObj = {
-                                instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                                name: token.name,
-                                imageUrl: token.imageUrl,
-                                owner: activeRoleKey,
-                                controller: activeRoleKey,
-                                zone: `monster_${pSuffix}_3`, // placeholder
-                                faceDown: false,
-                                tapped: false, // Default to Attack Position
-                                counters: 0,
-                                attachedTo: null,
-                                x: 430,
-                                y: pSuffix === 1 ? 320 : 160,
-                                z: state.cards.length + 10,
-                                isExtra: false,
-                                isToken: true,
-                                description: token.description
-                            };
-
-                            state.cards.push(newTokenObj);
-
-                            setTimeout(() => {
-                                startGraphicalTargeting(newTokenObj, "summon");
-                                sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
-                            }, 200);
-                        }
-                    });
-                } else {
-                    // No tokens configured: summon a random token automatically, exactly as before
-                    let tokenName = "Ficha de Monstruo (Token)";
-                    let tokenImg = "https://images.ygoprodeck.com/images/cards/10000000.jpg";
-                    let tokenDesc = "Esta ficha puede ser invocada en cualquier zona seleccionada.";
-
-                    if (cachedTokens.length > 0) {
-                        const randomToken = cachedTokens[Math.floor(Math.random() * cachedTokens.length)];
-                        tokenName = randomToken.name;
-                        tokenImg = randomToken.card_images[0].image_url;
-                        tokenDesc = randomToken.desc || "Ficha Especial.";
-                    } else {
-                        const randomToken = DEFAULT_TOKENS[Math.floor(Math.random() * DEFAULT_TOKENS.length)];
-                        tokenName = randomToken.name;
-                        tokenImg = randomToken.imageUrl;
-                        tokenDesc = randomToken.description;
-                    }
-
-                    const newTokenObj = {
-                        instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                        name: tokenName,
-                        imageUrl: tokenImg,
-                        owner: activeRoleKey,
-                        controller: activeRoleKey,
-                        zone: `monster_${pSuffix}_3`, // placeholder
-                        faceDown: false,
-                        tapped: false, // Default to Attack Position
-                        counters: 0,
-                        attachedTo: null,
-                        x: 430,
-                        y: pSuffix === 1 ? 320 : 160,
-                        z: state.cards.length + 10,
-                        isExtra: false,
-                        isToken: true,
-                        description: tokenDesc
-                    };
-
-                    state.cards.push(newTokenObj);
-
-                    setTimeout(() => {
-                        startGraphicalTargeting(newTokenObj, "summon");
-                        sendGameAction(`Está invocando de forma especial un Token: 🌟 ${tokenName}`);
-                    }, 200);
-                }
+                // Let user visually select exactly where on the playmat to place this newly spawned Token!
+                setTimeout(() => {
+                    startGraphicalTargeting(newTokenObj, "summon");
+                    sendGameAction(`Está invocando de forma especial un Token: 🌟 ${tokenName}`);
+                }, 200);
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
-            let activeCounterDragVal = null; // null for YGO, integer (10, 20... 100) for Pokémon, or object for CUSTOM_ATK_DEF / REMOVE_ATK_DEF
+            let activeCounterDragVal = null; // null for YGO, integer (10, 20... 100) for Pokémon
 
-            $(document).on("dragstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
-                if ($(this).hasClass("custom-atk-def-source")) {
-                    const $parent = $(this).closest(".accessories-section");
-                    const atk = parseInt($parent.find(".custom-atk-input").val()) || 0;
-                    const def = parseInt($parent.find(".custom-def-input").val()) || 0;
-                    activeCounterDragVal = { type: "CUSTOM_ATK_DEF", atk: atk, def: def };
-                    if (e.originalEvent.dataTransfer) {
-                        e.originalEvent.dataTransfer.setData("text/plain", "custom_atk_def");
-                    }
-                } else if ($(this).hasClass("custom-atk-def-badge")) {
-                    const instId = $(this).data("instance-id");
-                    activeCounterDragVal = { type: "REMOVE_ATK_DEF", cardInstanceId: instId };
-                    if (e.originalEvent.dataTransfer) {
-                        e.originalEvent.dataTransfer.setData("text/plain", "remove_atk_def");
-                    }
+            $(document).on("dragstart", ".counter-source", function(e) {
+                // Determine counter type
+                if ($(this).hasClass("ygo-counter-source")) {
+                    activeCounterDragVal = "YGO";
                 } else {
-                    // Determine counter type
-                    if ($(this).hasClass("ygo-counter-source")) {
-                        activeCounterDragVal = "YGO";
-                    } else {
-                        activeCounterDragVal = parseInt($(this).data("val"));
-                    }
+                    activeCounterDragVal = parseInt($(this).data("val"));
+                }
 
-                    // Keep clone image invisible or custom
-                    if (e.originalEvent.dataTransfer) {
-                        e.originalEvent.dataTransfer.setData("text/plain", "counter");
-                    }
+                // Keep clone image invisible or custom
+                if (e.originalEvent.dataTransfer) {
+                    e.originalEvent.dataTransfer.setData("text/plain", "counter");
                 }
             });
 
             // Allow drop targets
             $(document).on("dragover", ".duel-card", function(e) {
                 e.preventDefault();
-            });
-
-            $(document).on("dragover", "#playmat, body", function(e) {
-                e.preventDefault();
-            });
-
-            $(document).on("drop", "#playmat, body", function(e) {
-                if (activeCounterDragVal && activeCounterDragVal.type === "REMOVE_ATK_DEF") {
-                    e.preventDefault();
-                    const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
-                    if (oldCard) {
-                        delete oldCard.customAtkDef;
-                        sendGameAction(`Quitó ATK/DEF personalizado de ${oldCard.name}`);
-                        window.renderAllCards();
-                    }
-                    activeCounterDragVal = null;
-                }
             });
 
             $(document).on("drop", ".duel-card", function(e) {
@@ -2536,20 +2367,7 @@
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
 
-                if (activeCounterDragVal && activeCounterDragVal.type === "CUSTOM_ATK_DEF") {
-                    cardObj.customAtkDef = {
-                        atk: activeCounterDragVal.atk,
-                        def: activeCounterDragVal.def
-                    };
-                    sendGameAction(`Colocó ATK/DEF personalizado en ${cardObj.name} (ATK: ${cardObj.customAtkDef.atk} / DEF: ${cardObj.customAtkDef.def})`);
-                } else if (activeCounterDragVal && activeCounterDragVal.type === "REMOVE_ATK_DEF") {
-                    const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
-                    if (oldCard && oldCard.instanceId !== cardObj.instanceId) {
-                        cardObj.customAtkDef = { ...oldCard.customAtkDef };
-                        delete oldCard.customAtkDef;
-                        sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
-                    }
-                } else if (activeCounterDragVal === "YGO") {
+                if (activeCounterDragVal === "YGO") {
                     if (state.layout !== 'yugioh') return;
                     cardObj.counters = (cardObj.counters || 0) + 1;
                     sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
@@ -2573,30 +2391,17 @@
             let activeTouchDragSource = null;
             let $activeTouchDragClone = null;
 
-            $(document).on("touchstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
+            $(document).on("touchstart", ".counter-source", function(e) {
                 activeTouchDragSource = $(this);
-                if (activeTouchDragSource.hasClass("custom-atk-def-source")) {
-                    const $parent = activeTouchDragSource.closest(".accessories-section");
-                    const atk = parseInt($parent.find(".custom-atk-input").val()) || 0;
-                    const def = parseInt($parent.find(".custom-def-input").val()) || 0;
-                    activeCounterDragVal = { type: "CUSTOM_ATK_DEF", atk: atk, def: def };
-                } else if (activeTouchDragSource.hasClass("custom-atk-def-badge")) {
-                    const instId = activeTouchDragSource.data("instance-id");
-                    activeCounterDragVal = { type: "REMOVE_ATK_DEF", cardInstanceId: instId };
-                } else {
-                    const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
-                    activeCounterDragVal = isYGO ? "YGO" : parseInt(activeTouchDragSource.data("val"));
-                }
+                const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
+                activeCounterDragVal = isYGO ? "YGO" : parseInt(activeTouchDragSource.data("val"));
 
                 const coords = getEventCoords(e);
                 $activeTouchDragClone = activeTouchDragSource.clone()
                     .addClass("dragging-counter-clone")
                     .css({
                         left: `${coords.x}px`,
-                        top: `${coords.y}px`,
-                        position: 'absolute',
-                        pointerEvents: 'none',
-                        zIndex: 1000000
+                        top: `${coords.y}px`
                     })
                     .appendTo("body");
             });
@@ -2618,27 +2423,14 @@
                 $activeTouchDragClone = null;
 
                 // Find element under touch point
-                const targetEl = document.elementFromPoint(coords.clientX || coords.x, coords.clientY || coords.y);
+                const targetEl = document.elementFromPoint(coords.x, coords.y);
                 const cardElem = $(targetEl).closest(".duel-card");
 
                 if (cardElem.length) {
                     const instId = cardElem.data("instance-id");
                     const cardObj = state.cards.find(c => c.instanceId === instId);
                     if (cardObj) {
-                        if (activeCounterDragVal && activeCounterDragVal.type === "CUSTOM_ATK_DEF") {
-                            cardObj.customAtkDef = {
-                                atk: activeCounterDragVal.atk,
-                                def: activeCounterDragVal.def
-                            };
-                            sendGameAction(`Colocó ATK/DEF personalizado en ${cardObj.name} (ATK: ${cardObj.customAtkDef.atk} / DEF: ${cardObj.customAtkDef.def})`);
-                        } else if (activeCounterDragVal && activeCounterDragVal.type === "REMOVE_ATK_DEF") {
-                            const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
-                            if (oldCard && oldCard.instanceId !== cardObj.instanceId) {
-                                cardObj.customAtkDef = { ...oldCard.customAtkDef };
-                                delete oldCard.customAtkDef;
-                                sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
-                            }
-                        } else if (activeCounterDragVal === "YGO") {
+                        if (activeCounterDragVal === "YGO") {
                             if (state.layout === 'yugioh') {
                                 cardObj.counters = (cardObj.counters || 0) + 1;
                                 sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
@@ -2654,16 +2446,6 @@
                             }
                         }
                         window.renderAllCards();
-                    }
-                } else {
-                    // Touch dropped outside any card
-                    if (activeCounterDragVal && activeCounterDragVal.type === "REMOVE_ATK_DEF") {
-                        const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
-                        if (oldCard) {
-                            delete oldCard.customAtkDef;
-                            sendGameAction(`Quitó ATK/DEF personalizado de ${oldCard.name}`);
-                            window.renderAllCards();
-                        }
                     }
                 }
 
@@ -2728,72 +2510,8 @@
                             `);
                         }
                     }
-
-                    // Render Custom ATK/DEF Badge if set
-                    $card.find(".custom-atk-def-badge").remove();
-                    if (card.customAtkDef) {
-                        $card.append(`
-                            <div class="custom-atk-def-badge" draggable="true" data-instance-id="${card.instanceId}">
-                                <span>ATK: <span class="atk-val">${card.customAtkDef.atk}</span></span>
-                                <span>DEF: <span class="def-val">${card.customAtkDef.def}</span></span>
-                            </div>
-                        `);
-                    }
                 });
             };
-
-            // Click/Edit Custom ATK/DEF badge
-            $(document).on("click", ".custom-atk-def-badge", function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const instId = $(this).data("instance-id");
-                const cardObj = state.cards.find(c => c.instanceId === instId);
-                if (!cardObj || !cardObj.customAtkDef) return;
-
-                Swal.fire({
-                    title: `Modificar ATK/DEF - ${cardObj.name}`,
-                    html: `
-                        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
-                            <div>
-                                <label style="display: block; font-weight: bold; color: #ff4a4a; margin-bottom: 5px; font-size: 0.9rem;">ATK:</label>
-                                <input type="number" id="edit-atk-input" class="swal2-input" value="${cardObj.customAtkDef.atk}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
-                            </div>
-                            <div>
-                                <label style="display: block; font-weight: bold; color: #00d2ff; margin-bottom: 5px; font-size: 0.9rem;">DEF:</label>
-                                <input type="number" id="edit-def-input" class="swal2-input" value="${cardObj.customAtkDef.def}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
-                            </div>
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    showDenyButton: true,
-                    confirmButtonText: 'Guardar',
-                    denyButtonText: 'Eliminar',
-                    cancelButtonText: 'Cancelar',
-                    background: '#12181e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd32d',
-                    denyButtonColor: '#ff4a4a',
-                    preConfirm: () => {
-                        const atk = parseInt(document.getElementById('edit-atk-input').value) || 0;
-                        const def = parseInt(document.getElementById('edit-def-input').value) || 0;
-                        return { atk, def };
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        cardObj.customAtkDef = {
-                            atk: result.value.atk,
-                            def: result.value.def
-                        };
-                        sendGameAction(`Modificó ATK/DEF en ${cardObj.name} (ATK: ${result.value.atk} / DEF: ${result.value.def})`);
-                        window.renderAllCards();
-                    } else if (result.isDenied) {
-                        delete cardObj.customAtkDef;
-                        sendGameAction(`Quitó ATK/DEF personalizado de ${cardObj.name}`);
-                        window.renderAllCards();
-                    }
-                });
-            });
 
             // Remove/Click Individual counters easily
             $(document).on("click", ".card-counter-container .stacked-counter-bead", function(e) {
