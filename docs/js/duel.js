@@ -107,6 +107,7 @@ const state = {
     roomId: stateParams.get('room') || null,
     mode: stateParams.get('mode') || "practice",
     layout: stateParams.get('layout') || "yugioh",
+    userRole: stateParams.get('role') || 'player1', // Stored globally to track owner views
     cards: [], // All active card instances currently in game
     decks: { player1: [], player2: [] }, // Raw decks selected
     currentUser: null
@@ -462,8 +463,24 @@ function renderAllCards() {
 
         const zIndexStyle = isHand ? "" : `z-index: ${card.z};`;
 
+        const isPractice = state.mode === 'practice';
+        const currentRole = state.userRole || 'player1';
+        const isOwner = card.owner === currentRole;
+        const shouldReveal = isPractice || isOwner;
+        const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("grave_") || card.zone.startsWith("banished_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
+
+        let faceDownClass = "";
+        if (card.faceDown) {
+            if (shouldReveal && !isPile) {
+                faceDownClass = "face-down-revealed";
+            } else {
+                faceDownClass = "face-down";
+            }
+        }
+        const ownerClass = card.owner === "player1" ? "owner-p1" : "owner-p2";
+
         const cardHTML = `
-            <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
+            <div class="duel-card ${faceDownClass} ${card.tapped ? 'tapped' : ''} ${ownerClass}"
                  id="${card.instanceId}"
                  data-instance-id="${card.instanceId}"
                  style="--tilt: ${card.tiltAngle || 0}deg; ${zIndexStyle}">
@@ -539,8 +556,20 @@ function renderAllCards() {
                 }
                 const childZ = card.z - 14 * (idx + 1); // Maintain correct stacking order below the parent and each other
 
+                const childIsOwner = childCard.owner === currentRole;
+                const childShouldReveal = isPractice || childIsOwner;
+                let childFaceDownClass = "";
+                if (childCard.faceDown) {
+                    if (childShouldReveal && !isPile) {
+                        childFaceDownClass = "face-down-revealed";
+                    } else {
+                        childFaceDownClass = "face-down";
+                    }
+                }
+                const childOwnerClass = childCard.owner === "player1" ? "owner-p1" : "owner-p2";
+
                 const childCardHTML = `
-                    <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''}"
+                    <div class="duel-card attached-card-cascade ${childFaceDownClass} ${childCard.tapped ? 'tapped' : ''} ${childOwnerClass}"
                          id="${childCard.instanceId}"
                          data-instance-id="${childCard.instanceId}"
                          data-parent-id="${card.instanceId}"
@@ -1146,12 +1175,24 @@ function checkHandTrayHover(e, traySelector) {
 // Side info detailed previewer
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
+    // Keep track of currently previewed card globally
+    window.activePreviewCard = card;
+
     const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
     let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
 
-    // Seteadas de mi lado (player1) en el campo se pueden ver en el preview
-    if (isFaceDown && card.owner === "player1" && !isPile) {
-        isFaceDown = false;
+    if (state.mode === 'practice') {
+        // Practice mode: allow previewing any face-down cards of both players (except piles)
+        if (!isPile) {
+            isFaceDown = false;
+        }
+    } else {
+        // 2 players / Multiplayer mode:
+        // Only allow previewing face-down cards if they belong to the local user (owner === state.userRole) and are not piles
+        const currentRole = state.userRole || 'player1';
+        if (card.owner === currentRole && !isPile) {
+            isFaceDown = false;
+        }
     }
 
     if (isPile || isFaceDown) {
@@ -2167,6 +2208,29 @@ function openPileModal(playerKey, pileType) {
 }
 
 function setupEventListeners() {
+    // Zoom popup modal event listeners
+    $(document).on("click", "#btn-zoom-preview", function(e) {
+        e.stopPropagation();
+        const currentSrc = $("#detail-card-img").attr("src");
+        if (currentSrc) {
+            $("#zoom-modal-img").attr("src", currentSrc);
+            $("#zoom-modal").fadeIn(200);
+        }
+    });
+
+    $(document).on("click", "#close-zoom-modal, #zoom-modal", function(e) {
+        if (e.target.id === "zoom-modal-img") {
+            return;
+        }
+        $("#zoom-modal").fadeOut(200);
+    });
+
+    $(document).on("keydown", function(e) {
+        if (e.key === "Escape") {
+            $("#zoom-modal").fadeOut(200);
+        }
+    });
+
     // Menu layout toggle
     $("#select-board-layout").change(async function() {
         state.layout = $(this).val();
