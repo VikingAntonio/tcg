@@ -972,8 +972,11 @@ $(document).ready(async function() {
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
+        const sleeves = window.selectedSleeves || null;
+        const deckbox = window.selectedDeckbox || null;
+        const coin = window.selectedCoin || null;
 
-        let updateData = { name, is_public, use_special_price, special_price };
+        let updateData = { name, is_public, use_special_price, special_price, sleeves, deckbox, coin };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -1018,6 +1021,7 @@ $(document).ready(async function() {
 
             if (deckRes.error && deckRes.error.code === '42703') {
                 await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
+                console.warn("La tabla decks no tiene las columnas sleeves, deckbox o coin. Se guardo sin accesorios.");
             } else if (deckRes.error) throw deckRes.error;
 
             if (insRes.error) throw insRes.error;
@@ -1229,6 +1233,14 @@ $(document).ready(async function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#bdd-image-url', '#drop-zone-bdd .file-name');
     });
 
+    $(document).on('change', '#bdd-type', function() {
+        if ($(this).val() === 'accessories') {
+            $('#bdd-accessory-type-container').show();
+        } else {
+            $('#bdd-accessory-type-container').hide();
+        }
+    });
+
     $('#btn-queue-bdd').click(function() {
         const type = $('#bdd-type').val();
         const name = $('#bdd-name').val().trim();
@@ -1243,11 +1255,18 @@ $(document).ready(async function() {
             return;
         }
 
+        let finalRarity = rarity;
+        let finalExpansion = expansion;
+        if (type === 'accessories') {
+            finalRarity = $('#bdd-accessory-type').val() || 'sleeves';
+            finalExpansion = finalRarity;
+        }
+
         bddQueue.push({
             name,
             image_url: imageUrl,
-            expansion,
-            rarity,
+            expansion: finalExpansion,
+            rarity: finalRarity,
             tcg,
             price,
             type,
@@ -1313,6 +1332,9 @@ $(document).ready(async function() {
     }
 
     function resetBddForm() {
+        $('#bdd-type').val('card');
+        $('#bdd-accessory-type').val('sleeves');
+        $('#bdd-accessory-type-container').hide();
         $('#bdd-name').val('');
         $('#bdd-image-url').val('');
         $('#bdd-expansion').val('');
@@ -2098,9 +2120,104 @@ async function editDeck(deck) {
         $('#special-price-container').hide();
     }
 
+    // Initialize selected accessories
+    window.selectedSleeves = target.sleeves || null;
+    window.selectedDeckbox = target.deckbox || null;
+    window.selectedCoin = target.coin || null;
+
+    loadAndRenderAccessories();
+
     showView('deck-editor');
     loadDeckCards(target.id, true);
 }
+
+async function loadAndRenderAccessories() {
+    try {
+        const { data: accessories, error } = await _supabase
+            .from('viking_data')
+            .select('*')
+            .or('type.eq.accessories,type.eq.accessory');
+
+        if (error) throw error;
+
+        renderAccessoriesGrid(accessories || []);
+    } catch (err) {
+        console.error("Error al cargar accesorios:", err);
+    }
+}
+
+function renderAccessoriesGrid(accessories) {
+    const sections = [
+        { key: 'sleeves', gridId: '#grid-sleeves', nameId: '#selected-sleeves-name', selectedVal: window.selectedSleeves },
+        { key: 'deckbox', gridId: '#grid-deckbox', nameId: '#selected-deckbox-name', selectedVal: window.selectedDeckbox },
+        { key: 'coin', gridId: '#grid-coin', nameId: '#selected-coin-name', selectedVal: window.selectedCoin }
+    ];
+
+    sections.forEach(({ key, gridId, nameId, selectedVal }) => {
+        const $grid = $(gridId);
+        $grid.empty();
+
+        const filtered = accessories.filter(acc =>
+            (acc.rarity || '').toLowerCase() === key ||
+            (acc.expansion || '').toLowerCase() === key
+        );
+
+        // Name display
+        let currentSelectedName = 'Ninguno';
+        const found = filtered.find(acc => acc.image_url === selectedVal);
+        if (found) {
+            currentSelectedName = found.name;
+        }
+        $(nameId).text(currentSelectedName);
+
+        // Render "Ninguno" Option
+        const isNoneSelected = !selectedVal;
+        const $noneItem = $(`
+            <div class="accessory-item none-option type-${key} ${isNoneSelected ? 'selected' : ''}" data-value="">
+                <div style="font-size: 10px; opacity: 0.7;">Ninguno</div>
+            </div>
+        `);
+        $grid.append($noneItem);
+
+        // Render DB options
+        filtered.forEach(acc => {
+            const isSelected = acc.image_url === selectedVal;
+            const $item = $(`
+                <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''}" data-value="${acc.image_url}" title="${acc.name}">
+                    <img src="${acc.image_url}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                </div>
+            `);
+            $grid.append($item);
+        });
+    });
+}
+
+// Add the click handler on accessory items
+$(document).on('click', '.accessory-item', function() {
+    const $item = $(this);
+    const val = $item.attr('data-value') || null;
+    const isSleeves = $item.hasClass('type-sleeves');
+    const isDeckbox = $item.hasClass('type-deckbox');
+    const isCoin = $item.hasClass('type-coin');
+
+    if (isSleeves) {
+        window.selectedSleeves = val;
+    } else if (isDeckbox) {
+        window.selectedDeckbox = val;
+    } else if (isCoin) {
+        window.selectedCoin = val;
+    }
+
+    // Toggle active state in the grid
+    $item.siblings().removeClass('selected');
+    $item.addClass('selected');
+
+    // Update name label
+    const headerName = $item.attr('title') || 'Ninguno';
+    if (isSleeves) $('#selected-sleeves-name').text(headerName);
+    if (isDeckbox) $('#selected-deckbox-name').text(headerName);
+    if (isCoin) $('#selected-coin-name').text(headerName);
+});
 
 async function deleteDeck(id) {
     const result = await Swal.fire({

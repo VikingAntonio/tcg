@@ -934,6 +934,130 @@
                                 <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Público</span>
                             </label>
                         </div>
+
+                        <!-- SEPARATOR FOR ACCESSORIES -->
+                        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+
+                        <!-- ACCESSORIES CONTAINER -->
+                        <div id="deck-accessories-selector-container">
+                            <style>
+                                .accessory-section {
+                                    margin-bottom: 15px;
+                                }
+                                .accessory-header {
+                                    font-size: 11px;
+                                    font-weight: bold;
+                                    text-transform: uppercase;
+                                    color: rgba(255,255,255,0.6);
+                                    margin-bottom: 8px;
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                }
+                                .accessory-selected-name {
+                                    color: #00d2ff;
+                                    font-weight: 700;
+                                    font-size: 11px;
+                                    text-align: right;
+                                    max-width: 60%;
+                                    overflow: hidden;
+                                    text-overflow: ellipsis;
+                                    white-space: nowrap;
+                                }
+                                .accessory-grid {
+                                    display: grid;
+                                    grid-template-columns: repeat(3, 1fr);
+                                    gap: 10px;
+                                    max-height: 120px;
+                                    overflow-y: auto;
+                                    padding-right: 4px;
+                                }
+                                .accessory-grid::-webkit-scrollbar {
+                                    width: 4px;
+                                }
+                                .accessory-grid::-webkit-scrollbar-thumb {
+                                    background: rgba(255,255,255,0.2);
+                                    border-radius: 4px;
+                                }
+                                .accessory-item {
+                                    position: relative;
+                                    cursor: pointer;
+                                    border: 2px solid transparent;
+                                    border-radius: 8px;
+                                    overflow: hidden;
+                                    background: rgba(0,0,0,0.3);
+                                    aspect-ratio: 1;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    transition: all 0.2s;
+                                }
+                                .accessory-item.type-sleeves {
+                                    aspect-ratio: 2/3;
+                                }
+                                .accessory-item.type-coin {
+                                    border-radius: 50%;
+                                }
+                                .accessory-item img {
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                }
+                                .accessory-item:hover {
+                                    border-color: rgba(0, 210, 255, 0.4);
+                                }
+                                .accessory-item.selected {
+                                    border-color: #00d2ff;
+                                    box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
+                                }
+                                .accessory-item.none-option {
+                                    background: rgba(255,255,255,0.03);
+                                    border: 1px dashed rgba(255,255,255,0.2);
+                                    font-size: 10px;
+                                    color: rgba(255,255,255,0.4);
+                                    text-align: center;
+                                    text-transform: uppercase;
+                                    font-weight: bold;
+                                }
+                                .accessory-item.none-option.selected {
+                                    border: 2px solid #00d2ff;
+                                    color: #00d2ff;
+                                }
+                            </style>
+
+                            <!-- Sleeves Section -->
+                            <div class="accessory-section">
+                                <div class="accessory-header">
+                                    <span>Micas / Sleeves</span>
+                                    <span class="accessory-selected-name" id="selected-sleeves-name">Ninguno</span>
+                                </div>
+                                <div id="grid-sleeves" class="accessory-grid">
+                                    <!-- Dynamic items -->
+                                </div>
+                            </div>
+
+                            <!-- Deckbox Section -->
+                            <div class="accessory-section">
+                                <div class="accessory-header">
+                                    <span>Portadeck / Deckbox</span>
+                                    <span class="accessory-selected-name" id="selected-deckbox-name">Ninguno</span>
+                                </div>
+                                <div id="grid-deckbox" class="accessory-grid">
+                                    <!-- Dynamic items -->
+                                </div>
+                            </div>
+
+                            <!-- Coin Section -->
+                            <div class="accessory-section">
+                                <div class="accessory-header">
+                                    <span>Moneda / Coin</span>
+                                    <span class="accessory-selected-name" id="selected-coin-name">Ninguno</span>
+                                </div>
+                                <div id="grid-coin" class="accessory-grid">
+                                    <!-- Dynamic items -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1222,6 +1346,15 @@
                                 <option value="card">Carta Suelta</option>
                                 <option value="product">Producto Sellado</option>
                                 <option value="preorder">Preventa</option>
+                                <option value="accessories">Accesorio</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="bdd-accessory-type-container" style="display: none;">
+                            <label>Tipo de Accesorio</label>
+                            <select id="bdd-accessory-type">
+                                <option value="sleeves">Sleeves (Micas)</option>
+                                <option value="deckbox">Deckbox (Portadecks)</option>
+                                <option value="coin">Coin (Moneda)</option>
                             </select>
                         </div>
                         <div class="form-group">
