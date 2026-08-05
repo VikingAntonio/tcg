@@ -2251,7 +2251,7 @@ function openPileModal(playerKey, pileType) {
             $("#pile-overlay").fadeOut(200);
 
             // Bring card to top of the pile on the playmat
-            cardObj.movedToPileAt = Date.now() + 10000;
+            cardObj.movedToPileAt = Date.now();
             renderAllCards();
 
             // Trigger beautiful temporary activation glow animation on the playmat card element
