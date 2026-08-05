@@ -1,4 +1,4 @@
-/* Duel Simulator Mobile horizontal Stylesheet */
+/* Duel Simulator Stylesheet */
 
 :root {
     --bg-color: #0c0f12;
@@ -9,7 +9,7 @@
     --secondary-glow: rgba(255, 27, 107, 0.4);
     --success-color: #2ec4b6;
     --danger-color: #ff1b6b;
-    --panel-bg: rgba(18, 24, 30, 0.98);
+    --panel-bg: rgba(18, 24, 30, 0.85);
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.08);
     --card-width: 80px;
@@ -23,17 +23,15 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
-    overflow: hidden !important;
-    height: 100vh !important;
-    width: 100vw !important;
-    margin: 0;
-    padding: 0;
-    position: fixed;
+body.duel-body {
     background-color: var(--bg-color);
     background-image: radial-gradient(circle at center, #111a2e 0%, #06090e 100%);
     color: var(--text-color);
     font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* Background Cosmic Blobs */
@@ -52,49 +50,189 @@ html, body {
     position: absolute;
     border-radius: 50%;
     filter: blur(100px);
-    opacity: 0.1;
+    opacity: 0.12;
 }
 
 .blob-1 {
-    width: 350px;
-    height: 350px;
+    width: 450px;
+    height: 450px;
     background-color: var(--primary-color);
-    top: -50px;
-    left: 5%;
+    top: -100px;
+    left: 10%;
 }
 
 .blob-2 {
-    width: 450px;
-    height: 450px;
+    width: 550px;
+    height: 550px;
     background-color: var(--secondary-color);
-    bottom: -100px;
-    right: 10%;
+    bottom: -150px;
+    right: 15%;
 }
 
 /* Workspace Layout */
 .duel-workspace {
-    overflow: hidden !important;
-    height: 100vh !important;
-    width: 100vw !important;
-    position: relative;
     display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    height: 100vh;
+}
+
+/* Sidebar Option Panels */
+.duel-sidebar {
+    width: 300px;
+    background: var(--panel-bg);
+    backdrop-filter: blur(15px);
+    border-right: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll; /* Force vertical scrollbar to be always visible to avoid layout shifts */
+    scrollbar-gutter: stable; /* Reserve space for scrollbar */
+    padding: 15px;
+    padding-bottom: 50px; /* Add comfortable bottom margin/padding for accessories */
+    gap: 15px;
+    z-index: 5;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.4);
+}
+
+.duel-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.duel-sidebar::-webkit-scrollbar-track {
+    background: transparent; /* Make track fully transparent */
+}
+
+.duel-sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--glass-border);
+    border-radius: 10px;
+}
+
+.sidebar-section {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.sidebar-section h3 {
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 6px;
+}
+
+.sidebar-select {
+    width: 100%;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: white;
+    padding: 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+
+.sidebar-select:focus {
+    border-color: var(--primary-color);
+}
+
+/* Button styles */
+.btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger-color), #b3003b);
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 10px rgba(255, 27, 107, 0.4);
+}
+
+/* Detailed Card Previewer */
+.card-detailed-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.preview-img-container {
+    width: 100%;
+    max-width: 244px;
+    height: 342px; /* Lock height to prevent layout shifting */
+    aspect-ratio: 2.5 / 3.5;
+    background: #000;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s;
+}
+
+.preview-info h4 {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 4px;
+}
+
+.preview-info p {
+    font-size: 0.75rem;
+    color: #aaa;
+    line-height: 1.4;
+    max-height: 140px;
+    overflow-y: auto;
+    white-space: pre-line;
 }
 
 /* Playmat Area Grid Wrapper */
 .duel-arena-wrapper {
     flex: 1;
-    height: 100vh !important;
-    width: 100vw !important;
     display: flex;
     flex-direction: column;
-    padding: 5px;
+    padding: 10px;
+    gap: 8px;
     background: radial-gradient(circle at center, rgba(16, 28, 43, 0.4) 0%, rgba(5, 8, 12, 0.8) 100%);
     overflow: hidden !important;
     position: relative;
     align-items: center;
     justify-content: space-between;
-    perspective: 1200px;
-    transform-style: preserve-3d;
+    height: 100vh;
 }
 
 /* Hand trays (Fully transparent, no borders, no label, no shadow) */
@@ -103,68 +241,43 @@ html, body {
     max-width: 1120px;
     background: transparent;
     border: none;
+    border-radius: 0;
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
+    gap: 0;
+    position: relative;
     z-index: 105;
     box-shadow: none;
-    pointer-events: auto;
 }
 
-/* Hand cards layout on mobile horizontal */
 .hand-cards-container {
     display: flex;
-    gap: -10px; /* Overlap effect */
-    min-height: 70px;
-    align-items: flex-end;
-    justify-content: center;
-    overflow: visible;
-    padding: 0 10px;
-}
-
-.hand-cards-container .duel-card {
-    width: 45px !important;
-    height: 64px !important;
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    margin-left: -12px; /* Overlap */
-    transform: perspective(400px) rotateX(18deg);
-    transform-origin: bottom center;
-    transition: transform 0.2s ease, margin-top 0.2s ease, z-index 0s;
-    flex-shrink: 0;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-}
-
-.hand-cards-container .duel-card:hover,
-.hand-cards-container .duel-card:active {
-    transform: perspective(400px) rotateX(0deg) scale(1.3) translateY(-15px);
-    z-index: 1000 !important;
-    margin-top: -15px;
-}
-
-.hand-controls {
-    display: flex;
-    gap: 8px;
+    gap: 16px;
+    min-height: 116px;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2px;
+    overflow: visible;
+    padding: 5px;
 }
 
 /* Playmat Board Element */
 .playmat-board {
     width: 1120px;
     height: 600px;
-    background: rgba(8, 12, 18, 0.85);
+    background: rgba(8, 12, 18, 0.8);
     border: 2px solid rgba(0, 210, 255, 0.25);
     border-radius: 20px;
-    position: absolute;
-    box-shadow: 0 15px 45px rgba(0,0,0,0.8), inset 0 0 50px rgba(0, 210, 255, 0.1);
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 0 40px rgba(0, 210, 255, 0.08);
     overflow: visible;
     flex-shrink: 0;
-    transform-style: preserve-3d;
-    transition: transform 0.1s ease-out;
+    margin-right: 95px; /* Reserve safe horizontal space for the vertical phase bar on the right */
+    transform: scale(0.85);
+    transform-origin: center center;
+    margin-top: -84px;
+    margin-bottom: -84px;
 }
 
 .playmat-board.pokemon-active {
@@ -172,7 +285,11 @@ html, body {
     background-size: cover;
     background-position: center;
     border-color: rgba(255, 215, 0, 0.35) !important;
-    box-shadow: 0 15px 45px rgba(0,0,0,0.9), inset 0 0 50px rgba(255, 215, 0, 0.15) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 50px rgba(255, 215, 0, 0.15) !important;
+}
+
+.playmat-board.pokemon-active .board-grid-bg {
+    opacity: 0.15;
 }
 
 .board-grid-bg {
@@ -183,9 +300,40 @@ html, body {
     left: 0;
     background-size: 40px 40px;
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     pointer-events: none;
+}
+
+/* Symmetrical and Professional Board Dividers & Labels */
+.playmat-board::before {
+    content: "JUGADOR 2 FIELD";
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: rgba(255, 27, 107, 0.35);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.playmat-board::after {
+    content: "JUGADOR 1 FIELD";
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: rgba(0, 210, 255, 0.35);
+    pointer-events: none;
+    z-index: 1;
 }
 
 /* Center Playmat Divider Line */
@@ -195,7 +343,7 @@ html, body {
     left: 0;
     width: 100%;
     height: 2px;
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), rgba(0, 210, 255, 0.4), rgba(255, 27, 107, 0.4), rgba(255, 255, 255, 0.1), transparent);
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), rgba(0, 210, 255, 0.5), rgba(255, 27, 107, 0.5), rgba(255, 255, 255, 0.1), transparent);
     transform: translateY(-50%);
     pointer-events: none;
     z-index: 2;
@@ -215,105 +363,125 @@ html, body {
     pointer-events: auto;
     z-index: 1;
     background: rgba(11, 16, 25, 0.85);
-    border: 1.5px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
 }
 
-/* Player 1 Theme */
+/* Player 1 Cyan Glow Theme */
 .board-zone.zone-player-1 {
-    border-color: rgba(0, 210, 255, 0.2);
+    border-color: rgba(0, 210, 255, 0.25);
+    box-shadow: inset 0 0 8px rgba(0, 210, 255, 0.05);
 }
 .board-zone.zone-player-1 .zone-label {
-    color: rgba(0, 210, 255, 0.6);
+    color: rgba(0, 210, 255, 0.65);
 }
 
-/* Player 2 Theme */
+/* Player 2 Pink Glow Theme */
 .board-zone.zone-player-2 {
-    border-color: rgba(255, 27, 107, 0.2);
+    border-color: rgba(255, 27, 107, 0.25);
+    box-shadow: inset 0 0 8px rgba(255, 27, 107, 0.05);
 }
 .board-zone.zone-player-2 .zone-label {
-    color: rgba(255, 27, 107, 0.6);
+    color: rgba(255, 27, 107, 0.65);
 }
 
-/* Specific Zone Type Colors */
+/* Specific Zone Type Overrides */
 .board-zone.zone-type-deck {
-    background: linear-gradient(135deg, rgba(15, 32, 67, 0.8) 0%, rgba(8, 12, 18, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(15, 32, 67, 0.85) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
     cursor: pointer;
 }
-.board-zone.zone-type-deck.zone-player-1 { border-color: rgba(0, 210, 255, 0.4); }
-.board-zone.zone-type-deck.zone-player-2 { border-color: rgba(255, 27, 107, 0.4); }
+.board-zone.zone-type-deck.zone-player-1 { border-color: rgba(0, 210, 255, 0.5); box-shadow: 0 0 10px rgba(0, 210, 255, 0.1); }
+.board-zone.zone-type-deck.zone-player-2 { border-color: rgba(255, 27, 107, 0.5); box-shadow: 0 0 10px rgba(255, 27, 107, 0.1); }
 
 .board-zone.zone-type-extra {
-    background: linear-gradient(135deg, rgba(74, 20, 140, 0.6) 0%, rgba(8, 12, 18, 0.95) 100%);
-    border-color: rgba(155, 93, 229, 0.4);
+    background: linear-gradient(135deg, rgba(74, 20, 140, 0.65) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(155, 93, 229, 0.5);
 }
 
 .board-zone.zone-type-grave {
-    background: linear-gradient(135deg, rgba(43, 43, 43, 0.8) 0%, rgba(8, 12, 18, 0.95) 100%);
-    border-color: rgba(140, 140, 140, 0.4);
+    background: linear-gradient(135deg, rgba(43, 43, 43, 0.85) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(140, 140, 140, 0.5);
 }
 
 .board-zone.zone-type-banished {
-    background: linear-gradient(135deg, rgba(183, 28, 28, 0.5) 0%, rgba(8, 12, 18, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(183, 28, 28, 0.55) 0%, rgba(8, 12, 18, 0.95) 100%);
     border-style: dashed;
-    border-color: rgba(255, 27, 107, 0.4);
+    border-color: rgba(255, 27, 107, 0.5);
 }
 
 .board-zone.zone-type-field {
-    background: linear-gradient(135deg, rgba(27, 94, 32, 0.4) 0%, rgba(8, 12, 18, 0.95) 100%);
-    border-color: rgba(46, 196, 182, 0.4);
+    background: linear-gradient(135deg, rgba(27, 94, 32, 0.45) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(46, 196, 182, 0.5);
 }
 
 .board-zone.zone-type-monster {
-    background: linear-gradient(135deg, rgba(230, 81, 0, 0.25) 0%, rgba(8, 12, 18, 0.9) 100%);
-    border-color: rgba(255, 121, 63, 0.4);
+    background: linear-gradient(135deg, rgba(230, 81, 0, 0.3) 0%, rgba(8, 12, 18, 0.9) 100%);
+    border-style: solid;
+    border-color: rgba(255, 121, 63, 0.45);
 }
 
 .board-zone.zone-type-spell {
-    background: linear-gradient(135deg, rgba(13, 71, 161, 0.25) 0%, rgba(8, 12, 18, 0.9) 100%);
-    border-color: rgba(0, 210, 255, 0.4);
+    background: linear-gradient(135deg, rgba(13, 71, 161, 0.3) 0%, rgba(8, 12, 18, 0.9) 100%);
+    border-style: solid;
+    border-color: rgba(0, 210, 255, 0.45);
 }
 
 .board-zone.zone-type-active {
-    background: linear-gradient(135deg, rgba(245, 127, 23, 0.3) 0%, rgba(8, 12, 18, 0.95) 100%);
-    border-color: rgba(255, 211, 45, 0.5);
+    background: linear-gradient(135deg, rgba(245, 127, 23, 0.4) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(255, 211, 45, 0.6);
+    box-shadow: inset 0 0 15px rgba(255, 211, 45, 0.2), 0 0 8px rgba(255, 211, 45, 0.1);
 }
 
 .board-zone.zone-type-bench {
-    background: linear-gradient(135deg, rgba(51, 105, 30, 0.2) 0%, rgba(8, 12, 18, 0.9) 100%);
-    border-color: rgba(76, 175, 80, 0.4);
+    background: linear-gradient(135deg, rgba(51, 105, 30, 0.25) 0%, rgba(8, 12, 18, 0.9) 100%);
+    border-style: solid;
+    border-color: rgba(76, 175, 80, 0.45);
 }
 
 .board-zone.zone-type-prize {
-    background: linear-gradient(135deg, rgba(255, 235, 59, 0.15) 0%, rgba(8, 12, 18, 0.95) 100%);
-    border-color: rgba(255, 235, 59, 0.3);
+    background: linear-gradient(135deg, rgba(255, 235, 59, 0.2) 0%, rgba(8, 12, 18, 0.95) 100%);
+    border-style: solid;
+    border-color: rgba(255, 235, 59, 0.4);
+}
+
+.board-zone.highlighted {
+    border-color: var(--primary-color) !important;
+    background: rgba(0, 210, 255, 0.12) !important;
+    box-shadow: 0 0 18px rgba(0, 210, 255, 0.25), inset 0 0 10px rgba(0, 210, 255, 0.1) !important;
 }
 
 .zone-label {
     font-size: 0.55rem;
     font-weight: 800;
     text-align: center;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.35);
     text-transform: uppercase;
     pointer-events: none;
-    padding: 3px;
-    line-height: 1.1;
+    padding: 4px;
+    line-height: 1.2;
 }
 
 .zone-card-count {
     font-family: 'Orbitron', sans-serif;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 800;
     color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
     pointer-events: none;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
-    padding: 1px 4px;
-    min-width: 18px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 2px 6px;
+    min-width: 22px;
     text-align: center;
 }
 
-/* Card Element (Interactive physical sandboxes with 3D Standing) */
+/* Card Element (Interactive physical sandboxes) */
 .duel-card {
     width: var(--card-width);
     height: var(--card-height);
@@ -322,33 +490,32 @@ html, body {
     overflow: visible;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     user-select: none;
     z-index: 10;
     border: 1px solid rgba(255, 255, 255, 0.12);
+    transform: rotate(var(--tilt, 0deg));
 }
 
-/* Standing/Erect Cards inside 3D Playmat */
-.playmat-board .duel-card {
-    transform-style: preserve-3d;
-    transform: rotateX(-30deg) rotateZ(var(--tilt, 0deg));
-    transform-origin: bottom center; /* Pivot from the bottom edge so they stand up from the board */
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s, border-color 0.3s;
+/* Transition is enabled when not actively dragged */
+.duel-card.snapping {
+    transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s, box-shadow 0.3s;
 }
 
-/* Glowing rising elevation transition on drag */
-.playmat-board .duel-card.dragging {
-    transform: rotateX(-30deg) rotateZ(calc(var(--tilt, 0deg) + 2deg)) scale(1.1) translate3d(0, -10px, 35px) !important;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.6), 0 0 20px var(--primary-glow) !important;
-    z-index: 999999 !important;
+.duel-card:hover {
+    box-shadow: 0 8px 18px rgba(0,0,0,0.6), 0 0 10px rgba(255,255,255,0.15);
+    transform: scale(1.08) rotate(var(--tilt, 0deg)) translate3d(0, 0, 5px);
+    z-index: 100;
 }
 
-.playmat-board .attached-card-cascade {
-    transform-style: preserve-3d;
-    transform: rotateX(-30deg) rotateZ(var(--tilt, 0deg));
-    transform-origin: bottom center;
+.duel-card.dragging {
+    cursor: grabbing;
+    box-shadow: 0 15px 28px rgba(0,0,0,0.7), 0 0 15px var(--primary-glow);
+    transform: scale(1.12) rotate(calc(var(--tilt, 0deg) + 2deg)) translate3d(0, 0, 15px);
+    border-color: var(--primary-color);
+    z-index: 200 !important;
 }
 
-/* Card image setup */
 .card-img-wrapper {
     width: 100%;
     height: 100%;
@@ -372,6 +539,14 @@ html, body {
     transition: transform 0.2s ease-in-out;
 }
 
+.duel-card.tapped:hover .card-img-wrapper {
+    transform: rotate(90deg) scale(1.08);
+}
+
+.duel-card.tapped.dragging .card-img-wrapper {
+    transform: rotate(92deg) scale(1.12);
+}
+
 /* Face Down Mode */
 .duel-card.face-down img {
     visibility: hidden;
@@ -382,6 +557,7 @@ html, body {
     background-position: center;
     background-image: var(--card-back-url);
     border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 body.layout-yugioh .duel-card.face-down .card-img-wrapper {
@@ -395,70 +571,122 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
 /* Counter indicator badges */
 .card-counter {
     position: absolute;
-    top: -6px;
-    right: -6px;
+    top: -8px;
+    right: -8px;
     background: radial-gradient(circle at center, #ffd32d 0%, #ff5e13 100%);
-    border: 1.5px solid #fff;
-    width: 18px;
-    height: 18px;
+    border: 2px solid #fff;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     color: black;
+    font-weight: 900;
+    font-size: 0.65rem;
+    font-family: 'Orbitron', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px rgba(255, 94, 19, 0.8);
+    pointer-events: none;
+    z-index: 20;
+    animation: counterPulse 1.5s infinite alternate;
+}
+
+.card-attached-badge {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background: radial-gradient(circle at center, #00d2ff 0%, #0066ff 100%);
+    border: 2px solid #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    color: white;
     font-weight: 900;
     font-size: 0.6rem;
     font-family: 'Orbitron', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 0 8px rgba(255, 94, 19, 0.8);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
     pointer-events: none;
     z-index: 20;
+    animation: attachedPulse 1.5s infinite alternate;
 }
 
-.card-attached-badge {
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    background: radial-gradient(circle at center, #00d2ff 0%, #0066ff 100%);
-    border: 1.5px solid #fff;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    color: white;
-    font-weight: 900;
-    font-size: 0.55rem;
-    font-family: 'Orbitron', sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 8px rgba(0, 210, 255, 0.8);
-    pointer-events: none;
-    z-index: 20;
+@keyframes counterPulse {
+    0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 94, 19, 0.6); }
+    100% { transform: scale(1.15); box-shadow: 0 0 15px rgba(255, 94, 19, 0.9); }
 }
 
-/* Quick Action Menu for Hand Cards */
+@keyframes attachedPulse {
+    0% { transform: scale(1); box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); }
+    100% { transform: scale(1.15); box-shadow: 0 0 15px rgba(0, 210, 255, 0.9); }
+}
+
+/* Hand tray specific cards */
+.hand-cards-container .duel-card {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    flex-shrink: 0;
+    transform: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.hand-cards-container .duel-card:hover {
+    transform: translateY(-15px) scale(1.15);
+    z-index: 50;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+}
+
+/* Quick Action Menu for Hand Cards (Sits above hover card inside hand) */
 .hand-card-actions {
     position: absolute;
-    bottom: 72px;
+    bottom: 120px;
     left: 50%;
-    transform: translateX(-50%) scale(0.85);
+    transform: translateX(-50%) scale(0.8);
     background: rgba(10, 15, 22, 0.98);
     border: 1.5px solid rgba(0, 210, 255, 0.45);
-    border-radius: 6px;
+    border-radius: 8px;
     display: none;
     flex-direction: column;
-    gap: 3px;
-    padding: 4px;
+    gap: 4px;
+    padding: 5px;
     z-index: 99999;
-    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.7);
-    min-width: 90px;
-    transition: transform 0.15s;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+    min-width: 110px;
+    transition: transform 0.2s;
     pointer-events: auto;
 }
 
+/* Opponent Hand (P2) drops actions downwards instead of upwards off-screen */
 .player-2 .hand-card-actions {
     bottom: auto;
-    top: 72px;
+    top: 120px;
     border-color: rgba(255, 27, 107, 0.45);
+}
+
+.attached-card-cascade {
+    pointer-events: auto !important;
+}
+
+/* Hover bridge pseudo-element for hand card menu options */
+.hand-card-actions::after {
+    content: "";
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    pointer-events: auto;
+}
+
+/* P2 hover bridge pseudo-element needs to bridge downwards */
+.player-2 .hand-card-actions::after {
+    bottom: auto;
+    top: -15px;
+    height: 18px;
 }
 
 .duel-card:hover .hand-card-actions {
@@ -469,42 +697,105 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
 /* Quick Action Hover Bar for Cards placed on the field */
 .field-card-actions {
     position: absolute;
-    top: -30px;
+    top: -32px;
     left: 50%;
     transform: translateX(-50%) scale(0.8);
     background: rgba(10, 15, 22, 0.98);
     border: 1.5px solid rgba(0, 210, 255, 0.45);
-    border-radius: 5px;
+    border-radius: 6px;
     display: flex;
     visibility: hidden;
     opacity: 0;
     flex-direction: row;
-    gap: 3px;
-    padding: 2px;
+    gap: 4px;
+    padding: 3px;
     z-index: 99999;
-    box-shadow: 0 5px 12px rgba(0,0,0,0.8);
-    transition: transform 0.15s ease, opacity 0.15s ease, visibility 0.15s ease;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.8);
+    transition: transform 0.2s ease, opacity 0.2s ease, visibility 0.2s ease;
+    transition-delay: 0.15s;
     pointer-events: auto;
 }
 
-.duel-card:hover .field-card-actions {
+/* Hover bridge pseudo-element to guarantee zero-gap and prevent menu disappearing */
+.field-card-actions::after {
+    content: "";
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    width: 100%;
+    height: 25px; /* Extended height for maximum robustness and zero hover-slips */
+    background: transparent;
+    pointer-events: auto;
+}
+
+/* Specific Vertical layouts for Field Zone cards so options flow inward and stay fully on-screen */
+.field-card-actions.field-zone-right {
+    flex-direction: column !important;
+    left: calc(100% + 10px) !important;
+    top: 50% !important;
+    transform: translateY(-50%) scale(0.8) !important;
+}
+.field-card-actions.field-zone-right::after {
+    bottom: 0;
+    left: -15px;
+    width: 18px;
+    height: 100%;
+}
+.duel-card:hover .field-card-actions.field-zone-right {
+    visibility: visible;
+    opacity: 1;
+    display: flex;
+    transform: translateY(-50%) scale(1) !important;
+    transition-delay: 0s;
+}
+
+.field-card-actions.field-zone-left {
+    flex-direction: column !important;
+    left: auto !important;
+    right: calc(100% + 10px) !important;
+    top: 50% !important;
+    transform: translateY(-50%) scale(0.8) !important;
+}
+.field-card-actions.field-zone-left::after {
+    bottom: 0;
+    right: -15px;
+    left: auto;
+    width: 18px;
+    height: 100%;
+}
+.duel-card:hover .field-card-actions.field-zone-left {
+    visibility: visible;
+    opacity: 1;
+    display: flex;
+    transform: translateY(-50%) scale(1) !important;
+    transition-delay: 0s;
+}
+
+.duel-card:hover .field-card-actions:not(.field-zone-right):not(.field-zone-left) {
     visibility: visible;
     opacity: 1;
     display: flex;
     transform: translateX(-50%) scale(1);
+    transition-delay: 0s;
 }
 
+/* Field micro quick-buttons style - Text Only (No Icons) */
 .field-action-btn {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
     color: #e2e8f0;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    padding: 2px 4px;
-    font-size: 0.55rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 0.65rem;
     font-weight: 700;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     white-space: nowrap;
+    transition: all 0.15s;
     text-transform: uppercase;
+    font-family: inherit;
 }
 
 .field-action-btn:hover {
@@ -513,16 +804,376 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* Custom styles for Yu-Gi-Oh! Advanced format layout zones */
+.board-zone.zone-pendulum-blue {
+    border: 1.5px dashed #00d2ff !important;
+    background: rgba(0, 210, 255, 0.05) !important;
+    box-shadow: inset 0 0 15px rgba(0, 210, 255, 0.15) !important;
+}
+.board-zone.zone-pendulum-blue::after {
+    content: "";
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: #00d2ff;
+    opacity: 0.15;
+    top: calc(50% - 12px);
+    left: calc(50% - 12px);
+    transform: rotate(45deg);
+    box-shadow: 0 0 10px #00d2ff;
+    pointer-events: none;
+}
+
+.board-zone.zone-pendulum-red {
+    border: 1.5px dashed #ff1b6b !important;
+    background: rgba(255, 27, 107, 0.05) !important;
+    box-shadow: inset 0 0 15px rgba(255, 27, 107, 0.15) !important;
+}
+.board-zone.zone-pendulum-red::after {
+    content: "";
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: #ff1b6b;
+    opacity: 0.15;
+    top: calc(50% - 12px);
+    left: calc(50% - 12px);
+    transform: rotate(45deg);
+    box-shadow: 0 0 10px #ff1b6b;
+    pointer-events: none;
+}
+
+.board-zone.zone-extra-monster {
+    border: 1.5px dashed rgba(255, 255, 255, 0.45) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05) !important;
+}
+.board-zone.zone-extra-monster:hover {
+    border-color: rgba(255, 255, 255, 0.8) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Custom ATK/DEF Badge styling */
+.custom-atk-def-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(12, 19, 26, 0.95);
+    border: 1px dashed #00d2ff;
+    border-radius: 4px;
+    padding: 2px 5px;
+    display: flex;
+    gap: 6px;
+    font-size: 0.65rem;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.custom-atk-def-badge:hover {
+    transform: translateX(-50%) scale(1.2);
+    border-style: solid;
+    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.5);
+    background: rgba(12, 19, 26, 1);
+}
+
+.custom-atk-def-badge span {
+    font-weight: bold;
+}
+
+.custom-atk-def-badge .atk-val {
+    color: #00d2ff;
+}
+
+.custom-atk-def-badge .def-val {
+    color: #00d2ff;
+}
+
+/* Invisible/discreet styling for Pokémon layout banished zones */
+body.layout-pokemon .zone-type-banished {
+    border: 1px dashed rgba(255, 255, 255, 0.12) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+body.layout-pokemon .zone-type-banished .zone-label {
+    display: none !important;
+}
+body.layout-pokemon .zone-type-banished .zone-card-count {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 0.7rem !important;
+}
+body.layout-pokemon #floating-count-banished_1,
+body.layout-pokemon #floating-count-banished_2 {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+    background: rgba(12, 15, 18, 0.6) !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Card Attack & Defense Blinking Neon Glow effects */
+.card-is-attacker {
+    animation: neonBlinkAttacker 1s infinite alternate !important;
+    border: 3px solid #00d2ff !important;
+    box-shadow: 0 0 15px #00d2ff, 0 0 30px rgba(0, 210, 255, 0.6) !important;
+    z-index: 9999 !important;
+}
+
+.card-under-attack {
+    animation: neonBlinkDefender 1s infinite alternate !important;
+    border: 3px solid #ff1b6b !important;
+    box-shadow: 0 0 15px #ff1b6b, 0 0 30px rgba(255, 27, 107, 0.6) !important;
+    z-index: 9999 !important;
+}
+
+@keyframes neonBlinkAttacker {
+    0% {
+        box-shadow: 0 0 8px #00d2ff, 0 0 15px rgba(0, 210, 255, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 20px #00d2ff, 0 0 40px rgba(0, 210, 255, 0.8);
+    }
+}
+
+@keyframes neonBlinkDefender {
+    0% {
+        box-shadow: 0 0 8px #ff1b6b, 0 0 15px rgba(255, 27, 107, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 20px #ff1b6b, 0 0 40px rgba(255, 27, 107, 0.8);
+    }
+}
+
+/* Float badges on top of cards during attacks */
+.attack-text-badge {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 15, 22, 0.95);
+    color: #00d2ff;
+    border: 1.5px solid #00d2ff;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+    z-index: 100000;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.attack-text-badge.defender {
+    color: #ff1b6b;
+    border-color: #ff1b6b;
+    box-shadow: 0 0 10px rgba(255, 27, 107, 0.5);
+}
+
+.attack-direct-badge {
+    position: absolute;
+    background: linear-gradient(135deg, #ff1b6b, #ff8c00);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    font-weight: 900;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    box-shadow: 0 5px 15px rgba(255, 27, 107, 0.5);
+    z-index: 100000;
+    pointer-events: none;
+    white-space: nowrap;
+    border: 2px solid white;
+}
+
+/* SVG Attack overlay arrows style */
+#attack-arrows-overlay {
+    pointer-events: none !important;
+    z-index: 999999 !important; /* Ensure it floats above absolutely everything including cards, menus, and playmats */
+}
+
+.attack-line {
+    stroke-width: 5px !important; /* Extremely visible, solid line */
+    stroke-linecap: round !important;
+    stroke-dasharray: none !important; /* Solid line, no dashed style */
+    opacity: 0.95 !important;
+    filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.8)) !important; /* Make it pop against any playmat color */
+}
+
+.attack-head {
+    opacity: 0.95 !important;
+    filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.8)) !important;
+}
+
+/* Card highlighter in attack targeting mode */
+.playmat-board.selecting-zone .duel-card:not(.card-is-attacker) {
+    cursor: crosshair !important;
+    box-shadow: 0 0 8px rgba(255, 27, 107, 0.5);
+    border: 1px dashed rgba(255, 27, 107, 0.8);
+    transition: all 0.2s ease;
+}
+.playmat-board.selecting-zone .duel-card:not(.card-is-attacker):hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 15px #ff1b6b, 0 0 25px rgba(255, 27, 107, 0.5) !important;
+    border: 1.5px solid #ff1b6b !important;
+}
+
+/* Premium Card highlighter in unified targeting-attack mode */
+.playmat-board.targeting-attack .duel-card:not(.card-is-attacker) {
+    cursor: crosshair !important;
+    box-shadow: 0 0 12px rgba(0, 210, 255, 0.5);
+    border: 1px dashed rgba(0, 210, 255, 0.8);
+    transition: all 0.2s ease;
+}
+.playmat-board.targeting-attack .duel-card:not(.card-is-attacker):hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 20px #00d2ff, 0 0 30px rgba(0, 210, 255, 0.5) !important;
+    border: 1.5px solid #00d2ff !important;
+}
+
+/* Custom Sleek Switch Toggles */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+    margin: 0;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    transition: .3s;
+    border-radius: 20px;
+}
+
+.theme-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 4px;
+    bottom: 3.5px;
+    background-color: #ffffff;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+/* Player 1 Theme Switch (Cyan Glow) */
+.p1-theme-switch input:checked + .theme-slider {
+    background-color: rgba(0, 210, 255, 0.2);
+    border-color: #00d2ff;
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.4);
+}
+
+.p1-theme-switch input:checked + .theme-slider:before {
+    transform: translateX(20px);
+    background-color: #00d2ff;
+    box-shadow: 0 0 8px #00d2ff;
+}
+
+/* Player 2 Theme Switch (Pink Glow) */
+.p2-theme-switch input:checked + .theme-slider {
+    background-color: rgba(255, 27, 107, 0.2);
+    border-color: #ff1b6b;
+    box-shadow: 0 0 8px rgba(255, 27, 107, 0.4);
+}
+
+.p2-theme-switch input:checked + .theme-slider:before {
+    transform: translateX(20px);
+    background-color: #ff1b6b;
+    box-shadow: 0 0 8px #ff1b6b;
+}
+
+/* Sleek Hover Animation */
+.theme-switch:hover .theme-slider {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Pile Batch Actions Hover Transitions */
+.batch-action-btn:hover {
+    background: #00d2ff !important;
+    color: #000 !important;
+    text-shadow: none !important;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
+}
+
+/* Multi-select active state highlights */
+.duel-card.selected-for-batch {
+    outline: 3px solid #00d2ff !important;
+    box-shadow: 0 0 15px #00d2ff !important;
+    transform: scale(1.05) !important;
+}
+
+/* Hide action menus when multi-select mode is active */
+.hand-tray.hand-multi-select-active .hand-card-actions {
+    display: none !important;
+}
+
+#pile-overlay.pile-multi-select-active .pile-card-hover-overlay {
+    display: none !important;
+}
+
+.pile-card-container.selected-for-batch {
+    outline: 3px solid #00d2ff !important;
+    box-shadow: 0 0 15px #00d2ff !important;
+    transform: scale(1.05) !important;
+}
+
+/* Glowing flash activation effect */
+.duel-card.activating-flash {
+    animation: activateFlashPulse 0.4s 2 alternate ease-in-out;
+}
+
+@keyframes activateFlashPulse {
+    0% {
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        border-color: #00d2ff;
+    }
+    100% {
+        box-shadow: 0 0 40px rgba(0, 210, 255, 1), 0 0 20px rgba(255, 255, 255, 1);
+        border-color: white;
+        transform: scale(1.15);
+    }
+}
+
 .hand-action-btn {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
     color: #e2e8f0;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    padding: 3px 6px;
-    font-size: 0.55rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.65rem;
     font-weight: 700;
     cursor: pointer;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
     text-transform: uppercase;
+    font-family: inherit;
+    white-space: nowrap;
 }
 
 .hand-action-btn:hover {
@@ -531,56 +1182,32 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
-/* Custom ATK/DEF Badge styling */
-.custom-atk-def-badge {
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(12, 19, 26, 0.95);
-    border: 1px dashed #00d2ff;
-    border-radius: 3px;
-    padding: 1px 3px;
-    display: flex;
-    gap: 4px;
-    font-size: 0.55rem;
-    color: #fff;
-    font-family: 'Orbitron', sans-serif;
-    white-space: nowrap;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    cursor: grab;
-}
-
-.custom-atk-def-badge .atk-val, .custom-atk-def-badge .def-val {
-    color: #00d2ff;
-}
-
-/* Context Menu & Deck menus - Scrollable, Compact, Invisible Scrollbars */
+/* Interactive custom context menu & Deck menus */
 .card-context-menu, .deck-context-menu {
     position: fixed;
     background: rgba(18, 25, 33, 0.98);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-    padding: 4px 0;
-    padding-bottom: 0px;
-    width: 200px;
-    z-index: 100000;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    padding: 6px 0;
+    padding-bottom: 120px; /* Space for scroll-past blank space */
+    width: 230px;
+    z-index: 1000;
     user-select: none;
     opacity: 0;
     transform: scale(0.9) translate3d(0, 10px, 0);
     pointer-events: none;
-    transition: opacity 0.2s, transform 0.2s;
+    transition: opacity 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    max-height: 180px;
+    /* Scrollability and invisible scrollbar support */
+    max-height: 380px;
     overflow-y: auto;
-    scrollbar-width: none;
+    scrollbar-width: none; /* Firefox */
 }
 
 .card-context-menu::-webkit-scrollbar, .deck-context-menu::-webkit-scrollbar {
-    display: none;
+    display: none; /* WebKit/Blink (Chrome, Safari, Edge) */
 }
 
 .card-context-menu.active, .deck-context-menu.active {
@@ -589,547 +1216,42 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     pointer-events: auto;
 }
 
+.card-context-menu hr, .deck-context-menu hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 4px 0;
+}
+
 .menu-item {
-    padding: 8px 12px;
-    font-size: 0.75rem;
+    padding: 10px 16px;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #ccc;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
-    transition: all 0.15s;
+    gap: 12px;
+    transition: all 0.2s;
     white-space: nowrap;
 }
 
+body:not(.layout-pokemon) .pokemon-only-item {
+    display: none !important;
+}
+
 .menu-item i {
-    font-size: 0.85rem;
-    width: 14px;
+    font-size: 0.95rem;
+    width: 16px;
     color: var(--primary-color);
 }
 
 .menu-item:hover {
     background: rgba(0, 210, 255, 0.15);
     color: #fff;
-    padding-left: 15px;
+    padding-left: 20px;
 }
 
-/* LP Counter Styling */
-.lp-counter-container {
-    position: absolute;
-    background: rgba(10, 15, 22, 0.95);
-    backdrop-filter: blur(10px);
-    border: 1.5px solid var(--glass-border);
-    border-radius: 10px;
-    padding: 4px 6px;
-    width: 90px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-    z-index: 102;
-    pointer-events: auto;
-}
-
-.p1-lp-container {
-    left: 10px;
-    bottom: 85px;
-    top: auto;
-    border-color: rgba(0, 210, 255, 0.3);
-}
-
-.p2-lp-container {
-    right: 10px;
-    top: 85px;
-    border-color: rgba(255, 27, 107, 0.3);
-}
-
-.lp-header {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.6rem;
-    font-weight: 900;
-    text-align: center;
-}
-
-.p1-lp-container .lp-header { color: var(--primary-color); }
-.p2-lp-container .lp-header { color: var(--secondary-color); }
-
-.lp-number {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.15rem;
-    font-weight: 900;
-    text-align: center;
-    color: #fff;
-}
-
-.p1-lp-container .lp-number { text-shadow: 0 0 5px var(--primary-glow); color: var(--primary-color); }
-.p2-lp-container .lp-number { text-shadow: 0 0 5px var(--secondary-glow); color: var(--secondary-color); }
-
-.lp-calc-row {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-}
-
-.lp-calc-input {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--glass-border);
-    border-radius: 4px;
-    color: #fff;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-align: center;
-    outline: none;
-    padding: 2px;
-}
-
-.lp-controls-row {
-    display: flex;
-    gap: 3px;
-}
-
-.lp-btn {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: #eee;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 0.65rem;
-    font-weight: bold;
-    padding: 3px 0;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-.p1-lp-container .lp-btn:hover { background: var(--primary-color); color: #000; }
-.p2-lp-container .lp-btn:hover { background: var(--secondary-color); color: #fff; }
-
-
-/* Central Turn and Phase Bar Styling - Symmetrically pinned on the right of the screen, vertically aligned */
-.central-turn-bar {
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    transform: translateY(-50%);
-    z-index: 100;
-    background: rgba(10, 15, 22, 0.95);
-    backdrop-filter: blur(10px);
-    border: 1.5px solid var(--glass-border);
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 6px;
-    gap: 6px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-    pointer-events: auto;
-    width: 48px;
-}
-
-.turn-indicator {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 900;
-    padding: 3px 0;
-    width: 34px;
-    text-align: center;
-    border-radius: 10px;
-    text-transform: uppercase;
-}
-
-.turn-indicator.p1-turn {
-    background: rgba(0, 210, 255, 0.2);
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-}
-
-.turn-indicator.p2-turn {
-    background: rgba(255, 27, 107, 0.2);
-    color: var(--secondary-color);
-    border: 1px solid var(--secondary-color);
-}
-
-.phases-container {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    width: 100%;
-    align-items: center;
-}
-
-.phase-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: #ccc;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.55rem;
-    font-weight: bold;
-    padding: 2px 0;
-    width: 28px;
-    text-align: center;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.phase-btn.active {
-    background: var(--primary-color);
-    color: #000;
-    border-color: #fff;
-}
-
-.end-turn-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid #fff;
-    color: #fff;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 800;
-    font-size: 0.5rem;
-    text-transform: uppercase;
-    padding: 4px 0;
-    width: 40px;
-    text-align: center;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-
-/* Mobile Collapsible Sidebar Styles */
-.mobile-sidebar-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 260px;
-    height: 100vh;
-    background: rgba(10, 15, 22, 0.98);
-    backdrop-filter: blur(25px);
-    border-left: 1.5px solid var(--glass-border);
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
-    pointer-events: auto;
-}
-
-.mobile-sidebar-panel.collapsed {
-    transform: translateX(100%);
-    box-shadow: none;
-}
-
-/* Sidebar Tab Headers */
-.sidebar-tabs-header {
-    display: flex;
-    background: rgba(0, 0, 0, 0.4);
-    border-bottom: 1.5px solid var(--glass-border);
-}
-
-.sidebar-tabs-header .tab-btn {
-    flex: 1;
-    background: none;
-    border: none;
-    color: #8a9fc4;
-    padding: 10px 4px;
-    font-size: 0.6rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-}
-
-.sidebar-tabs-header .tab-btn i {
-    font-size: 0.9rem;
-}
-
-.sidebar-tabs-header .tab-btn.active {
-    color: var(--primary-color);
-    background: rgba(255, 255, 255, 0.02);
-    box-shadow: inset 0 -2px 0 var(--primary-color);
-}
-
-/* Tab Content */
-.sidebar-tabs-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.sidebar-tabs-content .tab-pane {
-    display: none;
-    flex-direction: column;
-    height: 100%;
-    gap: 8px;
-}
-
-.sidebar-tabs-content .tab-pane.active {
-    display: flex;
-}
-
-/* Floating Sidebar Toggle Button */
-.mobile-sidebar-toggle {
-    position: fixed;
-    bottom: 15px;
-    right: 15px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    border: 2px solid #fff;
-    color: #000;
-    font-size: 1.15rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.3);
-    z-index: 10001;
-    transition: transform 0.2s, background-color 0.2s;
-}
-
-.mobile-sidebar-toggle:hover {
-    transform: scale(1.1);
-    background-color: #fff;
-}
-
-/* Sidebar Section overrides */
-.sidebar-section {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    padding: 8px;
-}
-
-.sidebar-section h3 {
-    font-size: 0.7rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--primary-color);
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border-bottom: 1px solid var(--glass-border);
-    padding-bottom: 4px;
-}
-
-.sidebar-select {
-    width: 100%;
-    background: rgba(0,0,0,0.5);
-    border: 1px solid var(--glass-border);
-    border-radius: 6px;
-    color: white;
-    padding: 6px;
-    font-size: 0.75rem;
-    outline: none;
-}
-
-.preview-img-container {
-    width: 100%;
-    max-width: 160px;
-    height: 224px;
-    background: #000;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.preview-img-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-/* Chat Messages */
-.chat-message {
-    padding: 4px 8px;
-    border-radius: 6px;
-    line-height: 1.3;
-    word-wrap: break-word;
-    max-width: 85%;
-}
-
-.chat-message.p1-msg {
-    background: rgba(0, 210, 255, 0.1);
-    border: 1px solid rgba(0, 210, 255, 0.2);
-    align-self: flex-start;
-}
-
-.chat-message.p2-msg {
-    background: rgba(255, 27, 107, 0.1);
-    border: 1px solid rgba(255, 27, 107, 0.2);
-    align-self: flex-end;
-}
-
-.message-header {
-    font-size: 0.6rem;
-    font-weight: 800;
-    margin-bottom: 1px;
-    text-transform: uppercase;
-}
-
-/* Logs */
-.log-entry {
-    padding: 3px 6px;
-    border-radius: 4px;
-    border-left: 2.5px solid transparent;
-    line-height: 1.25;
-}
-
-.log-entry.p1-log { border-left-color: var(--primary-color); background: rgba(0, 210, 255, 0.03); }
-.log-entry.p2-log { border-left-color: var(--secondary-color); background: rgba(255, 27, 107, 0.03); }
-.log-entry.sys-log { border-left-color: #ffd32d; background: rgba(255, 211, 45, 0.03); }
-
-/* Quick responses */
-.quick-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border-radius: 4px;
-    padding: 2px 4px;
-    font-size: 0.6rem;
-    cursor: pointer;
-}
-
-/* Injected Stacked Counters on card rendering */
-.card-counter-container {
-    position: absolute;
-    bottom: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: -4px;
-    pointer-events: auto;
-    z-index: 150;
-}
-
-/* Top-left static damage counter total label for Pokemon cards */
-.pokemon-damage-badge {
-    position: absolute;
-    top: -12px;
-    left: -12px;
-    background: linear-gradient(135deg, #ff1b6b, #ff8c00);
-    border: 2px solid white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    font-size: 0.6rem;
-    color: white;
-    box-shadow: 0 0 10px rgba(255, 27, 107, 0.8);
-    z-index: 160;
-}
-
-.stacked-counter-bead {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 1px solid white;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    position: relative;
-}
-
-.ygo-bead {
-    background: radial-gradient(circle at center, rgba(0, 210, 255, 0.8) 0%, rgba(0, 66, 128, 0.95) 100%);
-    border-color: var(--primary-color);
-}
-
-.poke-bead {
-    width: 16px;
-    height: 16px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.45rem;
-    font-weight: 900;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-}
-
-.poke-bead.dmg-10 { background: radial-gradient(circle at center, #ffd32d 0%, #801000 100%); }
-.poke-bead.dmg-50 { background: radial-gradient(circle at center, #ff8c00 0%, #803000 100%); }
-.poke-bead.dmg-80 { background: radial-gradient(circle at center, #ff1b6b 0%, #801032 100%); }
-
-/* Tooltips */
-.counter-tooltip {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-5px);
-    background: rgba(10, 15, 22, 0.95);
-    border: 1px solid var(--glass-border);
-    color: white;
-    font-size: 0.55rem;
-    font-weight: bold;
-    padding: 2px 4px;
-    border-radius: 3px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    font-family: 'Orbitron', sans-serif;
-    z-index: 200;
-}
-
-.duel-card:hover .counter-tooltip {
-    opacity: 1;
-}
-
-/* SVG Attack overlay arrows style */
-#attack-arrows-overlay {
-    pointer-events: none !important;
-    z-index: 999999 !important;
-}
-
-.attack-line {
-    stroke-width: 4px !important;
-    stroke-linecap: round !important;
-    opacity: 0.95 !important;
-    filter: drop-shadow(0px 0px 3px rgba(0,0,0,0.8)) !important;
-}
-
-.attack-head {
-    opacity: 0.95 !important;
-    filter: drop-shadow(0px 0px 3px rgba(0,0,0,0.8)) !important;
-}
-
-/* Premium Card highlighter in unified targeting-attack mode */
-.playmat-board.targeting-attack .duel-card:not(.card-is-attacker) {
-    cursor: crosshair !important;
-    box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
-    border: 1px dashed rgba(0, 210, 255, 0.8);
-}
-.playmat-board.targeting-attack .duel-card:not(.card-is-attacker):hover {
-    transform: rotateX(-30deg) scale(1.05) !important;
-    box-shadow: 0 0 15px #00d2ff !important;
-    border: 1.5px solid #00d2ff !important;
-}
-
-.playmat-board.selecting-zone .board-zone {
-    border-color: rgba(0, 210, 255, 0.7) !important;
-    cursor: crosshair !important;
-    pointer-events: auto !important;
-}
-
-/* Modals Overlay style */
+/* Search deck overlay */
 .search-overlay {
     position: fixed;
     top: 0;
@@ -1138,18 +1260,137 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     height: 100%;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(8px);
-    z-index: 20000;
+    z-index: 2000;
     display: none;
     justify-content: center;
     align-items: center;
 }
 
+/* Graphical Target Zone Picker Overlay */
+.zone-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 210, 255, 0.08);
+    backdrop-filter: blur(2px);
+    z-index: 3000;
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    pointer-events: none; /* Let clicks pass to zones */
+}
+
+.zone-picker-toast {
+    margin-top: 30px;
+    background: linear-gradient(135deg, #00d2ff, #0066ff);
+    box-shadow: 0 10px 30px rgba(0, 210, 255, 0.5), 0 0 20px rgba(0, 210, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 15px 30px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideDownIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: auto; /* Buttons / text in toast are clickable but we keep it clean */
+}
+
+@keyframes slideDownIn {
+    0% { transform: translateY(-50px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Zone highlighter in targeting mode */
+.playmat-board.selecting-zone .board-zone {
+    border-color: rgba(0, 210, 255, 0.7) !important;
+    animation: zonePulse 1.2s infinite alternate;
+    cursor: crosshair !important;
+    pointer-events: auto !important;
+}
+
+@keyframes zonePulse {
+    0% { box-shadow: 0 0 5px rgba(0, 210, 255, 0.2); }
+    100% { box-shadow: 0 0 15px rgba(0, 210, 255, 0.6); }
+}
+
+/* Extra Deck interactive card container & visual hover overlays */
+.extra-deck-card-container {
+    position: relative;
+    width: 80px;
+    height: 116px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+
+.extra-deck-card-container:hover {
+    transform: scale(1.1);
+    border-color: #00d2ff;
+    box-shadow: 0 8px 18px rgba(0, 210, 255, 0.3);
+}
+
+.extra-deck-card-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.extra-deck-card-hover-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+}
+
+.extra-deck-card-container:hover .extra-deck-card-hover-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Extra Deck interactive preview items (Clean text, no icons) */
+.extra-card-action-btn {
+    background: #00d2ff;
+    color: black;
+    border: none;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 0.65rem;
+    padding: 6px 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: transform 0.15s, background-color 0.15s;
+    box-shadow: 0 4px 10px rgba(0, 210, 255, 0.5);
+    white-space: nowrap;
+}
+
+.extra-card-action-btn:hover {
+    background: #ffffff;
+    color: black;
+    transform: scale(1.08);
+}
+
 .search-modal {
     background: #12181e;
     border: 1.5px solid rgba(0, 210, 255, 0.3);
-    border-radius: 12px;
+    border-radius: 16px;
     width: 90%;
-    max-width: 600px;
+    max-width: 800px;
     max-height: 85vh;
     display: flex;
     flex-direction: column;
@@ -1161,49 +1402,144 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 16px;
+    padding: 16px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .search-header h3 {
     font-family: 'Orbitron', sans-serif;
     color: var(--primary-color);
-    font-size: 0.9rem;
+    font-size: 1.1rem;
 }
 
 .search-close-btn {
     background: none;
     border: none;
     color: #aaa;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     cursor: pointer;
+    transition: color 0.2s;
+}
+
+.search-close-btn:hover {
+    color: #fff;
 }
 
 .search-body {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
+    padding: 20px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 15px;
+}
+
+.search-card-item {
+    cursor: pointer;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.search-card-item:hover {
+    transform: scale(1.1);
+    border-color: var(--primary-color);
+}
+
+.search-card-item img {
+    width: 100%;
+    display: block;
+}
+
+/* Mobile responsive constraints */
+@media (max-width: 1024px) {
+    body.duel-body {
+        overflow: auto;
+    }
+
+    .duel-workspace {
+        flex-direction: column;
+        overflow: auto;
+        height: auto;
+    }
+
+    .duel-sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+    }
+}
+
+/* Flying card draw animation */
+.flying-card {
+    position: absolute;
+    width: var(--card-width);
+    height: var(--card-height);
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 6px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 210, 255, 0.4);
+    background-size: cover;
+    background-position: center;
+    border: 2px solid rgba(0, 210, 255, 0.4);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: center;
+}
+
+.flying-card.card-back {
+    background-image: var(--card-back-url);
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+}
+
+/* Floating zone counters stacked on top of piles */
+.floating-zone-count {
+    position: absolute;
+    background: rgba(10, 15, 22, 0.95);
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border-radius: 8px;
+    padding: 2px 6px;
+    min-width: 24px;
+    text-align: center;
+    z-index: 150; /* Needs to sit above standard card z-index but below drag */
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    border: 1.5px solid var(--glass-border);
 }
 
 /* Pile Modal Card Styles */
 .pile-card-container {
     position: relative;
-    width: 60px;
-    height: 87px;
-    border-radius: 4px;
+    width: 80px;
+    height: 116px;
+    border-radius: 6px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: transform 0.2s, border-color 0.2s;
     cursor: pointer;
+}
+
+.pile-card-container:hover {
+    transform: scale(1.1);
+    border-color: #00d2ff;
+    box-shadow: 0 8px 18px rgba(0, 210, 255, 0.3);
+    z-index: 1000 !important;
+    overflow: visible !important;
 }
 
 .pile-card-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
 .pile-card-hover-overlay {
@@ -1227,58 +1563,42 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     opacity: 1;
     pointer-events: auto;
     height: auto;
-    min-height: 150px;
-    width: 80px;
-    left: -10px;
-    top: -30px;
-    border-radius: 6px;
+    min-height: 200px;
+    width: 110px;
+    left: -15px;
+    top: -42px;
+    border-radius: 8px;
     border: 1.5px solid var(--primary-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.9), 0 0 15px rgba(0, 210, 255, 0.5);
     background: rgba(10, 15, 22, 0.98);
 }
 
 .pile-card-menu {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     width: 100%;
+    padding: 2px;
 }
 
 .pile-card-action-btn {
     background: rgba(255, 255, 255, 0.08);
     color: #f1f2f6;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
+    border-radius: 4px;
     font-weight: 700;
-    font-size: 0.5rem;
-    padding: 2px;
+    font-size: 0.55rem;
+    padding: 3px 2px;
     cursor: pointer;
     text-transform: uppercase;
     text-align: center;
+    transition: all 0.15s;
+    white-space: nowrap;
     width: 100%;
 }
 
 .pile-card-action-btn:hover {
     background: #00d2ff;
     color: black;
-}
-
-/* Floating zone counters stacked on top of piles */
-.floating-zone-count {
-    position: absolute;
-    background: rgba(10, 15, 22, 0.95);
-    color: white;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 800;
-    border-radius: 6px;
-    padding: 1px 4px;
-    min-width: 18px;
-    text-align: center;
-    z-index: 150;
-    pointer-events: none;
-    border: 1px solid var(--glass-border);
-}
-
-.overlay, #mask-editor-overlay {
-    display: none !important;
+    border-color: #ffffff;
 }
