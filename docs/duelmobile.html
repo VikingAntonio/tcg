@@ -9,6 +9,163 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/duelmobile.css">
     <style>
+        /* Hide sidebars, LP, central bar, switches, and other panels to focus purely on the board & hands */
+        .duel-sidebar,
+        .duel-communication-sidebar,
+        .lp-counter-container,
+        .central-turn-bar,
+        .hand-controls {
+            display: none !important;
+        }
+
+        /* Landscape/horizontal mobile layout adjustments */
+        html, body.duel-body {
+            overflow: hidden !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            width: 100vw !important;
+        }
+
+        .duel-workspace {
+            display: block !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            width: 100vw !important;
+            overflow: hidden !important;
+        }
+
+        .duel-arena-wrapper {
+            position: relative !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            display: block !important; /* overrides flex-direction / justify-content */
+        }
+
+        /* Position hands as overlaying floating trays */
+        .hand-tray {
+            position: absolute !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: auto !important;
+            max-width: 95% !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            z-index: 1000 !important; /* float on top of scaled playmat */
+            pointer-events: none !important;
+        }
+
+        .hand-tray.player-2 {
+            top: 2px !important;
+            bottom: auto !important;
+        }
+
+        .hand-tray.player-1 {
+            bottom: 2px !important;
+            top: auto !important;
+        }
+
+        .hand-cards-container {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: -8px !important; /* overlapping card margin */
+            min-height: auto !important;
+            padding: 4px 10px !important;
+            overflow: visible !important;
+            pointer-events: auto !important;
+        }
+
+        /* Overlap effect for cards in hands and portrait ratio */
+        .hand-cards-container .duel-card {
+            width: 52px !important;
+            height: 75px !important;
+            margin-left: -12px !important; /* overlap effect */
+            perspective: 400px !important;
+            transform: perspective(400px) rotateX(15deg) !important;
+            transition: transform 0.25s ease, margin 0.25s ease, z-index 0.25s ease !important;
+            pointer-events: auto !important;
+        }
+
+        /* Reverse overlap margin for first child to avoid left clipping */
+        .hand-cards-container .duel-card:first-child {
+            margin-left: 0 !important;
+        }
+
+        /* Slide up, scale and flatten on hover/touch */
+        .hand-cards-container .duel-card:hover {
+            transform: translateY(-20px) scale(1.3) rotateX(0deg) !important;
+            z-index: 10000 !important;
+            margin-left: -4px !important;
+            margin-right: 8px !important;
+        }
+
+        /* Player 2 floats downward instead of upward */
+        .player-2 .hand-cards-container .duel-card {
+            transform: perspective(400px) rotateX(-15deg) !important;
+        }
+
+        .player-2 .hand-cards-container .duel-card:hover {
+            transform: translateY(20px) scale(1.3) rotateX(0deg) !important;
+            z-index: 10000 !important;
+            margin-left: -4px !important;
+            margin-right: 8px !important;
+        }
+
+        /* Suppress/hide any legacy mask-editor overlay automatically appended by utils.js */
+        #mask-editor-overlay, .overlay {
+            display: none !important;
+        }
+
+        /* Keep actual search modals and overlays visible */
+        .search-overlay, .search-overlay .overlay, .search-overlay .search-modal {
+            display: none; /* controlled by jQuery fadeIn/fadeOut */
+        }
+
+        /* Responsive overlays, list views, context menus, and list-view modalsearch grids proportioned nicely for horizontal cellphones */
+        .search-overlay .search-modal {
+            display: flex !important;
+            max-width: 90vw !important;
+            max-height: 90vh !important;
+            width: 90vw !important;
+            height: 90vh !important;
+            border-radius: 10px !important;
+        }
+
+        .search-body {
+            grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)) !important;
+            gap: 8px !important;
+            padding: 10px !important;
+        }
+
+        .pile-card-container, .extra-deck-card-container {
+            width: 55px !important;
+            height: 80px !important;
+        }
+
+        .pile-card-container img, .extra-deck-card-container img {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Capped context menu styling on horizontal mobile viewports */
+        .card-context-menu, .deck-context-menu {
+            max-height: 85vh !important;
+            width: 190px !important;
+            border-radius: 10px !important;
+            padding-bottom: 20px !important; /* tight pad */
+        }
+
+        .menu-item {
+            padding: 8px 12px !important;
+            font-size: 0.75rem !important;
+            gap: 8px !important;
+        }
+
         /* Right Communication Sidebar */
         .duel-communication-sidebar {
             width: 330px;
@@ -1235,6 +1392,9 @@
     <!-- Click handler bindings for targeting attacks -->
     <script>
         $(document).ready(function() {
+            // Global variable to track whether a touch/drag happened instead of a single tap
+            window.wasDragging = false;
+
             // Global variables to track the active attack targeting state robustly
             window.activeAttackSourceCard = null;
 
@@ -3135,6 +3295,76 @@
             setTimeout(() => {
                 previousCardStates = trackCardStates();
             }, 1000);
+        });
+
+        // Setup dragging trackers on playmat elements
+        $(document).ready(function() {
+            // Monitor move events on window to toggle wasDragging
+            let startDragX = 0;
+            let startDragY = 0;
+
+            $(document).on("touchstart mousedown", ".duel-card", function(e) {
+                const coords = (e.originalEvent.touches ? e.originalEvent.touches[0] : e);
+                startDragX = coords.clientX;
+                startDragY = coords.clientY;
+                window.wasDragging = false;
+            });
+
+            $(document).on("touchmove mousemove", ".duel-card", function(e) {
+                if (startDragX === 0 && startDragY === 0) return;
+                const coords = (e.originalEvent.touches ? e.originalEvent.touches[0] : e);
+                const dx = coords.clientX - startDragX;
+                const dy = coords.clientY - startDragY;
+                if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                    window.wasDragging = true;
+                }
+            });
+
+            $(document).on("touchend mouseup", function() {
+                startDragX = 0;
+                startDragY = 0;
+            });
+
+            // Prevent any context menus or clicks if card was being dragged
+            $(document).on("contextmenu click", ".duel-card", function(e) {
+                if (window.wasDragging) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            });
+        });
+
+        // Resolution-aware scaling function to fit the playmat board on mobile screens
+        window.adjustPlaymatScale = function() {
+            const $playmat = $("#playmat");
+            if (!$playmat.length) return;
+            const matWidth = 1120;
+            const matHeight = 600;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Compute scaling to fit board inside the screen with room for top and bottom floating hands
+            const targetWidth = viewportWidth * 0.96;
+            const targetHeight = viewportHeight * 0.65; // Keep 65% height for board to leave plenty of room for overlaying hands
+
+            const scaleX = targetWidth / matWidth;
+            const scaleY = targetHeight / matHeight;
+            const scale = Math.min(scaleX, scaleY);
+
+            $playmat.css({
+                "transform": `translate(-50%, -50%) scale(${scale})`,
+                "transform-origin": "center center",
+                "position": "absolute",
+                "left": "50%",
+                "top": "50%",
+                "margin": "0"
+            });
+        };
+
+        $(window).on("resize orientationchange", window.adjustPlaymatScale);
+        $(document).ready(function() {
+            setTimeout(window.adjustPlaymatScale, 100);
         });
     </script>
 </body>
