@@ -2773,6 +2773,7 @@ function setupEventListeners() {
                     <button class="top-individual-btn btn-to-hand" data-id="${card.instanceId}" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; font-size: 9px; font-weight: bold; padding: 3px; border-radius: 4px; cursor: pointer; text-transform: uppercase;">Mano</button>
                     <button class="top-individual-btn btn-to-grave" data-id="${card.instanceId}" style="background: rgba(255, 71, 87, 0.15); border: 1px solid #ff4757; color: #ff4757; font-size: 9px; font-weight: bold; padding: 3px; border-radius: 4px; cursor: pointer; text-transform: uppercase;">Grave</button>
                     <button class="top-individual-btn btn-to-banish" data-id="${card.instanceId}" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #a855f7; font-size: 9px; font-weight: bold; padding: 3px; border-radius: 4px; cursor: pointer; text-transform: uppercase;">Remover</button>
+                    <button class="top-individual-btn btn-to-deck" data-id="${card.instanceId}" style="background: rgba(255, 255, 255, 0.15); border: 1px solid #ffffff; color: #ffffff; font-size: 9px; font-weight: bold; padding: 3px; border-radius: 4px; cursor: pointer; text-transform: uppercase;">A Deck</button>
                 </div>
             </div>
         `).join('');
@@ -2780,10 +2781,11 @@ function setupEventListeners() {
         const htmlContent = `
             <div class="bulk-switch-container" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box;">
                 <div style="font-size: 13px; color: #ccc; font-weight: bold; text-align: left;">Acción en lote (Enviar todo a):</div>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button id="top-bulk-hand" style="background: #00d2ff; border: none; color: #000; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;">Mano</button>
                     <button id="top-bulk-grave" style="background: #ff4757; border: none; color: #fff; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;">Cementerio</button>
                     <button id="top-bulk-banish" style="background: #a855f7; border: none; color: #fff; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;">Remover</button>
+                    <button id="top-bulk-deck" style="background: #ffffff; border: none; color: #000; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;">A Deck</button>
                 </div>
             </div>
             <div class="top-cards-grid" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-height: 400px; overflow-y: auto; padding: 10px; width: 100%; box-sizing: border-box;">
@@ -2868,6 +2870,24 @@ function setupEventListeners() {
                     removeCardFromPopupDOM(id);
                 });
 
+                // Individual "A Deck" (re-insert into deck stack, face down)
+                $(".btn-to-deck").click(function() {
+                    const id = $(this).data("id");
+                    const cardObj = state.cards.find(c => c.instanceId === id);
+                    if (!cardObj) return;
+
+                    cardObj.zone = `deck_${playerSuffix}`;
+                    cardObj.faceDown = true;
+                    cardObj.tapped = false;
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Reinsertó ${cardObj.name} al Deck`);
+                    }
+
+                    removeCardFromPopupDOM(id);
+                });
+
                 // Bulk "Mano"
                 $("#top-bulk-hand").click(function() {
                     if (activeCardsInPopup.length === 0) return;
@@ -2883,6 +2903,25 @@ function setupEventListeners() {
 
                     if (typeof sendGameAction === "function") {
                         sendGameAction(`Añadió ${activeCardsInPopup.length} cartas a la Mano desde el tope del Deck`);
+                    }
+                    Swal.close();
+                });
+
+                // Bulk "A Deck"
+                $("#top-bulk-deck").click(function() {
+                    if (activeCardsInPopup.length === 0) return;
+                    activeCardsInPopup.forEach(c => {
+                        const cardObj = state.cards.find(card => card.instanceId === c.instanceId);
+                        if (cardObj) {
+                            cardObj.zone = `deck_${playerSuffix}`;
+                            cardObj.faceDown = true;
+                            cardObj.tapped = false;
+                        }
+                    });
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Reinsertó ${activeCardsInPopup.length} cartas al Deck`);
                     }
                     Swal.close();
                 });

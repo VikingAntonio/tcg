@@ -1232,6 +1232,7 @@ body.layout-pokemon #floating-count-banished_2 {
     align-items: center;
     gap: 12px;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 body:not(.layout-pokemon) .pokemon-only-item {
@@ -1530,7 +1531,8 @@ body:not(.layout-pokemon) .pokemon-only-item {
     transform: scale(1.1);
     border-color: #00d2ff;
     box-shadow: 0 8px 18px rgba(0, 210, 255, 0.3);
-    z-index: 10;
+    z-index: 1000 !important;
+    overflow: visible !important;
 }
 
 .pile-card-container img {
@@ -1560,6 +1562,15 @@ body:not(.layout-pokemon) .pokemon-only-item {
 .pile-card-container:hover .pile-card-hover-overlay {
     opacity: 1;
     pointer-events: auto;
+    height: auto;
+    min-height: 200px;
+    width: 110px;
+    left: -15px;
+    top: -42px;
+    border-radius: 8px;
+    border: 1.5px solid var(--primary-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.9), 0 0 15px rgba(0, 210, 255, 0.5);
+    background: rgba(10, 15, 22, 0.98);
 }
 
 .pile-card-menu {
