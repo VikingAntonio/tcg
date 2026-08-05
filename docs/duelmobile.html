@@ -7,7 +7,7 @@
     <title>Duel Simulator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/duel.css">
+    <link rel="stylesheet" href="css/duelmobile.css">
     <style>
         /* Right Communication Sidebar */
         .duel-communication-sidebar {
@@ -1513,7 +1513,7 @@
     <!-- External project config & logic scripts -->
     <script src="js/supabase-config.js"></script>
     <script>
-        // Global synchronization & XSS guard - Must be loaded before duel.js!
+        // Global synchronization & XSS guard - Must be loaded before duelmobile.js!
         window.isIncomingSync = false;
 
         // Monkey-patch _supabase.channel to automatically wrap all subscription callbacks
@@ -1538,7 +1538,7 @@
         };
     </script>
     <script src="js/utils.js"></script>
-    <script src="js/duel.js"></script>
+    <script src="js/duelmobile.js"></script>
 
     <!-- Communication, Chat, and Game Log integration -->
     <script>
@@ -2811,7 +2811,7 @@
                 sendTurnStateUpdate();
             });
 
-            // 8. Decorate global helper functions in duel.js
+            // 8. Decorate global helper functions in duelmobile.js
             let isDrawingAction = false;
 
             const originalDrawCards = window.drawCards;
