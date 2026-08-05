@@ -1801,10 +1801,12 @@ function openAttachedCardsModal(parentId) {
             cardObj.zone = `grave_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
         } else if ($(this).hasClass("btn-attached-banish")) {
             cardObj.zone = `banished_${playerSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
         } else if ($(this).hasClass("btn-attached-deck")) {
             cardObj.zone = `deck_${playerSuffix}`;
             cardObj.faceDown = true;
@@ -2101,12 +2103,14 @@ function openSearchModal(playerKey) {
             cardObj.zone = `grave_${pSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
             openSearchModal(playerKey); // refresh
         } else if ($(this).hasClass("btn-search-banish")) {
             cardObj.zone = `banished_${pSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
             openSearchModal(playerKey); // refresh
         }
@@ -2233,12 +2237,14 @@ function openPileModal(playerKey, pileType) {
             cardObj.zone = `banished_${pSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
         } else if ($(this).hasClass("btn-pile-grave")) {
             cardObj.zone = `grave_${pSuffix}`;
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
         } else if ($(this).hasClass("btn-pile-effect")) {
@@ -2704,6 +2710,226 @@ function setupEventListeners() {
         if (activeMenuDeckPlayer) {
             drawCards(activeMenuDeckPlayer, 1);
         }
+    });
+
+    $("#deck-menu-draw-5").click(function() {
+        if (activeMenuDeckPlayer) {
+            drawCards(activeMenuDeckPlayer, 5);
+        }
+    });
+
+    $("#deck-menu-show-top").click(async function() {
+        if (!activeMenuDeckPlayer) return;
+
+        const { value: countStr } = await Swal.fire({
+            title: 'Mostrar cartas del tope',
+            input: 'number',
+            inputLabel: 'Cantidad de cartas a mostrar',
+            inputValue: 5,
+            inputAttributes: {
+                min: 1,
+                step: 1
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Mostrar',
+            cancelButtonText: 'Cancelar',
+            background: '#121824',
+            color: '#ffffff',
+            confirmButtonColor: '#00d2ff',
+            cancelButtonColor: '#ff4757'
+        });
+
+        if (countStr === undefined || countStr === null) return;
+        const count = parseInt(countStr, 10);
+        if (isNaN(count) || count <= 0) return;
+
+        const playerKey = activeMenuDeckPlayer;
+        const playerSuffix = playerKey === "player1" ? 1 : 2;
+        const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
+        const deckCards = state.cards
+            .filter(c => c.zone === deckZone)
+            .sort((a, b) => b.z - a.z);
+
+        if (deckCards.length === 0) {
+            Swal.fire({
+                title: 'Deck vacío',
+                text: 'No hay cartas en el Deck.',
+                icon: 'warning',
+                background: '#121824',
+                color: '#ffffff',
+                confirmButtonColor: '#00d2ff'
+            });
+            return;
+        }
+
+        const finalCount = Math.min(count, deckCards.length);
+        const topCards = deckCards.slice(0, finalCount);
+
+        let cardsHtml = topCards.map(card => `
+            <div class="top-card-item" id="top-card-item-${card.instanceId}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 95px; background: rgba(255,255,255,0.02); padding: 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box;">
+                <img src="${card.imageUrl}" style="width: 80px; height: 116px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 8px rgba(0,0,0,0.5); object-fit: cover;" />
+                <div style="font-size: 9px; color: #aaa; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; width: 100%; text-align: center; font-weight: bold;" title="${card.name}">${card.name}</div>
+                <div style="display: flex; flex-direction: column; gap: 3px; width: 100%;">
+                    <button class="top-individual-btn btn-to-hand" data-id="${card.instanceId}" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; font-size: 9px; font-weight: bold; padding: 3px; border-radius: 4px; cursor: pointer; text-transform: uppercase;">Mano</button>
+                    <button class="top-individual-btn btn-to-grave" data-id="${card.instanceId}" style="background: rgba(255, 71, 87, 0.15); border: 1px solid #ff4757; color: #ff4757; font-size: 9px; font-weight: bold; padding: 3px; border-radius: 4px; cursor: pointer; text-transform: uppercase;">Grave</button>
+                    <button class="top-individual-btn btn-to-banish" data-id="${card.instanceId}" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #a855f7; font-size: 9px; font-weight: bold; padding: 3px; border-radius: 4px; cursor: pointer; text-transform: uppercase;">Remover</button>
+                </div>
+            </div>
+        `).join('');
+
+        const htmlContent = `
+            <div class="bulk-switch-container" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box;">
+                <div style="font-size: 13px; color: #ccc; font-weight: bold; text-align: left;">Acción en lote (Enviar todo a):</div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="top-bulk-hand" style="background: #00d2ff; border: none; color: #000; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;">Mano</button>
+                    <button id="top-bulk-grave" style="background: #ff4757; border: none; color: #fff; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;">Cementerio</button>
+                    <button id="top-bulk-banish" style="background: #a855f7; border: none; color: #fff; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;">Remover</button>
+                </div>
+            </div>
+            <div class="top-cards-grid" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-height: 400px; overflow-y: auto; padding: 10px; width: 100%; box-sizing: border-box;">
+                ${cardsHtml}
+            </div>
+        `;
+
+        Swal.fire({
+            title: `Cartas del tope (${finalCount})`,
+            html: htmlContent,
+            background: '#121824',
+            color: '#ffffff',
+            width: '680px',
+            showConfirmButton: false,
+            showCloseButton: true,
+            didOpen: () => {
+                let activeCardsInPopup = [...topCards];
+
+                function removeCardFromPopupDOM(id) {
+                    $(`#top-card-item-${id}`).fadeOut(300, function() {
+                        $(this).remove();
+                        activeCardsInPopup = activeCardsInPopup.filter(c => c.instanceId !== id);
+                        if (activeCardsInPopup.length === 0) {
+                            Swal.close();
+                        }
+                    });
+                }
+
+                // Individual "Mano"
+                $(".btn-to-hand").click(function() {
+                    const id = $(this).data("id");
+                    const cardObj = state.cards.find(c => c.instanceId === id);
+                    if (!cardObj) return;
+
+                    cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+                    cardObj.faceDown = false;
+                    cardObj.tapped = false;
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Añadió ${cardObj.name} a la Mano desde el tope del Deck`);
+                    }
+
+                    removeCardFromPopupDOM(id);
+                });
+
+                // Individual "Grave"
+                $(".btn-to-grave").click(function() {
+                    const id = $(this).data("id");
+                    const cardObj = state.cards.find(c => c.instanceId === id);
+                    if (!cardObj) return;
+
+                    cardObj.zone = `grave_${playerSuffix}`;
+                    cardObj.faceDown = false;
+                    cardObj.tapped = false;
+                    cardObj.movedToPileAt = Date.now() + Math.random();
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Envió ${cardObj.name} al Cementerio desde el tope del Deck`);
+                    }
+
+                    removeCardFromPopupDOM(id);
+                });
+
+                // Individual "Remover"
+                $(".btn-to-banish").click(function() {
+                    const id = $(this).data("id");
+                    const cardObj = state.cards.find(c => c.instanceId === id);
+                    if (!cardObj) return;
+
+                    cardObj.zone = `banished_${playerSuffix}`;
+                    cardObj.faceDown = false;
+                    cardObj.tapped = false;
+                    cardObj.movedToPileAt = Date.now() + Math.random();
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Envió ${cardObj.name} al Desterrado desde el tope del Deck`);
+                    }
+
+                    removeCardFromPopupDOM(id);
+                });
+
+                // Bulk "Mano"
+                $("#top-bulk-hand").click(function() {
+                    if (activeCardsInPopup.length === 0) return;
+                    activeCardsInPopup.forEach(c => {
+                        const cardObj = state.cards.find(card => card.instanceId === c.instanceId);
+                        if (cardObj) {
+                            cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
+                            cardObj.faceDown = false;
+                            cardObj.tapped = false;
+                        }
+                    });
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Añadió ${activeCardsInPopup.length} cartas a la Mano desde el tope del Deck`);
+                    }
+                    Swal.close();
+                });
+
+                // Bulk "Grave"
+                $("#top-bulk-grave").click(function() {
+                    if (activeCardsInPopup.length === 0) return;
+                    const baseTime = Date.now();
+                    activeCardsInPopup.forEach((c, index) => {
+                        const cardObj = state.cards.find(card => card.instanceId === c.instanceId);
+                        if (cardObj) {
+                            cardObj.zone = `grave_${playerSuffix}`;
+                            cardObj.faceDown = false;
+                            cardObj.tapped = false;
+                            cardObj.movedToPileAt = baseTime + index;
+                        }
+                    });
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Envió ${activeCardsInPopup.length} cartas al Cementerio desde el tope del Deck`);
+                    }
+                    Swal.close();
+                });
+
+                // Bulk "Remover"
+                $("#top-bulk-banish").click(function() {
+                    if (activeCardsInPopup.length === 0) return;
+                    const baseTime = Date.now();
+                    activeCardsInPopup.forEach((c, index) => {
+                        const cardObj = state.cards.find(card => card.instanceId === c.instanceId);
+                        if (cardObj) {
+                            cardObj.zone = `banished_${playerSuffix}`;
+                            cardObj.faceDown = false;
+                            cardObj.tapped = false;
+                            cardObj.movedToPileAt = baseTime + index;
+                        }
+                    });
+                    renderAllCards();
+
+                    if (typeof sendGameAction === "function") {
+                        sendGameAction(`Envió ${activeCardsInPopup.length} cartas al Desterrado desde el tope del Deck`);
+                    }
+                    Swal.close();
+                });
+            }
+        });
     });
 
     $("#deck-menu-shuffle").click(function() {
