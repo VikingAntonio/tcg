@@ -1,0 +1,18 @@
+Explicación de la optimización horizontal para duelmobile.html:
+
+1. ENFOQUE EN TABLERO Y MANOS:
+   - Se ocultaron completamente mediante CSS con 'display: none !important' todos los paneles secundarios innecesarios para el juego móvil directo (menú izquierdo .duel-sidebar, menú derecho .duel-communication-sidebar, contadores de vida .lp-counter-container, la barra de turnos .central-turn-bar, controles de mano .hand-controls, paneles de accesorios, etc.).
+
+2. REDUCCIÓN UNIFORME DEL TABLERO Y AJUSTE DE CÁMARA:
+   - La función 'window.adjustPlaymatScale' calcula dinámicamente las dimensiones del playmat y la ventana del celular. Restando 130px de alto en viewport, asegura que el playmat se escale y centre matemáticamente con la proporción perfecta, dejando 65px libres de margen tanto arriba como abajo para las manos de ambos jugadores.
+
+3. MANOS FLOTANTES EN PERSPECTIVA (ESTILO MASTER DUEL / POKÉMON TCG LIVE):
+   - Las manos de ambos jugadores se posicionaron de manera flotante en la parte superior (Jugador 2) y en la parte inferior (Jugador 1) de la pantalla mediante CSS absoluto y con un alto z-index de 2000.
+   - Las cartas en mano se redimensionaron a un tamaño sumamente compacto y táctil (44x64px) con perspectiva 3D (tilt) de rotaciónX de 12°/-12°. Al pasar el dedo o hover, la carta seleccionada se desliza hacia el centro, se aplana y escala 1.6x de forma sumamente premium.
+
+4. INTEGRACIÓN DE ARRASTRE (DRAG) Y MENÚS DE CLICK/TAP:
+   - Se reescribió y unificó por completo el control de gestos y eventos táctiles/mouse.
+   - Se mide la distancia recorrida y la duración del toque:
+     * Si la distancia es corta (< 15px) y la duración es rápida (< 350ms), se interpreta como un TAP, deteniendo la animación de arrastre y abriendo de inmediato el menú de la carta.
+     * Si se detecta un desplazamiento mayor de 10px, se activa el modo de arrastre libre por todo el tablero táctil, bloqueando la activación del menú contextual para una experiencia sumamente suave.
+   - Los menús contextuales y de mazos se limitan a un ancho táctil de 160px con scroll vertical invisible (max-height de 60vh), y se integró la función 'clampMenuCoords' para mantener los menús siempre dentro de los bordes visibles del celular, evitando que se corten.
