@@ -1814,7 +1814,7 @@
                     if (!card) return false;
                     const z = card.zone;
                     if (!z) return false;
-                    if (z.startsWith("hand_") || z.startsWith("deck_") || z.startsWith("extra_") || z.startsWith("grave_") || z.startsWith("banished_")) {
+                    if (z.startsWith("hand_") || z.startsWith("deck_") || (z.startsWith("extra_") && !z.startsWith("extra_monster")) || z.startsWith("grave_") || z.startsWith("banished_")) {
                         return false;
                     }
                     return true;
@@ -2860,7 +2860,7 @@
                 if (!zoneId) return false;
                 return !zoneId.startsWith("hand_") &&
                        !zoneId.startsWith("deck_") &&
-                       !zoneId.startsWith("extra_") &&
+                       !(zoneId.startsWith("extra_") && !zoneId.startsWith("extra_monster")) &&
                        !zoneId.startsWith("prize_") &&
                        !zoneId.startsWith("grave_") &&
                        !zoneId.startsWith("banished_");
@@ -2870,7 +2870,7 @@
                 if (!zoneId) return "Campo";
                 if (zoneId.startsWith("hand_")) return "la Mano";
                 if (zoneId.startsWith("deck_")) return "el Deck";
-                if (zoneId.startsWith("extra_")) return "el Extra Deck";
+                if (zoneId.startsWith("extra_") && !zoneId.startsWith("extra_monster")) return "el Extra Deck";
                 if (zoneId.startsWith("grave_")) {
                     return (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "el Cementerio" : "la zona de Descarte";
                 }
@@ -2942,13 +2942,13 @@
                                       !oldC.zone.startsWith("hand_") &&
                                       !oldC.zone.startsWith("deck_") &&
                                       !oldC.zone.startsWith("prize_") &&
-                                      !oldC.zone.startsWith("extra_");
+                                      !(oldC.zone.startsWith("extra_") && !oldC.zone.startsWith("extra_monster"));
 
                     const isNewPublic = !newC.faceDown &&
                                         !newC.zone.startsWith("hand_") &&
                                         !newC.zone.startsWith("deck_") &&
                                         !newC.zone.startsWith("prize_") &&
-                                        !newC.zone.startsWith("extra_");
+                                        !(newC.zone.startsWith("extra_") && !newC.zone.startsWith("extra_monster"));
 
                     // Escape variables for XSS protection
                     const escapedName = escapeHtml(cardObj.name);
@@ -2968,7 +2968,7 @@
                             const nameToUse = (wasPublic || isNewPublic) ? publicName : privateName;
                             const actionLabel = newC.zone.startsWith("grave_") ? "Cementerio / Descarte" : "Desterró / Removió";
                             sendGameAction(`${actionLabel} a ${nameToUse} (desde ${oldZoneName})`);
-                        } else if (newC.zone.startsWith("hand_") || newC.zone.startsWith("deck_") || newC.zone.startsWith("extra_") || newC.zone.startsWith("prize_")) {
+                        } else if (newC.zone.startsWith("hand_") || newC.zone.startsWith("deck_") || (newC.zone.startsWith("extra_") && !newC.zone.startsWith("extra_monster")) || newC.zone.startsWith("prize_")) {
                             const nameToUse = wasPublic ? publicName : privateName;
                             let actionLabel = "Regresó";
                             let destLabel = "";
