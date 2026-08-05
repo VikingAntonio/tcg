@@ -173,8 +173,8 @@ let targetActionType = null; // "summon", "set", "defense"
 // Page initialization
 $(document).ready(async function() {
     initLayout();
+    setupEventListeners(); // Call instantly so the page is immediately interactive!
     await checkUserSessionAndPreload();
-    setupEventListeners();
 });
 
 // Targeting system state for Attach attachment process
@@ -923,11 +923,14 @@ function bindCardDragEvents() {
 
 // Helper to resolve client touch vs mouse coords
 function getEventCoords(e) {
-    if (e.type.startsWith('touch')) {
-        const t = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-        return { x: t.clientX, y: t.clientY };
+    const oe = e.originalEvent || e;
+    if (oe.touches && oe.touches.length > 0) {
+        return { x: oe.touches[0].clientX, y: oe.touches[0].clientY };
     }
-    return { x: e.clientX, y: e.clientY };
+    if (oe.changedTouches && oe.changedTouches.length > 0) {
+        return { x: oe.changedTouches[0].clientX, y: oe.changedTouches[0].clientY };
+    }
+    return { x: e.clientX || oe.clientX || 0, y: e.clientY || oe.clientY || 0 };
 }
 
 // Global window event listeners for active drag tracking
@@ -1030,22 +1033,83 @@ $(window).on('mouseup touchend', function(e) {
         }
 
         // This is a click!
-        // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
         const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !(cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
-        if (isField) {
+
+        if (cardObj.zone.startsWith("deck_")) {
+            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+            $("#card-menu").removeClass("active");
+            const coords = getEventCoords(e);
+            const clampedX = Math.max(10, Math.min(coords.x, window.innerWidth - 210 - 10));
+            const clampedY = Math.max(10, Math.min(coords.y, window.innerHeight - 180 - 10));
+            $("#deck-menu").css({
+                left: `${clampedX}px`,
+                top: `${clampedY}px`
+            }).addClass("active");
+            dragCard = null;
+            return;
+        } else if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
+            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
+            openExtraDeckModal(playerKey);
+            dragCard = null;
+            return;
+        } else if (cardObj.zone.startsWith("grave_")) {
+            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
+            openPileModal(playerKey, "grave");
+            dragCard = null;
+            return;
+        } else if (cardObj.zone.startsWith("banished_")) {
+            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
+            openPileModal(playerKey, "banished");
+            dragCard = null;
+            return;
+        } else if (isField) {
             // Check if this card has attached cards!
             const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
             if (hasAttached) {
                 openAttachedCardsModal(cardObj.instanceId);
             } else {
-                if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
-                    cardObj.tiltAngle = 0;
+                // Instantly trigger card context menu on mobile short-tap!
+                activeMenuCard = cardObj;
+                $("#deck-menu").removeClass("active");
+
+                const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
+                if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
+                    $("#menu-swap-active-bench").show();
                 } else {
-                    // Set a small random angle between -8 and 8 (excluding -2 to 2)
-                    const sign = Math.random() < 0.5 ? -1 : 1;
-                    const angle = sign * (4 + Math.random() * 5); // 4 to 9 degrees
-                    cardObj.tiltAngle = Math.round(angle);
+                    $("#menu-swap-active-bench").hide();
                 }
+
+                if (state.layout === 'yugioh') {
+                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
+                } else {
+                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+                }
+
+                if (cardObj.isToken) {
+                    $("#menu-destroy-token").show();
+                    $("#menu-to-hand").hide();
+                    $("#menu-to-grave").hide();
+                    $("#menu-to-banish").hide();
+                    $("#menu-to-deck-top").hide();
+                    $("#menu-to-deck-bottom").hide();
+                    $("#menu-control").hide();
+                } else {
+                    $("#menu-destroy-token").hide();
+                    $("#menu-to-hand").show();
+                    $("#menu-to-grave").show();
+                    $("#menu-to-banish").show();
+                    $("#menu-to-deck-top").show();
+                    $("#menu-to-deck-bottom").show();
+                    $("#menu-control").show();
+                }
+
+                const coords = getEventCoords(e);
+                const clampedX = Math.max(10, Math.min(coords.x, window.innerWidth - 210 - 10));
+                const clampedY = Math.max(10, Math.min(coords.y, window.innerHeight - 180 - 10));
+                $("#card-menu").css({
+                    left: `${clampedX}px`,
+                    top: `${clampedY}px`
+                }).addClass("active");
             }
         }
     } else {
@@ -2335,9 +2399,12 @@ function setupEventListeners() {
             e.stopPropagation();
             activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
             $("#card-menu").removeClass("active");
+            const coords = getEventCoords(e);
+            const clampedX = Math.max(10, Math.min(coords.x, window.innerWidth - 210 - 10));
+            const clampedY = Math.max(10, Math.min(coords.y, window.innerHeight - 180 - 10));
             $("#deck-menu").css({
-                left: `${e.clientX}px`,
-                top: `${e.clientY}px`
+                left: `${clampedX}px`,
+                top: `${clampedY}px`
             }).addClass("active");
             return;
         }
@@ -2416,9 +2483,12 @@ function setupEventListeners() {
             }
         }
 
+        const coords = getEventCoords(e);
+        const clampedX = Math.max(10, Math.min(coords.x, window.innerWidth - 210 - 10));
+        const clampedY = Math.max(10, Math.min(coords.y, window.innerHeight - 180 - 10));
         $("#card-menu").css({
-            left: `${e.clientX}px`,
-            top: `${e.clientY}px`
+            left: `${clampedX}px`,
+            top: `${clampedY}px`
         }).addClass("active");
     });
 
@@ -2435,9 +2505,12 @@ function setupEventListeners() {
             e.stopPropagation();
             activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
             $("#card-menu").removeClass("active");
+            const coords = getEventCoords(e);
+            const clampedX = Math.max(10, Math.min(coords.x, window.innerWidth - 210 - 10));
+            const clampedY = Math.max(10, Math.min(coords.y, window.innerHeight - 180 - 10));
             $("#deck-menu").css({
-                left: `${e.clientX}px`,
-                top: `${e.clientY}px`
+                left: `${clampedX}px`,
+                top: `${clampedY}px`
             }).addClass("active");
         } else if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
             e.preventDefault();
@@ -2467,9 +2540,13 @@ function setupEventListeners() {
         activeMenuDeckPlayer = zoneId === "zone-deck_1" || zoneId === "deck_1" ? "player1" : "player2";
 
         $("#card-menu").removeClass("active");
+        const coords = getEventCoords(e);
+        const clampedX = Math.max(10, Math.min(coords.x, window.innerWidth - 210 - 10));
+        const clampedY = Math.max(10, Math.min(coords.y, window.innerHeight - 180 - 10));
+        console.log("DECK_CLICK_DEBUG: coords.x=" + coords.x + ", coords.y=" + coords.y + ", window.innerWidth=" + window.innerWidth + ", window.innerHeight=" + window.innerHeight + ", clampedX=" + clampedX + ", clampedY=" + clampedY);
         $("#deck-menu").css({
-            left: `${e.clientX}px`,
-            top: `${e.clientY}px`
+            left: `${clampedX}px`,
+            top: `${clampedY}px`
         }).addClass("active");
     });
 
@@ -3333,3 +3410,51 @@ window.renderAllCards = renderAllCards;
 window.drawCards = drawCards;
 window.shuffleDeck = shuffleDeck;
 window.setupPokemonPrizes = setupPokemonPrizes;
+
+// Resolution-Aware 3D Auto-Scaling and Centering for mobile horizontal viewports
+window.adjustPlaymatScale = function() {
+    const $playmat = $("#playmat");
+    if (!$playmat.length) return;
+
+    // Available viewport size
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+
+    // Playmat dimensions (fixed base virtual coordinate space)
+    const matW = 1120;
+    const matH = 600;
+
+    // Symmetrical scale factor to keep the whole board visible
+    // We reserve ~110px vertically for the vertical overlapping hand cards (at top and bottom)
+    // We reserve ~40px horizontally for margins
+    const scaleX = (viewportW - 40) / matW;
+    const scaleY = (viewportH - 110) / matH;
+
+    let scale = Math.min(scaleX, scaleY);
+    if (scale <= 0) scale = 0.1; // fallback failsafe
+
+    // Set 3D perspective and angle dynamically
+    // RotateX(28deg) tilts the playmat back. TranslateX/Y centers it dynamically.
+    $playmat.css({
+        "transform": `translate(-50%, -50%) rotateX(28deg) scale(${scale})`,
+        "transform-origin": "center center",
+        "position": "absolute",
+        "top": "50%",
+        "left": "47%" /* Shifted slightly left to allow thumb space on the right for sidebar/trigger */
+    });
+};
+
+// Bind resolution auto-adjusts
+$(window).on("resize", window.adjustPlaymatScale);
+$(document).ready(window.adjustPlaymatScale);
+
+// Wrap renderAllCards to automatically adjust scale after render
+const originalAssignRenderAllCards = window.renderAllCards;
+window.renderAllCards = function() {
+    if (typeof originalAssignRenderAllCards === "function") {
+        originalAssignRenderAllCards.apply(this, arguments);
+    }
+    if (typeof window.adjustPlaymatScale === "function") {
+        window.adjustPlaymatScale();
+    }
+};

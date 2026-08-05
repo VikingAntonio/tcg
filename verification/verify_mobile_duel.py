@@ -10,17 +10,8 @@ def run_cuj(page):
     page.on("console", lambda msg: print(f"BROWSER CONSOLE: [{msg.type}] {msg.text}"))
     page.on("pageerror", lambda err: print(f"BROWSER ERROR: {err}"))
 
-    print("Navigating to configDuel.html...")
-    page.goto("http://localhost:8000/configDuel.html")
-    page.wait_for_timeout(1000)
-
-    # Screenshot of mobile config
-    page.screenshot(path="/home/jules/verification/screenshots/mobile_config.png")
-    print("Screenshot of configDuel.html captured.")
-
-    # Click start practice
-    print("Starting practice mode...")
-    page.get_by_role("button", name="INICIAR PRÁCTICA").click(force=True)
+    print("Navigating directly to duelmobile.html in mobile horizontal view...")
+    page.goto("http://localhost:8000/duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock")
     page.wait_for_timeout(2000)
 
     # Screenshot of scaled mobile duel simulator
@@ -29,17 +20,27 @@ def run_cuj(page):
 
     # Tap the P1 Deck (Player 1 Deck zone) to open the Deck context menu
     print("Tapping P1 Deck...")
-    box = page.locator("#zone-deck_1").bounding_box()
-    if box:
-        page.mouse.click(box["x"] + box["width"]/2, box["y"] + box["height"]/2)
-    else:
-        page.locator("#zone-deck_1").click(force=True)
+    print("All zone IDs on page:", page.evaluate("Array.from(document.querySelectorAll('.board-zone')).map(el => el.id)"))
+    print("All card IDs on page:", page.evaluate("Array.from(document.querySelectorAll('.duel-card')).map(el => el.id)"))
+    print("state.cards length on page:", page.evaluate("state.cards.length"))
+    page.evaluate("jQuery('#zone-deck_1').trigger('click')")
     page.wait_for_timeout(1000)
     page.screenshot(path="/home/jules/verification/screenshots/mobile_after_deck_click.png")
 
     # Click 'Robar Carta' from Deck Menu
     print("Clicking 'Robar Carta' from Deck Menu...")
+    print("Viewport inner height:", page.evaluate("window.innerHeight"))
+    print("Viewport scroll Y:", page.evaluate("window.scrollY"))
+    print("Body scroll height:", page.evaluate("document.body.scrollHeight"))
+    print("DocumentElement scroll height:", page.evaluate("document.documentElement.scrollHeight"))
+    menu_locator = page.locator("#deck-menu")
+    print("Deck menu bounding box:", menu_locator.bounding_box())
+    print("Deck menu active state:", page.evaluate("document.getElementById('deck-menu').classList.contains('active')"))
+    print("Deck menu computed position:", page.evaluate("window.getComputedStyle(document.getElementById('deck-menu')).position"))
+    print("Deck menu computed top:", page.evaluate("window.getComputedStyle(document.getElementById('deck-menu')).top"))
+    print("Deck menu offsetParent:", page.evaluate("document.getElementById('deck-menu').offsetParent ? document.getElementById('deck-menu').offsetParent.tagName : 'null'"))
     draw_btn = page.locator("#deck-menu-draw, #deck-menu li:has-text('Robar Carta')").first
+    print("Draw button bounding box:", draw_btn.bounding_box())
     print("Draw button count:", draw_btn.count())
     if draw_btn.is_visible():
         draw_btn.click(force=True)
