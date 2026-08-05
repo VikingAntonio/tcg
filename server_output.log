@@ -1,77 +1,38 @@
-npm warn exec The following package was not found and will be installed: http-server@14.1.1
-npm warn deprecated whatwg-encoding@2.0.0: Use @exodus/bytes instead for a more spec-conformant and faster implementation
-Starting up http-server, serving docs
-
-http-server version: 14.1.1
-
-http-server settings:
-CORS: disabled
-Cache: 3600 seconds
-Connection Timeout: 120 seconds
-Directory Listings: visible
-AutoIndex: visible
-Serve GZIP Files: false
-Serve Brotli Files: false
-Default File Extension: none
-
-Available on:
-  http://127.0.0.1:8000
-  http://192.168.0.2:8000
-Hit CTRL-C to stop the server
-
-[2026-08-05T14:12:48.684Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-(node:30624) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
-(Use `node --trace-deprecation ...` to show where the warning was created)
-[2026-08-05T14:12:48.847Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:12:48.851Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:12:48.875Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:12:48.892Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:12:49.856Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:12:53.546Z]  "GET /css/img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:23.617Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:23.631Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:23.645Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:23.649Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:23.656Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:23.879Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:26.648Z]  "GET /css/img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:54.849Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:54.861Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:54.870Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:54.875Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:54.881Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:55.110Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:13:57.871Z]  "GET /css/img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:28.645Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:28.658Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:28.667Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:28.671Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:28.678Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:28.915Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:31.671Z]  "GET /css/img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:41.303Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:41.320Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:41.323Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:41.328Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:41.334Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:41.563Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:14:45.112Z]  "GET /css/img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:15:54.055Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:15:54.066Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:15:54.073Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:15:54.077Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:15:54.082Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:15:54.312Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:17.172Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:17.183Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:17.190Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:17.196Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:17.201Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:17.443Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:28.367Z]  "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:28.381Z]  "GET /css/duelmobile.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:28.388Z]  "GET /js/supabase-config.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:28.397Z]  "GET /js/utils.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:28.402Z]  "GET /js/duelmobile.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:28.705Z]  "GET /img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
-[2026-08-05T14:16:32.385Z]  "GET /css/img/bocabajo.jpg" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
+127.0.0.1 - - [05/Aug/2026 04:49:15] "HEAD /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 04:50:03] "GET /duel.html?layout=yugioh&mode=practice HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 04:50:03] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 04:50:03] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 04:50:03] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 04:50:03] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 04:50:03] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 04:50:05] code 404, message File not found
+127.0.0.1 - - [05/Aug/2026 04:50:05] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [05/Aug/2026 04:50:05] code 404, message File not found
+127.0.0.1 - - [05/Aug/2026 04:50:05] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [05/Aug/2026 05:37:23] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:23] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:23] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:23] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:23] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:24] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:25] code 404, message File not found
+127.0.0.1 - - [05/Aug/2026 05:37:25] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [05/Aug/2026 05:37:53] "GET /duel.html HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:53] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:53] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:53] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:53] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:54] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 05:37:55] code 404, message File not found
+127.0.0.1 - - [05/Aug/2026 05:37:55] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [05/Aug/2026 05:37:55] code 404, message File not found
+127.0.0.1 - - [05/Aug/2026 05:37:55] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [05/Aug/2026 05:38:36] code 404, message File not found
+127.0.0.1 - - [05/Aug/2026 05:38:36] "GET /docs/duel.html?layout=pokemon&mode=practice HTTP/1.1" 404 -
+127.0.0.1 - - [05/Aug/2026 06:07:11] "GET /configDuel.html HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 06:07:11] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 06:07:13] "GET /duel.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 06:07:13] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 06:07:13] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 06:07:13] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 06:07:13] "GET /img/bocabajo.jpg HTTP/1.1" 200 -

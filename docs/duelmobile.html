@@ -9,12 +9,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/duelmobile.css">
     <style>
-        /* Hide sidebars, LP, central bar, switches, and other panels to focus purely on the board & hands */
+        /* Hide sidebars, LP, central bar, switches, accessories, and other panels to focus purely on the board & hands */
         .duel-sidebar,
         .duel-communication-sidebar,
         .lp-counter-container,
         .central-turn-bar,
-        .hand-controls {
+        .hand-controls,
+        .tcg-accessories-panel,
+        .accessories-tab,
+        #btn-reset-game,
+        .floating-zone-count,
+        .hand-card-actions,
+        .field-card-actions {
             display: none !important;
         }
 
@@ -24,6 +30,8 @@
             height: 100vh !important;
             max-height: 100vh !important;
             width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .duel-workspace {
@@ -45,27 +53,29 @@
             display: block !important; /* overrides flex-direction / justify-content */
         }
 
-        /* Position hands as overlaying floating trays */
+        /* Position hands as overlaying floating trays (Master Duel / Pokemon TCG Live Style) */
         .hand-tray {
             position: absolute !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
-            width: auto !important;
-            max-width: 95% !important;
+            width: 100% !important;
+            max-width: 98vw !important;
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            z-index: 1000 !important; /* float on top of scaled playmat */
+            z-index: 2000 !important; /* Float on top of the playmat board */
             pointer-events: none !important;
+            display: flex !important;
+            justify-content: center !important;
         }
 
         .hand-tray.player-2 {
-            top: 2px !important;
+            top: 0px !important;
             bottom: auto !important;
         }
 
         .hand-tray.player-1 {
-            bottom: 2px !important;
+            bottom: 0px !important;
             top: auto !important;
         }
 
@@ -73,47 +83,49 @@
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            gap: -8px !important; /* overlapping card margin */
-            min-height: auto !important;
-            padding: 4px 10px !important;
+            min-height: 65px !important;
+            padding: 0 !important;
             overflow: visible !important;
             pointer-events: auto !important;
         }
 
-        /* Overlap effect for cards in hands and portrait ratio */
+        /* Overlap effect for cards in hands, styled small and elegantly */
         .hand-cards-container .duel-card {
-            width: 52px !important;
-            height: 75px !important;
-            margin-left: -12px !important; /* overlap effect */
-            perspective: 400px !important;
-            transform: perspective(400px) rotateX(15deg) !important;
-            transition: transform 0.25s ease, margin 0.25s ease, z-index 0.25s ease !important;
+            position: relative !important;
+            width: 44px !important;
+            height: 64px !important;
+            margin-left: -16px !important; /* overlapping overlapping effect */
+            perspective: 300px !important;
+            transform: perspective(300px) rotateX(12deg) !important;
+            transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), margin 0.2s, z-index 0.2s !important;
             pointer-events: auto !important;
+            left: auto !important;
+            top: auto !important;
         }
 
-        /* Reverse overlap margin for first child to avoid left clipping */
+        /* Avoid clipping of the first card */
         .hand-cards-container .duel-card:first-child {
             margin-left: 0 !important;
         }
 
-        /* Slide up, scale and flatten on hover/touch */
+        /* Slide up, scale, and flatten on hover/focus */
         .hand-cards-container .duel-card:hover {
-            transform: translateY(-20px) scale(1.3) rotateX(0deg) !important;
-            z-index: 10000 !important;
+            transform: translateY(-25px) scale(1.6) rotateX(0deg) !important;
+            z-index: 50000 !important;
             margin-left: -4px !important;
-            margin-right: 8px !important;
+            margin-right: 12px !important;
         }
 
-        /* Player 2 floats downward instead of upward */
+        /* Player 2 slides downwards instead of upwards */
         .player-2 .hand-cards-container .duel-card {
-            transform: perspective(400px) rotateX(-15deg) !important;
+            transform: perspective(300px) rotateX(-12deg) !important;
         }
 
         .player-2 .hand-cards-container .duel-card:hover {
-            transform: translateY(20px) scale(1.3) rotateX(0deg) !important;
-            z-index: 10000 !important;
+            transform: translateY(25px) scale(1.6) rotateX(0deg) !important;
+            z-index: 50000 !important;
             margin-left: -4px !important;
-            margin-right: 8px !important;
+            margin-right: 12px !important;
         }
 
         /* Suppress/hide any legacy mask-editor overlay automatically appended by utils.js */
@@ -129,14 +141,15 @@
         /* Responsive overlays, list views, context menus, and list-view modalsearch grids proportioned nicely for horizontal cellphones */
         .search-overlay .search-modal {
             display: flex !important;
-            max-width: 90vw !important;
-            max-height: 90vh !important;
-            width: 90vw !important;
-            height: 90vh !important;
+            max-width: 85vw !important;
+            max-height: 85vh !important;
+            width: 85vw !important;
+            height: 85vh !important;
             border-radius: 10px !important;
         }
 
         .search-body {
+            display: grid !important;
             grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)) !important;
             gap: 8px !important;
             padding: 10px !important;
@@ -152,18 +165,35 @@
             height: 100% !important;
         }
 
-        /* Capped context menu styling on horizontal mobile viewports */
+        /* Capped context menu styling on horizontal mobile viewports with smooth scroll and clean layout */
         .card-context-menu, .deck-context-menu {
-            max-height: 85vh !important;
-            width: 190px !important;
-            border-radius: 10px !important;
-            padding-bottom: 20px !important; /* tight pad */
+            max-height: 60vh !important;
+            width: 160px !important;
+            border-radius: 8px !important;
+            padding-bottom: 5px !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            background: rgba(18, 25, 33, 0.98) !important;
+            font-family: 'Montserrat', sans-serif !important;
+            overflow-y: auto !important;
+            scrollbar-width: none !important;
+        }
+
+        .card-context-menu::-webkit-scrollbar, .deck-context-menu::-webkit-scrollbar {
+            display: none !important;
         }
 
         .menu-item {
-            padding: 8px 12px !important;
-            font-size: 0.75rem !important;
-            gap: 8px !important;
+            padding: 6px 10px !important;
+            font-size: 0.68rem !important;
+            gap: 6px !important;
+            font-weight: 700 !important;
+            color: #eee !important;
+        }
+
+        .menu-item i {
+            font-size: 0.8rem !important;
+            width: 12px !important;
         }
 
         /* Right Communication Sidebar */
@@ -3297,42 +3327,469 @@
             }, 1000);
         });
 
-        // Setup dragging trackers on playmat elements
+        // Setup dragging trackers on playmat elements and clamping of context menus
         $(document).ready(function() {
-            // Monitor move events on window to toggle wasDragging
-            let startDragX = 0;
-            let startDragY = 0;
+            // Helper to clamp coordinate bounds of menus so they never bleed off-screen
+            window.clampMenuCoords = function(x, y, menuSelector) {
+                const menuWidth = 160; // Styled fixed width
+                const menuHeight = Math.min($(window).height() * 0.6, 250); // Capped scroll height estimate
 
-            $(document).on("touchstart mousedown", ".duel-card", function(e) {
-                const coords = (e.originalEvent.touches ? e.originalEvent.touches[0] : e);
-                startDragX = coords.clientX;
-                startDragY = coords.clientY;
-                window.wasDragging = false;
-            });
+                const winWidth = $(window).width();
+                const winHeight = $(window).height();
 
-            $(document).on("touchmove mousemove", ".duel-card", function(e) {
-                if (startDragX === 0 && startDragY === 0) return;
-                const coords = (e.originalEvent.touches ? e.originalEvent.touches[0] : e);
-                const dx = coords.clientX - startDragX;
-                const dy = coords.clientY - startDragY;
+                let clampedX = x;
+                let clampedY = y;
+
+                if (x + menuWidth > winWidth) {
+                    clampedX = winWidth - menuWidth - 10;
+                }
+                if (clampedX < 10) clampedX = 10;
+
+                if (y + menuHeight > winHeight) {
+                    clampedY = winHeight - menuHeight - 10;
+                }
+                if (clampedY < 10) clampedY = 10;
+
+                return { x: clampedX, y: clampedY };
+            };
+
+            // Helper to get client coordinates for menu positioning
+            function getClientCoords(e) {
+                const oe = e.originalEvent || e;
+                if (oe.touches && oe.touches.length > 0) {
+                    return { clientX: oe.touches[0].clientX, clientY: oe.touches[0].clientY };
+                }
+                if (oe.changedTouches && oe.changedTouches.length > 0) {
+                    return { clientX: oe.changedTouches[0].clientX, clientY: oe.changedTouches[0].clientY };
+                }
+                return { clientX: e.clientX || oe.clientX || 0, clientY: e.clientY || oe.clientY || 0 };
+            }
+
+            // Helper to handle card tap/click
+            function handleCardTap(cardObj, e) {
+                if (cardObj.zone.startsWith("deck_")) {
+                    activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+                    $("#card-menu").removeClass("active");
+                    const clientCoords = getClientCoords(e);
+                    const clamped = window.clampMenuCoords(clientCoords.clientX, clientCoords.clientY, "#deck-menu");
+                    $("#deck-menu").css({
+                        left: `${clamped.x}px`,
+                        top: `${clamped.y}px`
+                    }).addClass("active");
+                } else if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
+                    const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
+                    openExtraDeckModal(playerKey);
+                } else if (cardObj.zone.startsWith("grave_")) {
+                    const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
+                    openPileModal(playerKey, "grave");
+                } else if (cardObj.zone.startsWith("banished_")) {
+                    const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
+                    openPileModal(playerKey, "banished");
+                } else {
+                    // Hand card or on-field card: open Card Menu `#card-menu`!
+                    activeMenuCard = cardObj;
+                    $("#deck-menu").removeClass("active");
+
+                    // Toggle pokemon specific options
+                    const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
+                    if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
+                        $("#menu-swap-active-bench").show();
+                    } else {
+                        $("#menu-swap-active-bench").hide();
+                    }
+
+                    if (state.layout === 'yugioh') {
+                        $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
+                    } else {
+                        $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+                    }
+
+                    if (cardObj.isToken) {
+                        $("#menu-destroy-token").show();
+                        $("#menu-to-hand").hide();
+                        $("#menu-to-grave").hide();
+                        $("#menu-to-banish").hide();
+                        $("#menu-to-deck-top").hide();
+                        $("#menu-to-deck-bottom").hide();
+                        $("#menu-control").hide();
+                        $("#menu-detach").hide();
+                    } else {
+                        $("#menu-destroy-token").hide();
+                        $("#menu-to-hand").show();
+                        $("#menu-to-grave").show();
+                        $("#menu-to-banish").show();
+                        $("#menu-to-deck-top").show();
+                        $("#menu-to-deck-bottom").show();
+                        $("#menu-control").show();
+
+                        const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
+                        if (hasAttached) {
+                            $("#menu-detach").show();
+                        } else {
+                            $("#menu-detach").hide();
+                        }
+                    }
+
+                    const clientCoords = getClientCoords(e);
+                    const clamped = window.clampMenuCoords(clientCoords.clientX, clientCoords.clientY, "#card-menu");
+                    $("#card-menu").css({
+                        left: `${clamped.x}px`,
+                        top: `${clamped.y}px`
+                    }).addClass("active");
+                }
+            }
+
+            // Wrap renderAllCards to override card events
+            const baseRenderAllCardsWithClamping = window.renderAllCards;
+            window.renderAllCards = function() {
+                baseRenderAllCardsWithClamping.apply(this, arguments);
+
+                const cards = $(".duel-card");
+                // Unbind default handlers from duelmobile.js
+                cards.off("mousedown touchstart click contextmenu");
+
+                // Re-bind hover preview
+                cards.on('mouseenter', function() {
+                    const instId = $(this).data("instance-id");
+                    const cardObj = state.cards.find(c => c.instanceId === instId);
+                    if (cardObj) {
+                        updatePreview(cardObj);
+                    }
+                });
+
+                // Touch start / Mousedown
+                cards.on('mousedown touchstart', function(e) {
+                    if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container').length) {
+                        return;
+                    }
+
+                    const instId = $(this).data("instance-id");
+                    const cardObj = state.cards.find(c => c.instanceId === instId);
+                    if (!cardObj) return;
+
+                    if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
+                        return;
+                    }
+
+                    if (cardObj.zone.startsWith("deck_") || cardObj.attachedTo) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    updatePreview(cardObj);
+
+                    dragCard = $(this);
+                    dragCard.addClass("dragging").removeClass("snapping");
+
+                    const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                    cardObj.z = maxZ + 1;
+                    dragCard.css("z-index", cardObj.z);
+
+                    const pos = getEventCoords(e);
+                    const matOffset = $("#playmat").offset();
+                    const rect = $("#playmat")[0].getBoundingClientRect();
+                    const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+
+                    dragOffset.x = (pos.x - matOffset.left) / scale - cardObj.x;
+                    dragOffset.y = (pos.y - matOffset.top) / scale - cardObj.y;
+                    dragStartCoords = { x: pos.x, y: pos.y };
+                    dragStartTime = Date.now();
+                    window.wasDragging = false;
+                });
+
+                // Re-bind attached cards cascade
+                $(".attached-card-cascade").off("click contextmenu mousedown touchstart").on("click contextmenu mousedown touchstart", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const parentId = $(this).data("parent-id");
+                    openAttachedCardsModal(parentId);
+                });
+            };
+
+            // Unbind default window mouse/touch move and end listeners from duelmobile.js
+            $(window).off('mousemove touchmove mouseup touchend');
+
+            // Re-bind window mousemove/touchmove with flawless scale handling
+            $(window).on('mousemove touchmove', function(e) {
+                if (!dragCard) return;
+                e.preventDefault();
+
+                const instId = dragCard.data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (!cardObj) return;
+
+                const pos = getEventCoords(e);
+                const matOffset = $("#playmat").offset();
+                const rect = $("#playmat")[0].getBoundingClientRect();
+                const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+
+                const x = (pos.x - matOffset.left) / scale - dragOffset.x;
+                const y = (pos.y - matOffset.top) / scale - dragOffset.y;
+
+                const boundedX = Math.max(-10, Math.min(1120 - 70, x));
+                const boundedY = Math.max(-10, Math.min(600 - 100, y));
+
+                cardObj.x = boundedX;
+                cardObj.y = boundedY;
+
+                dragCard.css({
+                    left: `${boundedX}px`,
+                    top: `${boundedY}px`
+                });
+
+                const centerCoords = {
+                    x: boundedX + 40,
+                    y: boundedY + 58
+                };
+
+                $(".board-zone").removeClass("highlighted");
+                const overlappingZone = findOverlappingZone(centerCoords);
+                if (overlappingZone) {
+                    $(`#zone-${overlappingZone.id}`).addClass("highlighted");
+                }
+
+                // Toggle wasDragging to true if moved beyond 10px threshold
+                const dx = pos.x - dragStartCoords.x;
+                const dy = pos.y - dragStartCoords.y;
                 if (Math.sqrt(dx * dx + dy * dy) > 10) {
                     window.wasDragging = true;
                 }
             });
 
-            $(document).on("touchend mouseup", function() {
-                startDragX = 0;
-                startDragY = 0;
+            // Re-bind window mouseup/touchend to split dragging vs tapping
+            $(window).on('mouseup touchend', function(e) {
+                if (!dragCard) return;
+
+                const instId = dragCard.data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (!cardObj) return;
+
+                const endPos = getEventCoords(e);
+                const dx = endPos.x - dragStartCoords.x;
+                const dy = endPos.y - dragStartCoords.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const duration = Date.now() - dragStartTime;
+
+                let isClick = (dist < 15 && duration < 350);
+
+                dragCard.removeClass("dragging").addClass("snapping");
+                $(".board-zone").removeClass("highlighted");
+
+                if (isClick) {
+                    // Cancel dragging visual
+                    const targetZone = cardObj.zone;
+                    const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === targetZone);
+                    if (zoneObj) {
+                        dragCard.css({
+                            left: `${zoneObj.x}px`,
+                            top: `${zoneObj.y}px`
+                        });
+                    } else {
+                        dragCard.css({
+                            left: `${cardObj.x}px`,
+                            top: `${cardObj.y}px`
+                        });
+                    }
+
+                    if ($("#playmat").hasClass("selecting-zone") || $("#playmat").hasClass("targeting-attack")) {
+                        const targetEl = dragCard[0];
+                        dragCard = null;
+                        if (targetEl) {
+                            const clickEvent = new MouseEvent('click', {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window
+                            });
+                            targetEl.dispatchEvent(clickEvent);
+                        }
+                        return;
+                    }
+
+                    const isHandCard = cardObj.zone.startsWith("hand_");
+                    if (isHandCard) {
+                        const playerKey = cardObj.zone === "hand_1" ? "player1" : "player2";
+                        const $toggle = $(`.hand-multi-select-toggle[data-player="${playerKey}"]`);
+                        if ($toggle.is(":checked")) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const idx = selectedHandCards[playerKey].indexOf(cardObj.instanceId);
+                            if (idx > -1) {
+                                selectedHandCards[playerKey].splice(idx, 1);
+                                $(`#${cardObj.instanceId}`).removeClass("selected-for-batch");
+                            } else {
+                                selectedHandCards[playerKey].push(cardObj.instanceId);
+                                $(`#${cardObj.instanceId}`).addClass("selected-for-batch");
+                            }
+                            dragCard = null;
+                            return;
+                        }
+                    }
+
+                    // Call Tap Handler!
+                    handleCardTap(cardObj, e);
+
+                } else {
+                    // Standard drop logic
+                    const centerCoords = {
+                        x: cardObj.x + 40,
+                        y: cardObj.y + 58
+                    };
+
+                    const hoverZone = findOverlappingZone(centerCoords);
+                    const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
+                    const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+
+                    if (cardObj.isToken) {
+                        if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
+                            state.cards = state.cards.filter(c => c.instanceId !== cardObj.instanceId);
+                            if (typeof sendGameAction === "function") {
+                                sendGameAction(`Desapareció Token: ${cardObj.name} al salir del campo`);
+                            }
+                            dragCard = null;
+                            renderAllCards();
+                            return;
+                        }
+                    }
+
+                    const oldZone = cardObj.zone;
+
+                    if (isOverP1Hand || isOverP2Hand) {
+                        const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
+                        cardObj.zone = `hand_${originalSuffix}`;
+                        cardObj.controller = cardObj.owner;
+                    } else if (hoverZone) {
+                        if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
+                            const zonePrefix = hoverZone.id.split("_")[0];
+                            const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
+                            const targetPileId = `${zonePrefix}_${originalSuffix}`;
+                            sendAttachedCardsToPile(cardObj.instanceId, targetPileId);
+                            cardObj.movedToPileAt = Date.now() + Math.random();
+                            cardObj.zone = targetPileId;
+                            cardObj.controller = cardObj.owner;
+                        } else if (hoverZone.id.startsWith("deck_")) {
+                            const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
+                            cardObj.zone = `deck_${originalSuffix}`;
+                            cardObj.controller = cardObj.owner;
+                        } else {
+                            cardObj.zone = hoverZone.id;
+                        }
+                        cardObj.attachedTo = null;
+
+                        if (hoverZone.id.startsWith("deck_")) {
+                            const isFromGrave = oldZone.startsWith("grave_");
+                            const isFromBanish = oldZone.startsWith("banished_");
+                            const isFromHand = oldZone.startsWith("hand_");
+                            if (isFromGrave || isFromBanish || isFromHand) {
+                                const sourceLabel = isFromGrave ? "el Cementerio" : (isFromBanish ? "el Desterrado" : "la Mano");
+                                Swal.fire({
+                                    title: '¡Carta enviada al Deck!',
+                                    html: `
+                                        <p style="margin-bottom: 15px; font-weight: 600;">Se ha enviado esta carta desde ${sourceLabel} al Deck:</p>
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                            <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
+                                            <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
+                                        </div>
+                                    `,
+                                    confirmButtonText: 'Entendido',
+                                    confirmButtonColor: '#00d2ff'
+                                });
+                            }
+                        }
+                    } else {
+                        const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
+                        if (droppedOnCard) {
+                            state.cards.forEach(c => {
+                                if (c.attachedTo === cardObj.instanceId) {
+                                    c.attachedTo = droppedOnCard.instanceId;
+                                }
+                            });
+
+                            const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                            droppedOnCard.z = maxZ + 1;
+
+                            cardObj.attachedTo = droppedOnCard.instanceId;
+                            cardObj.attachedAt = Date.now() + Math.random();
+                            cardObj.zone = droppedOnCard.zone;
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Carta Acoplada',
+                                text: `${cardObj.name} ha sido acoplada a ${droppedOnCard.name}.`,
+                                toast: true,
+                                position: 'top-end',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            cardObj.zone = "field_free";
+                            cardObj.attachedTo = null;
+                        }
+                    }
+                }
+
+                dragCard = null;
+                renderAllCards();
             });
 
-            // Prevent any context menus or clicks if card was being dragged
-            $(document).on("contextmenu click", ".duel-card", function(e) {
-                if (window.wasDragging) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
+            // Re-bind the delegated contextmenu & clicks on board pile/deck zones
+            $(document).off("click contextmenu", ".board-zone.zone-type-deck");
+            $(document).off("click contextmenu", ".board-zone.zone-type-extra");
+            $(document).off("click contextmenu", ".board-zone.zone-type-grave");
+            $(document).off("click contextmenu", ".board-zone.zone-type-banished");
+
+            $(document).on("click contextmenu", ".board-zone.zone-type-deck", function(e) {
+                if ($("#playmat").hasClass("selecting-zone")) return;
+                e.preventDefault();
+                e.stopPropagation();
+
+                const zoneId = $(this).data("id");
+                activeMenuDeckPlayer = zoneId === "zone-deck_1" || zoneId === "deck_1" ? "player1" : "player2";
+
+                $("#card-menu").removeClass("active");
+                const clientCoords = getClientCoords(e);
+                const clamped = window.clampMenuCoords(clientCoords.clientX, clientCoords.clientY, "#deck-menu");
+                $("#deck-menu").css({
+                    left: `${clamped.x}px`,
+                    top: `${clamped.y}px`
+                }).addClass("active");
             });
+
+            $(document).on("click contextmenu", ".board-zone.zone-type-extra", function(e) {
+                if ($("#playmat").hasClass("selecting-zone")) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const zoneId = $(this).data("id");
+                const playerKey = zoneId === "zone-extra_1" || zoneId === "extra_1" ? "player1" : "player2";
+                openExtraDeckModal(playerKey);
+            });
+
+            $(document).on("click contextmenu", ".board-zone.zone-type-grave", function(e) {
+                if ($("#playmat").hasClass("selecting-zone")) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const zoneId = $(this).data("id");
+                const playerKey = zoneId === "zone-grave_1" || zoneId === "grave_1" ? "player1" : "player2";
+                openPileModal(playerKey, "grave");
+            });
+
+            $(document).on("click contextmenu", ".board-zone.zone-type-banished", function(e) {
+                if ($("#playmat").hasClass("selecting-zone")) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const zoneId = $(this).data("id");
+                const playerKey = zoneId === "zone-banished_1" || zoneId === "banished_1" ? "player1" : "player2";
+                openPileModal(playerKey, "banished");
+            });
+
+            // Prevent default drag events on window to avoid browser image ghosting
+            $(window).on("dragover dragenter drop", function(e) {
+                e.preventDefault();
+            });
+
+            // Initial layout render trigger to apply custom events
+            renderAllCards();
         });
 
         // Resolution-aware scaling function to fit the playmat board on mobile screens
@@ -3344,9 +3801,9 @@
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
 
-            // Compute scaling to fit board inside the screen with room for top and bottom floating hands
-            const targetWidth = viewportWidth * 0.96;
-            const targetHeight = viewportHeight * 0.65; // Keep 65% height for board to leave plenty of room for overlaying hands
+            // Subtract 130px from viewport height to guarantee room for hand overlays at the top and bottom (65px each)
+            const targetWidth = viewportWidth * 0.98;
+            const targetHeight = Math.max(200, viewportHeight - 130);
 
             const scaleX = targetWidth / matWidth;
             const scaleY = targetHeight / matHeight;
