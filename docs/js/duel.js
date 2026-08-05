@@ -42,42 +42,42 @@ const BOARD_LAYOUTS = {
     ],
     yugioh_advanced: [
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
-        { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 20, type: "deck" },
-        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 135, type: "grave" },
-        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 880, y: 135, type: "banished" },
-        { id: "extra_2", name: "P2 Extra", player: 2, x: 990, y: 20, type: "extra" },
-        { id: "field_2", name: "P2 Campo", player: 2, x: 990, y: 135, type: "field" },
-        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 190, y: 135, type: "monster" },
-        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 310, y: 135, type: "monster" },
-        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 430, y: 135, type: "monster" },
-        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 550, y: 135, type: "monster" },
-        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 670, y: 135, type: "monster" },
-        { id: "spell_2_5", name: "P2 Péndulo Izq", player: 2, x: 190, y: 20, type: "spell" },
-        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 310, y: 20, type: "spell" },
-        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 430, y: 20, type: "spell" },
-        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 550, y: 20, type: "spell" },
-        { id: "spell_2_1", name: "P2 Péndulo Der", player: 2, x: 670, y: 20, type: "spell" },
+        { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 6, type: "deck" },
+        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 125, type: "grave" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 880, y: 125, type: "banished" },
+        { id: "extra_2", name: "P2 Extra", player: 2, x: 990, y: 6, type: "extra" },
+        { id: "field_2", name: "P2 Campo", player: 2, x: 990, y: 125, type: "field" },
+        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 190, y: 125, type: "monster" },
+        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 310, y: 125, type: "monster" },
+        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 430, y: 125, type: "monster" },
+        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 550, y: 125, type: "monster" },
+        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 670, y: 125, type: "monster" },
+        { id: "spell_2_5", name: "P2 Péndulo Izq", player: 2, x: 190, y: 6, type: "spell" },
+        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 310, y: 6, type: "spell" },
+        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 430, y: 6, type: "spell" },
+        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 550, y: 6, type: "spell" },
+        { id: "spell_2_1", name: "P2 Péndulo Der", player: 2, x: 670, y: 6, type: "spell" },
 
         // Shared Extra Monster Zones placed in the middle
-        { id: "extra_monster_2", name: "Extra Monstruo 2", player: 2, x: 310, y: 250, type: "monster" },
-        { id: "extra_monster_1", name: "Extra Monstruo 1", player: 1, x: 550, y: 250, type: "monster" },
+        { id: "extra_monster_2", name: "Extra Monstruo 2", player: 2, x: 310, y: 244, type: "monster" },
+        { id: "extra_monster_1", name: "Extra Monstruo 1", player: 1, x: 550, y: 244, type: "monster" },
 
         // Player 1 (Bottom Half) - Blue Theme
-        { id: "extra_1", name: "P1 Extra", player: 1, x: 50, y: 480, type: "extra" },
-        { id: "field_1", name: "P1 Campo", player: 1, x: 50, y: 365, type: "field" },
-        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 880, y: 365, type: "banished" },
-        { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 480, type: "deck" },
-        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 365, type: "grave" },
-        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 190, y: 365, type: "monster" },
-        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 310, y: 365, type: "monster" },
-        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 430, y: 365, type: "monster" },
-        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 550, y: 365, type: "monster" },
-        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 670, y: 365, type: "monster" },
-        { id: "spell_1_1", name: "P1 Péndulo Izq", player: 1, x: 190, y: 480, type: "spell" },
-        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 310, y: 480, type: "spell" },
-        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 430, y: 480, type: "spell" },
-        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 550, y: 480, type: "spell" },
-        { id: "spell_1_5", name: "P1 Péndulo Der", player: 1, x: 670, y: 480, type: "spell" }
+        { id: "extra_1", name: "P1 Extra", player: 1, x: 50, y: 482, type: "extra" },
+        { id: "field_1", name: "P1 Campo", player: 1, x: 50, y: 363, type: "field" },
+        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 880, y: 363, type: "banished" },
+        { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 482, type: "deck" },
+        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 363, type: "grave" },
+        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 190, y: 363, type: "monster" },
+        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 310, y: 363, type: "monster" },
+        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 430, y: 363, type: "monster" },
+        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 550, y: 363, type: "monster" },
+        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 670, y: 363, type: "monster" },
+        { id: "spell_1_1", name: "P1 Péndulo Izq", player: 1, x: 190, y: 482, type: "spell" },
+        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 310, y: 482, type: "spell" },
+        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 430, y: 482, type: "spell" },
+        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 550, y: 482, type: "spell" },
+        { id: "spell_1_5", name: "P1 Péndulo Der", player: 1, x: 670, y: 482, type: "spell" }
     ],
     pokemon: [
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
@@ -472,7 +472,7 @@ function renderAllCards() {
         const isHand = card.zone.startsWith("hand_");
 
         // Count cards in piles
-        const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("grave_") || card.zone.startsWith("banished_") || card.zone.startsWith("extra_");
+        const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("grave_") || card.zone.startsWith("banished_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster"));
         if (isPile) {
             zoneCounts[card.zone] = (zoneCounts[card.zone] || 0) + 1;
         }
@@ -1031,7 +1031,7 @@ $(window).on('mouseup touchend', function(e) {
 
         // This is a click!
         // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
-        const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
+        const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !(cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
         if (isField) {
             // Check if this card has attached cards!
             const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
@@ -1062,7 +1062,7 @@ $(window).on('mouseup touchend', function(e) {
 
         // Token specific check: delete if dragged out of active field
         if (cardObj.isToken) {
-            if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || hoverZone.id.startsWith("extra_") || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
+            if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
                 state.cards = state.cards.filter(c => c.instanceId !== cardObj.instanceId);
                 if (typeof sendGameAction === "function") {
                     sendGameAction(`Desapareció Token: ${cardObj.name} al salir del campo`);
@@ -1169,7 +1169,7 @@ function findOverlappingCard(coords, excludeInstanceId) {
         !c.attachedTo &&
         !c.zone.startsWith("hand_") &&
         !c.zone.startsWith("deck_") &&
-        !c.zone.startsWith("extra_") &&
+        !(c.zone.startsWith("extra_") && !c.zone.startsWith("extra_monster")) &&
         !c.zone.startsWith("grave_") &&
         !c.zone.startsWith("banished_") &&
         !c.zone.startsWith("prize_")
@@ -1226,7 +1226,7 @@ function checkHandTrayHover(e, traySelector) {
 // Side info detailed previewer
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
-    const isPile = card.zone.startsWith("deck_") || card.zone.startsWith("extra_") || card.zone.startsWith("prize_");
+    const isPile = card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_");
     let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
 
     // Seteadas de mi lado (player1) en el campo se pueden ver en el preview
@@ -2337,7 +2337,7 @@ function setupEventListeners() {
         }
 
         // If card is inside an extra deck zone, open the Extra Deck overlay instead
-        if (cardObj.zone.startsWith("extra_")) {
+        if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
             e.preventDefault();
             e.stopPropagation();
             const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
@@ -2433,7 +2433,7 @@ function setupEventListeners() {
                 left: `${e.clientX}px`,
                 top: `${e.clientY}px`
             }).addClass("active");
-        } else if (cardObj.zone.startsWith("extra_")) {
+        } else if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
             e.preventDefault();
             e.stopPropagation();
             const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
