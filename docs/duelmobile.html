@@ -68,17 +68,17 @@
         /* Stand upright nested cards on field rotated perfectly matching playmat angle */
         #playmat .duel-card {
             transform-origin: bottom center !important;
-            transform: rotateX(-50deg) rotate(var(--tilt, 0deg)) !important;
+            transform: rotateX(-30deg) rotate(var(--tilt, 0deg)) !important;
             transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s !important;
         }
 
         #playmat .duel-card:hover {
-            transform: rotateX(-50deg) scale(1.08) rotate(var(--tilt, 0deg)) !important;
+            transform: rotateX(-30deg) scale(1.08) rotate(var(--tilt, 0deg)) !important;
             z-index: 5000 !important;
         }
 
         #playmat .duel-card.dragging {
-            transform: rotateX(-50deg) rotate(calc(var(--tilt, 0deg) + 2deg)) translate3d(0, -10px, 40px) scale(1.12) !important;
+            transform: rotateX(-30deg) rotate(calc(var(--tilt, 0deg) + 2deg)) translate3d(0, -10px, 40px) scale(1.12) !important;
             box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 25px var(--primary-glow) !important;
             z-index: 100000 !important;
         }
@@ -166,14 +166,30 @@
             margin-right: 14px !important;
         }
 
+        /* Absolutely no background dimming, darkening, blurring, or opacity */
+        .search-overlay,
+        .zone-picker-overlay,
+        .swal2-backdrop,
+        .swal2-container {
+            background: transparent !important;
+            backdrop-filter: none !important;
+            filter: none !important;
+            box-shadow: none !important;
+        }
+
         /* Suppress/hide any legacy mask-editor overlay automatically appended by utils.js */
-        #mask-editor-overlay, .overlay {
+        #mask-editor-overlay,
+        body > .overlay {
             display: none !important;
+            pointer-events: none !important;
         }
 
         /* Keep actual search modals and overlays visible */
-        .search-overlay, .search-overlay .overlay, .search-overlay .search-modal {
+        .search-overlay, .search-overlay .overlay {
             display: none; /* controlled by jQuery fadeIn/fadeOut */
+        }
+        .search-overlay .search-modal {
+            display: none;
         }
 
         /* Responsive overlays, list views, context menus, and list-view modalsearch grids proportioned nicely for horizontal cellphones */
@@ -184,13 +200,17 @@
             width: 85vw !important;
             height: 85vh !important;
             border-radius: 10px !important;
+            background: rgba(10, 15, 22, 0.98) !important;
+            border: 2px solid var(--glass-border) !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important;
         }
 
         .search-body {
             display: grid !important;
             grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)) !important;
-            gap: 8px !important;
+            gap: 12px !important;
             padding: 10px !important;
+            overflow-y: auto !important;
         }
 
         .pile-card-container, .extra-deck-card-container, .search-card-item {
@@ -200,13 +220,70 @@
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
             box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
             position: relative !important;
-            overflow: hidden !important;
+            overflow: visible !important; /* Allow overlay menu to pop out of card bounds without clipping */
         }
 
         .pile-card-container img, .extra-deck-card-container img, .search-card-item img {
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
+            border-radius: 4px !important;
+        }
+
+        /* Tap menus inside modals, perfectly comfortable, no SweetAlert2 or clipping */
+        .pile-card-hover-overlay, .extra-deck-card-hover-overlay {
+            position: absolute !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+            justify-content: center !important;
+            align-items: center !important;
+            background: rgba(12, 18, 24, 0.98) !important;
+            border: 1.5px solid var(--primary-color) !important;
+            border-radius: 8px !important;
+            padding: 6px !important;
+            width: 110px !important;
+            height: auto !important;
+            min-height: auto !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            z-index: 99999 !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(0, 210, 255, 0.4) !important;
+            transition: opacity 0.15s ease-in-out !important;
+        }
+
+        /* Show the menu overlay on hover or when .active-menu class is applied on tap */
+        .pile-card-container:hover .pile-card-hover-overlay,
+        .extra-deck-card-container:hover .extra-deck-card-hover-overlay,
+        .pile-card-container.active-menu .pile-card-hover-overlay,
+        .extra-deck-card-container.active-menu .extra-deck-card-hover-overlay,
+        .search-card-item.active-menu .pile-card-hover-overlay {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        /* Override button styles in list overlay menus for touch accuracy */
+        .pile-card-action-btn, .extra-card-action-btn {
+            font-size: 0.62rem !important;
+            padding: 5px 4px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            text-align: center !important;
+            border-radius: 5px !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #fff !important;
+            width: 100% !important;
+            cursor: pointer !important;
+            white-space: nowrap !important;
+        }
+        .pile-card-action-btn:hover, .extra-card-action-btn:hover {
+            background: var(--primary-color) !important;
+            color: #000 !important;
+            border-color: #fff !important;
         }
 
         /* Capped context menu styling on horizontal mobile viewports with smooth scroll and clean layout */
@@ -3831,272 +3908,40 @@
                 openPileModal(playerKey, "banished");
             });
 
-            // Mobile delegated click handler for cards inside modal list-views to bypass hover limitations on touchscreens
+            // Mobile delegated click/tap handler to toggle menu overlay on list-view cards (No SweetAlert2!)
             $(document).on("click", ".pile-card-container, .extra-deck-card-container, .search-card-item", function(e) {
-                // If multi-select is active on graveyard/banished list modal, bypass popup
+                // If multi-select is active on graveyard/banished list modal, bypass popup/overlay menu
                 if ($("#pile-multi-select-toggle").is(":checked")) {
                     return;
                 }
 
-                // If the target clicked is already an action button inside the card's overlay menu, don't trigger Swal popup!
-                if ($(e.target).closest(".pile-card-action-btn, .extra-card-action-btn").length) {
+                // If clicking an action button, let the click go through to its individual handler
+                if ($(e.target).closest(".pile-card-action-btn, .extra-card-action-btn, .swal-modal-btn").length) {
                     return;
                 }
 
                 e.preventDefault();
                 e.stopPropagation();
 
-                const instId = $(this).data("instance-id");
-                const cardObj = state.cards.find(c => c.instanceId === instId);
-                if (!cardObj) return;
-
-                // Determine context from container's parent
-                const inExtra = $(this).closest("#extra-overlay").length > 0;
-                const inSearch = $(this).closest("#search-overlay").length > 0;
-                const inPile = $(this).closest("#pile-overlay").length > 0;
-                const inAttached = $(this).closest("#attached-overlay").length > 0;
-
-                let title = cardObj.name;
-                let imageUrl = cardObj.imageUrl;
-                let html = `<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">`;
-
-                if (inExtra) {
-                    html += `
-                        <button class="btn swal-modal-btn" data-action="extra-summon" data-id="${instId}" style="background: var(--primary-color); color: black; font-weight: bold; padding: 10px;">🌟 Invocar</button>
-                        <button class="btn swal-modal-btn" data-action="extra-xyz" data-id="${instId}" style="background: #ffd32d; color: black; font-weight: bold; padding: 10px;">⛓️ Invocación XYZ</button>
-                    `;
-                } else if (inSearch) {
-                    html += `
-                        <button class="btn swal-modal-btn" data-action="search-hand" data-id="${instId}" style="background: #00d2ff; color: black; font-weight: bold; padding: 10px;">✋ Añadir a Mano</button>
-                        <button class="btn swal-modal-btn" data-action="search-summon" data-id="${instId}" style="background: var(--primary-color); color: black; font-weight: bold; padding: 10px;">🌟 Invocar</button>
-                        <button class="btn swal-modal-btn" data-action="search-set" data-id="${instId}" style="background: #888; color: white; font-weight: bold; padding: 10px;">🃏 Colocar (Set)</button>
-                        <button class="btn swal-modal-btn" data-action="search-attach" data-id="${instId}" style="background: #ff5e13; color: white; font-weight: bold; padding: 10px;">📎 Acoplar</button>
-                        <button class="btn swal-modal-btn" data-action="search-grave" data-id="${instId}" style="background: #ff1b6b; color: white; font-weight: bold; padding: 10px;">💀 Enviar al Cementerio</button>
-                        <button class="btn swal-modal-btn" data-action="search-banish" data-id="${instId}" style="background: #a855f7; color: white; font-weight: bold; padding: 10px;">🚫 Desterrar / Remover</button>
-                    `;
-                } else if (inPile) {
-                    const isGrave = activePileModalType === "grave";
-                    html += `
-                        <button class="btn swal-modal-btn" data-action="pile-summon" data-id="${instId}" style="background: var(--primary-color); color: black; font-weight: bold; padding: 10px;">🌟 Invocar</button>
-                        <button class="btn swal-modal-btn" data-action="pile-set" data-id="${instId}" style="background: #888; color: white; font-weight: bold; padding: 10px;">🃏 Colocar (Set)</button>
-                        <button class="btn swal-modal-btn" data-action="pile-attach" data-id="${instId}" style="background: #ff5e13; color: white; font-weight: bold; padding: 10px;">📎 Acoplar</button>
-                        <button class="btn swal-modal-btn" data-action="pile-hand" data-id="${instId}" style="background: #00d2ff; color: black; font-weight: bold; padding: 10px;">✋ Añadir a Mano</button>
-                        <button class="btn swal-modal-btn" data-action="pile-deck" data-id="${instId}" style="background: #999; color: black; font-weight: bold; padding: 10px;">🎴 Regresar al Deck</button>
-                        ${isGrave ?
-                            `<button class="btn swal-modal-btn" data-action="pile-banish" data-id="${instId}" style="background: #a855f7; color: white; font-weight: bold; padding: 10px;">🚫 Desterrar / Remover</button>` :
-                            `<button class="btn swal-modal-btn" data-action="pile-grave" data-id="${instId}" style="background: #ff1b6b; color: white; font-weight: bold; padding: 10px;">💀 Enviar al Cementerio</button>`
-                        }
-                        <button class="btn swal-modal-btn" data-action="pile-effect" data-id="${instId}" style="background: #ffd32d; color: black; font-weight: bold; padding: 10px;">⚡ Activar Efecto</button>
-                    `;
-                } else if (inAttached) {
-                    html += `
-                        <button class="btn swal-modal-btn" data-action="attached-hand" data-id="${instId}" style="background: #00d2ff; color: black; font-weight: bold; padding: 10px;">✋ Añadir a Mano</button>
-                        <button class="btn swal-modal-btn" data-action="attached-grave" data-id="${instId}" style="background: #ff1b6b; color: white; font-weight: bold; padding: 10px;">💀 Enviar al Cementerio</button>
-                        <button class="btn swal-modal-btn" data-action="attached-banish" data-id="${instId}" style="background: #a855f7; color: white; font-weight: bold; padding: 10px;">🚫 Desterrar / Remover</button>
-                        <button class="btn swal-modal-btn" data-action="attached-deck" data-id="${instId}" style="background: #999; color: black; font-weight: bold; padding: 10px;">🎴 Regresar al Deck</button>
-                    `;
+                // If the clicked card is already active, close it
+                if ($(this).hasClass("active-menu")) {
+                    $(this).removeClass("active-menu");
+                    return;
                 }
 
-                html += `</div>`;
+                // Remove .active-menu from all other sibling containers in the modal grid
+                $(".pile-card-container, .extra-deck-card-container, .search-card-item").not(this).removeClass("active-menu");
 
-                Swal.fire({
-                    title: title,
-                    html: `
-                        <div style="display: flex; gap: 15px; align-items: center; justify-content: center;">
-                            <img src="${imageUrl}" style="width: 100px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />
-                            <div style="flex: 1; text-align: left;">
-                                <p style="font-size: 0.8rem; color: #ccc; max-height: 120px; overflow-y: auto;">${cardObj.description || "Sin descripción."}</p>
-                            </div>
-                        </div>
-                        ${html}
-                    `,
-                    background: '#12181e',
-                    color: '#fff',
-                    showConfirmButton: false,
-                    showCloseButton: true,
-                    didOpen: () => {
-                        $(".swal-modal-btn").off("click").on("click", function(ev) {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                            const action = $(this).data("action");
-                            const targetId = $(this).data("id");
-                            Swal.close();
-                            triggerModalCardAction(action, targetId);
-                        });
-                    }
-                });
+                // Toggle active menu class on the clicked container
+                $(this).addClass("active-menu");
             });
 
-            function triggerModalCardAction(action, targetId) {
-                const cardObj = state.cards.find(c => c.instanceId === targetId);
-                if (!cardObj) return;
-
-                const pSuffix = cardObj.owner === "player1" ? 1 : 2;
-
-                if (action === "extra-summon") {
-                    $("#extra-overlay").fadeOut(200);
-                    startGraphicalTargeting(cardObj, "summon");
-                } else if (action === "extra-xyz") {
-                    $("#extra-overlay").fadeOut(200);
-                    startXYZTargeting(cardObj);
-                } else if (action === "search-hand") {
-                    $("#search-overlay").fadeOut(200);
-                    cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    renderAllCards();
-
-                    Swal.fire({
-                        title: '¡Carta Revelada!',
-                        html: `
-                            <p style="margin-bottom: 15px; font-weight: 600;">El jugador ha buscado y añadido esta carta a su mano:</p>
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
-                                <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
-                            </div>
-                        `,
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: '#00d2ff'
-                    });
-                } else if (action === "search-summon") {
-                    $("#search-overlay").fadeOut(200);
-                    startGraphicalTargeting(cardObj, "summon");
-                } else if (action === "search-set") {
-                    $("#search-overlay").fadeOut(200);
-                    startGraphicalTargeting(cardObj, "set");
-                } else if (action === "search-attach") {
-                    $("#search-overlay").fadeOut(200);
-                    startAttachmentTargeting(cardObj);
-                } else if (action === "search-grave") {
-                    cardObj.zone = `grave_${pSuffix}`;
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    cardObj.movedToPileAt = Date.now() + Math.random();
-                    renderAllCards();
-                    openSearchModal(cardObj.owner);
-                } else if (action === "search-banish") {
-                    cardObj.zone = `banished_${pSuffix}`;
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    cardObj.movedToPileAt = Date.now() + Math.random();
-                    renderAllCards();
-                    openSearchModal(cardObj.owner);
-                } else if (action === "pile-summon") {
-                    $("#pile-overlay").fadeOut(200);
-                    startGraphicalTargeting(cardObj, "summon");
-                } else if (action === "pile-set") {
-                    $("#pile-overlay").fadeOut(200);
-                    startGraphicalTargeting(cardObj, "set");
-                } else if (action === "pile-attach") {
-                    $("#pile-overlay").fadeOut(200);
-                    startAttachmentTargeting(cardObj);
-                } else if (action === "pile-hand") {
-                    cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    renderAllCards();
-                    openPileModal(activePileModalPlayer, activePileModalType);
-
-                    const sourceLabel = activePileModalType === "grave" ? "el Cementerio" : "el Desterrado";
-                    Swal.fire({
-                        title: '¡Carta añadida a la Mano!',
-                        html: `
-                            <p style="margin-bottom: 15px; font-weight: 600;">Se ha añadido esta carta desde ${sourceLabel} a la Mano:</p>
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
-                                <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
-                            </div>
-                        `,
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: '#00d2ff'
-                    });
-                } else if (action === "pile-deck") {
-                    cardObj.zone = `deck_${pSuffix}`;
-                    cardObj.faceDown = true;
-                    cardObj.tapped = false;
-                    renderAllCards();
-                    openPileModal(activePileModalPlayer, activePileModalType);
-
-                    const sourceLabel = activePileModalType === "grave" ? "el Cementerio" : "el Desterrado";
-                    Swal.fire({
-                        title: '¡Carta enviada al Deck!',
-                        html: `
-                            <p style="margin-bottom: 15px; font-weight: 600;">Se ha enviado esta carta desde ${sourceLabel} al Deck:</p>
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
-                                <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
-                            </div>
-                        `,
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: '#00d2ff'
-                    });
-                } else if (action === "pile-banish") {
-                    cardObj.zone = `banished_${pSuffix}`;
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    cardObj.movedToPileAt = Date.now() + Math.random();
-                    renderAllCards();
-                    openPileModal(activePileModalPlayer, activePileModalType);
-                } else if (action === "pile-grave") {
-                    cardObj.zone = `grave_${pSuffix}`;
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    cardObj.movedToPileAt = Date.now() + Math.random();
-                    renderAllCards();
-                    openPileModal(activePileModalPlayer, activePileModalType);
-                } else if (action === "pile-effect") {
-                    $("#pile-overlay").fadeOut(200);
-                    cardObj.movedToPileAt = Date.now();
-                    renderAllCards();
-
-                    setTimeout(() => {
-                        const $cardElem = $(`#${cardObj.instanceId}`);
-                        if ($cardElem.length) {
-                            $cardElem.addClass("activating-flash");
-                            setTimeout(() => { $cardElem.removeClass("activating-flash"); }, 800);
-                        }
-                    }, 100);
-
-                    if (typeof sendGameAction === "function") {
-                        const sourceLabel = activePileModalType === "grave" ? "el Cementerio" : "el Desterrado";
-                        sendGameAction(`Activó el efecto de ${cardObj.name} desde ${sourceLabel}`);
-                    }
-                } else if (action === "attached-hand") {
-                    cardObj.attachedTo = null;
-                    cardObj.zone = cardObj.owner === "player1" ? "hand_1" : "hand_2";
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    renderAllCards();
-                    const parentId = $(`#bulk-to-hand`).data("parent-id");
-                    openAttachedCardsModal(parentId);
-                } else if (action === "attached-grave") {
-                    cardObj.attachedTo = null;
-                    cardObj.zone = `grave_${pSuffix}`;
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    cardObj.movedToPileAt = Date.now() + Math.random();
-                    renderAllCards();
-                    const parentId = $(`#bulk-to-hand`).data("parent-id");
-                    openAttachedCardsModal(parentId);
-                } else if (action === "attached-banish") {
-                    cardObj.attachedTo = null;
-                    cardObj.zone = `banished_${pSuffix}`;
-                    cardObj.faceDown = false;
-                    cardObj.tapped = false;
-                    cardObj.movedToPileAt = Date.now() + Math.random();
-                    renderAllCards();
-                    const parentId = $(`#bulk-to-hand`).data("parent-id");
-                    openAttachedCardsModal(parentId);
-                } else if (action === "attached-deck") {
-                    cardObj.attachedTo = null;
-                    cardObj.zone = `deck_${pSuffix}`;
-                    cardObj.faceDown = true;
-                    cardObj.tapped = false;
-                    renderAllCards();
-                    const parentId = $(`#bulk-to-hand`).data("parent-id");
-                    openAttachedCardsModal(parentId);
+            // Clicking anywhere outside of modal list-view cards closes any open menu overlay
+            $(document).on("click", function(e) {
+                if (!$(e.target).closest(".pile-card-container, .extra-deck-card-container, .search-card-item").length) {
+                    $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
                 }
-            }
+            });
 
             // Prevent default drag events on window to avoid browser image ghosting
             $(window).on("dragover dragenter drop", function(e) {
@@ -4116,23 +3961,42 @@
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
 
-            // Maximize board sizing. Subtracting less space to make playmat as large as possible
-            // while hand trays float seamlessly like TCG Live / Master Duel overlay.
-            const targetWidth = viewportWidth * 0.96;
-            const targetHeight = Math.max(200, viewportHeight - 50);
+            // Reserve exactly 150px of vertical height split between both hands
+            // to make sure they are 100% visible with zero screen scroll and ample margins
+            const targetWidth = viewportWidth * 0.98;
+            const targetHeight = Math.max(180, viewportHeight - 150);
 
             const scaleX = targetWidth / matWidth;
             const scaleY = targetHeight / matHeight;
-            // Scale dynamically to fit the smaller dimension nicely with margins
-            const scale = Math.min(scaleX, scaleY) * 0.95;
+            // Uniformly scale the playmat to fit perfectly
+            const scale = Math.min(scaleX, scaleY) * 0.98;
 
             $playmat.css({
-                "transform": `translate(-50%, -50%) scale(${scale}) rotateX(50deg)`,
+                "transform": `translate(-50%, -50%) scale(${scale}) rotateX(30deg)`,
                 "transform-origin": "center center",
                 "position": "absolute",
                 "left": "50%",
                 "top": "50%",
                 "margin": "0"
+            });
+
+            // Calculate precise visual vertical height of the tilted playmat
+            const cosAngle = Math.cos(30 * Math.PI / 180); // cos(30deg)
+            const visualHalfHeight = (matHeight / 2) * scale * cosAngle;
+
+            // Pin hand trays exactly to the top and bottom visual borders of the playmat,
+            // creating a premium, non-clashing, and perfectly stuck layout (Master Duel style)
+            const t2Top = Math.max(2, (viewportHeight / 2) - visualHalfHeight - 25);
+            const t1Bottom = Math.max(2, (viewportHeight / 2) - visualHalfHeight - 28);
+
+            $("#hand-tray-p2").css({
+                "top": `${t2Top}px`,
+                "bottom": "auto"
+            });
+
+            $("#hand-tray-p1").css({
+                "bottom": `${t1Bottom}px`,
+                "top": "auto"
             });
         };
 
