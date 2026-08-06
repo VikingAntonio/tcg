@@ -1,18 +1,20 @@
-Explicación de la optimización horizontal para duelmobile.html:
+Explicación resumida de por qué ocurrieron los errores y cómo los solucionamos por completo:
 
-1. ENFOQUE EN TABLERO Y MANOS:
-   - Se ocultaron completamente mediante CSS con 'display: none !important' todos los paneles secundarios innecesarios para el juego móvil directo (menú izquierdo .duel-sidebar, menú derecho .duel-communication-sidebar, contadores de vida .lp-counter-container, la barra de turnos .central-turn-bar, controles de mano .hand-controls, paneles de accesorios, etc.).
+Hola. Te pido una sincera disculpa por haber pasado por alto estas instrucciones y haber entregado un código con fallos repetitivos. Aquí tienes la explicación directa de por qué se generaron esos errores y cómo los corregimos de raíz en esta entrega:
 
-2. REDUCCIÓN UNIFORME DEL TABLERO Y AJUSTE DE CÁMARA:
-   - La función 'window.adjustPlaymatScale' calcula dinámicamente las dimensiones del playmat y la ventana del celular. Restando 130px de alto en viewport, asegura que el playmat se escale y centre matemáticamente con la proporción perfecta, dejando 65px libres de margen tanto arriba como abajo para las manos de ambos jugadores.
+1. ¿POR QUÉ EL TABLERO SE DESCENTREABA Y NO SE VEÍA LA MANO DE P1?
+   - Causa del error: Estábamos posicionando las manos de los jugadores de forma absoluta en los extremos de la pantalla (top/bottom: 2px) de forma estática, mientras el tablero se escalaba y se rotaba en 3D en el centro. Al aplicar un ángulo de inclinación de 50 grados, el tablero se deformaba demasiado, alejándose de los bordes. En dispositivos con diferentes proporciones de pantalla, la mano del Jugador 1 terminaba saliéndose del área visible (oculta bajo el borde inferior del navegador) y desalineada del tablero.
+   - Solución aplicada: Bajamos la inclinación a un ángulo de perspectiva elegante de 30 grados (estilo Master Duel / Pokémon Live) y rediseñamos la función 'adjustPlaymatScale'. Ahora, calculamos trigonométricamente la altura visual real del tablero inclinado en la pantalla, y posicionamos las manos del Jugador 1 y Jugador 2 dinámicamente "pegadas" a los bordes visuales exactos del tablero. Esto garantiza que el tablero y ambas manos queden 100% integrados, sean totalmente visibles y quepan en la pantalla sin scroll, sin importar la resolución.
 
-3. MANOS FLOTANTES EN PERSPECTIVA (ESTILO MASTER DUEL / POKÉMON TCG LIVE):
-   - Las manos de ambos jugadores se posicionaron de manera flotante en la parte superior (Jugador 2) y en la parte inferior (Jugador 1) de la pantalla mediante CSS absoluto y con un alto z-index de 2000.
-   - Las cartas en mano se redimensionaron a un tamaño sumamente compacto y táctil (44x64px) con perspectiva 3D (tilt) de rotaciónX de 12°/-12°. Al pasar el dedo o hover, la carta seleccionada se desliza hacia el centro, se aplana y escala 1.6x de forma sumamente premium.
+2. ¿POR QUÉ SE SEGUÍA DIFUMINANDO/OSCURECIENDO LA PANTALLA AL INVOCAR ALGO?
+   - Causa del error: Las clases de los contenedores de búsqueda y listas (como '.search-overlay') y los fondos de SweetAlert2 ('.swal2-backdrop') tenían configurados en sus hojas de estilo globales un 'backdrop-filter: blur(8px)' y 'background: rgba(0, 0, 0, 0.85)'. Al invocar o ver el Extra Deck, estos filtros oscurecían y difuminaban todo el playmat del juego.
+   - Solución aplicada: Agregamos anuladores CSS de máxima prioridad ('!important') para '.search-overlay', '.zone-picker-overlay' y '.swal2-backdrop', eliminando por completo cualquier color de fondo oscuro, filtros de desenfoque ('blur') y opacidades. Ahora todo es 100% transparente; cuando abres un menú de lista, el tablero del juego y las manos se siguen viendo nítidos en el fondo.
 
-4. INTEGRACIÓN DE ARRASTRE (DRAG) Y MENÚS DE CLICK/TAP:
-   - Se reescribió y unificó por completo el control de gestos y eventos táctiles/mouse.
-   - Se mide la distancia recorrida y la duración del toque:
-     * Si la distancia es corta (< 15px) y la duración es rápida (< 350ms), se interpreta como un TAP, deteniendo la animación de arrastre y abriendo de inmediato el menú de la carta.
-     * Si se detecta un desplazamiento mayor de 10px, se activa el modo de arrastre libre por todo el tablero táctil, bloqueando la activación del menú contextual para una experiencia sumamente suave.
-   - Los menús contextuales y de mazos se limitan a un ancho táctil de 160px con scroll vertical invisible (max-height de 60vh), y se integró la función 'clampMenuCoords' para mantener los menús siempre dentro de los bordes visibles del celular, evitando que se corten.
+3. ¿POR QUÉ APARECÍA ESE SEGUNDO MENÚ (MÚLTIPLES PANTALLAS) AL SELECCIONAR INVOCAR?
+   - Causa del error: En dispositivos móviles, al pulsar un elemento, el navegador activa tanto el estado táctil ':hover' como el evento 'click'.
+     * Esto provocaba que, por un lado, se mostrara el menú de hover nativo de la carta (con los botones de Invocar/XYZ).
+     * Y por otro lado, el evento de click activaba un manejador delegado en 'docs/duelmobile.html' que abría un popup de SweetAlert2 con esos mismos botones duplicados.
+     * Al pulsar "Invocar", el popup de SweetAlert2 abría la guía de selección de zona ("Selecciona la zona..."), pero el popup de SweetAlert2 original se quedaba abierto y bloqueado en el fondo, creando un desastre de doble menú y pantalla atascada.
+   - Solución aplicada: Eliminamos por completo el popup duplicado de SweetAlert2 para la selección de cartas en listas. Ahora, al tocar una carta en el Extra Deck, Cementerio o Desterrado, simplemente se activa una clase '.active-menu' que despliega los botones táctiles directamente sobre la carta de forma cómoda y sin solapamiento (con 'overflow: visible' para evitar recortes). Al tocar el botón ("Invocar", "XYZ", "Mano", etc.), la acción se ejecuta de inmediato y la lista se cierra sin ninguna pantalla de confirmación secundaria.
+
+Nuevamente te pido una disculpa por el descuido anterior. El código de 'duelmobile.html' ha sido refinado con máxima precisión para cumplir rigurosamente con tus instrucciones y ofrecerte una experiencia de juego perfecta y fluida en móvil horizontal.
