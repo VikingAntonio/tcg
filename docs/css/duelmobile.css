@@ -1755,6 +1755,7 @@ html, body.duel-body {
 }
 .card-context-menu.active, .deck-context-menu.active {
     transform: scale(1) translate3d(0, 0, 0) !important;
+    pointer-events: auto !important;
 }
 
 /* Player 2 slides downwards instead of upwards */
@@ -1901,6 +1902,7 @@ body > .overlay {
     font-family: 'Montserrat', sans-serif !important;
     overflow-y: auto !important;
     scrollbar-width: none !important;
+    z-index: 100000 !important;
 }
 
 .card-context-menu::-webkit-scrollbar, .deck-context-menu::-webkit-scrollbar {
