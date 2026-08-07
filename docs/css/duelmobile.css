@@ -1719,7 +1719,7 @@ html, body.duel-body {
     min-height: 75px !important;
     padding: 0 !important;
     overflow: visible !important;
-    pointer-events: auto !important;
+    pointer-events: none !important;
 }
 
 /* Overlap effect for cards in hands, styled small and elegantly */
