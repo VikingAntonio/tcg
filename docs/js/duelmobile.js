@@ -5079,11 +5079,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                     const oldZone = cardObj.zone;
 
-                    if (isOverP1Hand || isOverP2Hand) {
-                        const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
-                        cardObj.zone = `hand_${originalSuffix}`;
-                        cardObj.controller = cardObj.owner;
-                    } else if (hoverZone) {
+                    if (hoverZone) {
                         if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
                             const zonePrefix = hoverZone.id.split("_")[0];
                             const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
@@ -5121,6 +5117,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                                 });
                             }
                         }
+                    } else if (isOverP1Hand || isOverP2Hand) {
+                        const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
+                        cardObj.zone = `hand_${originalSuffix}`;
+                        cardObj.controller = cardObj.owner;
                     } else {
                         const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
                         if (droppedOnCard) {
