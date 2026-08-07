@@ -57,7 +57,7 @@
             margin: 0 !important;
             overflow: hidden !important;
             display: block !important; /* overrides flex-direction / justify-content */
-            perspective: 2200px !important;
+            perspective: 1200px !important;
             perspective-origin: center center !important;
         }
 
@@ -68,17 +68,17 @@
         /* Stand upright nested cards on field rotated perfectly matching playmat angle */
         #playmat .duel-card {
             transform-origin: bottom center !important;
-            transform: rotate(var(--tilt, 0deg)) !important;
+            transform: rotateX(-30deg) rotate(var(--tilt, 0deg)) !important;
             transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s !important;
         }
 
         #playmat .duel-card:hover {
-            transform: scale(1.08) rotate(var(--tilt, 0deg)) !important;
+            transform: rotateX(-30deg) scale(1.08) rotate(var(--tilt, 0deg)) !important;
             z-index: 5000 !important;
         }
 
         #playmat .duel-card.dragging {
-            transform: rotate(calc(var(--tilt, 0deg) + 2deg)) translate3d(0, -10px, 40px) scale(1.12) !important;
+            transform: rotateX(-30deg) rotate(calc(var(--tilt, 0deg) + 2deg)) translate3d(0, -10px, 40px) scale(1.12) !important;
             box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 25px var(--primary-glow) !important;
             z-index: 100000 !important;
         }
@@ -100,12 +100,12 @@
         }
 
         .hand-tray.player-2 {
-            top: 2px;
+            top: 2px !important;
             bottom: auto !important;
         }
 
         .hand-tray.player-1 {
-            bottom: 2px;
+            bottom: 2px !important;
             top: auto !important;
         }
 
@@ -113,8 +113,7 @@
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            min-height: 70px !important;
-            height: 70px !important;
+            min-height: 75px !important;
             padding: 0 !important;
             overflow: visible !important;
             pointer-events: auto !important;
@@ -3615,22 +3614,10 @@
                     const rect = $("#playmat")[0].getBoundingClientRect();
                     const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
-                    // Append card to .duel-arena-wrapper so it drags in flat 2D viewport coordinates
-                    $(".duel-arena-wrapper").append(dragCard);
-                    dragCard.css({
-                        "position": "fixed",
-                        "left": `${pos.x - 40}px`,
-                        "top": `${pos.y - 58}px`,
-                        "width": "80px",
-                        "height": "116px",
-                        "margin": "0",
-                        "transform": "none"
-                    });
-
-                    // Keep track of cardObj x & y relative to playmat coordinates
-                    cardObj.x = (pos.x - matOffset.left) / scale - 40;
-                    cardObj.y = (pos.y - matOffset.top) / scale - 58;
-
+                    const elemLeft = parseFloat($(this).css("left")) || 0;
+                    const elemTop = parseFloat($(this).css("top")) || 0;
+                    dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
+                    dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
                     dragStartCoords = { x: pos.x, y: pos.y };
                     dragStartTime = Date.now();
                     window.wasDragging = false;
@@ -3662,21 +3649,19 @@
                 const rect = $("#playmat")[0].getBoundingClientRect();
                 const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
-                // Dragged card is in fixed screen coords, keep it centered under pointer
-                dragCard.css({
-                    left: `${pos.x - 40}px`,
-                    top: `${pos.y - 58}px`
-                });
-
-                // Calculate where that point maps to inside the playmat coordinate space
-                const x = (pos.x - matOffset.left) / scale - 40;
-                const y = (pos.y - matOffset.top) / scale - 58;
+                const x = (pos.x - matOffset.left) / scale - dragOffset.x;
+                const y = (pos.y - matOffset.top) / scale - dragOffset.y;
 
                 const boundedX = Math.max(-10, Math.min(1120 - 70, x));
                 const boundedY = Math.max(-10, Math.min(600 - 100, y));
 
                 cardObj.x = boundedX;
                 cardObj.y = boundedY;
+
+                dragCard.css({
+                    left: `${boundedX}px`,
+                    top: `${boundedY}px`
+                });
 
                 const centerCoords = {
                     x: boundedX + 40,
@@ -3983,11 +3968,11 @@
 
             const scaleX = targetWidth / matWidth;
             const scaleY = targetHeight / matHeight;
-            // Uniformly scale the playmat to fit perfectly (using 0.84 to make it slightly smaller as requested)
-            const scale = Math.min(scaleX, scaleY) * 0.84;
+            // Uniformly scale the playmat to fit perfectly
+            const scale = Math.min(scaleX, scaleY) * 0.98;
 
             $playmat.css({
-                "transform": `translate(-50%, -50%) scale(${scale}) rotateX(15deg)`,
+                "transform": `translate(-50%, -50%) scale(${scale}) rotateX(30deg)`,
                 "transform-origin": "center center",
                 "position": "absolute",
                 "left": "50%",
@@ -3995,15 +3980,14 @@
                 "margin": "0"
             });
 
-            // Calculate precise visual vertical height of the tilted playmat using 15deg tilt
-            const cosAngle = Math.cos(15 * Math.PI / 180); // cos(15deg)
+            // Calculate precise visual vertical height of the tilted playmat
+            const cosAngle = Math.cos(30 * Math.PI / 180); // cos(30deg)
             const visualHalfHeight = (matHeight / 2) * scale * cosAngle;
 
-            // Pin hand trays exactly so the edges touch the playmat borders perfectly
-            // Player 1 (user1) bottom edge of the board should align with the top edge of hand cards (which are 70px height)
-            // Player 2 (user2) top edge of the board should align with the bottom edge of hand cards (which are 70px height)
-            const t2Top = Math.max(2, (viewportHeight / 2) - visualHalfHeight - 70);
-            const t1Bottom = Math.max(2, (viewportHeight / 2) - visualHalfHeight - 70);
+            // Pin hand trays exactly to the top and bottom visual borders of the playmat,
+            // creating a premium, non-clashing, and perfectly stuck layout (Master Duel style)
+            const t2Top = Math.max(2, (viewportHeight / 2) - visualHalfHeight - 25);
+            const t1Bottom = Math.max(2, (viewportHeight / 2) - visualHalfHeight - 28);
 
             $("#hand-tray-p2").css({
                 "top": `${t2Top}px`,
