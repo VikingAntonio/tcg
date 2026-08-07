@@ -5267,7 +5267,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             const perspectiveAngle = 15;    // Ángulo de inclinación en grados (15 es más suave que 30)
             const boardOffsetY = -30;       // Desplazamiento vertical en Y del tablero (negativo sube el tablero, positivo lo baja)
             const p2HandTopOffset = -10;    // Desplazamiento de cartas de mano del oponente (P2) (negativo las sube/aleja) -15
-            const p1HandBottomOffset = 25;  // Desplazamiento de cartas de mano del usuario (P1) (positivo las sube para que se vean completas) estaba en 25
+            const p1HandBottomOffset = -10; // Desplazamiento de cartas de mano del usuario (P1) (negativo las baja/aleja para quedar igual que P2)
             // =========================================================================
 
             // Reserve exactly 150px of vertical height split between both hands
