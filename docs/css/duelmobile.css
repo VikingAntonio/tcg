@@ -1921,3 +1921,17 @@ body > .overlay {
     font-size: 0.72rem !important;
     width: 10px !important;
 }
+
+/* Ensure that active playmat field cards reside physically on top of the hand trays to accept events cleanly */
+#field-cards-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 1120px !important;
+    height: 600px !important;
+    z-index: 2500 !important;
+    pointer-events: none !important;
+}
+#field-cards-container .duel-card {
+    pointer-events: auto !important;
+}

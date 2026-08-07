@@ -5204,17 +5204,15 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     let isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
                     let isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
 
-                    // If the card was already on the field (not in hand), only allow dragging back to hand if dropped near the very bottom/top edges of the screen
-                    if (!oldZone.startsWith("hand_")) {
-                        const coords = getEventCoords(e);
-                        const viewportHeight = window.innerHeight;
-                        // Requires drop to be in the bottom 80px for Player 1, or top 80px for Player 2
-                        if (isOverP1Hand && coords.y < viewportHeight - 80) {
-                            isOverP1Hand = false;
-                        }
-                        if (isOverP2Hand && coords.y > 80) {
-                            isOverP2Hand = false;
-                        }
+                    // Only allow dropping cards back to hand if dropped near the very bottom/top edges of the screen
+                    const coords = getEventCoords(e);
+                    const viewportHeight = window.innerHeight;
+                    // Requires drop to be in the bottom 80px for Player 1, or top 80px for Player 2
+                    if (isOverP1Hand && coords.y < viewportHeight - 80) {
+                        isOverP1Hand = false;
+                    }
+                    if (isOverP2Hand && coords.y > 80) {
+                        isOverP2Hand = false;
                     }
 
                     if (cardObj.isToken) {

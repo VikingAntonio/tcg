@@ -1,0 +1,47 @@
+=============================================================================
+EXPLICACIÓN DETALLADA DEL SIMULADOR MÓVIL Y AJUSTES DE INTERACCIÓN (duelmobile)
+=============================================================================
+
+Este archivo detalla con precisión científica y técnica por qué el comportamiento del Usuario 1 (Player 1) presentaba fallas en comparación con el Usuario 2 (Player 2), y cómo se han solucionado por completo para que ambos funcionen exactamente igual de forma simétrica en el modo Práctica.
+
+-----------------------------------------------------------------------------
+1. ¿POR QUÉ FALLABA EL USUARIO 1 Y EL USUARIO 2 SÍ FUNCIONABA PERFECTO?
+-----------------------------------------------------------------------------
+
+Aunque el tablero es el mismo y comparte las mismas funciones, físicamente la distribución espacial en pantallas móviles horizontales (Landscape) es asimétrica debido a la posición de las bandejas de mano (Hand Trays):
+
+A) TRASLAPE FÍSICO Y CAPTURA DE EVENTOS (Z-INDEX):
+- La bandeja de cartas de mano del Usuario 1 (#hand-tray-p1) se ubica en la parte inferior de la pantalla con una altura de 110px y un z-index de 2000.
+- La bandeja de cartas de mano del Usuario 2 (#hand-tray-p2) se ubica en la parte superior.
+- Debido a la perspectiva 3D y la inclinación del tablero, el tablero está centrado y escalado. Esto causa que la zona de monstruos y magias/trampas del Usuario 1 en la mitad inferior de la pantalla quede FÍSICAMENTE TRASLAPADA debajo de la bandeja invisible del Usuario 1 (#hand-tray-p1).
+- Aunque la bandeja tiene 'pointer-events: none', en la mayoría de navegadores móviles y webviews de dispositivos, un contenedor posicionado de forma absoluta con un z-index alto (2000) que se traslapa sobre elementos con z-index menor o no posicionado bloquea total o parcialmente los eventos táctiles y clicks que deberían recibir los elementos de abajo.
+- Por eso, al intentar hacer click o drag en una carta colocada en el campo del Usuario 1, el navegador interceptaba el evento a través del contenedor del hand tray del Usuario 1, impidiendo que el click llegara a la carta para abrir el menú o iniciar el arrastre. El Usuario 2 no sufría de esto porque su bandeja está arriba y sus cartas en campo quedan fuera de ese traslape inferior.
+
+B) EFECTO "SUCCIÓN" AL COLOCAR CARTAS (DRAG & DROP):
+- Al arrastrar una carta desde la mano al campo, si se soltaba en cualquier espacio de la mitad inferior de la pantalla, la función de detección de colisión `checkHandTrayHover(e, "#hand-tray-p1")` detectaba que las coordenadas táctiles estaban dentro del área del hand tray inferior (ya que este cubre los 110px inferiores).
+- Como la carta venía de la mano (oldZone iniciaba con 'hand_'), la lógica de seguridad que previene succiones accidentales se omitía, y el sistema interpretaba que querías devolver la carta a la mano. Por eso, cualquier intento de soltar la carta del Usuario 1 en el campo la succionaba inmediatamente de vuelta a la mano, haciendo imposible colocarla arrastrando.
+
+-----------------------------------------------------------------------------
+2. ¿CÓMO SE HAN CORREGIDO ESTOS PROBLEMAS?
+-----------------------------------------------------------------------------
+
+Para asegurar un comportamiento impecable, fluido y simétrico para ambos usuarios, se han implementado las siguientes mejoras:
+
+1. CAPA DE CARTAS DEL CAMPO PRIORITARIA (#field-cards-container):
+- Hemos asignado a `#field-cards-container` un `z-index: 2500 !important;` y `pointer-events: none !important;` en `docs/css/duelmobile.css`.
+- Las cartas individuales en campo heredan `pointer-events: auto !important;`.
+- Esto eleva físicamente todas las cartas invocadas en el tablero por encima de las bandejas transparentes de mano (#hand-tray-p1, z-index 2000). Al estar por encima, reciben clicks, mousedown, y eventos táctiles de forma instantánea y directa sin interferencias. ¡Ahora puedes hacer click y arrastrar cualquier carta del Usuario 1 con la misma facilidad que el Usuario 2!
+
+2. PERFECCIONAMIENTO DE COLISIÓN DEL HAND TRAY:
+- Hemos removido la restricción `if (!oldZone.startsWith("hand_"))` en `docs/js/duelmobile.js`.
+- Ahora, sin importar de dónde venga la carta (sea de la mano o del tablero), solo se succiona de regreso a la mano si se suelta en la zona extrema inferior (últimos 80px del viewport) para el Usuario 1, o en la zona extrema superior (primeros 80px) para el Usuario 2. Cualquier drop más allá de estos 80px coloca la carta libremente en el campo (field_free).
+
+3. SISTEMA DE ACOPLAMIENTO (XYZ / CARTAS ENMASCARADAS) EN MENÚS:
+- Añadida la opción "Acoplar Carta" (`#menu-attach-field`) al menú general `#card-menu` en `docs/duelmobile.html`.
+- Su click ejecuta directamente la función `startAttachmentTargeting` en `docs/js/duelmobile.js`.
+- El sistema de acoplamiento de arrastre se activa cuando arrastras y sueltas una carta directamente sobre otra en el campo.
+- La carta principal (la de arriba) es la única que responde a arrastres y muestra el menú contextual normal con todas sus opciones de juego (Atacar, Voltear, Girar, etc).
+- Si das click o tocas las cartas acopladas de abajo (las acopladas a la carta principal), el sistema cancela el arrastre y abre directamente el modal de cartas acopladas (`openAttachedCardsModal`) mostrando la lista detallada de cartas acopladas con todas sus opciones individuales (Mano, Grave, Remover, Deck), tal como lo solicitaste.
+
+¡Cualquier duda o ajuste adicional quedo completamente a tu disposición!
+=============================================================================
