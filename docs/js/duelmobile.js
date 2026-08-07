@@ -1,5 +1,14 @@
 // Duel Simulator Engine
 
+// Offline / Sandbox compatibility guard for Supabase when offline
+if (typeof _supabase === 'undefined' || !_supabase) {
+    window._supabase = {
+        auth: {
+            getSession: async () => ({ data: { session: null }, error: null })
+        }
+    };
+}
+
 // JSON Playmat layouts for Yu-Gi-Oh and Pokémon TCG
 // Scaled layout for a 1120x600 playmat board.
 // Card Width: 80px, Height: 116px.
@@ -4881,10 +4890,29 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     const rect = $("#playmat")[0].getBoundingClientRect();
                     const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
-                    const elemLeft = parseFloat($(this).css("left")) || 0;
-                    const elemTop = parseFloat($(this).css("top")) || 0;
-                    dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
-                    dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+                    if (cardObj.zone.startsWith("hand_")) {
+                        // Move element to playmat container to escape flex relative layout
+                        $("#field-cards-container").append(dragCard);
+                        const initialX = (pos.x - matOffset.left) / scale - 40;
+                        const initialY = (pos.y - matOffset.top) / scale - 58;
+                        dragCard.css({
+                            position: "absolute",
+                            width: "80px",
+                            height: "116px",
+                            left: `${initialX}px`,
+                            top: `${initialY}px`,
+                            margin: "0"
+                        });
+                        cardObj.x = initialX;
+                        cardObj.y = initialY;
+                        dragOffset.x = 40;
+                        dragOffset.y = 58;
+                    } else {
+                        const elemLeft = parseFloat($(this).css("left")) || 0;
+                        const elemTop = parseFloat($(this).css("top")) || 0;
+                        dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
+                        dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+                    }
                     dragStartCoords = { x: pos.x, y: pos.y };
                     dragStartTime = Date.now();
                     window.wasDragging = false;
@@ -5021,6 +5049,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                     // Call Tap Handler!
                     handleCardTap(cardObj, e);
+
+                    if (isHandCard) {
+                        renderAllCards();
+                    }
 
                 } else {
                     // Standard drop logic
@@ -5231,11 +5263,11 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             // =========================================================================
             // AJUSTES PERSONALIZABLES DEL TABLERO Y LAS MANOS (MODIFICABLES)
             // =========================================================================
-            const scaleFactor = 1.05;       // Tamaño del tablero (1.05 = 5% más grande, 1.00 = tamaño original)
-            const perspectiveAngle = 15;    // Ángulo de inclinación en grados (15 es más suave que 30)
-            const boardOffsetY = -30;       // Desplazamiento vertical en Y del tablero (negativo sube el tablero, positivo lo baja)
-            const p2HandTopOffset = -15;    // Desplazamiento de cartas de mano del oponente (P2) (negativo las sube/aleja)
-            const p1HandBottomOffset = 25;  // Desplazamiento de cartas de mano del usuario (P1) (positivo las sube para que se vean completas)
+            const scaleFactor = 1.15;       // Tamaño del tablero (1.05 = 5% más grande, 1.00 = tamaño original)
+            const perspectiveAngle = 11;    // Ángulo de inclinación en grados (15 es más suave que 30)
+            const boardOffsetY = -65;       // Desplazamiento vertical en Y del tablero (negativo sube el tablero, positivo lo baja)
+            const p2HandTopOffset = 5;     // Desplazamiento de cartas de mano del oponente (P2) (negativo las sube/aleja)
+            const p1HandBottomOffset = 45;  // Desplazamiento de cartas de mano del usuario (P1) (positivo las sube para que se vean completas)
             // =========================================================================
 
             // Reserve exactly 150px of vertical height split between both hands

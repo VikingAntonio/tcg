@@ -13,40 +13,40 @@ manera sumamente sencilla.
 
 Los ajustes dinámicos principales de escala, perspectiva y posición se calculan
 dentro de la función `window.adjustPlaymatScale`. He colocado un bloque de variables
-claramente etiquetado a partir de la línea 5231 del archivo `docs/js/duelmobile.js`:
+claramente etiquetado a partir de la línea 5254 del archivo `docs/js/duelmobile.js`:
 
-Líneas 5231 a 5239 de `docs/js/duelmobile.js`:
+Líneas 5254 a 5262 de `docs/js/duelmobile.js`:
 -----------------------------------------------------------------------------
-5231:            // =========================================================================
-5232:            // AJUSTES PERSONALIZABLES DEL TABLERO Y LAS MANOS (MODIFICABLES)
-5233:            // =========================================================================
-5234:            const scaleFactor = 1.05;       // Tamaño del tablero (1.05 = 5% más grande, 1.00 = tamaño original)
-5235:            const perspectiveAngle = 15;    // Ángulo de inclinación en grados (15 es más suave que 30)
-5236:            const boardOffsetY = -30;       // Desplazamiento vertical en Y del tablero (negativo sube el tablero, positivo lo baja)
-5237:            const p2HandTopOffset = -15;    // Desplazamiento de cartas de mano del oponente (P2) (negativo las sube/aleja)
-5238:            const p1HandBottomOffset = 25;  // Desplazamiento de cartas de mano del usuario (P1) (positivo las sube para que se vean completas)
-5239:            // =========================================================================
+5254:            // =========================================================================
+5255:            // AJUSTES PERSONALIZABLES DEL TABLERO Y LAS MANOS (MODIFICABLES)
+5256:            // =========================================================================
+5257:            const scaleFactor = 1.15;       // Tamaño del tablero (1.15 = 15% más grande, 1.00 = tamaño original)
+5258:            const perspectiveAngle = 11;    // Ángulo de inclinación en grados (11 es más suave que 15)
+5259:            const boardOffsetY = -65;       // Desplazamiento vertical en Y del tablero (negativo sube el tablero, positivo lo baja)
+5260:            const p2HandTopOffset = 5;      // Desplazamiento de cartas de mano del oponente (P2) (positivo las acerca al tablero)
+5261:            const p1HandBottomOffset = 45;  // Desplazamiento de cartas de mano del usuario (P1) (positivo las sube para que se vean completas)
+5262:            // =========================================================================
 -----------------------------------------------------------------------------
 
 ¿CÓMO MODIFICAR ESTOS VALORES?:
 
-* `scaleFactor` (Línea 5234): Controla el tamaño del tablero.
-  - Si quieres hacerlo más grande: Pon un valor mayor (ej. 1.08 o 1.10).
-  - Si quieres reducirlo: Pon un valor menor (ej. 1.00 o 0.95).
+* `scaleFactor` (Línea 5257): Controla el tamaño del tablero.
+  - Si quieres hacerlo más grande: Pon un valor mayor (ej. 1.20).
+  - Si quieres reducirlo: Pon un valor menor (ej. 1.10 o 1.00).
 
-* `perspectiveAngle` (Línea 5235): Controla la perspectiva 3D (el ángulo de inclinación).
-  - Un valor menor como 15 (grados) suaviza enormemente la perspectiva 3D haciendo el tablero más plano y plano.
+* `perspectiveAngle` (Línea 5258): Controla la perspectiva 3D (el ángulo de inclinación).
+  - Un valor menor como 11 (grados) suaviza enormemente la perspectiva 3D haciendo el tablero más plano.
   - El sistema actualiza automáticamente el contra-giro de las cartas invocadas en el tablero para que se queden derechas al mismo ángulo.
 
-* `boardOffsetY` (Línea 5236): Desplazamiento vertical en el eje Y de todo el tablero.
-  - Si pones un valor negativo (ej. -30 o -40), el tablero se subirá en la pantalla (acercándolo visualmente a las cartas de mano del oponente/P2).
-  - Si pones un valor positivo (ej. 10 o 20), el tablero bajará.
+* `boardOffsetY` (Línea 5259): Desplazamiento vertical en el eje Y de todo el tablero.
+  - Si pones un valor más negativo (ej. -75 o -80), el tablero se subirá más en la pantalla (acercándolo visualmente a las cartas de mano del oponente/P2).
+  - Si pones un valor menos negativo (ej. -30 o -40), el tablero bajará.
 
-* `p2HandTopOffset` (Línea 5237): Desplazamiento vertical de la mano del oponente (Jugador 2).
-  - Un valor negativo (ej. -15) sube y aleja las cartas de mano del oponente, pegándolas al borde superior de la pantalla.
+* `p2HandTopOffset` (Línea 5260): Desplazamiento vertical de la mano del oponente (Jugador 2).
+  - Un valor positivo mayor (ej. 10 o 15) baja y aproxima las cartas de mano del oponente, pegándolas al borde del tablero.
 
-* `p1HandBottomOffset` (Línea 5238): Desplazamiento de la mano del usuario local (Jugador 1).
-  - Un valor positivo (ej. 25 o 30) sube las cartas de tu mano hacia el centro para que se vean completas y nunca se salgan de la pantalla por debajo.
+* `p1HandBottomOffset` (Línea 5261): Desplazamiento de la mano del usuario local (Jugador 1).
+  - Un valor positivo mayor (ej. 45 o 50) sube las cartas de tu mano hacia el centro para que se vean completas y nunca se salgan de la pantalla por debajo.
 
 
 -----------------------------------------------------------------------------
@@ -55,20 +55,20 @@ Líneas 5231 a 5239 de `docs/js/duelmobile.js`:
 
 Las variables globales de CSS de la perspectiva 3D y su comportamiento se encuentran
 al final de tu archivo `docs/css/duelmobile.css` en la regla `:root` a partir de la
-línea 1610:
+línea 1608:
 
-Líneas 1610 a 1613 de `docs/css/duelmobile.css`:
+Líneas 1608 a 1613 de `docs/css/duelmobile.css`:
 -----------------------------------------------------------------------------
-1610: :root {
-1611:     --board-tilt: 15deg;
-1612:     --board-perspective: 2000px;
-1613: }
+1608: :root {
+1609:     --board-tilt: 15deg;
+1610:     --board-perspective: 2000px;
+1611: }
 -----------------------------------------------------------------------------
 
-* `--board-tilt` (Línea 1611): Es el ángulo por defecto con el que las cartas contrarrestan
+* `--board-tilt` (Línea 1609): Es el ángulo por defecto con el que las cartas contrarrestan
   la inclinación del tablero. Se sincroniza automáticamente con el valor que configures
   en `perspectiveAngle` de `duelmobile.js`.
-* `--board-perspective` (Línea 1612): Modifica la profundidad 3D del lienzo de juego.
+* `--board-perspective` (Línea 1610): Modifica la profundidad 3D del lienzo de juego.
   - Un valor mayor (ej. 2000px o 2500px) reduce el efecto de perspectiva cónica, dando
     un renderizado plano y premium sin distorsiones agresivas.
 

@@ -399,6 +399,26 @@
     </div>
 
     <!-- External project config & logic scripts -->
+    <script>
+        if (typeof supabase === 'undefined') {
+            window.supabase = {
+                createClient: function() {
+                    return {
+                        auth: {
+                            getSession: async () => ({ data: { session: null }, error: null }),
+                            onAuthStateChange: function() { return { data: { subscription: { unsubscribe: function() {} } } }; }
+                        },
+                        channel: function() {
+                            return {
+                                on: function() { return this; },
+                                subscribe: function(cb) { if (cb) cb('SUBSCRIBED'); return this; }
+                            };
+                        }
+                    };
+                }
+            };
+        }
+    </script>
     <script src="js/supabase-config.js"></script>
 
     <script src="js/utils.js"></script>
