@@ -1602,3 +1602,320 @@ body:not(.layout-pokemon) .pokemon-only-item {
     color: black;
     border-color: #ffffff;
 }
+
+/* ==========================================================================
+   MOBILE PORTRAIT/LANDSCAPE SPECIAL OVERRIDES
+   ========================================================================== */
+
+:root {
+    --board-tilt: 15deg;
+    --board-perspective: 2000px;
+}
+
+/* Hide sidebars, LP, central bar, switches, accessories, and other panels to focus purely on the board & hands */
+.duel-sidebar,
+.duel-communication-sidebar,
+.lp-counter-container,
+.central-turn-bar,
+.hand-controls,
+.tcg-accessories-panel,
+.accessories-tab,
+#btn-reset-game,
+.floating-zone-count,
+.hand-card-actions,
+.field-card-actions,
+.theme-switch,
+.hand-batch-actions,
+#pile-batch-actions,
+.attached-bulk-actions,
+#pending-response-box,
+.quick-responses-bar {
+    display: none !important;
+}
+
+/* Landscape/horizontal mobile layout adjustments */
+html, body.duel-body {
+    overflow: hidden !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.duel-workspace {
+    display: block !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    width: 100vw !important;
+    overflow: hidden !important;
+}
+
+.duel-arena-wrapper {
+    position: relative !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    display: block !important; /* overrides flex-direction / justify-content */
+    perspective: var(--board-perspective, 2000px) !important;
+    perspective-origin: center center !important;
+}
+
+#playmat {
+    transform-style: preserve-3d !important;
+}
+
+/* Stand upright nested cards on field rotated perfectly matching playmat angle */
+#playmat .duel-card {
+    transform-origin: bottom center !important;
+    transform: rotateX(calc(-1 * var(--board-tilt, 15deg))) rotate(var(--tilt, 0deg)) !important;
+    transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s !important;
+}
+
+#playmat .duel-card:hover {
+    transform: rotateX(calc(-1 * var(--board-tilt, 15deg))) scale(1.08) rotate(var(--tilt, 0deg)) !important;
+    z-index: 5000 !important;
+}
+
+#playmat .duel-card.dragging {
+    transform: rotateX(calc(-1 * var(--board-tilt, 15deg))) rotate(calc(var(--tilt, 0deg) + 2deg)) translate3d(0, -10px, 40px) scale(1.12) !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 25px var(--primary-glow) !important;
+    z-index: 100000 !important;
+}
+
+/* Position hands as overlaying floating trays (Master Duel / Pokemon TCG Live Style) */
+.hand-tray {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 100% !important;
+    max-width: 98vw !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    z-index: 2000 !important; /* Float on top of the playmat board */
+    pointer-events: none !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+.hand-tray.player-2 {
+    top: 2px !important;
+    bottom: auto !important;
+}
+
+.hand-tray.player-1 {
+    bottom: 2px !important;
+    top: auto !important;
+}
+
+.hand-cards-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 75px !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+}
+
+/* Overlap effect for cards in hands, styled small and elegantly */
+.hand-cards-container .duel-card {
+    position: relative !important;
+    width: 48px !important;
+    height: 70px !important;
+    margin-left: -14px !important; /* overlapping overlapping effect */
+    perspective: 300px !important;
+    transform: perspective(300px) rotateX(12deg) !important;
+    transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), margin 0.2s, z-index 0.2s !important;
+    pointer-events: auto !important;
+    left: auto !important;
+    top: auto !important;
+}
+
+/* Avoid clipping of the first card */
+.hand-cards-container .duel-card:first-child {
+    margin-left: 0 !important;
+}
+
+/* Slide up, scale, and flatten on hover/focus */
+.hand-cards-container .duel-card:hover {
+    transform: translateY(-20px) scale(1.6) rotateX(0deg) !important;
+    z-index: 50000 !important;
+    margin-left: 2px !important;
+    margin-right: 14px !important;
+}
+
+/* Keep overlay sub-menus flat/2D */
+.card-context-menu, .deck-context-menu {
+    transform: scale(0.9) translate3d(0, 10px, 0) !important;
+}
+.card-context-menu.active, .deck-context-menu.active {
+    transform: scale(1) translate3d(0, 0, 0) !important;
+}
+
+/* Player 2 slides downwards instead of upwards */
+.player-2 .hand-cards-container .duel-card {
+    transform: perspective(300px) rotateX(-12deg) !important;
+}
+
+.player-2 .hand-cards-container .duel-card:hover {
+    transform: translateY(20px) scale(1.6) rotateX(0deg) !important;
+    z-index: 50000 !important;
+    margin-left: 2px !important;
+    margin-right: 14px !important;
+}
+
+/* Absolutely no background dimming, darkening, blurring, or opacity */
+.search-overlay,
+.zone-picker-overlay,
+.swal2-backdrop,
+.swal2-container {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+}
+
+/* Suppress/hide any legacy mask-editor overlay automatically appended by utils.js */
+#mask-editor-overlay,
+body > .overlay {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+/* Keep actual search modals and overlays visible */
+.search-overlay, .search-overlay .overlay {
+    display: none; /* controlled by jQuery fadeIn/fadeOut */
+}
+.search-overlay .search-modal {
+    display: none;
+}
+
+/* Responsive overlays, list views, context menus, and list-view modalsearch grids proportioned nicely for horizontal cellphones */
+.search-overlay .search-modal {
+    display: flex !important;
+    max-width: 85vw !important;
+    max-height: 85vh !important;
+    width: 85vw !important;
+    height: 85vh !important;
+    border-radius: 10px !important;
+    background: rgba(10, 15, 22, 0.98) !important;
+    border: 2px solid var(--glass-border) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important;
+}
+
+.search-body {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)) !important;
+    gap: 12px !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+}
+
+.pile-card-container, .extra-deck-card-container, .search-card-item {
+    width: 55px !important;
+    height: 80px !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
+    position: relative !important;
+    overflow: visible !important; /* Allow overlay menu to pop out of card bounds without clipping */
+}
+
+.pile-card-container img, .extra-deck-card-container img, .search-card-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 4px !important;
+}
+
+/* Tap menus inside modals, perfectly comfortable, no SweetAlert2 or clipping */
+.pile-card-hover-overlay, .extra-deck-card-hover-overlay {
+    position: absolute !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: rgba(12, 18, 24, 0.98) !important;
+    border: 1.5px solid var(--primary-color) !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+    width: 110px !important;
+    height: auto !important;
+    min-height: auto !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: 99999 !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(0, 210, 255, 0.4) !important;
+    transition: opacity 0.15s ease-in-out !important;
+}
+
+/* Show the menu overlay on hover or when .active-menu class is applied on tap */
+.pile-card-container:hover .pile-card-hover-overlay,
+.extra-deck-card-container:hover .extra-deck-card-hover-overlay,
+.pile-card-container.active-menu .pile-card-hover-overlay,
+.extra-deck-card-container.active-menu .extra-deck-card-hover-overlay,
+.search-card-item.active-menu .pile-card-hover-overlay {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Override button styles in list overlay menus for touch accuracy */
+.pile-card-action-btn, .extra-card-action-btn {
+    font-size: 0.62rem !important;
+    padding: 5px 4px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    text-align: center !important;
+    border-radius: 5px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+    width: 100% !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+}
+.pile-card-action-btn:hover, .extra-card-action-btn:hover {
+    background: var(--primary-color) !important;
+    color: #000 !important;
+    border-color: #fff !important;
+}
+
+/* Capped context menu styling on horizontal mobile viewports with smooth scroll and clean layout */
+.card-context-menu, .deck-context-menu {
+    max-height: 60vh !important;
+    width: 140px !important;
+    border-radius: 8px !important;
+    padding-bottom: 5px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(18, 25, 33, 0.98) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+}
+
+.card-context-menu::-webkit-scrollbar, .deck-context-menu::-webkit-scrollbar {
+    display: none !important;
+}
+
+.menu-item {
+    padding: 5px 8px !important;
+    font-size: 0.62rem !important;
+    gap: 5px !important;
+    font-weight: 700 !important;
+    color: #eee !important;
+}
+
+.menu-item i {
+    font-size: 0.72rem !important;
+    width: 10px !important;
+}
