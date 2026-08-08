@@ -1949,3 +1949,154 @@ body > .overlay {
 #field-cards-container .duel-card {
     pointer-events: auto !important;
 }
+
+/* ==========================================================================
+   MOBILE EXCLUSIVE FLOATING ACC-BAR & SIDEBAR DRAWER OVERRIDES
+   ========================================================================== */
+
+#btn-toggle-mobile-sidebar {
+    display: flex !important;
+}
+
+.duel-sidebar {
+    display: none !important;
+}
+
+.duel-sidebar.mobile-sidebar-active {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    z-index: 120000 !important;
+    background: rgba(12, 18, 24, 0.98) !important;
+    border-right: 2px solid var(--primary-color) !important;
+    box-shadow: 5px 0 25px rgba(0,0,0,0.8) !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    padding: 15px !important;
+    gap: 12px !important;
+}
+
+.duel-sidebar.mobile-sidebar-active .preview-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+.duel-sidebar.mobile-sidebar-active .preview-img-container {
+    width: 140px !important;
+    height: 200px !important;
+    max-width: 140px !important;
+    display: flex !important;
+}
+
+.duel-sidebar.mobile-sidebar-active .sidebar-accessories {
+    margin-bottom: 10px !important;
+    gap: 8px !important;
+    display: flex !important;
+}
+
+.duel-sidebar.mobile-sidebar-active .accessories-section {
+    padding: 6px !important;
+    background: rgba(0,0,0,0.3) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 8px !important;
+    display: block !important;
+}
+
+.duel-sidebar.mobile-sidebar-active .sidebar-section {
+    padding: 8px !important;
+    display: block !important;
+}
+
+.duel-sidebar.mobile-sidebar-active .sidebar-accessories,
+.duel-sidebar.mobile-sidebar-active .accessories-section,
+.duel-sidebar.mobile-sidebar-active .acc-row,
+.duel-sidebar.mobile-sidebar-active .acc-tool-box,
+.duel-sidebar.mobile-sidebar-active .tcg-dice,
+.duel-sidebar.mobile-sidebar-active .tcg-coin,
+.duel-sidebar.mobile-sidebar-active .tool-label,
+.duel-sidebar.mobile-sidebar-active .custom-atk-def-source,
+.duel-sidebar.mobile-sidebar-active .atk-def-custom-inputs,
+.duel-sidebar.mobile-sidebar-active .custom-atk-input,
+.duel-sidebar.mobile-sidebar-active .custom-def-input,
+.duel-sidebar.mobile-sidebar-active .btn-spawn-token,
+.duel-sidebar.mobile-sidebar-active .counter-source {
+    display: flex !important;
+}
+
+.duel-sidebar.mobile-sidebar-active .pokemon-only-tool,
+.duel-sidebar.mobile-sidebar-active .ygo-only-tool {
+    display: none !important;
+}
+
+body.layout-yugioh .duel-sidebar.mobile-sidebar-active .ygo-only-tool,
+body.layout-yugioh_advanced .duel-sidebar.mobile-sidebar-active .ygo-only-tool {
+    display: block !important;
+}
+body.layout-yugioh .duel-sidebar.mobile-sidebar-active .ygo-only-tool.counter-source-wrapper,
+body.layout-yugioh_advanced .duel-sidebar.mobile-sidebar-active .ygo-only-tool.counter-source-wrapper {
+    display: flex !important;
+}
+
+body.layout-pokemon .duel-sidebar.mobile-sidebar-active .pokemon-only-tool {
+    display: block !important;
+}
+body.layout-pokemon .duel-sidebar.mobile-sidebar-active .pokemon-only-tool.poke-counter-grid {
+    display: grid !important;
+}
+
+/* Floating LP Counters for mobile horizontal layout, visible only in Yu-Gi-Oh! modes */
+body.layout-yugioh .lp-counter-container,
+body.layout-yugioh_advanced .lp-counter-container {
+    display: flex !important;
+    position: fixed !important;
+    top: 10px !important;
+    background: rgba(18, 24, 30, 0.95) !important;
+    border: 1.5px solid var(--primary-color) !important;
+    border-radius: 8px !important;
+    padding: 6px 12px !important;
+    z-index: 100000 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: auto !important;
+    min-width: 90px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6) !important;
+}
+
+body.layout-yugioh .lp-counter-container.p1-lp-container,
+body.layout-yugioh_advanced .lp-counter-container.p1-lp-container {
+    left: 10px !important;
+    border-color: var(--primary-color) !important;
+}
+
+body.layout-yugioh .lp-counter-container.p2-lp-container,
+body.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
+    right: 10px !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* Hide inputs and control rows on mobile viewport to keep LP containers small & clean */
+@media (max-width: 1024px) {
+    .lp-counter-container .lp-calc-row,
+    .lp-counter-container .lp-controls-row {
+        display: none !important;
+    }
+    .lp-counter-container .lp-header {
+        font-size: 0.65rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        color: #aaa !important;
+        margin-bottom: 2px !important;
+    }
+    .lp-counter-container .lp-number {
+        font-family: 'Orbitron', sans-serif !important;
+        font-size: 1.1rem !important;
+        font-weight: 900 !important;
+        color: #fff !important;
+        cursor: pointer !important;
+    }
+}

@@ -1233,8 +1233,8 @@ function openExtraDeckModal(playerKey) {
 
     $("#extra-overlay").fadeIn(200).css("display", "flex");
 
-    // Click Invocar button to start targeting mode on the field
-    $(".btn-extra-summon").off("click").on("click", function(e) {
+    // Click Invocar button to start targeting mode on the field (Delegated for loop cloning support)
+    $("#extra-cards-grid").off("click").on("click", ".btn-extra-summon", function(e) {
         e.preventDefault();
         e.stopPropagation();
         const container = $(this).closest(".extra-deck-card-container");
@@ -1251,8 +1251,8 @@ function openExtraDeckModal(playerKey) {
         }
     });
 
-    // Click XYZ button to start XYZ targeting mode on the field
-    $(".btn-extra-xyz").off("click").on("click", function(e) {
+    // Click XYZ button to start XYZ targeting mode on the field (Delegated for loop cloning support)
+    $("#extra-cards-grid").on("click", ".btn-extra-xyz", function(e) {
         e.preventDefault();
         e.stopPropagation();
         const container = $(this).closest(".extra-deck-card-container");
@@ -4442,6 +4442,142 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 sendTurnStateUpdate();
             });
 
+            // Mobile Click LP counter to show SweetAlert2 calculator
+            $(".lp-counter-container").click(function(e) {
+                // If clicking an input/button of desktop layout, ignore
+                if ($(e.target).closest(".lp-calc-input, .lp-btn").length) {
+                    return;
+                }
+                const player = $(this).attr("id") === "lp-counter-p1" ? "p1" : "p2";
+                const key = player === "p1" ? "player1" : "player2";
+                const currentLP = state.lp[key];
+
+                Swal.fire({
+                    title: `Calculadora LP - ${player.toUpperCase()}`,
+                    html: `
+                        <div style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;" id="calc-current-display">
+                            ${currentLP}
+                        </div>
+                        <input type="text" id="calc-input-value" class="swal2-input" placeholder="0" readonly style="text-align: center; font-size: 1.5rem; font-family: 'Orbitron', sans-serif; margin: 10px auto; width: 80%; background: #1e2530; color: #fff; border: 1.5px solid var(--primary-color);">
+
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px auto; max-width: 240px;">
+                            <button class="btn btn-calc" data-val="7" style="padding: 10px 0; font-size: 1.1rem;">7</button>
+                            <button class="btn btn-calc" data-val="8" style="padding: 10px 0; font-size: 1.1rem;">8</button>
+                            <button class="btn btn-calc" data-val="9" style="padding: 10px 0; font-size: 1.1rem;">9</button>
+                            <button class="btn btn-calc" data-val="4" style="padding: 10px 0; font-size: 1.1rem;">4</button>
+                            <button class="btn btn-calc" data-val="5" style="padding: 10px 0; font-size: 1.1rem;">5</button>
+                            <button class="btn btn-calc" data-val="6" style="padding: 10px 0; font-size: 1.1rem;">6</button>
+                            <button class="btn btn-calc" data-val="1" style="padding: 10px 0; font-size: 1.1rem;">1</button>
+                            <button class="btn btn-calc" data-val="2" style="padding: 10px 0; font-size: 1.1rem;">2</button>
+                            <button class="btn btn-calc" data-val="3" style="padding: 10px 0; font-size: 1.1rem;">3</button>
+                            <button class="btn btn-calc" data-val="0" style="padding: 10px 0; font-size: 1.1rem;">0</button>
+                            <button class="btn btn-calc" data-val="00" style="padding: 10px 0; font-size: 1.1rem;">00</button>
+                            <button class="btn btn-calc" data-val="000" style="padding: 10px 0; font-size: 1.1rem;">000</button>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px auto; max-width: 240px;">
+                            <button class="btn btn-calc-op btn-danger" data-op="sub" style="padding: 12px 0; font-weight: bold; font-size: 1.1rem;">-</button>
+                            <button class="btn btn-calc-op btn-success" data-op="add" style="padding: 12px 0; font-weight: bold; font-size: 1.1rem;">+</button>
+                            <button class="btn btn-calc-op btn-warning" data-op="half" style="padding: 12px 0; font-weight: bold; font-size: 0.9rem; background: #ff9f43; border: none; color: #fff;">/2</button>
+                            <button class="btn btn-calc-clear btn-secondary" style="padding: 12px 0; font-weight: bold; font-size: 1.1rem; background: #4b6584; border: none; color: #fff;">C</button>
+                        </div>
+                    `,
+                    background: '#12181e',
+                    color: '#fff',
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    didOpen: () => {
+                        const inputVal = $("#calc-input-value");
+
+                        // Handle numbers click
+                        $(".btn-calc").click(function() {
+                            const val = $(this).data("val");
+                            let curr = inputVal.val();
+                            if (curr === "0") curr = "";
+                            inputVal.val(curr + val);
+                        });
+
+                        // Handle clear click
+                        $(".btn-calc-clear").click(function() {
+                            inputVal.val("");
+                        });
+
+                        // Handle operators click
+                        $(".btn-calc-op").click(function() {
+                            const op = $(this).data("op");
+                            const entered = parseInt(inputVal.val()) || 0;
+
+                            if (op === "add") {
+                                if (entered > 0) {
+                                    state.lp[key] += entered;
+                                    appendGameLog('SYS', `Sumó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                                }
+                            } else if (op === "sub") {
+                                if (entered > 0) {
+                                    state.lp[key] = Math.max(0, state.lp[key] - entered);
+                                    appendGameLog('SYS', `Restó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                                }
+                            } else if (op === "half") {
+                                const originalLP = state.lp[key];
+                                state.lp[key] = Math.ceil(state.lp[key] / 2);
+                                appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${originalLP} a ${state.lp[key]}`);
+                            }
+
+                            updateTurnUI();
+                            sendTurnStateUpdate();
+                            Swal.close();
+                        });
+
+                        // Support physical keyboard entries
+                        $(document).off("keydown.calc").on("keydown.calc", function(ke) {
+                            if (ke.key >= '0' && ke.key <= '9') {
+                                let curr = inputVal.val();
+                                if (curr === "0") curr = "";
+                                inputVal.val(curr + ke.key);
+                            } else if (ke.key === 'Backspace' || ke.key === 'Delete') {
+                                let curr = inputVal.val();
+                                if (curr.length > 0) {
+                                    inputVal.val(curr.slice(0, -1));
+                                }
+                            } else if (ke.key === '+' || ke.key === 'Enter') {
+                                ke.preventDefault();
+                                const entered = parseInt(inputVal.val()) || 0;
+                                if (entered > 0) {
+                                    state.lp[key] += entered;
+                                    appendGameLog('SYS', `Sumó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                                    updateTurnUI();
+                                    sendTurnStateUpdate();
+                                }
+                                Swal.close();
+                            } else if (ke.key === '-') {
+                                ke.preventDefault();
+                                const entered = parseInt(inputVal.val()) || 0;
+                                if (entered > 0) {
+                                    state.lp[key] = Math.max(0, state.lp[key] - entered);
+                                    appendGameLog('SYS', `Restó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
+                                    updateTurnUI();
+                                    sendTurnStateUpdate();
+                                }
+                                Swal.close();
+                            } else if (ke.key === '/') {
+                                ke.preventDefault();
+                                const originalLP = state.lp[key];
+                                state.lp[key] = Math.ceil(state.lp[key] / 2);
+                                appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${originalLP} a ${state.lp[key]}`);
+                                updateTurnUI();
+                                sendTurnStateUpdate();
+                                Swal.close();
+                            } else if (ke.key === 'c' || ke.key === 'C') {
+                                inputVal.val("");
+                            }
+                        });
+                    },
+                    willClose: () => {
+                        $(document).off("keydown.calc");
+                    }
+                });
+            });
+
             // 8. Decorate global helper functions in duelmobile.js
             let isDrawingAction = false;
 
@@ -5354,7 +5490,65 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 $(".pile-card-container, .extra-deck-card-container, .search-card-item").not(this).removeClass("active-menu");
 
                 // Toggle active menu class on the clicked container
-                $(this).addClass("active-menu");
+                const $this = $(this);
+                $this.addClass("active-menu");
+
+                // Initialize loop scrolling
+                const overlay = $this.find('.pile-card-hover-overlay, .extra-deck-card-hover-overlay');
+                if (overlay.length && !overlay.data('loop-initialized')) {
+                    overlay.data('loop-initialized', true);
+
+                    let menu = overlay.find('.pile-card-menu');
+                    let isExtra = false;
+                    if (!menu.length) {
+                        menu = overlay;
+                        isExtra = true;
+                    }
+
+                    const children = menu.children().clone();
+                    menu.empty();
+
+                    const gapStyle = isExtra ? 'gap: 6px;' : 'gap: 3px;';
+                    const set1 = $(`<div class="menu-set-wrapper" style="display:flex; flex-direction:column; ${gapStyle} width:100%;"></div>`).append(children.clone());
+                    const set2 = $(`<div class="menu-set-wrapper" style="display:flex; flex-direction:column; ${gapStyle} width:100%;"></div>`).append(children.clone());
+                    const set3 = $(`<div class="menu-set-wrapper" style="display:flex; flex-direction:column; ${gapStyle} width:100%;"></div>`).append(children.clone());
+
+                    menu.append(set1).append(set2).append(set3);
+
+                    // Add scroll listener for seamless looping
+                    overlay.off('scroll.menuloop').on('scroll.mobile_menuloop', function() {
+                        const container = this;
+                        const $sets = $(container).find('.menu-set-wrapper');
+                        if ($sets.length < 3) return;
+
+                        const setHeight = $sets.eq(0).outerHeight(true) || $sets.eq(0).height();
+                        const scrollTop = container.scrollTop;
+
+                        if (scrollTop >= setHeight * 2) {
+                            container.scrollTop = scrollTop - setHeight;
+                        } else if (scrollTop < setHeight) {
+                            container.scrollTop = scrollTop + setHeight;
+                        }
+                    });
+
+                    // Set initial scroll to the middle set (set2)
+                    setTimeout(() => {
+                        const $sets = overlay.find('.menu-set-wrapper');
+                        if ($sets.length >= 3) {
+                            const setHeight = $sets.eq(0).outerHeight(true) || $sets.eq(0).height();
+                            overlay[0].scrollTop = setHeight;
+                        }
+                    }, 50);
+                } else if (overlay.length) {
+                    // Reset scroll to middle set on every open
+                    setTimeout(() => {
+                        const $sets = overlay.find('.menu-set-wrapper');
+                        if ($sets.length >= 3) {
+                            const setHeight = $sets.eq(0).outerHeight(true) || $sets.eq(0).height();
+                            overlay[0].scrollTop = setHeight;
+                        }
+                    }, 50);
+                }
             });
 
             // Clicking anywhere outside of modal list-view cards closes any open menu overlay
@@ -5629,6 +5823,23 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     } catch (err) {}
                     if (typeof window.drawAttackArrows === "function") {
                         window.drawAttackArrows();
+                    }
+                }
+            });
+
+            // Toggle mobile accessories sidebar
+            $("#btn-toggle-mobile-sidebar").off("click").on("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(".duel-sidebar").toggleClass("mobile-sidebar-active");
+            });
+
+            // Close mobile accessories sidebar when clicking outside
+            $(document).on("click mousedown touchstart", function(e) {
+                const sidebar = $(".duel-sidebar");
+                if (sidebar.hasClass("mobile-sidebar-active")) {
+                    if (!$(e.target).closest(".duel-sidebar, #btn-toggle-mobile-sidebar, .swal2-container, .swal2-popup").length) {
+                        sidebar.removeClass("mobile-sidebar-active");
                     }
                 }
             });
