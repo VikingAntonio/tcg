@@ -1845,7 +1845,7 @@ body > .overlay {
     border: 1.5px solid var(--primary-color) !important;
     border-radius: 8px !important;
     padding: 6px !important;
-    width: 110px !important;
+    width: 130px !important; /* Increased size to comfortably fit all options */
     height: auto !important;
     min-height: auto !important;
     left: 50% !important;
@@ -1868,10 +1868,17 @@ body > .overlay {
     pointer-events: auto !important;
 }
 
+/* Ensure active menu containers are brought to top of layout stack */
+.pile-card-container.active-menu,
+.extra-deck-card-container.active-menu,
+.search-card-item.active-menu {
+    z-index: 100000 !important;
+}
+
 /* Override button styles in list overlay menus for touch accuracy */
 .pile-card-action-btn, .extra-card-action-btn {
-    font-size: 0.62rem !important;
-    padding: 5px 4px !important;
+    font-size: 0.65rem !important; /* Increased slightly for comfortable tap */
+    padding: 6px 4px !important; /* Raised padding slightly for larger tap targets */
     font-weight: 800 !important;
     text-transform: uppercase !important;
     text-align: center !important;
