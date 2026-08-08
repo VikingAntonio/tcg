@@ -2182,7 +2182,6 @@ function setupEventListeners() {
             $("#menu-to-hand").hide();
             $("#menu-to-grave").hide();
             $("#menu-to-banish").hide();
-            $("#menu-attach-field").hide();
             $("#menu-to-deck-top").hide();
             $("#menu-to-deck-bottom").hide();
             $("#menu-control").hide();
@@ -2192,7 +2191,6 @@ function setupEventListeners() {
             $("#menu-to-hand").show();
             $("#menu-to-grave").show();
             $("#menu-to-banish").show();
-            $("#menu-attach-field").show();
             $("#menu-to-deck-top").show();
             $("#menu-to-deck-bottom").show();
             $("#menu-control").show();
@@ -2400,12 +2398,6 @@ function setupEventListeners() {
         activeMenuCard.faceDown = false;
         activeMenuCard.tapped = false;
         renderAllCards();
-    });
-
-    $("#menu-attach-field").click(function() {
-        if (!activeMenuCard) return;
-        $("#card-menu").removeClass("active");
-        startAttachmentTargeting(activeMenuCard);
     });
 
     $("#menu-swap-active-bench").click(function() {
@@ -4814,7 +4806,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         $("#menu-to-hand").hide();
                         $("#menu-to-grave").hide();
                         $("#menu-to-banish").hide();
-                        $("#menu-attach-field").hide();
                         $("#menu-to-deck-top").hide();
                         $("#menu-to-deck-bottom").hide();
                         $("#menu-control").hide();
@@ -4824,7 +4815,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         $("#menu-to-hand").show();
                         $("#menu-to-grave").show();
                         $("#menu-to-banish").show();
-                        $("#menu-attach-field").show();
                         $("#menu-to-deck-top").show();
                         $("#menu-to-deck-bottom").show();
                         $("#menu-control").show();
@@ -4873,14 +4863,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     const instId = $(this).data("instance-id");
                     const cardObj = state.cards.find(c => c.instanceId === instId);
                     if (!cardObj) return;
-
-                    // If it is an attached card (the coupled ones underneath), open the attached cards modal and return immediately
-                    if (cardObj.attachedTo) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openAttachedCardsModal(cardObj.attachedTo);
-                        return;
-                    }
 
                     if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
                         return;
@@ -5031,126 +5013,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         });
                     }
 
-                    if ($("#playmat").hasClass("selecting-zone")) {
-                        // 1. Attachment Targeting mode direct handling
-                        if (typeof attachingCard !== "undefined" && attachingCard) {
-                            if (cardObj.instanceId !== attachingCard.instanceId && !cardObj.attachedTo) {
-                                const parentCardObj = cardObj;
-                                const attachingCardObj = attachingCard;
-                                state.cards.forEach(c => {
-                                    if (c.attachedTo === attachingCardObj.instanceId) {
-                                        c.attachedTo = parentCardObj.instanceId;
-                                    }
-                                });
-                                const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                                parentCardObj.z = maxZ + 1;
-
-                                attachingCardObj.attachedTo = parentCardObj.instanceId;
-                                attachingCardObj.attachedAt = Date.now() + Math.random();
-                                attachingCardObj.zone = parentCardObj.zone;
-                                attachingCardObj.faceDown = parentCardObj.faceDown;
-
-                                renderAllCards();
-
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Carta Acoplada',
-                                    text: `${attachingCardObj.name} acoplada a ${parentCardObj.name}.`,
-                                    toast: true,
-                                    position: 'top-end',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
-                                stopAttachmentTargeting();
-                                dragCard = null;
-                                return;
-                            }
-                        }
-
-                        // 2. XYZ Targeting mode direct handling
-                        if (typeof xyzCard !== "undefined" && xyzCard) {
-                            if (!cardObj.attachedTo) {
-                                const parentCardObj = cardObj;
-                                const newParent = xyzCard;
-                                const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                                newParent.z = maxZ + 1;
-
-                                newParent.zone = parentCardObj.zone;
-                                newParent.x = parentCardObj.x;
-                                newParent.y = parentCardObj.y;
-                                newParent.faceDown = false;
-                                newParent.tapped = parentCardObj.tapped;
-                                newParent.isExtra = true;
-
-                                state.cards.forEach(c => {
-                                    if (c.attachedTo === parentCardObj.instanceId) {
-                                        c.attachedTo = newParent.instanceId;
-                                    }
-                                });
-
-                                parentCardObj.attachedTo = newParent.instanceId;
-                                parentCardObj.attachedAt = Date.now() + Math.random();
-
-                                renderAllCards();
-
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Convocación XYZ',
-                                    text: `${newParent.name} ha sido colocada encima de ${parentCardObj.name} (XYZ).`,
-                                    toast: true,
-                                    position: 'top-end',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
-                                stopXYZTargeting();
-                                dragCard = null;
-                                return;
-                            }
-                        }
-
-                        // 3. Swap Targeting mode direct handling
-                        if (typeof activeSwapSourceCard !== "undefined" && activeSwapSourceCard) {
-                            if (cardObj.instanceId !== activeSwapSourceCard.instanceId) {
-                                const sourceCard = activeSwapSourceCard;
-                                const targetCard = cardObj;
-                                const tempZone = sourceCard.zone;
-                                const tempX = sourceCard.x;
-                                const tempY = sourceCard.y;
-                                const tempFaceDown = sourceCard.faceDown;
-                                const tempTapped = sourceCard.tapped;
-
-                                sourceCard.zone = targetCard.zone;
-                                sourceCard.x = targetCard.x;
-                                sourceCard.y = targetCard.y;
-                                sourceCard.faceDown = targetCard.faceDown;
-                                sourceCard.tapped = targetCard.tapped;
-
-                                targetCard.zone = tempZone;
-                                targetCard.x = tempX;
-                                targetCard.y = tempY;
-                                targetCard.faceDown = tempFaceDown;
-                                targetCard.tapped = tempTapped;
-
-                                state.cards.forEach(c => {
-                                    if (c.attachedTo === sourceCard.instanceId) {
-                                        c.zone = sourceCard.zone;
-                                    } else if (c.attachedTo === targetCard.instanceId) {
-                                        c.zone = targetCard.zone;
-                                    }
-                                });
-
-                                renderAllCards();
-
-                                if (typeof sendGameAction === "function") {
-                                    sendGameAction(`Intercambió posiciones: 🔁 ${sourceCard.name} y ${targetCard.name}`);
-                                }
-                                stopPokemonSwapTargeting();
-                                dragCard = null;
-                                return;
-                            }
-                        }
-                    }
-
                     if ($("#playmat").hasClass("selecting-zone") || $("#playmat").hasClass("targeting-attack")) {
                         const targetEl = dragCard[0];
                         dragCard = null;
@@ -5199,21 +5061,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         y: cardObj.y + 58
                     };
 
-                    const oldZone = cardObj.zone;
                     const hoverZone = findOverlappingZone(centerCoords);
-                    let isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
-                    let isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
-
-                    // Only allow dropping cards back to hand if dropped near the very bottom/top edges of the screen
-                    const coords = getEventCoords(e);
-                    const viewportHeight = window.innerHeight;
-                    // Requires drop to be in the bottom 80px for Player 1, or top 80px for Player 2
-                    if (isOverP1Hand && coords.y < viewportHeight - 80) {
-                        isOverP1Hand = false;
-                    }
-                    if (isOverP2Hand && coords.y > 80) {
-                        isOverP2Hand = false;
-                    }
+                    const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
+                    const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
 
                     if (cardObj.isToken) {
                         if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
@@ -5226,6 +5076,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             return;
                         }
                     }
+
+                    const oldZone = cardObj.zone;
 
                     if (hoverZone) {
                         if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
