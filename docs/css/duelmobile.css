@@ -1839,14 +1839,17 @@ body > .overlay {
     display: flex !important;
     flex-direction: column !important;
     gap: 4px !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     align-items: center !important;
     background: rgba(12, 18, 24, 0.98) !important;
     border: 1.5px solid var(--primary-color) !important;
     border-radius: 8px !important;
     padding: 6px !important;
-    width: 130px !important; /* Increased size to comfortably fit all options */
+    width: 110px !important;
     height: auto !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important; /* Invisible scrollbar Firefox */
     min-height: auto !important;
     left: 50% !important;
     top: 50% !important;
@@ -1858,6 +1861,11 @@ body > .overlay {
     transition: opacity 0.15s ease-in-out !important;
 }
 
+.pile-card-hover-overlay::-webkit-scrollbar,
+.extra-deck-card-hover-overlay::-webkit-scrollbar {
+    display: none !important; /* Invisible scrollbar Chrome/Safari/Opera */
+}
+
 /* Show the menu overlay on hover or when .active-menu class is applied on tap */
 .pile-card-container:hover .pile-card-hover-overlay,
 .extra-deck-card-container:hover .extra-deck-card-hover-overlay,
@@ -1866,6 +1874,7 @@ body > .overlay {
 .search-card-item.active-menu .pile-card-hover-overlay {
     opacity: 1 !important;
     pointer-events: auto !important;
+    z-index: 1000000 !important; /* Elevate menu to top */
 }
 
 /* Ensure active menu containers are brought to top of layout stack */
@@ -1877,8 +1886,8 @@ body > .overlay {
 
 /* Override button styles in list overlay menus for touch accuracy */
 .pile-card-action-btn, .extra-card-action-btn {
-    font-size: 0.65rem !important; /* Increased slightly for comfortable tap */
-    padding: 6px 4px !important; /* Raised padding slightly for larger tap targets */
+    font-size: 0.62rem !important;
+    padding: 5px 4px !important;
     font-weight: 800 !important;
     text-transform: uppercase !important;
     text-align: center !important;
