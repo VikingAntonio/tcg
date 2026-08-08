@@ -2117,15 +2117,23 @@ function setupEventListeners() {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
+        if (cardObj.attachedTo) {
+            e.preventDefault();
+            e.stopPropagation();
+            openAttachedCardsModal(cardObj.attachedTo);
+            return;
+        }
+
         // If card is inside a deck zone, open the deck menu instead of card menu
         if (cardObj.zone.startsWith("deck_")) {
             e.preventDefault();
             e.stopPropagation();
             activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
             $("#card-menu").removeClass("active");
+            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 230, y: e.clientY };
             $("#deck-menu").css({
-                left: `${e.clientX}px`,
-                top: `${e.clientY}px`
+                left: `${clamped.x}px`,
+                top: `${clamped.y}px`
             }).addClass("active");
             return;
         }
@@ -2162,51 +2170,14 @@ function setupEventListeners() {
         activeMenuCard = cardObj;
         $("#deck-menu").removeClass("active");
 
-        // Dynamically toggle and adjust pokemon/yugioh menu items
-        const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
-        if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
-            $("#menu-swap-active-bench").show();
-        } else {
-            $("#menu-swap-active-bench").hide();
+        if (window.updateCardMenuOptions) {
+            window.updateCardMenuOptions(cardObj);
         }
 
-        if (state.layout === 'yugioh') {
-            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
-        } else {
-            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
-        }
-
-        // Token specific menu items adjustment
-        if (cardObj.isToken) {
-            $("#menu-destroy-token").show();
-            $("#menu-to-hand").hide();
-            $("#menu-to-grave").hide();
-            $("#menu-to-banish").hide();
-            $("#menu-to-deck-top").hide();
-            $("#menu-to-deck-bottom").hide();
-            $("#menu-control").hide();
-            $("#menu-detach").hide();
-        } else {
-            $("#menu-destroy-token").hide();
-            $("#menu-to-hand").show();
-            $("#menu-to-grave").show();
-            $("#menu-to-banish").show();
-            $("#menu-to-deck-top").show();
-            $("#menu-to-deck-bottom").show();
-            $("#menu-control").show();
-
-            // Check if there are attached cards to show detach option
-            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
-            if (hasAttached) {
-                $("#menu-detach").show();
-            } else {
-                $("#menu-detach").hide();
-            }
-        }
-
+        const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#card-menu") : { x: e.clientX, y: e.clientY };
         $("#card-menu").css({
-            left: `${e.clientX}px`,
-            top: `${e.clientY}px`
+            left: `${clamped.x}px`,
+            top: `${clamped.y}px`
         }).addClass("active");
     });
 
@@ -2223,9 +2194,10 @@ function setupEventListeners() {
             e.stopPropagation();
             activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
             $("#card-menu").removeClass("active");
+            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 230, y: e.clientY };
             $("#deck-menu").css({
-                left: `${e.clientX}px`,
-                top: `${e.clientY}px`
+                left: `${clamped.x}px`,
+                top: `${clamped.y}px`
             }).addClass("active");
         } else if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
             e.preventDefault();
@@ -2255,9 +2227,10 @@ function setupEventListeners() {
         activeMenuDeckPlayer = zoneId === "zone-deck_1" || zoneId === "deck_1" ? "player1" : "player2";
 
         $("#card-menu").removeClass("active");
+        const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 230, y: e.clientY };
         $("#deck-menu").css({
-            left: `${e.clientX}px`,
-            top: `${e.clientY}px`
+            left: `${clamped.x}px`,
+            top: `${clamped.y}px`
         }).addClass("active");
     });
 
@@ -2327,6 +2300,40 @@ function setupEventListeners() {
                 showConfirmButton: false
             });
         }
+    });
+
+    // New Menu Action handlers for Hand/Acoplar/View
+    $(document).on("click", "#menu-summon", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        startGraphicalTargeting(activeMenuCard, "summon");
+    });
+
+    $(document).on("click", "#menu-set", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        startGraphicalTargeting(activeMenuCard, "set");
+    });
+
+    $(document).on("click", "#menu-activate", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        activeMenuCard.zone = "field_free";
+        activeMenuCard.faceDown = false;
+        activeMenuCard.tapped = false;
+        renderAllCards();
+    });
+
+    $(document).on("click", "#menu-attach-option", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        startAttachmentTargeting(activeMenuCard);
+    });
+
+    $(document).on("click", "#menu-view-attached", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        openAttachedCardsModal(activeMenuCard.instanceId);
     });
 
     // Card Menu Action handlers
@@ -4726,18 +4733,125 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
         // Setup dragging trackers on playmat elements and clamping of context menus
         $(document).ready(function() {
+            window.updateCardMenuOptions = function(cardObj) {
+                // By default, hide all hand-specific items
+                $("#menu-summon").hide();
+                $("#menu-set").hide();
+                $("#menu-activate").hide();
+
+                const isHandCard = cardObj.zone && cardObj.zone.startsWith("hand_");
+
+                if (isHandCard) {
+                    // Hand Card layout options
+                    $("#menu-summon").show();
+                    if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                        $("#menu-set").show();
+                    } else if (state.layout === 'pokemon') {
+                        $("#menu-activate").show();
+                    }
+                    $("#menu-attach-option").show();
+                    $("#menu-view-attached").hide();
+                    $("#menu-hr-attached-actions").show();
+
+                    // Hide field-only options
+                    $("#menu-attack").hide();
+                    $("#menu-direct-attack").hide();
+                    $("#menu-hr-attack").hide();
+                    $("#menu-flip").hide();
+                    $("#menu-tap").hide();
+                    $("#menu-swap-active-bench").hide();
+                    $("#menu-add-counter").hide();
+                    $("#menu-sub-counter").hide();
+                    $("#menu-to-hand").hide();
+                    $("#menu-destroy-token").hide();
+                    $("#menu-control").hide();
+                    $("#menu-detach").hide();
+
+                    // Show deck / grave / banish options for hand
+                    $("#menu-to-grave").show();
+                    $("#menu-to-banish").show();
+                    $("#menu-to-deck-top").show();
+                    $("#menu-to-deck-bottom").show();
+                } else {
+                    // Field Card layout options
+                    $("#menu-summon").hide();
+                    $("#menu-set").hide();
+                    $("#menu-activate").hide();
+
+                    // Show "Acoplar" on field cards too!
+                    $("#menu-attach-option").show();
+
+                    // Show "Ver acopladas" if parent card has attached cards
+                    const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
+                    if (hasAttached) {
+                        $("#menu-view-attached").show();
+                        $("#menu-detach").show();
+                    } else {
+                        $("#menu-view-attached").hide();
+                        $("#menu-detach").hide();
+                    }
+                    $("#menu-hr-attached-actions").show();
+
+                    // Field options
+                    $("#menu-attack").show();
+                    $("#menu-direct-attack").show();
+                    $("#menu-hr-attack").show();
+                    $("#menu-flip").show();
+                    $("#menu-tap").show();
+
+                    const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
+                    if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
+                        $("#menu-swap-active-bench").show();
+                    } else {
+                        $("#menu-swap-active-bench").hide();
+                    }
+
+                    $("#menu-add-counter").show();
+                    $("#menu-sub-counter").show();
+
+                    if (cardObj.isToken) {
+                        $("#menu-destroy-token").show();
+                        $("#menu-to-hand").hide();
+                        $("#menu-to-grave").hide();
+                        $("#menu-to-banish").hide();
+                        $("#menu-to-deck-top").hide();
+                        $("#menu-to-deck-bottom").hide();
+                        $("#menu-control").hide();
+                        $("#menu-detach").hide();
+                    } else {
+                        $("#menu-destroy-token").hide();
+                        $("#menu-to-hand").show();
+                        $("#menu-to-grave").show();
+                        $("#menu-to-banish").show();
+                        $("#menu-to-deck-top").show();
+                        $("#menu-to-deck-bottom").show();
+                        $("#menu-control").show();
+                    }
+                }
+
+                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
+                } else {
+                    $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+                }
+            };
+
             // Helper to clamp coordinate bounds of menus so they never bleed off-screen
             window.clampMenuCoords = function(x, y, menuSelector) {
-                const menuWidth = 160; // Styled fixed width
+                const menuWidth = 230; // Styled fixed width (both context menus are 230px)
                 const menuHeight = Math.min($(window).height() * 0.6, 250); // Capped scroll height estimate
 
                 const winWidth = $(window).width();
                 const winHeight = $(window).height();
 
                 let clampedX = x;
+                // If it is the deck menu, unfold to the left of the click coordinate
+                if (menuSelector === "#deck-menu") {
+                    clampedX = x - menuWidth;
+                }
                 let clampedY = y;
 
-                if (x + menuWidth > winWidth) {
+                if (clampedX + menuWidth > winWidth) {
                     clampedX = winWidth - menuWidth - 10;
                 }
                 if (clampedX < 10) clampedX = 10;
@@ -4764,6 +4878,12 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             // Helper to handle card tap/click
             function handleCardTap(cardObj, e) {
+                if (cardObj.attachedTo) {
+                    // It's an attached card underneath! Open the attached list modal for its parent card
+                    openAttachedCardsModal(cardObj.attachedTo);
+                    return;
+                }
+
                 if (cardObj.zone.startsWith("deck_")) {
                     activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
                     $("#card-menu").removeClass("active");
@@ -4787,44 +4907,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     activeMenuCard = cardObj;
                     $("#deck-menu").removeClass("active");
 
-                    // Toggle pokemon specific options
-                    const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
-                    if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
-                        $("#menu-swap-active-bench").show();
-                    } else {
-                        $("#menu-swap-active-bench").hide();
-                    }
-
-                    if (state.layout === 'yugioh') {
-                        $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
-                    } else {
-                        $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
-                    }
-
-                    if (cardObj.isToken) {
-                        $("#menu-destroy-token").show();
-                        $("#menu-to-hand").hide();
-                        $("#menu-to-grave").hide();
-                        $("#menu-to-banish").hide();
-                        $("#menu-to-deck-top").hide();
-                        $("#menu-to-deck-bottom").hide();
-                        $("#menu-control").hide();
-                        $("#menu-detach").hide();
-                    } else {
-                        $("#menu-destroy-token").hide();
-                        $("#menu-to-hand").show();
-                        $("#menu-to-grave").show();
-                        $("#menu-to-banish").show();
-                        $("#menu-to-deck-top").show();
-                        $("#menu-to-deck-bottom").show();
-                        $("#menu-control").show();
-
-                        const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
-                        if (hasAttached) {
-                            $("#menu-detach").show();
-                        } else {
-                            $("#menu-detach").hide();
-                        }
+                    // Dynamically update menu options show/hide state
+                    if (window.updateCardMenuOptions) {
+                        window.updateCardMenuOptions(cardObj);
                     }
 
                     const clientCoords = getClientCoords(e);
@@ -5050,7 +5135,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     // Call Tap Handler!
                     handleCardTap(cardObj, e);
 
-                    if (isHandCard) {
+                    if (isHandCard && !$("#card-menu").hasClass("active")) {
                         renderAllCards();
                     }
 
