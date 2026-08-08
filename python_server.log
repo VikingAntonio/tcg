@@ -1,2 +1,20 @@
-127.0.0.1 - - [08/Aug/2026 07:23:58] code 404, message File not found
-127.0.0.1 - - [08/Aug/2026 07:23:58] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 404 -
+127.0.0.1 - - [08/Aug/2026 18:11:26] "GET /docs/duelmobile.html?room=testroom&mode=practice HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:11:26] "GET /docs/css/duelmobile.css HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:11:26] "GET /docs/js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:11:26] "GET /docs/js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:11:26] "GET /docs/js/duelmobile.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:11:26] "GET /docs/img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:11:29] code 404, message File not found
+127.0.0.1 - - [08/Aug/2026 18:11:29] "GET /docs/css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [08/Aug/2026 18:11:29] code 404, message File not found
+127.0.0.1 - - [08/Aug/2026 18:11:29] "GET /docs/css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [08/Aug/2026 18:12:02] code 404, message File not found
+127.0.0.1 - - [08/Aug/2026 18:12:02] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 404 -
+127.0.0.1 - - [08/Aug/2026 18:13:42] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:13:42] "GET /css/duelmobile.css HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:13:42] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:13:42] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:13:42] "GET /js/duelmobile.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:13:43] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [08/Aug/2026 18:13:46] code 404, message File not found
+127.0.0.1 - - [08/Aug/2026 18:13:46] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -

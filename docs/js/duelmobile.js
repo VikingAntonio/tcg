@@ -3878,44 +3878,101 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                 const userTokens = state.deckTokens && state.deckTokens[activeRoleKey] ? state.deckTokens[activeRoleKey] : [];
 
-                let token = null;
+                let availableTokens = [];
                 if (userTokens.length > 0) {
-                    token = userTokens[0];
+                    availableTokens = userTokens;
                 } else {
-                    token = DEFAULT_TOKENS[0];
+                    availableTokens = DEFAULT_TOKENS;
                 }
 
-                const newTokenObj = {
-                    instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                    name: token.name || "Token",
-                    imageUrl: token.imageUrl || token.image_url || "https://images.ygoprodeck.com/images/cards/10000000.jpg",
-                    owner: activeRoleKey,
-                    controller: activeRoleKey,
-                    zone: `monster_${pSuffix}_3`, // placeholder
-                    faceDown: false,
-                    tapped: false, // Default to Attack Position
-                    counters: 0,
-                    attachedTo: null,
-                    x: 430,
-                    y: pSuffix === 1 ? 320 : 160,
-                    z: state.cards.length + 10,
-                    isExtra: false,
-                    isToken: true,
-                    description: token.description || token.effect || "Ficha Especial."
-                };
+                // Show a SweetAlert2 dialog with tokens to choose from
+                Swal.fire({
+                    title: 'Invocar Token',
+                    html: `
+                        <div style="margin-bottom: 15px; text-align: left;">
+                            <label for="token-select" style="display:block; margin-bottom: 5px; color:#ffd32d; font-weight:bold; font-size: 0.9rem;">Selecciona un Token:</label>
+                            <select id="token-select" class="swal2-select" style="display: block; width: 100%; box-sizing: border-box; margin: 0 auto; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 8px;">
+                                <!-- populated via JS -->
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 15px; text-align: center;">
+                            <img id="token-preview-img" style="max-height: 180px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;" src="" alt="Token Preview" />
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Invocar',
+                    cancelButtonText: 'Cancelar',
+                    background: '#12181e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd32d',
+                    cancelButtonColor: '#ff4a4a',
+                    didOpen: () => {
+                        const select = document.getElementById('token-select');
+                        const img = document.getElementById('token-preview-img');
 
-                state.cards.push(newTokenObj);
+                        availableTokens.forEach((t, i) => {
+                            const opt = document.createElement('option');
+                            opt.value = i;
+                            opt.textContent = t.name;
+                            select.appendChild(opt);
+                        });
 
-                setTimeout(() => {
-                    startGraphicalTargeting(newTokenObj, "summon");
-                    sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
-                }, 200);
+                        const updatePreview = () => {
+                            const selectedIdx = select.value;
+                            if (availableTokens[selectedIdx]) {
+                                img.src = availableTokens[selectedIdx].imageUrl || availableTokens[selectedIdx].image_url;
+                                img.style.display = 'inline-block';
+                            } else {
+                                img.style.display = 'none';
+                            }
+                        };
+
+                        select.addEventListener('change', updatePreview);
+                        updatePreview();
+                    },
+                    preConfirm: () => {
+                        const select = document.getElementById('token-select');
+                        const selectedIdx = select.value;
+                        return availableTokens[selectedIdx];
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        const token = result.value;
+
+                        const newTokenObj = {
+                            instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                            name: token.name,
+                            imageUrl: token.imageUrl || token.image_url,
+                            owner: activeRoleKey,
+                            controller: activeRoleKey,
+                            zone: `monster_${pSuffix}_3`, // placeholder
+                            faceDown: false,
+                            tapped: false, // Default to Attack Position
+                            counters: 0,
+                            attachedTo: null,
+                            x: 430,
+                            y: pSuffix === 1 ? 320 : 160,
+                            z: state.cards.length + 10,
+                            isExtra: false,
+                            isToken: true,
+                            description: token.description || token.effect || "Ficha Especial."
+                        };
+
+                        state.cards.push(newTokenObj);
+
+                        setTimeout(() => {
+                            startGraphicalTargeting(newTokenObj, "summon");
+                            sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
+                        }, 200);
+                    }
+                });
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
             let activeCounterDragVal = null; // null for YGO, integer (10, 20... 100) for Pokémon, or object for CUSTOM_ATK_DEF / REMOVE_ATK_DEF
 
             $(document).on("dragstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
+                $(".duel-sidebar").removeClass("mobile-sidebar-active");
                 if ($(this).hasClass("custom-atk-def-source")) {
                     const $parent = $(this).closest(".accessories-section");
                     const atk = parseInt($parent.find(".custom-atk-input").val()) || 0;
@@ -4013,6 +4070,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             let $activeTouchDragClone = null;
 
             $(document).on("touchstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
+                $(".duel-sidebar").removeClass("mobile-sidebar-active");
                 activeTouchDragSource = $(this);
                 if (activeTouchDragSource.hasClass("custom-atk-def-source")) {
                     const $parent = activeTouchDragSource.closest(".accessories-section");
