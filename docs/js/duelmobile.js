@@ -1234,7 +1234,15 @@ function openExtraDeckModal(playerKey) {
     $("#extra-overlay").fadeIn(200).css("display", "flex");
 
     // Click Invocar button to start targeting mode on the field
-    $(".btn-extra-summon").off("click").on("click", function() {
+    $(".btn-extra-summon").off("click").on("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const container = $(this).closest(".extra-deck-card-container");
+        if (!container.hasClass("active-menu")) {
+            $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
+            container.addClass("active-menu");
+            return;
+        }
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (cardObj) {
@@ -1244,7 +1252,15 @@ function openExtraDeckModal(playerKey) {
     });
 
     // Click XYZ button to start XYZ targeting mode on the field
-    $(".btn-extra-xyz").off("click").on("click", function() {
+    $(".btn-extra-xyz").off("click").on("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const container = $(this).closest(".extra-deck-card-container");
+        if (!container.hasClass("active-menu")) {
+            $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
+            container.addClass("active-menu");
+            return;
+        }
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (cardObj) {
@@ -1573,6 +1589,13 @@ function openAttachedCardsModal(parentId) {
         e.preventDefault();
         e.stopPropagation();
 
+        const container = $(this).closest(".pile-card-container, .extra-deck-card-container, .search-card-item");
+        if (!container.hasClass("active-menu")) {
+            $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
+            container.addClass("active-menu");
+            return;
+        }
+
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
@@ -1852,6 +1875,13 @@ function openSearchModal(playerKey) {
         e.preventDefault();
         e.stopPropagation();
 
+        const container = $(this).closest(".pile-card-container, .extra-deck-card-container, .search-card-item");
+        if (!container.hasClass("active-menu")) {
+            $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
+            container.addClass("active-menu");
+            return;
+        }
+
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
@@ -1965,6 +1995,13 @@ function openPileModal(playerKey, pileType) {
     $("#pile-cards-grid").off("click").on("click", ".pile-card-action-btn", function(e) {
         e.preventDefault();
         e.stopPropagation();
+
+        const container = $(this).closest(".pile-card-container, .extra-deck-card-container, .search-card-item");
+        if (!container.hasClass("active-menu")) {
+            $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
+            container.addClass("active-menu");
+            return;
+        }
 
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
@@ -2130,7 +2167,7 @@ function setupEventListeners() {
             e.stopPropagation();
             activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
             $("#card-menu").removeClass("active");
-            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 230, y: e.clientY };
+            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 140, y: e.clientY };
             $("#deck-menu").css({
                 left: `${clamped.x}px`,
                 top: `${clamped.y}px`
@@ -2194,7 +2231,7 @@ function setupEventListeners() {
             e.stopPropagation();
             activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
             $("#card-menu").removeClass("active");
-            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 230, y: e.clientY };
+            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 140, y: e.clientY };
             $("#deck-menu").css({
                 left: `${clamped.x}px`,
                 top: `${clamped.y}px`
@@ -2227,7 +2264,7 @@ function setupEventListeners() {
         activeMenuDeckPlayer = zoneId === "zone-deck_1" || zoneId === "deck_1" ? "player1" : "player2";
 
         $("#card-menu").removeClass("active");
-        const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 230, y: e.clientY };
+        const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 140, y: e.clientY };
         $("#deck-menu").css({
             left: `${clamped.x}px`,
             top: `${clamped.y}px`
@@ -4838,7 +4875,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             // Helper to clamp coordinate bounds of menus so they never bleed off-screen
             window.clampMenuCoords = function(x, y, menuSelector) {
-                const menuWidth = 230; // Styled fixed width (both context menus are 230px)
+                const menuWidth = 140; // Styled fixed width (both context menus are 140px on mobile landscape)
                 const menuHeight = Math.min($(window).height() * 0.6, 250); // Capped scroll height estimate
 
                 const winWidth = $(window).width();
