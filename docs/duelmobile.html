@@ -59,14 +59,11 @@
                 <div class="sidebar-accessories" id="sidebar-accessories-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px;">
                     <!-- Luck/Suerte tools -->
                     <div class="accessories-section">
-                        <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #ffd32d;"><i class="fas fa-dice"></i> Dados y Monedas</h3>
                         <div class="acc-row" style="display: flex; gap: 12px; justify-content: center; align-items: center;">
                             <div class="acc-tool-box" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                                <span class="tool-label" style="font-size: 0.7rem; color: #aaa;">Dado</span>
                                 <div class="tcg-dice dice-action-btn" id="unified-dice" style="cursor: pointer;">1</div>
                             </div>
                             <div class="acc-tool-box" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                                <span class="tool-label" style="font-size: 0.7rem; color: #aaa;">Moneda</span>
                                 <div class="tcg-coin coin-action-btn" id="unified-coin" style="cursor: pointer;">
                                     <div class="coin-inner">
                                         <div class="coin-front">Cara</div>
@@ -79,7 +76,6 @@
 
                     <!-- Tokens (YGO) Section -->
                     <div class="accessories-section ygo-only-tool">
-                        <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #2ec4b6;"><i class="fas fa-ghost"></i> Tokens (YGO)</h3>
                         <button class="btn-spawn-token token-action-btn" id="unified-token-btn" style="width: 100%; padding: 8px; font-size: 0.75rem;">
                             <i class="fas fa-ghost"></i> Invocar Token
                         </button>
@@ -87,7 +83,6 @@
 
                     <!-- Counters/Contadores Section -->
                     <div class="accessories-section" id="accessories-counters-section-unified">
-                        <h3 class="counter-section-title" style="font-size: 0.9rem; margin-bottom: 4px; color: #00d2ff;">Contadores</h3>
                         <div class="ygo-only-tool counter-source-wrapper" style="display: flex; justify-content: center;">
                             <div class="counter-source ygo-counter-source" draggable="true">
                                 +1
@@ -110,7 +105,6 @@
 
                     <!-- Custom ATK/DEF Section -->
                     <div class="accessories-section" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
-                        <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #ff1b6b;">ATK/DEF Custom</h3>
                         <div class="atk-def-custom-inputs" style="display: flex; gap: 6px; margin-bottom: 8px; justify-content: center;">
                             <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
                             <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
@@ -296,6 +290,7 @@
         <div class="menu-item" id="menu-set"><i class="fas fa-folder-open"></i> Set</div>
         <div class="menu-item" id="menu-activate"><i class="fas fa-magic"></i> Activar</div>
         <div class="menu-item" id="menu-attach-option"><i class="fas fa-paperclip"></i> Acoplar</div>
+        <div class="menu-item" id="menu-attach-field" style="display: none;"><i class="fas fa-paperclip"></i> Acoplar</div>
         <div class="menu-item" id="menu-view-attached"><i class="fas fa-list"></i> Ver acopladas</div>
         <hr id="menu-hr-attached-actions">
         <div class="menu-item" id="menu-attack"><i class="fas fa-bolt"></i> Atacar</div>

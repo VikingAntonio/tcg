@@ -876,7 +876,7 @@ function bindCardDragEvents() {
     });
 
     // Click / Contextmenu on attached card cascade to open the Attached Cards Modal
-    $(".attached-card-cascade").off("click contextmenu").on("click contextmenu", function(e) {
+    $(".attached-card-cascade").off("click contextmenu mousedown").on("click contextmenu mousedown", function(e) {
         e.preventDefault();
         e.stopPropagation();
         const parentId = $(this).data("parent-id");
@@ -1276,7 +1276,9 @@ function startGraphicalTargeting(cardObj, actionType) {
     targetActionType = actionType;
 
     // Display the guidance overlay
-    $("#zone-picker-overlay").fadeIn(200).css("display", "flex");
+    if (actionType !== "set") {
+        $("#zone-picker-overlay").fadeIn(200).css("display", "flex");
+    }
     $("#playmat").addClass("selecting-zone");
 
     // Temporarily bind click event strictly to board zones
@@ -1334,15 +1336,17 @@ function startGraphicalTargeting(cardObj, actionType) {
 
             renderAllCards();
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Carta Colocada',
-                text: `${targetingCard.name} colocada en ${$(this).find('.zone-label').text() || zoneId}.`,
-                toast: true,
-                position: 'top-end',
-                timer: 2000,
-                showConfirmButton: false
-            });
+            if (targetActionType !== "set") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Carta Colocada',
+                    text: `${targetingCard.name} colocada en ${$(this).find('.zone-label').text() || zoneId}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
         }
 
         // Cleanup targeting state
@@ -2103,6 +2107,8 @@ function setupEventListeners() {
     $("#btn-magnify-preview").click(function(e) {
         e.preventDefault();
         e.stopPropagation();
+        // Hide mobile accessories sidebar to see the popup complete
+        $(".duel-sidebar").removeClass("mobile-sidebar-active");
         const src = $("#detail-card-img").attr("src");
         if (!src || src.includes("placeholder") || src.includes("via.placeholder.com")) {
             return;
@@ -2361,7 +2367,7 @@ function setupEventListeners() {
         renderAllCards();
     });
 
-    $(document).on("click", "#menu-attach-option", function() {
+    $(document).on("click", "#menu-attach-option, #menu-attach-field", function() {
         if (!activeMenuCard) return;
         $("#card-menu").removeClass("active");
         startAttachmentTargeting(activeMenuCard);
@@ -3857,20 +3863,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             });
 
             // 3. Spawning Token Cards with Selective Zone Placing (Yu-Gi-Oh!)
-            let cachedTokens = [];
-            async function fetchTokensList() {
-                try {
-                    const response = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?type=Token");
-                    const data = await response.json();
-                    if (data && data.data) {
-                        cachedTokens = data.data;
-                    }
-                } catch (err) {
-                    console.error("Error fetching tokens from YGOPRODeck:", err);
-                }
-            }
-            fetchTokensList();
-
             const DEFAULT_TOKENS = [
                 { name: "Ficha de Monstruo (Token)", imageUrl: "https://images.ygoprodeck.com/images/cards/10000000.jpg", description: "Ficha Especial." },
                 { name: "Ficha de Chivo Expiatorio (Scapegoat)", imageUrl: "https://images.ygoprodeck.com/images/cards/73915051.jpg", description: "Ficha Especial invocada por Chivo Expiatorio." },
@@ -3886,100 +3878,38 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                 const userTokens = state.deckTokens && state.deckTokens[activeRoleKey] ? state.deckTokens[activeRoleKey] : [];
 
-                let availableTokens = [];
+                let token = null;
                 if (userTokens.length > 0) {
-                    availableTokens = userTokens;
-                } else if (cachedTokens && cachedTokens.length > 0) {
-                    availableTokens = cachedTokens.map(t => ({
-                        name: t.name,
-                        imageUrl: t.card_images[0].image_url,
-                        description: t.desc || "Ficha Especial."
-                    }));
+                    token = userTokens[0];
                 } else {
-                    availableTokens = DEFAULT_TOKENS;
+                    token = DEFAULT_TOKENS[0];
                 }
 
-                // Show a SweetAlert2 dialog with tokens to choose from
-                Swal.fire({
-                    title: 'Invocar Token',
-                    html: `
-                        <div style="margin-bottom: 15px; text-align: left;">
-                            <label for="token-select" style="display:block; margin-bottom: 5px; color:#ffd32d; font-weight:bold; font-size: 0.9rem;">Selecciona un Token:</label>
-                            <select id="token-select" class="swal2-select" style="display: block; width: 100%; box-sizing: border-box; margin: 0 auto; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 8px;">
-                                <!-- populated via JS -->
-                            </select>
-                        </div>
-                        <div style="margin-bottom: 15px; text-align: center;">
-                            <img id="token-preview-img" style="max-height: 180px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;" src="" alt="Token Preview" />
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Invocar',
-                    cancelButtonText: 'Cancelar',
-                    background: '#12181e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd32d',
-                    cancelButtonColor: '#ff4a4a',
-                    didOpen: () => {
-                        const select = document.getElementById('token-select');
-                        const img = document.getElementById('token-preview-img');
+                const newTokenObj = {
+                    instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                    name: token.name || "Token",
+                    imageUrl: token.imageUrl || token.image_url || "https://images.ygoprodeck.com/images/cards/10000000.jpg",
+                    owner: activeRoleKey,
+                    controller: activeRoleKey,
+                    zone: `monster_${pSuffix}_3`, // placeholder
+                    faceDown: false,
+                    tapped: false, // Default to Attack Position
+                    counters: 0,
+                    attachedTo: null,
+                    x: 430,
+                    y: pSuffix === 1 ? 320 : 160,
+                    z: state.cards.length + 10,
+                    isExtra: false,
+                    isToken: true,
+                    description: token.description || token.effect || "Ficha Especial."
+                };
 
-                        availableTokens.forEach((t, i) => {
-                            const opt = document.createElement('option');
-                            opt.value = i;
-                            opt.textContent = t.name;
-                            select.appendChild(opt);
-                        });
+                state.cards.push(newTokenObj);
 
-                        const updatePreview = () => {
-                            const selectedIdx = select.value;
-                            if (availableTokens[selectedIdx]) {
-                                img.src = availableTokens[selectedIdx].imageUrl;
-                                img.style.display = 'inline-block';
-                            } else {
-                                img.style.display = 'none';
-                            }
-                        };
-
-                        select.addEventListener('change', updatePreview);
-                        updatePreview();
-                    },
-                    preConfirm: () => {
-                        const select = document.getElementById('token-select');
-                        const selectedIdx = select.value;
-                        return availableTokens[selectedIdx];
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed && result.value) {
-                        const token = result.value;
-
-                        const newTokenObj = {
-                            instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                            name: token.name,
-                            imageUrl: token.imageUrl,
-                            owner: activeRoleKey,
-                            controller: activeRoleKey,
-                            zone: `monster_${pSuffix}_3`, // placeholder
-                            faceDown: false,
-                            tapped: false, // Default to Attack Position
-                            counters: 0,
-                            attachedTo: null,
-                            x: 430,
-                            y: pSuffix === 1 ? 320 : 160,
-                            z: state.cards.length + 10,
-                            isExtra: false,
-                            isToken: true,
-                            description: token.description
-                        };
-
-                        state.cards.push(newTokenObj);
-
-                        setTimeout(() => {
-                            startGraphicalTargeting(newTokenObj, "summon");
-                            sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
-                        }, 200);
-                    }
-                });
+                setTimeout(() => {
+                    startGraphicalTargeting(newTokenObj, "summon");
+                    sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
+                }, 200);
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
@@ -4923,6 +4853,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         $("#menu-activate").show();
                     }
                     $("#menu-attach-option").show();
+                    $("#menu-attach-field").hide();
                     $("#menu-view-attached").hide();
                     $("#menu-hr-attached-actions").show();
 
@@ -4953,6 +4884,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                     // Show "Acoplar" on field cards too!
                     $("#menu-attach-option").show();
+                    $("#menu-attach-field").show();
 
                     // Show "Ver acopladas" if parent card has attached cards
                     const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
@@ -5177,7 +5109,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 });
 
                 // Re-bind attached cards cascade click/contextmenu for fast taps
-                $(".attached-card-cascade").off("click contextmenu").on("click contextmenu", function(e) {
+                $(".attached-card-cascade").off("click contextmenu mousedown").on("click contextmenu mousedown", function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     const parentId = $(this).data("parent-id");
@@ -5300,17 +5232,19 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                                 selectedHandCards[playerKey].push(cardObj.instanceId);
                                 $(`#${cardObj.instanceId}`).addClass("selected-for-batch");
                             }
+                            renderAllCards();
                             dragCard = null;
                             return;
                         }
                     }
 
-                    // Call Tap Handler!
-                    handleCardTap(cardObj, e);
-
-                    if (isHandCard && !$("#card-menu").hasClass("active")) {
+                    // Put it back in hand tray BEFORE tap/click handles so it doesn't move/jump!
+                    if (isHandCard) {
                         renderAllCards();
                     }
+
+                    // Call Tap Handler!
+                    handleCardTap(cardObj, e);
 
                 } else {
                     // Standard drop logic
