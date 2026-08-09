@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
-    <title>Configurador de Duelos - Vikingdev TCG</title>
+    <title>Configurador de Duelos Móvil - Vikingdev TCG</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
@@ -521,8 +521,8 @@
 
     <main class="config-container">
         <section class="title-section">
-            <h1>CONFIGURACIÓN DE DUELO</h1>
-            <p>Elige tu modo de juego, selecciona tus mazos preferidos y prepárate para la batalla en nuestro simulador rule-free.</p>
+            <h1>CONFIGURACIÓN DE DUELO MÓVIL</h1>
+            <p>Elige tu modo de juego, selecciona tus mazos preferidos y prepárate para la batalla en nuestro simulador móvil rule-free.</p>
         </section>
 
         <section class="mode-grid">
@@ -728,10 +728,8 @@
                 });
 
                 try {
-                    // Try to log in as email or look up email by username
                     let email = usernameOrEmail;
                     if (!usernameOrEmail.includes('@')) {
-                        // Look up email by username in usuarios table
                         const { data, error } = await _supabase
                             .from('usuarios')
                             .select('email')
@@ -777,7 +775,6 @@
                     if (session && session.user) {
                         sessionUser = session.user;
 
-                        // Fetch username
                         const { data: userData, error: userError } = await _supabase
                             .from('usuarios')
                             .select('username')
@@ -789,11 +786,9 @@
                         $("#username-display").text(username);
                         $("#logged-user-badge").show();
 
-                        // Unhide multiplayer config
                         $("#auth-locked-view").hide();
                         $("#auth-unlocked-view").css("display", "flex");
 
-                        // Fetch user decks
                         await loadDecks(sessionUser.id);
                     } else {
                         sessionUser = null;
@@ -802,7 +797,6 @@
                         $("#auth-locked-view").show();
                         $("#auth-unlocked-view").hide();
 
-                        // Load pre-established decks list for practice mode
                         populatePracticeDecks([]);
                     }
                 } catch (e) {
@@ -887,7 +881,7 @@
                 const deck1 = $("#practice-deck1").val();
                 const deck2 = $("#practice-deck2").val();
 
-                window.location.href = `duel.html?mode=practice&layout=${layout}&deck1=${deck1}&deck2=${deck2}`;
+                window.location.href = `duelmobile.html?mode=practice&layout=${layout}&deck1=${deck1}&deck2=${deck2}`;
             });
 
             // Multiplayer Host Start
@@ -900,9 +894,8 @@
                     return;
                 }
 
-                // Generate random room id
                 const roomId = 'R' + Math.floor(10000 + Math.random() * 90000);
-                window.location.href = `duel.html?mode=multiplayer&role=player1&layout=${layout}&deck1=${deck1}&room=${roomId}`;
+                window.location.href = `duelmobile.html?mode=multiplayer&role=player1&layout=${layout}&deck1=${deck1}&room=${roomId}`;
             });
 
             // Multiplayer Guest Start
@@ -920,7 +913,7 @@
                     return;
                 }
 
-                window.location.href = `duel.html?mode=multiplayer&role=player2&deck2=${deck2}&room=${roomId}`;
+                window.location.href = `duelmobile.html?mode=multiplayer&role=player2&deck2=${deck2}&room=${roomId}`;
             });
         });
     </script>

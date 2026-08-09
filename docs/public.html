@@ -579,6 +579,34 @@
         </div>
     </div>
 
+    <!-- Try Deck Floating Purple Button -->
+    <button id="btn-try-deck" style="display: none; position: fixed; bottom: 90px; right: 20px; z-index: 9999999; background: linear-gradient(135deg, #8e2de2, #4a00e0); color: #fff; border: 2px solid #b92b27; padding: 12px 24px; border-radius: 50px; font-weight: 800; font-family: 'Montserrat', sans-serif; font-size: 0.9rem; cursor: pointer; box-shadow: 0 0 15px rgba(142, 45, 226, 0.6), inset 0 0 10px rgba(142, 45, 226, 0.4); animation: pulseTryDeck 1.8s infinite alternate; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px;">
+        <i class="fas fa-play"></i> Probar Deck
+    </button>
+
+    <style>
+        @keyframes pulseTryDeck {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(142, 45, 226, 0.6), 0 0 5px rgba(74, 0, 224, 0.4);
+                border-color: #8e2de2;
+            }
+            100% {
+                transform: scale(1.08);
+                box-shadow: 0 0 25px rgba(142, 45, 226, 0.9), 0 0 15px rgba(74, 0, 224, 0.7);
+                border-color: #00d2ff;
+            }
+        }
+        #btn-try-deck:hover {
+            transform: scale(1.12) translateY(-2px);
+            filter: brightness(1.2);
+            box-shadow: 0 0 30px rgba(142, 45, 226, 1), 0 0 20px rgba(74, 0, 224, 0.8);
+        }
+        #btn-try-deck:active {
+            transform: scale(0.95);
+        }
+    </style>
+
     <div class="bottom-nav">
         <div class="nav-item" id="btn-nav-home" title="Ir al Home">
             <i class="fas fa-home"></i>

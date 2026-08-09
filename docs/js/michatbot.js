@@ -263,6 +263,7 @@ async function initMichatbot(forceRefresh = false) {
                 <div id="michatbot-menu">
                     <div class="michatbot-menu-item" id="michatbot-opt-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-mute"></div>
+                    <div class="michatbot-menu-item" id="michatbot-opt-play-duel"><i class="fas fa-gamepad"></i> Jugar</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play"><i class="fas fa-bolt"></i> Hora del duelo</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-detail"><i class="fas fa-search-plus"></i> Ver Detalle</div>
                     <div id="michatbot-resize-control" style="padding: 10px 18px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px;">
@@ -377,6 +378,18 @@ async function initMichatbot(forceRefresh = false) {
     $('#michatbot-opt-chat').off('click').on('click', function(e) { e.stopPropagation(); $('#michatbot-chat-container').css('display', 'flex').hide().fadeIn(300); $('#michatbot-menu').fadeOut(250); if ($('#michatbot-chat-messages').is(':empty')) { addBotMessage(`¡Hola! Soy ${window.currentSpirit.name}, tu asistente.`); renderContextFAQs(); } });
     $('#michatbot-opt-mute').off('click').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleMute(); });
     $('#michatbot-opt-play').off('click').on('click', function(e) { e.stopPropagation(); window.location.href = 'play.html'; });
+
+    // Handle "Jugar" button click with device auto-detection
+    $('#michatbot-opt-play-duel').off('click').on('click', function(e) {
+        e.stopPropagation();
+        $('#michatbot-menu').fadeOut(250);
+        const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            window.location.href = 'configDuelMobile.html';
+        } else {
+            window.location.href = 'configDuel.html';
+        }
+    });
 
     $('#michatbot-opt-detail').off('click').on('click', function(e) {
         e.stopPropagation();
