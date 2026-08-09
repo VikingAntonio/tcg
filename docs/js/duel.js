@@ -1226,15 +1226,36 @@ function checkHandTrayHover(e, traySelector) {
 // Side info detailed previewer
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
+    if (state.mode === "practice") {
+        // In practice mode, show all card details and images openly
+        $("#detail-card-img").attr("src", card.imageUrl);
+        $("#detail-card-name").text(card.name);
+        let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Práctica)" : "Boca Arriba"}\nContadores: ${card.counters}`;
+        $("#detail-card-desc").text(descText);
+        return;
+    }
+
+    // Otherwise, multiplayer mode
+    const currentRole = window.currentRole || "player1";
+    const isMyCard = (card.owner === currentRole);
+
     const isPile = card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_");
     let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
 
-    // Seteadas de mi lado (player1) en el campo se pueden ver en el preview
-    if (isFaceDown && card.owner === "player1" && !isPile) {
-        isFaceDown = false;
+    // Seteadas o piles de mi oponente no se pueden ver, EXCEPTO si es una carta en el Extra Deck que esté boca arriba (Péndulo)
+    let canSee = false;
+    if (!isPile && !isFaceDown) {
+        // Face-up field/hand cards are public
+        canSee = true;
+    } else if (isMyCard) {
+        // I can see all my own cards (face-down field cards, my deck, my extra deck)
+        canSee = true;
+    } else if (card.zone.startsWith("extra_") && !card.faceDown) {
+        // Face-up cards in the opponent's Extra Deck (Pendulums) are visible to both players
+        canSee = true;
     }
 
-    if (isPile || isFaceDown) {
+    if (!canSee) {
         const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
@@ -1246,6 +1267,49 @@ function updatePreview(card) {
         let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada para ti)" : "Boca Arriba"}\nContadores: ${card.counters}`;
         $("#detail-card-desc").text(descText);
     }
+}
+
+// Reusable card zoom viewer popup that respects anti-cheat masking rules
+function viewCardZoom(card) {
+    if (!card) return;
+
+    let imgToZoom = card.imageUrl;
+
+    if (state.mode !== "practice") {
+        const currentRole = window.currentRole || "player1";
+        const isMyCard = (card.owner === currentRole);
+        const isPile = card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_");
+        let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+
+        let canSee = false;
+        if (!isPile && !isFaceDown) {
+            canSee = true;
+        } else if (isMyCard) {
+            canSee = true;
+        } else if (card.zone.startsWith("extra_") && !card.faceDown) {
+            canSee = true;
+        }
+
+        if (!canSee) {
+            const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+            imgToZoom = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+        }
+    }
+
+    if (!imgToZoom) return;
+
+    Swal.fire({
+        html: `
+            <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
+                <img src="${imgToZoom}" style="max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
+            </div>
+        `,
+        showCloseButton: true,
+        showConfirmButton: false,
+        background: "transparent",
+        backdrop: "rgba(0, 0, 0, 0.85)",
+        width: "auto"
+    });
 }
 
 // Shuffle deck piles silently without notification
@@ -1429,13 +1493,32 @@ function openExtraDeckModal(playerKey) {
     if (extraCards.length === 0) {
         $("#extra-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Extra Deck.</p>');
     } else {
+        const currentRole = window.currentRole || "player1";
+        const isMyExtraDeck = (playerKey === currentRole);
+
         extraCards.forEach(card => {
+            let imgToUse = card.imageUrl;
+            let isMasked = false;
+
+            if (state.mode !== "practice" && !isMyExtraDeck && card.faceDown) {
+                isMasked = true;
+                const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+                imgToUse = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+            }
+
+            const actionButtonsHTML = isMyExtraDeck ? `
+                <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
+                <button class="extra-card-action-btn btn-extra-view" data-instance-id="${card.instanceId}" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff;">Ver carta</button>
+            ` : (isMasked ? "" : `
+                <button class="extra-card-action-btn btn-extra-view" data-instance-id="${card.instanceId}" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff;">Ver carta</button>
+            `);
+
             const cardHTML = `
                 <div class="extra-deck-card-container" data-instance-id="${card.instanceId}">
-                    <img src="${card.imageUrl}" alt="${card.name}">
+                    <img src="${imgToUse}" alt="${card.name}">
                     <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 6px;">
-                        <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
-                        <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
+                        ${actionButtonsHTML}
                     </div>
                 </div>
             `;
@@ -1462,6 +1545,15 @@ function openExtraDeckModal(playerKey) {
         if (cardObj) {
             $("#extra-overlay").fadeOut(200);
             startXYZTargeting(cardObj);
+        }
+    });
+
+    // Click Ver carta button to zoom
+    $(".btn-extra-view").off("click").on("click", function() {
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            viewCardZoom(cardObj);
         }
     });
 }
@@ -1770,6 +1862,7 @@ function openAttachedCardsModal(parentId) {
                             <button class="pile-card-action-btn btn-attached-grave" data-instance-id="${card.instanceId}">Grave</button>
                             <button class="pile-card-action-btn btn-attached-banish" data-instance-id="${card.instanceId}">Remover</button>
                             <button class="pile-card-action-btn btn-attached-deck" data-instance-id="${card.instanceId}">Deck</button>
+                            <button class="pile-card-action-btn btn-attached-view" data-instance-id="${card.instanceId}">Ver carta</button>
                         </div>
                     </div>
                 </div>
@@ -1788,6 +1881,11 @@ function openAttachedCardsModal(parentId) {
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
+
+        if ($(this).hasClass("btn-attached-view")) {
+            viewCardZoom(cardObj);
+            return;
+        }
 
         const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
 
@@ -2028,6 +2126,18 @@ function stopPokemonSwapTargeting() {
 
 // Search and extract from deck (UPGRADED WITH COMPREHENSIVE MULTI-ACTIONS)
 function openSearchModal(playerKey) {
+    if (state.mode !== "practice" && playerKey !== (window.currentRole || "player1")) {
+        Swal.fire({
+            title: 'Acceso Denegado',
+            text: 'No puedes buscar en el Deck de tu oponente.',
+            icon: 'error',
+            background: '#121824',
+            color: '#ffffff',
+            confirmButtonColor: '#ff4757'
+        });
+        return;
+    }
+
     const deckZone = playerKey === "player1" ? "deck_1" : "deck_2";
     const deckCards = state.cards.filter(c => c.zone === deckZone);
 
@@ -2049,6 +2159,7 @@ function openSearchModal(playerKey) {
                                     <button class="pile-card-action-btn btn-search-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-search-grave" data-instance-id="${card.instanceId}">Grave</button>
                             <button class="pile-card-action-btn btn-search-banish" data-instance-id="${card.instanceId}">Remover</button>
+                            <button class="pile-card-action-btn btn-search-view" data-instance-id="${card.instanceId}">Ver carta</button>
                         </div>
                     </div>
                 </div>
@@ -2067,6 +2178,11 @@ function openSearchModal(playerKey) {
         const instId = $(this).data("instance-id");
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
+
+        if ($(this).hasClass("btn-search-view")) {
+            viewCardZoom(cardObj);
+            return;
+        }
 
         const pSuffix = cardObj.owner === "player1" ? 1 : 2;
 
@@ -2163,6 +2279,9 @@ function openPileModal(playerKey, pileType) {
                                 `<button class="pile-card-action-btn btn-pile-grave" data-instance-id="${card.instanceId}">Cementerio</button>`
                             }
                             <button class="pile-card-action-btn btn-pile-effect" data-instance-id="${card.instanceId}">Efecto</button>
+                            <button class="pile-card-action-btn btn-pile-to-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
+                            <button class="pile-card-action-btn btn-pile-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
+                            <button class="pile-card-action-btn btn-pile-view" data-instance-id="${card.instanceId}">Ver carta</button>
                         </div>
                     </div>
                 </div>
@@ -2247,6 +2366,48 @@ function openPileModal(playerKey, pileType) {
             cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
+        } else if ($(this).hasClass("btn-pile-to-extra")) {
+            cardObj.zone = `extra_${pSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+
+            const sourceLabel = pileType === "grave" ? "el Cementerio" : "el Desterrado";
+            Swal.fire({
+                title: '¡Carta enviada al Extra Deck!',
+                html: `
+                    <p style="margin-bottom: 15px; font-weight: 600;">Se ha enviado esta carta desde ${sourceLabel} al Extra Deck:</p>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
+                        <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
+                    </div>
+                `,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#00d2ff'
+            });
+        } else if ($(this).hasClass("btn-pile-pendulum")) {
+            cardObj.zone = `extra_${pSuffix}`;
+            cardObj.faceDown = false; // face up for pendulum!
+            cardObj.tapped = false;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+
+            const sourceLabel = pileType === "grave" ? "el Cementerio" : "el Desterrado";
+            Swal.fire({
+                title: '¡Carta enviada como Péndulo!',
+                html: `
+                    <p style="margin-bottom: 15px; font-weight: 600;">Se ha enviado esta carta desde ${sourceLabel} al Extra Deck boca arriba (Péndulo):</p>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <img src="${cardObj.imageUrl}" style="width: 150px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" />
+                        <h3 style="color: #00d2ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-top: 5px;">${cardObj.name}</h3>
+                    </div>
+                `,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#00d2ff'
+            });
+        } else if ($(this).hasClass("btn-pile-view")) {
+            viewCardZoom(cardObj);
         } else if ($(this).hasClass("btn-pile-effect")) {
             $("#pile-overlay").fadeOut(200);
 
@@ -2396,6 +2557,8 @@ function setupEventListeners() {
             $("#menu-to-banish").hide();
             $("#menu-to-deck-top").hide();
             $("#menu-to-deck-bottom").hide();
+            $("#menu-to-extra").hide();
+            $("#menu-pendulum").hide();
             $("#menu-control").hide();
             $("#menu-detach").hide();
         } else {
@@ -2405,6 +2568,8 @@ function setupEventListeners() {
             $("#menu-to-banish").show();
             $("#menu-to-deck-top").show();
             $("#menu-to-deck-bottom").show();
+            $("#menu-to-extra").show();
+            $("#menu-pendulum").show();
             $("#menu-control").show();
 
             // Check if there are attached cards to show detach option
@@ -2705,21 +2870,83 @@ function setupEventListeners() {
         });
     });
 
+    $("#menu-to-extra").click(function() {
+        if (!activeMenuCard) return;
+        const playerSuffix = activeMenuCard.owner === "player1" ? 1 : 2;
+        detachAllChildren(activeMenuCard.instanceId);
+        activeMenuCard.zone = `extra_${playerSuffix}`;
+        activeMenuCard.faceDown = true;
+        activeMenuCard.tapped = false;
+        renderAllCards();
+    });
+
+    $("#menu-pendulum").click(function() {
+        if (!activeMenuCard) return;
+        const playerSuffix = activeMenuCard.owner === "player1" ? 1 : 2;
+        detachAllChildren(activeMenuCard.instanceId);
+        activeMenuCard.zone = `extra_${playerSuffix}`;
+        activeMenuCard.faceDown = false; // face up!
+        activeMenuCard.tapped = false;
+        renderAllCards();
+    });
+
+    $("#menu-view-card").click(function() {
+        if (!activeMenuCard) return;
+        viewCardZoom(activeMenuCard);
+    });
+
+    // Helper to check if the clicked deck belongs to the current player or if in practice mode
+    function isMyDeckOrPractice(playerKey) {
+        if (state.mode === "practice") return true;
+        return playerKey === (window.currentRole || "player1");
+    }
+
     // Deck Menu Action handlers
     $("#deck-menu-draw").click(function() {
-        if (activeMenuDeckPlayer) {
-            drawCards(activeMenuDeckPlayer, 1);
+        if (!activeMenuDeckPlayer) return;
+        if (!isMyDeckOrPractice(activeMenuDeckPlayer)) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'No puedes interactuar con el Deck del oponente',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            return;
         }
+        drawCards(activeMenuDeckPlayer, 1);
     });
 
     $("#deck-menu-draw-5").click(function() {
-        if (activeMenuDeckPlayer) {
-            drawCards(activeMenuDeckPlayer, 5);
+        if (!activeMenuDeckPlayer) return;
+        if (!isMyDeckOrPractice(activeMenuDeckPlayer)) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'No puedes interactuar con el Deck del oponente',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            return;
         }
+        drawCards(activeMenuDeckPlayer, 5);
     });
 
     $("#deck-menu-show-top").click(async function() {
         if (!activeMenuDeckPlayer) return;
+        if (!isMyDeckOrPractice(activeMenuDeckPlayer)) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'No puedes interactuar con el Deck del oponente',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            return;
+        }
 
         const { value: countStr } = await Swal.fire({
             title: 'Mostrar cartas del tope',
@@ -2972,15 +3199,35 @@ function setupEventListeners() {
     });
 
     $("#deck-menu-shuffle").click(function() {
-        if (activeMenuDeckPlayer) {
-            shuffleDeck(activeMenuDeckPlayer);
+        if (!activeMenuDeckPlayer) return;
+        if (!isMyDeckOrPractice(activeMenuDeckPlayer)) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'No puedes interactuar con el Deck del oponente',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            return;
         }
+        shuffleDeck(activeMenuDeckPlayer);
     });
 
     $("#deck-menu-prizes").click(function() {
-        if (activeMenuDeckPlayer) {
-            setupPokemonPrizes(activeMenuDeckPlayer);
+        if (!activeMenuDeckPlayer) return;
+        if (!isMyDeckOrPractice(activeMenuDeckPlayer)) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'No puedes interactuar con el Deck del oponente',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            return;
         }
+        setupPokemonPrizes(activeMenuDeckPlayer);
     });
 
     $("#deck-menu-search").click(function() {

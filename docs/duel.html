@@ -1212,6 +1212,8 @@
 
     <!-- Context Menu for Cards -->
     <div class="card-context-menu" id="card-menu">
+        <div class="menu-item" id="menu-view-card"><i class="fas fa-search-plus"></i> Ver carta</div>
+        <hr>
         <div class="menu-item" id="menu-attack"><i class="fas fa-bolt"></i> Atacar</div>
         <div class="menu-item" id="menu-direct-attack"><i class="fas fa-crosshairs"></i> Atk Directo</div>
         <hr>
@@ -1227,6 +1229,8 @@
         <div class="menu-item" id="menu-to-banish"><i class="fas fa-ban"></i> Enviar a Removido</div>
         <div class="menu-item" id="menu-to-deck-top"><i class="fas fa-arrow-up"></i> Poner al tope del Deck</div>
         <div class="menu-item" id="menu-to-deck-bottom"><i class="fas fa-arrow-down"></i> Poner al fondo del Deck</div>
+        <div class="menu-item" id="menu-to-extra"><i class="fas fa-undo"></i> Enviar al Extra Deck</div>
+        <div class="menu-item" id="menu-pendulum"><i class="fas fa-sync-alt"></i> Péndulo (Extra Deck Arriba)</div>
         <div class="menu-item" id="menu-destroy-token" style="display: none; color: #ff4a4a; font-weight: bold;"><i class="fas fa-trash-alt"></i> Destruir Ficha (Token)</div>
         <hr>
         <div class="menu-item" id="menu-control"><i class="fas fa-exchange-alt"></i> Tomar Control</div>
@@ -1571,6 +1575,7 @@
             }
 
             let currentRole = params.get('role') || "player1"; // default to URL param
+            window.currentRole = currentRole;
             let roomId = params.get('room');
             if (!roomId) {
                 roomId = 'R' + Math.floor(10000 + Math.random() * 90000);
@@ -1641,6 +1646,7 @@
                 $(".role-btn").removeClass("active");
                 $(this).addClass("active");
                 currentRole = $(this).data("role");
+                window.currentRole = currentRole;
 
                 // Visual feedback of my own role changes
                 appendSystemMsg(`Te has conectado como ${currentRole === 'player1' ? 'Jugador 1' : 'Jugador 2'}`);
