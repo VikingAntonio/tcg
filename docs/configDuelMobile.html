@@ -567,13 +567,12 @@
                 <div style="text-align: center;">
                     <div class="card-header-icon"><i class="fas fa-gamepad"></i></div>
                     <h2>MODO DOS JUGADORES</h2>
-                    <p class="card-desc">Enfréntate a un amigo en tiempo real. Configura tu deck personal, crea una sala y comparte el ID para iniciar el duelo juntos.</p>
                 </div>
 
                 <!-- Unauthenticated view -->
                 <div id="auth-locked-view" class="auth-locked-container">
                     <i class="fas fa-lock"></i>
-                    <p>Requiere tener una cuenta en el proyecto con al menos un deck configurado para poder jugar en el modo dos jugadores.</p>
+                    <p>Para poder usar este modo inicia sesión o crea una cuenta y configura al menos 1 deck</p>
                     <button id="btn-open-login" class="nav-btn" style="background: rgba(255, 27, 107, 0.15); border-color: var(--secondary-color); color: var(--secondary-color); padding: 12px 24px; border-radius: 10px;">
                         <i class="fas fa-sign-in-alt"></i> Iniciar Sesión / Registrarse
                     </button>
@@ -665,6 +664,7 @@
             let sessionUser = null;
             let userDecks = [];
             let preselectedDeck = null;
+            let publicAccountDecks = [];
 
             // Check if there is a preselected deck via query string
             const urlParams = new URLSearchParams(window.location.search);
@@ -674,11 +674,20 @@
                 try {
                     const { data, error } = await _supabase
                         .from('decks')
-                        .select('id, name')
+                        .select('id, name, user_id')
                         .eq('id', preselectedDeckId)
                         .maybeSingle();
                     if (!error && data) {
                         preselectedDeck = data;
+
+                        // Fetch all decks belonging to the owner of this public deck
+                        const { data: oDecks, error: oError } = await _supabase
+                            .from('decks')
+                            .select('id, name')
+                            .eq('user_id', preselectedDeck.user_id);
+                        if (!oError && oDecks) {
+                            publicAccountDecks = oDecks;
+                        }
                     }
                 } catch(e) {
                     console.error("Error fetching preselected deck:", e);
@@ -827,26 +836,34 @@
                 $deck1.empty();
                 $deck2.empty();
 
-                let practiceDecks = [...decks];
-                if (preselectedDeck && !practiceDecks.some(d => d.id == preselectedDeck.id)) {
-                    practiceDecks.unshift(preselectedDeck);
-                }
+                if (preselectedDeck) {
+                    // P1: ese deck sera el de usuario1
+                    $deck1.append(`<option value="${preselectedDeck.id}" selected>${preselectedDeck.name}</option>`);
+                    $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
 
-                // Player 1 Decks
-                if (practiceDecks.length > 0) {
-                    practiceDecks.forEach(d => {
-                        const selected = (preselectedDeck && d.id == preselectedDeck.id) ? 'selected' : '';
-                        $deck1.append(`<option value="${d.id}" ${selected}>${d.name}</option>`);
-                    });
-                }
-                $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+                    // P2: pueda elegir cualquier deck de esa cuenta de decks públicos
+                    if (publicAccountDecks && publicAccountDecks.length > 0) {
+                        publicAccountDecks.forEach(d => {
+                            $deck2.append(`<option value="${d.id}">${d.name}</option>`);
+                        });
+                    }
+                    $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+                } else {
+                    // P1: todos los que tengo disponibles en mi cuenta
+                    if (decks.length > 0) {
+                        decks.forEach(d => {
+                            $deck1.append(`<option value="${d.id}">${d.name}</option>`);
+                        });
+                    }
+                    $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
 
-                // Player 2 Decks
-                $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
-                if (decks.length > 0) {
-                    decks.forEach(d => {
-                        $deck2.append(`<option value="${d.id}">${d.name}</option>`);
-                    });
+                    // P2: todos los que tengo disponibles en mi cuenta
+                    if (decks.length > 0) {
+                        decks.forEach(d => {
+                            $deck2.append(`<option value="${d.id}">${d.name}</option>`);
+                        });
+                    }
+                    $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
                 }
             }
 
