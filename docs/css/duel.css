@@ -804,6 +804,15 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* Hide scrollbars for search/list bodies to prevent layout flickering */
+.search-body, .top-cards-grid {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+}
+.search-body::-webkit-scrollbar, .top-cards-grid::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+}
+
 /* Custom styles for Yu-Gi-Oh! Advanced format layout zones */
 .board-zone.zone-pendulum-blue {
     border: 1.5px dashed #00d2ff !important;
