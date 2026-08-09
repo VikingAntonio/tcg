@@ -1014,7 +1014,9 @@ function checkHandTrayHover(e, traySelector) {
 // Side info detailed previewer
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
-    const isPile = card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_");
+    // Face-up Pendulum cards in the Extra Deck can be previewed by anyone
+    const isExtraFaceUp = (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster") && card.faceDown === false);
+    const isPile = (card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_")) && !isExtraFaceUp;
     let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
 
     // Seteadas de mi lado (player1) en el campo se pueden ver en el preview
@@ -1217,10 +1219,17 @@ function openExtraDeckModal(playerKey) {
     if (extraCards.length === 0) {
         $("#extra-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Extra Deck.</p>');
     } else {
+        const isOwner = (playerKey === (typeof currentRole !== "undefined" ? currentRole : "player1"));
         extraCards.forEach(card => {
+            // Anti-cheat: mask image if the card is face-down and viewer is NOT the owner of the Extra Deck
+            const showBack = (card.faceDown !== false) && !isOwner;
+            const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+            const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+            const imgSrc = showBack ? backImg : card.imageUrl;
+
             const cardHTML = `
                 <div class="extra-deck-card-container" data-instance-id="${card.instanceId}">
-                    <img src="${card.imageUrl}" alt="${card.name}">
+                    <img src="${imgSrc}" alt="${card.name}">
                     <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 6px;">
                         <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
                         <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
@@ -1578,6 +1587,8 @@ function openAttachedCardsModal(parentId) {
                             <button class="pile-card-action-btn btn-attached-grave" data-instance-id="${card.instanceId}">Grave</button>
                             <button class="pile-card-action-btn btn-attached-banish" data-instance-id="${card.instanceId}">Remover</button>
                             <button class="pile-card-action-btn btn-attached-deck" data-instance-id="${card.instanceId}">Deck</button>
+                            <button class="pile-card-action-btn btn-attached-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
+                            <button class="pile-card-action-btn btn-attached-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
                         </div>
                     </div>
                 </div>
@@ -1626,6 +1637,20 @@ function openAttachedCardsModal(parentId) {
             cardObj.zone = `deck_${playerSuffix}`;
             cardObj.faceDown = true;
             cardObj.tapped = false;
+        } else if ($(this).hasClass("btn-attached-extra")) {
+            cardObj.zone = `extra_${playerSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Desacopló y envió al Extra Deck: 📁 ${cardObj.name}`);
+            }
+        } else if ($(this).hasClass("btn-attached-pendulum")) {
+            cardObj.zone = `extra_${playerSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Desacopló y envió al Extra Deck (Péndulo Boca Arriba): 🌟 ${cardObj.name}`);
+            }
         }
 
         renderAllCards();
@@ -1864,6 +1889,8 @@ function openSearchModal(playerKey) {
                                     <button class="pile-card-action-btn btn-search-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-search-grave" data-instance-id="${card.instanceId}">Grave</button>
                             <button class="pile-card-action-btn btn-search-banish" data-instance-id="${card.instanceId}">Remover</button>
+                            <button class="pile-card-action-btn btn-search-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
+                            <button class="pile-card-action-btn btn-search-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
                         </div>
                     </div>
                 </div>
@@ -1935,6 +1962,24 @@ function openSearchModal(playerKey) {
             cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
             openSearchModal(playerKey); // refresh
+        } else if ($(this).hasClass("btn-search-extra")) {
+            cardObj.zone = `extra_${pSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+            renderAllCards();
+            openSearchModal(playerKey); // refresh
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Buscó y envió al Extra Deck: 📁 ${cardObj.name}`);
+            }
+        } else if ($(this).hasClass("btn-search-pendulum")) {
+            cardObj.zone = `extra_${pSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            renderAllCards();
+            openSearchModal(playerKey); // refresh
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Buscó y envió al Extra Deck (Péndulo Boca Arriba): 🌟 ${cardObj.name}`);
+            }
         }
     });
 }
@@ -1984,6 +2029,8 @@ function openPileModal(playerKey, pileType) {
                                 `<button class="pile-card-action-btn btn-pile-banish" data-instance-id="${card.instanceId}">Remover</button>` :
                                 `<button class="pile-card-action-btn btn-pile-grave" data-instance-id="${card.instanceId}">Cementerio</button>`
                             }
+                            <button class="pile-card-action-btn btn-pile-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
+                            <button class="pile-card-action-btn btn-pile-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
                             <button class="pile-card-action-btn btn-pile-effect" data-instance-id="${card.instanceId}">Efecto</button>
                         </div>
                     </div>
@@ -2076,6 +2123,26 @@ function openPileModal(playerKey, pileType) {
             cardObj.movedToPileAt = Date.now() + Math.random();
             renderAllCards();
             openPileModal(playerKey, pileType); // refresh view
+        } else if ($(this).hasClass("btn-pile-extra")) {
+            cardObj.zone = `extra_${pSuffix}`;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+            cardObj.attachedTo = null;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Envió al Extra Deck: 📁 ${cardObj.name}`);
+            }
+        } else if ($(this).hasClass("btn-pile-pendulum")) {
+            cardObj.zone = `extra_${pSuffix}`;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            cardObj.attachedTo = null;
+            renderAllCards();
+            openPileModal(playerKey, pileType); // refresh view
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Envió al Extra Deck (Péndulo Boca Arriba): 🌟 ${cardObj.name}`);
+            }
         } else if ($(this).hasClass("btn-pile-effect")) {
             $("#pile-overlay").fadeOut(200);
 
@@ -3035,7 +3102,7 @@ function setupEventListeners() {
         }
     });
 
-    $(document).off("click", ".pile-card-container").on("click", ".pile-card-container", function(e) {
+    $(document).off("click.pile_batch_select", ".pile-card-container").on("click.pile_batch_select", ".pile-card-container", function(e) {
         if ($("#pile-multi-select-toggle").is(":checked")) {
             e.preventDefault();
             e.stopPropagation();
@@ -3872,6 +3939,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             ];
 
             $(".token-action-btn").click(function() {
+                // Collapse the mobile sidebar panel to clearly view the popup and the playmat
+                $(".duel-sidebar").removeClass("mobile-sidebar-active");
+
                 const spawnerPlayer = currentRole === "player1" ? "p1" : "p2";
                 const activeRoleKey = currentRole === "player1" ? "player1" : "player2";
                 const pSuffix = currentRole === "player1" ? 1 : 2;
@@ -5458,7 +5528,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             });
 
             // Mobile delegated click/tap handler to toggle menu overlay on list-view cards (No SweetAlert2!)
-            $(document).on("click", ".pile-card-container, .extra-deck-card-container, .search-card-item", function(e) {
+            $(document).off("click.mobile_menu_overlay").on("click.mobile_menu_overlay", ".pile-card-container, .extra-deck-card-container, .search-card-item", function(e) {
                 // If multi-select is active on graveyard/banished list modal, bypass popup/overlay menu
                 if ($("#pile-multi-select-toggle").is(":checked")) {
                     return;
