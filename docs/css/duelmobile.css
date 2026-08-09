@@ -1191,7 +1191,6 @@ body.layout-pokemon #floating-count-banished_2 {
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     padding: 6px 0;
-    padding-bottom: 120px; /* Space for scroll-past blank space */
     width: 230px;
     z-index: 1000;
     user-select: none;
@@ -1910,7 +1909,7 @@ body > .overlay {
     max-height: 60vh !important;
     width: 140px !important;
     border-radius: 8px !important;
-    padding-bottom: 5px !important;
+    padding-bottom: 0px !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     background: rgba(18, 25, 33, 0.98) !important;

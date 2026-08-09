@@ -2066,6 +2066,21 @@ async function selectDeck(deckId, skipPush = false) {
     const deck = (window.allPublicDecks || []).find(d => d.id == deckId);
     if (!deck) return;
 
+    // Show Probar Deck button
+    $('#btn-try-deck').show().off('click').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Auto-detect mobile vs desktop
+        const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            window.location.href = `configDuelMobile.html?deckId=${deckId}`;
+        } else {
+            window.location.href = `configDuel.html?deckId=${deckId}`;
+        }
+    });
+
     // Show loading for the specific deck
     $('#decks-container').html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando deck...</div>');
     $('#deck-menu-container').hide();
@@ -2134,6 +2149,8 @@ window.showDeckMenu = function() {
     const url = new URL(window.location);
     url.searchParams.delete('deckId');
     window.history.pushState({}, '', url);
+
+    $('#btn-try-deck').hide();
 
     $('#selected-deck-view').hide();
     $('#deck-menu-container').show();

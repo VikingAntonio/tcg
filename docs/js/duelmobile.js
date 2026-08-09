@@ -2447,6 +2447,27 @@ function setupEventListeners() {
     });
 
     // Card Menu Action handlers
+    $("#menu-trigger-effect").click(function() {
+        if (!activeMenuCard) return;
+        const cardObj = activeMenuCard;
+        $("#card-menu").removeClass("active");
+
+        // Trigger beautiful temporary activation glow animation on the playmat card element
+        setTimeout(() => {
+            const $cardElem = $(`#${cardObj.instanceId}`);
+            if ($cardElem.length) {
+                $cardElem.addClass("activating-flash");
+                setTimeout(() => {
+                    $cardElem.removeClass("activating-flash");
+                }, 800);
+            }
+        }, 100);
+
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Activó el efecto de ${cardObj.name}`);
+        }
+    });
+
     $("#menu-flip").click(function() {
         if (!activeMenuCard) return;
         activeMenuCard.faceDown = !activeMenuCard.faceDown;
@@ -4998,6 +5019,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     $("#menu-destroy-token").hide();
                     $("#menu-control").hide();
                     $("#menu-detach").hide();
+                    $("#menu-trigger-effect").hide();
+                    $("#menu-hr-trigger-effect").hide();
 
                     // Show deck / grave / banish options for hand
                     $("#menu-to-grave").show();
@@ -5031,6 +5054,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     $("#menu-hr-attack").show();
                     $("#menu-flip").show();
                     $("#menu-tap").show();
+                    $("#menu-trigger-effect").show();
+                    $("#menu-hr-trigger-effect").show();
 
                     const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
                     if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
