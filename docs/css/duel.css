@@ -568,6 +568,24 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     background-image: var(--custom-sleeve, url('../img/pokeBocaAbajo.jpg')) !important;
 }
 
+/* Face Down Semi-Transparent Reveal animation for owner / practice mode */
+@keyframes faceDownRevealPulse {
+    0% {
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 0.60;
+    }
+    100% {
+        opacity: 0.35;
+    }
+}
+
+.duel-card.face-down.reveal-face-down img {
+    visibility: visible !important;
+    animation: faceDownRevealPulse 3.5s infinite ease-in-out !important;
+}
+
 /* Counter indicator badges */
 .card-counter {
     position: absolute;
@@ -802,6 +820,11 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     background: #00d2ff;
     color: black;
     border-color: #ffffff;
+}
+
+/* Ensure SweetAlert is always on top of our overlays (such as search, graveyard, deck list, etc.) */
+.swal2-container {
+    z-index: 4000000 !important;
 }
 
 /* Hide scrollbars for search/list bodies to prevent layout flickering */
