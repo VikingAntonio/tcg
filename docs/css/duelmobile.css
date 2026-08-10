@@ -2265,3 +2265,52 @@ body.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
     border-style: solid;
     box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
 }
+
+/* Custom Fullscreen Card Zoom Overlay Styles */
+#custom-card-zoom-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 5000000 !important;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+#custom-card-zoom-overlay .custom-zoom-wrapper {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#custom-card-zoom-close {
+    position: absolute;
+    top: -45px;
+    right: 0;
+    color: #ffffff;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+}
+
+#custom-card-zoom-close:hover {
+    color: #ff4a4a;
+}
+
+#custom-card-zoom-img {
+    max-width: 100%;
+    max-height: 85vh;
+    border-radius: 12px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+    object-fit: contain;
+    pointer-events: auto;
+}

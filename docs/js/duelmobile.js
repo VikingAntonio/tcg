@@ -9,6 +9,59 @@ if (typeof _supabase === 'undefined' || !_supabase) {
     };
 }
 
+// Fullscreen card zoom helper functions
+window.getCardZoomImage = function(card) {
+    if (!card) return "";
+    if (card.zone && card.zone.startsWith("prize_") && card.faceDown) {
+        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        return (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+    }
+
+    const isExtraFaceUp = (card.zone && card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster") && card.faceDown === false);
+    const isPile = card.zone && (card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_")) && !isExtraFaceUp;
+    let isFaceDown = card.faceDown && card.zone && !card.zone.startsWith("hand_");
+
+    // Practice mode reveals all face-down cards. Multiplayer mode only reveals viewer's own.
+    if (isFaceDown && !isPile) {
+        if (state.mode === 'practice') {
+            isFaceDown = false;
+        } else if (state.mode === 'multiplayer') {
+            const viewerRole = window.currentRole || "player1";
+            if (card.owner === viewerRole) {
+                isFaceDown = false;
+            }
+        }
+    }
+
+    if (isPile || isFaceDown) {
+        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        return (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+    } else {
+        return card.imageUrl;
+    }
+};
+
+window.showCustomCardZoom = function(imageUrl) {
+    if (!imageUrl || imageUrl.includes("placeholder") || imageUrl.includes("via.placeholder.com")) {
+        return;
+    }
+    // Collapse any mobile accessories sidebar first
+    $(".duel-sidebar").removeClass("mobile-sidebar-active");
+
+    $("#custom-card-zoom-img").attr("src", imageUrl);
+    $("#custom-card-zoom-overlay").fadeIn(150).css("display", "flex");
+};
+
+// Bind custom card zoom overlay click handlers
+$(document).ready(function() {
+    $("#custom-card-zoom-overlay, #custom-card-zoom-close").click(function(e) {
+        if (e.target.id === "custom-card-zoom-img") {
+            return;
+        }
+        $("#custom-card-zoom-overlay").fadeOut(150);
+    });
+});
+
 // JSON Playmat layouts for Yu-Gi-Oh and Pokémon TCG
 // Scaled layout for a 1120x600 playmat board.
 // Card Width: 80px, Height: 116px.
@@ -1281,6 +1334,7 @@ function openExtraDeckModal(playerKey) {
                     <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 6px;">
                         <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
                         <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
+                        <button class="extra-card-action-btn btn-extra-zoom" data-instance-id="${card.instanceId}">Ver carta</button>
                     </div>
                 </div>
             `;
@@ -1305,6 +1359,24 @@ function openExtraDeckModal(playerKey) {
         if (cardObj) {
             $("#extra-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "summon");
+        }
+    });
+
+    // Click zoom button to view card details (Delegated for loop cloning support)
+    $("#extra-cards-grid").on("click", ".btn-extra-zoom", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const container = $(this).closest(".extra-deck-card-container");
+        if (!container.hasClass("active-menu")) {
+            $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
+            container.addClass("active-menu");
+            return;
+        }
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            const zoomUrl = window.getCardZoomImage(cardObj);
+            window.showCustomCardZoom(zoomUrl);
         }
     });
 
@@ -1637,6 +1709,7 @@ function openAttachedCardsModal(parentId) {
                             <button class="pile-card-action-btn btn-attached-deck" data-instance-id="${card.instanceId}">Deck</button>
                             <button class="pile-card-action-btn btn-attached-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
                             <button class="pile-card-action-btn btn-attached-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
+                            <button class="pile-card-action-btn btn-attached-zoom" data-instance-id="${card.instanceId}">Ver carta</button>
                         </div>
                     </div>
                 </div>
@@ -1664,6 +1737,12 @@ function openAttachedCardsModal(parentId) {
         if (!cardObj) return;
 
         const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if ($(this).hasClass("btn-attached-zoom")) {
+            const zoomUrl = window.getCardZoomImage(cardObj);
+            window.showCustomCardZoom(zoomUrl);
+            return;
+        }
 
         cardObj.attachedTo = null; // Detach first!
 
@@ -1939,6 +2018,7 @@ function openSearchModal(playerKey) {
                             <button class="pile-card-action-btn btn-search-banish" data-instance-id="${card.instanceId}">Remover</button>
                             <button class="pile-card-action-btn btn-search-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
                             <button class="pile-card-action-btn btn-search-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
+                            <button class="pile-card-action-btn btn-search-zoom" data-instance-id="${card.instanceId}">Ver carta</button>
                         </div>
                     </div>
                 </div>
@@ -1966,6 +2046,12 @@ function openSearchModal(playerKey) {
         if (!cardObj) return;
 
         const pSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if ($(this).hasClass("btn-search-zoom")) {
+            const zoomUrl = window.getCardZoomImage(cardObj);
+            window.showCustomCardZoom(zoomUrl);
+            return;
+        }
 
         if ($(this).hasClass("btn-search-hand")) {
             $("#search-overlay").fadeOut(200);
@@ -2080,6 +2166,7 @@ function openPileModal(playerKey, pileType) {
                             <button class="pile-card-action-btn btn-pile-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
                             <button class="pile-card-action-btn btn-pile-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
                             <button class="pile-card-action-btn btn-pile-effect" data-instance-id="${card.instanceId}">Efecto</button>
+                            <button class="pile-card-action-btn btn-pile-zoom" data-instance-id="${card.instanceId}">Ver carta</button>
                         </div>
                     </div>
                 </div>
@@ -2107,6 +2194,12 @@ function openPileModal(playerKey, pileType) {
         if (!cardObj) return;
 
         const pSuffix = cardObj.owner === "player1" ? 1 : 2;
+
+        if ($(this).hasClass("btn-pile-zoom")) {
+            const zoomUrl = window.getCardZoomImage(cardObj);
+            window.showCustomCardZoom(zoomUrl);
+            return;
+        }
 
         if ($(this).hasClass("btn-pile-summon")) {
             $("#pile-overlay").fadeOut(200);
@@ -2222,24 +2315,11 @@ function setupEventListeners() {
     $("#btn-magnify-preview").click(function(e) {
         e.preventDefault();
         e.stopPropagation();
-        // Hide mobile accessories sidebar to see the popup complete
-        $(".duel-sidebar").removeClass("mobile-sidebar-active");
         const src = $("#detail-card-img").attr("src");
         if (!src || src.includes("placeholder") || src.includes("via.placeholder.com")) {
             return;
         }
-        Swal.fire({
-            html: `
-                <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
-                    <img src="${src}" style="max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
-                </div>
-            `,
-            showCloseButton: true,
-            showConfirmButton: false,
-            background: "transparent",
-            backdrop: "rgba(0, 0, 0, 0.85)",
-            width: "auto"
-        });
+        window.showCustomCardZoom(src);
     });
 
     // Menu layout toggle
@@ -2461,6 +2541,13 @@ function setupEventListeners() {
     });
 
     // New Menu Action handlers for Hand/Acoplar/View
+    $(document).on("click", "#menu-view-card-detail", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        const zoomUrl = window.getCardZoomImage(activeMenuCard);
+        window.showCustomCardZoom(zoomUrl);
+    });
+
     $(document).on("click", "#menu-summon", function() {
         if (!activeMenuCard) return;
         $("#card-menu").removeClass("active");
@@ -5074,6 +5161,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
         // Setup dragging trackers on playmat elements and clamping of context menus
         $(document).ready(function() {
             window.updateCardMenuOptions = function(cardObj) {
+                $("#menu-view-card-detail").show();
                 // By default, hide all hand-specific items
                 $("#menu-summon").hide();
                 $("#menu-set").hide();

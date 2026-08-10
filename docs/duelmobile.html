@@ -276,6 +276,7 @@
 
     <!-- Context Menu for Cards -->
     <div class="card-context-menu" id="card-menu">
+        <div class="menu-item" id="menu-view-card-detail"><i class="fas fa-search-plus"></i> Ver carta</div>
         <div class="menu-item" id="menu-summon"><i class="fas fa-arrow-up"></i> Invocar</div>
         <div class="menu-item" id="menu-set"><i class="fas fa-folder-open"></i> Set</div>
         <div class="menu-item" id="menu-activate"><i class="fas fa-magic"></i> Activar</div>
@@ -431,6 +432,14 @@
     <script src="js/duelmobile.js"></script>
 
     <!-- Communication, Chat, and Game Log integration -->
+
+    <!-- Custom Fullscreen Card Zoom Overlay -->
+    <div id="custom-card-zoom-overlay">
+        <div class="custom-zoom-wrapper">
+            <span id="custom-card-zoom-close">&times;</span>
+            <img id="custom-card-zoom-img" src="" alt="Zoomed Card">
+        </div>
+    </div>
 
 </body>
 </html>
