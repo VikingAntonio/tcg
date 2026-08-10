@@ -2256,12 +2256,34 @@ function renderAccessoriesGrid(accessories) {
             const $item = $(`
                 <div class="accessory-item type-${key} ${isSelected ? 'selected' : ''}" data-value="${acc.image_url}" title="${acc.name}">
                     <img src="${acc.image_url}" alt="${acc.name}" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                    <div class="accessory-zoom-btn" data-url="${acc.image_url}"><i class="fas fa-search"></i></div>
                 </div>
             `);
             $grid.append($item);
         });
     });
 }
+
+// Add the click handler on accessory zoom button
+$(document).on('click', '.accessory-zoom-btn', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    const url = $(this).attr('data-url');
+    const name = $(this).closest('.accessory-item').attr('title') || 'Accesorio';
+    Swal.fire({
+        title: name,
+        imageUrl: url,
+        imageAlt: name,
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: '#1a1a1a',
+        color: '#fff',
+        customClass: {
+            popup: 'custom-swal-zoom-popup',
+            image: 'custom-swal-zoom-image'
+        }
+    });
+});
 
 // Add the click handler on accessory items
 $(document).on('click', '.accessory-item', function() {
