@@ -2467,6 +2467,34 @@ function setupEventListeners() {
         renderAllCards();
     });
 
+    $("#menu-to-extra").click(function() {
+        if (!activeMenuCard) return;
+        const playerSuffix = activeMenuCard.owner === "player1" ? 1 : 2;
+        detachAllChildren(activeMenuCard.instanceId);
+        activeMenuCard.zone = `extra_${playerSuffix}`;
+        activeMenuCard.faceDown = true;
+        activeMenuCard.tapped = false;
+        $("#card-menu").removeClass("active");
+        renderAllCards();
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Envió al Extra Deck: 📁 ${activeMenuCard.name}`);
+        }
+    });
+
+    $("#menu-pendulum").click(function() {
+        if (!activeMenuCard) return;
+        const playerSuffix = activeMenuCard.owner === "player1" ? 1 : 2;
+        detachAllChildren(activeMenuCard.instanceId);
+        activeMenuCard.zone = `extra_${playerSuffix}`;
+        activeMenuCard.faceDown = false; // face up!
+        activeMenuCard.tapped = false;
+        $("#card-menu").removeClass("active");
+        renderAllCards();
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Envió al Extra Deck (Péndulo Boca Arriba): 🌟 ${activeMenuCard.name}`);
+        }
+    });
+
     $(document).on("click", "#menu-attach-option, #menu-attach-field", function() {
         if (!activeMenuCard) return;
         $("#card-menu").removeClass("active");
@@ -5062,6 +5090,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     $("#menu-to-banish").show();
                     $("#menu-to-deck-top").show();
                     $("#menu-to-deck-bottom").show();
+                    $("#menu-to-extra").hide();
+                    $("#menu-pendulum").hide();
                 } else {
                     // Field Card layout options
                     $("#menu-summon").hide();
@@ -5111,6 +5141,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         $("#menu-to-deck-bottom").hide();
                         $("#menu-control").hide();
                         $("#menu-detach").hide();
+                        $("#menu-to-extra").hide();
+                        $("#menu-pendulum").hide();
                     } else {
                         $("#menu-destroy-token").hide();
                         $("#menu-to-hand").show();
@@ -5119,6 +5151,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         $("#menu-to-deck-top").show();
                         $("#menu-to-deck-bottom").show();
                         $("#menu-control").show();
+                        $("#menu-to-extra").show();
+                        $("#menu-pendulum").show();
                     }
                 }
 
@@ -5612,65 +5646,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 $(".pile-card-container, .extra-deck-card-container, .search-card-item").not(this).removeClass("active-menu");
 
                 // Toggle active menu class on the clicked container
-                const $this = $(this);
-                $this.addClass("active-menu");
-
-                // Initialize loop scrolling
-                const overlay = $this.find('.pile-card-hover-overlay, .extra-deck-card-hover-overlay');
-                if (overlay.length && !overlay.data('loop-initialized')) {
-                    overlay.data('loop-initialized', true);
-
-                    let menu = overlay.find('.pile-card-menu');
-                    let isExtra = false;
-                    if (!menu.length) {
-                        menu = overlay;
-                        isExtra = true;
-                    }
-
-                    const children = menu.children().clone();
-                    menu.empty();
-
-                    const gapStyle = isExtra ? 'gap: 6px;' : 'gap: 3px;';
-                    const set1 = $(`<div class="menu-set-wrapper" style="display:flex; flex-direction:column; ${gapStyle} width:100%;"></div>`).append(children.clone());
-                    const set2 = $(`<div class="menu-set-wrapper" style="display:flex; flex-direction:column; ${gapStyle} width:100%;"></div>`).append(children.clone());
-                    const set3 = $(`<div class="menu-set-wrapper" style="display:flex; flex-direction:column; ${gapStyle} width:100%;"></div>`).append(children.clone());
-
-                    menu.append(set1).append(set2).append(set3);
-
-                    // Add scroll listener for seamless looping
-                    overlay.off('scroll.menuloop').on('scroll.mobile_menuloop', function() {
-                        const container = this;
-                        const $sets = $(container).find('.menu-set-wrapper');
-                        if ($sets.length < 3) return;
-
-                        const setHeight = $sets.eq(0).outerHeight(true) || $sets.eq(0).height();
-                        const scrollTop = container.scrollTop;
-
-                        if (scrollTop >= setHeight * 2) {
-                            container.scrollTop = scrollTop - setHeight;
-                        } else if (scrollTop < setHeight) {
-                            container.scrollTop = scrollTop + setHeight;
-                        }
-                    });
-
-                    // Set initial scroll to the middle set (set2)
-                    setTimeout(() => {
-                        const $sets = overlay.find('.menu-set-wrapper');
-                        if ($sets.length >= 3) {
-                            const setHeight = $sets.eq(0).outerHeight(true) || $sets.eq(0).height();
-                            overlay[0].scrollTop = setHeight;
-                        }
-                    }, 50);
-                } else if (overlay.length) {
-                    // Reset scroll to middle set on every open
-                    setTimeout(() => {
-                        const $sets = overlay.find('.menu-set-wrapper');
-                        if ($sets.length >= 3) {
-                            const setHeight = $sets.eq(0).outerHeight(true) || $sets.eq(0).height();
-                            overlay[0].scrollTop = setHeight;
-                        }
-                    }, 50);
-                }
+                $(this).addClass("active-menu");
             });
 
             // Clicking anywhere outside of modal list-view cards closes any open menu overlay
