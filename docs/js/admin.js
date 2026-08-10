@@ -975,8 +975,9 @@ $(document).ready(async function() {
         const sleeves = window.selectedSleeves || null;
         const deckbox = window.selectedDeckbox || null;
         const coin = window.selectedCoin || null;
+        const mats = window.selectedMats || null;
 
-        let updateData = { name, is_public, use_special_price, special_price, sleeves, deckbox, coin };
+        let updateData = { name, is_public, use_special_price, special_price, sleeves, deckbox, coin, mats };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
@@ -1017,11 +1018,22 @@ $(document).ready(async function() {
                 insPromise = _supabase.from('deck_cards').insert(cardsToInsert);
             }
 
-            const [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
+            let [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
 
             if (deckRes.error && deckRes.error.code === '42703') {
-                await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
-                console.warn("La tabla decks no tiene las columnas sleeves, deckbox o coin. Se guardo sin accesorios.");
+                // Try without mats
+                const fallbackData = { name, is_public, use_special_price, special_price, sleeves, deckbox, coin };
+                const retryRes = await _supabase.from('decks').update(fallbackData).eq('id', currentDeckId);
+
+                if (retryRes.error && retryRes.error.code === '42703') {
+                    // Try without any accessories
+                    const basicRes = await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
+                    deckRes = basicRes;
+                    console.warn("La tabla decks no tiene las columnas de accesorios. Se guardo sin accesorios.");
+                } else {
+                    deckRes = retryRes;
+                    console.warn("La tabla decks no tiene la columna mats. Se guardó con los demás accesorios.");
+                }
             } else if (deckRes.error) throw deckRes.error;
 
             if (insRes.error) throw insRes.error;
@@ -1615,6 +1627,32 @@ $(document).ready(async function() {
     $(document).on('click', '#btn-organize-cards', function(e) { e.preventDefault(); openOrganizeModal('cards'); });
     $(document).on('click', '#close-organize-modal, #btn-finish-organize', function() { $('#organize-modal').removeClass('active'); });
 
+    // --- Accessories Modal Listeners ---
+    $(document).on('click', '#btn-deck-accessories', function(e) {
+        e.preventDefault();
+        $('#accessories-modal').addClass('active');
+        // Select the first tab on open
+        $('.acc-tab-btn[data-tab="sleeves"]').click();
+    });
+
+    $(document).on('click', '#close-accessories-modal, #btn-save-accessories-modal', function() {
+        $('#accessories-modal').removeClass('active');
+    });
+
+    $(document).on('click', '.acc-tab-btn', function() {
+        const tab = $(this).data('tab');
+        $('.acc-tab-btn').removeClass('active');
+        $(this).addClass('active');
+
+        $('.acc-tab-pane').removeClass('active');
+        $(`#pane-${tab}`).addClass('active');
+    });
+
+    $(document).on('click', '.selected-acc-preview-card', function() {
+        const tab = $(this).data('target-tab');
+        $(`.acc-tab-btn[data-tab="${tab}"]`).click();
+    });
+
     $(document).on('change', '.toggle-public', async function() {
         const id = $(this).data('id');
         const type = $(this).data('type');
@@ -2124,6 +2162,7 @@ async function editDeck(deck) {
     window.selectedSleeves = target.sleeves || null;
     window.selectedDeckbox = target.deckbox || null;
     window.selectedCoin = target.coin || null;
+    window.selectedMats = target.mats || null;
 
     loadAndRenderAccessories();
 
@@ -2148,27 +2187,59 @@ async function loadAndRenderAccessories() {
 
 function renderAccessoriesGrid(accessories) {
     const sections = [
-        { key: 'sleeves', gridId: '#grid-sleeves', nameId: '#selected-sleeves-name', selectedVal: window.selectedSleeves },
-        { key: 'deckbox', gridId: '#grid-deckbox', nameId: '#selected-deckbox-name', selectedVal: window.selectedDeckbox },
-        { key: 'coin', gridId: '#grid-coin', nameId: '#selected-coin-name', selectedVal: window.selectedCoin }
+        { key: 'sleeves', gridId: '#grid-sleeves', nameId: '#selected-sleeves-name', selectedVal: window.selectedSleeves, previewBoxId: '#preview-box-sleeves' },
+        { key: 'deckbox', gridId: '#grid-deckbox', nameId: '#selected-deckbox-name', selectedVal: window.selectedDeckbox, previewBoxId: '#preview-box-deckbox' },
+        { key: 'coin', gridId: '#grid-coin', nameId: '#selected-coin-name', selectedVal: window.selectedCoin, previewBoxId: '#preview-box-coin' },
+        { key: 'mats', gridId: '#grid-mats', nameId: '#selected-mats-name', selectedVal: window.selectedMats, previewBoxId: '#preview-box-mats' }
     ];
 
-    sections.forEach(({ key, gridId, nameId, selectedVal }) => {
+    sections.forEach(({ key, gridId, nameId, selectedVal, previewBoxId }) => {
         const $grid = $(gridId);
         $grid.empty();
 
-        const filtered = accessories.filter(acc =>
-            (acc.rarity || '').toLowerCase() === key ||
-            (acc.expansion || '').toLowerCase() === key
-        );
+        const filtered = accessories.filter(acc => {
+            const r = (acc.rarity || '').toLowerCase();
+            const e = (acc.expansion || '').toLowerCase();
+            if (key === 'mats') {
+                return r === 'mats' || r === 'playmat' || r === 'playmats' || r === 'mat' ||
+                       e === 'mats' || e === 'playmat' || e === 'playmats' || e === 'mat';
+            }
+            return r === key || e === key;
+        });
 
-        // Name display
+        // Name and Preview display
         let currentSelectedName = 'Ninguno';
         const found = filtered.find(acc => acc.image_url === selectedVal);
         if (found) {
             currentSelectedName = found.name;
         }
         $(nameId).text(currentSelectedName);
+
+        // Update preview box image
+        const $previewBox = $(previewBoxId);
+        if (selectedVal) {
+            $previewBox.html(`<img src="${selectedVal}" alt="Preview" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+        } else {
+            $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
+        }
+
+        if (filtered.length === 0) {
+            // Show custom message
+            let typeLabel = key;
+            if (key === 'sleeves') typeLabel = 'Sleeves (Micas)';
+            if (key === 'deckbox') typeLabel = 'Deckboxes';
+            if (key === 'coin') typeLabel = 'Coins (Monedas)';
+            if (key === 'mats') typeLabel = 'Playmats (Tapetes)';
+
+            const $msg = $(`
+                <div class="acc-upcoming-message">
+                    <i class="fas fa-hourglass-half"></i>
+                    <p>Próximamente habrá ${typeLabel} disponibles</p>
+                </div>
+            `);
+            $grid.append($msg);
+            return;
+        }
 
         // Render "Ninguno" Option
         const isNoneSelected = !selectedVal;
@@ -2199,6 +2270,7 @@ $(document).on('click', '.accessory-item', function() {
     const isSleeves = $item.hasClass('type-sleeves');
     const isDeckbox = $item.hasClass('type-deckbox');
     const isCoin = $item.hasClass('type-coin');
+    const isMats = $item.hasClass('type-mats');
 
     if (isSleeves) {
         window.selectedSleeves = val;
@@ -2206,17 +2278,29 @@ $(document).on('click', '.accessory-item', function() {
         window.selectedDeckbox = val;
     } else if (isCoin) {
         window.selectedCoin = val;
+    } else if (isMats) {
+        window.selectedMats = val;
     }
 
     // Toggle active state in the grid
     $item.siblings().removeClass('selected');
     $item.addClass('selected');
 
-    // Update name label
+    // Update name label & preview box
     const headerName = $item.attr('title') || 'Ninguno';
-    if (isSleeves) $('#selected-sleeves-name').text(headerName);
-    if (isDeckbox) $('#selected-deckbox-name').text(headerName);
-    if (isCoin) $('#selected-coin-name').text(headerName);
+    let key = '';
+    if (isSleeves) key = 'sleeves';
+    else if (isDeckbox) key = 'deckbox';
+    else if (isCoin) key = 'coin';
+    else if (isMats) key = 'mats';
+
+    $(`#selected-${key}-name`).text(headerName);
+    const $previewBox = $(`#preview-box-${key}`);
+    if (val) {
+        $previewBox.html(`<img src="${val}" alt="${headerName}" onerror="this.src='https://via.placeholder.com/150?text=Error'">`);
+    } else {
+        $previewBox.html(`<span class="acc-preview-none">Ninguno</span>`);
+    }
 });
 
 async function deleteDeck(id) {

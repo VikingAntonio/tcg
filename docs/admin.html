@@ -906,6 +906,7 @@
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                     <button id="btn-save-deck-meta" class="btn"><i class="fas fa-save"></i> Guardar Cambios</button>
                     <button id="btn-organize-cards" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                    <button id="btn-deck-accessories" class="btn btn-secondary"><i class="fas fa-gem"></i> Accesorios</button>
                 </div>
             </div>
 
@@ -935,129 +936,6 @@
                             </label>
                         </div>
 
-                        <!-- SEPARATOR FOR ACCESSORIES -->
-                        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
-
-                        <!-- ACCESSORIES CONTAINER -->
-                        <div id="deck-accessories-selector-container">
-                            <style>
-                                .accessory-section {
-                                    margin-bottom: 15px;
-                                }
-                                .accessory-header {
-                                    font-size: 11px;
-                                    font-weight: bold;
-                                    text-transform: uppercase;
-                                    color: rgba(255,255,255,0.6);
-                                    margin-bottom: 8px;
-                                    display: flex;
-                                    justify-content: space-between;
-                                    align-items: center;
-                                }
-                                .accessory-selected-name {
-                                    color: #00d2ff;
-                                    font-weight: 700;
-                                    font-size: 11px;
-                                    text-align: right;
-                                    max-width: 60%;
-                                    overflow: hidden;
-                                    text-overflow: ellipsis;
-                                    white-space: nowrap;
-                                }
-                                .accessory-grid {
-                                    display: grid;
-                                    grid-template-columns: repeat(3, 1fr);
-                                    gap: 10px;
-                                    max-height: 120px;
-                                    overflow-y: auto;
-                                    padding-right: 4px;
-                                }
-                                .accessory-grid::-webkit-scrollbar {
-                                    width: 4px;
-                                }
-                                .accessory-grid::-webkit-scrollbar-thumb {
-                                    background: rgba(255,255,255,0.2);
-                                    border-radius: 4px;
-                                }
-                                .accessory-item {
-                                    position: relative;
-                                    cursor: pointer;
-                                    border: 2px solid transparent;
-                                    border-radius: 8px;
-                                    overflow: hidden;
-                                    background: rgba(0,0,0,0.3);
-                                    aspect-ratio: 1;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    transition: all 0.2s;
-                                }
-                                .accessory-item.type-sleeves {
-                                    aspect-ratio: 2/3;
-                                }
-                                .accessory-item.type-coin {
-                                    border-radius: 50%;
-                                }
-                                .accessory-item img {
-                                    width: 100%;
-                                    height: 100%;
-                                    object-fit: cover;
-                                }
-                                .accessory-item:hover {
-                                    border-color: rgba(0, 210, 255, 0.4);
-                                }
-                                .accessory-item.selected {
-                                    border-color: #00d2ff;
-                                    box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
-                                }
-                                .accessory-item.none-option {
-                                    background: rgba(255,255,255,0.03);
-                                    border: 1px dashed rgba(255,255,255,0.2);
-                                    font-size: 10px;
-                                    color: rgba(255,255,255,0.4);
-                                    text-align: center;
-                                    text-transform: uppercase;
-                                    font-weight: bold;
-                                }
-                                .accessory-item.none-option.selected {
-                                    border: 2px solid #00d2ff;
-                                    color: #00d2ff;
-                                }
-                            </style>
-
-                            <!-- Sleeves Section -->
-                            <div class="accessory-section">
-                                <div class="accessory-header">
-                                    <span>Micas / Sleeves</span>
-                                    <span class="accessory-selected-name" id="selected-sleeves-name">Ninguno</span>
-                                </div>
-                                <div id="grid-sleeves" class="accessory-grid">
-                                    <!-- Dynamic items -->
-                                </div>
-                            </div>
-
-                            <!-- Deckbox Section -->
-                            <div class="accessory-section">
-                                <div class="accessory-header">
-                                    <span>Portadeck / Deckbox</span>
-                                    <span class="accessory-selected-name" id="selected-deckbox-name">Ninguno</span>
-                                </div>
-                                <div id="grid-deckbox" class="accessory-grid">
-                                    <!-- Dynamic items -->
-                                </div>
-                            </div>
-
-                            <!-- Coin Section -->
-                            <div class="accessory-section">
-                                <div class="accessory-header">
-                                    <span>Moneda / Coin</span>
-                                    <span class="accessory-selected-name" id="selected-coin-name">Ninguno</span>
-                                </div>
-                                <div id="grid-coin" class="accessory-grid">
-                                    <!-- Dynamic items -->
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1355,6 +1233,7 @@
                                 <option value="sleeves">Sleeves (Micas)</option>
                                 <option value="deckbox">Deckbox (Portadecks)</option>
                                 <option value="coin">Coin (Moneda)</option>
+                                <option value="mats">Mats (Tapetes)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -2767,6 +2646,289 @@
 
             <div class="inv-modal-footer">
                 <button id="btn-save-investment-card" class="btn-inv-main" style="width: 100%; height: 50px;">GUARDAR CAMBIOS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accessories Modal -->
+    <style>
+        .selected-acc-preview-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 16px;
+        }
+        .selected-acc-preview-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .selected-acc-preview-card:hover {
+            transform: translateY(-2px);
+            border-color: #00d2ff;
+            box-shadow: 0 4px 12px rgba(0, 210, 255, 0.2);
+        }
+        .acc-preview-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+        .acc-preview-box {
+            width: 55px;
+            height: 55px;
+            border-radius: 8px;
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 4px;
+            transition: all 0.3s ease;
+        }
+        .acc-preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .acc-preview-none {
+            font-size: 8px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .acc-preview-name {
+            font-size: 10px;
+            color: #00d2ff;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        /* Tab Navigation */
+        .acc-tabs-nav {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 15px;
+            padding-bottom: 2px;
+        }
+        .acc-tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .acc-tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .acc-tab-btn.active {
+            color: #00d2ff;
+            border-bottom: 2px solid #00d2ff;
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        /* Tab Content */
+        .acc-tab-pane {
+            display: none;
+            width: 100%;
+            min-height: 180px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .acc-tab-pane.active {
+            display: block;
+        }
+
+        /* Custom Accessory Grid */
+        .accessory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 10px;
+            width: 100%;
+        }
+        .accessory-item {
+            position: relative;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.3);
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .accessory-item.type-sleeves {
+            aspect-ratio: 2/3;
+        }
+        .accessory-item.type-coin {
+            border-radius: 50%;
+        }
+        .accessory-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .accessory-item:hover {
+            border-color: rgba(0, 210, 255, 0.4);
+            transform: scale(1.05);
+        }
+        .accessory-item.selected {
+            border-color: #00d2ff;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
+        }
+        .accessory-item.none-option {
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed rgba(255,255,255,0.2);
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .accessory-item.none-option.selected {
+            border: 2px solid #00d2ff;
+            color: #00d2ff;
+        }
+
+        /* Upcoming message */
+        .acc-upcoming-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            grid-column: 1 / -1;
+            padding: 30px 15px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.05);
+        }
+        .acc-upcoming-message i {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .acc-upcoming-message p {
+            font-size: 12px;
+            margin: 0;
+        }
+    </style>
+
+    <div id="accessories-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 600px; width: 95%;">
+            <span id="close-accessories-modal" class="close-btn">&times;</span>
+
+            <div class="modal-header-simple" style="margin-bottom: 20px; text-align: center;">
+                <h2><i class="fas fa-gem"></i> ACCESORIOS DEL DECK</h2>
+                <p style="color: #888; font-size: 12px; margin-top: 5px;">Personaliza las micas, portadeck, moneda y tapete de tu baraja</p>
+            </div>
+
+            <!-- Preview of Selected Accessories -->
+            <div class="selected-acc-preview-container">
+                <div class="selected-acc-preview-card" data-target-tab="sleeves">
+                    <span class="acc-preview-title">Sleeves</span>
+                    <div class="acc-preview-box" id="preview-box-sleeves">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                    <span class="acc-preview-name" id="selected-sleeves-name">Ninguno</span>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="deckbox">
+                    <span class="acc-preview-title">Deckbox</span>
+                    <div class="acc-preview-box" id="preview-box-deckbox">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                    <span class="acc-preview-name" id="selected-deckbox-name">Ninguno</span>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="coin">
+                    <span class="acc-preview-title">Coin</span>
+                    <div class="acc-preview-box" id="preview-box-coin">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                    <span class="acc-preview-name" id="selected-coin-name">Ninguno</span>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="mats">
+                    <span class="acc-preview-title">Playmat</span>
+                    <div class="acc-preview-box" id="preview-box-mats">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                    <span class="acc-preview-name" id="selected-mats-name">Ninguno</span>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="acc-tabs-nav">
+                <button class="acc-tab-btn active" data-tab="sleeves"><i class="fas fa-scroll"></i> Sleeves</button>
+                <button class="acc-tab-btn" data-tab="deckbox"><i class="fas fa-box-open"></i> Deckbox</button>
+                <button class="acc-tab-btn" data-tab="coin"><i class="fas fa-coins"></i> Coins</button>
+                <button class="acc-tab-btn" data-tab="mats"><i class="fas fa-border-all"></i> Mats</button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="acc-tabs-content" style="width: 100%;">
+                <!-- Sleeves Tab -->
+                <div class="acc-tab-pane active" id="pane-sleeves">
+                    <div id="grid-sleeves" class="accessory-grid">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Deckbox Tab -->
+                <div class="acc-tab-pane" id="pane-deckbox">
+                    <div id="grid-deckbox" class="accessory-grid">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Coin Tab -->
+                <div class="acc-tab-pane" id="pane-coin">
+                    <div id="grid-coin" class="accessory-grid">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Mats Tab -->
+                <div class="acc-tab-pane" id="pane-mats">
+                    <div id="grid-mats" class="accessory-grid">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finish Button -->
+            <div style="margin-top: 25px; width: 100%; display: flex; justify-content: center;">
+                <button id="btn-save-accessories-modal" class="btn" style="width: 100%; padding: 12px;"><i class="fas fa-check"></i> Listo</button>
             </div>
         </div>
     </div>

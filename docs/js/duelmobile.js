@@ -158,6 +158,7 @@ const state = {
     cards: [], // All active card instances currently in game
     decks: { player1: [], player2: [] }, // Raw decks selected
     deckSleeves: { player1: null, player2: null }, // Store selected sleeve URL for each player
+    deckMats: { player1: null, player2: null }, // Store selected playmat URL for each player
     currentUser: null
 };
 
@@ -327,21 +328,33 @@ async function fetchDeckCards(deckId, playerKey) {
         if (error) throw error;
         state.decks[playerKey] = cards || [];
 
-        // Fetch deck custom sleeve metadata safely
+        // Fetch deck custom sleeve & mat metadata safely
         try {
             const { data: deckMeta, error: deckErr } = await _supabase
                 .from('decks')
-                .select('sleeves')
+                .select('sleeves, mats')
                 .eq('id', deckId)
                 .single();
-            if (!deckErr && deckMeta && deckMeta.sleeves) {
-                state.deckSleeves[playerKey] = deckMeta.sleeves;
+            if (!deckErr && deckMeta) {
+                state.deckSleeves[playerKey] = deckMeta.sleeves || null;
+                state.deckMats[playerKey] = deckMeta.mats || null;
+
+                // Apply player1's custom mat to the playmat background
+                if (playerKey === 'player1' && deckMeta.mats) {
+                    $("#playmat").css({
+                        "background-image": `url('${deckMeta.mats}')`,
+                        "background-size": "cover",
+                        "background-position": "center"
+                    });
+                }
             } else {
                 state.deckSleeves[playerKey] = null;
+                state.deckMats[playerKey] = null;
             }
         } catch (metaE) {
-            console.warn("Error fetching deck sleeves, fallback to default card back:", metaE);
+            console.warn("Error fetching deck accessories, fallback:", metaE);
             state.deckSleeves[playerKey] = null;
+            state.deckMats[playerKey] = null;
         }
     } catch (err) {
         console.error("Error loading deck cards:", err);
