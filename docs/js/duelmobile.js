@@ -2479,6 +2479,16 @@ function setupEventListeners() {
         activeMenuCard.zone = "field_free";
         activeMenuCard.faceDown = false;
         activeMenuCard.tapped = false;
+
+        const playerSuffix = activeMenuCard.owner === "player1" ? 1 : 2;
+        if (playerSuffix === 1) {
+            activeMenuCard.x = 870;
+            activeMenuCard.y = 320;
+        } else {
+            activeMenuCard.x = 170;
+            activeMenuCard.y = 160;
+        }
+
         renderAllCards();
     });
 
@@ -5551,34 +5561,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         cardObj.zone = `hand_${originalSuffix}`;
                         cardObj.controller = cardObj.owner;
                     } else {
-                        const droppedOnCard = findOverlappingCard(centerCoords, cardObj.instanceId);
-                        if (droppedOnCard) {
-                            state.cards.forEach(c => {
-                                if (c.attachedTo === cardObj.instanceId) {
-                                    c.attachedTo = droppedOnCard.instanceId;
-                                }
-                            });
-
-                            const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                            droppedOnCard.z = maxZ + 1;
-
-                            cardObj.attachedTo = droppedOnCard.instanceId;
-                            cardObj.attachedAt = Date.now() + Math.random();
-                            cardObj.zone = droppedOnCard.zone;
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Carta Acoplada',
-                                text: `${cardObj.name} ha sido acoplada a ${droppedOnCard.name}.`,
-                                toast: true,
-                                position: 'top-end',
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                        } else {
-                            cardObj.zone = "field_free";
-                            cardObj.attachedTo = null;
-                        }
+                        cardObj.zone = "field_free";
+                        cardObj.attachedTo = null;
                     }
                 }
 
