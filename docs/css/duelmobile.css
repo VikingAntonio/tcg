@@ -568,6 +568,24 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     background-image: var(--custom-sleeve, url('../img/pokeBocaAbajo.jpg')) !important;
 }
 
+/* Face Down Semi-Transparent Reveal animation for owner / practice mode */
+@keyframes faceDownRevealPulse {
+    0% {
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 0.60;
+    }
+    100% {
+        opacity: 0.35;
+    }
+}
+
+.duel-card.face-down.reveal-face-down img {
+    visibility: visible !important;
+    animation: faceDownRevealPulse 3.5s infinite ease-in-out !important;
+}
+
 /* Counter indicator badges */
 .card-counter {
     position: absolute;
