@@ -547,8 +547,18 @@ function renderAllCards() {
         const sleeveUrl = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : "";
         const sleeveStyle = sleeveUrl ? `--custom-sleeve: url('${sleeveUrl}');` : "";
 
+        let revealFaceDownClass = "";
+        if (card.faceDown && !isHand && !isPile) {
+            const viewerRole = window.currentRole || "player1";
+            if (state.mode === "practice") {
+                revealFaceDownClass = "reveal-face-down";
+            } else if (state.mode === "multiplayer" && card.owner === viewerRole) {
+                revealFaceDownClass = "reveal-face-down";
+            }
+        }
+
         const cardHTML = `
-            <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${card.tapped ? 'tapped' : ''}"
+            <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${revealFaceDownClass} ${card.tapped ? 'tapped' : ''}"
                  id="${card.instanceId}"
                  data-instance-id="${card.instanceId}"
                  style="--tilt: ${card.tiltAngle || 0}deg; ${sleeveStyle} ${zIndexStyle}">
@@ -628,8 +638,18 @@ function renderAllCards() {
                 const childSleeveUrl = (childCard.owner && state.deckSleeves && state.deckSleeves[childCard.owner]) ? state.deckSleeves[childCard.owner] : "";
                 const childSleeveStyle = childSleeveUrl ? `--custom-sleeve: url('${childSleeveUrl}');` : "";
 
+                let childRevealClass = "";
+                if (childCard.faceDown) {
+                    const viewerRole = window.currentRole || "player1";
+                    if (state.mode === "practice") {
+                        childRevealClass = "reveal-face-down";
+                    } else if (state.mode === "multiplayer" && childCard.owner === viewerRole) {
+                        childRevealClass = "reveal-face-down";
+                    }
+                }
+
                 const childCardHTML = `
-                    <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childCard.tapped ? 'tapped' : ''}"
+                    <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childRevealClass} ${childCard.tapped ? 'tapped' : ''}"
                          id="${childCard.instanceId}"
                          data-instance-id="${childCard.instanceId}"
                          data-parent-id="${card.instanceId}"
