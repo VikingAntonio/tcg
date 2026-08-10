@@ -565,6 +565,9 @@ function renderAllCards() {
                 revealFaceDownClass = "reveal-face-down";
             }
         }
+        if (card.zone && card.zone.startsWith("prize_")) {
+            revealFaceDownClass = "";
+        }
 
         const cardHTML = `
             <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${revealFaceDownClass} ${card.tapped ? 'tapped' : ''}"
@@ -655,6 +658,9 @@ function renderAllCards() {
                     } else if (state.mode === "multiplayer" && childCard.owner === viewerRole) {
                         childRevealClass = "reveal-face-down";
                     }
+                }
+                if (childCard.zone && childCard.zone.startsWith("prize_")) {
+                    childRevealClass = "";
                 }
 
                 const childCardHTML = `
@@ -1047,6 +1053,15 @@ function checkHandTrayHover(e, traySelector) {
 // Side info detailed previewer
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
+    if (card.zone && card.zone.startsWith("prize_") && card.faceDown) {
+        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+        $("#detail-card-img").attr("src", backImg);
+        $("#detail-card-name").text("Carta Boca Abajo");
+        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
+        return;
+    }
+
     // Face-up Pendulum cards in the Extra Deck can be previewed by anyone
     const isExtraFaceUp = (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster") && card.faceDown === false);
     const isPile = (card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_")) && !isExtraFaceUp;
