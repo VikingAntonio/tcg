@@ -1829,7 +1829,7 @@ body > .overlay {
     display: grid !important;
     grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)) !important;
     gap: 12px !important;
-    padding: 10px !important;
+    padding: 70px 10px !important;
     overflow-y: auto !important;
 }
 
@@ -1851,7 +1851,7 @@ body > .overlay {
 }
 
 /* Tap menus inside modals, perfectly comfortable, no SweetAlert2 or clipping */
-.pile-card-hover-overlay, .extra-deck-card-hover-overlay {
+.pile-card-hover-overlay {
     position: absolute !important;
     display: flex !important;
     flex-direction: column !important;
@@ -1863,11 +1863,12 @@ body > .overlay {
     border-radius: 8px !important;
     padding: 6px !important;
     width: 110px !important;
-    height: 180px !important;
+    height: auto !important;
     max-height: 180px !important;
+    min-height: 60px !important;
     overflow-y: auto !important;
-    scrollbar-width: none !important; /* Invisible scrollbar Firefox */
-    min-height: 180px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important; /* thin scrollbar Firefox */
     left: 50% !important;
     top: 50% !important;
     transform: translate(-50%, -50%) !important;
@@ -1878,7 +1879,44 @@ body > .overlay {
     transition: opacity 0.15s ease-in-out !important;
 }
 
-.pile-card-hover-overlay::-webkit-scrollbar,
+.extra-deck-card-hover-overlay {
+    position: absolute !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: rgba(12, 18, 24, 0.98) !important;
+    border: 1.5px solid var(--primary-color) !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    width: 110px !important;
+    height: auto !important;
+    min-height: unset !important;
+    max-height: unset !important;
+    overflow-y: hidden !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: 99999 !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(0, 210, 255, 0.4) !important;
+    transition: opacity 0.15s ease-in-out !important;
+}
+
+.pile-card-hover-overlay::-webkit-scrollbar {
+    display: block !important;
+    width: 4px !important;
+}
+.pile-card-hover-overlay::-webkit-scrollbar-thumb {
+    background: var(--primary-color) !important;
+    border-radius: 4px !important;
+}
+.pile-card-hover-overlay::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2) !important;
+}
+
 .extra-deck-card-hover-overlay::-webkit-scrollbar {
     display: none !important; /* Invisible scrollbar Chrome/Safari/Opera */
 }
@@ -1933,6 +1971,7 @@ body > .overlay {
     background: rgba(18, 25, 33, 0.98) !important;
     font-family: 'Montserrat', sans-serif !important;
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
 }
 
