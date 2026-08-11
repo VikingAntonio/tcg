@@ -21,19 +21,23 @@ window.getCardZoomImage = function(card) {
     const isPile = card.zone && (card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_")) && !isExtraFaceUp;
     let isFaceDown = card.faceDown && card.zone && !card.zone.startsWith("hand_");
 
-    // Practice mode reveals all face-down cards. Multiplayer mode only reveals viewer's own.
-    if (isFaceDown && !isPile) {
-        if (state.mode === 'practice') {
-            isFaceDown = false;
-        } else if (state.mode === 'multiplayer') {
-            const viewerRole = window.currentRole || "player1";
-            if (card.owner === viewerRole) {
-                isFaceDown = false;
-            }
+    let showAsBack = false;
+    if (state.mode === 'practice') {
+        // In practice mode, all non-prize cards are fully visible in Zoom
+        showAsBack = false;
+    } else {
+        const viewerRole = window.currentRole || "player1";
+        const isMyCard = (card.owner === viewerRole);
+        if (isMyCard) {
+            // Players can always view their own cards (zoom) in any zone/state
+            showAsBack = false;
+        } else {
+            // For opponents' cards, hide them if they are in a pile or face-down
+            showAsBack = isPile || isFaceDown;
         }
     }
 
-    if (isPile || isFaceDown) {
+    if (showAsBack) {
         const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
         return (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
     } else {
@@ -3455,13 +3459,15 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             // Helper to hide/show features depending on selected layout
             function updateLayoutFeatureVisibility() {
                 if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
-                    // Show phases and show LP counters
+                    // Show phases, turn indicator, and show LP counters
                     $("#phases-container").show();
+                    $("#turn-display").show();
                     $("#lp-counter-p1").show();
                     $("#lp-counter-p2").show();
                 } else {
-                    // Hide phases and hide LP counters (Pokémon layout has no phases or LP counters)
+                    // Hide phases, turn indicator, and hide LP counters (Pokémon layout has no phases or LP counters)
                     $("#phases-container").hide();
+                    $("#turn-display").hide();
                     $("#lp-counter-p1").hide();
                     $("#lp-counter-p2").hide();
                 }

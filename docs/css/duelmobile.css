@@ -2314,3 +2314,126 @@ body.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
     object-fit: contain;
     pointer-events: auto;
 }
+
+/* Central Turn and Phase Selector Bar mobile styling - top center, between LP counters */
+.central-turn-bar {
+    display: flex !important;
+    position: fixed !important;
+    top: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 100000 !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(18, 24, 30, 0.95) !important;
+    border: 1.5px solid var(--glass-border) !important;
+    border-radius: 8px !important;
+    padding: 6px 12px !important;
+    gap: 8px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6) !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+.phases-container {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    align-items: center !important;
+}
+
+.phase-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: #ccc !important;
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 0.65rem !important;
+    font-weight: bold !important;
+    padding: 3px 6px !important;
+    width: auto !important;
+    min-width: 28px !important;
+    text-align: center !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.phase-btn:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+}
+
+.phase-btn.active {
+    background: var(--primary-color) !important;
+    color: #000 !important;
+    border-color: #fff !important;
+    box-shadow: 0 0 8px var(--primary-glow) !important;
+}
+
+.end-turn-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1.5px solid #fff !important;
+    color: #fff !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 0.65rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 4px 8px !important;
+    width: auto !important;
+    text-align: center !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+.end-turn-btn:hover {
+    transform: scale(1.05) !important;
+}
+
+.end-turn-btn.flashing {
+    animation: endTurnBlink 0.8s infinite alternate ease-in-out !important;
+}
+
+@keyframes endTurnBlink {
+    0% {
+        box-shadow: 0 0 4px rgba(255, 255, 255, 0.2) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: #fff !important;
+    }
+    100% {
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.8), 0 0 30px rgba(0, 210, 255, 0.4) !important;
+        background: rgba(0, 210, 255, 0.4) !important;
+        border-color: #00d2ff !important;
+        color: #fff !important;
+    }
+}
+
+.turn-indicator {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 0.75rem !important;
+    font-weight: 900 !important;
+    padding: 3px 6px !important;
+    width: auto !important;
+    text-align: center !important;
+    border-radius: 6px !important;
+    text-transform: uppercase !important;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.3s ease !important;
+}
+
+.turn-indicator.p1-turn {
+    background: rgba(0, 210, 255, 0.2) !important;
+    color: var(--primary-color) !important;
+    border: 1px solid var(--primary-color) !important;
+    box-shadow: 0 0 10px var(--primary-glow) !important;
+}
+
+.turn-indicator.p2-turn {
+    background: rgba(255, 27, 107, 0.2) !important;
+    color: var(--secondary-color) !important;
+    border: 1px solid var(--secondary-color) !important;
+    box-shadow: 0 0 10px var(--secondary-glow) !important;
+}

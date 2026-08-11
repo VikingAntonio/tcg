@@ -130,8 +130,8 @@ def run_cuj(page):
     page.evaluate("jQuery('#btn-magnify-preview').trigger('click')")
     page.wait_for_timeout(1000)
 
-    mob_is_swal_visible = page.evaluate("jQuery('.swal2-container').is(':visible')")
-    mob_swal_img = page.evaluate("jQuery('.swal2-html-container img').attr('src')")
+    mob_is_swal_visible = page.evaluate("jQuery('#custom-card-zoom-overlay').is(':visible')")
+    mob_swal_img = page.evaluate("jQuery('#custom-card-zoom-img').attr('src')")
     print(f"Mobile Zoom Popup Visible: {mob_is_swal_visible}")
     print(f"Mobile Zoom Image URL: {mob_swal_img}")
     assert mob_is_swal_visible, "ERROR: Mobile zoom popup should be visible!"
