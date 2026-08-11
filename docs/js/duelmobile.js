@@ -1326,8 +1326,8 @@ function openExtraDeckModal(playerKey) {
     } else {
         const isOwner = (playerKey === (typeof currentRole !== "undefined" ? currentRole : "player1"));
         extraCards.forEach(card => {
-            // Anti-cheat: mask image if the card is face-down and viewer is NOT the owner of the Extra Deck
-            const showBack = (card.faceDown !== false) && !isOwner;
+            // Anti-cheat: mask image if the card is face-down and viewer is NOT the owner of the Extra Deck (always bypass in Practice Mode so both players' Extra Decks are fully visible face-up in the list modal)
+            const showBack = (card.faceDown !== false) && !isOwner && (state.mode !== "practice");
             const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
             const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
             const imgSrc = showBack ? backImg : card.imageUrl;

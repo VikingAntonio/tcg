@@ -1,28 +1,6 @@
-127.0.0.1 - - [08/Aug/2026 10:29:45] "GET /docs/duelmobile.html?room=testroom&mode=practice HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:29:45] "GET /docs/css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:29:45] "GET /docs/js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:29:45] "GET /docs/js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:29:45] "GET /docs/js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:29:46] "GET /docs/img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:29:50] code 404, message File not found
-127.0.0.1 - - [08/Aug/2026 10:29:50] "GET /docs/css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [08/Aug/2026 10:29:50] code 404, message File not found
-127.0.0.1 - - [08/Aug/2026 10:29:50] "GET /docs/css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [08/Aug/2026 10:36:14] "GET /docs/duelmobile.html?room=testroom&mode=practice HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:36:14] "GET /docs/css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:36:14] "GET /docs/js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:36:14] "GET /docs/js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:36:14] "GET /docs/js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:36:15] "GET /docs/img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:36:18] code 404, message File not found
-127.0.0.1 - - [08/Aug/2026 10:36:18] "GET /docs/css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [08/Aug/2026 10:36:18] code 404, message File not found
-127.0.0.1 - - [08/Aug/2026 10:36:18] "GET /docs/css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [08/Aug/2026 10:39:04] "GET /docs/duelmobile.html?room=testroom&mode=practice HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:39:04] "GET /docs/css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:39:04] "GET /docs/js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:39:04] "GET /docs/js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:39:04] "GET /docs/js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:39:04] "GET /docs/img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [08/Aug/2026 10:39:07] code 404, message File not found
-127.0.0.1 - - [08/Aug/2026 10:39:07] "GET /docs/css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [11/Aug/2026 13:42:36] "GET /docs/duelmobile.html?room=testroom&mode=practice HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 13:42:36] "GET /docs/css/duelmobile.css HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 13:42:36] "GET /docs/js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 13:42:36] "GET /docs/js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 13:42:36] "GET /docs/js/duelmobile.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 13:42:36] "GET /docs/img/bocabajo.jpg HTTP/1.1" 200 -

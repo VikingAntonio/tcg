@@ -140,6 +140,20 @@
                 </div>
             </div>
 
+            <!-- Central Turn and Phase Selector Bar -->
+            <div id="central-turn-bar" class="central-turn-bar">
+                <div class="turn-indicator" id="turn-display">P1</div>
+                <div class="phases-container" id="phases-container">
+                    <button class="phase-btn" data-phase="DP" title="Draw Phase">DP</button>
+                    <button class="phase-btn" data-phase="SP" title="Standby Phase">SP</button>
+                    <button class="phase-btn" data-phase="M1" title="Main Phase 1">M1</button>
+                    <button class="phase-btn" data-phase="BP" title="Battle Phase">BP</button>
+                    <button class="phase-btn" data-phase="M2" title="Main Phase 2">M2</button>
+                    <button class="phase-btn" data-phase="EP" title="End Phase">EP</button>
+                </div>
+                <button class="end-turn-btn" id="btn-end-turn">End Turn</button>
+            </div>
+
             <!-- Player 2 Hand Tray (Invisible transparent workspace area at the top) -->
             <div class="hand-tray player-2" id="hand-tray-p2">
 
@@ -163,20 +177,6 @@
                 <div class="board-grid-bg"></div>
                 <!-- Dynamic Zone slots will be rendered here via JS -->
                 <div id="dynamic-zones-container"></div>
-
-                <!-- Central Turn and Phase Selector Bar -->
-                <div id="central-turn-bar" class="central-turn-bar">
-                    <div class="turn-indicator" id="turn-display">P1</div>
-                    <div class="phases-container" id="phases-container">
-                        <button class="phase-btn" data-phase="DP" title="Draw Phase">DP</button>
-                        <button class="phase-btn" data-phase="SP" title="Standby Phase">SP</button>
-                        <button class="phase-btn" data-phase="M1" title="Main Phase 1">M1</button>
-                        <button class="phase-btn" data-phase="BP" title="Battle Phase">BP</button>
-                        <button class="phase-btn" data-phase="M2" title="Main Phase 2">M2</button>
-                        <button class="phase-btn" data-phase="EP" title="End Phase">EP</button>
-                    </div>
-                    <button class="end-turn-btn" id="btn-end-turn">End Turn</button>
-                </div>
 
                 <!-- Absolutely Positioned Cards on the field -->
                 <div id="field-cards-container"></div>
