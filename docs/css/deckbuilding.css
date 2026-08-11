@@ -104,107 +104,14 @@ body {
     gap: 10px;
 }
 
-/* 3-Column Layout */
+/* 2-Column Layout */
 .workspace-layout {
     display: grid;
-    grid-template-columns: 200px 1fr 300px;
+    grid-template-columns: 1fr 300px;
     gap: 10px;
     flex: 1;
     overflow: hidden;
     height: calc(100vh - 76px);
-}
-
-/* Column 1: Preview */
-.col-preview {
-    background-color: rgba(30, 41, 59, 0.5);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 10px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.preview-sticky {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    height: 100%;
-}
-
-.preview-card-wrapper {
-    width: 100%;
-    aspect-ratio: 2.5/3.5;
-    background-color: #020617;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #475569;
-}
-
-.preview-card-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.preview-info h3 {
-    font-size: 0.9rem;
-    margin: 0 0 4px 0;
-    color: var(--primary-color);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.preview-info p {
-    font-size: 0.75rem;
-    margin: 0;
-    color: #cbd5e1;
-    max-height: 80px;
-    overflow-y: auto;
-    line-height: 1.3;
-}
-
-.meta-box {
-    margin-top: auto;
-    background: rgba(15, 23, 42, 0.4);
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.form-group-compact {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 8px;
-}
-
-.form-group-compact label {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    color: #94a3b8;
-    font-weight: 700;
-}
-
-.form-group-compact input {
-    background: #0f172a;
-    border: 1px solid #475569;
-    color: #fff;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.toggle-group-compact {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
 }
 
 /* Column 2: Deck Grids */
@@ -238,6 +145,7 @@ body {
     margin-bottom: 8px;
     cursor: pointer;
     border: 1px solid transparent;
+    flex-shrink: 0;
 }
 
 .section-header.active {
@@ -261,6 +169,7 @@ body {
     gap: 4px;
     margin-bottom: 15px;
     min-height: 40px;
+    flex-shrink: 0;
 }
 
 .grid-deck:last-child {
@@ -305,6 +214,52 @@ body {
     z-index: 10;
     box-shadow: 0 2px 4px rgba(0,0,0,0.5);
     cursor: pointer;
+}
+
+.grid-deck .nexus-card .nexus-card-zoom {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    background: var(--primary-color, #00d2ff);
+    color: #020617;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.grid-deck .nexus-card .nexus-card-zoom:hover {
+    transform: scale(1.15);
+    background-color: #fff;
+}
+
+/* Collapsible section animations and rotation */
+.section-header.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+/* Custom styles for Swal Card Zoom Popup */
+.swal-card-zoom-popup {
+    border: 2px solid var(--primary-color, #00d2ff) !important;
+    border-radius: 16px !important;
+    max-width: 320px !important;
+    padding: 10px !important;
+    background: #0f172a !important;
+    color: #fff !important;
+}
+
+.swal-card-zoom-image {
+    max-height: 400px !important;
+    object-fit: contain !important;
+    margin: 10px auto !important;
+    border-radius: 8px !important;
 }
 
 .grid-deck .nexus-card-qty {

@@ -61,11 +61,18 @@ $(document).ready(async function() {
         triggerCardSearch();
     });
 
-    // Section header switcher
+    // Section header switcher with collapsible toggle
     $(document).on('click', '.section-header', function() {
+        const sec = $(this).data('section');
+        activeSection = sec;
+
         $('.section-header').removeClass('active');
         $(this).addClass('active');
-        activeSection = $(this).data('section');
+
+        // Toggle the grid display
+        const $grid = $('#grid-' + sec.toLowerCase());
+        $grid.slideToggle(200);
+        $(this).toggleClass('collapsed');
     });
 
     // Accessories triggers
@@ -583,8 +590,8 @@ function renderDeckGrids() {
             .filter(c => (c.section || 'Main') === sec)
             .sort((a, b) => (a.position || 0) - (b.position || 0));
 
-        // Fill empty slots up to standard values
-        const minSlots = sec === 'Main' ? 40 : 15;
+        // Fill empty slots up to standard values (60 for Main, 20 for others)
+        const minSlots = sec === 'Main' ? 60 : 20;
         const totalSlots = Math.max(minSlots, Math.ceil(sectionCards.length / 10) * 10);
 
         for (let i = 0; i < totalSlots; i++) {
@@ -592,16 +599,33 @@ function renderDeckGrids() {
             if (card) {
                 const $item = $(`
                     <div class="nexus-card" title="${card.name}" data-id="${card.id || ''}" data-local-id="${card.localId || ''}">
-                        <div class="nexus-card-remove"><i class="fas fa-times"></i></div>
+                        <div class="nexus-card-zoom" title="Ver carta"><i class="fas fa-search-plus"></i></div>
+                        <div class="nexus-card-remove" title="Quitar carta"><i class="fas fa-times"></i></div>
                         <img src="${card.image_url}" loading="lazy">
                         ${card.quantity > 1 ? `<div class="nexus-card-qty">x${card.quantity}</div>` : ''}
                     </div>
                 `);
 
-                // Touch/Click to preview
+                // Touch/Click to preview or action
                 $item.on('click', function(e) {
                     if ($(e.target).closest('.nexus-card-remove').length) {
                         removeCardFromDeck(card);
+                        return;
+                    }
+                    if ($(e.target).closest('.nexus-card-zoom').length) {
+                        Swal.fire({
+                            title: card.name,
+                            imageUrl: card.image_url,
+                            imageAlt: card.name,
+                            showConfirmButton: false,
+                            showCloseButton: true,
+                            background: '#0f172a',
+                            color: '#fff',
+                            customClass: {
+                                popup: 'swal-card-zoom-popup',
+                                image: 'swal-card-zoom-image'
+                            }
+                        });
                         return;
                     }
                     previewCard({
