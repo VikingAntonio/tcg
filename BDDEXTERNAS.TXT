@@ -1,0 +1,12 @@
+Bases de Datos de Cartas en el Proyecto
+
+Bases de Datos Internas:
+1. deck_cards (Tabla en Supabase para cartas de decks de usuario)
+2. viking_data (Tabla en Supabase y archivo vikingData.json para cartas personalizadas)
+
+Bases de Datos Externas:
+1. YGOPRODeck API (db.ygoprodeck.com - Yu-Gi-Oh!)
+2. TCGdex API (api.tcgdex.net - Pokémon)
+3. Lorcana API (api.lorcana-api.com - Disney Lorcana)
+4. TCGAPI.dev (api.tcgapi.dev - Pokémon, Yu-Gi-Oh!, Magic, One Piece, Lorcana)
+5. Pokémon TCG API (api.pokemontcg.io - Pokémon)
