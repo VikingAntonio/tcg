@@ -735,9 +735,16 @@
             }
 
             currentExpansionCards.forEach((card, index) => {
+                const rarityBadge = card.rarity ? `
+                    <div class="expansion-rarity-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.85); color: #00d2ff; border: 1px solid var(--primary-color); border-radius: 20px; font-size: 8px; font-weight: 800; padding: 3px 8px; text-transform: uppercase; z-index: 6; pointer-events: none;">
+                        ${card.rarity}
+                    </div>
+                ` : '';
+
                 const $item = $(`
-                    <div class="expansion-card-item">
+                    <div class="expansion-card-item" style="position: relative;">
                         <input type="checkbox" class="expansion-card-checkbox" data-index="${index}" checked>
+                        ${rarityBadge}
                         <img src="${card.image_url}" alt="${card.name}" onerror="this.src='https://via.placeholder.com/150x210?text=Sin+Imagen'">
                         <div class="expansion-card-info" title="${card.name}">${card.name}</div>
                     </div>
@@ -866,13 +873,10 @@
             }
 
             if (cardsToInsert.length > 0) {
-                for (let i = 0; i < cardsToInsert.length; i += 50) {
-                    const chunk = cardsToInsert.slice(i, i + 50);
-                    const { error: insErr } = await _supabase
-                        .from('card_slots')
-                        .insert(chunk);
-                    if (insErr) throw insErr;
-                }
+                const { error: insErr } = await _supabase
+                    .from('card_slots')
+                    .insert(cardsToInsert);
+                if (insErr) throw insErr;
             }
         }
     </script>
