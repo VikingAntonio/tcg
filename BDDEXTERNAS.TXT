@@ -10,3 +10,4 @@ Bases de Datos Externas:
 3. Lorcana API (api.lorcana-api.com - Disney Lorcana)
 4. TCGAPI.dev (api.tcgapi.dev - Pokémon, Yu-Gi-Oh!, Magic, One Piece, Lorcana)
 5. Pokémon TCG API (api.pokemontcg.io - Pokémon)
+6. YAML Yugi (dawnbrandbots.github.io/yaml-yugi - Rush Duel)
