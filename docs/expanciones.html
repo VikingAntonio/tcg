@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="manifest" href="manifest.json">
+    <title>Vikingdev TCG - Expansiones</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Standalone Expansiones page styling */
+        body {
+            background-color: var(--bg-color);
+            background-image: var(--bg-gradient);
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: block;
+            min-height: 100vh;
+        }
+
+        .user-dropdown-menu {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            width: 240px;
+            display: none;
+            flex-direction: column;
+            padding: 12px 0;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            z-index: 10001;
+            overflow: hidden;
+            animation: slide-down 0.3s ease-out;
+        }
+
+        .user-dropdown-menu.active {
+            display: flex;
+        }
+
+        @keyframes slide-down {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .top-left-panel {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            flex-direction: row-reverse;
+            gap: 15px;
+        }
+
+        .pill-panel {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 5px 20px;
+            border-radius: 50px;
+            box-shadow: var(--nm-shadow);
+            border: 1px solid var(--card-border);
+            gap: 15px;
+        }
+
+        .pill-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--icon-bg);
+            box-shadow: var(--nm-shadow);
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--primary-color);
+            border: none;
+            font-size: 1.1rem;
+            text-decoration: none;
+        }
+
+        .pill-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .user-menu-container {
+            position: relative;
+        }
+
+        .user-dropdown-info {
+            padding: 10px 20px 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .user-dropdown-name {
+            font-weight: 800;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            margin-bottom: 2px;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            color: #bbb;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--primary-color);
+            padding-left: 25px;
+        }
+
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .menu-item.logout {
+            color: #ff4757;
+            margin-top: 5px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+        }
+
+        .menu-item.logout:hover {
+            background: rgba(255, 71, 87, 0.1);
+        }
+
+        /* Form/Input alignment and improvements */
+        .expansion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            width: 95%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .expansion-card-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            transition: transform 0.2s ease;
+            cursor: pointer;
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .expansion-card-item:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary-color);
+        }
+
+        .expansion-card-item img {
+            width: 100%;
+            aspect-ratio: 2.5 / 3.5;
+            object-fit: contain;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.1);
+            display: block;
+        }
+
+        .expansion-card-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 18px;
+            height: 18px;
+            z-index: 5;
+            cursor: pointer;
+        }
+
+        .expansion-card-info {
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-color);
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #expansion-search-results {
+            width: 100%;
+            top: 75px;
+            max-height: 250px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+        }
+
+        #expansion-search-results .menu-item {
+            cursor: pointer;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-color);
+        }
+
+        #expansion-search-results .menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--primary-color);
+        }
+
+        .swal2-container {
+            z-index: 4000000 !important;
+        }
+    </style>
+</head>
+<body class="theme-dark public-body">
+    <!-- Floating User Panel -->
+    <div class="top-left-panel" id="top-panel" style="display: none;">
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group" style="display: flex; gap: 10px;">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                    </div>
+                    <a href="admin.html" class="menu-item"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="binders.html" class="menu-item"><i class="fas fa-book"></i> Mis Álbumes</a>
+                    <a href="decks.html" class="menu-item"><i class="fas fa-layer-group"></i> Mis Decks</a>
+                    <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
+                    <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="overlay">
+        <div class="overlay-content login-container">
+            <h1>Iniciar Sesión</h1>
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="login-username" placeholder="Tu nombre de usuario">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-password" placeholder="********">
+            </div>
+            <button id="btn-login" class="btn" style="width: 100%; margin-bottom: 15px;">Entrar</button>
+        </div>
+    </div>
+
+    <!-- Authenticated Content -->
+    <div id="authenticated-content" style="display: none; width: 100%; margin: 0 auto; padding-top: 100px;">
+        <div class="admin-header" style="max-width: 800px; margin: 0 auto 30px; text-align: center;">
+            <a href="admin.html" class="btn btn-secondary" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</a>
+            <h1>Buscador de Expansiones</h1>
+            <p>Busca una expansión completa (por ejemplo, "Phantom Darkness") y añade todas las cartas directamente a tus álbumes.</p>
+        </div>
+
+        <div class="album-card" style="max-width: 800px; width: 100%; margin: 0 auto 30px; box-sizing: border-box;">
+            <div class="info-grid" style="grid-template-columns: 1fr; gap: 15px;">
+                <div class="form-group" style="position: relative;">
+                    <label>Buscar Expansión</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="expansion-search-input" placeholder="Escribe el nombre de la expansión..." autocomplete="off">
+                        <input type="hidden" id="expansion-selected-id">
+                        <input type="hidden" id="expansion-selected-tcg">
+                    </div>
+                    <div id="expansion-search-results" class="user-dropdown-menu">
+                        <!-- Autocomplete results here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+                <div class="form-group">
+                    <label>Seleccionar Álbum Destino</label>
+                    <select id="expansion-album-dest">
+                        <option value="new">Nuevo Álbum</option>
+                    </select>
+                </div>
+                <div class="form-group" id="expansion-new-album-group">
+                    <label id="lbl-expansion-new-name">Nombre del Nuevo Álbum</label>
+                    <input type="text" id="expansion-new-album-name" placeholder="Ej: Mi Colección de Phantom Darkness">
+                </div>
+            </div>
+
+            <div class="expansion-controls-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="expansion-select-all" checked style="width: 20px; height: 20px;">
+                    <span>Seleccionar Todas</span>
+                </label>
+                <button id="btn-save-expansion-cards" class="btn"><i class="fas fa-save"></i> Guardar Seleccionadas</button>
+            </div>
+        </div>
+
+        <div id="expansiones-card-grid" class="expansion-grid">
+            <!-- Cards will appear here -->
+            <div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">Escribe y selecciona una expansión arriba para cargar las cartas.</div>
+        </div>
+    </div>
+
+    <script src="js/supabase-config.js"></script>
+    <script>
+        // Standalone script for expanciones.html
+        let currentUser = null;
+        let currentExpansionCards = [];
+        let allSets = [];
+        let searchTimer = null;
+
+        $(document).ready(async function() {
+            await checkSession();
+            initTheme();
+
+            // Theme switching
+            $(document).on('click', '.theme-btn-small', function() {
+                const theme = $(this).data('theme');
+                applyTheme(theme);
+            });
+
+            // Avatar dropdown
+            $(document).on('click', '#avatar-btn', function(e) {
+                e.stopPropagation();
+                $('#user-dropdown').toggleClass('active');
+            });
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.user-menu-container').length) {
+                    $('#user-dropdown').removeClass('removeClass').removeClass('active');
+                }
+            });
+
+            // Autocomplete Search
+            $('#expansion-search-input').on('input', function() {
+                clearTimeout(searchTimer);
+                const query = $(this).val().toLowerCase().trim();
+
+                if (query.length < 2) {
+                    $('#expansion-search-results').removeClass('active').empty();
+                    return;
+                }
+
+                searchTimer = setTimeout(() => {
+                    const filtered = allSets.filter(s => {
+                        return s.name.toLowerCase().includes(query);
+                    }).slice(0, 50);
+
+                    displayAutocompleteResults(filtered);
+                }, 300);
+            });
+
+            // Close results dropdown on clicking outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.form-group').length) {
+                    $('#expansion-search-results').removeClass('active');
+                }
+            });
+
+            // Select all toggle
+            $('#expansion-select-all').change(function() {
+                const isChecked = $(this).is(':checked');
+                $('.expansion-card-checkbox').prop('checked', isChecked);
+            });
+
+            $(document).on('change', '.expansion-card-checkbox', function() {
+                updateSelectAllState();
+            });
+
+            // Toggle new album name input field
+            $('#expansion-album-dest').change(function() {
+                if ($(this).val() === 'new') {
+                    $('#expansion-new-album-group').show();
+                } else {
+                    $('#expansion-new-album-group').hide();
+                }
+            });
+
+            // Action: Save Selected Cards to Album
+            $('#btn-save-expansion-cards').click(async function() {
+                const selectedIndexes = $('.expansion-card-checkbox:checked').map(function() {
+                    return $(this).data('index');
+                }).get();
+
+                if (selectedIndexes.length === 0) {
+                    Swal.fire('Atención', 'Selecciona al menos una carta para guardar.', 'warning');
+                    return;
+                }
+
+                const albumDest = $('#expansion-album-dest').val();
+                let albumId = albumDest;
+                const newAlbumName = $('#expansion-new-album-name').val().trim();
+
+                if (albumDest === 'new') {
+                    if (!newAlbumName) {
+                        Swal.fire('Atención', 'Escribe un nombre para el nuevo álbum.', 'warning');
+                        return;
+                    }
+
+                    const { count } = await _supabase
+                        .from('albums')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', currentUser.id);
+
+                    if (count >= (currentUser.max_albums || 3)) {
+                        Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_albums || 3} álbumes.`, 'warning');
+                        return;
+                    }
+
+                    Swal.fire({ title: 'Creando álbum...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                    const { data: newAlbum, error: albumErr } = await _supabase
+                        .from('albums')
+                        .insert([{ title: newAlbumName, user_id: currentUser.id }])
+                        .select();
+
+                    if (albumErr) {
+                        Swal.fire('Error', 'No se pudo crear el álbum: ' + albumErr.message, 'error');
+                        return;
+                    }
+                    albumId = newAlbum[0].id;
+                }
+
+                const selectedCards = selectedIndexes.map(i => currentExpansionCards[i]);
+
+                Swal.fire({
+                    title: 'Guardando cartas...',
+                    text: `Procesando ${selectedCards.length} cartas.`,
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                try {
+                    await handleBatchExpansionRegistration(albumId, selectedCards);
+                    Swal.fire({
+                        title: '¡Guardado!',
+                        text: 'Las cartas se han añadido correctamente al álbum.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    if (albumDest === 'new') {
+                        loadExpansionAlbums();
+                        $('#expansion-new-album-name').val('');
+                        $('#expansion-album-dest').val(albumId).trigger('change');
+                    }
+                } catch (err) {
+                    console.error("Batch Expansion Save Error:", err);
+                    Swal.fire('Error', 'No se pudieron registrar las cartas: ' + err.message, 'error');
+                }
+            });
+
+            // Authentication Modal actions
+            $('#btn-login').click(async function(e) {
+                e.preventDefault();
+                await handleLogin();
+            });
+
+            $('#menu-btn-logout').click(async function(e) {
+                e.preventDefault();
+                await handleLogout();
+            });
+        });
+
+        // Check authentication session
+        async function checkSession() {
+            try {
+                const { data: { session } } = await _supabase.auth.getSession();
+                if (session) {
+                    const { data: user, error } = await _supabase
+                        .from('usuarios')
+                        .select('id, username, store_name, store_logo, is_store, role, max_albums, max_pages')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (user) {
+                        currentUser = user;
+                        localStorage.setItem('tcg_session', JSON.stringify(user));
+                        showAuthenticatedContent();
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error("Session check failed:", e);
+            }
+
+            const cachedUser = localStorage.getItem('tcg_session');
+            if (cachedUser) {
+                currentUser = JSON.parse(cachedUser);
+                showAuthenticatedContent();
+            } else {
+                showLoginView();
+            }
+        }
+
+        async function handleLogin() {
+            const userInput = $('#login-username').val().trim();
+            const password = $('#login-password').val().trim();
+
+            if (!userInput || !password) {
+                Swal.fire('Atención', 'Por favor, completa todos los campos', 'warning');
+                return;
+            }
+
+            let emailToUse = userInput;
+            if (!userInput.includes('@')) {
+                const { data: userRow } = await _supabase
+                    .from('usuarios')
+                    .select('email')
+                    .eq('username', userInput)
+                    .maybeSingle();
+
+                if (userRow && userRow.email) {
+                    emailToUse = userRow.email;
+                } else {
+                    emailToUse = `${userInput}@tcgdual.com`;
+                }
+            }
+
+            const { data, error } = await _supabase.auth.signInWithPassword({
+                email: emailToUse,
+                password: password,
+            });
+
+            if (error) {
+                Swal.fire('Error', 'Error al iniciar sesión: ' + error.message, 'error');
+            } else {
+                location.reload();
+            }
+        }
+
+        async function handleLogout() {
+            await _supabase.auth.signOut();
+            currentUser = null;
+            localStorage.removeItem('tcg_session');
+            location.reload();
+        }
+
+        function showLoginView() {
+            $('#login-modal').addClass('active');
+            $('#authenticated-content').hide();
+            $('#top-panel').hide();
+        }
+
+        function showAuthenticatedContent() {
+            $('#login-modal').removeClass('active');
+            $('#authenticated-content').show();
+            $('#top-panel').show();
+
+            if (currentUser.is_store) {
+                $('#dropdown-user-logo').show().attr('src', currentUser.store_logo || 'https://vikingtcg.xyz/favi.png');
+                $('#dropdown-user-name').text(currentUser.store_name || currentUser.username);
+            } else {
+                $('#dropdown-user-logo').hide();
+                $('#dropdown-user-name').text(currentUser.username);
+            }
+
+            loadExpansionAlbums();
+            fetchAllTCGSets();
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+            applyTheme(savedTheme);
+        }
+
+        function applyTheme(theme) {
+            $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+            localStorage.setItem('tcg_theme', theme);
+            $('.theme-btn-small').removeClass('active');
+            $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
+        }
+
+        // Fetch sets for autocomplete
+        async function fetchAllTCGSets() {
+            if (allSets.length > 0) return;
+
+            try {
+                const [ygRes, pkRes] = await Promise.all([
+                    fetch('https://db.ygoprodeck.com/api/v7/cardsets.php').then(r => r.json()).catch(() => []),
+                    fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json()).catch(() => [])
+                ]);
+
+                const ygSets = ygRes.map(s => ({ id: s.set_name, name: s.set_name, tcg: 'yugioh' }));
+                const pkSets = pkRes.map(s => ({ id: s.id, name: s.name, tcg: 'pokemon' }));
+                const opSets = [
+                    { id: 'OP-01', name: 'Romance Dawn (OP-01)', tcg: 'onepiece' },
+                    { id: 'OP-02', name: 'Paramount War (OP-02)', tcg: 'onepiece' },
+                    { id: 'OP-03', name: 'Pillars of Strength (OP-03)', tcg: 'onepiece' },
+                    { id: 'OP-04', name: 'Kingdoms of Intrigue (OP-04)', tcg: 'onepiece' },
+                    { id: 'OP-05', name: 'Awakening of the New Era (OP-05)', tcg: 'onepiece' },
+                    { id: 'OP-06', name: 'Wings of the Captain (OP-06)', tcg: 'onepiece' },
+                    { id: 'OP-07', name: '500 Years in the Future (OP-07)', tcg: 'onepiece' }
+                ];
+
+                allSets = [...ygSets, ...pkSets, ...opSets];
+            } catch (err) {
+                console.error("Error pre-fetching sets:", err);
+            }
+        }
+
+        function displayAutocompleteResults(results) {
+            const $container = $('#expansion-search-results');
+            $container.empty();
+
+            if (results.length === 0) {
+                $container.append('<div class="menu-item">Sin resultados</div>');
+            } else {
+                results.forEach(s => {
+                    const $item = $(`
+                        <div class="menu-item">
+                            <span>${s.name}</span>
+                            <small style="opacity:0.5; font-size:10px; text-transform:uppercase;">${s.tcg}</small>
+                        </div>
+                    `);
+                    $item.click(() => {
+                        $('#expansion-search-input').val(s.name);
+                        $('#expansion-selected-id').val(s.id);
+                        $('#expansion-selected-tcg').val(s.tcg);
+                        $container.removeClass('active').empty();
+                        fetchExpansionCards(s.id, s.tcg);
+                    });
+                    $container.append($item);
+                });
+            }
+            $container.addClass('active');
+        }
+
+        async function fetchExpansionCards(setId, tcg) {
+            $('#expansiones-card-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Cargando cartas de la expansión...</div>');
+
+            try {
+                let cards = [];
+                if (tcg === 'yugioh') {
+                    const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setId)}`);
+                    const data = await response.json();
+
+                    (data.data || []).forEach(c => {
+                        if (c.card_sets) {
+                            const setInstances = c.card_sets.filter(s => s.set_name === setId);
+                            setInstances.forEach(inst => {
+                                cards.push({
+                                    name: c.name + (inst.set_rarity ? ` (${inst.set_rarity})` : ''),
+                                    image_url: c.card_images[0].image_url,
+                                    expansion: setId,
+                                    rarity: inst.set_rarity
+                                });
+                            });
+                        } else {
+                            cards.push({
+                                name: c.name,
+                                image_url: c.card_images[0].image_url,
+                                expansion: setId
+                            });
+                        }
+                    });
+                } else if (tcg === 'pokemon') {
+                    const response = await fetch(`https://api.tcgdex.net/v2/en/sets/${setId}`);
+                    const data = await response.json();
+                    cards = (data.cards || []).map(c => ({
+                        name: c.name,
+                        image_url: c.image ? `${c.image}/high.webp` : 'https://via.placeholder.com/150x210?text=Sin+Imagen',
+                        expansion: data.name,
+                        rarity: c.rarity || ''
+                    }));
+                } else if (tcg === 'onepiece') {
+                    const { data: dbCards } = await _supabase
+                        .from('viking_data')
+                        .select('*')
+                        .eq('tcg', 'onepiece')
+                        .ilike('expansion', `%${setId}%`);
+
+                    cards = (dbCards || []).map(c => ({
+                        name: c.name,
+                        image_url: c.image_url,
+                        expansion: c.expansion
+                    }));
+
+                    if (cards.length === 0) {
+                        $('#expansiones-card-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #ff4757; padding: 40px;">No se encontraron cartas para esta expansión en la base de datos de One Piece.</div>');
+                        return;
+                    }
+                }
+
+                currentExpansionCards = cards;
+                renderExpansionCards();
+            } catch (err) {
+                console.error("Error fetching cards:", err);
+                $('#expansiones-card-grid').html('<div style="grid-column: 1/-1; text-align: center; color: #ff4757; padding: 40px;">Error al cargar las cartas. Reintenta.</div>');
+            }
+        }
+
+        function renderExpansionCards() {
+            const $grid = $('#expansiones-card-grid');
+            $grid.empty();
+
+            if (currentExpansionCards.length === 0) {
+                $grid.html('<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">No hay cartas en esta expansión.</div>');
+                return;
+            }
+
+            currentExpansionCards.forEach((card, index) => {
+                const $item = $(`
+                    <div class="expansion-card-item">
+                        <input type="checkbox" class="expansion-card-checkbox" data-index="${index}" checked>
+                        <img src="${card.image_url}" alt="${card.name}" onerror="this.src='https://via.placeholder.com/150x210?text=Sin+Imagen'">
+                        <div class="expansion-card-info" title="${card.name}">${card.name}</div>
+                    </div>
+                `);
+
+                $item.on('click', function(e) {
+                    if (!$(e.target).is('input')) {
+                        const $cb = $(this).find('input');
+                        $cb.prop('checked', !$cb.is(':checked'));
+                        updateSelectAllState();
+                    }
+                });
+
+                $grid.append($item);
+            });
+
+            updateSelectAllState();
+        }
+
+        function updateSelectAllState() {
+            const allChecked = currentExpansionCards.length > 0 && $('.expansion-card-checkbox:checked').length === currentExpansionCards.length;
+            $('#expansion-select-all').prop('checked', allChecked);
+        }
+
+        async function loadExpansionAlbums() {
+            const $select = $('#expansion-album-dest');
+            const { data: albums, error } = await _supabase
+                .from('albums')
+                .select('id, title')
+                .eq('user_id', currentUser.id)
+                .order('id', { ascending: false });
+
+            $select.html('<option value="new">Nuevo Álbum</option>');
+            if (albums) {
+                albums.forEach(a => {
+                    $select.append(`<option value="${a.id}">${a.title}</option>`);
+                });
+            }
+        }
+
+        async function handleBatchExpansionRegistration(albumId, cards) {
+            let { data: pages, error: pErr } = await _supabase
+                .from('pages')
+                .select('id, page_index')
+                .eq('album_id', albumId)
+                .order('page_index', { ascending: true });
+
+            if (pErr) throw pErr;
+
+            if (!pages || pages.length === 0) {
+                const { data: newPage, error: npe } = await _supabase
+                    .from('pages')
+                    .insert([{ album_id: albumId, page_index: 0 }])
+                    .select();
+                if (npe) throw npe;
+                pages = newPage;
+            }
+
+            const pageIds = pages.map(p => p.id);
+            const { data: occupiedSlots, error: sErr } = await _supabase
+                .from('card_slots')
+                .select('page_id, slot_index')
+                .in('page_id', pageIds);
+
+            if (sErr) throw sErr;
+
+            const cardsToInsert = [];
+            const maxPages = (currentUser.max_pages || 5);
+
+            let currentPageIdx = 0;
+            let startSlotIdx = 0;
+
+            for (const card of cards) {
+                let assigned = false;
+
+                while (!assigned) {
+                    const page = pages[currentPageIdx];
+                    if (!page) break;
+
+                    const pageOccupied = occupiedSlots.filter(s => s.page_id === page.id).map(s => s.slot_index);
+                    const localOccupied = cardsToInsert.filter(s => s.page_id === page.id).map(s => s.slot_index);
+                    const allOccupied = [...pageOccupied, ...localOccupied];
+
+                    let freeSlot = -1;
+                    for (let i = startSlotIdx; i < 9; i++) {
+                        if (!allOccupied.includes(i)) {
+                            freeSlot = i;
+                            break;
+                        }
+                    }
+
+                    if (freeSlot !== -1) {
+                        cardsToInsert.push({
+                            page_id: page.id,
+                            slot_index: freeSlot,
+                            name: card.name,
+                            image_url: card.image_url,
+                            expansion: card.expansion,
+                            rarity: card.rarity || '',
+                            condition: 'M',
+                            quantity: 1,
+                            price: ''
+                        });
+                        startSlotIdx = freeSlot + 1;
+                        assigned = true;
+                    } else {
+                        currentPageIdx++;
+                        startSlotIdx = 0;
+
+                        if (currentPageIdx >= pages.length) {
+                            if (pages.length >= maxPages) {
+                                throw new Error(`Se ha alcanzado el límite de ${maxPages} páginas para este álbum.`);
+                            }
+
+                            const nextIdx = (pages.length > 0) ? pages[pages.length - 1].page_index + 1 : 0;
+                            const { data: nPage, error: npe2 } = await _supabase
+                                .from('pages')
+                                .insert([{ album_id: albumId, page_index: nextIdx }])
+                                .select();
+
+                            if (npe2) throw npe2;
+                            pages.push(nPage[0]);
+                        }
+                    }
+                }
+            }
+
+            if (cardsToInsert.length > 0) {
+                for (let i = 0; i < cardsToInsert.length; i += 50) {
+                    const chunk = cardsToInsert.slice(i, i + 50);
+                    const { error: insErr } = await _supabase
+                        .from('card_slots')
+                        .insert(chunk);
+                    if (insErr) throw insErr;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
