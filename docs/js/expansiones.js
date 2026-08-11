@@ -6,7 +6,6 @@ $(document).ready(function() {
     // --- Navigation ---
     window.showExpansionView = function() {
         showView('expansiones');
-        loadExpansionAlbums();
         fetchAllTCGSets();
     }
 
@@ -14,28 +13,44 @@ $(document).ready(function() {
     async function fetchAllTCGSets() {
         if (allSets.length > 0) return; // Use cache
 
+        let ygSets = [];
+        let pkSets = [];
+
         try {
-            const [ygRes, pkRes] = await Promise.all([
-                fetch('https://db.ygoprodeck.com/api/v7/cardsets.php').then(r => r.json()),
-                fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json())
-            ]);
-
-            const ygSets = ygRes.map(s => ({ id: s.set_name, name: s.set_name, tcg: 'yugioh' }));
-            const pkSets = pkRes.map(s => ({ id: s.id, name: s.name, tcg: 'pokemon' }));
-            const opSets = [
-                { id: 'OP-01', name: 'Romance Dawn (OP-01)', tcg: 'onepiece' },
-                { id: 'OP-02', name: 'Paramount War (OP-02)', tcg: 'onepiece' },
-                { id: 'OP-03', name: 'Pillars of Strength (OP-03)', tcg: 'onepiece' },
-                { id: 'OP-04', name: 'Kingdoms of Intrigue (OP-04)', tcg: 'onepiece' },
-                { id: 'OP-05', name: 'Awakening of the New Era (OP-05)', tcg: 'onepiece' },
-                { id: 'OP-06', name: 'Wings of the Captain (OP-06)', tcg: 'onepiece' },
-                { id: 'OP-07', name: '500 Years in the Future (OP-07)', tcg: 'onepiece' }
-            ];
-
-            allSets = [...ygSets, ...pkSets, ...opSets];
+            const r = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
+            if (r.ok) {
+                const data = await r.json();
+                if (Array.isArray(data)) {
+                    ygSets = data.map(s => ({ id: s.set_name, name: s.set_name, tcg: 'yugioh' }));
+                }
+            }
         } catch (err) {
-            console.error("Error pre-fetching sets:", err);
+            console.error("Error fetching Yugioh sets:", err);
         }
+
+        try {
+            const r = await fetch('https://api.tcgdex.net/v2/en/sets');
+            if (r.ok) {
+                const data = await r.json();
+                if (Array.isArray(data)) {
+                    pkSets = data.map(s => ({ id: s.id, name: s.name, tcg: 'pokemon' }));
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching Pokemon sets:", err);
+        }
+
+        const opSets = [
+            { id: 'OP-01', name: 'Romance Dawn (OP-01)', tcg: 'onepiece' },
+            { id: 'OP-02', name: 'Paramount War (OP-02)', tcg: 'onepiece' },
+            { id: 'OP-03', name: 'Pillars of Strength (OP-03)', tcg: 'onepiece' },
+            { id: 'OP-04', name: 'Kingdoms of Intrigue (OP-04)', tcg: 'onepiece' },
+            { id: 'OP-05', name: 'Awakening of the New Era (OP-05)', tcg: 'onepiece' },
+            { id: 'OP-06', name: 'Wings of the Captain (OP-06)', tcg: 'onepiece' },
+            { id: 'OP-07', name: '500 Years in the Future (OP-07)', tcg: 'onepiece' }
+        ];
+
+        allSets = [...ygSets, ...pkSets, ...opSets];
     }
 
     async function fetchExpansionCards(setId, tcg) {
@@ -210,31 +225,6 @@ $(document).ready(function() {
         updateSelectAllState();
     });
 
-    $('#expansion-album-dest').change(function() {
-        if ($(this).val() === 'new') {
-            $('#expansion-new-album-group').show();
-        } else {
-            $('#expansion-new-album-group').hide();
-        }
-    });
-
-    // --- Album Loading ---
-    async function loadExpansionAlbums() {
-        const $select = $('#expansion-album-dest');
-        const { data: albums, error } = await _supabase
-            .from('albums')
-            .select('id, title')
-            .eq('user_id', currentUser.id)
-            .order('id', { ascending: false });
-
-        $select.html('<option value="new">Nuevo Álbum</option>');
-        if (albums) {
-            albums.forEach(a => {
-                $select.append(`<option value="${a.id}">${a.title}</option>`);
-            });
-        }
-    }
-
     // --- Save Logic ---
     $('#btn-save-expansion-cards').click(async function() {
         const selectedIndexes = $('.expansion-card-checkbox:checked').map(function() {
@@ -246,40 +236,22 @@ $(document).ready(function() {
             return;
         }
 
-        const albumDest = $('#expansion-album-dest').val();
-        let albumId = albumDest;
-        const newAlbumName = $('#expansion-new-album-name').val().trim();
+        const expansionName = $('#expansion-search-input').val().trim();
+        const albumName = expansionName || "Nueva Expansión";
 
-        if (albumDest === 'new') {
-            if (!newAlbumName) {
-                Swal.fire('Atención', 'Escribe un nombre para el nuevo álbum.', 'warning');
-                return;
-            }
+        Swal.fire({ title: 'Creando álbum...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-            const { count } = await _supabase
-                .from('albums')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', currentUser.id);
+        const { data: newAlbum, error: albumErr } = await _supabase
+            .from('albums')
+            .insert([{ title: albumName, user_id: currentUser.id }])
+            .select();
 
-            if (count >= (currentUser.max_albums || 3)) {
-                Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_albums || 3} álbumes.`, 'warning');
-                return;
-            }
-
-            Swal.fire({ title: 'Creando álbum...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-            const { data: newAlbum, error: albumErr } = await _supabase
-                .from('albums')
-                .insert([{ title: newAlbumName, user_id: currentUser.id }])
-                .select();
-
-            if (albumErr) {
-                Swal.fire('Error', 'No se pudo crear el álbum: ' + albumErr.message, 'error');
-                return;
-            }
-            albumId = newAlbum[0].id;
+        if (albumErr) {
+            Swal.fire('Error', 'No se pudo crear el álbum: ' + albumErr.message, 'error');
+            return;
         }
 
+        const albumId = newAlbum[0].id;
         const selectedCards = selectedIndexes.map(i => currentExpansionCards[i]);
 
         Swal.fire({
@@ -293,15 +265,11 @@ $(document).ready(function() {
             await handleBatchExpansionRegistration(albumId, selectedCards);
             Swal.fire({
                 title: '¡Guardado!',
-                text: 'Las cartas se han añadido correctamente al álbum.',
+                text: 'Se ha creado el álbum y las cartas se han añadido correctamente.',
                 icon: 'success',
                 timer: 2000,
                 showConfirmButton: false
             });
-            if (albumDest === 'new') {
-                loadExpansionAlbums();
-                $('#expansion-new-album-name').val('');
-            }
         } catch (err) {
             console.error("Batch Expansion Save Error:", err);
             Swal.fire('Error', 'No se pudieron registrar las cartas: ' + err.message, 'error');

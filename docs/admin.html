@@ -1143,16 +1143,8 @@
             </div>
 
             <div class="album-card" style="max-width: 800px; width: 100%; margin: 0 auto 30px;">
-                <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <div class="form-group">
-                        <label>TCG</label>
-                        <select id="expansion-tcg-select">
-                            <option value="all">Todos los TCG</option>
-                            <option value="yugioh">Yu-Gi-Oh!</option>
-                            <option value="pokemon">Pokémon</option>
-                            <option value="onepiece">One Piece</option>
-                        </select>
-                    </div>
+                <div class="info-grid" style="grid-template-columns: 1fr; gap: 15px;">
+                    <input type="hidden" id="expansion-tcg-select" value="all">
                     <div class="form-group" style="position: relative;">
                         <label>Buscar Expansión</label>
                         <div style="display: flex; gap: 10px;">
@@ -1162,26 +1154,6 @@
                         <div id="expansion-search-results" class="user-dropdown-menu" style="width: 100%; top: 70px; max-height: 250px; overflow-y: auto;">
                             <!-- Autocomplete results here -->
                         </div>
-                    </div>
-                </div>
-
-                <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
-                    <div class="form-group">
-                        <label>Tipo de Destino</label>
-                        <select id="expansion-dest-type">
-                            <option value="album">Álbum</option>
-                            <option value="deck">Deck</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Seleccionar Destino</label>
-                        <select id="expansion-album-dest">
-                            <!-- Populated via JS -->
-                        </select>
-                    </div>
-                    <div class="form-group" id="expansion-new-album-group">
-                        <label id="lbl-expansion-new-name">Nombre del Nuevo Álbum</label>
-                        <input type="text" id="expansion-new-album-name" placeholder="Ej: Mi Colección de OP-01">
                     </div>
                 </div>
 
