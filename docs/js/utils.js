@@ -643,6 +643,12 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
         if (filters.attribute) ygoParams.push(`attribute=${filters.attribute}`);
         if (filters.level) ygoParams.push(`level=${filters.level}`);
         if (filters.monsterType) ygoParams.push(`race=${filters.monsterType}`);
+        if (filters.format) {
+            let formatParam = filters.format;
+            if (filters.format.toLowerCase() === 'speed duel') formatParam = 'Speed Duel';
+            else if (filters.format.toLowerCase() === 'rush duel') formatParam = 'Rush Duel';
+            ygoParams.push(`format=${encodeURIComponent(formatParam)}`);
+        }
 
         const finalYgoUrl = ygoUrl + ygoParams.join('&');
 
@@ -652,7 +658,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             const q = query.toUpperCase();
             // Passcode (Numeric 5-10 digits)
             if (/^\d{5,10}$/.test(q)) {
-                const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}`, { signal }).then(res => res.json()).catch(() => ({data:[]}));
+                const formatUrl = filters.format ? `&format=${encodeURIComponent(filters.format.toLowerCase() === 'speed duel' ? 'Speed Duel' : 'Rush Duel')}` : '';
+                const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${q}${formatUrl}`, { signal }).then(res => res.json()).catch(() => ({data:[]}));
                 return r.data || [];
             }
             // Set Code (Format XXX-123 or XXX-EN123)
@@ -662,7 +669,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                 const sets = await window.getYgoSets();
                 const setObj = sets.find(s => s.set_code.toUpperCase() === prefix);
                 if (setObj) {
-                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}`, { signal }).then(res => res.json()).catch(() => ({data:[]}));
+                    const formatUrl = filters.format ? `&format=${encodeURIComponent(filters.format.toLowerCase() === 'speed duel' ? 'Speed Duel' : 'Rush Duel')}` : '';
+                    const r = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setObj.set_name)}${formatUrl}`, { signal }).then(res => res.json()).catch(() => ({data:[]}));
                     if (r.data) {
                         // Filter for the exact set code
                         return r.data.filter(c => c.card_sets && c.card_sets.some(s => s.set_code.toUpperCase() === q));
@@ -702,32 +710,32 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             ygoParams.length > 0 ? fetch(finalYgoUrl, { signal }).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
 
             // Yu-Gi-Oh! Code/Set Search
-            query.length >= 1 ? fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
+            (query.length >= 1) ? fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(query)}${filters.format ? `&format=${encodeURIComponent(filters.format.toLowerCase() === 'speed duel' ? 'Speed Duel' : 'Rush Duel')}` : ''}`, { signal }).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})) : Promise.resolve({data:[]}),
 
             // Special YGO Search
             ygoSpecialSearch(),
 
             // Pokémon TCGdex - English
-            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            (query.length >= 1 && !filters.format) ? fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Pokémon TCGdex - Spanish
-            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            (query.length >= 1 && !filters.format) ? fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Pokémon TCGdex - Japanese
-            query.length >= 1 ? fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            (query.length >= 1 && !filters.format) ? fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Lorcana Search
-            query.length >= 1 ? fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            (query.length >= 1 && !filters.format) ? fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Viking Search
-            query.length >= 1 ? (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])) : Promise.resolve([]),
+            (query.length >= 1 && !filters.format) ? (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])) : Promise.resolve([]),
 
             // TCGAPI.dev (Top games)
-            searchTCGAPI(query, 'pokemon'),
-            searchTCGAPI(query, 'yugioh'),
-            searchTCGAPI(query, 'magic'),
-            searchTCGAPI(query, 'onepiece'),
-            searchTCGAPI(query, 'lorcana')
+            (!filters.format) ? searchTCGAPI(query, 'pokemon') : Promise.resolve([]),
+            (!filters.format) ? searchTCGAPI(query, 'yugioh') : Promise.resolve([]),
+            (!filters.format) ? searchTCGAPI(query, 'magic') : Promise.resolve([]),
+            (!filters.format) ? searchTCGAPI(query, 'onepiece') : Promise.resolve([]),
+            (!filters.format) ? searchTCGAPI(query, 'lorcana') : Promise.resolve([])
         ];
 
         const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults, tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor] = await Promise.all(searchPromises);

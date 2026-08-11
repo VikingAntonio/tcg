@@ -4100,7 +4100,8 @@ function triggerNexusSearch() {
         cardType: $('#nexus-filter-card-type').val(),
         attribute: $('#nexus-filter-attribute').val(),
         level: $('#nexus-filter-level').val(),
-        monsterType: $('#nexus-filter-monster-type').val()
+        monsterType: $('#nexus-filter-monster-type').val(),
+        format: $('#nexus-filter-format').val()
     };
 
     const hasFilters = Object.values(filters).some(v => v !== '');
