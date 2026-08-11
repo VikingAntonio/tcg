@@ -48,6 +48,22 @@
         </div>
     </div>
 
+    <!-- Deck Selection Panel (Landing Screen if no deckId is provided) -->
+    <div id="deck-selection-panel" style="display: none;">
+        <header class="workspace-header">
+            <button id="btn-selection-back" class="btn btn-header-back"><i class="fas fa-arrow-left"></i> Volver</button>
+            <h1>Mis Decks</h1>
+            <div class="header-actions">
+                <button id="btn-create-deck-selection" class="btn btn-success"><i class="fas fa-plus"></i> Nuevo Deck</button>
+            </div>
+        </header>
+        <main class="selection-layout">
+            <div id="deck-selection-list" class="deck-selection-grid">
+                <!-- Dynamically populated -->
+            </div>
+        </main>
+    </div>
+
     <!-- Main Workspace -->
     <div id="deck-workspace" style="display: none;">
         <!-- Header -->
