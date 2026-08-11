@@ -1,14 +1,22 @@
-127.0.0.1 - - [10/Aug/2026 10:19:41] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:19:42] "GET /css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:19:42] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:19:42] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:19:42] "GET /js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:19:42] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:19:46] code 404, message File not found
-127.0.0.1 - - [10/Aug/2026 10:19:46] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
-127.0.0.1 - - [10/Aug/2026 10:20:20] "GET /duelmobile.html?layout=pokemon&mode=practice&deck1=mock&deck2=mock HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:20:20] "GET /css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:20:20] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:20:20] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:20:20] "GET /js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [10/Aug/2026 10:20:20] "GET /img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:10:54] "GET /duel.html?room=facedown_verification_duel&mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:10:54] "GET /css/duel.css HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:10:54] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:10:54] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:10:54] "GET /js/duel.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:10:54] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:10:57] code 404, message File not found
+127.0.0.1 - - [11/Aug/2026 08:10:57] "GET /css/img/bocabajo.jpg HTTP/1.1" 404 -
+127.0.0.1 - - [11/Aug/2026 08:11:00] "GET /duel.html?room=facedown_verification_duel_multi&mode=multiplayer&role=player1&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:11:58] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:11:58] "GET /css/duelmobile.css HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:11:58] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:11:58] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:11:58] "GET /js/duelmobile.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:11:59] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:13:09] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:13:09] "GET /css/duelmobile.css HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:13:09] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:13:09] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:13:09] "GET /js/duelmobile.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:13:09] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 08:13:19] "GET /img/pokeBocaAbajo.jpg HTTP/1.1" 200 -
