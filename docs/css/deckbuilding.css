@@ -1,0 +1,615 @@
+/* Styles for standalone landscape mobile deckbuilder */
+
+:root {
+    --bg-dark-color: #0f172a;
+    --text-color: #f1f5f9;
+    --primary-color: #00d2ff;
+    --card-bg-color: #1e293b;
+    --border-color: #334155;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-dark-color);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Orientation Warning Overlay */
+#orientation-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0b0f19;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.warning-content {
+    max-width: 400px;
+}
+
+.rotate-icon {
+    font-size: 5rem;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    animation: rotatePulse 2s infinite ease-in-out;
+}
+
+@keyframes rotatePulse {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(90deg) scale(1.1); }
+}
+
+#orientation-warning h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #fff;
+    font-weight: 800;
+}
+
+#orientation-warning p {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+/* Landscape Mode Check: Hide Warning in Landscape */
+@media screen and (orientation: landscape) {
+    #orientation-warning {
+        display: none !important;
+    }
+}
+
+/* Main Workspace layout */
+#deck-workspace {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+/* Header styling */
+.workspace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 50px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+}
+
+.workspace-header h1 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 3-Column Layout */
+.workspace-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr 300px;
+    gap: 10px;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 76px);
+}
+
+/* Column 1: Preview */
+.col-preview {
+    background-color: rgba(30, 41, 59, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preview-sticky {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+}
+
+.preview-card-wrapper {
+    width: 100%;
+    aspect-ratio: 2.5/3.5;
+    background-color: #020617;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #475569;
+}
+
+.preview-card-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.preview-info h3 {
+    font-size: 0.9rem;
+    margin: 0 0 4px 0;
+    color: var(--primary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.preview-info p {
+    font-size: 0.75rem;
+    margin: 0;
+    color: #cbd5e1;
+    max-height: 80px;
+    overflow-y: auto;
+    line-height: 1.3;
+}
+
+.meta-box {
+    margin-top: auto;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.form-group-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.form-group-compact label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: #94a3b8;
+    font-weight: 700;
+}
+
+.form-group-compact input {
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #fff;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.toggle-group-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Column 2: Deck Grids */
+.col-grids {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.deck-container {
+    flex: 1;
+    overflow-y: auto;
+    background-color: rgba(15, 23, 42, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(51, 65, 85, 0.4);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #cbd5e1;
+    margin-bottom: 8px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.section-header.active {
+    border-color: var(--primary-color);
+    background-color: rgba(0, 210, 255, 0.15);
+    color: #fff;
+}
+
+.count-badge {
+    background-color: var(--primary-color);
+    color: #0f172a;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 900;
+}
+
+.grid-deck {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+    margin-bottom: 15px;
+    min-height: 40px;
+}
+
+.grid-deck:last-child {
+    margin-bottom: 0;
+}
+
+/* Cards inside construction sections */
+.grid-deck .nexus-card {
+    aspect-ratio: 2.5/3.5;
+    background: #020617;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    cursor: pointer;
+}
+
+.grid-deck .nexus-card.empty {
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    background: transparent;
+    cursor: default;
+}
+
+.grid-deck .nexus-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.grid-deck .nexus-card .nexus-card-remove {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: #fff;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    cursor: pointer;
+}
+
+.grid-deck .nexus-card-qty {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    border: 1px solid var(--primary-color);
+    z-index: 5;
+    font-weight: 800;
+}
+
+/* Column 3: Search and filters */
+.col-search {
+    background-color: rgba(30, 41, 59, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.search-box-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.search-input-wrapper {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.search-input-wrapper i {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.search-input-wrapper input {
+    width: 100%;
+    background-color: #0f172a;
+    border: 1px solid #475569;
+    color: #fff;
+    padding: 8px 10px 8px 30px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+    background: rgba(15, 23, 42, 0.5);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.filter-group label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    color: #94a3b8;
+    font-weight: 700;
+}
+
+.filter-group select {
+    background-color: #0f172a;
+    border: 1px solid #475569;
+    color: #fff;
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+/* Results grid on the right */
+.results-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.results-grid .external-card-result {
+    aspect-ratio: 2.5/3.5;
+    cursor: pointer;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #020617;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.results-grid .external-card-result img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Compact Buttons */
+.btn-sm {
+    padding: 4px 8px !important;
+    font-size: 0.7rem !important;
+}
+
+.btn-header-back {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+/* Scrollbar customizations for compact design */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Accessories Modal Styles */
+.selected-acc-preview-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 16px;
+}
+.selected-acc-preview-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.selected-acc-preview-card:hover {
+    border-color: #00d2ff;
+}
+.acc-preview-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 4px;
+}
+.acc-preview-box {
+    width: 55px;
+    height: 55px;
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+.acc-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.acc-preview-none {
+    font-size: 8px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Tab Navigation */
+.acc-tabs-nav {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 15px;
+    padding-bottom: 2px;
+}
+.acc-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.acc-tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+.acc-tab-btn.active {
+    color: #00d2ff;
+    border-bottom: 2px solid #00d2ff;
+    background: rgba(0, 210, 255, 0.05);
+}
+
+/* Tab Content */
+.acc-tab-pane {
+    display: none;
+    width: 100%;
+    min-height: 120px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.acc-tab-pane.active {
+    display: block;
+}
+
+/* Custom Accessory Grid */
+.accessory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+    gap: 10px;
+    width: 100%;
+}
+.accessory-item {
+    position: relative;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.3);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.accessory-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.accessory-item:hover {
+    border-color: rgba(0, 210, 255, 0.4);
+}
+.accessory-item.selected {
+    border-color: #00d2ff;
+}
+.accessory-item.none-option {
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed rgba(255,255,255,0.2);
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.accessory-item.none-option.selected {
+    border: 2px solid #00d2ff;
+    color: #00d2ff;
+}

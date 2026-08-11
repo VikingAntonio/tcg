@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="manifest" href="manifest.json">
+    <title>Constructor de Decks - Vikingdev</title>
+    <!-- CSS imports -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/multiFoils.css">
+    <link rel="stylesheet" href="css/pokeballRare.css">
+    <link rel="stylesheet" href="css/duelTerminal.css">
+    <link rel="stylesheet" href="css/cosmoPaldea.css">
+    <link rel="stylesheet" href="css/deckbuilding.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+</head>
+<body>
+
+    <!-- Overlay de Orientación (Rotar el dispositivo) -->
+    <div id="orientation-warning">
+        <div class="warning-content">
+            <i class="fas fa-mobile-alt rotate-icon"></i>
+            <h2>Por favor, rota tu celular horizontalmente</h2>
+            <p>Este constructor de decks está optimizado para pantallas en formato horizontal para ofrecerte la mejor experiencia.</p>
+        </div>
+    </div>
+
+    <!-- Login Modal fallback (if not authenticated) -->
+    <div id="login-modal" class="overlay">
+        <div class="overlay-content login-container">
+            <h1>Iniciar Sesión</h1>
+            <p style="color: #aaa; text-align: center; margin-bottom: 20px;">Inicia sesión para editar tus decks.</p>
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="login-username" placeholder="Tu nombre de usuario">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-password" placeholder="********">
+            </div>
+            <button id="btn-login" class="btn" style="width: 100%; margin-bottom: 15px;">Entrar</button>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div id="deck-workspace" style="display: none;">
+        <!-- Header -->
+        <header class="workspace-header">
+            <button id="btn-back" class="btn btn-header-back"><i class="fas fa-arrow-left"></i> Volver</button>
+            <h1 id="deck-title">Cargando Deck...</h1>
+            <div class="header-actions">
+                <button id="btn-deck-accessories" class="btn btn-secondary"><i class="fas fa-magic"></i> Accesorios</button>
+                <button id="btn-save-deck" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </header>
+
+        <!-- Master Duel / Nexus 3-Column Grid -->
+        <main class="workspace-layout">
+            <!-- Column 1: Preview & Details (Left) -->
+            <section class="col-preview">
+                <div class="preview-sticky">
+                    <div class="preview-card-wrapper">
+                        <img id="card-preview-img" src="https://via.placeholder.com/400x600?text=Selecciona+una+carta" alt="Preview">
+                    </div>
+                    <div class="preview-info">
+                        <h3 id="card-preview-name">Nombre de la carta</h3>
+                        <p id="card-preview-desc">Toca o pasa el cursor por una carta para ver sus detalles aquí.</p>
+                    </div>
+                    <div class="meta-box">
+                        <div class="form-group-compact">
+                            <label>Nombre del Deck</label>
+                            <input type="text" id="deck-name-input" placeholder="Nombre del deck">
+                        </div>
+                        <div class="toggle-group-compact">
+                            <label class="switch switch-mini">
+                                <input type="checkbox" id="deck-public-checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Público</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Column 2: Grids (Center) -->
+            <section class="col-grids">
+                <div class="deck-container">
+                    <div class="section-header active" data-section="Main">
+                        <span>MAIN DECK</span>
+                        <span class="count-badge" id="count-main">0</span>
+                    </div>
+                    <div id="grid-main" class="grid-deck" data-section="Main"></div>
+
+                    <div class="section-header" data-section="Extra">
+                        <span>EXTRA DECK</span>
+                        <span class="count-badge" id="count-extra">0</span>
+                    </div>
+                    <div id="grid-extra" class="grid-deck" data-section="Extra"></div>
+
+                    <div class="section-header" data-section="Side">
+                        <span>SIDE DECK</span>
+                        <span class="count-badge" id="count-side">0</span>
+                    </div>
+                    <div id="grid-side" class="grid-deck" data-section="Side"></div>
+
+                    <div class="section-header" data-section="Tokens">
+                        <span>TOKENS</span>
+                        <span class="count-badge" id="count-tokens">0</span>
+                    </div>
+                    <div id="grid-tokens" class="grid-deck" data-section="Tokens"></div>
+                </div>
+            </section>
+
+            <!-- Column 3: Search & Results (Right) -->
+            <section class="col-search">
+                <div class="search-box-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Buscar carta...">
+                    </div>
+
+                    <!-- Search Filters (Toggleable/Compact for mobile screen height) -->
+                    <div class="filters-header">
+                        <span>Filtros</span>
+                        <button id="btn-toggle-filters" class="btn btn-sm btn-secondary"><i class="fas fa-sliders-h"></i></button>
+                    </div>
+
+                    <div class="filters-grid" style="display: none;">
+                        <div class="filter-group">
+                            <label>Tipo de Carta</label>
+                            <select id="filter-card-type">
+                                <option value="">Todos</option>
+                                <option value="monster">Monstruo</option>
+                                <option value="spell">Mágica</option>
+                                <option value="trap">Trampa</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Atributo</label>
+                            <select id="filter-attribute">
+                                <option value="">Todos</option>
+                                <option value="dark">OSCURIDAD</option>
+                                <option value="light">LUZ</option>
+                                <option value="earth">TIERRA</option>
+                                <option value="water">AGUA</option>
+                                <option value="fire">FUEGO</option>
+                                <option value="wind">VIENTO</option>
+                                <option value="divine">DIVINIDAD</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Nivel/Rango</label>
+                            <select id="filter-level">
+                                <option value="">Cualquiera</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                                <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Formato</label>
+                            <select id="filter-format">
+                                <option value="">Todos</option>
+                                <option value="speed duel">Speed Duel</option>
+                                <option value="rush duel">Rush Duel</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Results Area -->
+                    <div class="results-container">
+                        <div id="search-results" class="results-grid"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Accessories Modal -->
+    <div id="accessories-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 550px; width: 95%;">
+            <span id="close-accessories-modal" class="close-btn">&times;</span>
+            <div class="modal-header-simple" style="margin-bottom: 15px; text-align: center;">
+                <h2>personaliza tu deck</h2>
+            </div>
+
+            <!-- Preview of Selected Accessories -->
+            <div class="selected-acc-preview-container">
+                <div class="selected-acc-preview-card" data-target-tab="sleeves">
+                    <span class="acc-preview-title">Sleeves</span>
+                    <div class="acc-preview-box" id="preview-box-sleeves">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="deckbox">
+                    <span class="acc-preview-title">Deckbox</span>
+                    <div class="acc-preview-box" id="preview-box-deckbox">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="coin">
+                    <span class="acc-preview-title">Coin</span>
+                    <div class="acc-preview-box" id="preview-box-coin">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                </div>
+                <div class="selected-acc-preview-card" data-target-tab="mats">
+                    <span class="acc-preview-title">Playmat</span>
+                    <div class="acc-preview-box" id="preview-box-mats">
+                        <span class="acc-preview-none">Ninguno</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="acc-tabs-nav">
+                <button class="acc-tab-btn active" data-tab="sleeves">sleeves</button>
+                <button class="acc-tab-btn" data-tab="deckbox">deckbox</button>
+                <button class="acc-tab-btn" data-tab="coin">coin</button>
+                <button class="acc-tab-btn" data-tab="mats">mats</button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="acc-tabs-content" style="width: 100%;">
+                <div class="acc-tab-pane active" id="pane-sleeves">
+                    <div id="grid-sleeves" class="accessory-grid"></div>
+                </div>
+                <div class="acc-tab-pane" id="pane-deckbox">
+                    <div id="grid-deckbox" class="accessory-grid"></div>
+                </div>
+                <div class="acc-tab-pane" id="pane-coin">
+                    <div id="grid-coin" class="accessory-grid"></div>
+                </div>
+                <div class="acc-tab-pane" id="pane-mats">
+                    <div id="grid-mats" class="accessory-grid"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; width: 100%; display: flex; justify-content: center;">
+                <button id="btn-save-accessories" class="btn" style="width: 100%; padding: 10px;"><i class="fas fa-check"></i> Listo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/deckbuilding.js"></script>
+</body>
+</html>
