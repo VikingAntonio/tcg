@@ -1,18 +1,1 @@
-127.0.0.1 - - [07/Aug/2026 04:26:34] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:26:34] "GET /css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:26:34] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:26:34] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:26:34] "GET /js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:26:35] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:29:07] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:29:07] "GET /css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:29:07] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:29:07] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:29:07] "GET /js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:29:07] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:30:54] "GET /duelmobile.html?mode=practice&layout=yugioh&deck1=mock&deck2=mock HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:30:54] "GET /js/supabase-config.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:30:54] "GET /css/duelmobile.css HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:30:54] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:30:54] "GET /js/duelmobile.js HTTP/1.1" 200 -
-127.0.0.1 - - [07/Aug/2026 04:30:54] "GET /img/bocabajo.jpg HTTP/1.1" 200 -
+Server running on http://localhost:8000

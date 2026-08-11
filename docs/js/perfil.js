@@ -105,14 +105,23 @@ $(document).ready(async function() {
         try {
             // --- Duplicate Store Name Check ---
             if (storeName && storeName !== currentUser.store_name) {
-                const { data: existing, error: storeCheckError } = await _supabase
+                // Check if store_name already exists for another user
+                const { data: existingStore, error: storeCheckError } = await _supabase
                     .from('usuarios')
                     .select('id')
-                    .or(`store_name.eq."${storeName}",username.eq."${storeName}"`)
+                    .eq('store_name', storeName)
                     .neq('id', currentUser.id)
                     .maybeSingle();
 
-                if (existing) {
+                // Also check if any user has this storeName as their username
+                const { data: existingUser, error: userCheckError } = await _supabase
+                    .from('usuarios')
+                    .select('id')
+                    .eq('username', storeName)
+                    .neq('id', currentUser.id)
+                    .maybeSingle();
+
+                if (existingStore || existingUser) {
                     Swal.fire({
                         title: 'Atención',
                         text: 'Este nombre de tienda ya está en uso. Por favor, elige otro.',
@@ -146,16 +155,16 @@ $(document).ready(async function() {
             // 2. Update DB
             // Start with fields common to all users
             const updateData = {
-                whatsapp_link: whatsapp,
-                messenger_link: messenger
+                whatsapp_link: whatsapp || null,
+                messenger_link: messenger || null
             };
 
             // Only add store-specific fields if the user is a store
             if (currentUser.is_store) {
-                updateData.store_name = storeName;
-                updateData.horario = horario;
-                updateData.ubicacion = ubicacion;
-                updateData.store_logo = logoUrl;
+                updateData.store_name = storeName || null;
+                updateData.horario = horario || null;
+                updateData.ubicacion = ubicacion || null;
+                updateData.store_logo = logoUrl || null;
             }
 
             const { error: dbError } = await _supabase
