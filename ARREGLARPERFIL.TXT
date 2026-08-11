@@ -1,0 +1,38 @@
+========================================================================
+SOLUCIÓN DE ERROR EN ACTUALIZACIÓN DE PERFIL - VIKINGDEV TCG
+========================================================================
+
+Si te sale el siguiente error al intentar guardar o actualizar el perfil:
+"duplicate key value violates unique constraint "usuarios_store_name_key""
+
+Esto se debe a que algunos usuarios de tu base de datos guardaron un nombre
+de tienda vacío que se registró como un texto vacío "" en lugar de un valor NULL.
+PostgreSQL permite múltiples valores NULL en una columna con restricción UNIQUE,
+pero NO permite múltiples textos vacíos "", lo que genera el conflicto de duplicidad.
+
+Para solucionar esto de forma inmediata en tu base de datos de Supabase,
+sigue estos pasos simples:
+
+1. Ve a tu panel de control de Supabase.
+2. Abre la sección de SQL Editor (Editor SQL).
+3. Crea una "New Query" (Nueva Consulta).
+4. Pega y ejecuta (Run) el siguiente comando SQL:
+
+------------------------------------------------------------------------
+-- SQL PARA LIMPIAR STRINGS VACÍOS Y EVITAR ERRORES DE DUPLICADO
+------------------------------------------------------------------------
+
+UPDATE usuarios
+SET store_name = NULL
+WHERE store_name = '';
+
+------------------------------------------------------------------------
+
+Con esta consulta, todos los textos vacíos se convertirán en NULL,
+permitiendo que todos tus usuarios puedan actualizar y configurar sus
+perfiles sin ningún error de clave duplicada ("unique constraint violation").
+
+Nota: El archivo javascript de tu perfil ya ha sido corregido para que
+en el futuro cualquier campo de tienda vacío se envíe directamente como
+NULL a Supabase automáticamente, previniendo que este problema vuelva a ocurrir.
+========================================================================
