@@ -358,6 +358,21 @@ body {
     margin: auto !important;
 }
 
+.grid-container.grid-layout-4x4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-rows: repeat(4, auto) !important;
+    gap: 6px !important;
+    align-content: center !important;
+    justify-content: center !important;
+}
+
+.grid-container.grid-layout-4x4 .card-slot {
+    aspect-ratio: 2.5 / 3.5 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: auto !important;
+}
+
 .grid-container.grid-layout-4x3 {
     grid-template-columns: repeat(4, 1fr) !important;
     grid-template-rows: repeat(3, auto) !important;

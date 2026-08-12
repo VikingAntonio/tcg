@@ -139,8 +139,67 @@ $(document).ready(async function() {
         loadAlbums();
     });
 
-    $(document).on('change', '#input-album-grid-layout', function() {
-        window.currentAlbumGridLayout = $(this).val();
+    async function redistributeLocalSlots(newLayout) {
+        const { data: pages, error } = await _supabase
+            .from('pages')
+            .select('*')
+            .eq('album_id', currentAlbumId)
+            .order('page_index', { ascending: true });
+
+        if (error || !pages || pages.length === 0) return;
+
+        const pageMap = {};
+        pages.forEach(p => pageMap[p.id] = p.page_index);
+
+        let activeSlots = localAlbumSlots.filter(s => pageMap[s.page_id] !== undefined && s.image_url);
+        activeSlots.sort((a, b) => {
+            const pageDiff = pageMap[a.page_id] - pageMap[b.page_id];
+            if (pageDiff !== 0) return pageDiff;
+            return a.slot_index - b.slot_index;
+        });
+
+        let numSlots = 9;
+        if (newLayout === '4x3') numSlots = 12;
+        else if (newLayout === '4x4') numSlots = 16;
+        else if (newLayout === '2x2') numSlots = 4;
+        else if (newLayout === '1x1') numSlots = 1;
+
+        const redistributed = [];
+        let currentSlotCount = 0;
+
+        for (const slot of activeSlots) {
+            const pageIdx = Math.floor(currentSlotCount / numSlots);
+            const slotIdx = currentSlotCount % numSlots;
+
+            if (pageIdx < pages.length) {
+                const targetPage = pages[pageIdx];
+                const { id, page_id, slot_index, ...rest } = slot;
+                redistributed.push({
+                    ...rest,
+                    page_id: targetPage.id,
+                    slot_index: slotIdx
+                });
+                currentSlotCount++;
+            }
+        }
+
+        localAlbumSlots = redistributed;
+    }
+
+    $(document).on('change', '#input-album-grid-layout', async function() {
+        const newLayout = $(this).val();
+        window.currentAlbumGridLayout = newLayout;
+
+        Swal.fire({
+            title: 'Acomodando cartas...',
+            text: 'Reorganizando las cartas para el nuevo tamaño',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        await redistributeLocalSlots(newLayout);
+
+        Swal.close();
         loadAlbumPages(currentAlbumId, false);
     });
 
@@ -507,18 +566,23 @@ $(document).ready(async function() {
             }
             if (albumErr) throw albumErr;
 
-            // 2. Perform Batch Deletions
-            if (albumSlotsToDelete.length > 0) {
-                const { error: delErr } = await _supabase
+            // 2. Clear all existing slots of these pages to prevent duplicate leftover slots from layout shifts
+            const { data: albumPages } = await _supabase
+                .from('pages')
+                .select('id')
+                .eq('album_id', currentAlbumId);
+            const pageIds = albumPages ? albumPages.map(p => p.id) : [];
+            if (pageIds.length > 0) {
+                const { error: clearErr } = await _supabase
                     .from('card_slots')
                     .delete()
-                    .in('id', albumSlotsToDelete);
-                if (delErr) throw delErr;
+                    .in('page_id', pageIds);
+                if (clearErr) throw clearErr;
             }
 
-            // 3. Perform Batch Upsert for Slots
+            // 3. Perform Batch Insert for Slots
             if (localAlbumSlots.length > 0) {
-                // Remove ID from objects to allow upsert by unique constraint (page_id, slot_index)
+                // Remove ID from objects to allow clean insert/upsert
                 const slotsToUpsert = localAlbumSlots.map(s => {
                     // Safety: strip 'obtained' field for card_slots as it might not exist in that table
                     const { id, obtained, ...rest } = s;
@@ -2902,6 +2966,7 @@ function renderAlbumPagesLocal(pages, scrollPos) {
 
         let numSlots = 9;
         if (gridLayout === '4x3') numSlots = 12;
+        else if (gridLayout === '4x4') numSlots = 16;
         else if (gridLayout === '2x2') numSlots = 4;
         else if (gridLayout === '1x1') numSlots = 1;
 

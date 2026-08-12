@@ -2365,6 +2365,7 @@ function renderAlbum(album) {
 
         let numSlots = 9;
         if (gridLayout === '4x3') numSlots = 12;
+        else if (gridLayout === '4x4') numSlots = 16;
         else if (gridLayout === '2x2') numSlots = 4;
         else if (gridLayout === '1x1') numSlots = 1;
 
