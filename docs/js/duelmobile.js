@@ -5791,8 +5791,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             document.documentElement.style.setProperty('--board-tilt', `${perspectiveAngle}deg`);
             document.documentElement.style.setProperty('--board-perspective', '2000px');
 
+            const rotatedAngle = window.isBoardRotated ? 180 : 0;
+
             $playmat.css({
-                "transform": `translate(-50%, calc(-50% + ${boardOffsetY}px)) scale(${scale}) rotateX(${perspectiveAngle}deg)`,
+                "transform": `translate(-50%, calc(-50% + ${boardOffsetY}px)) scale(${scale}) rotateX(${perspectiveAngle}deg) rotate(${rotatedAngle}deg)`,
                 "transform-origin": "center center",
                 "position": "absolute",
                 "left": "50%",
@@ -5809,15 +5811,27 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             const t2Top = Math.max(2, (viewportHeight / 2) + boardOffsetY - visualHalfHeight + p2HandTopOffset);
             const t1Bottom = Math.max(2, (viewportHeight / 2) - boardOffsetY - visualHalfHeight + p1HandBottomOffset);
 
-            $("#hand-tray-p2").css({
-                "top": `${t2Top}px`,
-                "bottom": "auto"
-            });
+            if (window.isBoardRotated) {
+                $("#hand-tray-p2").css({
+                    "bottom": `${t1Bottom}px`,
+                    "top": "auto"
+                });
 
-            $("#hand-tray-p1").css({
-                "bottom": `${t1Bottom}px`,
-                "top": "auto"
-            });
+                $("#hand-tray-p1").css({
+                    "top": `${t2Top}px`,
+                    "bottom": "auto"
+                });
+            } else {
+                $("#hand-tray-p2").css({
+                    "top": `${t2Top}px`,
+                    "bottom": "auto"
+                });
+
+                $("#hand-tray-p1").css({
+                    "bottom": `${t1Bottom}px`,
+                    "top": "auto"
+                });
+            }
         };
 
         $(window).on("resize orientationchange", window.adjustPlaymatScale);
@@ -6018,6 +6032,29 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 }
             });
 
+            // Initialize board rotated state
+            window.isBoardRotated = false;
+
+            // Show rotation button only in Practice Mode
+            if (state.mode === 'practice') {
+                $("#btn-rotate-board").show().css("display", "flex");
+            }
+
+            // Click listener for rotation button
+            $("#btn-rotate-board").off("click").on("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                window.isBoardRotated = !window.isBoardRotated;
+                if (window.isBoardRotated) {
+                    $("body").addClass("rotated-board");
+                } else {
+                    $("body").removeClass("rotated-board");
+                }
+                if (typeof window.adjustPlaymatScale === "function") {
+                    window.adjustPlaymatScale();
+                }
+            });
+
             // Toggle mobile accessories sidebar
             $("#btn-toggle-mobile-sidebar").off("click").on("click", function(e) {
                 e.preventDefault();
@@ -6029,7 +6066,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             $(document).on("click mousedown touchstart", function(e) {
                 const sidebar = $(".duel-sidebar");
                 if (sidebar.hasClass("mobile-sidebar-active")) {
-                    if (!$(e.target).closest(".duel-sidebar, #btn-toggle-mobile-sidebar, .swal2-container, .swal2-popup").length) {
+                    if (!$(e.target).closest(".duel-sidebar, #btn-toggle-mobile-sidebar, #btn-rotate-board, .swal2-container, .swal2-popup").length) {
                         sidebar.removeClass("mobile-sidebar-active");
                     }
                 }
