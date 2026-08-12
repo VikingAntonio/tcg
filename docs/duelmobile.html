@@ -8,6 +8,95 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/duelmobile.css">
+    <style>
+        /* Compact Phase Bar on mobile - perfectly fits between P1 and P2 LP counters */
+        @media screen and (max-width: 1024px) {
+            .central-turn-bar {
+                top: 10px !important;
+                padding: 3px 6px !important;
+                gap: 4px !important;
+                max-width: calc(100vw - 230px) !important; /* Ensure perfect clearance for LP counters (10px + 90px + margin each side) */
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: center !important;
+                box-sizing: border-box !important;
+            }
+            .phases-container {
+                gap: 2.5px !important;
+            }
+            .phase-btn {
+                min-width: 20px !important;
+                padding: 2px 3px !important;
+                font-size: 0.52rem !important;
+                border-radius: 3px !important;
+            }
+            .turn-indicator {
+                font-size: 0.6rem !important;
+                padding: 2px 4px !important;
+                border-radius: 4px !important;
+            }
+            .end-turn-btn {
+                padding: 2px 5px !important;
+                font-size: 0.52rem !important;
+                border-radius: 4px !important;
+            }
+        }
+
+        /* Pokémon specific layout overrides for turn indicators (Blue for P1, Red for P2) */
+        body.layout-pokemon .turn-indicator.p1-turn {
+            background: rgba(0, 123, 255, 0.25) !important;
+            color: #3b82f6 !important;
+            border: 1.5px solid #3b82f6 !important;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.6) !important;
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.6) !important;
+        }
+        body.layout-pokemon .turn-indicator.p2-turn {
+            background: rgba(220, 38, 38, 0.25) !important;
+            color: #ef4444 !important;
+            border: 1.5px solid #ef4444 !important;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6) !important;
+            text-shadow: 0 0 5px rgba(239, 68, 68, 0.6) !important;
+        }
+
+        /* Pokémon layout overrides - hide phases, show Turn bar and Turn display */
+        body.layout-pokemon #phases-container {
+            display: none !important;
+        }
+        body.layout-pokemon #turn-display {
+            display: inline-block !important;
+        }
+        body.layout-pokemon #central-turn-bar {
+            display: flex !important;
+        }
+        body.layout-pokemon #lp-counter-p1,
+        body.layout-pokemon #lp-counter-p2 {
+            display: none !important;
+        }
+
+        /* Card Select Pointer Visual style - bouncing yellow/gold finger pointing down at the card */
+        .card-select-pointer {
+            position: absolute;
+            top: -55px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            color: #ffed4a;
+            text-shadow: 0 0 8px rgba(255, 237, 74, 0.9), 0 0 15px rgba(255, 140, 0, 0.7);
+            z-index: 10005;
+            pointer-events: none;
+            animation: cardPointerBounce 0.5s infinite alternate ease-in-out;
+            transition: opacity 0.3s ease;
+        }
+        @keyframes cardPointerBounce {
+            0% {
+                transform: translate(-50%, 0);
+            }
+            100% {
+                transform: translate(-50%, -12px);
+            }
+        }
+    </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -292,6 +381,7 @@
         <div class="menu-item pokemon-only-item" id="menu-swap-active-bench" style="display: none;"><i class="fas fa-exchange-alt"></i> Activo / Banca</div>
         <hr>
         <div class="menu-item" id="menu-trigger-effect"><i class="fas fa-magic"></i> Activar efecto</div>
+        <div class="menu-item" id="menu-select-card"><i class="fas fa-hand-pointer"></i> Seleccionar</div>
         <hr id="menu-hr-trigger-effect">
         <div class="menu-item" id="menu-add-counter"><i class="fas fa-plus-circle"></i> Agregar Contador (+1)</div>
         <div class="menu-item" id="menu-sub-counter"><i class="fas fa-minus-circle"></i> Quitar Contador (-1)</div>
@@ -430,6 +520,65 @@
 
     <script src="js/utils.js"></script>
     <script src="js/duelmobile.js"></script>
+
+    <!-- Post-load custom overrides and adjustments -->
+    <script>
+        $(document).ready(function() {
+            // 1. Card Context Menu "Select" option handling
+            if (window.updateCardMenuOptions) {
+                const originalUpdateCardMenuOptions = window.updateCardMenuOptions;
+                window.updateCardMenuOptions = function(cardObj) {
+                    originalUpdateCardMenuOptions(cardObj);
+
+                    const isHandCard = cardObj.zone && cardObj.zone.startsWith("hand_");
+                    if (isHandCard) {
+                        $("#menu-select-card").hide();
+                    } else {
+                        $("#menu-select-card").show();
+                    }
+                };
+            }
+
+            // 2. Register Seleccionar Option Click Event
+            $("#menu-select-card").click(function() {
+                if (typeof activeMenuCard === "undefined" || !activeMenuCard) return;
+                const cardObj = activeMenuCard;
+
+                // Close context menu
+                $("#card-menu").removeClass("active");
+
+                // Trigger beautiful temporary activation glow animation on the playmat card element
+                setTimeout(() => {
+                    const $cardElem = $(`#${cardObj.instanceId}`);
+                    if ($cardElem.length) {
+                        // Play activation flash animation
+                        $cardElem.addClass("activating-flash");
+                        setTimeout(() => {
+                            $cardElem.removeClass("activating-flash");
+                        }, 800);
+
+                        // Clear any pre-existing pointer, then add the beautiful pointing gold finger
+                        $(".card-select-pointer").remove();
+                        const $pointer = $('<div class="card-select-pointer"><i class="fas fa-hand-point-down"></i></div>');
+                        $cardElem.append($pointer);
+
+                        // Keep it pointing for 4 seconds, then fade out and remove gracefully
+                        setTimeout(() => {
+                            $pointer.css('opacity', '0');
+                            setTimeout(() => {
+                                $pointer.remove();
+                            }, 300);
+                        }, 4000);
+                    }
+                }, 100);
+
+                // Send action to game logs & broadcast
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Seleccionó la carta`, cardObj.name);
+                }
+            });
+        });
+    </script>
 
     <!-- Communication, Chat, and Game Log integration -->
 
