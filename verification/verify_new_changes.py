@@ -1,109 +1,88 @@
-import asyncio
 import os
-import glob
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
-async def run_verification():
-    print("Starting Playwright verification for new changes...")
+def run_verification(page):
+    # Enable console log forwarding
+    page.on("console", lambda msg: print(f"BROWSER CONSOLE: {msg.text}"))
+
+    # Navigate to admin page
+    page.goto("http://localhost:8000/admin.html")
+    page.wait_for_timeout(2000)
+
+    # Force show view-editor, make sure it is displayed and hide login modal
+    page.evaluate("""() => {
+        $('#login-modal').hide();
+        $('.admin-section').hide().removeClass('active');
+        $('#view-editor').show().addClass('active');
+        // Ensure parent containers if any are shown
+        $('#view-editor').parents().show();
+    }""")
+    page.wait_for_timeout(500)
+
+    # 1. Assert Configurator Trigger exists
+    toggle_btn = page.query_selector("#btn-toggle-config")
+    assert toggle_btn is not None, "Configurator toggle button not found!"
+    print("Toggle button is present.")
+
+    # 2. Check initial state of the container (should be hidden)
+    config_container = page.query_selector("#album-config-container")
+    assert config_container is not None, "Album config container not found!"
+    is_hidden = page.evaluate("() => $('#album-config-container').is(':hidden')")
+    assert is_hidden, "Album config container should be hidden initially!"
+    print("Album config container is initially hidden.")
+
+    # Take screenshot of collapsed state
     os.makedirs("/home/jules/verification/screenshots", exist_ok=True)
-    os.makedirs("/home/jules/verification/videos", exist_ok=True)
+    page.screenshot(path="/home/jules/verification/screenshots/collapsed_state.png")
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            record_video_dir="/home/jules/verification/videos",
-            viewport={"width": 1280, "height": 720}
-        )
-        page = await context.new_page()
+    # 3. Trigger Click via jQuery and check state (should be visible)
+    page.evaluate("() => $('#btn-toggle-config').click()")
+    page.wait_for_timeout(500)
+    is_visible = page.evaluate("() => $('#album-config-container').is(':visible')")
+    assert is_visible, "Album config container should be visible after toggle!"
+    print("Album config container toggled to visible successfully!")
 
-        print("Navigating to duel simulator...")
-        await page.goto("http://localhost:8000/duel.html?layout=yugioh&mode=practice")
-        await page.wait_for_timeout(1000)
+    # 4. Check labels and fields
+    title_label = page.evaluate("() => $('#album-config-container > .form-group:first-child label').text().trim()")
+    assert title_label == "Nombre", f"Expected label 'Nombre', got '{title_label}'"
+    print("Title field is renamed to 'Nombre'.")
 
-        # 1. Draw a card to the hand
-        print("Drawing a card...")
-        await page.evaluate("""() => {
-            const deckZone = document.querySelector(".board-zone.zone-type-deck");
-            if (deckZone) deckZone.click();
-        }""")
-        await page.wait_for_timeout(500)
-        await page.evaluate("""() => {
-            const drawBtn = document.querySelector("#deck-menu-draw");
-            if (drawBtn) drawBtn.click();
-        }""")
-        await page.wait_for_timeout(1000)
+    grid_label = page.evaluate("() => $('#album-config-container > .form-group:nth-child(2) label').text().trim()")
+    assert grid_label == "Tamaño de carpeta", f"Expected label 'Tamaño de carpeta', got '{grid_label}'"
+    print("Grid selection label is renamed to 'Tamaño de carpeta'.")
 
-        # 2. Open card menu on hand card (we can just click the card to open detailed preview, then right click or programmatic field place)
-        # Let's drag card to field programmatically to place it on field
-        print("Placing card on the field...")
-        await page.evaluate("""() => {
-            const cardObj = state.cards.find(c => c.zone.startsWith("hand_"));
-            if (cardObj) {
-                cardObj.zone = "monster_1_1";
-                cardObj.x = 450;
-                cardObj.y = 350;
-                renderAllCards();
-            }
-        }""")
-        await page.wait_for_timeout(1000)
+    # Take screenshot of expanded state
+    page.screenshot(path="/home/jules/verification/screenshots/expanded_state.png")
 
-        # 3. Open context menu on the field card
-        print("Opening context menu on the placed field card...")
-        card_elem = page.locator(".duel-card").first
-        await card_elem.click(button="right", force=True)
-        await page.wait_for_timeout(1000)
+    # 5. Check mobile styles of grid container
+    # Set viewport to mobile size
+    page.set_viewport_size({"width": 375, "height": 667})
+    page.wait_for_timeout(500)
 
-        # Take screenshot of the context menu showing the new options: "Ver carta", "Enviar al Extra Deck", "Péndulo"
-        screenshot_menu = "/home/jules/verification/screenshots/context_menu_new_options.png"
-        await page.screenshot(path=screenshot_menu)
-        print(f"Screenshot of context menu saved to {screenshot_menu}")
+    # Inject a test grid if it doesn't exist just to verify mobile styles
+    page.evaluate("""() => {
+        $('body').append('<div class="admin-grid-preview grid-container" id="test-grid"></div>');
+    }""")
 
-        # 4. Click "Ver carta" option programmatically
-        print("Clicking 'Ver carta' option...")
-        await page.evaluate("""() => {
-            const viewBtn = document.querySelector("#menu-view-card");
-            if (viewBtn) viewBtn.click();
-        }""")
-        await page.wait_for_timeout(1000)
+    grid_height = page.evaluate("() => window.getComputedStyle(document.getElementById('test-grid')).height")
+    height_val = float(grid_height.replace('px', ''))
+    print(f"Mobile Grid height: {grid_height}")
+    assert height_val < 50.0, f"Expected small height for empty auto-height grid, but got {grid_height}"
+    print("Mobile height auto-scaling verified successfully!")
 
-        # Take screenshot of the zoom modal
-        screenshot_zoom = "/home/jules/verification/screenshots/ver_carta_zoom.png"
-        await page.screenshot(path=screenshot_zoom)
-        print(f"Screenshot of zoom modal saved to {screenshot_zoom}")
-
-        # Dismiss zoom modal
-        await page.evaluate("""() => {
-            const closeBtn = document.querySelector(".swal2-close");
-            if (closeBtn) closeBtn.click();
-        }""")
-        await page.wait_for_timeout(500)
-
-        # Re-open context menu on field card
-        await card_elem.click(button="right", force=True)
-        await page.wait_for_timeout(500)
-
-        # 5. Click "Péndulo" option
-        print("Clicking 'Péndulo' option...")
-        await page.evaluate("""() => {
-            const pendBtn = document.querySelector("#menu-pendulum");
-            if (pendBtn) pendBtn.click();
-        }""")
-        await page.wait_for_timeout(1000)
-
-        # 6. Open Extra Deck Modal
-        print("Opening Extra Deck Modal to verify the card went there face-up...")
-        await page.evaluate("""() => {
-            openExtraDeckModal("player1");
-        }""")
-        await page.wait_for_timeout(1000)
-
-        # Take screenshot of the Extra Deck showing the face-up Pendulum card and its options
-        screenshot_extra = "/home/jules/verification/screenshots/extra_deck_face_up_pendulum.png"
-        await page.screenshot(path=screenshot_extra)
-        print(f"Screenshot of Extra Deck modal saved to {screenshot_extra}")
-
-        await context.close()
-        await browser.close()
+    page.screenshot(path="/home/jules/verification/screenshots/new_admin_features_verified.png")
+    print("Verification successfully complete!")
 
 if __name__ == "__main__":
-    asyncio.run(run_verification())
+    os.makedirs("/home/jules/verification/videos", exist_ok=True)
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            record_video_dir="/home/jules/verification/videos"
+        )
+        page = context.new_page()
+        try:
+            run_verification(page)
+        finally:
+            context.close()
+            browser.close()

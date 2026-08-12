@@ -1658,14 +1658,20 @@
                 <button id="btn-save-album-meta" class="btn"><i class="fas fa-save"></i> Guardar Cambios</button>
             </div>
 
-            <div class="album-card" style="max-width: 600px; margin: 0 auto 40px;">
+            <!-- Configurator Toggle Tab -->
+            <div class="config-toggle-tab" id="btn-toggle-config" style="max-width: 600px; margin: 0 auto 15px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: var(--text-color);">
+                <span><i class="fas fa-cog" style="color: var(--primary-color); margin-right: 8px;"></i> Configuración del Álbum</span>
+                <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.3s ease;"></i>
+            </div>
+
+            <div id="album-config-container" class="album-card" style="max-width: 600px; margin: 0 auto 40px; display: none; padding: 20px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border);">
                 <div class="form-group">
-                    <label>Título del Álbum</label>
+                    <label>Nombre</label>
                     <input type="text" id="input-album-title" placeholder="Nuevo Álbum">
                 </div>
 
                 <div class="form-group">
-                    <label><i class="fas fa-th"></i> Tamaño de la Carpeta (Filas x Columnas)</label>
+                    <label>Tamaño de carpeta</label>
                     <select id="input-album-grid-layout" style="width: 100%; background: #222; color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">
                         <option value="3x3">3x3 (9 Cartas)</option>
                         <option value="4x4">4x4 (16 Cartas)</option>
@@ -1674,35 +1680,35 @@
                     </select>
                 </div>
 
-                <!-- Hidden Cover Style fields (Forced to style-cosmic / galaxy) -->
+                <!-- Hidden Cover Style fields & Custom Cover fields (Hidden for simplified UI, but preserved for JS compatibility) -->
                 <div style="display: none;">
                     <input type="hidden" id="input-album-cover-style" value="style-cosmic">
                     <input type="color" id="input-album-cover-color" value="#1a1a1a">
-                </div>
 
-                <!-- Tab: Upload (Custom Images) - Always active for custom covers -->
-                <div id="album-tab-upload" class="slot-tab-content active">
-                    <div class="form-group">
-                        <label>Portada Personalizada</label>
-                        <label class="file-drop-zone" id="drop-zone-album-cover" for="input-album-cover-file" style="display: block;">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Arrastra la portada aquí o haz clic para subir</p>
-                            <input type="file" id="input-album-cover-file" accept="image/*" style="display: none;">
-                            <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                        </label>
-                        <input type="text" id="input-album-cover" placeholder="midominio.com/portada.png">
-                    </div>
-                    <div class="form-group">
-                        <label>Contraportada</label>
-                        <label class="file-drop-zone" id="drop-zone-album-back" for="input-album-back-file" style="display: block;">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Arrastra la contraportada aquí o haz clic para subir</p>
-                            <input type="file" id="input-album-back-file" accept="image/*" style="display: none;">
-                            <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
-                        </label>
-                        <div class="color-input-wrapper">
-                            <input type="text" id="input-album-back" placeholder="midominio.com/contraportada.png" style="flex:1;">
-                            <input type="hidden" id="input-album-back-color" value="#1a1a1a">
+                    <!-- Tab: Upload (Custom Images) -->
+                    <div id="album-tab-upload" class="slot-tab-content active">
+                        <div class="form-group">
+                            <label>Portada Personalizada</label>
+                            <label class="file-drop-zone" id="drop-zone-album-cover" for="input-album-cover-file" style="display: block;">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Arrastra la portada aquí o haz clic para subir</p>
+                                <input type="file" id="input-album-cover-file" accept="image/*" style="display: none;">
+                                <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                            </label>
+                            <input type="text" id="input-album-cover" placeholder="midominio.com/portada.png">
+                        </div>
+                        <div class="form-group">
+                            <label>Contraportada</label>
+                            <label class="file-drop-zone" id="drop-zone-album-back" for="input-album-back-file" style="display: block;">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Arrastra la contraportada aquí o haz clic para subir</p>
+                                <input type="file" id="input-album-back-file" accept="image/*" style="display: none;">
+                                <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                            </label>
+                            <div class="color-input-wrapper">
+                                <input type="text" id="input-album-back" placeholder="midominio.com/contraportada.png" style="flex:1;">
+                                <input type="hidden" id="input-album-back-color" value="#1a1a1a">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1712,7 +1718,7 @@
                         <input type="checkbox" id="input-album-public" checked>
                         <span class="slider"></span>
                     </label>
-                    <label style="margin-bottom: 0; cursor: pointer;" for="input-album-public">Album Publico</label>
+                    <label style="margin-bottom: 0; cursor: pointer;" for="input-album-public">Público/Privado</label>
                 </div>
             </div>
 
@@ -3085,6 +3091,77 @@
                 $('.cover-preview-item').removeClass('active');
                 $(`.cover-preview-item[data-style="${style}"]`).addClass('active');
             };
+        });
+    </script>
+
+    <!-- Overrides for Album Editor (Mobile overlapping & Collapsible & Swal intercepter) -->
+    <style>
+        /* Mobile layout: allow album creator grid to auto scale and reduce card sizes slightly */
+        @media (max-width: 480px) {
+            .admin-grid-preview {
+                height: auto !important;
+                max-width: 280px !important;
+                margin: 0 auto !important;
+            }
+            .grid-container {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .grid-container .card-slot {
+                aspect-ratio: 2.5 / 3.5 !important;
+                width: 100% !important;
+                height: auto !important;
+            }
+        }
+    </style>
+
+    <script>
+        $(document).ready(function() {
+            // Toggle Configurator panel
+            $(document).on('click', '#btn-toggle-config', function() {
+                const $container = $('#album-config-container');
+                const isVisible = $container.is(':visible');
+                if (isVisible) {
+                    $container.slideUp(300);
+                    $(this).find('.toggle-icon').css('transform', 'rotate(0deg)');
+                } else {
+                    $container.slideDown(300);
+                    $(this).find('.toggle-icon').css('transform', 'rotate(180deg)');
+                }
+            });
+
+            // Intercept Swal "Acomodando cartas..." loading animation/alert to prevent annoying flicker
+            if (window.Swal) {
+                const originalSwalFire = window.Swal.fire;
+                const originalSwalClose = window.Swal.close;
+                const originalSwalShowLoading = window.Swal.showLoading;
+
+                window.Swal.fire = function(...args) {
+                    const options = args[0];
+                    if (options && (options.title === 'Acomodando cartas...' || options === 'Acomodando cartas...')) {
+                        // Temporarily bypass showLoading and close
+                        window.Swal.showLoading = function() {};
+                        window.Swal.close = function() {
+                            // Restore original methods once closed
+                            window.Swal.showLoading = originalSwalShowLoading;
+                            window.Swal.close = originalSwalClose;
+                        };
+
+                        // Execute didOpen immediately if present to execute internal loader triggers (if any)
+                        if (options.didOpen) {
+                            try { options.didOpen(); } catch(e) {}
+                        }
+
+                        // Return dummy promise that mimics Swal behavior but doesn't show any alert
+                        const dummy = Promise.resolve({ isConfirmed: true });
+                        dummy.then = function(onFulfilled) {
+                            return Promise.resolve(onFulfilled({ isConfirmed: true }));
+                        };
+                        return dummy;
+                    }
+                    return originalSwalFire.apply(this, args);
+                };
+            }
         });
     </script>
 </body>
