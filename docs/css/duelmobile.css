@@ -2437,3 +2437,73 @@ body.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
     border: 1px solid var(--secondary-color) !important;
     box-shadow: 0 0 10px var(--secondary-glow) !important;
 }
+
+/* Rotated board visual overrides for practice mode control swap */
+body.rotated-board #playmat .duel-card {
+    transform: rotateX(calc(-1 * var(--board-tilt, 15deg))) rotate(calc(var(--tilt, 0deg) + 180deg)) !important;
+}
+
+body.rotated-board #playmat .duel-card:hover {
+    transform: rotateX(calc(-1 * var(--board-tilt, 15deg))) scale(1.08) rotate(calc(var(--tilt, 0deg) + 180deg)) !important;
+}
+
+body.rotated-board #playmat .duel-card.dragging {
+    transform: rotateX(calc(-1 * var(--board-tilt, 15deg))) rotate(calc(var(--tilt, 0deg) + 182deg)) translate3d(0, -10px, 40px) scale(1.12) !important;
+}
+
+/* Invert hand cards view/interactions since trays vertical positions are swapped */
+body.rotated-board .hand-tray.player-1 .hand-cards-container .duel-card {
+    transform: perspective(300px) rotateX(-12deg) !important;
+}
+
+body.rotated-board .hand-tray.player-1 .hand-cards-container .duel-card:hover {
+    transform: translateY(20px) scale(1.6) rotateX(0deg) !important;
+    z-index: 50000 !important;
+    margin-left: 2px !important;
+    margin-right: 14px !important;
+}
+
+body.rotated-board .hand-tray.player-2 .hand-cards-container .duel-card {
+    transform: perspective(300px) rotateX(12deg) !important;
+}
+
+body.rotated-board .hand-tray.player-2 .hand-cards-container .duel-card:hover {
+    transform: translateY(-20px) scale(1.6) rotateX(0deg) !important;
+    z-index: 50000 !important;
+    margin-left: 2px !important;
+    margin-right: 14px !important;
+}
+
+/* Rotate badge/text indicators so they stay upright and easily readable */
+body.rotated-board .zone-label,
+body.rotated-board .zone-card-count,
+body.rotated-board .floating-zone-count,
+body.rotated-board .card-counter,
+body.rotated-board .card-attached-badge,
+body.rotated-board .pokemon-damage-badge,
+body.rotated-board .attack-direct-badge {
+    transform: rotate(180deg) !important;
+}
+
+/* Precise alignment/rotations for custom ATK/DEF draggable badges */
+body.rotated-board .custom-atk-def-badge {
+    transform: translateX(-50%) rotate(180deg) !important;
+    transform-origin: center center !important;
+}
+
+body.rotated-board .custom-atk-def-badge:hover {
+    transform: translateX(-50%) scale(1.2) rotate(180deg) !important;
+}
+
+/* Swap absolute screen positions of life point counters to match the swapped board */
+body.rotated-board.layout-yugioh .lp-counter-container.p1-lp-container,
+body.rotated-board.layout-yugioh_advanced .lp-counter-container.p1-lp-container {
+    left: auto !important;
+    right: 10px !important;
+}
+
+body.rotated-board.layout-yugioh .lp-counter-container.p2-lp-container,
+body.rotated-board.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
+    right: auto !important;
+    left: 10px !important;
+}
