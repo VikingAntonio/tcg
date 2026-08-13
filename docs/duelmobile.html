@@ -96,6 +96,33 @@
                 transform: translate(-50%, -12px);
             }
         }
+
+        /* Force hand trays to be absolutely positioned and styled consistently across all screen sizes */
+        .hand-tray {
+            position: absolute !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 100% !important;
+            max-width: 98vw !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            z-index: 2000 !important;
+            pointer-events: none !important;
+            display: flex !important;
+            justify-content: center !important;
+        }
+
+        /* Ensure perfect anchor alignment of field cards during board rotation to prevent shifting */
+        body.rotated-board #playmat .duel-card {
+            transform-origin: bottom center !important;
+        }
+        body.rotated-board #playmat .duel-card:hover {
+            transform-origin: bottom center !important;
+        }
+        body.rotated-board #playmat .duel-card.dragging {
+            transform-origin: bottom center !important;
+        }
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -529,6 +556,142 @@
     <!-- Post-load custom overrides and adjustments -->
     <script>
         $(document).ready(function() {
+            // Override window.renderAllCards to support flawless card dragging under board rotation
+            if (window.renderAllCards) {
+                const baseRenderAllCards = window.renderAllCards;
+                window.renderAllCards = function() {
+                    baseRenderAllCards.apply(this, arguments);
+
+                    // Re-bind touch/mouse start with window.isBoardRotated support
+                    const cards = $(".duel-card");
+                    cards.off("mousedown touchstart");
+                    cards.on('mousedown touchstart', function(e) {
+                        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container').length) {
+                            return;
+                        }
+
+                        const instId = $(this).data("instance-id");
+                        const cardObj = state.cards.find(c => c.instanceId === instId);
+                        if (!cardObj) return;
+
+                        if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
+                            return;
+                        }
+
+                        if (cardObj.zone.startsWith("deck_")) {
+                            return;
+                        }
+
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        updatePreview(cardObj);
+
+                        dragCard = $(this);
+                        dragCard.addClass("dragging").removeClass("snapping");
+
+                        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                        cardObj.z = maxZ + 1;
+                        dragCard.css("z-index", cardObj.z);
+
+                        const pos = getEventCoords(e);
+                        const matOffset = $("#playmat").offset();
+                        const rect = $("#playmat")[0].getBoundingClientRect();
+                        const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+
+                        if (cardObj.zone.startsWith("hand_")) {
+                            $("#field-cards-container").append(dragCard);
+                            let initialX, initialY;
+                            if (window.isBoardRotated) {
+                                initialX = (matOffset.left + rect.width - pos.x) / scale - 40;
+                                initialY = (matOffset.top + rect.height - pos.y) / scale - 58;
+                            } else {
+                                initialX = (pos.x - matOffset.left) / scale - 40;
+                                initialY = (pos.y - matOffset.top) / scale - 58;
+                            }
+                            dragCard.css({
+                                position: "absolute",
+                                width: "80px",
+                                height: "116px",
+                                left: `${initialX}px`,
+                                top: `${initialY}px`,
+                                margin: "0"
+                            });
+                            cardObj.x = initialX;
+                            cardObj.y = initialY;
+                            dragOffset.x = 40;
+                            dragOffset.y = 58;
+                        } else {
+                            const elemLeft = parseFloat($(this).css("left")) || 0;
+                            const elemTop = parseFloat($(this).css("top")) || 0;
+                            if (window.isBoardRotated) {
+                                dragOffset.x = (matOffset.left + rect.width - pos.x) / scale - elemLeft;
+                                dragOffset.y = (matOffset.top + rect.height - pos.y) / scale - elemTop;
+                            } else {
+                                dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
+                                dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+                            }
+                        }
+                        dragStartCoords = { x: pos.x, y: pos.y };
+                        dragStartTime = Date.now();
+                        window.wasDragging = false;
+                    });
+                };
+            }
+
+            // Re-bind window mousemove/touchmove with flawless scale handling and board rotation coordinate mapping
+            $(window).off('mousemove.mobileDrag touchmove.mobileDrag');
+            $(window).on('mousemove.mobileDrag touchmove.mobileDrag', function(e) {
+                if (!dragCard) return;
+                e.preventDefault();
+
+                const instId = dragCard.data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (!cardObj) return;
+
+                const pos = getEventCoords(e);
+                const matOffset = $("#playmat").offset();
+                const rect = $("#playmat")[0].getBoundingClientRect();
+                const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+
+                let x, y;
+                if (window.isBoardRotated) {
+                    x = (matOffset.left + rect.width - pos.x) / scale - dragOffset.x;
+                    y = (matOffset.top + rect.height - pos.y) / scale - dragOffset.y;
+                } else {
+                    x = (pos.x - matOffset.left) / scale - dragOffset.x;
+                    y = (pos.y - matOffset.top) / scale - dragOffset.y;
+                }
+
+                const boundedX = Math.max(-10, Math.min(1120 - 70, x));
+                const boundedY = Math.max(-10, Math.min(600 - 100, y));
+
+                cardObj.x = boundedX;
+                cardObj.y = boundedY;
+
+                dragCard.css({
+                    left: `${boundedX}px`,
+                    top: `${boundedY}px`
+                });
+
+                const centerCoords = {
+                    x: boundedX + 40,
+                    y: boundedY + 58
+                };
+
+                $(".board-zone").removeClass("highlighted");
+                const overlappingZone = findOverlappingZone(centerCoords);
+                if (overlappingZone) {
+                    $(`#zone-${overlappingZone.id}`).addClass("highlighted");
+                }
+
+                const dx = pos.x - dragStartCoords.x;
+                const dy = pos.y - dragStartCoords.y;
+                if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                    window.wasDragging = true;
+                }
+            });
+
             // 1. Card Context Menu "Select" option handling
             if (window.updateCardMenuOptions) {
                 const originalUpdateCardMenuOptions = window.updateCardMenuOptions;
