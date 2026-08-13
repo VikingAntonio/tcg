@@ -75,19 +75,19 @@ const BOARD_LAYOUTS = {
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
         { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
         { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 160, type: "grave" },
-        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 880, y: 160, type: "banished" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 160, y: 160, type: "banished" },
         { id: "extra_2", name: "P2 Extra", player: 2, x: 990, y: 30, type: "extra" },
         { id: "field_2", name: "P2 Campo", player: 2, x: 990, y: 160, type: "field" },
-        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 190, y: 160, type: "monster" },
-        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 310, y: 160, type: "monster" },
-        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 430, y: 160, type: "monster" },
-        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 550, y: 160, type: "monster" },
-        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 670, y: 160, type: "monster" },
-        { id: "spell_2_5", name: "P2 Magia/Trampa 5", player: 2, x: 190, y: 30, type: "spell" },
-        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 310, y: 30, type: "spell" },
-        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 430, y: 30, type: "spell" },
-        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 550, y: 30, type: "spell" },
-        { id: "spell_2_1", name: "P2 Magia/Trampa 1", player: 2, x: 670, y: 30, type: "spell" },
+        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 300, y: 160, type: "monster" },
+        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 410, y: 160, type: "monster" },
+        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 520, y: 160, type: "monster" },
+        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 630, y: 160, type: "monster" },
+        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 740, y: 160, type: "monster" },
+        { id: "spell_2_5", name: "P2 Magia/Trampa 5", player: 2, x: 300, y: 30, type: "spell" },
+        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 410, y: 30, type: "spell" },
+        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 520, y: 30, type: "spell" },
+        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 630, y: 30, type: "spell" },
+        { id: "spell_2_1", name: "P2 Magia/Trampa 1", player: 2, x: 740, y: 30, type: "spell" },
 
         // Player 1 (Bottom Half) - Blue Theme
         { id: "extra_1", name: "P1 Extra", player: 1, x: 50, y: 450, type: "extra" },
@@ -95,38 +95,38 @@ const BOARD_LAYOUTS = {
         { id: "banished_1", name: "P1 Desterrado", player: 1, x: 880, y: 320, type: "banished" },
         { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
         { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 320, type: "grave" },
-        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 190, y: 320, type: "monster" },
-        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 310, y: 320, type: "monster" },
-        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 430, y: 320, type: "monster" },
-        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 550, y: 320, type: "monster" },
-        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 670, y: 320, type: "monster" },
-        { id: "spell_1_1", name: "P1 Magia/Trampa 1", player: 1, x: 190, y: 450, type: "spell" },
-        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 310, y: 450, type: "spell" },
-        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 430, y: 450, type: "spell" },
-        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 550, y: 450, type: "spell" },
-        { id: "spell_1_5", name: "P1 Magia/Trampa 5", player: 1, x: 670, y: 450, type: "spell" }
+        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 300, y: 320, type: "monster" },
+        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 410, y: 320, type: "monster" },
+        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 520, y: 320, type: "monster" },
+        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 630, y: 320, type: "monster" },
+        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 740, y: 320, type: "monster" },
+        { id: "spell_1_1", name: "P1 Magia/Trampa 1", player: 1, x: 300, y: 450, type: "spell" },
+        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 410, y: 450, type: "spell" },
+        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 520, y: 450, type: "spell" },
+        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 630, y: 450, type: "spell" },
+        { id: "spell_1_5", name: "P1 Magia/Trampa 5", player: 1, x: 740, y: 450, type: "spell" }
     ],
     yugioh_advanced: [
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
         { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 6, type: "deck" },
         { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 125, type: "grave" },
-        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 880, y: 125, type: "banished" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 160, y: 125, type: "banished" },
         { id: "extra_2", name: "P2 Extra", player: 2, x: 990, y: 6, type: "extra" },
         { id: "field_2", name: "P2 Campo", player: 2, x: 990, y: 125, type: "field" },
-        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 190, y: 125, type: "monster" },
-        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 310, y: 125, type: "monster" },
-        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 430, y: 125, type: "monster" },
-        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 550, y: 125, type: "monster" },
-        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 670, y: 125, type: "monster" },
-        { id: "spell_2_5", name: "P2 Péndulo Izq", player: 2, x: 190, y: 6, type: "spell" },
-        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 310, y: 6, type: "spell" },
+        { id: "monster_2_5", name: "P2 Monstruo 5", player: 2, x: 300, y: 125, type: "monster" },
+        { id: "monster_2_4", name: "P2 Monstruo 4", player: 2, x: 410, y: 125, type: "monster" },
+        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 520, y: 125, type: "monster" },
+        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 630, y: 125, type: "monster" },
+        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 740, y: 125, type: "monster" },
+        { id: "spell_2_5", name: "P2 Péndulo Izq", player: 2, x: 300, y: 6, type: "spell" },
+        { id: "spell_2_4", name: "P2 Magia/Trampa 4", player: 2, x: 410, y: 6, type: "spell" },
         { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 430, y: 6, type: "spell" },
         { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 550, y: 6, type: "spell" },
-        { id: "spell_2_1", name: "P2 Péndulo Der", player: 2, x: 670, y: 6, type: "spell" },
+        { id: "spell_2_1", name: "P2 Péndulo Der", player: 2, x: 740, y: 6, type: "spell" },
 
         // Shared Extra Monster Zones placed in the middle
-        { id: "extra_monster_2", name: "Extra Monstruo 2", player: 2, x: 310, y: 244, type: "monster" },
-        { id: "extra_monster_1", name: "Extra Monstruo 1", player: 1, x: 550, y: 244, type: "monster" },
+        { id: "extra_monster_2", name: "Extra Monstruo 2", player: 2, x: 410, y: 244, type: "monster" },
+        { id: "extra_monster_1", name: "Extra Monstruo 1", player: 1, x: 630, y: 244, type: "monster" },
 
         // Player 1 (Bottom Half) - Blue Theme
         { id: "extra_1", name: "P1 Extra", player: 1, x: 50, y: 482, type: "extra" },
@@ -134,16 +134,16 @@ const BOARD_LAYOUTS = {
         { id: "banished_1", name: "P1 Desterrado", player: 1, x: 880, y: 363, type: "banished" },
         { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 482, type: "deck" },
         { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 363, type: "grave" },
-        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 190, y: 363, type: "monster" },
-        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 310, y: 363, type: "monster" },
-        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 430, y: 363, type: "monster" },
-        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 550, y: 363, type: "monster" },
-        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 670, y: 363, type: "monster" },
-        { id: "spell_1_1", name: "P1 Péndulo Izq", player: 1, x: 190, y: 482, type: "spell" },
-        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 310, y: 482, type: "spell" },
-        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 430, y: 482, type: "spell" },
-        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 550, y: 482, type: "spell" },
-        { id: "spell_1_5", name: "P1 Péndulo Der", player: 1, x: 670, y: 482, type: "spell" }
+        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 300, y: 363, type: "monster" },
+        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 410, y: 363, type: "monster" },
+        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 520, y: 363, type: "monster" },
+        { id: "monster_1_4", name: "P1 Monstruo 4", player: 1, x: 630, y: 363, type: "monster" },
+        { id: "monster_1_5", name: "P1 Monstruo 5", player: 1, x: 740, y: 363, type: "monster" },
+        { id: "spell_1_1", name: "P1 Péndulo Izq", player: 1, x: 300, y: 482, type: "spell" },
+        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 410, y: 482, type: "spell" },
+        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 520, y: 482, type: "spell" },
+        { id: "spell_1_4", name: "P1 Magia/Trampa 4", player: 1, x: 630, y: 482, type: "spell" },
+        { id: "spell_1_5", name: "P1 Péndulo Der", player: 1, x: 740, y: 482, type: "spell" }
     ],
     pokemon: [
         // Player 2 (Top Half, Mirrored) - Red/Pink Theme
@@ -5621,6 +5621,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             cardObj.movedToPileAt = Date.now() + Math.random();
                             cardObj.zone = targetPileId;
                             cardObj.controller = cardObj.owner;
+                            cardObj.faceDown = false;
+                            cardObj.tapped = false;
                         } else if (hoverZone.id.startsWith("deck_")) {
                             const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
                             cardObj.zone = `deck_${originalSuffix}`;
