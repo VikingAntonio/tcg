@@ -115,13 +115,13 @@
 
         /* Ensure perfect anchor alignment of field cards during board rotation to prevent shifting */
         body.rotated-board #playmat .duel-card {
-            transform-origin: bottom center !important;
+            transform-origin: center center !important;
         }
         body.rotated-board #playmat .duel-card:hover {
-            transform-origin: bottom center !important;
+            transform-origin: center center !important;
         }
         body.rotated-board #playmat .duel-card.dragging {
-            transform-origin: bottom center !important;
+            transform-origin: center center !important;
         }
     </style>
 
@@ -556,6 +556,71 @@
     <!-- Post-load custom overrides and adjustments -->
     <script>
         $(document).ready(function() {
+            // Override window.adjustPlaymatScale to fix the hand tray positioning and prevent them from shifting to the top of the page under rotation
+            if (typeof window.adjustPlaymatScale === "function") {
+                const originalAdjustPlaymatScale = window.adjustPlaymatScale;
+                window.adjustPlaymatScale = function() {
+                    // Call original scale and playmat transform positioning first
+                    originalAdjustPlaymatScale();
+
+                    const matHeight = 600;
+                    const viewportHeight = window.innerHeight;
+                    const scaleFactor = 1.05;
+                    const perspectiveAngle = 15;
+                    const boardOffsetY = -30;
+                    const p2HandTopOffset = -10;
+                    const p1HandBottomOffset = -10;
+
+                    const $playmat = $("#playmat");
+                    if (!$playmat.length) return;
+                    const rect = $playmat[0].getBoundingClientRect();
+                    const scale = rect.width / $playmat[0].offsetWidth || 1;
+
+                    // Calculate precise visual vertical height of the tilted playmat
+                    const cosAngle = Math.cos(perspectiveAngle * Math.PI / 180);
+                    const visualHalfHeight = (matHeight / 2) * scale * cosAngle;
+
+                    const t2Top = Math.max(2, (viewportHeight / 2) + boardOffsetY - visualHalfHeight + p2HandTopOffset);
+                    const t1Bottom = Math.max(2, (viewportHeight / 2) - boardOffsetY - visualHalfHeight + p1HandBottomOffset);
+
+                    const h2 = $("#hand-tray-p2")[0];
+                    const h1 = $("#hand-tray-p1")[0];
+
+                    if (window.isBoardRotated) {
+                        if (h2) {
+                            h2.style.setProperty('bottom', `${t1Bottom}px`, 'important');
+                            h2.style.setProperty('top', 'auto', 'important');
+                        }
+                        if (h1) {
+                            h1.style.setProperty('top', `${t2Top}px`, 'important');
+                            h1.style.setProperty('bottom', 'auto', 'important');
+                        }
+                    } else {
+                        if (h2) {
+                            h2.style.removeProperty('bottom');
+                            h2.style.removeProperty('top');
+                        }
+                        if (h1) {
+                            h1.style.removeProperty('bottom');
+                            h1.style.removeProperty('top');
+                        }
+                        // Restore jQuery-applied CSS layout
+                        $("#hand-tray-p2").css({
+                            "top": `${t2Top}px`,
+                            "bottom": "auto"
+                        });
+                        $("#hand-tray-p1").css({
+                            "bottom": `${t1Bottom}px`,
+                            "top": "auto"
+                        });
+                    }
+                };
+
+                // Re-bind window resize/orientation events so the custom wrapper is invoked
+                $(window).off("resize orientationchange", originalAdjustPlaymatScale);
+                $(window).on("resize orientationchange", window.adjustPlaymatScale);
+            }
+
             // Override window.renderAllCards to support flawless card dragging under board rotation
             if (window.renderAllCards) {
                 const baseRenderAllCards = window.renderAllCards;
