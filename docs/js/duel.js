@@ -966,6 +966,11 @@ function bindCardDragEvents() {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
+        // Secure multiplayer drag guard: prevent dragging opponent's cards
+        if (state.mode === "multiplayer" && cardObj.owner !== (window.currentRole || "player1")) {
+            return;
+        }
+
         // If we are in attack targeting mode, bypass dragging and click handling in mousedown
         if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
             return;
