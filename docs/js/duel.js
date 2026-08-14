@@ -450,13 +450,37 @@ function renderAllCards() {
             }
         }
 
-        // Rule 1: Hand cards are always face-up
+        // Rule 1: Hand cards are always face-up and not tilted, but can be tapped (rotated) for effect activations
         if (card.zone.startsWith("hand_")) {
             card.faceDown = false;
+            if (!card.tapped) {
+                card.tiltAngle = 0;
+            }
             card.attachedTo = null; // attached cards returned to hand get detached
         }
 
-        // Rule 2: In Pokémon, field cards are always face-up (except deck and prizes)
+        // Rule 2: Graveyard cards are always face-up, upright, and not tilted
+        if (card.zone.startsWith("grave_")) {
+            card.faceDown = false;
+            card.tapped = false;
+            card.tiltAngle = 0;
+        }
+
+        // Rule 3: Banished cards are always face-up, upright, and not tilted
+        if (card.zone.startsWith("banished_")) {
+            card.faceDown = false;
+            card.tapped = false;
+            card.tiltAngle = 0;
+        }
+
+        // Rule 4: Deck cards are always face-down, upright, and not tilted
+        if (card.zone.startsWith("deck_")) {
+            card.faceDown = true;
+            card.tapped = false;
+            card.tiltAngle = 0;
+        }
+
+        // Rule 5: In Pokémon, field cards are always face-up (except deck and prizes)
         if (state.layout === "pokemon") {
             if (!card.zone.startsWith("deck_") && !card.zone.startsWith("prize_") && !card.zone.startsWith("hand_")) {
                 card.faceDown = false;
@@ -508,6 +532,7 @@ function renderAllCards() {
                         `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
                     }
                     <button class="hand-action-btn btn-attach" data-instance-id="${card.instanceId}">Acoplar</button>
+                    <button class="hand-action-btn btn-effect" data-instance-id="${card.instanceId}">Efecto</button>
                     <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}">Cementerio</button>
                     <button class="hand-action-btn btn-banish" data-instance-id="${card.instanceId}">Remover</button>
                     <button class="hand-action-btn btn-deck" data-instance-id="${card.instanceId}">Deck</button>
@@ -721,6 +746,24 @@ function bindCardDragEvents() {
         } else if ($(this).hasClass("btn-attach")) {
             // Start Attachment Targeting mode
             startAttachmentTargeting(cardObj);
+        } else if ($(this).hasClass("btn-effect")) {
+            // Activar efecto desde la mano!
+            cardObj.tapped = true;
+            renderAllCards();
+
+            setTimeout(() => {
+                const $cardElem = $(`#${cardObj.instanceId}`);
+                if ($cardElem.length) {
+                    $cardElem.addClass("activating-flash");
+                    setTimeout(() => {
+                        $cardElem.removeClass("activating-flash");
+                    }, 800);
+                }
+            }, 100);
+
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Activó el efecto de ${cardObj.name} desde la Mano`);
+            }
         } else if ($(this).hasClass("btn-activate")) {
             // Pokémon "Activar" action path: drops card straight face-up next to the discard pile (grave)
             cardObj.zone = "field_free";
@@ -1545,7 +1588,7 @@ function openExtraDeckModal(playerKey) {
         $("#extra-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Extra Deck.</p>');
     } else {
         const currentRole = window.currentRole || "player1";
-        const isMyExtraDeck = (playerKey === currentRole);
+        const isMyExtraDeck = (playerKey === currentRole || state.mode === "practice");
 
         extraCards.forEach(card => {
             let imgToUse = card.imageUrl;
@@ -2944,6 +2987,64 @@ function setupEventListeners() {
     $("#menu-view-card").click(function() {
         if (!activeMenuCard) return;
         viewCardZoom(activeMenuCard);
+    });
+
+    $("#menu-effect").click(function() {
+        if (!activeMenuCard) return;
+
+        const cardObj = activeMenuCard;
+
+        if (cardObj.zone.startsWith("hand_")) {
+            cardObj.tapped = true;
+            renderAllCards();
+
+            setTimeout(() => {
+                const $cardElem = $(`#${cardObj.instanceId}`);
+                if ($cardElem.length) {
+                    $cardElem.addClass("activating-flash");
+                    setTimeout(() => {
+                        $cardElem.removeClass("activating-flash");
+                    }, 800);
+                }
+            }, 100);
+
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Activó el efecto de ${cardObj.name} desde la Mano`);
+            }
+        } else if (cardObj.zone.startsWith("grave_") || cardObj.zone.startsWith("banished_")) {
+            cardObj.movedToPileAt = Date.now();
+            renderAllCards();
+
+            setTimeout(() => {
+                const $cardElem = $(`#${cardObj.instanceId}`);
+                if ($cardElem.length) {
+                    $cardElem.addClass("activating-flash");
+                    setTimeout(() => {
+                        $cardElem.removeClass("activating-flash");
+                    }, 800);
+                }
+            }, 100);
+
+            if (typeof sendGameAction === "function") {
+                const sourceLabel = cardObj.zone.startsWith("grave_") ? "el Cementerio" : "el Desterrado";
+                sendGameAction(`Activó el efecto de ${cardObj.name} desde ${sourceLabel}`);
+            }
+        } else {
+            // Field or other
+            setTimeout(() => {
+                const $cardElem = $(`#${cardObj.instanceId}`);
+                if ($cardElem.length) {
+                    $cardElem.addClass("activating-flash");
+                    setTimeout(() => {
+                        $cardElem.removeClass("activating-flash");
+                    }, 800);
+                }
+            }, 100);
+
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Activó el efecto de ${cardObj.name}`);
+            }
+        }
     });
 
     // Helper to check if the clicked deck belongs to the current player or if in practice mode
