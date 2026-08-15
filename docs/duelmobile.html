@@ -639,6 +639,11 @@
                         const cardObj = state.cards.find(c => c.instanceId === instId);
                         if (!cardObj) return;
 
+                        // Secure multiplayer drag guard: prevent dragging opponent's cards
+                        if (state.mode === "multiplayer" && cardObj.owner !== (window.currentRole || "player1")) {
+                            return;
+                        }
+
                         if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
                             return;
                         }
