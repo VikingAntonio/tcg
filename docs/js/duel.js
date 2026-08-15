@@ -1405,6 +1405,10 @@ function viewCardZoom(card) {
 
     if (!imgToZoom) return;
 
+    if (document.activeElement && typeof document.activeElement.blur === "function") {
+        document.activeElement.blur();
+    }
+
     Swal.fire({
         html: `
             <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
@@ -1413,12 +1417,17 @@ function viewCardZoom(card) {
         `,
         showCloseButton: true,
         showConfirmButton: false,
+        returnFocus: false,
         background: "transparent",
         backdrop: "rgba(0, 0, 0, 0.85)",
         width: "auto",
         willClose: () => {
+            if (document.activeElement && typeof document.activeElement.blur === "function") {
+                document.activeElement.blur();
+            }
             $(".pile-card-container, .search-card-item, .extra-deck-card-container").each(function() {
                 this.scrollTop = 0;
+                this.scrollLeft = 0;
             });
         }
     });
