@@ -1415,7 +1415,12 @@ function viewCardZoom(card) {
         showConfirmButton: false,
         background: "transparent",
         backdrop: "rgba(0, 0, 0, 0.85)",
-        width: "auto"
+        width: "auto",
+        willClose: () => {
+            $(".pile-card-container, .search-card-item, .extra-deck-card-container").each(function() {
+                this.scrollTop = 0;
+            });
+        }
     });
 }
 
@@ -2399,8 +2404,16 @@ function openPileModal(playerKey, pileType) {
 
     $("#pile-overlay").fadeIn(200).css("display", "flex");
 
+    // Reset scroll positions on hover leave or click
+    $(document).off("mouseleave.pile_reset", ".pile-card-container, .search-card-item, .extra-deck-card-container")
+               .on("mouseleave.pile_reset", ".pile-card-container, .search-card-item, .extra-deck-card-container", function() {
+        this.scrollTop = 0;
+    });
+
     // Click events inside results
     $("#pile-cards-grid").off("click").on("click", ".pile-card-action-btn", function(e) {
+        const container = this.closest(".pile-card-container");
+        if (container) container.scrollTop = 0;
         e.preventDefault();
         e.stopPropagation();
 
