@@ -123,6 +123,31 @@
         body.rotated-board #playmat .duel-card.dragging {
             transform-origin: center center !important;
         }
+
+        /* Player Mat Backgrounds (Top Half for P2, Bottom Half for P1) */
+        .player-mat-bg {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.85;
+            transition: background-image 0.3s ease;
+        }
+        .p2-mat-bg {
+            top: 0;
+            border-top-left-radius: 18px;
+            border-top-right-radius: 18px;
+        }
+        .p1-mat-bg {
+            bottom: 0;
+            border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 18px;
+        }
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -290,6 +315,8 @@
 
             <!-- Interactive Playmat Board -->
             <div class="playmat-board" id="playmat">
+                <div class="player-mat-bg p2-mat-bg" id="player-mat-p2"></div>
+                <div class="player-mat-bg p1-mat-bg" id="player-mat-p1"></div>
                 <div class="board-grid-bg"></div>
                 <!-- Dynamic Zone slots will be rendered here via JS -->
                 <div id="dynamic-zones-container"></div>
@@ -556,6 +583,23 @@
     <!-- Post-load custom overrides and adjustments -->
     <script>
         $(document).ready(function() {
+            // Function to update individual half-board mats for P1 and P2
+            window.updateHalfPlaymats = function() {
+                $("#playmat").css("background-image", "none");
+                if (typeof state !== "undefined" && state.deckMats) {
+                    if (state.deckMats.player1) {
+                        $("#player-mat-p1").css("background-image", `url('${state.deckMats.player1}')`);
+                    } else {
+                        $("#player-mat-p1").css("background-image", "none");
+                    }
+                    if (state.deckMats.player2) {
+                        $("#player-mat-p2").css("background-image", `url('${state.deckMats.player2}')`);
+                    } else {
+                        $("#player-mat-p2").css("background-image", "none");
+                    }
+                }
+            };
+
             // Override window.adjustPlaymatScale to fix the hand tray positioning and prevent them from shifting to the top of the page under rotation
             if (typeof window.adjustPlaymatScale === "function") {
                 const originalAdjustPlaymatScale = window.adjustPlaymatScale;
@@ -626,6 +670,10 @@
                 const baseRenderAllCards = window.renderAllCards;
                 window.renderAllCards = function() {
                     baseRenderAllCards.apply(this, arguments);
+
+                    if (typeof window.updateHalfPlaymats === "function") {
+                        window.updateHalfPlaymats();
+                    }
 
                     // Re-bind touch/mouse start with window.isBoardRotated support
                     const cards = $(".duel-card");
