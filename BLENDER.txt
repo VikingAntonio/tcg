@@ -1,0 +1,4 @@
+Los archivos de modelos 3D GLTF/GLB para los compañeros (spirits) NO se cargan en Cloudinary.
+Se cargan y almacenan directamente en Supabase Storage, dentro del bucket de almacenamiento llamado 'spirits' (por ejemplo, en el path 'models/{folderId}/{filename}.gltf').
+
+Cloudinary se utiliza principalmente en el proyecto para la subida y almacenamiento de imágenes 2D (portadas, cartas, etc.), mientras que Supabase Storage se encarga de alojar los archivos del modelo 3D (.gltf, .glb, .bin, texturas).
