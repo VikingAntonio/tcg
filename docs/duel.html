@@ -7,6 +7,7 @@
     <title>Duel Simulator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <link rel="stylesheet" href="css/duel.css">
     <style>
         /* Right Communication Sidebar */
@@ -395,6 +396,15 @@
             pointer-events: auto;
         }
 
+        .p1-lp-container, .p2-lp-container {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .p1-lp-container:hover, .p2-lp-container:hover {
+            transform: scale(1.05);
+        }
+
         .p1-lp-container {
             left: 15px;
             top: 15px;
@@ -410,6 +420,87 @@
             transform: none;
             border-color: rgba(255, 27, 107, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 27, 107, 0.05);
+        }
+
+        /* Speech bubble styling for GLTF characters */
+        .spirit-speech-bubble {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: rgba(10, 15, 22, 0.95);
+            border: 1.5px solid var(--primary-color);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            font-family: 'Montserrat', sans-serif;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            pointer-events: none;
+            z-index: 10001;
+            transition: all 0.2s ease;
+        }
+
+        .spirit-speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid var(--primary-color);
+        }
+
+        /* Green glow & tint for LP gain */
+        .spirit-viewer-heal {
+            filter: drop-shadow(0 0 15px #2ed573) brightness(1.2) sepia(0.8) hue-rotate(85deg) saturate(3) !important;
+            transition: filter 0.3s ease;
+        }
+
+        /* Red glow & tint for LP loss */
+        .spirit-viewer-damage {
+            filter: drop-shadow(0 0 15px #ff4757) brightness(1.2) sepia(0.8) hue-rotate(-50deg) saturate(3) !important;
+            transition: filter 0.3s ease;
+        }
+
+        /* LP Counter text gain / loss animations */
+        .lp-adding {
+            color: #2ed573 !important;
+            text-shadow: 0 0 15px #2ed573, 0 0 30px #2ed573 !important;
+            transform: scale(1.1);
+        }
+
+        .lp-subtracting {
+            color: #ff4757 !important;
+            text-shadow: 0 0 15px #ff4757, 0 0 30px #ff4757 !important;
+            transform: scale(0.95);
+        }
+
+        .spirit-option-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .spirit-option-card:hover {
+            background: rgba(0, 210, 255, 0.15);
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+        .spirit-option-card span {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #aaa;
+            text-align: center;
         }
 
         .lp-header {
@@ -1055,30 +1146,35 @@
         <main class="duel-arena-wrapper">
 
             <!-- LP Counter for Player 2 (Moved to top right) -->
-            <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
+            <div class="lp-counter-container p2-lp-container" id="lp-counter-p2" title="Clic para modificar Puntos de Vida">
                 <div class="lp-header">P2 LP</div>
                 <div class="lp-number" id="lp-display-p2">8000</div>
-                <div class="lp-calc-row">
-                    <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
-                </div>
-                <div class="lp-controls-row">
-                    <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+</button>
-                    <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-</button>
-                    <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/</button>
-                </div>
             </div>
 
             <!-- LP Counter for Player 1 (Moved to top left) -->
-            <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
+            <div class="lp-counter-container p1-lp-container" id="lp-counter-p1" title="Clic para modificar Puntos de Vida">
                 <div class="lp-header">P1 LP</div>
                 <div class="lp-number" id="lp-display-p1">8000</div>
-                <div class="lp-calc-row">
-                    <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
+            </div>
+
+            <!-- Floating GLTF Character Companions -->
+            <!-- Player 1 Companion -->
+            <div class="gltf-companion-wrapper" id="gltf-companion-p1" style="position: absolute; bottom: 80px; left: 30px; z-index: 1000; width: 140px; height: 140px; touch-action: none; pointer-events: auto;">
+                <div class="spirit-speech-bubble" id="bubble-p1" style="display: none;">¡Listo para el duelo!</div>
+                <model-viewer id="viewer-p1" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="0" exposure="1" camera-controls disable-zoom disable-pan style="width: 100%; height: 100%; cursor: grab; outline: none;"></model-viewer>
+                <!-- Context Menu trigger button or drag indicator -->
+                <div class="gltf-drag-handle" title="Arrastra para mover personaje" style="position: absolute; top: -5px; right: -5px; width: 26px; height: 26px; background: rgba(0, 210, 255, 0.8); border: 1.5px solid #fff; border-radius: 50%; color: #000; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: move; box-shadow: 0 0 8px rgba(0,210,255,0.6); z-index: 10002;">
+                    <i class="fas fa-arrows-alt"></i>
                 </div>
-                <div class="lp-controls-row">
-                    <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+</button>
-                    <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-</button>
-                    <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/</button>
+            </div>
+
+            <!-- Player 2 Companion -->
+            <div class="gltf-companion-wrapper" id="gltf-companion-p2" style="position: absolute; top: 80px; right: 180px; z-index: 1000; width: 140px; height: 140px; touch-action: none; pointer-events: auto;">
+                <div class="spirit-speech-bubble" id="bubble-p2" style="display: none;">¡Que gane el mejor!</div>
+                <model-viewer id="viewer-p2" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="0" exposure="1" camera-controls disable-zoom disable-pan style="width: 100%; height: 100%; cursor: grab; outline: none;"></model-viewer>
+                <!-- Context Menu trigger button or drag indicator -->
+                <div class="gltf-drag-handle" title="Arrastra para mover personaje" style="position: absolute; top: -5px; right: -5px; width: 26px; height: 26px; background: rgba(255, 27, 107, 0.8); border: 1.5px solid #fff; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: move; box-shadow: 0 0 8px rgba(255,27,107,0.6); z-index: 10002;">
+                    <i class="fas fa-arrows-alt"></i>
                 </div>
             </div>
 
@@ -2150,10 +2246,14 @@
                 $(".phase-btn").removeClass("active");
                 $(`.phase-btn[data-phase="${state.activePhase}"]`).addClass("active");
 
-                // Animated LP transition (Anime-style ticker)
-                function animateLPCounter(elementId, startValue, endValue, duration = 800) {
+                // Animated LP transition (Anime-style ticker with gain/loss class)
+                function animateLPCounter(elementId, startValue, endValue, animClass = '', duration = 800) {
                     const $el = $(elementId);
                     const startTime = performance.now();
+
+                    if (animClass) {
+                        $el.removeClass('lp-adding lp-subtracting').addClass(animClass);
+                    }
 
                     function update(currentTime) {
                         const elapsed = currentTime - startTime;
@@ -2167,10 +2267,17 @@
                             requestAnimationFrame(update);
                         } else {
                             $el.text(endValue);
+                            if (animClass) {
+                                setTimeout(() => {
+                                    $el.removeClass(animClass);
+                                }, 1200);
+                            }
                         }
                     }
                     requestAnimationFrame(update);
                 }
+
+                window.animateLPCounter = animateLPCounter;
 
                 // Update LP Displays with anime-style counting animations
                 const currentP1Disp = parseInt($("#lp-display-p1").text()) || 0;
@@ -2935,30 +3042,109 @@
                 }
             }
 
-            // Life Points button controls (+, -, /2) with calculator entry
-            $(".lp-btn").click(function() {
-                const player = $(this).data("player"); // "p1" or "p2"
-                const key = player === "p1" ? "player1" : "player2";
-                const calcInputId = player === "p1" ? "#lp-calc-p1" : "#lp-calc-p2";
-                const enteredValue = parseInt($(calcInputId).val()) || 0;
+            // Open LP Calculator Modal on LP container click
+            $("#lp-counter-p1").click(function() {
+                openLPCalculator('p1');
+            });
+            $("#lp-counter-p2").click(function() {
+                openLPCalculator('p2');
+            });
 
-                if ($(this).hasClass("lp-btn-add")) {
-                    state.lp[key] += enteredValue;
-                    appendGameLog('SYS', `Sumó ${enteredValue} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
-                    $(calcInputId).val(""); // Clear after calc
-                } else if ($(this).hasClass("lp-btn-sub")) {
-                    state.lp[key] = Math.max(0, state.lp[key] - enteredValue);
-                    appendGameLog('SYS', `Restó ${enteredValue} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
-                    $(calcInputId).val(""); // Clear after calc
-                } else if ($(this).hasClass("lp-btn-half")) {
-                    const originalLP = state.lp[key];
-                    state.lp[key] = Math.ceil(state.lp[key] / 2);
-                    appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${originalLP} a ${state.lp[key]}`);
+            window.openLPCalculator = function(player) {
+                const pKey = player === "p1" ? "player1" : "player2";
+                const currentLP = state.lp[pKey];
+                const playerLabel = player === "p1" ? "P1" : "P2";
+
+                Swal.fire({
+                    title: `Modificar LP (${playerLabel})`,
+                    html: `
+                        <div style="font-family: 'Orbitron', sans-serif; font-size: 2.2rem; color: ${player === 'p1' ? 'var(--primary-color)' : 'var(--secondary-color)'}; font-weight: 900; margin-bottom: 12px; text-shadow: 0 0 10px rgba(255,255,255,0.2);">
+                            ${currentLP} LP
+                        </div>
+                        <input type="number" id="swal-lp-val" class="swal2-input" placeholder="Ingresa valor..." autofocus style="width: 80%; text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.3rem; margin: 10px auto 15px auto; background: rgba(0,0,0,0.6); color: #fff; border: 1.5px solid var(--glass-border); border-radius: 8px;">
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                            <button type="button" id="btn-lp-op-add" class="swal2-confirm swal2-styled" style="background-color: #2ed573; color: #000; font-weight: 900; font-size: 1.3rem; padding: 10px 22px; border-radius: 8px; cursor: pointer;">+</button>
+                            <button type="button" id="btn-lp-op-sub" class="swal2-confirm swal2-styled" style="background-color: #ff4757; color: #fff; font-weight: 900; font-size: 1.3rem; padding: 10px 22px; border-radius: 8px; cursor: pointer;">-</button>
+                            <button type="button" id="btn-lp-op-div" class="swal2-confirm swal2-styled" style="background-color: #ffa502; color: #000; font-weight: 900; font-size: 1.1rem; padding: 10px 20px; border-radius: 8px; cursor: pointer;">/ 2</button>
+                        </div>
+                    `,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
+                    background: '#12181e',
+                    color: '#fff',
+                    didOpen: () => {
+                        const $input = $("#swal-lp-val");
+                        setTimeout(() => $input.focus(), 100);
+
+                        const applyOp = (op) => {
+                            const val = parseInt($input.val()) || 0;
+                            applyLPOperation(player, op, val);
+                            Swal.close();
+                        };
+
+                        $("#btn-lp-op-add").click(() => applyOp('+'));
+                        $("#btn-lp-op-sub").click(() => applyOp('-'));
+                        $("#btn-lp-op-div").click(() => applyOp('/'));
+
+                        $input.on('keydown', (e) => {
+                            if (e.key === '+' || e.key === 'Add') {
+                                e.preventDefault();
+                                applyOp('+');
+                            } else if (e.key === '-' || e.key === 'Subtract') {
+                                e.preventDefault();
+                                applyOp('-');
+                            } else if (e.key === '/' || e.key === 'Divide') {
+                                e.preventDefault();
+                                applyOp('/');
+                            } else if (e.key === 'Enter') {
+                                e.preventDefault();
+                                applyOp('-');
+                            }
+                        });
+                    }
+                });
+            };
+
+            window.applyLPOperation = function(player, op, val) {
+                const key = player === "p1" ? "player1" : "player2";
+                const startValue = state.lp[key];
+                let endValue = startValue;
+                let diff = 0;
+                let opType = 'none';
+
+                if (op === '+') {
+                    endValue = startValue + val;
+                    diff = val;
+                    opType = 'heal';
+                    appendGameLog('SYS', `Sumó ${val} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${endValue})`);
+                } else if (op === '-') {
+                    endValue = Math.max(0, startValue - val);
+                    diff = startValue - endValue;
+                    opType = 'damage';
+                    appendGameLog('SYS', `Restó ${val} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${endValue})`);
+                } else if (op === '/') {
+                    endValue = Math.ceil(startValue / 2);
+                    diff = startValue - endValue;
+                    opType = 'damage';
+                    appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${startValue} a ${endValue}`);
+                }
+
+                state.lp[key] = endValue;
+
+                // Trigger LP Animation with colors
+                const displayElId = player === "p1" ? "#lp-display-p1" : "#lp-display-p2";
+                animateLPCounter(displayElId, startValue, endValue, opType === 'heal' ? 'lp-adding' : 'lp-subtracting');
+
+                // Trigger GLTF Spirit Reaction
+                const playerIdx = player === "p1" ? 1 : 2;
+                if (typeof window.triggerSpiritReaction === "function") {
+                    window.triggerSpiritReaction(playerIdx, opType, diff, endValue);
                 }
 
                 updateTurnUI();
                 sendTurnStateUpdate();
-            });
+            };
 
             // 8. Decorate global helper functions in duel.js
             let isDrawingAction = false;
@@ -3284,6 +3470,250 @@
             setTimeout(() => {
                 previousCardStates = trackCardStates();
             }, 1000);
+
+            // ==========================================
+            // 10. GLTF SPIRIT COMPANIONS LOGIC
+            // ==========================================
+            let availableSpirits = [];
+            let playerSpirits = [null, null];
+            let activeBubbleTimers = [null, null];
+
+            async function initSpirits() {
+                try {
+                    const { data: spirits, error } = await _supabase
+                        .from('spirits')
+                        .select('*')
+                        .order('name', { ascending: true });
+
+                    if (!error && spirits && spirits.length > 0) {
+                        availableSpirits = spirits;
+                    }
+                } catch (e) {
+                    console.error("Error fetching spirits:", e);
+                }
+
+                // Fallback spirit if none loaded from database
+                const fallbackSpirit = {
+                    id: 'winged_kuriboh',
+                    name: 'Winged Kuriboh',
+                    gltf_url: 'https://vikingantonio.github.io/vikingdev3D/assets/winged_kuriboh.gltf'
+                };
+
+                if (availableSpirits.length === 0) {
+                    availableSpirits = [fallbackSpirit];
+                }
+
+                // Saved selections from localStorage or default
+                const savedP1 = localStorage.getItem('viking_duel_spirit_1');
+                const savedP2 = localStorage.getItem('viking_duel_spirit_2');
+
+                if (savedP1) {
+                    try { setPlayerSpirit(1, JSON.parse(savedP1)); } catch (e) { setPlayerSpirit(1, availableSpirits[0]); }
+                } else {
+                    setPlayerSpirit(1, availableSpirits[0]);
+                }
+
+                if (savedP2) {
+                    try { setPlayerSpirit(2, JSON.parse(savedP2)); } catch (e) { setPlayerSpirit(2, availableSpirits[availableSpirits.length > 1 ? 1 : 0]); }
+                } else {
+                    setPlayerSpirit(2, availableSpirits[availableSpirits.length > 1 ? 1 : 0]);
+                }
+            }
+
+            function setPlayerSpirit(playerIdx, spirit) {
+                playerSpirits[playerIdx - 1] = spirit;
+                localStorage.setItem(`viking_duel_spirit_${playerIdx}`, JSON.stringify(spirit));
+
+                const $viewer = $(`#viewer-p${playerIdx}`);
+                if ($viewer.length && spirit && spirit.gltf_url) {
+                    $viewer.attr('src', spirit.gltf_url);
+                }
+            }
+
+            // Trigger reactions (glow tint + speech bubble)
+            window.triggerSpiritReaction = function(playerIdx, type, diffVal, currentLP) {
+                const $bubble = $(`#bubble-p${playerIdx}`);
+                const $viewer = $(`#viewer-p${playerIdx}`);
+                if (!$bubble.length || !$viewer.length) return;
+
+                let message = "";
+                let animClass = "";
+
+                if (currentLP <= 0) {
+                    message = "¡Oh no! Perdimos... 😵";
+                    animClass = 'spirit-viewer-damage';
+                } else if (type === 'heal') {
+                    message = `¡Genial! +${diffVal} LP 💚`;
+                    animClass = 'spirit-viewer-heal';
+                } else if (type === 'damage') {
+                    message = `¡Auch! -${diffVal} LP ❤️`;
+                    animClass = 'spirit-viewer-damage';
+                }
+
+                if (message) {
+                    $bubble.text(message).stop(true, true).fadeIn(200);
+                    if (animClass) {
+                        $viewer.addClass(animClass);
+                    }
+
+                    if (activeBubbleTimers[playerIdx - 1]) {
+                        clearTimeout(activeBubbleTimers[playerIdx - 1]);
+                    }
+
+                    activeBubbleTimers[playerIdx - 1] = setTimeout(() => {
+                        $bubble.fadeOut(300);
+                        if (animClass) {
+                            $viewer.removeClass(animClass);
+                        }
+                    }, 2500);
+                }
+            };
+
+            // Open Spirit Selection Modal
+            window.openSpiritPickerModal = function(playerIdx) {
+                let optionsHtml = '';
+                availableSpirits.forEach((sp, idx) => {
+                    optionsHtml += `
+                        <div class="spirit-option-card" data-idx="${idx}">
+                            <model-viewer src="${sp.gltf_url}" style="width: 70px; height: 70px;" loading="lazy" shadow-intensity="0" auto-rotate interaction-prompt="none" disable-zoom disable-pan></model-viewer>
+                            <span>${sp.name}</span>
+                        </div>
+                    `;
+                });
+
+                Swal.fire({
+                    title: `Cambiar Personaje (P${playerIdx})`,
+                    html: `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; max-height: 300px; overflow-y: auto; padding: 5px;">
+                            ${optionsHtml}
+                        </div>
+                    `,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cerrar',
+                    background: '#12181e',
+                    color: '#fff',
+                    didOpen: () => {
+                        $(".spirit-option-card").click(function() {
+                            const idx = $(this).data("idx");
+                            if (availableSpirits[idx]) {
+                                setPlayerSpirit(playerIdx, availableSpirits[idx]);
+                                Swal.close();
+                            }
+                        });
+                    }
+                });
+            };
+
+            // Dragging & Click Handling without jumping or unwanted zoom
+            function setupCompanionControls(playerIdx) {
+                const $wrapper = $(`#gltf-companion-p${playerIdx}`);
+                if (!$wrapper.length) return;
+
+                let isDragging = false;
+                let startX = 0, startY = 0;
+                let initialLeft = 0, initialTop = 0;
+                let hasMoved = false;
+
+                const onPointerDown = function(e) {
+                    const oe = e.originalEvent || e;
+                    const clientX = oe.touches ? oe.touches[0].clientX : e.clientX;
+                    const clientY = oe.touches ? oe.touches[0].clientY : e.clientY;
+
+                    isDragging = true;
+                    hasMoved = false;
+                    startX = clientX;
+                    startY = clientY;
+
+                    const pos = $wrapper.position();
+                    initialLeft = pos.left;
+                    initialTop = pos.top;
+
+                    $(document).on("mousemove.gltfdrag touchmove.gltfdrag", onPointerMove);
+                    $(document).on("mouseup.gltfdrag touchend.gltfdrag", onPointerUp);
+                };
+
+                const onPointerMove = function(e) {
+                    if (!isDragging) return;
+                    const oe = e.originalEvent || e;
+                    const clientX = oe.touches ? oe.touches[0].clientX : e.clientX;
+                    const clientY = oe.touches ? oe.touches[0].clientY : e.clientY;
+
+                    const dx = clientX - startX;
+                    const dy = clientY - startY;
+
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                        hasMoved = true;
+                    }
+
+                    if (hasMoved) {
+                        e.preventDefault();
+                        $wrapper.css({
+                            left: `${initialLeft + dx}px`,
+                            top: `${initialTop + dy}px`,
+                            bottom: 'auto',
+                            right: 'auto'
+                        });
+                    }
+                };
+
+                const onPointerUp = function(e) {
+                    $(document).off(".gltfdrag");
+                    if (!hasMoved && isDragging) {
+                        // Clean click without drag -> Show character options menu (Size & Change Character)
+                        showCompanionMenu(playerIdx);
+                    }
+                    isDragging = false;
+                };
+
+                $wrapper.on("mousedown touchstart", onPointerDown);
+            }
+
+            function showCompanionMenu(playerIdx) {
+                const $wrapper = $(`#gltf-companion-p${playerIdx}`);
+                const currentWidth = parseInt($wrapper.css("width")) || 140;
+
+                Swal.fire({
+                    title: `Opciones de Personaje (P${playerIdx})`,
+                    html: `
+                        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                            <div>
+                                <label style="display: block; font-weight: bold; color: var(--primary-color); margin-bottom: 8px; font-size: 0.85rem;">Tamaño:</label>
+                                <input type="range" id="swal-gltf-scale" min="80" max="260" value="${currentWidth}" style="width: 80%; cursor: pointer;">
+                            </div>
+                            <button type="button" id="btn-swal-change-spirit" class="swal2-confirm swal2-styled" style="background: var(--primary-color); color: #000; font-weight: bold; border-radius: 8px; padding: 10px 18px; cursor: pointer; border: none; align-self: center;">
+                                <i class="fas fa-user-astronaut"></i> Cambiar Personaje
+                            </button>
+                        </div>
+                    `,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cerrar',
+                    background: '#12181e',
+                    color: '#fff',
+                    didOpen: () => {
+                        $("#swal-gltf-scale").on("input", function() {
+                            const val = $(this).val();
+                            $wrapper.css({
+                                width: `${val}px`,
+                                height: `${val}px`
+                            });
+                        });
+
+                        $("#btn-swal-change-spirit").click(() => {
+                            Swal.close();
+                            setTimeout(() => {
+                                window.openSpiritPickerModal(playerIdx);
+                            }, 150);
+                        });
+                    }
+                });
+            }
+
+            // Initialize GLTF Spirits & Controls
+            initSpirits();
+            setupCompanionControls(1);
+            setupCompanionControls(2);
         });
     </script>
 </body>
