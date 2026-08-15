@@ -994,6 +994,12 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="acc-tool-box" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                <span class="tool-label" style="font-size: 0.7rem; color: #aaa;">Calculadora</span>
+                                <div class="tcg-calc calc-action-btn" id="unified-calc" style="cursor: pointer;" title="Abrir Calculadora">
+                                    <i class="fas fa-calculator"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1448,6 +1454,47 @@
             </div>
             <div class="search-body" id="search-cards-grid">
                 <!-- Cards will render here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Accessories Calculator Modal Overlay -->
+    <div class="search-overlay" id="calculator-overlay">
+        <div class="calculator-modal">
+            <div class="search-header" style="padding-bottom: 8px;">
+                <h3 style="font-size: 1.1rem; color: #ffd32d;"><i class="fas fa-calculator"></i> Calculadora</h3>
+                <button class="search-close-btn" id="btn-close-calculator"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="calculator-body">
+                <div class="calc-display-wrapper">
+                    <div class="calc-formula" id="calc-formula"></div>
+                    <div class="calc-screen" id="calc-screen">0</div>
+                </div>
+                <div class="calc-grid">
+                    <button class="calc-btn btn-calc-action" data-action="clear">C</button>
+                    <button class="calc-btn btn-calc-action" data-action="backspace"><i class="fas fa-backspace"></i></button>
+                    <button class="calc-btn btn-calc-op" data-op="/">÷</button>
+                    <button class="calc-btn btn-calc-op" data-op="*">×</button>
+
+                    <button class="calc-btn btn-calc-num" data-num="7">7</button>
+                    <button class="calc-btn btn-calc-num" data-num="8">8</button>
+                    <button class="calc-btn btn-calc-num" data-num="9">9</button>
+                    <button class="calc-btn btn-calc-op" data-op="-">−</button>
+
+                    <button class="calc-btn btn-calc-num" data-num="4">4</button>
+                    <button class="calc-btn btn-calc-num" data-num="5">5</button>
+                    <button class="calc-btn btn-calc-num" data-num="6">6</button>
+                    <button class="calc-btn btn-calc-op" data-op="+">+</button>
+
+                    <button class="calc-btn btn-calc-num" data-num="1">1</button>
+                    <button class="calc-btn btn-calc-num" data-num="2">2</button>
+                    <button class="calc-btn btn-calc-num" data-num="3">3</button>
+                    <button class="calc-btn btn-calc-equals" id="btn-calc-equals">=</button>
+
+                    <button class="calc-btn btn-calc-num btn-calc-zero" data-num="0">0</button>
+                    <button class="calc-btn btn-calc-num" data-num="00">00</button>
+                    <button class="calc-btn btn-calc-num" data-num="000">000</button>
+                </div>
             </div>
         </div>
     </div>
@@ -2230,6 +2277,101 @@
                     }
                     sendGameAction(`[${playerSuffix}] Lanzó una moneda y obtuvo: 🪙 ${finalResult}`);
                 }, 800);
+            });
+
+            // 3. Calculator Logic
+            let calcExpr = "";
+            let calcResultShown = false;
+
+            function updateCalcDisplay() {
+                $("#calc-screen").text(calcExpr || "0");
+            }
+
+            $("#unified-calc").click(function() {
+                $("#calculator-overlay").fadeIn(200).css("display", "flex");
+            });
+
+            $("#btn-close-calculator").click(function() {
+                $("#calculator-overlay").fadeOut(200);
+            });
+
+            $("#calculator-overlay").click(function(e) {
+                if ($(e.target).is("#calculator-overlay")) {
+                    $("#calculator-overlay").fadeOut(200);
+                }
+            });
+
+            $(".btn-calc-num").click(function() {
+                const num = $(this).data("num").toString();
+                if (calcResultShown) {
+                    calcExpr = "";
+                    calcResultShown = false;
+                    $("#calc-formula").text("");
+                }
+                if (calcExpr === "0" && num !== "00" && num !== "000") {
+                    calcExpr = num;
+                } else if (calcExpr !== "0") {
+                    calcExpr += num;
+                }
+                updateCalcDisplay();
+            });
+
+            $(".btn-calc-op").click(function() {
+                const op = $(this).data("op");
+                if (calcResultShown) {
+                    calcResultShown = false;
+                    $("#calc-formula").text("");
+                }
+                if (calcExpr === "") {
+                    calcExpr = "0" + op;
+                } else {
+                    const lastChar = calcExpr.slice(-1);
+                    if (["+", "-", "*", "/"].includes(lastChar)) {
+                        calcExpr = calcExpr.slice(0, -1) + op;
+                    } else {
+                        calcExpr += op;
+                    }
+                }
+                updateCalcDisplay();
+            });
+
+            $(".btn-calc-action").click(function() {
+                const action = $(this).data("action");
+                if (action === "clear") {
+                    calcExpr = "";
+                    calcResultShown = false;
+                    $("#calc-formula").text("");
+                    updateCalcDisplay();
+                } else if (action === "backspace") {
+                    if (calcResultShown) {
+                        calcExpr = "";
+                        calcResultShown = false;
+                        $("#calc-formula").text("");
+                    } else if (calcExpr.length > 0) {
+                        calcExpr = calcExpr.slice(0, -1);
+                    }
+                    updateCalcDisplay();
+                }
+            });
+
+            $("#btn-calc-equals").click(function() {
+                if (!calcExpr) return;
+                try {
+                    // Safe evaluation for basic mathematical expressions (+, -, *, /)
+                    const sanitizedExpr = calcExpr.replace(/[^0-9+\-*/.]/g, '');
+                    if (!sanitizedExpr) return;
+
+                    const evalResult = Function('"use strict";return (' + sanitizedExpr + ')')();
+                    if (evalResult !== undefined && !isNaN(evalResult) && isFinite(evalResult)) {
+                        const formattedFormula = calcExpr.replace(/\*/g, '×').replace(/\//g, '÷') + " =";
+                        $("#calc-formula").text(formattedFormula);
+                        calcExpr = evalResult.toString();
+                        calcResultShown = true;
+                        updateCalcDisplay();
+                    }
+                } catch (err) {
+                    $("#calc-formula").text("Error");
+                }
             });
 
             // 3. Spawning Token Cards with Selective Zone Placing (Yu-Gi-Oh!)
