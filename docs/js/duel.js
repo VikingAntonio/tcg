@@ -1317,8 +1317,21 @@ function updatePreview(card) {
         return;
     }
 
+    // Check if card is in Deck, Extra Deck (face down), or Prize zone (face down)
+    const isExtraFaceUp = (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster") && card.faceDown === false);
+    const isHiddenPileCard = (card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_")) && !isExtraFaceUp;
+
+    if (isHiddenPileCard) {
+        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+        $("#detail-card-img").attr("src", backImg);
+        $("#detail-card-name").text("Carta Boca Abajo");
+        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
+        return;
+    }
+
     if (state.mode === "practice") {
-        // In practice mode, show all card details and images openly
+        // In practice mode, show face-up card details and images openly
         $("#detail-card-img").attr("src", card.imageUrl);
         $("#detail-card-name").text(card.name);
         let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Práctica)" : "Boca Arriba"}\nContadores: ${card.counters}`;
