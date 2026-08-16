@@ -59,18 +59,18 @@
             text-shadow: 0 0 5px rgba(239, 68, 68, 0.6) !important;
         }
 
-        /* Pokémon layout overrides - hide phases, show Turn bar and Turn display */
-        body.layout-pokemon #phases-container {
+        /* Non-Yu-Gi-Oh! layout overrides - hide phases and LP counters */
+        body:not(.layout-yugioh) #phases-container {
             display: none !important;
         }
-        body.layout-pokemon #turn-display {
+        body:not(.layout-yugioh) #turn-display {
             display: inline-block !important;
         }
-        body.layout-pokemon #central-turn-bar {
+        body:not(.layout-yugioh) #central-turn-bar {
             display: flex !important;
         }
-        body.layout-pokemon #lp-counter-p1,
-        body.layout-pokemon #lp-counter-p2 {
+        body:not(.layout-yugioh) #lp-counter-p1,
+        body:not(.layout-yugioh) #lp-counter-p2 {
             display: none !important;
         }
 

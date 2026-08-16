@@ -66,6 +66,12 @@ $(document).ready(function() {
     });
 });
 
+// Helper to check if current layout is a Yu-Gi-Oh! format
+function isYGOLayout(layout) {
+    const l = layout || (typeof state !== 'undefined' ? state.layout : '');
+    return l === "yugioh" || l === "yugioh_advanced" || l === "speed_rush";
+}
+
 // JSON Playmat layouts for Yu-Gi-Oh and Pokémon TCG
 // Scaled layout for a 1120x600 playmat board.
 // Card Width: 80px, Height: 116px.
@@ -422,8 +428,11 @@ function initLayout() {
     if (state.layout === "pokemon") {
         $("body").addClass("layout-pokemon").removeClass("layout-yugioh");
         document.body.style.setProperty('--card-back-url', "url('img/pokeBocaAbajo.jpg')");
-    } else {
+    } else if (isYGOLayout(state.layout)) {
         $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
+        document.body.style.setProperty('--card-back-url', "url('img/bocabajo.jpg')");
+    } else {
+        $("body").removeClass("layout-yugioh").removeClass("layout-pokemon");
         document.body.style.setProperty('--card-back-url', "url('img/bocabajo.jpg')");
     }
 
@@ -618,11 +627,11 @@ function instantiateDeck(playerKey) {
         let targetZone = `deck_${playerSuffix}`; // Default is Main Deck
         let isExtra = false;
         if (section === "Extra") {
-            if (state.layout === "yugioh" || state.layout === "yugioh_advanced") {
+            if (isYGOLayout(state.layout)) {
                 targetZone = `extra_${playerSuffix}`; // Extra Deck pile
                 isExtra = true;
             } else {
-                targetZone = `deck_${playerSuffix}`; // Force Main Deck for Pokémon
+                targetZone = `deck_${playerSuffix}`; // Force Main Deck for non-YGO
                 isExtra = false;
             }
         }
@@ -1272,7 +1281,7 @@ function checkHandTrayHover(e, traySelector) {
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
     if (card.zone && card.zone.startsWith("prize_") && card.faceDown) {
-        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
@@ -1291,7 +1300,7 @@ function updatePreview(card) {
     }
 
     if (isPile || isFaceDown) {
-        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
@@ -1489,7 +1498,7 @@ function openExtraDeckModal(playerKey) {
         extraCards.forEach(card => {
             // Anti-cheat: mask image if the card is face-down and viewer is NOT the owner of the Extra Deck (always bypass in Practice Mode so both players' Extra Decks are fully visible face-up in the list modal)
             const showBack = (card.faceDown !== false) && !isOwner && (state.mode !== "practice");
-            const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+            const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
             const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
             const imgSrc = showBack ? backImg : card.imageUrl;
 
@@ -1587,7 +1596,7 @@ function startGraphicalTargeting(cardObj, actionType) {
         if (targetingCard) {
             targetingCard.zone = zoneId;
 
-            if (state.layout === "yugioh" || state.layout === "yugioh_advanced") {
+            if (isYGOLayout(state.layout)) {
                 // Symmetrical placement rules for Yu-Gi-Oh!
                 if (zoneObj && zoneObj.type === "monster") {
                     if (targetActionType === "set") {
@@ -2302,18 +2311,18 @@ function openPileModal(playerKey, pileType) {
     // Dynamic titles depending on pileType and layout
     let title = "";
     if (pileType === "grave") {
-        if (state.layout === "pokemon" || state.layout === "one_piece" || state.layout === "digimon") {
-            title = "Descarte / Trash";
-        } else {
+        if (isYGOLayout(state.layout)) {
             title = "Cementerio";
+        } else {
+            title = "Descarte / Trash";
         }
     } else {
-        if (state.layout === "pokemon") {
+        if (isYGOLayout(state.layout)) {
+            title = "Desterrado";
+        } else if (state.layout === "pokemon") {
             title = "Mano de Premios / Removido";
-        } else if (state.layout === "naruto" || state.layout === "magic_commander") {
-            title = "Exilio / Desterrado";
         } else {
-            title = "Desterrado / Removido";
+            title = "Exilio / Desterrado";
         }
     }
 
@@ -3442,7 +3451,7 @@ function setupEventListeners() {
             </div>
         `).join('');
 
-        const destLabel = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "Cementerio" : "Descarte";
+        const destLabel = isYGOLayout(state.layout) ? "Cementerio" : "Descarte";
         Swal.fire({
             title: `¡Cartas enviadas al ${destLabel}!`,
             html: `
@@ -3629,7 +3638,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             // Helper to hide/show features depending on selected layout
             function updateLayoutFeatureVisibility() {
-                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                if (isYGOLayout(state.layout)) {
                     // Show phases, turn indicator, and show LP counters
                     $("#phases-container").show();
                     $("#turn-display").show();
@@ -4216,7 +4225,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                 // Do not flash if the current player has performed any gameplay actions this turn
                 if (!state.turnActionTaken) {
-                    if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                    if (isYGOLayout(state.layout)) {
                         // Blinks if the turn player has selected EP (End Phase), indicating the rival should click it
                         if (state.activePhase === 'EP') {
                             // The player who is NOT active should see the button flashing
@@ -4244,15 +4253,19 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             const baseUpdateLayoutFeatureVisibility = updateLayoutFeatureVisibility;
             updateLayoutFeatureVisibility = function() {
                 baseUpdateLayoutFeatureVisibility();
-                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                if (isYGOLayout(state.layout)) {
                     $(".ygo-only-tool").show();
                     $(".pokemon-only-tool").hide();
                     $(".counter-section-title").text("Contadores YGO");
                     $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
                 } else {
                     $(".ygo-only-tool").hide();
-                    $(".pokemon-only-tool").show();
-                    $(".counter-section-title").text("Daño Pokémon");
+                    if (state.layout === 'pokemon') {
+                        $(".pokemon-only-tool").show();
+                        $(".counter-section-title").text("Daño Pokémon");
+                    } else {
+                        $(".pokemon-only-tool").hide();
+                    }
                     $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
                 }
             };
@@ -4489,7 +4502,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                     }
                 } else if (activeCounterDragVal === "YGO") {
-                    if (state.layout !== 'yugioh' && state.layout !== 'yugioh_advanced') return;
+                    if (!isYGOLayout(state.layout)) return;
                     cardObj.counters = (cardObj.counters || 0) + 1;
                     sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                 } else if (typeof activeCounterDragVal === "number") {
@@ -4579,7 +4592,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                                 sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                             }
                         } else if (activeCounterDragVal === "YGO") {
-                            if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                            if (isYGOLayout(state.layout)) {
                                 cardObj.counters = (cardObj.counters || 0) + 1;
                                 sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                             }
@@ -4630,7 +4643,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         ? `style="left: ${card.counterPosition.left}px; top: ${card.counterPosition.top}px; bottom: auto; transform: none;"`
                         : "";
 
-                    if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                    if (isYGOLayout(state.layout)) {
                         if (card.counters && card.counters > 0) {
                             let beadsHtml = "";
                             const visibleBeadsCount = Math.min(card.counters, 5); // Limit stacked nodes visually to 5 beads maximum
@@ -4748,7 +4761,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
 
-                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                if (isYGOLayout(state.layout)) {
                     cardObj.counters = Math.max(0, (cardObj.counters || 0) - 1);
                     sendGameAction(`Quitó un contador de ${cardObj.name} (Total restante: ${cardObj.counters})`);
                 } else {
@@ -5072,10 +5085,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 if (zoneId.startsWith("deck_")) return "el Deck";
                 if (zoneId.startsWith("extra_") && !zoneId.startsWith("extra_monster")) return "el Extra Deck";
                 if (zoneId.startsWith("grave_")) {
-                    return (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "el Cementerio" : "la zona de Descarte";
+                    return isYGOLayout(state.layout) ? "el Cementerio" : "la zona de Descarte";
                 }
                 if (zoneId.startsWith("banished_")) {
-                    return (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "la zona Desterrado" : "zona Removido";
+                    return isYGOLayout(state.layout) ? "la zona Desterrado" : "zona Removido";
                 }
                 if (zoneId.startsWith("prize_")) return "la zona de Premios";
 
@@ -5349,7 +5362,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 if (isHandCard) {
                     // Hand Card layout options
                     $("#menu-summon").show();
-                    if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                    if (isYGOLayout(state.layout)) {
                         $("#menu-set").show();
                     } else if (state.layout === 'pokemon') {
                         $("#menu-activate").show();
@@ -5446,7 +5459,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     }
                 }
 
-                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                if (isYGOLayout(state.layout)) {
                     $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
                 } else {
                     $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
