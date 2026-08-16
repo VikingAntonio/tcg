@@ -158,6 +158,35 @@
         </div>
 
         <div id="sealed-view" class="view-section">
+            <!-- Sealed Products Public Filter & Toolbar -->
+            <div class="sealed-public-toolbar" style="max-width: 1200px; margin: 0 auto 25px auto; padding: 15px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; backdrop-filter: blur(12px); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                <div style="position: relative; flex: 1; min-width: 220px;">
+                    <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #888; font-size: 0.9rem;"></i>
+                    <input type="text" id="public-sealed-search" placeholder="Buscar productos sellados..." style="width: 100%; padding: 10px 14px 10px 38px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50px; color: #fff; font-size: 0.88rem; outline: none; box-sizing: border-box;">
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                    <select id="public-sealed-filter-tcg" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50px; color: #fff; padding: 9px 14px; font-size: 0.85rem; font-weight: 700; outline: none; cursor: pointer;">
+                        <option value="all" style="background: #111;">Todas las Franquicias</option>
+                        <option value="yugioh" style="background: #111;">Yu-Gi-Oh!</option>
+                        <option value="pokemon" style="background: #111;">Pokémon</option>
+                        <option value="onepiece" style="background: #111;">One Piece</option>
+                        <option value="lorcana" style="background: #111;">Lorcana</option>
+                        <option value="other" style="background: #111;">Otros</option>
+                    </select>
+                    <select id="public-sealed-filter-stock" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50px; color: #fff; padding: 9px 14px; font-size: 0.85rem; font-weight: 700; outline: none; cursor: pointer;">
+                        <option value="all" style="background: #111;">Todas las Existencias</option>
+                        <option value="in_stock" style="background: #111;">En Stock</option>
+                        <option value="out_of_stock" style="background: #111;">Agotados</option>
+                    </select>
+                    <select id="public-sealed-sort" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50px; color: #fff; padding: 9px 14px; font-size: 0.85rem; font-weight: 700; outline: none; cursor: pointer;">
+                        <option value="recent" style="background: #111;">Más Recientes</option>
+                        <option value="price_desc" style="background: #111;">Precio: Mayor a Menor</option>
+                        <option value="price_asc" style="background: #111;">Precio: Menor a Mayor</option>
+                        <option value="name_asc" style="background: #111;">Nombre: A-Z</option>
+                    </select>
+                </div>
+            </div>
+
             <div id="sealed-container" class="decks-grid">
                 <!-- Sealed products will be loaded here -->
             </div>
