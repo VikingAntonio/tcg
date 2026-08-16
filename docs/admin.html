@@ -3164,5 +3164,54 @@
             }
         });
     </script>
+
+    <!-- Mobile Detection & Redirection for Mis Decks / Constructor -->
+    <script>
+        $(document).ready(function() {
+            function isMobileDevice() {
+                return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            }
+
+            // Intercept navigation to "Mis Decks" (from dashboard tile or dropdown menu)
+            $(document).on('click', '#btn-show-decks, #menu-btn-decks, #btn-decks', function(e) {
+                if (isMobileDevice()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = 'deckbuilding.html';
+                }
+            });
+
+            // Intercept deck edit / constructor action
+            $(document).on('click', '.btn-edit-deck', function(e) {
+                if (isMobileDevice()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const deckId = $(this).data('id');
+                    if (deckId) {
+                        window.location.href = 'deckbuilding.html?deckId=' + deckId;
+                    } else {
+                        window.location.href = 'deckbuilding.html';
+                    }
+                }
+            });
+
+            // Wrap window.editDeck function if called programmatically
+            const _origEditDeck = window.editDeck;
+            window.editDeck = function(deck) {
+                if (isMobileDevice()) {
+                    const deckId = deck && deck.id ? deck.id : '';
+                    if (deckId) {
+                        window.location.href = 'deckbuilding.html?deckId=' + deckId;
+                    } else {
+                        window.location.href = 'deckbuilding.html';
+                    }
+                    return;
+                }
+                if (typeof _origEditDeck === 'function') {
+                    return _origEditDeck.apply(this, arguments);
+                }
+            };
+        });
+    </script>
 </body>
 </html>
