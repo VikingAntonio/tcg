@@ -13,7 +13,7 @@ if (typeof _supabase === 'undefined' || !_supabase) {
 window.getCardZoomImage = function(card) {
     if (!card) return "";
     if (card.zone && card.zone.startsWith("prize_") && card.faceDown) {
-        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         return (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
     }
 
@@ -38,7 +38,7 @@ window.getCardZoomImage = function(card) {
     }
 
     if (showAsBack) {
-        const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
+        const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         return (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
     } else {
         return card.imageUrl;
@@ -179,6 +179,167 @@ const BOARD_LAYOUTS = {
         { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
         { id: "grave_1", name: "P1 Descarte", player: 1, x: 990, y: 320, type: "grave" },
         { id: "banished_1", name: "P1 Desterrado", player: 1, x: 1135, y: 450, type: "banished" }
+    ],
+    speed_rush: [
+        // Player 2 (Top Half, Mirrored) - Red/Pink Theme
+        { id: "deck_2", name: "P2 Deck", player: 2, x: 50, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "banished_2", name: "P2 Desterrado", player: 2, x: 160, y: 160, type: "banished" },
+        { id: "extra_2", name: "P2 Extra", player: 2, x: 990, y: 30, type: "extra" },
+        { id: "field_2", name: "P2 Campo", player: 2, x: 990, y: 160, type: "field" },
+        { id: "monster_2_3", name: "P2 Monstruo 3", player: 2, x: 410, y: 160, type: "monster" },
+        { id: "monster_2_2", name: "P2 Monstruo 2", player: 2, x: 520, y: 160, type: "monster" },
+        { id: "monster_2_1", name: "P2 Monstruo 1", player: 2, x: 630, y: 160, type: "monster" },
+        { id: "spell_2_3", name: "P2 Magia/Trampa 3", player: 2, x: 410, y: 30, type: "spell" },
+        { id: "spell_2_2", name: "P2 Magia/Trampa 2", player: 2, x: 520, y: 30, type: "spell" },
+        { id: "spell_2_1", name: "P2 Magia/Trampa 1", player: 2, x: 630, y: 30, type: "spell" },
+
+        // Player 1 (Bottom Half) - Blue Theme
+        { id: "extra_1", name: "P1 Extra", player: 1, x: 50, y: 450, type: "extra" },
+        { id: "field_1", name: "P1 Campo", player: 1, x: 50, y: 320, type: "field" },
+        { id: "banished_1", name: "P1 Desterrado", player: 1, x: 880, y: 320, type: "banished" },
+        { id: "deck_1", name: "P1 Deck", player: 1, x: 990, y: 450, type: "deck" },
+        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "monster_1_1", name: "P1 Monstruo 1", player: 1, x: 410, y: 320, type: "monster" },
+        { id: "monster_1_2", name: "P1 Monstruo 2", player: 1, x: 520, y: 320, type: "monster" },
+        { id: "monster_1_3", name: "P1 Monstruo 3", player: 1, x: 630, y: 320, type: "monster" },
+        { id: "spell_1_1", name: "P1 Magia/Trampa 1", player: 1, x: 410, y: 450, type: "spell" },
+        { id: "spell_1_2", name: "P1 Magia/Trampa 2", player: 1, x: 520, y: 450, type: "spell" },
+        { id: "spell_1_3", name: "P1 Magia/Trampa 3", player: 1, x: 630, y: 450, type: "spell" }
+    ],
+    one_piece: [
+        // Player 2 (Top Half, Mirrored)
+        { id: "deck_2", name: "P2 Mazo", player: 2, x: 50, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Trash", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "prize_2_1", name: "P2 Vidas", player: 2, x: 160, y: 30, type: "prize" },
+        { id: "leader_2", name: "P2 Líder", player: 2, x: 520, y: 30, type: "active" },
+        { id: "field_2", name: "P2 Escenario", player: 2, x: 630, y: 30, type: "field" },
+        { id: "extra_2", name: "P2 Mazo DON!!", player: 2, x: 990, y: 30, type: "extra" },
+        { id: "don_2", name: "P2 Área DON!!", player: 2, x: 990, y: 160, type: "spell" },
+        { id: "char_2_5", name: "P2 Personaje 5", player: 2, x: 300, y: 160, type: "monster" },
+        { id: "char_2_4", name: "P2 Personaje 4", player: 2, x: 410, y: 160, type: "monster" },
+        { id: "char_2_3", name: "P2 Personaje 3", player: 2, x: 520, y: 160, type: "monster" },
+        { id: "char_2_2", name: "P2 Personaje 2", player: 2, x: 630, y: 160, type: "monster" },
+        { id: "char_2_1", name: "P2 Personaje 1", player: 2, x: 740, y: 160, type: "monster" },
+
+        // Player 1 (Bottom Half)
+        { id: "extra_1", name: "P1 Mazo DON!!", player: 1, x: 50, y: 450, type: "extra" },
+        { id: "don_1", name: "P1 Área DON!!", player: 1, x: 50, y: 320, type: "spell" },
+        { id: "prize_1_1", name: "P1 Vidas", player: 1, x: 160, y: 450, type: "prize" },
+        { id: "leader_1", name: "P1 Líder", player: 1, x: 520, y: 450, type: "active" },
+        { id: "field_1", name: "P1 Escenario", player: 1, x: 410, y: 450, type: "field" },
+        { id: "deck_1", name: "P1 Mazo", player: 1, x: 990, y: 450, type: "deck" },
+        { id: "grave_1", name: "P1 Trash", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "char_1_1", name: "P1 Personaje 1", player: 1, x: 300, y: 320, type: "monster" },
+        { id: "char_1_2", name: "P1 Personaje 2", player: 1, x: 410, y: 320, type: "monster" },
+        { id: "char_1_3", name: "P1 Personaje 3", player: 1, x: 520, y: 320, type: "monster" },
+        { id: "char_1_4", name: "P1 Personaje 4", player: 1, x: 630, y: 320, type: "monster" },
+        { id: "char_1_5", name: "P1 Personaje 5", player: 1, x: 740, y: 320, type: "monster" }
+    ],
+    digimon: [
+        // Player 2 (Top Half, Mirrored)
+        { id: "extra_2", name: "P2 Digi-Egg", player: 2, x: 50, y: 30, type: "extra" },
+        { id: "hatch_2", name: "P2 Crianza", player: 2, x: 50, y: 160, type: "bench" },
+        { id: "prize_2_1", name: "P2 Seguridad", player: 2, x: 160, y: 30, type: "prize" },
+        { id: "battle_2_5", name: "P2 Área Batalla 5", player: 2, x: 300, y: 160, type: "monster" },
+        { id: "battle_2_4", name: "P2 Área Batalla 4", player: 2, x: 410, y: 160, type: "monster" },
+        { id: "battle_2_3", name: "P2 Área Batalla 3", player: 2, x: 520, y: 160, type: "monster" },
+        { id: "battle_2_2", name: "P2 Área Batalla 2", player: 2, x: 630, y: 160, type: "monster" },
+        { id: "battle_2_1", name: "P2 Área Batalla 1", player: 2, x: 740, y: 160, type: "monster" },
+        { id: "option_2_5", name: "P2 Opciones 5", player: 2, x: 300, y: 30, type: "spell" },
+        { id: "option_2_4", name: "P2 Opciones 4", player: 2, x: 410, y: 30, type: "spell" },
+        { id: "option_2_3", name: "P2 Opciones 3", player: 2, x: 520, y: 30, type: "spell" },
+        { id: "option_2_2", name: "P2 Opciones 2", player: 2, x: 630, y: 30, type: "spell" },
+        { id: "option_2_1", name: "P2 Opciones 1", player: 2, x: 740, y: 30, type: "spell" },
+        { id: "deck_2", name: "P2 Mazo", player: 2, x: 990, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Trash", player: 2, x: 990, y: 160, type: "grave" },
+
+        // Player 1 (Bottom Half)
+        { id: "extra_1", name: "P1 Digi-Egg", player: 1, x: 50, y: 450, type: "extra" },
+        { id: "hatch_1", name: "P1 Crianza", player: 1, x: 50, y: 320, type: "bench" },
+        { id: "prize_1_1", name: "P1 Seguridad", player: 1, x: 160, y: 450, type: "prize" },
+        { id: "battle_1_1", name: "P1 Área Batalla 1", player: 1, x: 300, y: 320, type: "monster" },
+        { id: "battle_1_2", name: "P1 Área Batalla 2", player: 1, x: 410, y: 320, type: "monster" },
+        { id: "battle_1_3", name: "P1 Área Batalla 3", player: 1, x: 520, y: 320, type: "monster" },
+        { id: "battle_1_4", name: "P1 Área Batalla 4", player: 1, x: 630, y: 320, type: "monster" },
+        { id: "battle_1_5", name: "P1 Área Batalla 5", player: 1, x: 740, y: 320, type: "monster" },
+        { id: "option_1_1", name: "P1 Opciones 1", player: 1, x: 300, y: 450, type: "spell" },
+        { id: "option_1_2", name: "P1 Opciones 2", player: 1, x: 410, y: 450, type: "spell" },
+        { id: "option_1_3", name: "P1 Opciones 3", player: 1, x: 520, y: 450, type: "spell" },
+        { id: "option_1_4", name: "P1 Opciones 4", player: 1, x: 630, y: 450, type: "spell" },
+        { id: "option_1_5", name: "P1 Opciones 5", player: 1, x: 740, y: 450, type: "spell" },
+        { id: "deck_1", name: "P1 Mazo", player: 1, x: 990, y: 450, type: "deck" },
+        { id: "grave_1", name: "P1 Trash", player: 1, x: 990, y: 320, type: "grave" }
+    ],
+    naruto: [
+        // Player 2 (Top Half, Mirrored)
+        { id: "deck_2", name: "P2 Mazo", player: 2, x: 50, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "banished_2", name: "P2 Exilio", player: 2, x: 160, y: 160, type: "banished" },
+        { id: "ninja_2_5", name: "P2 Ninja 5", player: 2, x: 300, y: 160, type: "monster" },
+        { id: "ninja_2_4", name: "P2 Ninja 4", player: 2, x: 410, y: 160, type: "monster" },
+        { id: "ninja_2_3", name: "P2 Ninja 3", player: 2, x: 520, y: 160, type: "monster" },
+        { id: "ninja_2_2", name: "P2 Ninja 2", player: 2, x: 630, y: 160, type: "monster" },
+        { id: "ninja_2_1", name: "P2 Ninja 1", player: 2, x: 740, y: 160, type: "monster" },
+        { id: "chakra_2_5", name: "P2 Chakra/Soporte 5", player: 2, x: 300, y: 30, type: "spell" },
+        { id: "chakra_2_4", name: "P2 Chakra/Soporte 4", player: 2, x: 410, y: 30, type: "spell" },
+        { id: "chakra_2_3", name: "P2 Chakra/Soporte 3", player: 2, x: 520, y: 30, type: "spell" },
+        { id: "chakra_2_2", name: "P2 Chakra/Soporte 2", player: 2, x: 630, y: 30, type: "spell" },
+        { id: "chakra_2_1", name: "P2 Chakra/Soporte 1", player: 2, x: 740, y: 30, type: "spell" },
+        { id: "active_2", name: "P2 Aldea/Líder", player: 2, x: 990, y: 160, type: "active" },
+        { id: "extra_2", name: "P2 Mazo Extra", player: 2, x: 990, y: 30, type: "extra" },
+
+        // Player 1 (Bottom Half)
+        { id: "extra_1", name: "P1 Mazo Extra", player: 1, x: 50, y: 450, type: "extra" },
+        { id: "active_1", name: "P1 Aldea/Líder", player: 1, x: 50, y: 320, type: "active" },
+        { id: "banished_1", name: "P1 Exilio", player: 1, x: 880, y: 320, type: "banished" },
+        { id: "ninja_1_1", name: "P1 Ninja 1", player: 1, x: 300, y: 320, type: "monster" },
+        { id: "ninja_1_2", name: "P1 Ninja 2", player: 1, x: 410, y: 320, type: "monster" },
+        { id: "ninja_1_3", name: "P1 Ninja 3", player: 1, x: 520, y: 320, type: "monster" },
+        { id: "ninja_1_4", name: "P1 Ninja 4", player: 1, x: 630, y: 320, type: "monster" },
+        { id: "ninja_1_5", name: "P1 Ninja 5", player: 1, x: 740, y: 320, type: "monster" },
+        { id: "chakra_1_1", name: "P1 Chakra/Soporte 1", player: 1, x: 300, y: 450, type: "spell" },
+        { id: "chakra_1_2", name: "P1 Chakra/Soporte 2", player: 1, x: 410, y: 450, type: "spell" },
+        { id: "chakra_1_3", name: "P1 Chakra/Soporte 3", player: 1, x: 520, y: 450, type: "spell" },
+        { id: "chakra_1_4", name: "P1 Chakra/Soporte 4", player: 1, x: 630, y: 450, type: "spell" },
+        { id: "chakra_1_5", name: "P1 Chakra/Soporte 5", player: 1, x: 740, y: 450, type: "spell" },
+        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "deck_1", name: "P1 Mazo", player: 1, x: 990, y: 450, type: "deck" }
+    ],
+    magic_commander: [
+        // Player 2 (Top Half, Mirrored)
+        { id: "deck_2", name: "P2 Biblioteca", player: 2, x: 50, y: 30, type: "deck" },
+        { id: "grave_2", name: "P2 Cementerio", player: 2, x: 50, y: 160, type: "grave" },
+        { id: "banished_2", name: "P2 Exilio", player: 2, x: 160, y: 160, type: "banished" },
+        { id: "creature_2_5", name: "P2 Criatura 5", player: 2, x: 300, y: 160, type: "monster" },
+        { id: "creature_2_4", name: "P2 Criatura 4", player: 2, x: 410, y: 160, type: "monster" },
+        { id: "creature_2_3", name: "P2 Criatura 3", player: 2, x: 520, y: 160, type: "monster" },
+        { id: "creature_2_2", name: "P2 Criatura 2", player: 2, x: 630, y: 160, type: "monster" },
+        { id: "creature_2_1", name: "P2 Criatura 1", player: 2, x: 740, y: 160, type: "monster" },
+        { id: "land_2_5", name: "P2 Tierras/Permanentes 5", player: 2, x: 300, y: 30, type: "spell" },
+        { id: "land_2_4", name: "P2 Tierras/Permanentes 4", player: 2, x: 410, y: 30, type: "spell" },
+        { id: "land_2_3", name: "P2 Tierras/Permanentes 3", player: 2, x: 520, y: 30, type: "spell" },
+        { id: "land_2_2", name: "P2 Tierras/Permanentes 2", player: 2, x: 630, y: 30, type: "spell" },
+        { id: "land_2_1", name: "P2 Tierras/Permanentes 1", player: 2, x: 740, y: 30, type: "spell" },
+        { id: "active_2", name: "P2 Permanentes", player: 2, x: 990, y: 160, type: "active" },
+        { id: "extra_2", name: "P2 Comandante", player: 2, x: 990, y: 30, type: "extra" },
+
+        // Player 1 (Bottom Half)
+        { id: "extra_1", name: "P1 Comandante", player: 1, x: 50, y: 450, type: "extra" },
+        { id: "active_1", name: "P1 Permanentes", player: 1, x: 50, y: 320, type: "active" },
+        { id: "banished_1", name: "P1 Exilio", player: 1, x: 880, y: 320, type: "banished" },
+        { id: "creature_1_1", name: "P1 Criatura 1", player: 1, x: 300, y: 320, type: "monster" },
+        { id: "creature_1_2", name: "P1 Criatura 2", player: 1, x: 410, y: 320, type: "monster" },
+        { id: "creature_1_3", name: "P1 Criatura 3", player: 1, x: 520, y: 320, type: "monster" },
+        { id: "creature_1_4", name: "P1 Criatura 4", player: 1, x: 630, y: 320, type: "monster" },
+        { id: "creature_1_5", name: "P1 Criatura 5", player: 1, x: 740, y: 320, type: "monster" },
+        { id: "land_1_1", name: "P1 Tierras/Permanentes 1", player: 1, x: 300, y: 450, type: "spell" },
+        { id: "land_1_2", name: "P1 Tierras/Permanentes 2", player: 1, x: 410, y: 450, type: "spell" },
+        { id: "land_1_3", name: "P1 Tierras/Permanentes 3", player: 1, x: 520, y: 450, type: "spell" },
+        { id: "land_1_4", name: "P1 Tierras/Permanentes 4", player: 1, x: 630, y: 450, type: "spell" },
+        { id: "land_1_5", name: "P1 Tierras/Permanentes 5", player: 1, x: 740, y: 450, type: "spell" },
+        { id: "grave_1", name: "P1 Cementerio", player: 1, x: 990, y: 320, type: "grave" },
+        { id: "deck_1", name: "P1 Biblioteca", player: 1, x: 990, y: 450, type: "deck" }
     ]
 };
 
@@ -258,12 +419,12 @@ function initLayout() {
     $("#dynamic-zones-container").append('<div class="playmat-divider"></div>');
 
     // DYNAMIC CARD BACK SETTING BASED ON THE SELECTED LAYOUT
-    if (state.layout === "yugioh" || state.layout === "yugioh_advanced") {
-        $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
-        document.body.style.setProperty('--card-back-url', "url('img/bocabajo.jpg')");
-    } else {
+    if (state.layout === "pokemon") {
         $("body").addClass("layout-pokemon").removeClass("layout-yugioh");
         document.body.style.setProperty('--card-back-url', "url('img/pokeBocaAbajo.jpg')");
+    } else {
+        $("body").addClass("layout-yugioh").removeClass("layout-pokemon");
+        document.body.style.setProperty('--card-back-url', "url('img/bocabajo.jpg')");
     }
 
     const zones = BOARD_LAYOUTS[state.layout];
@@ -2141,9 +2302,19 @@ function openPileModal(playerKey, pileType) {
     // Dynamic titles depending on pileType and layout
     let title = "";
     if (pileType === "grave") {
-        title = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "Cementerio" : "Descarte";
+        if (state.layout === "pokemon" || state.layout === "one_piece" || state.layout === "digimon") {
+            title = "Descarte / Trash";
+        } else {
+            title = "Cementerio";
+        }
     } else {
-        title = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "Desterrado" : "Mano de Premios / Removido";
+        if (state.layout === "pokemon") {
+            title = "Mano de Premios / Removido";
+        } else if (state.layout === "naruto" || state.layout === "magic_commander") {
+            title = "Exilio / Desterrado";
+        } else {
+            title = "Desterrado / Removido";
+        }
     }
 
     $("#pile-modal-title").text(`${title} (${playerKey === "player1" ? "P1" : "P2"})`);
