@@ -2663,24 +2663,24 @@ function renderPublicSealedGrid() {
         const tcgLabel = (product.tcg || 'Otro').toUpperCase();
 
         const $item = $(`
-            <div class="deck-public-item sealed-product-item" id="product-item-${product.id}" style="position: relative; background: var(--card-bg, #1a1a1a); border: 1px solid var(--card-border, rgba(255,255,255,0.1)); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 10px 25px rgba(0,0,0,0.25); cursor: pointer;">
-                <div style="position: relative;">
-                    <div class="product-image-container" style="position: relative; width: 100%; height: 180px; background: rgba(0,0,0,0.25); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid var(--slot-border, rgba(255,255,255,0.05));">
-                        <span style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.75); border: 1px solid var(--card-border, rgba(255,255,255,0.2)); padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; color: var(--primary-color, #00d2ff);">${tcgLabel}</span>
-                        ${isOutOfStock ? '<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">AGOTADO</span>' : `<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 255, 136, 0.15); border: 1px solid #00ff88; color: #00ff88; padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">DISPONIBLE: ${stockCount}</span>`}
-                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img" style="max-width: 85%; max-height: 85%; object-fit: contain; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));">
+            <div class="deck-public-item sealed-product-item sealed-product-card-modern" id="product-item-${product.id}">
+                <div>
+                    <div class="product-image-container">
+                        <span style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; color: #00d2ff; backdrop-filter: blur(8px); z-index: 2;">${tcgLabel}</span>
+                        ${isOutOfStock ? '<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(255, 71, 87, 0.25); border: 1px solid #ff4757; color: #ff4757; padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; backdrop-filter: blur(8px); z-index: 2;">AGOTADO</span>' : `<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 255, 136, 0.18); border: 1px solid #00ff88; color: #00ff88; padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; backdrop-filter: blur(8px); z-index: 2;">DISPONIBLE: ${stockCount}</span>`}
+                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img" style="max-width: 88%; max-height: 88%; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)); pointer-events: none;">
                     </div>
-                    <h3 style="margin: 14px 0 6px 0; font-size: 1.05rem; font-weight: 800; color: var(--text-color, #fff); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.7em;">${product.name}</h3>
-                    ${product.description ? `<p style="font-size: 0.78rem; color: var(--text-muted, #94a3b8); margin: 0 0 10px 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${product.description}</p>` : ''}
+                    <h3 style="margin: 12px 0 6px 0; font-size: 1.05rem; font-weight: 800; color: #ffffff; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.7em;">${product.name}</h3>
+                    ${product.description ? `<p style="font-size: 0.78rem; color: #94a3b8; margin: 0 0 10px 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${product.description}</p>` : ''}
                 </div>
 
-                <div>
-                    <div style="color: #00ff88; font-weight: 900; font-size: 1.25rem; margin-bottom: 14px; text-align: left;">${product.price || 'Consultar'}</div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-add-sealed-cart" style="flex: 1; height: 42px; border-radius: 12px; font-weight: 800; font-size: 0.88rem; background: var(--primary-color, #00d2ff); color: #0b1120; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.15s ease, opacity 0.15s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <div style="margin-top: 10px;">
+                    <div style="color: #00ff88; font-weight: 900; font-size: 1.3rem; margin-bottom: 12px; text-align: left; text-shadow: 0 2px 10px rgba(0, 255, 136, 0.2);">${product.price || 'Consultar'}</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn btn-add-sealed-modern btn-add-sealed-cart" title="Añadir al Carrito">
                             <i class="fas fa-shopping-cart"></i> <span>Añadir</span>
                         </button>
-                        <button class="btn btn-secondary btn-share-sealed-single" title="Compartir" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+                        <button class="btn btn-share-sealed-modern btn-share-sealed-single" title="Compartir">
                             <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
@@ -2688,21 +2688,21 @@ function renderPublicSealedGrid() {
             </div>
         `);
 
-        // Clicking anywhere on card (except buttons) opens the detail popup modal
+        // Clicking image or card area opens detail modal
         $item.on('click', function(e) {
-            if ($(e.target).closest('button').length) return;
+            if ($(e.target).closest('button, .btn-add-sealed-cart, .btn-share-sealed-single').length) return;
             openPublicSealedModal(product);
         });
 
-        // Share button
-        $item.find('.btn-share-sealed-single').on('click touchstart', function(e) {
+        // Share button click
+        $item.find('.btn-share-sealed-single').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             openShareModal((product.name || ''), 'sealed', product.id);
         });
 
-        // Add to cart button
-        $item.find('.btn-add-sealed-cart').on('click touchstart', function(e) {
+        // Add to cart button click
+        $item.find('.btn-add-sealed-cart').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             if (isOutOfStock) {
