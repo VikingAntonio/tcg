@@ -1,0 +1,32 @@
+EXPLICACION TECNICA Y ARQUITECTURA DE FIJACION
+
+================================================================================
+1. ¿POR QUE FALLABAN LOS BOTONES (AÑADIR, COMPARTIR Y CLICK EN IMAGEN/CARD)?
+================================================================================
+
+- Conflicto de Event Bubbling (Propagación de Eventos):
+  En las tarjetas de productos sellados (`.sealed-product-item`), se asignó un listener `click` general sobre el contenedor principal `$item` para abrir el modal emergente detallado del producto (`openPublicSealedModal`).
+  Anteriormente, al dar click o toque (touchstart) sobre el botón "Añadir" (`.btn-add-sealed-cart`) o "Compartir" (`.btn-share-sealed-single`), el evento se propagaba hacia el contenedor padre `$item`, provocando que se ejecutara el click de la tarjeta al mismo tiempo o cancelara el evento del botón en navegadores móviles.
+
+- Caché Persistente del Browser y Service Worker (`sw.js`):
+  El proyecto utiliza un Service Worker PWA (`docs/sw.js`) que almacena en caché estática (`STATIC_CACHE`) los archivos HTML, CSS y JS (`app.js`, `style.css`). Si no se actualiza la versión del `STATIC_CACHE` (ej. de `v15` a `v16`), los navegadores móviles y de escritorio continúan ejecutando el código JS antiguo guardado en memoria aunque el servidor se haya actualizado.
+
+- Rediseño del Botón "Añadir" y Formato Moderno:
+  El botón fue rediseñado de un bloque azul sólido tradicional a una barra de acción glassmorphic moderna (`.btn-add-sealed-modern`) con bordes sutiles y transparentes, respuesta háptica al pasar el ratón / toque, tipografía clara con ícono SVG/FontAwesome y alto contraste sobre el fondo oscuro de la tienda.
+
+================================================================================
+2. SOLUCIONES Y MEJORAS IMPLEMENTADAS
+================================================================================
+
+- Aislamiento de Eventos con `e.stopPropagation()`:
+  Se separaron explícitamente los listeners de los botones del listener de la tarjeta.
+  Al hacer clic en el botón de Añadir al Carrito o Compartir, `e.stopPropagation()` detiene inmediatamente la burbuja del evento para que no active la tarjeta ni abra modals no deseados.
+
+- Disparo de Card Modal desde la Imagen y Título:
+  Al hacer clic sobre la imagen del producto (`.product-image-container`) o sobre el título/descripción de la carta, se abre de forma inmediata y fluida la ventana modal de producto tipo Landing Page (`openPublicSealedModal`), mostrando la imagen en alta resolución, disponibilidad de stock, franquicia TCG y botón de agregar al carrito.
+
+- Actualización de `carrito.html`:
+  Se integró la píldora de temas (`pill-panel`) con los íconos de Modo Claro, Modo Morado y Modo Oscuro, sincronizando el estado con `localStorage` (`tcg_theme`). Además, la función `loadStoreContact()` consulta la base de datos de Supabase para mostrar el nombre oficial de la tienda (`store_name`) y el logo personalizado (`store_logo`).
+
+- Actualización del Cache del Service Worker:
+  Se incrementó la versión del Service Worker en `docs/sw.js` a `v16` para garantizar que todos los usuarios reciban inmediatamente la versión más reciente del código.

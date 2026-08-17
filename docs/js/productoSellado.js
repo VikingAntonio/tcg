@@ -306,7 +306,6 @@ function renderAdminProductGrid(products) {
                         </label>
 
                         <div style="display: flex; gap: 6px;">
-                            <button class="btn-icon-square btn-share" title="Compartir"><i class="fas fa-share-alt"></i></button>
                             <button class="btn-icon-square btn-edit" title="Editar"><i class="fas fa-pen"></i></button>
                             <button class="btn-icon-square danger btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
                         </div>
@@ -316,7 +315,6 @@ function renderAdminProductGrid(products) {
         `);
 
         $card.find('.btn-edit').click(() => editProduct(product));
-        $card.find('.btn-share').click(() => openShareModal(product.name, 'sealed', product.id));
         $card.find('.btn-delete').click(() => deleteProduct(product.id));
         $card.find('.toggle-public').change(function() {
             updateVisibility(product.id, $(this).is(':checked'));
