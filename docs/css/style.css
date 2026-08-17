@@ -1560,6 +1560,99 @@ input:checked + .slider:before {
     height: 100%;
 }
 
+/* --- Ultra Modern Glassmorphic Sealed Product Cards & Action Buttons --- */
+.sealed-product-card-modern {
+    position: relative;
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.sealed-product-card-modern:hover {
+    transform: translateY(-6px) scale(1.01);
+    border-color: rgba(0, 210, 255, 0.4) !important;
+    box-shadow: 0 20px 40px rgba(0, 210, 255, 0.15), 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+.sealed-product-card-modern .product-image-container {
+    position: relative;
+    width: 100%;
+    height: 190px;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.3) 100%);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 12px;
+}
+
+.sealed-product-card-modern .btn-add-sealed-modern {
+    flex: 1;
+    height: 44px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.15) 0%, rgba(0, 255, 136, 0.15) 100%);
+    color: #ffffff;
+    border: 1px solid rgba(0, 210, 255, 0.4);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.sealed-product-card-modern .btn-add-sealed-modern:hover {
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.3) 0%, rgba(0, 255, 136, 0.3) 100%);
+    border-color: #00d2ff;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.4), 0 0 10px rgba(0, 255, 136, 0.3);
+    transform: translateY(-2px);
+    color: #ffffff;
+}
+
+.sealed-product-card-modern .btn-add-sealed-modern:active {
+    transform: translateY(1px);
+}
+
+.sealed-product-card-modern .btn-share-sealed-modern {
+    width: 44px;
+    height: 44px;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+}
+
+.sealed-product-card-modern .btn-share-sealed-modern:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #00d2ff;
+    border-color: #00d2ff;
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+    transform: translateY(-2px);
+}
+
 .product-image-container {
     width: 100%;
     height: 280px;
