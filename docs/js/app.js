@@ -2519,6 +2519,130 @@ function renderAlbum(album) {
     });
 }
 
+window.allPublicSealedProducts = [];
+window.publicSealedToolbarBound = false;
+
+function bindPublicSealedToolbarEvents() {
+    if (window.publicSealedToolbarBound) return;
+    window.publicSealedToolbarBound = true;
+
+    $('#public-sealed-search').on('input', function() {
+        renderPublicSealedGrid();
+    });
+
+    $('#public-sealed-filter-tcg, #public-sealed-filter-stock, #public-sealed-sort').on('change', function() {
+        renderPublicSealedGrid();
+    });
+}
+
+function renderPublicSealedGrid() {
+    const $container = $('#sealed-container');
+    $container.empty();
+
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('productId');
+
+    if (filterId && window.allPublicSealedProducts && window.allPublicSealedProducts.length > 0) {
+        $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Productos</button></div>').appendTo($container);
+    }
+
+    let products = [...(window.allPublicSealedProducts || [])];
+
+    // Search query
+    const searchQuery = $('#public-sealed-search').val() ? $('#public-sealed-search').val().trim().toLowerCase() : '';
+    if (searchQuery) {
+        products = products.filter(p => (p.name || '').toLowerCase().includes(searchQuery) || (p.description || '').toLowerCase().includes(searchQuery));
+    }
+
+    // TCG Filter
+    const tcgVal = $('#public-sealed-filter-tcg').val() || 'all';
+    if (tcgVal !== 'all') {
+        products = products.filter(p => (p.tcg || '').toLowerCase() === tcgVal);
+    }
+
+    // Stock Filter
+    const stockVal = $('#public-sealed-filter-stock').val() || 'all';
+    if (stockVal === 'in_stock') {
+        products = products.filter(p => (p.stock !== undefined ? parseInt(p.stock) : (parseInt(p.quantity) || 1)) > 0);
+    } else if (stockVal === 'out_of_stock') {
+        products = products.filter(p => (p.stock !== undefined ? parseInt(p.stock) : (parseInt(p.quantity) || 1)) <= 0);
+    }
+
+    // Sort
+    const sortVal = $('#public-sealed-sort').val() || 'recent';
+    products.sort((a, b) => {
+        const priceA = parseFloat((a.price || "0").toString().replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+        const priceB = parseFloat((b.price || "0").toString().replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+
+        if (sortVal === 'price_desc') return priceB - priceA;
+        if (sortVal === 'price_asc') return priceA - priceB;
+        if (sortVal === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+
+    if (products.length === 0) {
+        $container.html('<div class="empty" style="grid-column: 1/-1; padding: 60px; text-align: center; color: #aaa;">No se encontraron productos sellados con los filtros seleccionados.</div>');
+        return;
+    }
+
+    products.forEach(product => {
+        const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
+        const isOutOfStock = stockCount <= 0;
+        const tcgLabel = (product.tcg || 'Otro').toUpperCase();
+
+        const $item = $(`
+            <div class="deck-public-item sealed-product-item" id="product-item-${product.id}" style="position: relative; background: rgba(15, 23, 36, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+                <div style="position: relative;">
+                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${(product.name || '').replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir Producto" style="position: absolute; top: 10px; right: 10px; z-index: 5;">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <div class="product-image-container" style="position: relative; width: 100%; height: 180px; background: rgba(0,0,0,0.3); border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; color: #00d2ff;">${tcgLabel}</span>
+                        ${isOutOfStock ? '<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">AGOTADO</span>' : `<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 255, 136, 0.15); border: 1px solid #00ff88; color: #00ff88; padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">STOCK: ${stockCount}</span>`}
+                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img" style="max-width: 85%; max-height: 85%; object-fit: contain; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));">
+                    </div>
+                    <h3 style="margin: 14px 0 6px 0; font-size: 1.05rem; font-weight: 800; color: #fff; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.7em;">${product.name}</h3>
+                    ${product.description ? `<p style="font-size: 0.78rem; color: #94a3b8; margin: 0 0 10px 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${product.description}</p>` : ''}
+                </div>
+
+                <div>
+                    <div style="color: #00d2ff; font-weight: 900; font-size: 1.25rem; margin-bottom: 14px; text-align: left;">${product.price || 'Consultar'}</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-add-sealed-cart" style="flex: 1; height: 42px; border-radius: 12px; font-weight: 800; background: linear-gradient(135deg, #00d2ff, #3a7bd5); color: #fff; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-shopping-cart"></i> Añadir
+                        </button>
+                        <button class="btn btn-secondary" onclick="openShareModal('${(product.name || '').replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        $item.find('.btn-add-sealed-cart').click(function(e) {
+            e.stopPropagation();
+            Cart.add({
+                name: product.name,
+                image_url: product.image_url,
+                price: product.price,
+                tcg: product.tcg,
+                description: product.description
+            });
+            Swal.fire({
+                title: '¡Añadido al Carrito!',
+                text: `${product.name} se agregó correctamente.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        });
+
+        $container.append($item);
+    });
+}
+
 function loadPublicSealed() {
     return new Promise(async (resolve) => {
     let userId = window.currentStoreId;
@@ -2532,7 +2656,8 @@ function loadPublicSealed() {
     }
     if (!userId) { resolve(); return; }
 
-    $('#sealed-container').html('<div class="loading">Cargando productos sellados...</div>');
+    bindPublicSealedToolbarEvents();
+    $('#sealed-container').html('<div class="loading" style="padding: 60px; text-align: center; color: #00d2ff;"><i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>Cargando productos sellados...</div>');
 
     const params = new URLSearchParams(window.location.search);
     const filterId = params.get('productId');
@@ -2553,63 +2678,18 @@ function loadPublicSealed() {
 
         if (error) throw error;
 
+        window.allPublicSealedProducts = products || [];
+
         if (!products || products.length === 0) {
-            $('#sealed-container').html('<div class="empty">No hay productos sellados disponibles.</div>');
+            $('#sealed-container').html('<div class="empty" style="padding: 60px; text-align: center; color: #888;">No hay productos sellados disponibles.</div>');
             return;
         }
 
-        $('#sealed-container').empty();
-        if (filterId && products && products.length > 0) {
-            $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Productos</button></div>').appendTo('#sealed-container');
-        }
-        products.forEach(product => {
-            const $item = $(`
-                <div class="deck-public-item sealed-product-item" id="product-item-${product.id}" style="position: relative;">
-                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${product.name.replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir Producto">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <div class="product-image-container">
-                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
-                             alt="${product.name}" class="sealed-product-img">
-                    </div>
-                    <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center;">${product.name}</h3>
-                    <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px;">${product.price || 'Consultar'}</div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-add-sealed-cart" style="flex: 1;">
-                            <i class="fas fa-cart-plus"></i>
-                        </button>
-                        <button class="btn btn-secondary" onclick="openShareModal('${product.name.replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            `);
-
-            $item.find('.btn-add-sealed-cart').click(function(e) {
-                e.stopPropagation();
-                Cart.add({
-                    name: product.name,
-                    image_url: product.image_url,
-                    price: product.price,
-                    tcg: product.tcg
-                });
-                Swal.fire({
-                    title: '¡Añadido!',
-                    text: `${product.name} se ha agregado al carrito.`,
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end'
-                });
-            });
-
-            $('#sealed-container').append($item);
-        });
+        renderPublicSealedGrid();
 
     } catch (e) {
         console.error("Error loading sealed products:", e);
-        $('#sealed-container').html('<div class="error">Error al cargar productos.</div>');
+        $('#sealed-container').html('<div class="error" style="padding: 60px; text-align: center; color: #ff4757;">Error al cargar productos.</div>');
     } finally {
         resolve();
     }
