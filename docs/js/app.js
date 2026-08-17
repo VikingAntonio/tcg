@@ -2582,16 +2582,26 @@ function openPublicSealedModal(product) {
                 image_url: product.image_url,
                 price: product.price,
                 tcg: product.tcg,
-                description: product.description
+                description: product.description,
+                whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
+                messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
             });
+            const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
             Swal.fire({
                 title: '¡Añadido al Carrito!',
-                text: `${product.name} se agregó correctamente.`,
+                text: `${product.name} se agregó a tu carrito.`,
                 icon: 'success',
-                timer: 1500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
+                cancelButtonText: 'Seguir Comprando',
+                confirmButtonColor: '#00d2ff',
+                cancelButtonColor: '#475569',
+                background: '#0f172a',
+                color: '#fff'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    window.location.href = cartUrl;
+                }
             });
         }
     });
@@ -2667,7 +2677,7 @@ function renderPublicSealedGrid() {
                 <div>
                     <div style="color: #00d2ff; font-weight: 900; font-size: 1.25rem; margin-bottom: 14px; text-align: left;">${product.price || 'Consultar'}</div>
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-add-sealed-cart" style="flex: 1; height: 42px; border-radius: 12px; font-weight: 800; background: linear-gradient(135deg, #00d2ff, #3a7bd5); color: #fff; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                        <button class="btn btn-add-sealed-cart" style="flex: 1; height: 42px; border-radius: 12px; font-weight: 800; font-size: 0.88rem; background: #00d2ff; color: #0b1120; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
                             <i class="fas fa-shopping-cart"></i> Añadir
                         </button>
                         <button class="btn btn-secondary btn-share-sealed-single" title="Compartir" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
@@ -2702,16 +2712,26 @@ function renderPublicSealedGrid() {
                 image_url: product.image_url,
                 price: product.price,
                 tcg: product.tcg,
-                description: product.description
+                description: product.description,
+                whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
+                messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
             });
+            const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
             Swal.fire({
                 title: '¡Añadido al Carrito!',
-                text: `${product.name} se agregó correctamente.`,
+                text: `${product.name} se agregó a tu carrito.`,
                 icon: 'success',
-                timer: 1500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
+                cancelButtonText: 'Seguir Comprando',
+                confirmButtonColor: '#00d2ff',
+                cancelButtonColor: '#475569',
+                background: '#0f172a',
+                color: '#fff'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    window.location.href = cartUrl;
+                }
             });
         });
 
