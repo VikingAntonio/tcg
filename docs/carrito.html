@@ -177,6 +177,14 @@
             <img id="public-store-logo" src="https://vikingtcg.xyz/favi.png" alt="Logo">
             <h1 id="public-store-name">Finalizar Pedido</h1>
         </a>
+
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
     </header>
 
     <div class="cart-page-container">
@@ -218,11 +226,41 @@
             messenger: 'TCGToonShop'
         };
 
+        function initTheme() {
+            const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+            applyTheme(savedTheme);
+        }
+
+        function applyTheme(theme) {
+            $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+            localStorage.setItem('tcg_theme', theme);
+
+            $('.theme-btn-small').removeClass('active');
+            $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
+        }
+
         $(document).ready(async function() {
+            initTheme();
+
+            $(document).on('click', '.theme-btn-small', function() {
+                const theme = $(this).data('theme');
+                if (theme) applyTheme(theme);
+            });
+
             // Setup context links
             document.getElementById('logo-link').href = 'public.html' + window.location.search;
-            const homeBtn = document.querySelector('.nav-item[onclick*="public.html"]');
-            if (homeBtn) homeBtn.setAttribute('onclick', "window.location.href='public.html' + window.location.search");
+            const homeBtn = document.getElementById('btn-nav-home');
+            if (homeBtn) {
+                homeBtn.onclick = function() {
+                    window.location.href = 'public.html' + window.location.search;
+                };
+            }
+            const returnBtn = document.getElementById('btn-nav-return');
+            if (returnBtn) {
+                returnBtn.onclick = function() {
+                    window.history.back();
+                };
+            }
 
             renderCart();
             await loadStoreContact();
@@ -267,14 +305,23 @@
             $('#empty-cart-msg').hide();
 
             items.forEach(item => {
+                const detailParts = [];
+                if (item.rarity && item.rarity !== '-') detailParts.push(item.rarity);
+                if (item.expansion && item.expansion !== '-') detailParts.push(item.expansion);
+                if (item.condition && item.condition !== '-') detailParts.push(item.condition);
+                if (item.tcg) detailParts.push(item.tcg.toUpperCase());
+                if (item.description) detailParts.push(item.description);
+
+                const detailsText = detailParts.length > 0 ? detailParts.join(' | ') : 'Producto';
+
                 const $itemRow = $(`
                     <div class="cart-item">
-                        <img src="${item.image_url}" alt="${item.name}">
+                        <img src="${item.image_url || 'https://via.placeholder.com/100x140?text=Producto'}" alt="${item.name}">
                         <div class="cart-item-info">
                             <h3>${item.name}</h3>
-                            <p>${item.rarity} | ${item.expansion} | ${item.condition}</p>
+                            <p>${detailsText}</p>
                         </div>
-                        <div class="cart-item-price">${item.price}</div>
+                        <div class="cart-item-price">${item.price || '$0.00'}</div>
                         <button class="btn-remove" onclick="removeItem('${item.cart_id}')" title="Quitar">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -293,20 +340,27 @@
 
         async function loadStoreContact() {
             const urlParams = new URLSearchParams(window.location.search);
-            const storeName = urlParams.get('store') || urlParams.get('user');
+            const storeName = urlParams.get('store') || urlParams.get('user') || urlParams.get('id');
 
             if (!storeName) return;
 
             try {
+                const safeId = storeName.replace(/['"]/g, '');
                 const { data, error } = await _supabase
                     .from('usuarios')
-                    .select('whatsapp_link, messenger_link')
-                    .or(`store_name.eq."${storeName}",username.eq."${storeName}"`)
+                    .select('store_name, username, store_logo, is_store, whatsapp_link, messenger_link')
+                    .or(`store_name.eq."${safeId}",username.eq."${safeId}"`)
                     .maybeSingle();
 
                 if (!error && data) {
                     if (data.whatsapp_link) storeOwnerLinks.whatsapp = data.whatsapp_link;
                     if (data.messenger_link) storeOwnerLinks.messenger = data.messenger_link;
+
+                    const title = data.is_store && data.store_name ? data.store_name : (data.username || 'Viking TCG');
+                    $('#public-store-name').text(title);
+                    if (data.store_logo) {
+                        $('#public-store-logo').attr('src', data.store_logo).show();
+                    }
                 }
             } catch (e) {
                 console.error("Error loading store contact:", e);
