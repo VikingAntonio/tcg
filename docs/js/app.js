@@ -2526,12 +2526,74 @@ function bindPublicSealedToolbarEvents() {
     if (window.publicSealedToolbarBound) return;
     window.publicSealedToolbarBound = true;
 
+    $(document).on('click', '#btn-toggle-public-sealed-filters', function() {
+        const $drawer = $('#public-sealed-toolbar-drawer');
+        if ($drawer.is(':visible')) {
+            $drawer.slideUp(200);
+        } else {
+            $drawer.css('display', 'flex').hide().slideDown(200);
+        }
+    });
+
     $('#public-sealed-search').on('input', function() {
         renderPublicSealedGrid();
     });
 
     $('#public-sealed-filter-tcg, #public-sealed-filter-stock, #public-sealed-sort').on('change', function() {
         renderPublicSealedGrid();
+    });
+}
+
+function openPublicSealedModal(product) {
+    const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
+    const isOutOfStock = stockCount <= 0;
+    const tcgLabel = (product.tcg || 'Otro').toUpperCase();
+
+    Swal.fire({
+        title: `<div style="font-size: 1.2rem; font-weight: 800; color: #fff;">${product.name}</div>`,
+        html: `
+            <div style="text-align: center; color: #e2e8f0; font-family: sans-serif;">
+                <div style="margin-bottom: 15px; position: relative; background: rgba(0,0,0,0.3); border-radius: 16px; padding: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                    <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); border-radius: 8px;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px;">
+                    <span style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; background: rgba(0,210,255,0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(0,210,255,0.3);">${tcgLabel}</span>
+                    <span style="font-size: 0.85rem; font-weight: 800; color: ${isOutOfStock ? '#ff4757' : '#00ff88'};">${isOutOfStock ? 'Agotado' : `Disponible: ${stockCount} en stock`}</span>
+                </div>
+                <div style="font-size: 1.5rem; font-weight: 900; color: #00d2ff; margin-bottom: 12px; text-align: center;">${product.price || 'Consultar'}</div>
+                ${product.description ? `<p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px; text-align: left; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">${product.description}</p>` : ''}
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-cart-plus"></i> Añadir al Carrito',
+        cancelButtonText: 'Cerrar',
+        confirmButtonColor: '#00d2ff',
+        cancelButtonColor: '#475569',
+        background: '#0f172a',
+        color: '#fff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            if (isOutOfStock) {
+                Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para este producto.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                return;
+            }
+            Cart.add({
+                name: product.name,
+                image_url: product.image_url,
+                price: product.price,
+                tcg: product.tcg,
+                description: product.description
+            });
+            Swal.fire({
+                title: '¡Añadido al Carrito!',
+                text: `${product.name} se agregó correctamente.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
     });
 }
 
@@ -2591,14 +2653,11 @@ function renderPublicSealedGrid() {
         const tcgLabel = (product.tcg || 'Otro').toUpperCase();
 
         const $item = $(`
-            <div class="deck-public-item sealed-product-item" id="product-item-${product.id}" style="position: relative; background: rgba(15, 23, 36, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <div class="deck-public-item sealed-product-item" id="product-item-${product.id}" style="position: relative; background: rgba(15, 23, 36, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; box-shadow: 0 10px 25px rgba(0,0,0,0.3); cursor: pointer;">
                 <div style="position: relative;">
-                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${(product.name || '').replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir Producto" style="position: absolute; top: 10px; right: 10px; z-index: 5;">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
                     <div class="product-image-container" style="position: relative; width: 100%; height: 180px; background: rgba(0,0,0,0.3); border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05);">
                         <span style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; color: #00d2ff;">${tcgLabel}</span>
-                        ${isOutOfStock ? '<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">AGOTADO</span>' : `<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 255, 136, 0.15); border: 1px solid #00ff88; color: #00ff88; padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">STOCK: ${stockCount}</span>`}
+                        ${isOutOfStock ? '<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">AGOTADO</span>' : `<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 255, 136, 0.15); border: 1px solid #00ff88; color: #00ff88; padding: 3px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;">DISPONIBLE: ${stockCount}</span>`}
                         <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img" style="max-width: 85%; max-height: 85%; object-fit: contain; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));">
                     </div>
                     <h3 style="margin: 14px 0 6px 0; font-size: 1.05rem; font-weight: 800; color: #fff; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.7em;">${product.name}</h3>
@@ -2611,7 +2670,7 @@ function renderPublicSealedGrid() {
                         <button class="btn btn-add-sealed-cart" style="flex: 1; height: 42px; border-radius: 12px; font-weight: 800; background: linear-gradient(135deg, #00d2ff, #3a7bd5); color: #fff; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
                             <i class="fas fa-shopping-cart"></i> Añadir
                         </button>
-                        <button class="btn btn-secondary" onclick="openShareModal('${(product.name || '').replace(/'/g, "\\'")}', 'sealed', '${product.id}')" title="Compartir" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+                        <button class="btn btn-secondary btn-share-sealed-single" title="Compartir" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
                             <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
@@ -2619,8 +2678,25 @@ function renderPublicSealedGrid() {
             </div>
         `);
 
+        // Clicking anywhere on card (except buttons) opens the detail popup modal
+        $item.on('click', function(e) {
+            if ($(e.target).closest('button').length) return;
+            openPublicSealedModal(product);
+        });
+
+        // Share button
+        $item.find('.btn-share-sealed-single').click(function(e) {
+            e.stopPropagation();
+            openShareModal((product.name || ''), 'sealed', product.id);
+        });
+
+        // Add to cart button
         $item.find('.btn-add-sealed-cart').click(function(e) {
             e.stopPropagation();
+            if (isOutOfStock) {
+                Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para este producto.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                return;
+            }
             Cart.add({
                 name: product.name,
                 image_url: product.image_url,

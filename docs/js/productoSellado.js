@@ -10,6 +10,11 @@ $(document).ready(async function() {
     }
 
     // --- Navigation & UI ---
+    $('#btn-toggle-admin-filters').click(function() {
+        $(this).toggleClass('active');
+        $('#admin-filter-drawer').slideToggle(250).css('display', $('#admin-filter-drawer').is(':visible') ? 'flex' : 'none');
+    });
+
     $('#btn-open-add-modal').click(function() {
         resetModal();
         $('#product-modal').addClass('active');

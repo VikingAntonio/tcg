@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <link rel="manifest" href="manifest.json">
-    <title>Producto Sellado - Vikingdev TCG</title>
+    <title>Productos - Vikingdev TCG</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -23,7 +23,6 @@
             --accent-blue: #3a7bd5;
             --accent-green: #00ff88;
             --viking-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-            --viking-gold: linear-gradient(135deg, #f12711 0%, #f5af19 100%);
             --card-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
 
@@ -34,6 +33,12 @@
             font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
             padding: 0;
+            scrollbar-width: none !important;
+        }
+
+        body::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
         }
 
         .sealed-wrapper {
@@ -50,22 +55,11 @@
             backdrop-filter: var(--glass-blur);
             border: 1px solid var(--glass-border);
             border-radius: 28px;
-            padding: 30px 35px;
-            margin-bottom: 30px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
             box-shadow: var(--card-shadow);
             position: relative;
             overflow: hidden;
-        }
-
-        .store-dashboard-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(0, 210, 255, 0.06) 0%, transparent 60%);
-            pointer-events: none;
         }
 
         .header-top-row {
@@ -73,8 +67,7 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 25px;
+            gap: 15px;
         }
 
         .header-title-box h1 {
@@ -86,73 +79,89 @@
             background: var(--viking-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .header-action-group {
             display: flex;
             align-items: center;
             gap: 12px;
-        }
-
-        .header-title-box p {
-            color: #a0aec0;
-            margin: 6px 0 0 0;
-            font-size: 0.95rem;
+            flex-wrap: wrap;
         }
 
         .btn-add-primary {
             background: var(--viking-gradient);
             color: #fff;
             border: none;
-            padding: 14px 28px;
+            padding: 12px 24px;
             border-radius: 50px;
             font-weight: 800;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             letter-spacing: 0.5px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             box-shadow: 0 8px 25px rgba(0, 210, 255, 0.35);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .btn-add-primary:hover {
-            transform: translateY(-3px) scale(1.02);
+            transform: translateY(-2px);
             box-shadow: 0 12px 30px rgba(0, 210, 255, 0.5);
         }
 
-        /* Metric Summary Cards */
+        .btn-filter-toggle {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-filter-toggle:hover, .btn-filter-toggle.active {
+            background: rgba(0, 210, 255, 0.2);
+            border-color: #00d2ff;
+            color: #00d2ff;
+        }
+
+        /* Responsive Metric Summary Cards */
         .stats-summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 18px;
-            margin-top: 10px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .stat-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 18px;
-            padding: 18px 20px;
+            border-radius: 16px;
+            padding: 14px 16px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(0, 210, 255, 0.3);
+            gap: 12px;
+            min-width: 0;
         }
 
         .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             background: rgba(0, 210, 255, 0.12);
             color: var(--accent-cyan);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             flex-shrink: 0;
         }
 
@@ -171,41 +180,55 @@
             color: #9b59b6;
         }
 
+        .stat-info {
+            min-width: 0;
+            overflow: hidden;
+        }
+
         .stat-info .stat-val {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 900;
             color: #fff;
             line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stat-info .stat-lbl {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #8a9ba8;
             text-transform: uppercase;
             font-weight: 700;
-            margin-top: 4px;
+            margin-top: 2px;
             letter-spacing: 0.5px;
+            white-space: nowrap;
         }
 
-        /* Control & Filter Toolbar */
+        /* Collapsible Filter Toolbar */
         .toolbar-control-panel {
-            background: rgba(15, 23, 36, 0.6);
+            display: none; /* Hidden by default, toggled via button */
+            background: rgba(15, 23, 36, 0.7);
             backdrop-filter: var(--glass-blur);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
             padding: 16px 20px;
-            margin-bottom: 30px;
-            display: flex;
-            flex-wrap: wrap;
+            margin-bottom: 25px;
             gap: 15px;
             align-items: center;
             justify-content: space-between;
+            animation: slideDownFade 0.3s ease-out;
+        }
+
+        @keyframes slideDownFade {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .search-field-wrapper {
             position: relative;
             flex: 1;
-            min-width: 240px;
+            min-width: 200px;
         }
 
         .search-field-wrapper i {
@@ -214,17 +237,17 @@
             top: 50%;
             transform: translateY(-50%);
             color: #64748b;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .search-field-input {
             width: 100%;
-            padding: 12px 16px 12px 44px;
+            padding: 10px 16px 10px 42px;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 50px;
             color: #fff;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             outline: none;
             box-sizing: border-box;
             transition: all 0.3s ease;
@@ -233,7 +256,6 @@
         .search-field-input:focus {
             border-color: var(--accent-cyan);
             box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
-            background: rgba(0, 0, 0, 0.5);
         }
 
         .filter-group-wrapper {
@@ -248,8 +270,8 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 50px;
             color: #cbd5e1;
-            padding: 10px 16px;
-            font-size: 0.85rem;
+            padding: 9px 16px;
+            font-size: 0.82rem;
             font-weight: 700;
             outline: none;
             cursor: pointer;
@@ -261,16 +283,11 @@
             color: #fff;
         }
 
-        .select-custom-filter:hover, .select-custom-filter:focus {
-            border-color: var(--accent-cyan);
-            color: #fff;
-        }
-
         /* Products Grid */
         .products-ecom-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 22px;
             width: 100%;
         }
 
@@ -280,24 +297,24 @@
             backdrop-filter: var(--glass-blur);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 22px;
-            padding: 18px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             position: relative;
-            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s ease;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
 
         .product-ecom-card:hover {
-            transform: translateY(-8px);
+            transform: translateY(-6px);
             border-color: rgba(0, 210, 255, 0.4);
-            box-shadow: 0 20px 40px rgba(0, 210, 255, 0.15);
+            box-shadow: 0 18px 35px rgba(0, 210, 255, 0.15);
         }
 
         .card-img-box {
             width: 100%;
-            height: 200px;
+            height: 190px;
             background: rgba(0, 0, 0, 0.35);
             border-radius: 16px;
             overflow: hidden;
@@ -313,39 +330,37 @@
             max-height: 85%;
             object-fit: contain;
             filter: drop-shadow(0 8px 18px rgba(0,0,0,0.6));
-            transition: transform 0.5s ease;
+            transition: transform 0.4s ease;
         }
 
         .product-ecom-card:hover .card-img-box img {
-            transform: scale(1.08);
+            transform: scale(1.06);
         }
 
         .badge-tcg-pill {
             position: absolute;
-            top: 12px;
-            left: 12px;
+            top: 10px;
+            left: 10px;
             background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 4px 10px;
+            padding: 3px 9px;
             border-radius: 30px;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             font-weight: 800;
             color: #00d2ff;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .badge-stock-pill {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 10px;
+            right: 10px;
             background: rgba(0, 255, 136, 0.15);
             border: 1px solid rgba(0, 255, 136, 0.3);
             color: #00ff88;
-            padding: 4px 10px;
+            padding: 3px 9px;
             border-radius: 30px;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             font-weight: 800;
         }
 
@@ -356,7 +371,7 @@
         }
 
         .card-content-body {
-            padding: 16px 4px 5px 4px;
+            padding: 14px 2px 2px 2px;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -364,10 +379,10 @@
         }
 
         .card-title {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 800;
             color: #fff;
-            margin: 0 0 8px 0;
+            margin: 0 0 6px 0;
             line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -378,10 +393,10 @@
         }
 
         .card-desc {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: #94a3b8;
-            margin-bottom: 12px;
-            line-height: 1.4;
+            margin-bottom: 10px;
+            line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -393,24 +408,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 10px;
-            padding-top: 10px;
+            margin-top: 8px;
+            padding-top: 8px;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .card-price-val {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 900;
             color: var(--accent-cyan);
-            letter-spacing: -0.5px;
         }
 
         .card-actions-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-top: 15px;
-            padding-top: 12px;
+            margin-top: 12px;
+            padding-top: 10px;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
@@ -419,14 +433,14 @@
             align-items: center;
             gap: 8px;
             cursor: pointer;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 800;
             color: #94a3b8;
         }
 
         .btn-icon-square {
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.1);
             background: rgba(255,255,255,0.05);
@@ -450,19 +464,19 @@
             border-color: #ff4757;
         }
 
-        /* Modal Redesign */
+        /* Modal Redesign - Invisible Scrollbar & Pure Text Labels */
         .modal-product-ecom {
             background: #0b1120 !important;
             border: 1px solid rgba(0, 210, 255, 0.2) !important;
             border-radius: 28px !important;
-            max-width: 700px !important;
+            max-width: 680px !important;
             width: 95% !important;
             overflow: hidden;
             box-shadow: 0 25px 60px rgba(0,0,0,0.8);
         }
 
         .modal-ecom-header {
-            padding: 22px 30px;
+            padding: 20px 28px;
             background: rgba(255, 255, 255, 0.02);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
@@ -471,22 +485,19 @@
         }
 
         .modal-ecom-title {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #fff;
             margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .modal-nav-tabs {
             display: flex;
             background: rgba(0, 0, 0, 0.4);
-            margin: 20px 30px 10px 30px;
-            padding: 5px;
+            margin: 18px 28px 10px 28px;
+            padding: 4px;
             border-radius: 50px;
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
@@ -512,21 +523,33 @@
         }
 
         .modal-body-scroll {
-            padding: 25px 30px;
-            max-height: 65vh;
+            padding: 22px 28px;
+            max-height: 62vh;
             overflow-y: auto;
+            scrollbar-width: none !important;
+        }
+
+        .modal-body-scroll::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
 
         .search-results-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-            padding: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+            gap: 14px;
+            margin-top: 18px;
+            padding: 14px;
             background: rgba(0,0,0,0.25);
             border-radius: 16px;
             border: 1px solid rgba(255,255,255,0.04);
-            min-height: 200px;
+            min-height: 180px;
+            scrollbar-width: none !important;
+        }
+
+        .search-results-grid::-webkit-scrollbar {
+            display: none !important;
         }
 
         .search-result-item {
@@ -550,7 +573,7 @@
 
         .search-result-item img {
             max-width: 90%;
-            max-height: 100px;
+            max-height: 95px;
             object-fit: contain;
             margin-bottom: 8px;
         }
@@ -568,17 +591,37 @@
                 padding-right: 12px;
             }
             .store-dashboard-header {
-                padding: 20px;
+                padding: 18px;
+                border-radius: 22px;
             }
             .header-title-box h1 {
-                font-size: 1.6rem;
+                font-size: 1.5rem;
             }
-            .btn-add-primary {
+            .header-action-group {
                 width: 100%;
+            }
+            .btn-add-primary, .btn-filter-toggle {
+                flex: 1;
                 justify-content: center;
             }
             .stats-summary-grid {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 10px 12px;
+                gap: 10px;
+            }
+            .stat-icon {
+                width: 34px;
+                height: 34px;
+                font-size: 0.95rem;
+            }
+            .stat-info .stat-val {
+                font-size: 1.05rem;
+            }
+            .stat-info .stat-lbl {
+                font-size: 0.62rem;
             }
             .toolbar-control-panel {
                 flex-direction: column;
@@ -622,12 +665,16 @@
         <div class="store-dashboard-header">
             <div class="header-top-row">
                 <div class="header-title-box">
-                    <h1><i class="fas fa-box-open" style="color: #00d2ff;"></i> Producto Sellado</h1>
-                    <p>Inventario profesional de cajas, sobres y productos especiales.</p>
+                    <h1>Productos</h1>
                 </div>
-                <button id="btn-open-add-modal" class="btn-add-primary">
-                    <i class="fas fa-plus-circle"></i> AÑADIR PRODUCTO
-                </button>
+                <div class="header-action-group">
+                    <button id="btn-toggle-admin-filters" class="btn-filter-toggle">
+                        <i class="fas fa-filter"></i> Filtros
+                    </button>
+                    <button id="btn-open-add-modal" class="btn-add-primary">
+                        <i class="fas fa-plus-circle"></i> AÑADIR PRODUCTO
+                    </button>
+                </div>
             </div>
 
             <!-- Stats Metric Cards -->
@@ -663,8 +710,8 @@
             </div>
         </div>
 
-        <!-- Filter & Search Toolbar -->
-        <div class="toolbar-control-panel">
+        <!-- Filter & Search Collapsible Toolbar -->
+        <div id="admin-filter-drawer" class="toolbar-control-panel">
             <div class="search-field-wrapper">
                 <i class="fas fa-search"></i>
                 <input type="text" id="admin-search-input" class="search-field-input" placeholder="Buscar por nombre...">
@@ -714,39 +761,37 @@
         <div class="overlay-content modal-product-ecom">
             <div class="modal-ecom-header">
                 <div class="modal-ecom-title">
-                    <i class="fas fa-box" style="color: #00d2ff;"></i>
                     <span id="modal-title">NUEVO PRODUCTO</span>
                 </div>
                 <span id="close-product-modal" class="close-btn" style="position: static; font-size: 28px; color: #64748b;">&times;</span>
             </div>
 
-            <!-- Modal Navigation Tabs -->
+            <!-- Modal Navigation Tabs (Pure Text) -->
             <div class="modal-nav-tabs">
-                <div class="modal-nav-tab active" data-tab="tab-search"><i class="fas fa-globe"></i> BÚSQUEDA GLOBAL</div>
-                <div class="modal-nav-tab" data-tab="tab-data"><i class="fas fa-pen"></i> DATOS DEL PRODUCTO</div>
+                <div class="modal-nav-tab active" data-tab="tab-search">BÚSQUEDA GLOBAL</div>
+                <div class="modal-nav-tab" data-tab="tab-data">DATOS DEL PRODUCTO</div>
             </div>
 
             <div class="modal-body-scroll">
                 <input type="hidden" id="edit-product-id">
 
-                <!-- Tab 1: Search Across Internal & External DBs -->
+                <!-- Tab 1: Search Across Internal & External DBs (Pure Text) -->
                 <div id="tab-search" class="tab-content active">
                     <div class="form-group">
-                        <label style="color: #00d2ff; font-weight: 800; font-size: 0.75rem; letter-spacing: 1px;"><i class="fas fa-search"></i> BUSCAR EN BASES DE DATOS MUNDIALES E INTERNAS</label>
+                        <label style="color: #00d2ff; font-weight: 800; font-size: 0.75rem; letter-spacing: 1px;">BUSCAR EN BASES DE DATOS MUNDIALES E INTERNAS</label>
                         <div style="display: flex; gap: 10px; margin-top: 12px;">
                             <input type="text" id="external-search-input" placeholder="Nombre de producto, set o carta..." style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 14px; font-size: 0.95rem;">
-                            <button id="btn-external-search" class="btn" style="padding: 0 22px; border-radius: 12px; font-weight: 800;"><i class="fas fa-search"></i></button>
+                            <button id="btn-external-search" class="btn" style="padding: 0 22px; border-radius: 12px; font-weight: 800;">BUSCAR</button>
                         </div>
                         <div id="external-search-results" class="search-results-grid">
                             <div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 50px;">
-                                <i class="fas fa-search" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4;"></i>
-                                <p style="font-weight: 600; font-size: 0.9rem;">Busca un producto para auto-completar título, imagen y detalles automáticamente.</p>
+                                <p style="font-weight: 600; font-size: 0.9rem; margin: 0;">Busca un producto para auto-completar título, imagen y detalles automáticamente.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab 2: Product Data -->
+                <!-- Tab 2: Product Data (Pure Text Labels) -->
                 <div id="tab-data" class="tab-content" style="display: none;">
                     <div class="form-group">
                         <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Nombre del Producto</label>
@@ -784,7 +829,6 @@
                     <div class="form-group">
                         <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Imagen del Producto</label>
                         <label class="file-drop-zone" id="drop-zone-product" for="input-product-file" style="display: block; background: rgba(0,0,0,0.3); border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 2.2rem; color: #00d2ff; margin-bottom: 8px;"></i>
                             <p style="font-weight: 700; margin: 0 0 4px 0; color: #fff;">Arrastra una imagen aquí</p>
                             <p style="font-size: 0.75rem; color: #64748b; margin: 0;">O haz clic para seleccionar un archivo</p>
                             <input type="file" id="input-product-file" accept="image/*" style="display: none;">
@@ -808,7 +852,7 @@
 
             <div style="padding: 20px 30px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);">
                 <button id="btn-save-product" class="btn" style="width: 100%; height: 50px; font-weight: 900; letter-spacing: 1.5px; font-size: 0.95rem; border-radius: 14px; background: var(--viking-gradient); color: #fff; border: none; cursor: pointer;">
-                    <i class="fas fa-check-circle"></i> GUARDAR PRODUCTO
+                    GUARDAR PRODUCTO
                 </button>
             </div>
         </div>
