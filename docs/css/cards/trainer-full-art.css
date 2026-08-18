@@ -80,8 +80,8 @@
 
 */
 
-.card[data-subtypes*="supporter"][data-rarity="rare ultra"] .card__shine,
-.card[data-subtypes*="supporter"][data-rarity="rare ultra"] .card__shine:after {
+.card:not(.masked)[data-subtypes*="supporter"][data-rarity="rare ultra"] .card__shine,
+.card:not(.masked)[data-subtypes*="supporter"][data-rarity="rare ultra"] .card__shine:after {
 
   --mask: none;
   --foil: url("../../img/trainerbg.png");
