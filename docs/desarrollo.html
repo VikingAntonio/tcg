@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Desarrollo y Mantenimiento - VikingTCG</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favi.png">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Model Viewer for 3D GLTF models -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #060913;
+            --card-bg: rgba(15, 23, 42, 0.75);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --primary-cyan: #00d2ff;
+            --accent-green: #00ff88;
+            --accent-purple: #9d4edd;
+            --warning-red: #ff4757;
+            --warning-orange: #ffa500;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-glow: 0 8px 32px 0 rgba(0, 210, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 15% 15%, rgba(0, 210, 255, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(157, 78, 221, 0.08) 0%, transparent 45%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 60px;
+            overflow-x: hidden;
+        }
+
+        /* Top Header */
+        header.dev-header {
+            background: rgba(10, 15, 29, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 16px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.5));
+        }
+
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.2), rgba(255, 165, 0, 0.2));
+            border: 1px solid var(--warning-red);
+            color: #ff6b81;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-header {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-header:hover {
+            background: rgba(0, 210, 255, 0.15);
+            border-color: var(--primary-cyan);
+            color: var(--primary-cyan);
+            transform: translateY(-2px);
+        }
+
+        /* Container & Grid Layout */
+        .container {
+            max-width: 1400px;
+            margin: 32px auto;
+            padding: 0 24px;
+        }
+
+        /* Access Denied View */
+        #access-denied-view {
+            display: none;
+            text-align: center;
+            padding: 80px 20px;
+            max-width: 600px;
+            margin: 60px auto;
+            background: var(--card-bg);
+            border: 1px solid var(--warning-red);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(255, 71, 87, 0.2);
+        }
+
+        #access-denied-view i {
+            font-size: 4rem;
+            color: var(--warning-red);
+            margin-bottom: 20px;
+        }
+
+        #access-denied-view h2 {
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        #access-denied-view p {
+            color: var(--text-muted);
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8));
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 32px;
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+            box-shadow: var(--glass-glow);
+        }
+
+        .hero-info h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-info p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            max-width: 700px;
+            line-height: 1.5;
+        }
+
+        .global-stats {
+            display: flex;
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px 24px;
+            text-align: center;
+            min-width: 140px;
+        }
+
+        .stat-num {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--primary-cyan);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Main Section Titles */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            margin-top: 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--primary-cyan);
+        }
+
+        /* Model Config Area */
+        .model-config-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            margin-bottom: 32px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 28px;
+        }
+
+        @media (max-width: 900px) {
+            .model-config-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .model-preview-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(0, 210, 255, 0.3);
+            border-radius: 16px;
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .model-preview-box model-viewer {
+            width: 100%;
+            height: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-cyan);
+            background: rgba(0, 210, 255, 0.05);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.2);
+        }
+
+        /* Grid of Maintenance Cards */
+        .zones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .zone-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .zone-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 210, 255, 0.4);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .zone-card.maintenance-active {
+            border-color: var(--warning-red);
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(15, 23, 42, 0.85));
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.2);
+        }
+
+        .zone-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .zone-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            color: var(--primary-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .zone-card.maintenance-active .zone-icon-box {
+            background: rgba(255, 71, 87, 0.15);
+            border-color: rgba(255, 71, 87, 0.3);
+            color: var(--warning-red);
+        }
+
+        .zone-status-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge-live {
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .status-badge-maintenance {
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid var(--warning-red);
+            color: #ff6b81;
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .zone-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #fff;
+        }
+
+        .zone-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            line-height: 1.4;
+            min-height: 2.8em;
+        }
+
+        .zone-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 14px;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        input:checked + .slider {
+            background-color: var(--warning-red);
+            border-color: var(--warning-red);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .btn-action {
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            color: var(--primary-cyan);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-action:hover {
+            background: var(--primary-cyan);
+            color: #000;
+        }
+
+        .btn-main-save {
+            background: linear-gradient(135deg, var(--primary-cyan), var(--accent-purple));
+            border: none;
+            color: #fff;
+            font-weight: 800;
+            font-size: 1rem;
+            padding: 14px 28px;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 210, 255, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-main-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 210, 255, 0.5);
+        }
+
+        /* Non-Dismissable Maintenance Overlay (Live Simulator & Runtime Display) */
+        #maintenance-overlay-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 7, 16, 0.94);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 999999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            user-select: none;
+        }
+
+        #maintenance-overlay-screen.active {
+            display: flex;
+            animation: fadeInOverlay 0.4s ease forwards;
+        }
+
+        @keyframes fadeInOverlay {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .maintenance-gltf-wrapper {
+            width: 100%;
+            max-width: 650px;
+            height: 400px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .maintenance-gltf-wrapper model-viewer {
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+
+        .maintenance-badge {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.25), rgba(255, 165, 0, 0.25));
+            border: 1px solid var(--warning-red);
+            color: #ff6b81;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);
+        }
+
+        .maintenance-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+            text-shadow: 0 4px 20px rgba(0, 210, 255, 0.4);
+        }
+
+        .maintenance-subtitle {
+            font-size: 1.05rem;
+            color: #cbd5e1;
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .maintenance-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-sim-exit-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 210, 255, 0.2);
+            border: 1px solid var(--primary-cyan);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            z-index: 1000000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-sim-exit-bar:hover {
+            background: var(--primary-cyan);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="dev-header">
+        <div class="brand-container">
+            <img src="favi.png" alt="VikingTCG Logo" class="brand-logo" onerror="this.src='https://via.placeholder.com/40'">
+            <div class="brand-title">VikingTCG DevZone</div>
+            <div class="admin-badge"><i class="fas fa-user-shield"></i> Exclusivo Admin</div>
+        </div>
+        <div class="user-actions">
+            <a href="admin.html" class="btn-header"><i class="fas fa-cog"></i> Panel Admin</a>
+            <a href="public.html" class="btn-header" target="_blank"><i class="fas fa-external-link-alt"></i> Ver Sitio Público</a>
+            <button id="btn-dev-logout" class="btn-header" style="color: var(--warning-red); border-color: rgba(255,71,87,0.3);"><i class="fas fa-sign-out-alt"></i> Salir</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+
+        <!-- Access Denied View (for non-admin users) -->
+        <div id="access-denied-view">
+            <i class="fas fa-lock"></i>
+            <h2>Acceso Restringido</h2>
+            <p>Este apartado está reservado exclusivamente para la administración principal de la plataforma VikingTCG.</p>
+            <a href="index.html" class="btn-main-save" style="display: inline-flex; justify-content: center; text-decoration: none;"><i class="fas fa-home"></i> Ir a la Página Principal</a>
+        </div>
+
+        <!-- Authorized Admin Panel -->
+        <div id="admin-panel-content" style="display: none;">
+
+            <!-- Hero Banner -->
+            <div class="hero-banner">
+                <div class="hero-info">
+                    <h1><i class="fas fa-tools" style="color: var(--primary-cyan);"></i> Centro de Control de Mantenimiento</h1>
+                    <p>Activa o desactiva el modo "En Obras / Mantenimiento" para páginas públicas, paneles o modos de juego específicos (como el modo 2 Jugadores de <code>duelmobile</code>). Los usuarios regulares verán un modelo 3D GLTF no removible con soporte para rotación, mientras que tú como administrador podrás ingresar normalmente para realizar pruebas y soporte.</p>
+                </div>
+                <div class="global-stats">
+                    <div class="stat-card">
+                        <div class="stat-num" id="active-maintenance-count">0</div>
+                        <div class="stat-label">Zonas en Obras</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="total-zones-count">0</div>
+                        <div class="stat-label">Zonas Totales</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model & Message Customizer -->
+            <div class="section-header">
+                <div class="section-title"><i class="fas fa-cube"></i> Personalización del Modelo GLTF de Mantenimiento</div>
+                <button id="btn-simulate-overlay" class="btn-action"><i class="fas fa-eye"></i> Simular Vista de Usuario Regular</button>
+            </div>
+
+            <div class="model-config-panel">
+                <div class="model-preview-box">
+                    <model-viewer id="admin-gltf-preview"
+                        src="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb"
+                        auto-rotate
+                        camera-controls
+                        shadow-intensity="1"
+                        exposure="1.2">
+                    </model-viewer>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label><i class="fas fa-link"></i> URL del Modelo GLTF / GLB</label>
+                        <select id="select-gltf-preset" class="form-control" style="margin-bottom: 10px;">
+                            <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Modelo Predeterminado: Letras VIKINGDEV 3D</option>
+                            <option value="custom">-- Ingresar URL Personalizada --</option>
+                        </select>
+                        <input type="text" id="input-gltf-url" class="form-control" value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb" placeholder="https://tu-servidor.com/modelo.gltf">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label><i class="fas fa-heading"></i> Título Principal</label>
+                            <input type="text" id="input-overlay-title" class="form-control" value="SITIO EN MANTENIMIENTO">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-compress-arrows-alt"></i> Escala del Modelo (Size)</label>
+                            <input type="range" id="input-overlay-scale" min="0.8" max="3.5" step="0.1" value="1.8" style="width: 100%; margin-top: 10px;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-align-left"></i> Mensaje Informativo</label>
+                        <textarea id="input-overlay-message" class="form-control" rows="2" style="resize: vertical;">Estamos realizando mejoras y mantenimiento en esta sección. Regresaremos pronto con una experiencia renovada.</textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+                        <button id="btn-save-maintenance-config" class="btn-main-save"><i class="fas fa-save"></i> Guardar Cambios Globales</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 1: Modos de Juego y Duelos -->
+            <div class="section-header">
+                <div class="section-title"><i class="fas fa-gamepad"></i> Modos de Juego y Arenas de Duelo</div>
+            </div>
+
+            <div class="zones-grid" id="grid-game-modes">
+                <!-- Zone: DuelMobile 2 Players -->
+                <div class="zone-card" data-zone-key="duelmobile_multiplayer">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-mobile-alt"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">DuelMobile (Modo 2 Jugadores)</div>
+                    <div class="zone-desc">Restringe el acceso al modo multijugador móvil. El modo práctica continuará funcionando si así lo deseas.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: Duel PC 2 Players -->
+                <div class="zone-card" data-zone-key="duel_multiplayer">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-desktop"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Duel Desktop (Modo 2 Jugadores)</div>
+                    <div class="zone-desc">Bloquea las salas de duelo PC multijugador mientras realizas modificaciones o correcciones.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: DuelMobile Complete -->
+                <div class="zone-card" data-zone-key="duelmobile_all">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-gamepad"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">DuelMobile Completo (Práctica + 2p)</div>
+                    <div class="zone-desc">Aplica el overlay GLTF a toda la interfaz de duelmobile.html impidiendo cualquier tipo de juego.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: Duel Desktop Complete -->
+                <div class="zone-card" data-zone-key="duel_all">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-tv"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Duel Desktop Completo (Práctica + 2p)</div>
+                    <div class="zone-desc">Bloquea completamente el acceso a la arena de duelo de escritorio duel.html.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 2: Secciones Públicas y Tiendas -->
+            <div class="section-header">
+                <div class="section-title"><i class="fas fa-store"></i> Secciones Públicas y Catálogo</div>
+            </div>
+
+            <div class="zones-grid" id="grid-public-views">
+                <!-- Zone: Public Albums -->
+                <div class="zone-card" data-zone-key="albums">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-book"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Colección de Álbumes</div>
+                    <div class="zone-desc">Muestra el GLTF de obras cuando los usuarios intenten navegar por los álbumes públicos.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: Public Decks -->
+                <div class="zone-card" data-zone-key="decks">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-layer-group"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Decks Públicos</div>
+                    <div class="zone-desc">Bloquea la vista pública de decks de tiendas y constructores.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: Sealed Products -->
+                <div class="zone-card" data-zone-key="sealed">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-box"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Producto Sellado</div>
+                    <div class="zone-desc">Desactiva temporalmente el catálogo de productos sellados.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: Auctions -->
+                <div class="zone-card" data-zone-key="auctions">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-gavel"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Sistema de Subastas</div>
+                    <div class="zone-desc">Impide la colocación de pujas y visualización de subastas activas.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: Events -->
+                <div class="zone-card" data-zone-key="events">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Eventos y Torneos</div>
+                    <div class="zone-desc">Pon en pausa la sección de calendarios de torneos y preventas.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zone: Shopping Cart -->
+                <div class="zone-card" data-zone-key="carrito">
+                    <div class="zone-top">
+                        <div class="zone-icon-box"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="zone-status-badge status-badge-live">En Línea</div>
+                    </div>
+                    <div class="zone-title">Carrito de Compras (carrito.html)</div>
+                    <div class="zone-desc">Bloquea el checkout y envío de pedidos a tiendas por WhatsApp/Messenger.</div>
+                    <div class="zone-controls">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">MANTENIMIENTO</span>
+                        <label class="switch">
+                            <input type="checkbox" class="toggle-zone-maintenance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Non-Dismissable GLTF Overlay Screen -->
+    <div id="maintenance-overlay-screen">
+        <div id="admin-sim-badge" class="admin-sim-exit-bar" style="display: none;">
+            <i class="fas fa-user-shield"></i> Modo Admin Simulación: Clic para Cerrar
+        </div>
+
+        <div class="maintenance-gltf-wrapper">
+            <model-viewer id="maintenance-overlay-viewer"
+                src="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb"
+                auto-rotate
+                camera-controls
+                shadow-intensity="1"
+                exposure="1.2">
+            </model-viewer>
+        </div>
+
+        <div class="maintenance-badge"><i class="fas fa-hard-hat"></i> Soporte Téknico en Curso</div>
+        <h2 class="maintenance-title" id="overlay-display-title">SITIO EN MANTENIMIENTO</h2>
+        <p class="maintenance-subtitle" id="overlay-display-message">Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Vuelve a intentarlo en unos momentos.</p>
+
+        <div class="maintenance-hint">
+            <i class="fas fa-sync fa-spin"></i> Puedes girar e interactuar con el objeto 3D mientras trabajamos
+        </div>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        let currentUser = null;
+        let maintenanceConfig = {
+            gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
+            title: "SITIO EN MANTENIMIENTO",
+            message: "Estamos realizando mejoras y mantenimiento en esta sección. Regresaremos pronto con una experiencia renovada.",
+            scale: 1.8,
+            zones: {}
+        };
+
+        $(document).ready(async function() {
+            await checkAdminSession();
+            setupEventListeners();
+        });
+
+        async function checkAdminSession() {
+            // First check local session cache for immediate response
+            const cachedUserStr = localStorage.getItem('tcg_session');
+            if (cachedUserStr) {
+                try {
+                    const cachedUser = JSON.parse(cachedUserStr);
+                    if (cachedUser && cachedUser.role === 'admin') {
+                        currentUser = cachedUser;
+                        $('#access-denied-view').hide();
+                        $('#admin-panel-content').show();
+                        await loadMaintenanceSettings();
+                        return;
+                    }
+                } catch(e){}
+            }
+
+            try {
+                // Timeout promise to avoid network hanging
+                const sessionPromise = _supabase.auth.getSession();
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 2000));
+
+                const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+                if (session) {
+                    const { data: user, error } = await _supabase
+                        .from('usuarios')
+                        .select('id, username, role')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (user && user.role === 'admin') {
+                        currentUser = user;
+                        $('#access-denied-view').hide();
+                        $('#admin-panel-content').show();
+                        await loadMaintenanceSettings();
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn("Verificación de sesión Supabase:", err.message || err);
+            }
+
+            // Access Denied
+            $('#admin-panel-content').hide();
+            $('#access-denied-view').show();
+        }
+
+        async function loadMaintenanceSettings() {
+            // 1. Try fetching from Supabase build_assignments table
+            try {
+                const { data: assignments } = await _supabase
+                    .from('build_assignments')
+                    .select('*')
+                    .eq('user_id', currentUser.id);
+
+                if (assignments && assignments.length > 0) {
+                    assignments.forEach(a => {
+                        maintenanceConfig.zones[a.view_name] = a.is_active;
+                    });
+                }
+            } catch (e) {
+                console.warn("No se pudieron cargar asignaciones desde Supabase, usando local:", e);
+            }
+
+            // 2. Merge with localStorage cache
+            const savedLocal = localStorage.getItem('viking_maintenance_config');
+            if (savedLocal) {
+                try {
+                    const parsed = JSON.parse(savedLocal);
+                    maintenanceConfig = { ...maintenanceConfig, ...parsed };
+                } catch(e){}
+            }
+
+            // Populate Form Fields
+            $('#input-gltf-url').val(maintenanceConfig.gltfUrl);
+            $('#input-overlay-title').val(maintenanceConfig.title);
+            $('#input-overlay-message').val(maintenanceConfig.message);
+            $('#input-overlay-scale').val(maintenanceConfig.scale || 1.8);
+            $('#admin-gltf-preview').attr('src', maintenanceConfig.gltfUrl).attr('scale', `${maintenanceConfig.scale} ${maintenanceConfig.scale} ${maintenanceConfig.scale}`);
+
+            // Update UI Card Switches
+            updateZoneCardUI();
+        }
+
+        function updateZoneCardUI() {
+            let activeCount = 0;
+            let totalCount = $('.zone-card').length;
+
+            $('.zone-card').each(function() {
+                const key = $(this).data('zone-key');
+                const isActive = maintenanceConfig.zones[key] === true;
+                const $switch = $(this).find('.toggle-zone-maintenance');
+                const $badge = $(this).find('.zone-status-badge');
+
+                $switch.prop('checked', isActive);
+
+                if (isActive) {
+                    activeCount++;
+                    $(this).addClass('maintenance-active');
+                    $badge.removeClass('status-badge-live').addClass('status-badge-maintenance').html('<i class="fas fa-hard-hat"></i> En Obras');
+                } else {
+                    $(this).removeClass('maintenance-active');
+                    $badge.removeClass('status-badge-maintenance').addClass('status-badge-live').html('En Línea');
+                }
+            });
+
+            $('#active-maintenance-count').text(activeCount);
+            $('#total-zones-count').text(totalCount);
+        }
+
+        function setupEventListeners() {
+            // Preset URL Selector
+            $('#select-gltf-preset').change(function() {
+                const val = $(this).val();
+                if (val !== 'custom') {
+                    $('#input-gltf-url').val(val);
+                    $('#admin-gltf-preview').attr('src', val);
+                }
+            });
+
+            $('#input-gltf-url').on('input', function() {
+                const url = $(this).val().trim();
+                if (url) {
+                    $('#admin-gltf-preview').attr('src', url);
+                }
+            });
+
+            $('#input-overlay-scale').on('input', function() {
+                const val = $(this).val();
+                $('#admin-gltf-preview').attr('scale', `${val} ${val} ${val}`);
+            });
+
+            // Toggle Switches for Zones
+            $('.toggle-zone-maintenance').change(function() {
+                const $card = $(this).closest('.zone-card');
+                const key = $card.data('zone-key');
+                const isChecked = $(this).is(':checked');
+
+                maintenanceConfig.zones[key] = isChecked;
+                updateZoneCardUI();
+            });
+
+            // Save Global Settings Button
+            $('#btn-save-maintenance-config').click(async function() {
+                maintenanceConfig.gltfUrl = $('#input-gltf-url').val().trim();
+                maintenanceConfig.title = $('#input-overlay-title').val().trim();
+                maintenanceConfig.message = $('#input-overlay-message').val().trim();
+                maintenanceConfig.scale = parseFloat($('#input-overlay-scale').val()) || 1.8;
+
+                Swal.fire({
+                    title: 'Guardando Configuración...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                try {
+                    // Save to localStorage
+                    localStorage.setItem('viking_maintenance_config', JSON.stringify(maintenanceConfig));
+
+                    // Sync to Supabase build_assignments
+                    if (currentUser && currentUser.id) {
+                        for (const [zoneKey, isActive] of Object.entries(maintenanceConfig.zones)) {
+                            await _supabase.from('build_assignments').upsert({
+                                user_id: currentUser.id,
+                                view_name: zoneKey,
+                                target: 'public',
+                                is_active: isActive
+                            }, { onConflict: 'user_id,view_name,target' });
+                        }
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Configuración Guardada!',
+                        text: 'Los estados de mantenimiento se han sincronizado correctamente.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } catch (err) {
+                    console.error("Error al guardar en Supabase:", err);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Guardado Localmente',
+                        text: 'La configuración se aplicó en este navegador.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            });
+
+            // Simulate Non-Dismissable Overlay
+            $('#btn-simulate-overlay').click(function() {
+                const url = $('#input-gltf-url').val().trim();
+                const title = $('#input-overlay-title').val().trim();
+                const msg = $('#input-overlay-message').val().trim();
+                const scale = parseFloat($('#input-overlay-scale').val()) || 1.8;
+
+                $('#overlay-display-title').text(title);
+                $('#overlay-display-message').text(msg);
+                $('#maintenance-overlay-viewer').attr('src', url).attr('scale', `${scale} ${scale} ${scale}`);
+
+                $('#admin-sim-badge').show();
+                $('#maintenance-overlay-screen').addClass('active');
+            });
+
+            $('#admin-sim-badge').click(function() {
+                $('#maintenance-overlay-screen').removeClass('active');
+            });
+
+            // Logout
+            $('#btn-dev-logout').click(async function() {
+                await _supabase.auth.signOut();
+                localStorage.removeItem('tcg_session');
+                window.location.href = 'index.html';
+            });
+        }
+    </script>
+</body>
+</html>
