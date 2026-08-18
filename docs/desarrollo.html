@@ -751,11 +751,6 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                        <textarea id="input-overlay-message" class="form-control" rows="3" style="resize: vertical;">Aun estamos trabajando en esta seccion, aun puede haber errores o no funcionar correctamente. Si tienes alguna sugerencia o comentario escribenos en <a href="https://wa.me/526645367661" target="_blank">VikingDev</a>.</textarea>
-                    </div>
-
                     <!-- Mode Selection: Strict Maintenance vs Test Mode (Modo Prueba) -->
                     <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid var(--card-border);">
                         <label><i class="fas fa-vial"></i> Modo de Despliegue de Cartel</label>
@@ -769,6 +764,11 @@
                                 <span><strong style="color: var(--accent-green);">Modo Prueba</strong> (Se muestra cartel informativo con opción a tachar 'X')</span>
                             </label>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-align-left"></i> Mensaje Informativo</label>
+                        <textarea id="input-overlay-message" class="form-control" rows="3" style="resize: vertical;">Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Regresaremos pronto.</textarea>
                     </div>
 
                     <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
@@ -992,10 +992,17 @@
     <!-- Script Application Logic -->
     <script>
         let currentUser = null;
+        const DEFAULT_MESSAGES = {
+            maintenance: "Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Regresaremos pronto.",
+            test: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.'
+        };
+
         let maintenanceConfig = {
             gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
             title: "Mantenimiento en curso",
-            message: 'Aun estamos trabajando en esta seccion, aun puede haber errores o no funcionar correctamente. Si tienes alguna sugerencia o comentario escribenos en <a href="https://wa.me/526645367661" target="_blank">VikingDev</a>.',
+            message: DEFAULT_MESSAGES.maintenance,
+            maintenanceMessage: DEFAULT_MESSAGES.maintenance,
+            testMessage: DEFAULT_MESSAGES.test,
             scale: 1.8,
             isTestMode: false,
             zones: {}
@@ -1117,8 +1124,10 @@
 
             if (maintenanceConfig.isTestMode) {
                 $('input[name="overlay-mode"][value="test"]').prop('checked', true);
+                $('#input-overlay-message').val(maintenanceConfig.testMessage || DEFAULT_MESSAGES.test);
             } else {
                 $('input[name="overlay-mode"][value="maintenance"]').prop('checked', true);
+                $('#input-overlay-message').val(maintenanceConfig.maintenanceMessage || DEFAULT_MESSAGES.maintenance);
             }
 
             $('#admin-gltf-preview').attr('src', maintenanceConfig.gltfUrl).attr('scale', `${maintenanceConfig.scale} ${maintenanceConfig.scale} ${maintenanceConfig.scale}`);
@@ -1166,6 +1175,16 @@
                 $('#admin-gltf-preview').attr('scale', `${val} ${val} ${val}`);
             });
 
+            // Radio Button Overlay Mode Switch
+            $('input[name="overlay-mode"]').change(function() {
+                const mode = $(this).val();
+                if (mode === 'test') {
+                    $('#input-overlay-message').val(maintenanceConfig.testMessage || DEFAULT_MESSAGES.test);
+                } else {
+                    $('#input-overlay-message').val(maintenanceConfig.maintenanceMessage || DEFAULT_MESSAGES.maintenance);
+                }
+            });
+
             // Toggle Switches for Zones
             $('.toggle-zone-maintenance').change(function() {
                 const $card = $(this).closest('.zone-card');
@@ -1180,9 +1199,16 @@
             $('#btn-save-maintenance-config').click(async function() {
                 maintenanceConfig.gltfUrl = $('#input-gltf-url').val().trim();
                 maintenanceConfig.title = $('#input-overlay-title').val().trim();
-                maintenanceConfig.message = $('#input-overlay-message').val().trim();
                 maintenanceConfig.scale = parseFloat($('#input-overlay-scale').val()) || 1.8;
                 maintenanceConfig.isTestMode = ($('input[name="overlay-mode"]:checked').val() === 'test');
+
+                if (maintenanceConfig.isTestMode) {
+                    maintenanceConfig.testMessage = $('#input-overlay-message').val().trim();
+                    maintenanceConfig.message = maintenanceConfig.testMessage;
+                } else {
+                    maintenanceConfig.maintenanceMessage = $('#input-overlay-message').val().trim();
+                    maintenanceConfig.message = maintenanceConfig.maintenanceMessage;
+                }
 
                 Swal.fire({
                     title: 'Guardando Configuración...',
