@@ -326,6 +326,12 @@
             box-shadow: 0 0 12px rgba(0, 210, 255, 0.2);
         }
 
+        .form-control option {
+            background-color: #0d1527 !important;
+            color: #f8fafc !important;
+            padding: 10px;
+        }
+
         /* Grid of Maintenance Cards */
         .zones-grid {
             display: grid;
@@ -593,9 +599,20 @@
         .maintenance-subtitle {
             font-size: 1.05rem;
             color: #cbd5e1;
-            max-width: 600px;
+            max-width: 650px;
             line-height: 1.6;
             margin-bottom: 24px;
+        }
+
+        .maintenance-subtitle a {
+            color: var(--primary-cyan);
+            text-decoration: underline;
+            font-weight: 700;
+            transition: color 0.2s ease;
+        }
+
+        .maintenance-subtitle a:hover {
+            color: var(--accent-green);
         }
 
         .overlay-close-btn {
@@ -736,7 +753,7 @@
 
                     <div class="form-group">
                         <label><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                        <textarea id="input-overlay-message" class="form-control" rows="2" style="resize: vertical;">Estamos haciendo mejoras en esta seccion</textarea>
+                        <textarea id="input-overlay-message" class="form-control" rows="3" style="resize: vertical;">Aun estamos trabajando en esta seccion, aun puede haber errores o no funcionar correctamente. Si tienes alguna sugerencia o comentario escribenos en <a href="https://wa.me/526645367661" target="_blank">VikingDev</a>.</textarea>
                     </div>
 
                     <!-- Mode Selection: Strict Maintenance vs Test Mode (Modo Prueba) -->
@@ -978,7 +995,7 @@
         let maintenanceConfig = {
             gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
             title: "Mantenimiento en curso",
-            message: "Estamos haciendo mejoras en esta seccion",
+            message: 'Aun estamos trabajando en esta seccion, aun puede haber errores o no funcionar correctamente. Si tienes alguna sugerencia o comentario escribenos en <a href="https://wa.me/526645367661" target="_blank">VikingDev</a>.',
             scale: 1.8,
             isTestMode: false,
             zones: {}
@@ -1095,7 +1112,7 @@
             }
 
             $('#input-overlay-title').val(maintenanceConfig.title || "Mantenimiento en curso");
-            $('#input-overlay-message').val(maintenanceConfig.message || "Estamos haciendo mejoras en esta seccion");
+            $('#input-overlay-message').val(maintenanceConfig.message || 'Aun estamos trabajando en esta seccion, aun puede haber errores o no funcionar correctamente. Si tienes alguna sugerencia o comentario escribenos en <a href="https://wa.me/526645367661" target="_blank">VikingDev</a>.');
             $('#input-overlay-scale').val(maintenanceConfig.scale || 1.8);
 
             if (maintenanceConfig.isTestMode) {
@@ -1217,7 +1234,7 @@
                 const isTestMode = ($('input[name="overlay-mode"]:checked').val() === 'test');
 
                 $('#overlay-display-title').text(title);
-                $('#overlay-display-message').text(msg);
+                $('#overlay-display-message').html(msg);
                 $('#maintenance-overlay-viewer').attr('src', url).attr('scale', `${scale} ${scale} ${scale}`);
 
                 if (isTestMode) {
