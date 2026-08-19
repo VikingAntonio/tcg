@@ -1622,3 +1622,172 @@ $.fn.val = function(value) {
     }
     return originalVal.apply(this, arguments);
 };
+
+// --- RUNTIME MAINTENANCE & BETA/TEST MODE OVERLAY SYSTEM ---
+window.checkVikingMaintenance = async function(zoneKey) {
+    if (!zoneKey) return;
+
+    // 1. Check local session cache for admin status (admins bypass unless simulating)
+    let isAdmin = false;
+    try {
+        const cachedUserStr = localStorage.getItem('tcg_session');
+        if (cachedUserStr) {
+            const cachedUser = JSON.parse(cachedUserStr);
+            if (cachedUser && cachedUser.role === 'admin') {
+                isAdmin = true;
+            }
+        }
+    } catch(e){}
+
+    // 2. Fetch maintenance config from localStorage or Supabase
+    let maintenanceConfig = null;
+    const savedLocal = localStorage.getItem('viking_maintenance_config');
+    if (savedLocal) {
+        try {
+            maintenanceConfig = JSON.parse(savedLocal);
+        } catch(e){}
+    }
+
+    if (!maintenanceConfig || !maintenanceConfig.zones || !maintenanceConfig.zones[zoneKey]) {
+        // Fallback: check Supabase build_assignments
+        try {
+            if (typeof _supabase !== 'undefined') {
+                const { data: assignments } = await _supabase
+                    .from('build_assignments')
+                    .select('*')
+                    .eq('view_name', zoneKey)
+                    .eq('target', 'public')
+                    .eq('is_active', true)
+                    .maybeSingle();
+
+                if (!assignments) return; // Not active
+            }
+        } catch(e) {
+            return;
+        }
+    }
+
+    const rawConf = maintenanceConfig && maintenanceConfig.zones ? maintenanceConfig.zones[zoneKey] : null;
+    if (!rawConf) return;
+
+    let active = false;
+    let mode = 'maintenance';
+    let gltfUrl = "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb";
+    let title = "Mantenimiento en curso";
+    let message = "Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Regresaremos pronto.";
+    let scale = 1.8;
+
+    if (typeof rawConf === 'boolean') {
+        active = rawConf;
+    } else if (typeof rawConf === 'object') {
+        active = rawConf.active === true;
+        mode = rawConf.mode || 'maintenance';
+        gltfUrl = rawConf.gltfUrl || gltfUrl;
+        title = rawConf.title || (mode === 'test' ? "Modo Prueba / Beta" : title);
+        message = rawConf.message || (mode === 'test' ? 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.' : message);
+        scale = rawConf.scale || scale;
+    }
+
+    if (!active) return;
+
+    // Admin bypass: if user is admin and in strict maintenance mode, ignore hard block.
+    // In test / beta mode, admins ALSO see the dismissible popup with the 'X' button so they can verify and dismiss it.
+    if (isAdmin && mode === 'maintenance') {
+        console.log(`[VikingDev] Modo Admin detectado. Ignorando bloqueo de mantenimiento estricto para ${zoneKey}.`);
+        return;
+    }
+
+    // Render Overlay Screen if not already present
+    let $overlay = $('#viking-maintenance-overlay-screen');
+    if (!$overlay.length) {
+        const overlayHtml = `
+            <div id="viking-maintenance-overlay-screen" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(4, 7, 16, 0.96);
+                backdrop-filter: blur(25px);
+                -webkit-backdrop-filter: blur(25px);
+                z-index: 999999;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                text-align: center;
+                user-select: none;
+                box-sizing: border-box;
+                color: #ffffff;
+                font-family: 'Outfit', 'Montserrat', sans-serif;
+            ">
+                <button id="viking-overlay-close-x" style="
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    color: #fff;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    font-size: 1.4rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    z-index: 1000000;
+                    backdrop-filter: blur(10px);
+                    transition: all 0.2s ease;
+                " title="Cerrar / Continuar en Modo Prueba">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div style="width: 100%; max-width: 650px; height: 380px; position: relative; margin-bottom: 20px;">
+                    <model-viewer id="viking-maintenance-overlay-viewer"
+                        src="${gltfUrl}"
+                        scale="${scale} ${scale} ${scale}"
+                        auto-rotate
+                        camera-controls
+                        shadow-intensity="1"
+                        exposure="1.2"
+                        style="width: 100%; height: 100%; outline: none;">
+                    </model-viewer>
+                </div>
+
+                <div id="viking-overlay-badge" style="
+                    background: linear-gradient(135deg, rgba(255, 71, 87, 0.25), rgba(255, 165, 0, 0.25));
+                    border: 1px solid #ff4757;
+                    color: #ff6b81;
+                    padding: 6px 18px;
+                    border-radius: 30px;
+                    font-size: 0.85rem;
+                    font-weight: 800;
+                    letter-spacing: 1.5px;
+                    text-transform: uppercase;
+                    margin-bottom: 16px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);
+                "><i class="fas fa-hard-hat"></i> ${mode === 'test' ? 'Modo Prueba / Beta' : 'Mantenimiento en curso'}</div>
+
+                <h2 style="font-size: 2rem; font-weight: 900; color: #ffffff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 0 4px 20px rgba(0, 210, 255, 0.4);">${title}</h2>
+                <div style="font-size: 1.05rem; color: #cbd5e1; max-width: 650px; line-height: 1.6; margin-bottom: 24px;">${message}</div>
+            </div>
+        `;
+        $('body').append(overlayHtml);
+        $overlay = $('#viking-maintenance-overlay-screen');
+
+        $('#viking-overlay-close-x').click(function() {
+            $overlay.fadeOut(300, function() { $(this).remove(); });
+        });
+    }
+
+    if (mode === 'test') {
+        $('#viking-overlay-close-x').show();
+    } else {
+        $('#viking-overlay-close-x').hide();
+    }
+};
