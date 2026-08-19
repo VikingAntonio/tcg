@@ -1696,6 +1696,14 @@
             state.mode = params.get('mode') || 'practice';
             state.layout = params.get('layout') || 'yugioh';
 
+            // Maintenance & Beta/Test Mode Check
+            if (typeof window.checkVikingMaintenance === 'function') {
+                window.checkVikingMaintenance('duel_all');
+                if (state.mode === 'multiplayer') {
+                    window.checkVikingMaintenance('duel_multiplayer');
+                }
+            }
+
             // Custom Game State Variables for turn, phase and life points
             state.activeTurn = 'player1'; // 'player1' or 'player2'
             state.activePhase = 'DP'; // 'DP', 'SP', 'M1', 'BP', 'M2', 'EP'

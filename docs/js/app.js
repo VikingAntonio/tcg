@@ -1373,6 +1373,11 @@ async function switchView(view, skipPush = false) {
         $('.bottom-nav').css('display', 'flex');
     }
 
+    // Maintenance & Beta/Test Mode Check for public section
+    if (typeof window.checkVikingMaintenance === 'function') {
+        window.checkVikingMaintenance(view);
+    }
+
     // --- Build Mode Check ---
     const buildViews = ['albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
     if (buildViews.includes(view) && window.currentStoreId) {

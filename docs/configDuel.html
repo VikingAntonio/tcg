@@ -502,6 +502,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
 </head>
 <body>
     <div class="bg-blobs">
@@ -660,8 +661,14 @@
     </div>
 
     <script src="js/supabase-config.js"></script>
+    <script src="js/utils.js"></script>
     <script>
         $(document).ready(async function() {
+            // Maintenance & Beta/Test Mode Check
+            if (typeof window.checkVikingMaintenance === 'function') {
+                window.checkVikingMaintenance('duel_all');
+                window.checkVikingMaintenance('duel_multiplayer');
+            }
             let sessionUser = null;
             let userDecks = [];
             let preselectedDeck = null;

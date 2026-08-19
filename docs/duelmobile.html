@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/duelmobile.css">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <style>
         /* Compact Phase Bar on mobile - perfectly fits between P1 and P2 LP counters */
         @media screen and (max-width: 1024px) {
@@ -588,6 +589,13 @@
     <!-- Post-load custom overrides and adjustments -->
     <script>
         $(document).ready(function() {
+            // Maintenance & Beta/Test Mode Check
+            if (typeof window.checkVikingMaintenance === 'function') {
+                window.checkVikingMaintenance('duelmobile_all');
+                if (typeof state !== 'undefined' && state.mode === 'multiplayer') {
+                    window.checkVikingMaintenance('duelmobile_multiplayer');
+                }
+            }
             // Function to update individual half-board mats for P1 and P2
             window.updateHalfPlaymats = function() {
                 $("#playmat").css("background-image", "none");

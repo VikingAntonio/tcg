@@ -240,6 +240,11 @@
         }
 
         $(document).ready(async function() {
+            // Maintenance & Beta/Test Mode Check
+            if (typeof window.checkVikingMaintenance === 'function') {
+                window.checkVikingMaintenance('carrito');
+            }
+
             initTheme();
 
             $(document).on('click', '.theme-btn-small', function() {
