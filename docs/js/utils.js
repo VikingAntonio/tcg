@@ -1627,17 +1627,42 @@ $.fn.val = function(value) {
 window.checkVikingMaintenance = async function(zoneKey) {
     if (!zoneKey) return;
 
-    // 1. Check local session cache for admin status (admins bypass unless simulating)
+    // 1. Check session cache or global user variables for admin status
     let isAdmin = false;
     try {
         const cachedUserStr = localStorage.getItem('tcg_session');
         if (cachedUserStr) {
             const cachedUser = JSON.parse(cachedUserStr);
-            if (cachedUser && cachedUser.role === 'admin') {
+            if (cachedUser && (cachedUser.role === 'admin' || cachedUser.role === 'admin_store')) {
                 isAdmin = true;
             }
         }
     } catch(e){}
+
+    if (!isAdmin && typeof currentUser !== 'undefined' && currentUser && (currentUser.role === 'admin' || currentUser.role === 'admin_store')) {
+        isAdmin = true;
+    }
+    if (!isAdmin && typeof window.currentUser !== 'undefined' && window.currentUser && (window.currentUser.role === 'admin' || window.currentUser.role === 'admin_store')) {
+        isAdmin = true;
+    }
+
+    if (!isAdmin && typeof _supabase !== 'undefined') {
+        try {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session && session.user) {
+                const { data: user } = await _supabase.from('usuarios').select('role').eq('id', session.user.id).single();
+                if (user && (user.role === 'admin' || user.role === 'admin_store')) {
+                    isAdmin = true;
+                }
+            }
+        } catch(e){}
+    }
+
+    // Admin bypass: Admins bypass maintenance/beta overlays entirely to test freely
+    if (isAdmin) {
+        console.log(`[VikingDev] Modo Admin detectado. Ignorando overlay de mantenimiento/beta para ${zoneKey}.`);
+        return;
+    }
 
     // 2. Fetch maintenance config from localStorage or Supabase
     let maintenanceConfig = null;
@@ -1690,12 +1715,6 @@ window.checkVikingMaintenance = async function(zoneKey) {
 
     if (!active) return;
 
-    // Admin bypass: if user is admin and in strict maintenance mode, ignore hard block.
-    // In test / beta mode, admins ALSO see the dismissible popup with the 'X' button so they can verify and dismiss it.
-    if (isAdmin && mode === 'maintenance') {
-        console.log(`[VikingDev] Modo Admin detectado. Ignorando bloqueo de mantenimiento estricto para ${zoneKey}.`);
-        return;
-    }
 
     // Render Overlay Screen if not already present
     let $overlay = $('#viking-maintenance-overlay-screen');
