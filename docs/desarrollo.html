@@ -1517,7 +1517,7 @@
                         } catch(e){}
                     }
 
-                    // Sync to Supabase build_assignments & system_settings
+                    // Sync to Supabase build_assignments, build_assets & system_settings
                     if (currentUser && currentUser.id) {
                         for (const [zoneKey, zoneConf] of Object.entries(maintenanceConfig.zones)) {
                             try {
@@ -1525,9 +1525,24 @@
                             } catch(e){}
 
                             if (zoneConf.active) {
+                                let createdAssetId = null;
+                                try {
+                                    const { data: assetData } = await _supabase.from('build_assets').insert({
+                                        name: zoneConf.title || "Mantenimiento",
+                                        gltf_url: zoneConf.gltfUrl,
+                                        scale: zoneConf.scale,
+                                        user_id: currentUser.id
+                                    }).select('id').single();
+
+                                    if (assetData) {
+                                        createdAssetId = assetData.id;
+                                    }
+                                } catch(e){}
+
                                 await _supabase.from('build_assignments').insert({
                                     user_id: currentUser.id,
                                     view_name: zoneKey,
+                                    asset_id: createdAssetId,
                                     target: 'public',
                                     is_active: true
                                 });
