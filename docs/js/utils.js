@@ -1690,19 +1690,34 @@ window.checkVikingMaintenance = async function(zoneKey) {
         } catch(e){}
     }
 
-    // Determine configuration for this zone
+    // Fetch global maintenance settings from Supabase if activeAssignment exists and extra metadata is stored in build_assignments / system_settings
     let rawConf = null;
     if (maintenanceConfig && maintenanceConfig.zones && maintenanceConfig.zones[zoneKey]) {
         rawConf = maintenanceConfig.zones[zoneKey];
     } else if (activeAssignment) {
-        rawConf = {
-            active: true,
-            mode: 'test',
-            gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
-            title: "Modo Prueba / Beta",
-            message: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
-            scale: 1.8
-        };
+        // Query global system settings if local storage is cleared
+        try {
+            const { data: globalSettings } = await _supabase
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'viking_maintenance_config')
+                .maybeSingle();
+
+            if (globalSettings && globalSettings.value && globalSettings.value.zones && globalSettings.value.zones[zoneKey]) {
+                rawConf = globalSettings.value.zones[zoneKey];
+            }
+        } catch(e){}
+
+        if (!rawConf) {
+            rawConf = {
+                active: true,
+                mode: 'test',
+                gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
+                title: "Modo Beta",
+                message: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
+                scale: 1.8
+            };
+        }
     }
 
     if (!rawConf) return;
@@ -1720,7 +1735,7 @@ window.checkVikingMaintenance = async function(zoneKey) {
         active = rawConf.active === true;
         mode = rawConf.mode || 'maintenance';
         gltfUrl = rawConf.gltfUrl || gltfUrl;
-        title = rawConf.title || (mode === 'test' ? "Modo Prueba / Beta" : title);
+        title = rawConf.title || (mode === 'test' ? "Modo Beta" : title);
         message = rawConf.message || (mode === 'test' ? 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.' : message);
         scale = rawConf.scale || scale;
     }

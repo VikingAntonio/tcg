@@ -1504,7 +1504,7 @@
                     // Save to localStorage
                     localStorage.setItem('viking_maintenance_config', JSON.stringify(maintenanceConfig));
 
-                    // Sync to Supabase build_assignments
+                    // Sync to Supabase build_assignments & system_settings
                     if (currentUser && currentUser.id) {
                         for (const [zoneKey, zoneConf] of Object.entries(maintenanceConfig.zones)) {
                             await _supabase.from('build_assignments').upsert({
@@ -1514,6 +1514,14 @@
                                 is_active: zoneConf.active
                             }, { onConflict: 'user_id,view_name,target' });
                         }
+
+                        // Save full JSON config to system_settings table if accessible
+                        try {
+                            await _supabase.from('system_settings').upsert({
+                                key: 'viking_maintenance_config',
+                                value: maintenanceConfig
+                            }, { onConflict: 'key' });
+                        } catch(e){}
                     }
 
                     Swal.fire({
