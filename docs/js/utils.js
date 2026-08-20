@@ -1694,24 +1694,26 @@ window.checkVikingMaintenance = async function(zoneKey) {
         }
     }
 
-    // Secondary Fallback: Check build_assignments table
+    // Secondary Fallback: Check build_assignments table with linked build_assets
     if (!rawConf && typeof _supabase !== 'undefined') {
         try {
             const { data: assignments } = await _supabase
                 .from('build_assignments')
-                .select('*')
+                .select('*, build_assets(*)')
                 .eq('view_name', zoneKey)
                 .eq('target', 'public')
                 .eq('is_active', true);
 
             if (assignments && assignments.length > 0) {
+                const ass = assignments[0];
+                const asset = ass ? ass.build_assets : null;
                 rawConf = {
                     active: true,
-                    mode: 'maintenance',
-                    gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
-                    title: "Mantenimiento en curso",
-                    message: "Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Regresaremos pronto.",
-                    scale: 1.8
+                    mode: 'test',
+                    gltfUrl: (asset && asset.gltf_url) ? asset.gltf_url : "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
+                    title: (asset && asset.name) ? asset.name : "Modo Prueba / Beta",
+                    message: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
+                    scale: (asset && asset.scale) ? asset.scale : 1.8
                 };
             }
         } catch(e){}
