@@ -1722,25 +1722,26 @@ window.checkVikingMaintenance = async function(zoneKey) {
     if (!rawConf) return;
 
     let active = false;
-    let mode = 'maintenance';
     let gltfUrl = "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb";
-    let title = "Mantenimiento en curso";
-    let message = "Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Regresaremos pronto.";
+    let defaultMsg = 'Aún estamos trabajando en esta área. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank" style="color: #80b3ff !important; text-decoration: underline; font-weight: 700;">VikingDev</a>.';
+    let message = defaultMsg;
     let scale = 1.8;
 
     if (typeof rawConf === 'boolean') {
         active = rawConf;
     } else if (typeof rawConf === 'object') {
         active = rawConf.active === true;
-        mode = rawConf.mode || 'maintenance';
         gltfUrl = rawConf.gltfUrl || gltfUrl;
-        title = rawConf.title || (mode === 'test' ? "Modo Beta" : title);
-        message = rawConf.message || (mode === 'test' ? 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.' : message);
+        message = rawConf.message || defaultMsg;
         scale = rawConf.scale || scale;
     }
 
     if (!active) return;
 
+    // Format any link inside message to have pastel blue style if not already styled
+    if (message && message.includes('<a') && !message.includes('#80b3ff')) {
+        message = message.replace(/<a /gi, '<a style="color: #80b3ff !important; text-decoration: underline; font-weight: 700;" ');
+    }
 
     // Render Overlay Screen if not already present
     let $overlay = $('#viking-maintenance-overlay-screen');
@@ -1767,29 +1768,7 @@ window.checkVikingMaintenance = async function(zoneKey) {
                 color: #ffffff;
                 font-family: 'Outfit', 'Montserrat', sans-serif;
             ">
-                <button id="viking-overlay-close-x" style="
-                    position: absolute;
-                    top: 20px;
-                    right: 20px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.3);
-                    color: #fff;
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 50%;
-                    font-size: 1.4rem;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    z-index: 1000000;
-                    backdrop-filter: blur(10px);
-                    transition: all 0.2s ease;
-                " title="Cerrar / Continuar en Modo Prueba">
-                    <i class="fas fa-times"></i>
-                </button>
-
-                <div style="width: 100%; max-width: 650px; height: 380px; position: relative; margin-bottom: 20px;">
+                <div style="width: 100%; max-width: 900px; height: 550px; max-height: 60vh; position: relative; margin-bottom: 20px;">
                     <model-viewer id="viking-maintenance-overlay-viewer"
                         src="${gltfUrl}"
                         scale="${scale} ${scale} ${scale}"
@@ -1801,38 +1780,9 @@ window.checkVikingMaintenance = async function(zoneKey) {
                     </model-viewer>
                 </div>
 
-                <div id="viking-overlay-badge" style="
-                    background: linear-gradient(135deg, rgba(255, 71, 87, 0.25), rgba(255, 165, 0, 0.25));
-                    border: 1px solid #ff4757;
-                    color: #ff6b81;
-                    padding: 6px 18px;
-                    border-radius: 30px;
-                    font-size: 0.85rem;
-                    font-weight: 800;
-                    letter-spacing: 1.5px;
-                    text-transform: uppercase;
-                    margin-bottom: 16px;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);
-                "><i class="fas fa-hard-hat"></i> ${mode === 'test' ? 'Modo Prueba / Beta' : 'Mantenimiento en curso'}</div>
-
-                <h2 style="font-size: 2rem; font-weight: 900; color: #ffffff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 0 4px 20px rgba(0, 210, 255, 0.4);">${title}</h2>
-                <div style="font-size: 1.05rem; color: #cbd5e1; max-width: 650px; line-height: 1.6; margin-bottom: 24px;">${message}</div>
+                <div style="font-size: 1.15rem; color: #cbd5e1; max-width: 750px; line-height: 1.6; margin-bottom: 24px;">${message}</div>
             </div>
         `;
         $('body').append(overlayHtml);
-        $overlay = $('#viking-maintenance-overlay-screen');
-
-        $('#viking-overlay-close-x').click(function() {
-            $overlay.fadeOut(300, function() { $(this).remove(); });
-        });
-    }
-
-    if (mode === 'test') {
-        $('#viking-overlay-close-x').show();
-    } else {
-        $('#viking-overlay-close-x').hide();
     }
 };
