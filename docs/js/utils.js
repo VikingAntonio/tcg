@@ -1673,26 +1673,38 @@ window.checkVikingMaintenance = async function(zoneKey) {
         } catch(e){}
     }
 
-    if (!maintenanceConfig || !maintenanceConfig.zones || !maintenanceConfig.zones[zoneKey]) {
-        // Fallback: check Supabase build_assignments
+    let activeAssignment = null;
+    if (typeof _supabase !== 'undefined') {
         try {
-            if (typeof _supabase !== 'undefined') {
-                const { data: assignments } = await _supabase
-                    .from('build_assignments')
-                    .select('*')
-                    .eq('view_name', zoneKey)
-                    .eq('target', 'public')
-                    .eq('is_active', true)
-                    .maybeSingle();
+            const { data: assignments } = await _supabase
+                .from('build_assignments')
+                .select('*')
+                .eq('view_name', zoneKey)
+                .eq('target', 'public')
+                .eq('is_active', true)
+                .maybeSingle();
 
-                if (!assignments) return; // Not active
+            if (assignments) {
+                activeAssignment = assignments;
             }
-        } catch(e) {
-            return;
-        }
+        } catch(e){}
     }
 
-    const rawConf = maintenanceConfig && maintenanceConfig.zones ? maintenanceConfig.zones[zoneKey] : null;
+    // Determine configuration for this zone
+    let rawConf = null;
+    if (maintenanceConfig && maintenanceConfig.zones && maintenanceConfig.zones[zoneKey]) {
+        rawConf = maintenanceConfig.zones[zoneKey];
+    } else if (activeAssignment) {
+        rawConf = {
+            active: true,
+            mode: 'test',
+            gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
+            title: "Modo Prueba / Beta",
+            message: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
+            scale: 1.8
+        };
+    }
+
     if (!rawConf) return;
 
     let active = false;
