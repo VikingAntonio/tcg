@@ -1360,6 +1360,7 @@
             }
 
             // 2. Fallback / Merge with localStorage
+            if (!maintenanceConfig.zones) maintenanceConfig.zones = {};
             const savedLocal = localStorage.getItem('viking_maintenance_config');
             if (savedLocal) {
                 try {
@@ -1490,8 +1491,8 @@
                         active: isActive,
                         mode: mode,
                         gltfUrl: gltfUrl,
-                        title: title,
-                        message: message,
+                        title: title || (mode === 'test' ? "Modo Prueba / Beta" : "Mantenimiento en curso"),
+                        message: message || (mode === 'test' ? DEFAULT_MESSAGES.test : DEFAULT_MESSAGES.maintenance),
                         scale: scale
                     };
                 });
@@ -1506,24 +1507,56 @@
                     // Save to localStorage
                     localStorage.setItem('viking_maintenance_config', JSON.stringify(maintenanceConfig));
 
+                    // Verify active user session if not already available
+                    if ((!currentUser || !currentUser.id) && typeof _supabase !== 'undefined') {
+                        try {
+                            const { data: { session } } = await _supabase.auth.getSession();
+                            if (session && session.user) {
+                                currentUser = { id: session.user.id };
+                            }
+                        } catch(e){}
+                    }
+
                     // Sync to Supabase build_assignments & system_settings
                     if (currentUser && currentUser.id) {
                         for (const [zoneKey, zoneConf] of Object.entries(maintenanceConfig.zones)) {
-                            await _supabase.from('build_assignments').upsert({
-                                user_id: currentUser.id,
-                                view_name: zoneKey,
-                                target: 'public',
-                                is_active: zoneConf.active
-                            }, { onConflict: 'user_id,view_name,target' });
+                            try {
+                                await _supabase.from('build_assignments').delete().eq('view_name', zoneKey).eq('target', 'public');
+                            } catch(e){}
+
+                            if (zoneConf.active) {
+                                await _supabase.from('build_assignments').insert({
+                                    user_id: currentUser.id,
+                                    view_name: zoneKey,
+                                    target: 'public',
+                                    is_active: true
+                                });
+                            }
                         }
 
-                        // Save full JSON config to system_settings table if accessible
+                        // Save full JSON config to system_settings table
                         try {
-                            await _supabase.from('system_settings').upsert({
+                            const { error: sysErr } = await _supabase.from('system_settings').upsert({
                                 key: 'viking_maintenance_config',
                                 value: maintenanceConfig
                             }, { onConflict: 'key' });
-                        } catch(e){}
+
+                            if (sysErr) {
+                                console.warn("Upsert system_settings error, intentando update/insert fallback:", sysErr);
+                                const { error: updErr } = await _supabase.from('system_settings').update({
+                                    value: maintenanceConfig
+                                }).eq('key', 'viking_maintenance_config');
+
+                                if (updErr) {
+                                    await _supabase.from('system_settings').insert({
+                                        key: 'viking_maintenance_config',
+                                        value: maintenanceConfig
+                                    });
+                                }
+                            }
+                        } catch(e){
+                            console.error("Error al guardar system_settings:", e);
+                        }
                     }
 
                     Swal.fire({
@@ -1536,9 +1569,9 @@
                 } catch (err) {
                     console.error("Error al guardar en Supabase:", err);
                     Swal.fire({
-                        icon: 'success',
+                        icon: 'warning',
                         title: 'Guardado Localmente',
-                        text: 'La configuración se aplicó en este navegador.',
+                        text: 'La configuración se aplicó localmente.',
                         timer: 2000,
                         showConfirmButton: false
                     });
