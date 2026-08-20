@@ -557,8 +557,9 @@
 
         .maintenance-gltf-wrapper {
             width: 100%;
-            max-width: 650px;
-            height: 400px;
+            max-width: 900px;
+            height: 550px;
+            max-height: 60vh;
             position: relative;
             margin-bottom: 20px;
         }
@@ -569,76 +570,24 @@
             outline: none;
         }
 
-        .maintenance-badge {
-            background: linear-gradient(135deg, rgba(255, 71, 87, 0.25), rgba(255, 165, 0, 0.25));
-            border: 1px solid var(--warning-red);
-            color: #ff6b81;
-            padding: 6px 18px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin-bottom: 16px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);
-        }
-
-        .maintenance-title {
-            font-size: 2.2rem;
-            font-weight: 900;
-            color: #ffffff;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: -0.5px;
-            text-shadow: 0 4px 20px rgba(0, 210, 255, 0.4);
-        }
-
         .maintenance-subtitle {
-            font-size: 1.05rem;
+            font-size: 1.15rem;
             color: #cbd5e1;
-            max-width: 650px;
+            max-width: 750px;
             line-height: 1.6;
             margin-bottom: 24px;
         }
 
-        .maintenance-subtitle a {
-            color: var(--primary-cyan);
+        .maintenance-subtitle a,
+        .maintenance-subtitle a:visited {
+            color: #80b3ff !important;
             text-decoration: underline;
             font-weight: 700;
             transition: color 0.2s ease;
         }
 
         .maintenance-subtitle a:hover {
-            color: var(--accent-green);
-        }
-
-        .overlay-close-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #fff;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1000000;
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
-        }
-
-        .overlay-close-btn:hover {
-            background: rgba(255, 71, 87, 0.8);
-            border-color: var(--warning-red);
-            transform: scale(1.1);
+            color: #a6c8ff !important;
         }
 
         .admin-sim-exit-bar {
@@ -700,7 +649,7 @@
             <div class="hero-banner">
                 <div class="hero-info">
                     <h1><i class="fas fa-tools" style="color: var(--primary-cyan);"></i> Centro de Control de Mantenimiento</h1>
-                    <p>Configura individualmente cada sección con su propio modelo 3D GLTF y modo (Mantenimiento Estricto o Modo Prueba/Beta con cartel tachar 'X').</p>
+                    <p>Configura individualmente cada sección con su propio modelo 3D GLTF y mensaje informativo.</p>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px;">
                     <button id="btn-save-maintenance-config" class="btn-main-save"><i class="fas fa-save"></i> Guardar Cambios Globales</button>
@@ -740,25 +689,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -787,25 +725,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -834,25 +761,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -881,25 +797,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -935,25 +840,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -982,25 +876,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -1029,25 +912,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -1076,25 +948,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -1123,25 +984,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -1170,25 +1020,14 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
-                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
-                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
-                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
                             </select>
                         </div>
                         <div>
-                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-heading"></i> Título del Cartel</label>
-                            <input type="text" class="form-control card-title-input" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;" value="Mantenimiento en curso">
-                        </div>
-                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-align-left"></i> Mensaje Informativo</label>
-                            <textarea class="form-control card-message-input" rows="2" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
+                            <textarea class="form-control card-message-input" rows="3" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="flex: 1;">
@@ -1204,15 +1043,11 @@
         </div>
     </div>
 
-    <!-- GLTF Overlay Screen (Maintenance or Test Mode) -->
+    <!-- GLTF Overlay Screen -->
     <div id="maintenance-overlay-screen">
         <div id="admin-sim-badge" class="admin-sim-exit-bar" style="display: none;">
             <i class="fas fa-user-shield"></i> Modo Admin Simulación
         </div>
-
-        <button id="overlay-close-x" class="overlay-close-btn" style="display: none;" title="Cerrar / Entrar en Modo Prueba">
-            <i class="fas fa-times"></i>
-        </button>
 
         <div class="maintenance-gltf-wrapper">
             <model-viewer id="maintenance-overlay-viewer"
@@ -1224,18 +1059,13 @@
             </model-viewer>
         </div>
 
-        <div class="maintenance-badge" id="overlay-display-badge"><i class="fas fa-hard-hat"></i> Mantenimiento en curso</div>
-        <h2 class="maintenance-title" id="overlay-display-title">Mantenimiento en curso</h2>
         <p class="maintenance-subtitle" id="overlay-display-message">Estamos haciendo mejoras en esta seccion</p>
     </div>
 
     <!-- Script Application Logic -->
     <script>
         let currentUser = null;
-        const DEFAULT_MESSAGES = {
-            maintenance: "Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Regresaremos pronto.",
-            test: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.'
-        };
+        const DEFAULT_MESSAGE = 'Aún estamos trabajando en esta área. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank" style="color: #80b3ff !important; text-decoration: underline; font-weight: 700;">VikingDev</a>.';
 
         let maintenanceConfig = {
             zones: {}
@@ -1332,13 +1162,10 @@
             if (!raw || typeof raw !== 'object') {
                 raw = {};
             }
-            const mode = raw.mode || 'maintenance';
             return {
                 active: raw.active === true,
-                mode: mode,
                 gltfUrl: raw.gltfUrl || "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
-                title: raw.title || (mode === 'test' ? "Modo Prueba / Beta" : "Mantenimiento en curso"),
-                message: raw.message || (mode === 'test' ? DEFAULT_MESSAGES.test : DEFAULT_MESSAGES.maintenance),
+                message: raw.message || DEFAULT_MESSAGE,
                 scale: raw.scale || 1.8
             };
         }
@@ -1383,7 +1210,6 @@
                 const conf = normalizeZoneConfig(maintenanceConfig.zones[key]);
 
                 $(this).find('.toggle-zone-maintenance').prop('checked', conf.active);
-                $(this).find('.card-mode-select').val(conf.mode);
 
                 const $gltfSelect = $(this).find('.card-gltf-select');
                 if (conf.gltfUrl) {
@@ -1393,7 +1219,6 @@
                     $gltfSelect.val(conf.gltfUrl);
                 }
 
-                $(this).find('.card-title-input').val(conf.title);
                 $(this).find('.card-message-input').val(conf.message);
                 $(this).find('.card-scale-input').val(conf.scale);
             });
@@ -1425,21 +1250,6 @@
         }
 
         function setupEventListeners() {
-            // Mode Select Handler: Only set defaults if fields are empty
-            $(document).on('change', '.card-mode-select', function() {
-                const $card = $(this).closest('.zone-card');
-                const mode = $(this).val();
-                const $titleInput = $card.find('.card-title-input');
-                const $msgInput = $card.find('.card-message-input');
-
-                if (!$titleInput.val().trim()) {
-                    $titleInput.val(mode === 'test' ? 'Modo Prueba / Beta' : 'Mantenimiento en curso');
-                }
-                if (!$msgInput.val().trim()) {
-                    $msgInput.val(mode === 'test' ? DEFAULT_MESSAGES.test : DEFAULT_MESSAGES.maintenance);
-                }
-            });
-
             // Toggle Switches
             $(document).on('change', '.toggle-zone-maintenance', function() {
                 updateZoneCardUI();
@@ -1448,29 +1258,18 @@
             // Card-level "Simular" button
             $(document).on('click', '.btn-sim-card', function() {
                 const $card = $(this).closest('.zone-card');
-                const title = $card.find('.card-title-input').val().trim();
                 const msg = $card.find('.card-message-input').val().trim();
                 const url = $card.find('.card-gltf-select').val();
                 const scale = parseFloat($card.find('.card-scale-input').val()) || 1.8;
-                const mode = $card.find('.card-mode-select').val();
 
-                $('#overlay-display-title').text(title);
-                $('#overlay-display-message').html(msg);
+                $('#overlay-display-message').html(msg || DEFAULT_MESSAGE);
                 $('#maintenance-overlay-viewer').attr('src', url).attr('scale', `${scale} ${scale} ${scale}`);
-
-                if (mode === 'test') {
-                    $('#overlay-close-x').show();
-                    $('#overlay-display-badge').html('<i class="fas fa-vial"></i> Modo Prueba / Beta');
-                } else {
-                    $('#overlay-close-x').hide();
-                    $('#overlay-display-badge').html('<i class="fas fa-hard-hat"></i> Mantenimiento en curso');
-                }
 
                 $('#admin-sim-badge').show();
                 $('#maintenance-overlay-screen').addClass('active');
             });
 
-            $('#overlay-close-x, #admin-sim-badge').click(function() {
+            $('#admin-sim-badge').click(function() {
                 $('#maintenance-overlay-screen').removeClass('active');
             });
 
@@ -1481,18 +1280,14 @@
                 $('.zone-card').each(function() {
                     const key = $(this).data('zone-key');
                     const isActive = $(this).find('.toggle-zone-maintenance').is(':checked');
-                    const mode = $(this).find('.card-mode-select').val();
                     const gltfUrl = $(this).find('.card-gltf-select').val();
-                    const title = $(this).find('.card-title-input').val().trim();
                     const message = $(this).find('.card-message-input').val().trim();
                     const scale = parseFloat($(this).find('.card-scale-input').val()) || 1.8;
 
                     maintenanceConfig.zones[key] = {
                         active: isActive,
-                        mode: mode,
                         gltfUrl: gltfUrl,
-                        title: title || (mode === 'test' ? "Modo Prueba / Beta" : "Mantenimiento en curso"),
-                        message: message || (mode === 'test' ? DEFAULT_MESSAGES.test : DEFAULT_MESSAGES.maintenance),
+                        message: message || DEFAULT_MESSAGE,
                         scale: scale
                     };
                 });
@@ -1528,7 +1323,7 @@
                                 let createdAssetId = null;
                                 try {
                                     const { data: assetData } = await _supabase.from('build_assets').insert({
-                                        name: zoneConf.title || "Mantenimiento",
+                                        name: zoneConf.message ? zoneConf.message.substring(0, 50) : "Mantenimiento",
                                         gltf_url: zoneConf.gltfUrl,
                                         scale: zoneConf.scale,
                                         user_id: currentUser.id
