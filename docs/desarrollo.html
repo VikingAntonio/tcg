@@ -555,6 +555,32 @@
             to { opacity: 1; transform: scale(1); }
         }
 
+        .overlay-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000000;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+
+        .overlay-close-btn:hover {
+            background: rgba(255, 71, 87, 0.8);
+            border-color: var(--warning-red);
+            transform: scale(1.1);
+        }
+
         .maintenance-gltf-wrapper {
             width: 100%;
             max-width: 900px;
@@ -649,7 +675,7 @@
             <div class="hero-banner">
                 <div class="hero-info">
                     <h1><i class="fas fa-tools" style="color: var(--primary-cyan);"></i> Centro de Control de Mantenimiento</h1>
-                    <p>Configura individualmente cada sección con su propio modelo 3D GLTF y mensaje informativo.</p>
+                    <p>Configura individualmente cada sección con su propio modelo 3D GLTF, modo (Mantenimiento Estricto o Modo Prueba / Beta con 'X' para cerrar) y mensaje informativo.</p>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px;">
                     <button id="btn-save-maintenance-config" class="btn-main-save"><i class="fas fa-save"></i> Guardar Cambios Globales</button>
@@ -689,6 +715,13 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
+                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
@@ -724,6 +757,13 @@
                         </label>
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
                         <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
@@ -761,6 +801,13 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
+                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
@@ -796,6 +843,13 @@
                         </label>
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
                         <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
@@ -840,6 +894,13 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
+                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
@@ -875,6 +936,13 @@
                         </label>
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
                         <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
@@ -912,6 +980,13 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
+                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
@@ -947,6 +1022,13 @@
                         </label>
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
                         <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
@@ -984,6 +1066,13 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
+                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
@@ -1020,6 +1109,13 @@
                     </div>
                     <div class="zone-card-config" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div>
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-vial"></i> Modo de Cartel</label>
+                            <select class="form-control card-mode-select" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
+                                <option value="maintenance">Mantenimiento Estricto (Sin 'X')</option>
+                                <option value="test">Modo Prueba / Beta (Con 'X' para cerrar)</option>
+                            </select>
+                        </div>
+                        <div>
                             <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-ghost"></i> Compañero 3D GLTF</label>
                             <select class="form-control card-gltf-select spirit-preset-dropdown" style="font-size: 0.8rem; padding: 6px 10px; margin-top: 4px;">
                                 <option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>
@@ -1048,6 +1144,10 @@
         <div id="admin-sim-badge" class="admin-sim-exit-bar" style="display: none;">
             <i class="fas fa-user-shield"></i> Modo Admin Simulación
         </div>
+
+        <button id="overlay-close-x" class="overlay-close-btn" style="display: none;" title="Cerrar / Entrar en Modo Prueba">
+            <i class="fas fa-times"></i>
+        </button>
 
         <div class="maintenance-gltf-wrapper">
             <model-viewer id="maintenance-overlay-viewer"
@@ -1162,8 +1262,10 @@
             if (!raw || typeof raw !== 'object') {
                 raw = {};
             }
+            const mode = raw.mode || 'maintenance';
             return {
                 active: raw.active === true,
+                mode: mode,
                 gltfUrl: raw.gltfUrl || "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
                 message: raw.message || DEFAULT_MESSAGE,
                 scale: raw.scale || 1.8
@@ -1210,6 +1312,7 @@
                 const conf = normalizeZoneConfig(maintenanceConfig.zones[key]);
 
                 $(this).find('.toggle-zone-maintenance').prop('checked', conf.active);
+                $(this).find('.card-mode-select').val(conf.mode);
 
                 const $gltfSelect = $(this).find('.card-gltf-select');
                 if (conf.gltfUrl) {
@@ -1250,6 +1353,15 @@
         }
 
         function setupEventListeners() {
+            // Mode Select Handler
+            $(document).on('change', '.card-mode-select', function() {
+                const $card = $(this).closest('.zone-card');
+                const $msgInput = $card.find('.card-message-input');
+                if (!$msgInput.val().trim()) {
+                    $msgInput.val(DEFAULT_MESSAGE);
+                }
+            });
+
             // Toggle Switches
             $(document).on('change', '.toggle-zone-maintenance', function() {
                 updateZoneCardUI();
@@ -1261,15 +1373,22 @@
                 const msg = $card.find('.card-message-input').val().trim();
                 const url = $card.find('.card-gltf-select').val();
                 const scale = parseFloat($card.find('.card-scale-input').val()) || 1.8;
+                const mode = $card.find('.card-mode-select').val();
 
                 $('#overlay-display-message').html(msg || DEFAULT_MESSAGE);
                 $('#maintenance-overlay-viewer').attr('src', url).attr('scale', `${scale} ${scale} ${scale}`);
+
+                if (mode === 'test') {
+                    $('#overlay-close-x').show();
+                } else {
+                    $('#overlay-close-x').hide();
+                }
 
                 $('#admin-sim-badge').show();
                 $('#maintenance-overlay-screen').addClass('active');
             });
 
-            $('#admin-sim-badge').click(function() {
+            $('#overlay-close-x, #admin-sim-badge').click(function() {
                 $('#maintenance-overlay-screen').removeClass('active');
             });
 
@@ -1280,12 +1399,14 @@
                 $('.zone-card').each(function() {
                     const key = $(this).data('zone-key');
                     const isActive = $(this).find('.toggle-zone-maintenance').is(':checked');
+                    const mode = $(this).find('.card-mode-select').val();
                     const gltfUrl = $(this).find('.card-gltf-select').val();
                     const message = $(this).find('.card-message-input').val().trim();
                     const scale = parseFloat($(this).find('.card-scale-input').val()) || 1.8;
 
                     maintenanceConfig.zones[key] = {
                         active: isActive,
+                        mode: mode,
                         gltfUrl: gltfUrl,
                         message: message || DEFAULT_MESSAGE,
                         scale: scale

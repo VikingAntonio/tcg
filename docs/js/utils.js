@@ -1176,6 +1176,10 @@ $(document).ready(function() {
 
 // Dynamic Mask Editor Injection
 $(document).ready(function() {
+    const currentPath = window.location.pathname.toLowerCase();
+    if (currentPath.includes('configduel') || currentPath.includes('duel')) {
+        return;
+    }
     if ($('#mask-editor-overlay').length === 0) {
         const maskEditorHTML = `
         <div id="mask-editor-overlay" class="overlay">
@@ -1722,6 +1726,7 @@ window.checkVikingMaintenance = async function(zoneKey) {
     if (!rawConf) return;
 
     let active = false;
+    let mode = 'maintenance';
     let gltfUrl = "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb";
     let defaultMsg = 'Aún estamos trabajando en esta área. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank" style="color: #80b3ff !important; text-decoration: underline; font-weight: 700;">VikingDev</a>.';
     let message = defaultMsg;
@@ -1731,6 +1736,7 @@ window.checkVikingMaintenance = async function(zoneKey) {
         active = rawConf;
     } else if (typeof rawConf === 'object') {
         active = rawConf.active === true;
+        mode = rawConf.mode || 'maintenance';
         gltfUrl = rawConf.gltfUrl || gltfUrl;
         message = rawConf.message || defaultMsg;
         scale = rawConf.scale || scale;
@@ -1768,6 +1774,28 @@ window.checkVikingMaintenance = async function(zoneKey) {
                 color: #ffffff;
                 font-family: 'Outfit', 'Montserrat', sans-serif;
             ">
+                <button id="viking-overlay-close-x" style="
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    color: #fff;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    font-size: 1.4rem;
+                    display: ${mode === 'test' ? 'flex' : 'none'};
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    z-index: 1000000;
+                    backdrop-filter: blur(10px);
+                    transition: all 0.2s ease;
+                " title="Cerrar / Continuar en Modo Prueba">
+                    <i class="fas fa-times"></i>
+                </button>
+
                 <div style="width: 100%; max-width: 900px; height: 550px; max-height: 60vh; position: relative; margin-bottom: 20px;">
                     <model-viewer id="viking-maintenance-overlay-viewer"
                         src="${gltfUrl}"
@@ -1784,5 +1812,16 @@ window.checkVikingMaintenance = async function(zoneKey) {
             </div>
         `;
         $('body').append(overlayHtml);
+        $overlay = $('#viking-maintenance-overlay-screen');
+
+        $('#viking-overlay-close-x').click(function() {
+            $overlay.fadeOut(300, function() { $(this).remove(); });
+        });
+    }
+
+    if (mode === 'test') {
+        $('#viking-overlay-close-x').show();
+    } else {
+        $('#viking-overlay-close-x').hide();
     }
 };
