@@ -1713,10 +1713,9 @@ window.checkVikingMaintenance = async function(zoneKey) {
                 const asset = ass ? ass.build_assets : null;
                 rawConf = {
                     active: true,
-                    mode: 'test',
+                    mode: 'maintenance',
                     gltfUrl: (asset && asset.gltf_url) ? asset.gltf_url : "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
-                    title: (asset && asset.name) ? asset.name : "Modo Prueba / Beta",
-                    message: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
+                    message: 'Aún estamos trabajando en esta área. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
                     scale: (asset && asset.scale) ? asset.scale : 1.8
                 };
             }
@@ -1800,9 +1799,13 @@ window.checkVikingMaintenance = async function(zoneKey) {
                     <model-viewer id="viking-maintenance-overlay-viewer"
                         src="${gltfUrl}"
                         scale="${scale} ${scale} ${scale}"
+                        loading="eager"
+                        reveal="auto"
+                        power-preference="high-performance"
+                        interaction-prompt="none"
                         auto-rotate
                         camera-controls
-                        shadow-intensity="1"
+                        shadow-intensity="0.5"
                         exposure="1.2"
                         style="width: 100%; height: 100%; outline: none;">
                     </model-viewer>
@@ -1820,8 +1823,8 @@ window.checkVikingMaintenance = async function(zoneKey) {
     }
 
     if (mode === 'test') {
-        $('#viking-overlay-close-x').show();
+        $('#viking-overlay-close-x').css('display', 'flex').show();
     } else {
-        $('#viking-overlay-close-x').hide();
+        $('#viking-overlay-close-x').css('display', 'none').hide();
     }
 };
