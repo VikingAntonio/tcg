@@ -1300,16 +1300,26 @@
                     .order('name', { ascending: true });
 
                 const $selects = $('.spirit-preset-dropdown');
-                $selects.empty();
-                $selects.append('<option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Predeterminado: Letras VIKINGDEV 3D</option>');
+                $selects.each(function() {
+                    const currentVal = $(this).val();
+                    $(this).empty();
+                    $(this).append('<option value="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb">Letras VIKINGDEV 3D</option>');
 
-                if (!error && spirits && spirits.length > 0) {
-                    spirits.forEach(spirit => {
-                        if (spirit.gltf_url) {
-                            $selects.append(`<option value="${spirit.gltf_url}">${spirit.name || 'Compañero 3D'}</option>`);
+                    if (!error && spirits && spirits.length > 0) {
+                        spirits.forEach(spirit => {
+                            if (spirit.gltf_url) {
+                                $(this).append(`<option value="${spirit.gltf_url}">${spirit.name || 'Compañero 3D'}</option>`);
+                            }
+                        });
+                    }
+
+                    if (currentVal) {
+                        if ($(this).find(`option[value="${currentVal}"]`).length === 0) {
+                            $(this).append(`<option value="${currentVal}">${currentVal}</option>`);
                         }
-                    });
-                }
+                        $(this).val(currentVal);
+                    }
+                });
             } catch(e) {
                 console.warn("Error cargando compañeros desde Supabase:", e);
             }
@@ -1334,38 +1344,37 @@
         }
 
         async function loadMaintenanceSettings() {
-            await loadSpiritsList();
-
-            // 1. Fetch from Supabase build_assignments
+            // 1. Load full JSON config from system_settings first
             try {
-                const { data: assignments } = await _supabase
-                    .from('build_assignments')
-                    .select('*')
-                    .eq('user_id', currentUser.id);
+                const { data: globalSettings } = await _supabase
+                    .from('system_settings')
+                    .select('value')
+                    .eq('key', 'viking_maintenance_config')
+                    .maybeSingle();
 
-                if (assignments && assignments.length > 0) {
-                    assignments.forEach(a => {
-                        maintenanceConfig.zones[a.view_name] = {
-                            active: a.is_active === true
-                        };
-                    });
+                if (globalSettings && globalSettings.value && globalSettings.value.zones) {
+                    maintenanceConfig = globalSettings.value;
                 }
             } catch (e) {
-                console.warn("No se pudieron cargar asignaciones desde Supabase, usando local:", e);
+                console.warn("Error cargando system_settings desde Supabase:", e);
             }
 
-            // 2. Merge with localStorage
+            // 2. Fallback / Merge with localStorage
             const savedLocal = localStorage.getItem('viking_maintenance_config');
             if (savedLocal) {
                 try {
                     const parsed = JSON.parse(savedLocal);
                     if (parsed && parsed.zones) {
                         for (const [key, val] of Object.entries(parsed.zones)) {
-                            maintenanceConfig.zones[key] = val;
+                            if (!maintenanceConfig.zones[key]) {
+                                maintenanceConfig.zones[key] = val;
+                            }
                         }
                     }
                 } catch(e){}
             }
+
+            await loadSpiritsList();
 
             // Populate each .zone-card form fields
             $('.zone-card').each(function() {
@@ -1376,9 +1385,11 @@
                 $(this).find('.card-mode-select').val(conf.mode);
 
                 const $gltfSelect = $(this).find('.card-gltf-select');
-                $gltfSelect.val(conf.gltfUrl);
-                if (!$gltfSelect.val()) {
-                    $gltfSelect.append(`<option value="${conf.gltfUrl}" selected>Compañero Actual (${conf.gltfUrl})</option>`);
+                if (conf.gltfUrl) {
+                    if ($gltfSelect.find(`option[value="${conf.gltfUrl}"]`).length === 0) {
+                        $gltfSelect.append(`<option value="${conf.gltfUrl}">${conf.gltfUrl}</option>`);
+                    }
+                    $gltfSelect.val(conf.gltfUrl);
                 }
 
                 $(this).find('.card-title-input').val(conf.title);
@@ -1413,27 +1424,18 @@
         }
 
         function setupEventListeners() {
-            // Mode Select Handler: Auto-update default text if user switches mode
+            // Mode Select Handler: Only set defaults if fields are empty
             $(document).on('change', '.card-mode-select', function() {
                 const $card = $(this).closest('.zone-card');
                 const mode = $(this).val();
                 const $titleInput = $card.find('.card-title-input');
                 const $msgInput = $card.find('.card-message-input');
 
-                if (mode === 'test') {
-                    if ($titleInput.val() === 'Mantenimiento en curso' || !$titleInput.val()) {
-                        $titleInput.val('Modo Prueba / Beta');
-                    }
-                    if ($msgInput.val() === DEFAULT_MESSAGES.maintenance || !$msgInput.val()) {
-                        $msgInput.val(DEFAULT_MESSAGES.test);
-                    }
-                } else {
-                    if ($titleInput.val() === 'Modo Prueba / Beta' || !$titleInput.val()) {
-                        $titleInput.val('Mantenimiento en curso');
-                    }
-                    if ($msgInput.val() === DEFAULT_MESSAGES.test || !$msgInput.val()) {
-                        $msgInput.val(DEFAULT_MESSAGES.maintenance);
-                    }
+                if (!$titleInput.val().trim()) {
+                    $titleInput.val(mode === 'test' ? 'Modo Prueba / Beta' : 'Mantenimiento en curso');
+                }
+                if (!$msgInput.val().trim()) {
+                    $msgInput.val(mode === 'test' ? DEFAULT_MESSAGES.test : DEFAULT_MESSAGES.maintenance);
                 }
             });
 
