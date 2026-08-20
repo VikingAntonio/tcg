@@ -1664,38 +1664,10 @@ window.checkVikingMaintenance = async function(zoneKey) {
         return;
     }
 
-    // 2. Fetch maintenance config from localStorage or Supabase
-    let maintenanceConfig = null;
-    const savedLocal = localStorage.getItem('viking_maintenance_config');
-    if (savedLocal) {
-        try {
-            maintenanceConfig = JSON.parse(savedLocal);
-        } catch(e){}
-    }
-
-    let activeAssignment = null;
-    if (typeof _supabase !== 'undefined') {
-        try {
-            const { data: assignments } = await _supabase
-                .from('build_assignments')
-                .select('*')
-                .eq('view_name', zoneKey)
-                .eq('target', 'public')
-                .eq('is_active', true)
-                .maybeSingle();
-
-            if (assignments) {
-                activeAssignment = assignments;
-            }
-        } catch(e){}
-    }
-
-    // Fetch global maintenance settings from Supabase if activeAssignment exists and extra metadata is stored in build_assignments / system_settings
+    // 2. Fetch maintenance config: Query Supabase system_settings first so user devices load development settings
     let rawConf = null;
-    if (maintenanceConfig && maintenanceConfig.zones && maintenanceConfig.zones[zoneKey]) {
-        rawConf = maintenanceConfig.zones[zoneKey];
-    } else if (activeAssignment) {
-        // Query global system settings if local storage is cleared
+
+    if (typeof _supabase !== 'undefined') {
         try {
             const { data: globalSettings } = await _supabase
                 .from('system_settings')
@@ -1707,17 +1679,42 @@ window.checkVikingMaintenance = async function(zoneKey) {
                 rawConf = globalSettings.value.zones[zoneKey];
             }
         } catch(e){}
+    }
 
-        if (!rawConf) {
-            rawConf = {
-                active: true,
-                mode: 'test',
-                gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
-                title: "Modo Beta",
-                message: 'Aún estamos trabajando en esta área y puede haber errores o inconsistencias. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
-                scale: 1.8
-            };
+    // Fallback to localStorage if Supabase query returned no config
+    if (!rawConf) {
+        const savedLocal = localStorage.getItem('viking_maintenance_config');
+        if (savedLocal) {
+            try {
+                const parsed = JSON.parse(savedLocal);
+                if (parsed && parsed.zones && parsed.zones[zoneKey]) {
+                    rawConf = parsed.zones[zoneKey];
+                }
+            } catch(e){}
         }
+    }
+
+    // Secondary Fallback: Check build_assignments table
+    if (!rawConf && typeof _supabase !== 'undefined') {
+        try {
+            const { data: assignments } = await _supabase
+                .from('build_assignments')
+                .select('*')
+                .eq('view_name', zoneKey)
+                .eq('target', 'public')
+                .eq('is_active', true);
+
+            if (assignments && assignments.length > 0) {
+                rawConf = {
+                    active: true,
+                    mode: 'maintenance',
+                    gltfUrl: "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
+                    title: "Mantenimiento en curso",
+                    message: "Estamos realizando actualizaciones importantes para brindarte la mejor experiencia. Regresaremos pronto.",
+                    scale: 1.8
+                };
+            }
+        } catch(e){}
     }
 
     if (!rawConf) return;
