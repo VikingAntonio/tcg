@@ -1152,9 +1152,13 @@
         <div class="maintenance-gltf-wrapper">
             <model-viewer id="maintenance-overlay-viewer"
                 src="https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb"
+                loading="eager"
+                reveal="auto"
+                power-preference="high-performance"
+                interaction-prompt="none"
                 auto-rotate
                 camera-controls
-                shadow-intensity="1"
+                shadow-intensity="0.5"
                 exposure="1.2">
             </model-viewer>
         </div>
@@ -1379,9 +1383,9 @@
                 $('#maintenance-overlay-viewer').attr('src', url).attr('scale', `${scale} ${scale} ${scale}`);
 
                 if (mode === 'test') {
-                    $('#overlay-close-x').show();
+                    $('#overlay-close-x').css('display', 'flex').show();
                 } else {
-                    $('#overlay-close-x').hide();
+                    $('#overlay-close-x').css('display', 'none').hide();
                 }
 
                 $('#admin-sim-badge').show();
