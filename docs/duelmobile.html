@@ -103,7 +103,7 @@
             position: absolute !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
-            width: 100% !important;
+            width: auto !important;
             max-width: 98vw !important;
             background: transparent !important;
             border: none !important;
@@ -111,7 +111,80 @@
             z-index: 2000 !important;
             pointer-events: none !important;
             display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
             justify-content: center !important;
+            touch-action: none;
+        }
+
+        /* Hand Tray Drag and Resize Handle Controls */
+        .hand-tray-drag-handle,
+        .hand-tray-resize-handle {
+            position: absolute !important;
+            width: 28px !important;
+            height: 28px !important;
+            border-radius: 50% !important;
+            background: rgba(18, 24, 30, 0.88) !important;
+            border: 1.5px solid var(--primary-color, #00d2ff) !important;
+            color: var(--primary-color, #00d2ff) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.75rem !important;
+            cursor: grab !important;
+            z-index: 2010 !important;
+            pointer-events: auto !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6) !important;
+            transition: transform 0.15s ease, background-color 0.15s ease !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            touch-action: none !important;
+        }
+        .hand-tray-drag-handle:hover,
+        .hand-tray-resize-handle:hover {
+            transform: scale(1.18) !important;
+            background: rgba(0, 210, 255, 0.3) !important;
+            color: #ffffff !important;
+        }
+        .hand-tray-drag-handle:active,
+        .hand-tray-resize-handle:active {
+            cursor: grabbing !important;
+            transform: scale(1.05) !important;
+        }
+        .hand-tray-drag-handle {
+            left: -34px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+        }
+        .hand-tray-resize-handle {
+            right: -34px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+        }
+
+        /* Hand Cards Container: Limit visible capacity to 8 cards (~310px width), with horizontal scroll for >8 cards */
+        .hand-cards-container {
+            max-width: 310px !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            padding: 22px 12px !important;
+            pointer-events: auto !important;
+            scroll-behavior: smooth !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(0, 210, 255, 0.5) rgba(0, 0, 0, 0.2) !important;
+            touch-action: pan-x !important;
+            box-sizing: border-box !important;
+        }
+        .hand-cards-container::-webkit-scrollbar {
+            height: 4px !important;
+        }
+        .hand-cards-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border-radius: 4px !important;
+        }
+        .hand-cards-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 210, 255, 0.5) !important;
+            border-radius: 4px !important;
         }
 
         /* Ensure perfect anchor alignment of field cards during board rotation to prevent shifting */
@@ -303,6 +376,8 @@
 
             <!-- Player 2 Hand Tray (Invisible transparent workspace area at the top) -->
             <div class="hand-tray player-2" id="hand-tray-p2">
+                <div class="hand-tray-drag-handle" data-tray="hand-tray-p2" title="Mover bloque de mano"><i class="fas fa-arrows-alt"></i></div>
+                <div class="hand-tray-resize-handle" data-tray="hand-tray-p2" title="Ajustar tamaño de mano"><i class="fas fa-expand-alt"></i></div>
 
                 <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
                     <label class="theme-switch p2-theme-switch" title="Selección Múltiple">
@@ -340,6 +415,8 @@
 
             <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
             <div class="hand-tray player-1" id="hand-tray-p1">
+                <div class="hand-tray-drag-handle" data-tray="hand-tray-p1" title="Mover bloque de mano"><i class="fas fa-arrows-alt"></i></div>
+                <div class="hand-tray-resize-handle" data-tray="hand-tray-p1" title="Ajustar tamaño de mano"><i class="fas fa-expand-alt"></i></div>
 
                 <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
                     <label class="theme-switch p1-theme-switch" title="Selección Múltiple">
@@ -671,6 +748,11 @@
                             "top": "auto"
                         });
                     }
+
+                    if (typeof window.updateHandTrayTransform === "function") {
+                        window.updateHandTrayTransform("hand-tray-p1");
+                        window.updateHandTrayTransform("hand-tray-p2");
+                    }
                 };
 
                 // Re-bind window resize/orientation events so the custom wrapper is invoked
@@ -678,7 +760,78 @@
                 $(window).on("resize orientationchange", window.adjustPlaymatScale);
             }
 
-            // Override window.renderAllCards to support flawless card dragging under board rotation
+            // Global storage for hand tray custom transforms (offsets and scale)
+            window.handTrayState = window.handTrayState || {
+                "hand-tray-p1": { x: 0, y: 0, scale: 1 },
+                "hand-tray-p2": { x: 0, y: 0, scale: 1 }
+            };
+
+            window.updateHandTrayTransform = function(trayId) {
+                const $tray = $(`#${trayId}`);
+                if (!$tray.length) return;
+                const stateObj = window.handTrayState[trayId] || { x: 0, y: 0, scale: 1 };
+                $tray[0].style.setProperty('transform', `translateX(-50%) translate(${stateObj.x}px, ${stateObj.y}px) scale(${stateObj.scale})`, 'important');
+            };
+
+            // Hand Tray Dragging and Resizing Logic
+            (function initHandTrayControls() {
+                let activeAction = null; // 'drag' or 'resize'
+                let targetTrayId = null;
+                let startX = 0, startY = 0;
+                let initialX = 0, initialY = 0, initialScale = 1;
+
+                $(document).on("mousedown touchstart", ".hand-tray-drag-handle, .hand-tray-resize-handle", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const $btn = $(this);
+                    targetTrayId = $btn.data("tray");
+                    activeAction = $btn.hasClass("hand-tray-drag-handle") ? "drag" : "resize";
+
+                    const pos = getEventCoords(e);
+                    startX = pos.x;
+                    startY = pos.y;
+
+                    const trayState = window.handTrayState[targetTrayId] || { x: 0, y: 0, scale: 1 };
+                    initialX = trayState.x;
+                    initialY = trayState.y;
+                    initialScale = trayState.scale;
+
+                    $(document).on("mousemove.handTrayControl touchmove.handTrayControl", function(evt) {
+                        if (!activeAction || !targetTrayId) return;
+                        evt.preventDefault();
+
+                        const currentPos = getEventCoords(evt);
+                        const dx = currentPos.x - startX;
+                        const dy = currentPos.y - startY;
+                        const currentState = window.handTrayState[targetTrayId];
+
+                        if (activeAction === "drag") {
+                            currentState.x = initialX + dx;
+                            currentState.y = initialY + dy;
+                        } else if (activeAction === "resize") {
+                            // Dragging right or down increases scale, left or up decreases scale
+                            const scaleDelta = (dx + dy) * 0.005;
+                            const newScale = Math.max(0.5, Math.min(2.0, initialScale + scaleDelta));
+                            currentState.scale = parseFloat(newScale.toFixed(3));
+                        }
+
+                        window.updateHandTrayTransform(targetTrayId);
+                    });
+
+                    $(document).on("mouseup.handTrayControl touchend.handTrayControl touchcancel.handTrayControl", function() {
+                        activeAction = null;
+                        targetTrayId = null;
+                        $(document).off(".handTrayControl");
+                    });
+                });
+            })();
+
+            // Apply custom transforms on load/reset
+            window.updateHandTrayTransform("hand-tray-p1");
+            window.updateHandTrayTransform("hand-tray-p2");
+
+            // Override window.renderAllCards to support flawless card dragging under board rotation and auto-scroll overflow cards in hand
             if (window.renderAllCards) {
                 const baseRenderAllCards = window.renderAllCards;
                 window.renderAllCards = function() {
@@ -687,6 +840,18 @@
                     if (typeof window.updateHalfPlaymats === "function") {
                         window.updateHalfPlaymats();
                     }
+
+                    // Re-apply custom hand tray transforms
+                    window.updateHandTrayTransform("hand-tray-p1");
+                    window.updateHandTrayTransform("hand-tray-p2");
+
+                    // Auto scroll hand containers to show newly added cards if exceeding 8 cards
+                    ["#hand-p1", "#hand-p2"].forEach(selector => {
+                        const elem = $(selector)[0];
+                        if (elem) {
+                            elem.scrollLeft = elem.scrollWidth;
+                        }
+                    });
 
                     // Re-bind touch/mouse start with window.isBoardRotated support
                     const cards = $(".duel-card");
