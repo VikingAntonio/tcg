@@ -741,7 +741,8 @@ function renderAllCards() {
                     ${state.layout === 'pokemon' ?
                         `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
                          <button class="hand-action-btn btn-pokemon-field" data-instance-id="${card.instanceId}">Field</button>` :
-                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
+                        `<button class="hand-action-btn btn-defense" data-instance-id="${card.instanceId}">Invoc. Def.</button>
+                         <button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
                     }
                     <button class="hand-action-btn btn-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="hand-action-btn btn-grave" data-instance-id="${card.instanceId}">Cementerio</button>
@@ -952,6 +953,8 @@ function bindCardDragEvents() {
 
         if ($(this).hasClass("btn-summon")) {
             startGraphicalTargeting(cardObj, "summon");
+        } else if ($(this).hasClass("btn-defense")) {
+            startGraphicalTargeting(cardObj, "defense");
         } else if ($(this).hasClass("btn-set")) {
             startGraphicalTargeting(cardObj, "set");
         } else if ($(this).hasClass("btn-attach")) {
@@ -1507,6 +1510,7 @@ function openExtraDeckModal(playerKey) {
                     <img src="${imgSrc}" alt="${card.name}">
                     <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 6px;">
                         <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                        <button class="extra-card-action-btn btn-extra-defense" data-instance-id="${card.instanceId}">Invocar en defensa</button>
                         <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
                         <button class="extra-card-action-btn btn-extra-zoom" data-instance-id="${card.instanceId}">Ver carta</button>
                     </div>
@@ -1533,6 +1537,24 @@ function openExtraDeckModal(playerKey) {
         if (cardObj) {
             $("#extra-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "summon");
+        }
+    });
+
+    // Click Invocar en defensa button to start defense targeting mode
+    $("#extra-cards-grid").on("click", ".btn-extra-defense", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const container = $(this).closest(".extra-deck-card-container");
+        if (!container.hasClass("active-menu")) {
+            $(".pile-card-container, .extra-deck-card-container, .search-card-item").removeClass("active-menu");
+            container.addClass("active-menu");
+            return;
+        }
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            $("#extra-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "defense");
         }
     });
 
@@ -1596,36 +1618,19 @@ function startGraphicalTargeting(cardObj, actionType) {
         if (targetingCard) {
             targetingCard.zone = zoneId;
 
+            const isMonsterZone = (zoneObj && zoneObj.type === "monster") || (zoneId && (zoneId.startsWith("monster_") || zoneId.startsWith("extra_monster_") || zoneId.startsWith("char_") || zoneId.startsWith("ninja_") || zoneId.startsWith("creature_") || zoneId.startsWith("battle_")));
+
             if (isYGOLayout(state.layout)) {
                 // Symmetrical placement rules for Yu-Gi-Oh!
-                if (zoneObj && zoneObj.type === "monster") {
-                    if (targetActionType === "set") {
-                        targetingCard.faceDown = true;
-                        targetingCard.tapped = true; // Monster set is rotated/defense
-                    } else {
-                        targetingCard.faceDown = false;
-                        targetingCard.tapped = false; // Monster summon is upright
-                    }
-                } else if (zoneObj && (zoneObj.type === "spell" || zoneObj.type === "field")) {
-                    if (targetActionType === "set") {
-                        targetingCard.faceDown = true;
-                        targetingCard.tapped = false; // Spell/Trap set is upright
-                    } else {
-                        targetingCard.faceDown = false;
-                        targetingCard.tapped = false;
-                    }
+                if (targetActionType === "set") {
+                    targetingCard.faceDown = true;
+                    targetingCard.tapped = isMonsterZone ? true : false; // Monster set is rotated/horizontal, Spell/Trap set is upright
+                } else if (targetActionType === "defense") {
+                    targetingCard.faceDown = false;
+                    targetingCard.tapped = true; // Defense mode is rotated/horizontal, face-up
                 } else {
-                    // Default zone fallback
-                    if (targetActionType === "summon") {
-                        targetingCard.faceDown = false;
-                        targetingCard.tapped = false;
-                    } else if (targetActionType === "set") {
-                        targetingCard.faceDown = true;
-                        targetingCard.tapped = false;
-                    } else if (targetActionType === "defense") {
-                        targetingCard.faceDown = false;
-                        targetingCard.tapped = true;
-                    }
+                    targetingCard.faceDown = false;
+                    targetingCard.tapped = false; // Summon mode is upright, face-up
                 }
             } else {
                 // Pokémon placement rules (everything on the playmat is face-up except deck and prizes)
@@ -2186,6 +2191,7 @@ function openSearchModal(playerKey) {
                         <div class="pile-card-menu">
                             <button class="pile-card-action-btn btn-search-hand" data-instance-id="${card.instanceId}">Mano</button>
                             <button class="pile-card-action-btn btn-search-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                            <button class="pile-card-action-btn btn-search-defense" data-instance-id="${card.instanceId}">Invocar en defensa</button>
                             <button class="pile-card-action-btn btn-search-set" data-instance-id="${card.instanceId}">Set</button>
                                     <button class="pile-card-action-btn btn-search-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-search-grave" data-instance-id="${card.instanceId}">Grave</button>
@@ -2250,6 +2256,9 @@ function openSearchModal(playerKey) {
         } else if ($(this).hasClass("btn-search-summon")) {
             $("#search-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "summon");
+        } else if ($(this).hasClass("btn-search-defense")) {
+            $("#search-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "defense");
         } else if ($(this).hasClass("btn-search-set")) {
             $("#search-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "set");
@@ -2339,6 +2348,7 @@ function openPileModal(playerKey, pileType) {
                     <div class="pile-card-hover-overlay">
                         <div class="pile-card-menu">
                             <button class="pile-card-action-btn btn-pile-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                            <button class="pile-card-action-btn btn-pile-defense" data-instance-id="${card.instanceId}">Invocar en defensa</button>
                             <button class="pile-card-action-btn btn-pile-set" data-instance-id="${card.instanceId}">Set</button>
                             <button class="pile-card-action-btn btn-pile-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-pile-hand" data-instance-id="${card.instanceId}">Mano</button>
@@ -2388,6 +2398,9 @@ function openPileModal(playerKey, pileType) {
         if ($(this).hasClass("btn-pile-summon")) {
             $("#pile-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "summon");
+        } else if ($(this).hasClass("btn-pile-defense")) {
+            $("#pile-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "defense");
         } else if ($(this).hasClass("btn-pile-set")) {
             $("#pile-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "set");
@@ -2736,6 +2749,12 @@ function setupEventListeners() {
         if (!activeMenuCard) return;
         $("#card-menu").removeClass("active");
         startGraphicalTargeting(activeMenuCard, "summon");
+    });
+
+    $(document).on("click", "#menu-defense", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        startGraphicalTargeting(activeMenuCard, "defense");
     });
 
     $(document).on("click", "#menu-set", function() {
@@ -5354,6 +5373,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 $("#menu-view-card-detail").show();
                 // By default, hide all hand-specific items
                 $("#menu-summon").hide();
+                $("#menu-defense").hide();
                 $("#menu-set").hide();
                 $("#menu-activate").hide();
 
@@ -5363,6 +5383,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     // Hand Card layout options
                     $("#menu-summon").show();
                     if (isYGOLayout(state.layout)) {
+                        $("#menu-defense").show();
                         $("#menu-set").show();
                     } else if (state.layout === 'pokemon') {
                         $("#menu-activate").show();
@@ -5813,6 +5834,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             cardObj.controller = cardObj.owner;
                         } else {
                             cardObj.zone = hoverZone.id;
+                            if (cardObj.faceDown) {
+                                const isMonster = hoverZone.type === "monster" || hoverZone.id.startsWith("monster_") || hoverZone.id.startsWith("extra_monster_");
+                                cardObj.tapped = isMonster ? true : false;
+                            }
                         }
                         cardObj.attachedTo = null;
 
