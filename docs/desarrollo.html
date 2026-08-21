@@ -1446,9 +1446,10 @@
 
                             if (zoneConf.active) {
                                 let createdAssetId = null;
+                                const modePrefix = (zoneConf.mode || 'maintenance') + "::";
                                 try {
                                     const { data: assetData } = await _supabase.from('build_assets').insert({
-                                        name: zoneConf.message ? zoneConf.message.substring(0, 50) : "Mantenimiento",
+                                        name: modePrefix + (zoneConf.message ? zoneConf.message.substring(0, 50) : "Mantenimiento"),
                                         gltf_url: zoneConf.gltfUrl,
                                         scale: zoneConf.scale,
                                         user_id: currentUser.id
