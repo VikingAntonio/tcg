@@ -1711,9 +1711,15 @@ window.checkVikingMaintenance = async function(zoneKey) {
             if (assignments && assignments.length > 0) {
                 const ass = assignments[0];
                 const asset = ass ? ass.build_assets : null;
+                let assMode = 'maintenance';
+                if (asset && asset.name) {
+                    if (asset.name.startsWith('test::') || asset.name.includes('test') || asset.name.toLowerCase().includes('beta')) {
+                        assMode = 'test';
+                    }
+                }
                 rawConf = {
                     active: true,
-                    mode: 'maintenance',
+                    mode: assMode,
                     gltfUrl: (asset && asset.gltf_url) ? asset.gltf_url : "https://vikingantonio.github.io/vikingdev3D/assets/letrasVIKINGDEVfb.glb",
                     message: 'Aún estamos trabajando en esta área. Si tienes alguna sugerencia o comentario, escríbenos en <a href="https://m.me/vikingdevtj" target="_blank">VikingDev</a>.',
                     scale: (asset && asset.scale) ? asset.scale : 1.8
@@ -1742,6 +1748,8 @@ window.checkVikingMaintenance = async function(zoneKey) {
     }
 
     if (!active) return;
+
+    const isBeta = (mode === 'test' || mode === 'beta');
 
     // Format any link inside message to have pastel blue style if not already styled
     if (message && message.includes('<a') && !message.includes('#80b3ff')) {
@@ -1777,14 +1785,14 @@ window.checkVikingMaintenance = async function(zoneKey) {
                     position: absolute;
                     top: 20px;
                     right: 20px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.3);
-                    color: #fff;
+                    background: rgba(255, 255, 255, 0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.4);
+                    color: #ffffff;
                     width: 48px;
                     height: 48px;
                     border-radius: 50%;
-                    font-size: 1.4rem;
-                    display: ${mode === 'test' ? 'flex' : 'none'};
+                    font-size: 1.5rem;
+                    display: ${isBeta ? 'flex' : 'none'} !important;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
@@ -1822,7 +1830,7 @@ window.checkVikingMaintenance = async function(zoneKey) {
         });
     }
 
-    if (mode === 'test') {
+    if (isBeta) {
         $('#viking-overlay-close-x').css('display', 'flex').show();
     } else {
         $('#viking-overlay-close-x').css('display', 'none').hide();
