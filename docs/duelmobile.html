@@ -162,12 +162,12 @@
             transform: translateY(-50%) !important;
         }
 
-        /* Hand Cards Container: Limit visible capacity to 8 cards (~310px width), with horizontal scroll for >8 cards */
+        /* Hand Cards Container: Limit visible capacity to 8 cards (~310px width), with horizontal scroll for >=8 cards */
         .hand-cards-container {
             max-width: 310px !important;
-            overflow-x: auto !important;
+            overflow-x: hidden !important;
             overflow-y: hidden !important;
-            padding: 22px 12px !important;
+            padding: 22px 12px 14px 12px !important;
             pointer-events: auto !important;
             scroll-behavior: smooth !important;
             scrollbar-width: thin !important;
@@ -846,11 +846,29 @@
                     window.updateHandTrayTransform("hand-tray-p1");
                     window.updateHandTrayTransform("hand-tray-p2");
 
-                    // Auto scroll hand containers to show newly added cards if exceeding 8 cards
+                    // Sanitize hand cards state: always face-up and upright (not girada)
+                    if (typeof state !== "undefined" && state.cards) {
+                        state.cards.forEach(card => {
+                            if (card.zone && card.zone.startsWith("hand_")) {
+                                card.faceDown = false;
+                                card.tapped = false;
+                            }
+                        });
+                    }
+                    $("#hand-p1 .duel-card, #hand-p2 .duel-card").removeClass("tapped face-down");
+
+                    // Manage hand container scrollbar display (only show scrollbar when 8 or more cards)
                     ["#hand-p1", "#hand-p2"].forEach(selector => {
                         const elem = $(selector)[0];
                         if (elem) {
-                            elem.scrollLeft = elem.scrollWidth;
+                            const cardCount = $(elem).children(".duel-card").length;
+                            if (cardCount >= 8) {
+                                $(elem).css("overflow-x", "auto");
+                                elem.scrollLeft = elem.scrollWidth;
+                            } else {
+                                $(elem).css("overflow-x", "hidden");
+                                elem.scrollLeft = 0;
+                            }
                         }
                     });
 
@@ -860,6 +878,16 @@
                     cards.on('mousedown touchstart', function(e) {
                         if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container').length) {
                             return;
+                        }
+
+                        // Check if touch is in the bottom scrollbar region of a hand container to allow native horizontal scrolling
+                        const $handContainer = $(this).closest('.hand-cards-container');
+                        if ($handContainer.length) {
+                            const containerRect = $handContainer[0].getBoundingClientRect();
+                            const pos = getEventCoords(e);
+                            if (pos.y >= containerRect.bottom - 18) {
+                                return;
+                            }
                         }
 
                         const instId = $(this).data("instance-id");
