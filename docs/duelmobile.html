@@ -75,29 +75,6 @@
             display: none !important;
         }
 
-        /* Card Select Pointer Visual style - bouncing yellow/gold finger pointing down at the card */
-        .card-select-pointer {
-            position: absolute;
-            top: -55px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 2.5rem;
-            color: #ffed4a;
-            text-shadow: 0 0 8px rgba(255, 237, 74, 0.9), 0 0 15px rgba(255, 140, 0, 0.7);
-            z-index: 10005;
-            pointer-events: none;
-            animation: cardPointerBounce 0.5s infinite alternate ease-in-out;
-            transition: opacity 0.3s ease;
-        }
-        @keyframes cardPointerBounce {
-            0% {
-                transform: translate(-50%, 0);
-            }
-            100% {
-                transform: translate(-50%, -12px);
-            }
-        }
-
         /* Equipped Cards Indicator style - centered small icon with 70% opacity and blinking animation */
         .equip-indicator-icon {
             position: absolute;
@@ -121,6 +98,29 @@
             100% {
                 opacity: 0.9;
                 transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        /* Card Select Pointer Visual style - bouncing yellow/gold finger pointing down at the card */
+        .card-select-pointer {
+            position: absolute;
+            top: -55px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            color: #ffed4a;
+            text-shadow: 0 0 8px rgba(255, 237, 74, 0.9), 0 0 15px rgba(255, 140, 0, 0.7);
+            z-index: 10005;
+            pointer-events: none;
+            animation: cardPointerBounce 0.5s infinite alternate ease-in-out;
+            transition: opacity 0.3s ease;
+        }
+        @keyframes cardPointerBounce {
+            0% {
+                transform: translate(-50%, 0);
+            }
+            100% {
+                transform: translate(-50%, -12px);
             }
         }
 
@@ -535,7 +535,6 @@
         <div class="menu-item" id="menu-activate"><i class="fas fa-magic"></i> Activar</div>
         <div class="menu-item" id="menu-equip-option"><i class="fas fa-link"></i> Equipar</div>
         <div class="menu-item" id="menu-attach-option"><i class="fas fa-paperclip"></i> Acoplar</div>
-        <div class="menu-item" id="menu-attach-field" style="display: none;"><i class="fas fa-paperclip"></i> Acoplar</div>
         <div class="menu-item" id="menu-view-attached"><i class="fas fa-list"></i> Ver acopladas</div>
         <hr id="menu-hr-attached-actions">
         <div class="menu-item" id="menu-attack"><i class="fas fa-bolt"></i> Atacar</div>
@@ -1093,16 +1092,7 @@
                 }
             });
 
-            // 3. Register Equipar Context Menu Option
-            $(document).on("click", "#menu-equip-option", function() {
-                if (typeof activeMenuCard === "undefined" || !activeMenuCard) return;
-                $("#card-menu").removeClass("active");
-                if (typeof startAttachmentTargeting === "function") {
-                    startAttachmentTargeting(activeMenuCard);
-                }
-            });
-
-            // 4. Equipped cards click interaction indicator
+            // 3. Equipped cards click interaction indicator (shows Equip.webp blinking icon over all linked equipped cards)
             $(document).on("click", ".duel-card", function(e) {
                 if ($("#playmat").hasClass("selecting-zone") || window.wasDragging) return;
                 const instId = $(this).data("instance-id") || $(this).attr("id");
@@ -1111,25 +1101,37 @@
                 const clickedCard = state.cards.find(c => c.instanceId === instId);
                 if (!clickedCard) return;
 
-                // Find root parent monster card if clicked card is attached to another
-                let parentId = clickedCard.attachedTo ? clickedCard.attachedTo : clickedCard.instanceId;
-                const parentCard = state.cards.find(c => c.instanceId === parentId);
-                const attachedCards = state.cards.filter(c => c.attachedTo === parentId);
+                // Collect all cards connected via equippedTo relationship
+                let equipGroupIds = new Set();
 
-                // Check if this card group has equip/attached links
-                if (attachedCards.length > 0 || clickedCard.attachedTo) {
-                    const groupIds = [parentId, ...attachedCards.map(c => c.instanceId)];
+                // 1. If this card is equipping another card
+                if (clickedCard.equippedTo) {
+                    equipGroupIds.add(clickedCard.instanceId);
+                    equipGroupIds.add(clickedCard.equippedTo);
+                }
 
+                // 2. If this card has other cards equipped to it
+                state.cards.forEach(c => {
+                    if (c.equippedTo === clickedCard.instanceId) {
+                        equipGroupIds.add(clickedCard.instanceId);
+                        equipGroupIds.add(c.instanceId);
+                    }
+                    // Also include cards equipped to the target monster if clicked card is one of the equipment cards
+                    if (clickedCard.equippedTo && c.equippedTo === clickedCard.equippedTo) {
+                        equipGroupIds.add(c.instanceId);
+                    }
+                });
+
+                if (equipGroupIds.size > 0) {
                     // Clear pre-existing equip indicators
                     $(".equip-indicator-icon").remove();
 
-                    groupIds.forEach(id => {
+                    equipGroupIds.forEach(id => {
                         const $elem = $(`#${id}`);
                         if ($elem.length) {
                             const $icon = $('<img src="img/Equip.webp" class="equip-indicator-icon" alt="Equipped">');
                             $elem.append($icon);
 
-                            // Keep icon active for 4 seconds, then gracefully fade out and remove
                             setTimeout(() => {
                                 $icon.css('opacity', '0');
                                 setTimeout(() => {
