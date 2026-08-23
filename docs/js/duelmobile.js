@@ -6255,12 +6255,25 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             $("#btn-rotate-board").off("click").on("click", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // Reset hand tray drag/scale offsets back to origin before rotating
+                if (window.handTrayState) {
+                    window.handTrayState["hand-tray-p1"] = { x: 0, y: 0, scale: 1 };
+                    window.handTrayState["hand-tray-p2"] = { x: 0, y: 0, scale: 1 };
+                }
+
                 window.isBoardRotated = !window.isBoardRotated;
                 if (window.isBoardRotated) {
                     $("body").addClass("rotated-board");
                 } else {
                     $("body").removeClass("rotated-board");
                 }
+
+                if (typeof window.updateHandTrayTransform === "function") {
+                    window.updateHandTrayTransform("hand-tray-p1");
+                    window.updateHandTrayTransform("hand-tray-p2");
+                }
+
                 if (typeof window.adjustPlaymatScale === "function") {
                     window.adjustPlaymatScale();
                 }

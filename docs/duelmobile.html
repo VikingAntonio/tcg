@@ -98,6 +98,32 @@
             }
         }
 
+        /* Equipped Cards Indicator style - centered small icon with 70% opacity and blinking animation */
+        .equip-indicator-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+            opacity: 0.7;
+            z-index: 10006;
+            pointer-events: none;
+            animation: equipBlink 0.6s infinite alternate ease-in-out;
+            transition: opacity 0.3s ease;
+        }
+        @keyframes equipBlink {
+            0% {
+                opacity: 0.2;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            100% {
+                opacity: 0.9;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
         /* Force hand trays to be absolutely positioned and styled consistently across all screen sizes */
         .hand-tray {
             position: absolute !important;
@@ -507,6 +533,7 @@
         <div class="menu-item" id="menu-defense"><i class="fas fa-shield-alt"></i> Invocar en defensa</div>
         <div class="menu-item" id="menu-set"><i class="fas fa-folder-open"></i> Set</div>
         <div class="menu-item" id="menu-activate"><i class="fas fa-magic"></i> Activar</div>
+        <div class="menu-item" id="menu-equip-option"><i class="fas fa-link"></i> Equipar</div>
         <div class="menu-item" id="menu-attach-option"><i class="fas fa-paperclip"></i> Acoplar</div>
         <div class="menu-item" id="menu-attach-field" style="display: none;"><i class="fas fa-paperclip"></i> Acoplar</div>
         <div class="menu-item" id="menu-view-attached"><i class="fas fa-list"></i> Ver acopladas</div>
@@ -1063,6 +1090,54 @@
                 // Send action to game logs & broadcast
                 if (typeof sendGameAction === "function") {
                     sendGameAction(`Seleccionó la carta`, cardObj.name);
+                }
+            });
+
+            // 3. Register Equipar Context Menu Option
+            $(document).on("click", "#menu-equip-option", function() {
+                if (typeof activeMenuCard === "undefined" || !activeMenuCard) return;
+                $("#card-menu").removeClass("active");
+                if (typeof startAttachmentTargeting === "function") {
+                    startAttachmentTargeting(activeMenuCard);
+                }
+            });
+
+            // 4. Equipped cards click interaction indicator
+            $(document).on("click", ".duel-card", function(e) {
+                if ($("#playmat").hasClass("selecting-zone") || window.wasDragging) return;
+                const instId = $(this).data("instance-id") || $(this).attr("id");
+                if (!instId || typeof state === "undefined" || !state.cards) return;
+
+                const clickedCard = state.cards.find(c => c.instanceId === instId);
+                if (!clickedCard) return;
+
+                // Find root parent monster card if clicked card is attached to another
+                let parentId = clickedCard.attachedTo ? clickedCard.attachedTo : clickedCard.instanceId;
+                const parentCard = state.cards.find(c => c.instanceId === parentId);
+                const attachedCards = state.cards.filter(c => c.attachedTo === parentId);
+
+                // Check if this card group has equip/attached links
+                if (attachedCards.length > 0 || clickedCard.attachedTo) {
+                    const groupIds = [parentId, ...attachedCards.map(c => c.instanceId)];
+
+                    // Clear pre-existing equip indicators
+                    $(".equip-indicator-icon").remove();
+
+                    groupIds.forEach(id => {
+                        const $elem = $(`#${id}`);
+                        if ($elem.length) {
+                            const $icon = $('<img src="img/Equip.webp" class="equip-indicator-icon" alt="Equipped">');
+                            $elem.append($icon);
+
+                            // Keep icon active for 4 seconds, then gracefully fade out and remove
+                            setTimeout(() => {
+                                $icon.css('opacity', '0');
+                                setTimeout(() => {
+                                    $icon.remove();
+                                }, 300);
+                            }, 4000);
+                        }
+                    });
                 }
             });
         });
