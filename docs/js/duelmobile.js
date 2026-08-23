@@ -1964,6 +1964,62 @@ function openAttachedCardsModal(parentId) {
     });
 }
 
+let equipSourceCard = null;
+
+function startEquipTargeting(cardObj) {
+    equipSourceCard = cardObj;
+
+    $("#zone-picker-overlay").html(`
+        <div class="zone-picker-toast" style="background: linear-gradient(135deg, #00d2ff, #0072ff); box-shadow: 0 10px 30px rgba(0, 210, 255, 0.5);">
+            <i class="fas fa-link animate-pulse"></i> Elige una carta en el campo para equipar esta carta
+        </div>
+    `).fadeIn(200).css("display", "flex");
+
+    $("#playmat").addClass("selecting-zone");
+
+    setTimeout(() => {
+        $(".duel-card").not(`#${cardObj.instanceId}`).off("click.equip").on("click.equip", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetInstId = $(this).data("instance-id");
+            const targetCardObj = state.cards.find(c => c.instanceId === targetInstId);
+
+            if (targetCardObj && equipSourceCard) {
+                equipSourceCard.equippedTo = targetCardObj.instanceId;
+
+                renderAllCards();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Carta Equipada',
+                    text: `${equipSourceCard.name} equipada a ${targetCardObj.name}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+
+            stopEquipTargeting();
+        });
+    }, 100);
+
+    $(document).off("keydown.equip").on("keydown.equip", function(e) {
+        if (e.key === "Escape") {
+            stopEquipTargeting();
+        }
+    });
+}
+
+function stopEquipTargeting() {
+    equipSourceCard = null;
+    $("#zone-picker-overlay").fadeOut(200);
+    $("#playmat").removeClass("selecting-zone");
+    $(".duel-card").off("click.equip");
+    $(document).off("keydown.equip");
+}
+
 // Dynamic Graphical Attachment Targeting Mode
 function startAttachmentTargeting(cardObj) {
     attachingCard = cardObj;
@@ -2810,7 +2866,13 @@ function setupEventListeners() {
         }
     });
 
-    $(document).on("click", "#menu-attach-option, #menu-attach-field", function() {
+    $(document).on("click", "#menu-equip-option", function() {
+        if (!activeMenuCard) return;
+        $("#card-menu").removeClass("active");
+        startEquipTargeting(activeMenuCard);
+    });
+
+    $(document).on("click", "#menu-attach-option", function() {
         if (!activeMenuCard) return;
         $("#card-menu").removeClass("active");
         startAttachmentTargeting(activeMenuCard);
@@ -5389,7 +5451,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         $("#menu-activate").show();
                     }
                     $("#menu-attach-option").show();
-                    $("#menu-attach-field").hide();
                     $("#menu-view-attached").hide();
                     $("#menu-hr-attached-actions").show();
 
@@ -5422,9 +5483,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     $("#menu-set").hide();
                     $("#menu-activate").hide();
 
-                    // Show "Acoplar" on field cards too!
+                    // Show "Equipar" and "Acoplar" on field cards!
+                    $("#menu-equip-option").show();
                     $("#menu-attach-option").show();
-                    $("#menu-attach-field").show();
 
                     // Show "Ver acopladas" if parent card has attached cards
                     const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
@@ -6255,25 +6316,12 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             $("#btn-rotate-board").off("click").on("click", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-
-                // Reset hand tray drag/scale offsets back to origin before rotating
-                if (window.handTrayState) {
-                    window.handTrayState["hand-tray-p1"] = { x: 0, y: 0, scale: 1 };
-                    window.handTrayState["hand-tray-p2"] = { x: 0, y: 0, scale: 1 };
-                }
-
                 window.isBoardRotated = !window.isBoardRotated;
                 if (window.isBoardRotated) {
                     $("body").addClass("rotated-board");
                 } else {
                     $("body").removeClass("rotated-board");
                 }
-
-                if (typeof window.updateHandTrayTransform === "function") {
-                    window.updateHandTrayTransform("hand-tray-p1");
-                    window.updateHandTrayTransform("hand-tray-p2");
-                }
-
                 if (typeof window.adjustPlaymatScale === "function") {
                     window.adjustPlaymatScale();
                 }
