@@ -1966,6 +1966,48 @@ function openAttachedCardsModal(parentId) {
 
 let equipSourceCard = null;
 
+window.triggerEquipIndicator = function(cardObj) {
+    if (!cardObj || typeof state === "undefined" || !state.cards) return;
+
+    let equipGroupIds = new Set();
+
+    // 1. If this card is equipping another card
+    if (cardObj.equippedTo) {
+        equipGroupIds.add(cardObj.instanceId);
+        equipGroupIds.add(cardObj.equippedTo);
+    }
+
+    // 2. If this card has other cards equipped to it or shares the target monster
+    state.cards.forEach(c => {
+        if (c.equippedTo === cardObj.instanceId) {
+            equipGroupIds.add(cardObj.instanceId);
+            equipGroupIds.add(c.instanceId);
+        }
+        if (cardObj.equippedTo && c.equippedTo === cardObj.equippedTo) {
+            equipGroupIds.add(c.instanceId);
+        }
+    });
+
+    if (equipGroupIds.size > 0) {
+        $(".equip-indicator-icon").remove();
+
+        equipGroupIds.forEach(id => {
+            const $elem = $(`#${id}`);
+            if ($elem.length) {
+                const $icon = $('<img src="img/Equip.webp" class="equip-indicator-icon" alt="Equipped">');
+                $elem.append($icon);
+
+                setTimeout(() => {
+                    $icon.css('opacity', '0');
+                    setTimeout(() => {
+                        $icon.remove();
+                    }, 300);
+                }, 4000);
+            }
+        });
+    }
+};
+
 function startEquipTargeting(cardObj) {
     equipSourceCard = cardObj;
 
@@ -1982,7 +2024,7 @@ function startEquipTargeting(cardObj) {
             e.preventDefault();
             e.stopPropagation();
 
-            const targetInstId = $(this).data("instance-id");
+            const targetInstId = $(this).data("instance-id") || $(this).attr("id");
             const targetCardObj = state.cards.find(c => c.instanceId === targetInstId);
 
             if (targetCardObj && equipSourceCard) {
@@ -1999,6 +2041,10 @@ function startEquipTargeting(cardObj) {
                     timer: 2000,
                     showConfirmButton: false
                 });
+
+                if (typeof window.triggerEquipIndicator === "function") {
+                    window.triggerEquipIndicator(equipSourceCard);
+                }
             }
 
             stopEquipTargeting();
@@ -5590,6 +5636,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             // Helper to handle card tap/click
             function handleCardTap(cardObj, e) {
+                if (typeof window.triggerEquipIndicator === "function") {
+                    window.triggerEquipIndicator(cardObj);
+                }
+
                 if (cardObj.attachedTo) {
                     // It's an attached card underneath! Open the attached list modal for its parent card
                     openAttachedCardsModal(cardObj.attachedTo);
@@ -6316,6 +6366,17 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             $("#btn-rotate-board").off("click").on("click", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // Reset hand tray positions to initial origin before rotating
+                if (window.handTrayState) {
+                    window.handTrayState["hand-tray-p1"] = { x: 0, y: 0, scale: 1 };
+                    window.handTrayState["hand-tray-p2"] = { x: 0, y: 0, scale: 1 };
+                    if (typeof window.updateHandTrayTransform === "function") {
+                        window.updateHandTrayTransform("hand-tray-p1");
+                        window.updateHandTrayTransform("hand-tray-p2");
+                    }
+                }
+
                 window.isBoardRotated = !window.isBoardRotated;
                 if (window.isBoardRotated) {
                     $("body").addClass("rotated-board");

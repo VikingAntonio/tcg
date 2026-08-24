@@ -1101,45 +1101,8 @@
                 const clickedCard = state.cards.find(c => c.instanceId === instId);
                 if (!clickedCard) return;
 
-                // Collect all cards connected via equippedTo relationship
-                let equipGroupIds = new Set();
-
-                // 1. If this card is equipping another card
-                if (clickedCard.equippedTo) {
-                    equipGroupIds.add(clickedCard.instanceId);
-                    equipGroupIds.add(clickedCard.equippedTo);
-                }
-
-                // 2. If this card has other cards equipped to it
-                state.cards.forEach(c => {
-                    if (c.equippedTo === clickedCard.instanceId) {
-                        equipGroupIds.add(clickedCard.instanceId);
-                        equipGroupIds.add(c.instanceId);
-                    }
-                    // Also include cards equipped to the target monster if clicked card is one of the equipment cards
-                    if (clickedCard.equippedTo && c.equippedTo === clickedCard.equippedTo) {
-                        equipGroupIds.add(c.instanceId);
-                    }
-                });
-
-                if (equipGroupIds.size > 0) {
-                    // Clear pre-existing equip indicators
-                    $(".equip-indicator-icon").remove();
-
-                    equipGroupIds.forEach(id => {
-                        const $elem = $(`#${id}`);
-                        if ($elem.length) {
-                            const $icon = $('<img src="img/Equip.webp" class="equip-indicator-icon" alt="Equipped">');
-                            $elem.append($icon);
-
-                            setTimeout(() => {
-                                $icon.css('opacity', '0');
-                                setTimeout(() => {
-                                    $icon.remove();
-                                }, 300);
-                            }, 4000);
-                        }
-                    });
+                if (typeof window.triggerEquipIndicator === "function") {
+                    window.triggerEquipIndicator(clickedCard);
                 }
             });
         });
