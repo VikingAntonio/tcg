@@ -109,6 +109,16 @@ function initInvestmentListeners() {
         $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
     });
 
+    // Auto-clear or select-all on focus for price and quantity inputs to avoid annoying manual backspacing
+    $(document).on('focus', '#inv-card-purchase-price, #inv-card-current-price, #inv-card-quantity', function() {
+        const val = $(this).val().trim();
+        if (val === '0' || val === '0.0' || val === '0.00' || val === '0.000') {
+            $(this).val('');
+        } else if (val !== '') {
+            $(this).select();
+        }
+    });
+
     // Modal Tabs logic
     $(document).on('click', '#investment-card-modal .inv-tab-link', function() {
         const tabId = $(this).data('tab');
@@ -707,9 +717,10 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     $('#investment-card-modal .slot-tab-content').removeClass('active');
 
     if (!card) {
-        // New Card Mode
+        // New Card Mode: Hide RESUMEN and MOVIMIENTOS tabs until created
         $('#inv-card-modal-title').text('AÑADIR NUEVO ACTIVO');
         $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-resumen"]').hide();
+        $('#investment-card-modal .inv-tab-link[data-tab="inv-tab-movimientos"]').hide();
         $('#inv-card-search-container').show();
 
         // Reset previews
@@ -720,7 +731,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $(`#investment-card-modal .inv-tab-link[data-tab="inv-tab-datos"]`).addClass('active');
         $('#inv-tab-datos').addClass('active');
 
-        // Clear Fields for clean state
+        // Clear Fields for clean state without pre-filled '0's
         $('#inv-card-name').val('').prop('readonly', false);
         $('#inv-card-purchase-price').val('');
         $('#inv-card-current-price').val('');
@@ -731,13 +742,13 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-game').val('pokemon');
 
         // Cleanup search
-        $('#inv-card-search-results').empty();
+        $('#inv-card-search-results').empty().hide();
         $('#inv-card-search-input').val('');
     } else {
-        // Edit / View Mode
+        // Edit / View Mode: Show all tabs
         $('#inv-card-modal-title').text(card.card_name.toUpperCase());
-        $('#inv-card-search-container').hide();
-        $('#inv-card-name').prop('readonly', true);
+        $('#inv-card-search-container').show();
+        $('#inv-card-name').prop('readonly', false);
         $('#inv-main-image-status').hide();
 
         // Set requested tab or default to resumen
@@ -745,19 +756,19 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $(`#${defaultTab}`).addClass('active');
 
         // Populate Metadata Fields
-        $('#inv-card-name').val(card.card_name.toUpperCase());
-        $('#inv-card-purchase-price').val(card.purchase_price);
-        $('#inv-card-current-price').val(card.current_price);
-        $('#inv-card-quantity').val(card.quantity);
-        $('#inv-card-rarity-input').val(card.rarity);
-        $('#inv-card-notes').val(card.notes);
+        $('#inv-card-name').val(card.card_name ? card.card_name.toUpperCase() : '');
+        $('#inv-card-purchase-price').val(card.purchase_price !== null && card.purchase_price !== undefined ? card.purchase_price : '');
+        $('#inv-card-current-price').val(card.current_price !== null && card.current_price !== undefined ? card.current_price : '');
+        $('#inv-card-quantity').val(card.quantity || 1);
+        $('#inv-card-rarity-input').val(card.rarity || '');
+        $('#inv-card-notes').val(card.notes || '');
 
-        $('#inv-card-external-id').val(card.external_id);
-        $('#inv-card-image-url').val(card.image_url);
-        $('#inv-card-set-name').val(card.set_name);
-        $('#inv-card-set-number').val(card.set_number);
-        $('#inv-card-rarity').val(card.rarity);
-        $('#inv-card-game').val(card.tcg_game);
+        $('#inv-card-external-id').val(card.external_id || '');
+        $('#inv-card-image-url').val(card.image_url || '');
+        $('#inv-card-set-name').val(card.set_name || '');
+        $('#inv-card-set-number').val(card.set_number || '');
+        $('#inv-card-rarity').val(card.rarity || '');
+        $('#inv-card-game').val(card.tcg_game || 'pokemon');
 
         if (defaultTab === 'inv-tab-resumen') {
             updateSummaryTab(card);
@@ -765,6 +776,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
     }
 
     renderInvExtraImagesPreview();
+    syncAddPreview();
     $('#investment-card-modal').addClass('active');
 }
 
@@ -774,25 +786,26 @@ $('#close-investment-card-modal').click(() => {
 });
 
 $('#btn-inv-card-search').click(async function() {
+    $('#inv-card-search-results').show();
     window.searchExternalCard('#inv-card-search-input', '#inv-card-search-results', async function(card) {
         // When a card is selected from combined search
         const finalUrl = card.high_res || card.image;
         $('#inv-card-name').val(card.name.toUpperCase());
         $('#inv-card-image-url').val(finalUrl);
 
-        // Update Preview
-        syncAddPreview();
-
         $('#inv-card-set-name').val(card.set || card.set_name || '');
         $('#inv-card-set-number').val(card.number || '');
         $('#inv-card-rarity').val(card.rarity || '');
         $('#inv-card-rarity-input').val(card.rarity || '');
-        $('#inv-card-current-price').val(card.price || 0);
+        $('#inv-card-current-price').val(card.price ? card.price : '');
         $('#inv-card-game').val(card.game || 'pokemon');
         $('#inv-card-external-id').val(card.external_id || card.id || '');
 
+        // Update Preview
+        syncAddPreview();
+
         Swal.fire({
-            title: 'ASSET SELECTED',
+            title: 'CARTA SELECCIONADA',
             text: card.name,
             icon: 'success',
             timer: 1000,
@@ -803,19 +816,22 @@ $('#btn-inv-card-search').click(async function() {
 });
 
 $('#btn-save-investment-card').click(async function() {
-    const newPrice = parseFloat($('#inv-card-current-price').val()) || 0;
+    const purchaseVal = $('#inv-card-purchase-price').val();
+    const currentVal = $('#inv-card-current-price').val();
+    const newPrice = currentVal !== '' ? parseFloat(currentVal) : 0;
+    const purchasePrice = purchaseVal !== '' ? parseFloat(purchaseVal) : 0;
 
     const cardData = {
         category_id: currentInvestmentCategoryId,
         user_id: currentUser.id,
         card_name: $('#inv-card-name').val().toUpperCase(),
         external_id: $('#inv-card-external-id').val(),
-        tcg_game: $('#inv-card-game').val(),
+        tcg_game: $('#inv-card-game').val() || 'pokemon',
         image_url: $('#inv-card-image-url').val(),
         rarity: $('#inv-card-rarity-input').val(),
         set_name: $('#inv-card-set-name').val(),
         set_number: $('#inv-card-set-number').val(),
-        purchase_price: parseFloat($('#inv-card-purchase-price').val()) || 0,
+        purchase_price: purchasePrice,
         current_price: newPrice,
         quantity: parseInt($('#inv-card-quantity').val()) || 1,
         show_foil: false,

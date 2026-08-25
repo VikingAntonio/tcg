@@ -192,9 +192,9 @@
     border: 1px solid var(--inv-black);
     box-shadow: 0 40px 100px rgba(0,0,0,0.2) !important;
     width: 95% !important;
-    max-width: 950px !important;
-    height: 650px !important;
-    max-height: 95vh !important;
+    max-width: 980px !important;
+    height: auto !important;
+    max-height: 92vh !important;
     display: flex;
     flex-direction: column;
     padding: 0 !important;
@@ -280,7 +280,8 @@
 .slot-tab-content {
     display: none;
     height: 100%;
-    overflow: hidden;
+    max-height: calc(92vh - 130px);
+    overflow-y: auto !important;
 }
 
 .slot-tab-content.active {
@@ -353,23 +354,43 @@
     font-size: 0.85rem;
 }
 
-/* Search Results */
+/* Search Results - Enlarged PC View */
 #inv-card-search-results {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
-    margin-top: 15px;
-    max-height: 200px;
+    grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+    gap: 12px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    max-height: 320px;
     overflow-y: auto;
+    scrollbar-width: thin;
 }
 
 .external-card-result {
-    border: 1px solid transparent;
-    padding: 2px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.external-card-result img {
+    width: 100%;
+    height: auto;
+    border-radius: 3px;
+    display: block;
 }
 
 .external-card-result:hover {
     border-color: var(--inv-black);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
 }
 
 /* History Chart Area */
@@ -611,6 +632,12 @@
     }
 
     .inv-form-row { grid-template-columns: 1fr; }
+
+    #inv-card-search-results {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
+        max-height: 220px !important;
+        padding: 10px !important;
+    }
 }
 
 /* Detail Modal Styles */
