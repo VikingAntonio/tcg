@@ -4092,7 +4092,8 @@ async function openPublicInvestmentCategory(cat) {
         return;
     }
 
-    publicInvCards = cards || [];
+    // Filter out private cards so public cards reflow gaplessly
+    publicInvCards = (cards || []).filter(c => c.is_public !== false);
     renderPublicInvestmentCards();
 }
 
@@ -4151,8 +4152,12 @@ function renderPublicInvAlbumMode($container) {
                 const isDown = card.current_price < card.previous_price;
                 const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                             isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
+                const isUnavailable = card.is_available === false;
+                const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
+
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
+                    ${stampOverlay}
                     <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                 `);
                 if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
@@ -4195,10 +4200,14 @@ function renderPublicInvSlideMode($container) {
                     const isDown = card.current_price < card.previous_price;
                     const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
                                 isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
+                    const isUnavailable = card.is_available === false;
+                    const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
+
                     return `
                     <div class="swiper-slide card-slot inv-card-item" style="background: transparent;"
                          data-show-foil="${card.show_foil}" data-holo="${card.holo_effect || ''}" data-mask="${card.custom_mask_url || ''}">
                         <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1;">
+                        ${stampOverlay}
                         <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center; position: relative; z-index: 110;">
                             <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
                             <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
@@ -4236,13 +4245,18 @@ function renderPublicInvListMode($container) {
         const isDown = card.current_price < card.previous_price;
         const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.8rem;"></i>' :
                     isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.8rem;"></i>' : '';
+        const isUnavailable = card.is_available === false;
+        const unavailableBadge = isUnavailable ? `<span style="background: rgba(0, 0, 0, 0.85); color: #ff3344; border: 1px solid #ff3344; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-ban"></i> NO DISPONIBLE</span>` : '';
+        const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">NO DISPONIBLE</div>` : '';
+
         const $item = $(`
             <div class="inv-list-item" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px;">
                 <div class="inv-list-img-wrapper" style="position: relative; width: 50px; height: 70px; flex-shrink: 0;">
                     <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
+                    ${stampOverlay}
                 </div>
                 <div class="inv-list-details" style="flex: 1;">
-                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.85rem; color: #000;">${escapeHtml(card.card_name).toUpperCase()}</div>
+                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.85rem; color: #000; display: flex; align-items: center; flex-wrap: wrap;">${escapeHtml(card.card_name).toUpperCase()} ${unavailableBadge}</div>
                     <div class="inv-list-set" style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
                 </div>
                 <div class="inv-list-prices" style="text-align: right;">
