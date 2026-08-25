@@ -5,6 +5,7 @@
 
 // --- STATE ---
 let currentInvestmentCategoryId = null;
+let currentInvestmentCategory = null;
 let currentInvestmentViewMode = 'album'; // 'album', 'slide', 'list'
 let localInvestmentCards = [];
 let invPriceChart = null;
@@ -55,13 +56,28 @@ function initInvestmentListeners() {
         $('#inv-mobile-side-panel, #inv-side-panel-overlay').removeClass('active');
     });
 
-    // Create Category
+    // Create Category with Grid Layout Selector
     $('#btn-create-investment-category').click(async function() {
-        const { value: name } = await Swal.fire({
+        const { value: formValues } = await Swal.fire({
             title: 'NUEVO VAULT',
-            input: 'text',
-            inputLabel: 'NOMBRE DE LA COLECCIÓN',
-            inputPlaceholder: 'Ej: POKÉMON VINTAGE HOLOS',
+            html: `
+                <div style="text-align: left; display: flex; flex-direction: column; gap: 15px; padding-top: 10px;">
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Nombre de la Colección</label>
+                        <input id="swal-inv-vault-name" class="swal2-input" placeholder="Ej: POKÉMON VINTAGE HOLOS" style="margin: 0; width: 100%; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Tamaño de Carpeta (Layout)</label>
+                        <select id="swal-inv-vault-layout" class="swal2-select" style="margin: 0; width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-weight: 700;">
+                            <option value="3x3" selected>3x3 (9 Cartas)</option>
+                            <option value="4x3">4x3 (12 Cartas)</option>
+                            <option value="4x4">4x4 (16 Cartas)</option>
+                            <option value="2x2">2x2 (4 Cartas)</option>
+                            <option value="1x1">1x1 (1 Carta)</option>
+                        </select>
+                    </div>
+                </div>
+            `,
             showCancelButton: true,
             confirmButtonText: 'CREAR',
             cancelButtonText: 'CANCELAR',
@@ -69,11 +85,20 @@ function initInvestmentListeners() {
                 popup: 'inv-swal-popup',
                 confirmButton: 'btn-inv-main',
                 cancelButton: 'btn-inv-outline'
+            },
+            preConfirm: () => {
+                const name = $('#swal-inv-vault-name').val().trim();
+                const layout = $('#swal-inv-vault-layout').val() || '3x3';
+                if (!name) {
+                    Swal.showValidationMessage('Ingresa un nombre para la colección');
+                    return false;
+                }
+                return { name: name.toUpperCase(), grid_layout: layout };
             }
         });
 
-        if (name) {
-            saveInvestmentCategory({ name: name.toUpperCase() });
+        if (formValues) {
+            saveInvestmentCategory(formValues);
         }
     });
 
@@ -189,6 +214,20 @@ function initInvestmentListeners() {
 
     $('#input-inv-extra-files').on('change', function() {
         handleInvExtraImages(this.files);
+    });
+
+    // Real-time automatic search on typing & auto-clear when search input is empty
+    let invSearchDebounceTimer = null;
+    $(document).on('input', '#inv-card-search-input', function() {
+        clearTimeout(invSearchDebounceTimer);
+        const term = $(this).val().trim();
+        if (!term) {
+            $('#inv-card-search-results').empty().hide();
+            return;
+        }
+        invSearchDebounceTimer = setTimeout(() => {
+            $('#btn-inv-card-search').click();
+        }, 350);
     });
 
     // Drag & Drop for Main Image (Datos tab)
@@ -339,9 +378,18 @@ async function saveInvestmentCategory(data) {
         customClass: { popup: 'inv-swal-popup' }
     });
 
-    const { error } = await _supabase
+    let { error } = await _supabase
         .from('investment_categories')
         .insert([{ ...data, user_id: currentUser.id }]);
+
+    if (error && (error.code === '42703' || (error.message && error.message.includes('grid_layout')))) {
+        const fallbackData = { ...data };
+        delete fallbackData.grid_layout;
+        const res = await _supabase
+            .from('investment_categories')
+            .insert([{ ...fallbackData, user_id: currentUser.id }]);
+        error = res.error;
+    }
 
     Swal.close();
     if (error) {
@@ -352,10 +400,20 @@ async function saveInvestmentCategory(data) {
 }
 
 async function updateInvestmentCategory(id, data, refresh = false) {
-    const { error } = await _supabase
+    let { error } = await _supabase
         .from('investment_categories')
         .update(data)
         .eq('id', id);
+
+    if (error && (error.code === '42703' || (error.message && error.message.includes('grid_layout')))) {
+        const fallbackData = { ...data };
+        delete fallbackData.grid_layout;
+        const res = await _supabase
+            .from('investment_categories')
+            .update(fallbackData)
+            .eq('id', id);
+        error = res.error;
+    }
 
     if (error) {
         Swal.fire({
@@ -370,22 +428,48 @@ async function updateInvestmentCategory(id, data, refresh = false) {
 }
 
 async function editInvestmentCategory(cat) {
-    const { value: name } = await Swal.fire({
-        title: 'RENAME VAULT',
-        input: 'text',
-        inputValue: cat.name,
+    const currentLayout = cat.grid_layout || '3x3';
+    const { value: formValues } = await Swal.fire({
+        title: 'EDITAR VAULT',
+        html: `
+            <div style="text-align: left; display: flex; flex-direction: column; gap: 15px; padding-top: 10px;">
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Nombre de la Colección</label>
+                    <input id="swal-inv-vault-name" class="swal2-input" value="${escapeHtml(cat.name)}" placeholder="Ej: POKÉMON VINTAGE HOLOS" style="margin: 0; width: 100%; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #333; display: block; margin-bottom: 5px;">Tamaño de Carpeta (Layout)</label>
+                    <select id="swal-inv-vault-layout" class="swal2-select" style="margin: 0; width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-weight: 700;">
+                        <option value="3x3" ${currentLayout === '3x3' ? 'selected' : ''}>3x3 (9 Cartas)</option>
+                        <option value="4x3" ${currentLayout === '4x3' ? 'selected' : ''}>4x3 (12 Cartas)</option>
+                        <option value="4x4" ${currentLayout === '4x4' ? 'selected' : ''}>4x4 (16 Cartas)</option>
+                        <option value="2x2" ${currentLayout === '2x2' ? 'selected' : ''}>2x2 (4 Cartas)</option>
+                        <option value="1x1" ${currentLayout === '1x1' ? 'selected' : ''}>1x1 (1 Carta)</option>
+                    </select>
+                </div>
+            </div>
+        `,
         showCancelButton: true,
-        confirmButtonText: 'UPDATE',
-        cancelButtonText: 'CANCEL',
+        confirmButtonText: 'ACTUALIZAR',
+        cancelButtonText: 'CANCELAR',
         customClass: {
             popup: 'inv-swal-popup',
             confirmButton: 'btn-inv-main',
             cancelButton: 'btn-inv-outline'
+        },
+        preConfirm: () => {
+            const name = $('#swal-inv-vault-name').val().trim();
+            const layout = $('#swal-inv-vault-layout').val() || '3x3';
+            if (!name) {
+                Swal.showValidationMessage('Ingresa un nombre para la colección');
+                return false;
+            }
+            return { name: name.toUpperCase(), grid_layout: layout };
         }
     });
 
-    if (name && name !== cat.name) {
-        updateInvestmentCategory(cat.id, { name: name.toUpperCase() }, true);
+    if (formValues) {
+        updateInvestmentCategory(cat.id, formValues, true);
     }
 }
 
@@ -422,6 +506,7 @@ async function deleteInvestmentCategory(id) {
 // --- CARD FUNCTIONS ---
 
 async function openInvestmentCategory(cat) {
+    currentInvestmentCategory = cat;
     currentInvestmentCategoryId = cat.id;
     const upperName = cat.name.toUpperCase();
     $('#inv-category-title').text(upperName);
@@ -452,16 +537,19 @@ function renderInvestmentCards(mode) {
     const $container = $('#investment-card-container');
     $container.empty();
 
-    if (localInvestmentCards.length === 0) {
-        $container.html('<div class="empty">No hay cartas en esta categoría.</div>');
-        return;
-    }
-
     if (mode === 'album') {
         renderAlbumMode($container);
     } else if (mode === 'slide') {
+        if (localInvestmentCards.length === 0) {
+            $container.html('<div class="empty" style="text-align: center; padding: 40px; color: #888; font-weight: 700; text-transform: uppercase;">No hay activos en este vault.</div>');
+            return;
+        }
         renderSlideMode($container);
     } else {
+        if (localInvestmentCards.length === 0) {
+            $container.html('<div class="empty" style="text-align: center; padding: 40px; color: #888; font-weight: 700; text-transform: uppercase;">No hay activos en este vault.</div>');
+            return;
+        }
         renderListMode($container);
     }
 }
@@ -490,35 +578,41 @@ function renderAlbumMode($container) {
 
     $container.append($albumWrapper);
 
-    // Cover
+    const gridLayout = (currentInvestmentCategory && currentInvestmentCategory.grid_layout) ? currentInvestmentCategory.grid_layout : '3x3';
+    let numSlots = 9;
+    if (gridLayout === '4x3') numSlots = 12;
+    else if (gridLayout === '4x4') numSlots = 16;
+    else if (gridLayout === '2x2') numSlots = 4;
+    else if (gridLayout === '1x1') numSlots = 1;
+
+    // Minimum 5 pages (hojas)
+    const cardPages = Math.ceil(localInvestmentCards.length / numSlots) || 1;
+    const totalPages = Math.max(5, cardPages);
+
+    // Front Cover with Space/Cosmic Particles and no title/text
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
-                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml($('#inv-category-title').text()).toUpperCase()}</h2>
-                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
-            </div>
+            <div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: 10px solid #111;"></div>
         </div>
     `);
 
-    // Group cards into pages of 9
-    for (let i = 0; i < localInvestmentCards.length; i += 9) {
-        const pageCards = localInvestmentCards.slice(i, i + 9);
+    // Inner Pages with visible slots
+    for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
         const $page = $('<div class="page album-page"></div>');
-        const $grid = $('<div class="grid-container"></div>');
+        const $grid = $(`<div class="grid-container grid-layout-${gridLayout}"></div>`);
 
-        for (let j = 0; j < 9; j++) {
-            const card = pageCards[j];
-            // Rename to .inv-card-slot to avoid global admin.js click listeners
-            const $slot = $('<div class="inv-card-slot" style="position: relative;"></div>');
+        for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
+            const cardIdx = pageIdx * numSlots + slotIdx;
+            const card = localInvestmentCards[cardIdx];
+            const $slot = $('<div class="inv-card-slot card-slot" style="position: relative;"></div>');
+
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
-
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
                     <div class="inv-card-info-badge" style="z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
                 `);
-
 
                 $slot.find('.zoom-btn').on('click', (e) => {
                     e.preventDefault();
@@ -535,35 +629,73 @@ function renderAlbumMode($container) {
                     const isZoomBtn = $(e.target).closest('.zoom-btn').length > 0;
 
                     if (isMobile) {
-                        // En móvil, si no es la lupa, no hacemos nada (permitimos que el evento suba para el flip)
                         if (isZoomBtn) {
                             e.preventDefault();
                             e.stopPropagation();
                         }
                     } else {
-                        // En desktop, permitimos abrir el modal al clickear cualquier parte de la carta
                         if (!isZoomBtn) {
                             openInvestmentCardModal(card);
                         }
                     }
                 });
+            } else {
+                // Empty visible slot
+                $slot.addClass('empty-inv-slot').css({
+                    'border': '2px dashed rgba(0,0,0,0.15)',
+                    'border-radius': '4px',
+                    'display': 'flex',
+                    'flex-direction': 'column',
+                    'align-items': 'center',
+                    'justify-content': 'center',
+                    'background': 'rgba(0,0,0,0.02)',
+                    'cursor': 'pointer',
+                    'transition': 'all 0.2s ease',
+                    'min-height': '60px'
+                }).html(`
+                    <i class="fas fa-plus" style="color: #888; font-size: 1rem; margin-bottom: 3px;"></i>
+                    <span style="font-size: 0.6rem; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">AÑADIR</span>
+                `);
+
+                $slot.click(function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openInvestmentCardModal(null, 'inv-tab-datos');
+                });
             }
+
             $grid.append($slot);
         }
+
         $page.append($grid);
         $album.append($page);
     }
 
-    // Add empty page if needed for double display
-    const totalPages = $album.find('.page').length;
-    if (totalPages % 2 !== 0) {
-        $album.append('<div class="page album-page"></div>');
+    // Add empty page if needed for double display pairing
+    const innerPagesCount = $album.find('.album-page').length;
+    if (innerPagesCount % 2 !== 0) {
+        const $fillerPage = $('<div class="page album-page"></div>');
+        const $grid = $(`<div class="grid-container grid-layout-${gridLayout}"></div>`);
+        for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
+            const $slot = $('<div class="inv-card-slot card-slot empty-inv-slot" style="position: relative; border: 2px dashed rgba(0,0,0,0.15); border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s ease; min-height: 60px;"></div>').html(`
+                <i class="fas fa-plus" style="color: #888; font-size: 1rem; margin-bottom: 3px;"></i>
+                <span style="font-size: 0.6rem; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">AÑADIR</span>
+            `);
+            $slot.click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openInvestmentCardModal(null, 'inv-tab-datos');
+            });
+            $grid.append($slot);
+        }
+        $fillerPage.append($grid);
+        $album.append($fillerPage);
     }
 
-    // Back Cover
+    // Back Cover with Space/Cosmic Particles
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: #000000"></div>
+            <div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: 10px solid #111;"></div>
         </div>
     `);
 
@@ -581,13 +713,11 @@ function renderAlbumMode($container) {
             duration: 800,
             when: {
                 turning: function(e, page, view) {
-                    // Prevent page jumps by forcing fixed position
                     $(this).css('position', 'relative');
                 }
             }
         });
 
-        // Manual centering fix
         $album.css({
             'margin-left': 'auto',
             'margin-right': 'auto'
@@ -612,12 +742,12 @@ function renderSlideMode($container) {
         const trend = getTrendIcon(card.current_price, card.previous_price);
         const $slide = $(`
             <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative;">
-                <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1;">
-                <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '10px' : '20px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '10px' : '15px'}; text-align: center; position: relative; z-index: 110;">
+                <img src="${card.image_url}" style="width: auto; max-width: 100%; max-height: ${isMobile ? '180px' : '260px'}; object-fit: contain; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
+                <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '8px' : '15px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '8px' : '12px'}; text-align: center; position: relative; z-index: 110;">
                     <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
                     <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
-                    <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                    <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 8px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
                         <button class="btn-inv-outline btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-pen"></i></button>
                         <button class="btn-inv-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
                     </div>

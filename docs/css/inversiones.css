@@ -520,31 +520,35 @@
     .slot-tab-content::-webkit-scrollbar { display: none; }
 
     .inv-modal-header {
-        padding: 10px 15px;
+        padding: 15px 50px 15px 15px !important;
         display: flex !important;
-        flex-direction: row !important;
-        justify-content: flex-start !important;
-        align-items: center !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        position: relative !important;
     }
 
     .inv-close-btn {
-        position: static !important;
-        order: -1; /* Move to the left */
-        margin-right: 15px;
-        width: 30px !important;
-        height: 30px !important;
-        font-size: 24px !important;
+        position: absolute !important;
+        top: 12px !important;
+        right: 12px !important;
+        order: initial !important;
+        margin: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 22px !important;
         background: rgba(255, 71, 87, 0.1);
         border: 1px solid rgba(255, 71, 87, 0.3);
+        z-index: 2000005 !important;
     }
 
     .inv-modal-header h2 {
-        font-size: 0.85rem !important;
+        font-size: 0.95rem !important;
         text-align: left !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        flex: 1;
+        width: 100%;
     }
 
     .inv-modal-tabs {
@@ -631,7 +635,14 @@
         max-width: 100%;
     }
 
-    .inv-form-row { grid-template-columns: 1fr; }
+    .inv-form-row {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+
+    .inv-form-row-full {
+        grid-template-columns: 1fr !important;
+    }
 
     #inv-card-search-results {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
@@ -790,6 +801,17 @@
     background: #222;
 }
 
+/* Empty Slot Hover Styles */
+.empty-inv-slot:hover {
+    border-color: #000 !important;
+    background: rgba(0,0,0,0.06) !important;
+}
+
+.empty-inv-slot:hover i,
+.empty-inv-slot:hover span {
+    color: #000 !important;
+}
+
 @media (max-width: 768px) {
     .inv-detail-container {
         flex-direction: column;
@@ -821,8 +843,12 @@
     }
 
     .investment-slide-layout .swiper-slide img {
-        max-width: 100%;
-        height: auto;
+        max-height: 180px !important;
+        width: auto !important;
+        max-width: 100% !important;
+        object-fit: contain !important;
+        display: block !important;
+        margin: 0 auto !important;
     }
 
     .investment-slide-layout .inv-card-info-overlay {
