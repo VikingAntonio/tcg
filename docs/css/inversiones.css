@@ -929,3 +929,25 @@
         font-size: 0.9rem !important;
     }
 }
+
+/* --- STAMP UNAVAILABLE OVERLAY --- */
+.inv-stamp-unavailable {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    border: 3px dashed #ff3344;
+    color: #ff3344;
+    background: rgba(0, 0, 0, 0.88);
+    padding: 6px 14px;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-radius: 6px;
+    z-index: 120;
+    pointer-events: none;
+    box-shadow: 0 0 15px rgba(255, 51, 68, 0.6), inset 0 0 10px rgba(255, 51, 68, 0.3);
+    text-shadow: 0 0 8px rgba(255, 51, 68, 0.8);
+    white-space: nowrap;
+}

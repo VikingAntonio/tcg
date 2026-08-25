@@ -248,6 +248,16 @@ function initInvestmentListeners() {
     $(document).on('click', '#drop-zone-inv-main', function() {
         $('#input-inv-main-file').click();
     });
+
+    $(document).on('change', '#inv-card-public-toggle', function() {
+        const isChecked = $(this).is(':checked');
+        $('#inv-card-public-status').text(isChecked ? 'PÚBLICO' : 'PRIVADO').css('color', isChecked ? '#333' : '#ff4757');
+    });
+
+    $(document).on('change', '#inv-card-available-toggle', function() {
+        const isChecked = $(this).is(':checked');
+        $('#inv-card-available-status').text(isChecked ? 'DISPONIBLE' : 'NO DISPONIBLE').css('color', isChecked ? '#2ed573' : '#ff4757');
+    });
 }
 
 async function handleInvMainImage(file) {
@@ -608,8 +618,15 @@ function renderAlbumMode($container) {
 
             if (card) {
                 const trend = getTrendIcon(card.current_price, card.previous_price);
+                const isPrivate = card.is_public === false;
+                const isUnavailable = card.is_available === false;
+                const privateBadge = isPrivate ? `<div class="inv-card-private-badge" style="position: absolute; top: 5px; right: 5px; background: rgba(255, 71, 87, 0.9); color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 800; z-index: 115;" title="Privado (Oculto en link público)"><i class="fas fa-lock"></i></div>` : '';
+                const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
+
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
+                    ${stampOverlay}
+                    ${privateBadge}
                     <div class="inv-card-info-badge" style="z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                     <div class="zoom-btn" style="z-index: 110;"><i class="fas fa-search"></i></div>
                 `);
@@ -739,9 +756,16 @@ function renderSlideMode($container) {
     `);
 
     localInvestmentCards.forEach(card => {
+        const isPrivate = card.is_public === false;
+        const isUnavailable = card.is_available === false;
+        const privateBadge = isPrivate ? `<div class="inv-card-private-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(255, 71, 87, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; z-index: 115;" title="Privado (Oculto en link público)"><i class="fas fa-lock"></i> PRIVADO</div>` : '';
+        const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
+
         const $slide = $(`
             <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
                 <img src="${card.image_url}" style="width: auto; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
+                ${stampOverlay}
+                ${privateBadge}
             </div>
         `);
 
@@ -788,13 +812,20 @@ function renderListMode($container) {
         const diff = (card.current_price || 0) - (card.purchase_price || 0);
         const diffClass = diff >= 0 ? 'price-up' : 'price-down';
         const trend = getTrendIcon(card.current_price, card.previous_price);
+        const isPrivate = card.is_public === false;
+        const isUnavailable = card.is_available === false;
+        const privateBadge = isPrivate ? `<span style="background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-lock"></i> PRIVADO</span>` : '';
+        const unavailableBadge = isUnavailable ? `<span style="background: rgba(0, 0, 0, 0.85); color: #ff3344; border: 1px solid #ff3344; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-ban"></i> NO DISPONIBLE</span>` : '';
+        const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">NO DISPONIBLE</div>` : '';
+
         const $item = $(`
             <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
                 <div class="inv-list-img-wrapper" style="position: relative; width: 60px; height: 84px; flex-shrink: 0;">
                     <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
+                    ${stampOverlay}
                 </div>
                 <div class="inv-list-details" style="flex: 1;">
-                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000;">${escapeHtml(card.card_name)}</div>
+                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000; display: flex; align-items: center; flex-wrap: wrap;">${escapeHtml(card.card_name)} ${privateBadge} ${unavailableBadge}</div>
                     <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
                 </div>
                 <div class="inv-list-prices" style="display: flex; gap: 30px; text-align: right;">
@@ -860,6 +891,11 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-external-id, #inv-card-image-url, #inv-card-set-name, #inv-card-set-number, #inv-card-rarity').val('');
         $('#inv-card-game').val('pokemon');
 
+        $('#inv-card-public-toggle').prop('checked', true);
+        $('#inv-card-public-status').text('PÚBLICO').css('color', '#333');
+        $('#inv-card-available-toggle').prop('checked', true);
+        $('#inv-card-available-status').text('DISPONIBLE').css('color', '#2ed573');
+
         // Cleanup search
         $('#inv-card-search-results').empty().hide();
         $('#inv-card-search-input').val('');
@@ -888,6 +924,13 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-set-number').val(card.set_number || '');
         $('#inv-card-rarity').val(card.rarity || '');
         $('#inv-card-game').val(card.tcg_game || 'pokemon');
+
+        const isPublic = card.is_public !== false;
+        const isAvailable = card.is_available !== false;
+        $('#inv-card-public-toggle').prop('checked', isPublic);
+        $('#inv-card-public-status').text(isPublic ? 'PÚBLICO' : 'PRIVADO').css('color', isPublic ? '#333' : '#ff4757');
+        $('#inv-card-available-toggle').prop('checked', isAvailable);
+        $('#inv-card-available-status').text(isAvailable ? 'DISPONIBLE' : 'NO DISPONIBLE').css('color', isAvailable ? '#2ed573' : '#ff4757');
 
         if (defaultTab === 'inv-tab-resumen') {
             updateSummaryTab(card);
@@ -956,6 +999,8 @@ $('#btn-save-investment-card').click(async function() {
         show_foil: false,
         notes: $('#inv-card-notes').val(),
         extra_images: currentInvExtraImages,
+        is_public: $('#inv-card-public-toggle').is(':checked'),
+        is_available: $('#inv-card-available-toggle').is(':checked'),
         holo_effect: null,
         custom_mask_url: null
     };
