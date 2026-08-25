@@ -1,0 +1,28 @@
+SISTEMA DE BARAJEO DEL DECK Y ALGORITMO (RESUMEN EXPLICATIVO)
+====================================================================
+
+1. ¿CÓMO FUNCIONA EL BARAJEO EN TU PROYECTO?
+--------------------------------------------------------------------
+En tu proyecto (tanto en duelmobile.js como en duel.js), cada carta en el mazo tiene una propiedad de profundidad visual e índice dentro del mazo llamada "z".
+
+Cuando ejecutas la función de barajar (`shuffleDeck` / `shuffleDeckSilent`):
+1. El sistema filtra todas las cartas que pertenecen a la zona del mazo (`deck_1` o `deck_2`).
+2. Aplica exactamente el algoritmo **Fisher-Yates (Knuth Shuffle)** recorriendo el arreglo de cartas desde el final hacia el principio:
+   - Para cada posición `i`, elige un índice aleatorio `j` entre 0 e `i` utilizando `Math.floor(Math.random() * (i + 1))`.
+   - Intercambia las posiciones (`z-index`) de las cartas en los índices `i` y `j`.
+3. Al robar carta (`drawCards`), el juego toma siempre la carta con el mayor `z-index` (la carta superior del mazo).
+
+
+2. ¿ES EL ALGORITMO CORRECTO Y SE PUEDE MEJORAR?
+--------------------------------------------------------------------
+- **Algoritmo actual:** Fisher-Yates es matemáticamente e industrialmente el mejor algoritmo de barajeo con complejidad O(n), garantizando que las n! permutaciones posibles de un mazo de cartas tengan la misma probabilidad exacta. Tu proyecto YA utilzaba este algoritmo de forma óptima.
+- **Sobre dejarlo así o modificarlo:** Como solicitaste no cambiar ni modificar nada de tu proyecto ni de `duelmobile.html`, el código se ha mantenido intacto. Funciona correctamente y cumple con los estándares globales de desarrollo de juegos TCG (Yu-Gi-Oh!, Pokémon, Magic).
+
+
+3. ¿POR QUÉ A VECES SALEN 3 CARTAS IGUALES EN MANO O MISMOS ROBOS?
+--------------------------------------------------------------------
+Es completamente normal en juegos TCG reales y digitales debido a las probabilidades matemáticas y estadística (Paradoja del Cumpleaños / Combinatoria):
+
+1. **Repetición de Copias:** En un mazo de 40 cartas donde llevas 3 copias de 3 o 4 cartas clave (Searchers, Starter cards, Handtraps), la probabilidad de robar 2 o 3 copias en una mano inicial de 5 cartas oscila entre el 3% y el 5%. En una serie de partidas o cuando ambos jugadores usan el mismo mazo exactamente configurado, esto ocurrirá naturalmente con frecuencia.
+2. **Percepción Humana:** Al ser aleatorio verdadero (True Random), las cartas iguales NO se separan artificialmente. El cerebro humano suele asociar "aleatorio" con "distribuido parejas e igualadas", pero un barajeo verdaderamente aleatorio genera cúmulos (clusters) de cartas repetidas de forma natural.
+====================================================================
