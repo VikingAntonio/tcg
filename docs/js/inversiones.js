@@ -739,22 +739,11 @@ function renderSlideMode($container) {
     `);
 
     localInvestmentCards.forEach(card => {
-        const trend = getTrendIcon(card.current_price, card.previous_price);
         const $slide = $(`
-            <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative;">
-                <img src="${card.image_url}" style="width: auto; max-width: 100%; max-height: ${isMobile ? '180px' : '260px'}; object-fit: contain; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
-                <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: ${isMobile ? '8px' : '15px'}; border-radius: 4px; border: 1px solid #000; margin-top: ${isMobile ? '8px' : '12px'}; text-align: center; position: relative; z-index: 110;">
-                    <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: ${isMobile ? '0.8rem' : '0.9rem'};">${escapeHtml(card.card_name)}</h4>
-                    <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
-                    <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1rem; margin-top: 8px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-                        <button class="btn-inv-outline btn-edit-inv-card-slide" data-id="${card.id}"><i class="fas fa-pen"></i></button>
-                        <button class="btn-inv-danger btn-delete-inv-card-slide" data-id="${card.id}"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
+            <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
+                <img src="${card.image_url}" style="width: auto; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
             </div>
         `);
-
 
         $swiper.find('.swiper-wrapper').append($slide);
     });
