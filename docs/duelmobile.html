@@ -192,20 +192,22 @@
         .hand-cards-wrapper {
             position: relative !important;
             display: flex !important;
+            flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
             width: fit-content !important;
             max-width: 100% !important;
             margin: 0 auto !important;
             pointer-events: auto !important;
+            padding-bottom: 34px !important;
         }
 
         .hand-nav-arrow {
             position: absolute !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-            width: 30px !important;
-            height: 30px !important;
+            bottom: 0px !important;
+            top: auto !important;
+            width: 28px !important;
+            height: 28px !important;
             border-radius: 50% !important;
             background: rgba(18, 24, 30, 0.9) !important;
             border: 1.5px solid var(--primary-color, #00d2ff) !important;
@@ -213,7 +215,7 @@
             display: none;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 0.85rem !important;
+            font-size: 0.8rem !important;
             cursor: pointer !important;
             z-index: 2020 !important;
             pointer-events: auto !important;
@@ -225,23 +227,25 @@
         }
         .hand-nav-arrow:hover,
         .hand-nav-arrow:active {
-            transform: translateY(-50%) scale(1.15) !important;
+            transform: scale(1.15) !important;
             background: var(--primary-color, #00d2ff) !important;
             color: #ffffff !important;
         }
         .hand-nav-arrow.nav-left {
-            left: -36px !important;
+            left: calc(50% - 36px) !important;
+            right: auto !important;
         }
         .hand-nav-arrow.nav-right {
-            right: -36px !important;
+            right: calc(50% - 36px) !important;
+            left: auto !important;
         }
 
-        /* Hand Cards Container: Limit visible capacity to 8 cards (~310px width), with horizontal scroll for >=8 cards */
+        /* Hand Cards Container: Horizontal scroll for 7 or more cards in hand */
         .hand-cards-container {
-            max-width: 310px !important;
+            max-width: 320px !important;
             overflow-x: auto !important;
             overflow-y: hidden !important;
-            padding: 22px 12px 14px 12px !important;
+            padding: 22px 25px 14px 25px !important;
             pointer-events: auto !important;
             scroll-behavior: smooth !important;
             scrollbar-width: none !important;
@@ -913,7 +917,7 @@
                 if (!container) return;
 
                 const isLeft = $(this).hasClass("nav-left");
-                const scrollAmount = isLeft ? -35 : 35;
+                const scrollAmount = isLeft ? -90 : 90;
                 container.scrollBy({ left: scrollAmount, behavior: "smooth" });
             });
 
@@ -946,15 +950,14 @@
                     }
                     $("#hand-p1 .duel-card, #hand-p2 .duel-card").removeClass("tapped face-down");
 
-                    // Manage hand tray navigation arrows display (when 7 or more cards in hand)
+                    // Manage hand tray navigation arrows display (strictly when 7 or more cards in hand)
                     window.updateHandTrayArrows = function() {
                         ["#hand-p1", "#hand-p2"].forEach(selector => {
                             const elem = $(selector)[0];
                             if (elem) {
                                 const $wrapper = $(elem).closest(".hand-cards-wrapper");
                                 const cardCount = $(elem).children(".duel-card").length;
-                                const isOverflow = elem.scrollWidth > elem.clientWidth + 5;
-                                if (cardCount >= 7 || isOverflow) {
+                                if (cardCount >= 7) {
                                     $(elem).css("overflow-x", "auto");
                                     if ($wrapper.length) {
                                         $wrapper.find(".hand-nav-arrow").css("display", "flex");
