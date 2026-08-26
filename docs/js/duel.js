@@ -450,12 +450,11 @@ function renderAllCards() {
             }
         }
 
-        // Rule 1: Hand cards are always face-up and not tilted, but can be tapped (rotated) for effect activations
+        // Rule 1: Hand cards are always face-up, upright, and not tilted
         if (card.zone.startsWith("hand_")) {
             card.faceDown = false;
-            if (!card.tapped) {
-                card.tiltAngle = 0;
-            }
+            card.tapped = false;
+            card.tiltAngle = 0;
             card.attachedTo = null; // attached cards returned to hand get detached
         }
 
@@ -464,6 +463,7 @@ function renderAllCards() {
             card.faceDown = false;
             card.tapped = false;
             card.tiltAngle = 0;
+            card.attachedTo = null;
         }
 
         // Rule 3: Banished cards are always face-up, upright, and not tilted
@@ -471,6 +471,7 @@ function renderAllCards() {
             card.faceDown = false;
             card.tapped = false;
             card.tiltAngle = 0;
+            card.attachedTo = null;
         }
 
         // Rule 4: Deck cards are always face-down, upright, and not tilted
@@ -916,9 +917,13 @@ function bindCardDragEvents() {
                 cardObj.zone = `extra_${originalOwnerSuffix}`;
                 cardObj.faceDown = true;
                 cardObj.tapped = false;
+                cardObj.tiltAngle = 0;
             } else {
                 // Return to original owner's Hand
                 cardObj.zone = `hand_${originalOwnerSuffix}`;
+                cardObj.faceDown = false;
+                cardObj.tapped = false;
+                cardObj.tiltAngle = 0;
             }
             cardObj.controller = cardObj.owner; // Reset controller back to owner
             cardObj.attachedTo = null; // detach on return
@@ -931,6 +936,7 @@ function bindCardDragEvents() {
             cardObj.controller = cardObj.owner; // Reset controller back to owner
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.tiltAngle = 0;
             cardObj.attachedTo = null; // detach on discard
             renderAllCards();
         } else if ($(this).hasClass("btn-field-swap")) {
@@ -943,6 +949,7 @@ function bindCardDragEvents() {
             cardObj.controller = cardObj.owner; // Reset controller back to owner
             cardObj.faceDown = false;
             cardObj.tapped = false;
+            cardObj.tiltAngle = 0;
             cardObj.attachedTo = null; // detach on banish
             renderAllCards();
         }
@@ -995,9 +1002,30 @@ function bindCardDragEvents() {
         const rect = $("#playmat")[0].getBoundingClientRect();
         const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
-        // Calculate offset in internal coordinates relative to mouse/touch position
-        dragOffset.x = (pos.x - matOffset.left) / scale - cardObj.x;
-        dragOffset.y = (pos.y - matOffset.top) / scale - cardObj.y;
+        if (cardObj.zone.startsWith("hand_")) {
+            // Move element to playmat container to escape flex relative layout
+            $("#field-cards-container").append(dragCard);
+            const initialX = (pos.x - matOffset.left) / scale - 40;
+            const initialY = (pos.y - matOffset.top) / scale - 58;
+            dragCard.css({
+                position: "absolute",
+                width: "80px",
+                height: "116px",
+                left: `${initialX}px`,
+                top: `${initialY}px`,
+                margin: "0"
+            });
+            cardObj.x = initialX;
+            cardObj.y = initialY;
+            dragOffset.x = 40;
+            dragOffset.y = 58;
+        } else {
+            const cardOffset = $(this).offset();
+            const elemLeft = (cardOffset.left - matOffset.left) / scale;
+            const elemTop = (cardOffset.top - matOffset.top) / scale;
+            dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
+            dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+        }
         dragStartCoords = { x: pos.x, y: pos.y };
         dragStartTime = Date.now();
     });
@@ -1005,12 +1033,22 @@ function bindCardDragEvents() {
 
 // Helper to resolve client touch vs mouse coords
 function getEventCoords(e) {
-    if (e.type.startsWith('touch')) {
-        const t = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-        return { x: t.clientX, y: t.clientY };
+    const oe = e.originalEvent || e;
+    if (oe.touches && oe.touches.length > 0) {
+        return { x: oe.touches[0].clientX, y: oe.touches[0].clientY, clientX: oe.touches[0].clientX, clientY: oe.touches[0].clientY };
     }
-    return { x: e.clientX, y: e.clientY };
+    if (oe.changedTouches && oe.changedTouches.length > 0) {
+        return { x: oe.changedTouches[0].clientX, y: oe.changedTouches[0].clientY, clientX: oe.changedTouches[0].clientX, clientY: oe.changedTouches[0].clientY };
+    }
+    return { x: e.clientX || oe.clientX || 0, y: e.clientY || oe.clientY || 0, clientX: e.clientX || oe.clientX || 0, clientY: e.clientY || oe.clientY || 0 };
 }
+
+// Prevent default page scrolling on touch devices while dragging cards
+window.addEventListener('touchmove', function(e) {
+    if (typeof dragCard !== "undefined" && dragCard) {
+        e.preventDefault();
+    }
+}, { passive: false });
 
 // Global window event listeners for active drag tracking
 $(window).on('mousemove touchmove', function(e) {
@@ -1107,8 +1145,53 @@ $(window).on('mouseup touchend', function(e) {
                     $(`#${cardObj.instanceId}`).addClass("selected-for-batch");
                 }
                 dragCard = null; // Clean up drag state
+                renderAllCards();
                 return;
             }
+        }
+
+        // If card was in hand, re-render to put it back in hand container
+        if (isHandCard) {
+            dragCard = null;
+            renderAllCards();
+            return;
+        }
+
+        // Check if card was in deck, grave, banished, or extra deck!
+        if (cardObj.zone.startsWith("deck_")) {
+            dragCard = null;
+            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+            $("#card-menu").removeClass("active");
+            $("#deck-menu").css({
+                left: `${endPos.x || dragStartCoords.x}px`,
+                top: `${endPos.y || dragStartCoords.y}px`
+            }).addClass("active");
+            renderAllCards();
+            return;
+        }
+
+        if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
+            dragCard = null;
+            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
+            openExtraDeckModal(playerKey);
+            renderAllCards();
+            return;
+        }
+
+        if (cardObj.zone.startsWith("grave_")) {
+            dragCard = null;
+            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
+            openPileModal(playerKey, "grave");
+            renderAllCards();
+            return;
+        }
+
+        if (cardObj.zone.startsWith("banished_")) {
+            dragCard = null;
+            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
+            openPileModal(playerKey, "banished");
+            renderAllCards();
+            return;
         }
 
         // This is a click!
@@ -1162,6 +1245,10 @@ $(window).on('mouseup touchend', function(e) {
             const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
             cardObj.zone = `hand_${originalSuffix}`;
             cardObj.controller = cardObj.owner; // Reset controller
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            cardObj.tiltAngle = 0;
+            cardObj.attachedTo = null;
         } else if (hoverZone) {
             // If dropped on grave, banished, or deck pile, route to original owner's corresponding zone
             if (hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")) {
@@ -1172,10 +1259,16 @@ $(window).on('mouseup touchend', function(e) {
                 cardObj.movedToPileAt = Date.now() + Math.random();
                 cardObj.zone = targetPileId;
                 cardObj.controller = cardObj.owner; // Reset controller
+                cardObj.faceDown = false;
+                cardObj.tapped = false;
+                cardObj.tiltAngle = 0;
             } else if (hoverZone.id.startsWith("deck_")) {
                 const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
                 cardObj.zone = `deck_${originalSuffix}`;
                 cardObj.controller = cardObj.owner; // Reset controller
+                cardObj.faceDown = true;
+                cardObj.tapped = false;
+                cardObj.tiltAngle = 0;
             } else {
                 cardObj.zone = hoverZone.id;
             }

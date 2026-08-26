@@ -822,6 +822,29 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* Card Select Pointer Visual style - bouncing yellow/gold finger pointing down at the card */
+.card-select-pointer {
+    position: absolute;
+    top: -55px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.5rem;
+    color: #ffed4a;
+    text-shadow: 0 0 8px rgba(255, 237, 74, 0.9), 0 0 15px rgba(255, 140, 0, 0.7);
+    z-index: 10005;
+    pointer-events: none;
+    animation: cardPointerBounce 0.5s infinite alternate ease-in-out;
+    transition: opacity 0.3s ease;
+}
+@keyframes cardPointerBounce {
+    0% {
+        transform: translate(-50%, 0);
+    }
+    100% {
+        transform: translate(-50%, -12px);
+    }
+}
+
 /* Accessories Calculator Styles */
 .tcg-calc {
     width: 44px;
