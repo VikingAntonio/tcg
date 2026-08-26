@@ -905,7 +905,7 @@
             })();
 
             // Hand Navigation Arrows click scroll handler
-            $(document).on("click mousedown touchstart", ".hand-nav-arrow", function(e) {
+            $(document).on("click", ".hand-nav-arrow", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 const targetId = $(this).data("target");
