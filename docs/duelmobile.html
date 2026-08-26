@@ -188,29 +188,71 @@
             transform: translateY(-50%) !important;
         }
 
+        /* Hand Cards Wrapper & Nav Arrows */
+        .hand-cards-wrapper {
+            position: relative !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: fit-content !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            pointer-events: auto !important;
+        }
+
+        .hand-nav-arrow {
+            position: absolute !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: 30px !important;
+            height: 30px !important;
+            border-radius: 50% !important;
+            background: rgba(18, 24, 30, 0.9) !important;
+            border: 1.5px solid var(--primary-color, #00d2ff) !important;
+            color: var(--primary-color, #00d2ff) !important;
+            display: none;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.85rem !important;
+            cursor: pointer !important;
+            z-index: 2020 !important;
+            pointer-events: auto !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7) !important;
+            transition: transform 0.15s ease, background-color 0.15s ease !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            touch-action: manipulation !important;
+        }
+        .hand-nav-arrow:hover,
+        .hand-nav-arrow:active {
+            transform: translateY(-50%) scale(1.15) !important;
+            background: var(--primary-color, #00d2ff) !important;
+            color: #ffffff !important;
+        }
+        .hand-nav-arrow.nav-left {
+            left: -36px !important;
+        }
+        .hand-nav-arrow.nav-right {
+            right: -36px !important;
+        }
+
         /* Hand Cards Container: Limit visible capacity to 8 cards (~310px width), with horizontal scroll for >=8 cards */
         .hand-cards-container {
             max-width: 310px !important;
-            overflow-x: hidden !important;
+            overflow-x: auto !important;
             overflow-y: hidden !important;
             padding: 22px 12px 14px 12px !important;
             pointer-events: auto !important;
             scroll-behavior: smooth !important;
-            scrollbar-width: thin !important;
-            scrollbar-color: rgba(0, 210, 255, 0.5) rgba(0, 0, 0, 0.2) !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
             touch-action: pan-x !important;
             box-sizing: border-box !important;
         }
         .hand-cards-container::-webkit-scrollbar {
-            height: 4px !important;
-        }
-        .hand-cards-container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2) !important;
-            border-radius: 4px !important;
-        }
-        .hand-cards-container::-webkit-scrollbar-thumb {
-            background: rgba(0, 210, 255, 0.5) !important;
-            border-radius: 4px !important;
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
 
         /* Ensure perfect anchor alignment of field cards during board rotation to prevent shifting */
@@ -415,8 +457,12 @@
                         <button class="batch-action-btn btn-batch-grave" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
                     </div>
                 </div>
-                <div class="hand-cards-container" id="hand-p2">
-                    <!-- Cards inside P2 hand will be appended here -->
+                <div class="hand-cards-wrapper">
+                    <button class="hand-nav-arrow nav-left" data-target="hand-p2" title="Anterior carta"><i class="fas fa-chevron-left"></i></button>
+                    <div class="hand-cards-container" id="hand-p2">
+                        <!-- Cards inside P2 hand will be appended here -->
+                    </div>
+                    <button class="hand-nav-arrow nav-right" data-target="hand-p2" title="Siguiente carta"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
 
@@ -454,8 +500,12 @@
                         <button class="batch-action-btn btn-batch-grave" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
                     </div>
                 </div>
-                <div class="hand-cards-container" id="hand-p1">
-                    <!-- Cards inside P1 hand will be appended here -->
+                <div class="hand-cards-wrapper">
+                    <button class="hand-nav-arrow nav-left" data-target="hand-p1" title="Anterior carta"><i class="fas fa-chevron-left"></i></button>
+                    <div class="hand-cards-container" id="hand-p1">
+                        <!-- Cards inside P1 hand will be appended here -->
+                    </div>
+                    <button class="hand-nav-arrow nav-right" data-target="hand-p1" title="Siguiente carta"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
 
@@ -854,6 +904,19 @@
                 });
             })();
 
+            // Hand Navigation Arrows click scroll handler
+            $(document).on("click mousedown touchstart", ".hand-nav-arrow", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const targetId = $(this).data("target");
+                const container = document.getElementById(targetId);
+                if (!container) return;
+
+                const isLeft = $(this).hasClass("nav-left");
+                const scrollAmount = isLeft ? -35 : 35;
+                container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+            });
+
             // Apply custom transforms on load/reset
             window.updateHandTrayTransform("hand-tray-p1");
             window.updateHandTrayTransform("hand-tray-p2");
@@ -883,20 +946,30 @@
                     }
                     $("#hand-p1 .duel-card, #hand-p2 .duel-card").removeClass("tapped face-down");
 
-                    // Manage hand container scrollbar display (only show scrollbar when 8 or more cards)
-                    ["#hand-p1", "#hand-p2"].forEach(selector => {
-                        const elem = $(selector)[0];
-                        if (elem) {
-                            const cardCount = $(elem).children(".duel-card").length;
-                            if (cardCount >= 8) {
-                                $(elem).css("overflow-x", "auto");
-                                elem.scrollLeft = elem.scrollWidth;
-                            } else {
-                                $(elem).css("overflow-x", "hidden");
-                                elem.scrollLeft = 0;
+                    // Manage hand tray navigation arrows display (when 7 or more cards in hand)
+                    window.updateHandTrayArrows = function() {
+                        ["#hand-p1", "#hand-p2"].forEach(selector => {
+                            const elem = $(selector)[0];
+                            if (elem) {
+                                const $wrapper = $(elem).closest(".hand-cards-wrapper");
+                                const cardCount = $(elem).children(".duel-card").length;
+                                const isOverflow = elem.scrollWidth > elem.clientWidth + 5;
+                                if (cardCount >= 7 || isOverflow) {
+                                    $(elem).css("overflow-x", "auto");
+                                    if ($wrapper.length) {
+                                        $wrapper.find(".hand-nav-arrow").css("display", "flex");
+                                    }
+                                } else {
+                                    $(elem).css("overflow-x", "hidden");
+                                    elem.scrollLeft = 0;
+                                    if ($wrapper.length) {
+                                        $wrapper.find(".hand-nav-arrow").css("display", "none");
+                                    }
+                                }
                             }
-                        }
-                    });
+                        });
+                    };
+                    window.updateHandTrayArrows();
 
                     // Re-bind touch/mouse start with window.isBoardRotated support
                     const cards = $(".duel-card");
@@ -1098,7 +1171,7 @@
                 const instId = $(this).data("instance-id") || $(this).attr("id");
                 if (!instId || typeof state === "undefined" || !state.cards) return;
 
-                const clickedCard = state.cards.find(c => c.instanceId === instId);
+                const clickedCard = state.cards.find(c => String(c.instanceId) === String(instId));
                 if (!clickedCard) return;
 
                 if (typeof window.triggerEquipIndicator === "function") {

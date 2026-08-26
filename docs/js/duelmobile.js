@@ -1973,22 +1973,27 @@ window.triggerEquipIndicator = function(cardObj) {
 
     // 1. If this card is equipping another card
     if (cardObj.equippedTo) {
-        equipGroupIds.add(cardObj.instanceId);
-        equipGroupIds.add(cardObj.equippedTo);
+        equipGroupIds.add(String(cardObj.instanceId));
+        equipGroupIds.add(String(cardObj.equippedTo));
     }
 
     // 2. If this card has other cards equipped to it or shares the target monster
     state.cards.forEach(c => {
-        if (c.equippedTo === cardObj.instanceId) {
-            equipGroupIds.add(cardObj.instanceId);
-            equipGroupIds.add(c.instanceId);
+        if (c.equippedTo && String(c.equippedTo) === String(cardObj.instanceId)) {
+            equipGroupIds.add(String(cardObj.instanceId));
+            equipGroupIds.add(String(c.instanceId));
         }
-        if (cardObj.equippedTo && c.equippedTo === cardObj.equippedTo) {
-            equipGroupIds.add(c.instanceId);
+        if (cardObj.equippedTo && c.equippedTo && String(c.equippedTo) === String(cardObj.equippedTo)) {
+            equipGroupIds.add(String(c.instanceId));
         }
     });
 
     if (equipGroupIds.size > 0) {
+        if (window.equipIndicatorTimers) {
+            window.equipIndicatorTimers.forEach(t => clearTimeout(t));
+        }
+        window.equipIndicatorTimers = [];
+
         $(".equip-indicator-icon").remove();
 
         equipGroupIds.forEach(id => {
@@ -1997,12 +2002,14 @@ window.triggerEquipIndicator = function(cardObj) {
                 const $icon = $('<img src="img/Equip.webp" class="equip-indicator-icon" alt="Equipped">');
                 $elem.append($icon);
 
-                setTimeout(() => {
+                const t1 = setTimeout(() => {
                     $icon.css('opacity', '0');
-                    setTimeout(() => {
+                    const t2 = setTimeout(() => {
                         $icon.remove();
                     }, 300);
+                    if (window.equipIndicatorTimers) window.equipIndicatorTimers.push(t2);
                 }, 4000);
+                if (window.equipIndicatorTimers) window.equipIndicatorTimers.push(t1);
             }
         });
     }
@@ -5025,6 +5032,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                 Swal.fire({
                     title: `Calculadora LP - ${player.toUpperCase()}`,
+                    customClass: {
+                        popup: 'calc-swal-popup'
+                    },
                     html: `
                         <div style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;" id="calc-current-display">
                             ${currentLP}
