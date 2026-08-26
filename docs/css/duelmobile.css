@@ -2136,25 +2136,108 @@ body.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
     border-color: var(--secondary-color) !important;
 }
 
-/* Hide inputs and control rows on mobile viewport to keep LP containers small & clean */
-@media (max-width: 1024px) {
-    .lp-counter-container .lp-calc-row,
-    .lp-counter-container .lp-controls-row {
-        display: none !important;
+/* Always hide internal calc inputs/controls inside floating LP container badge on mobile layouts */
+.lp-counter-container .lp-calc-row,
+.lp-counter-container .lp-controls-row {
+    display: none !important;
+}
+.lp-counter-container .lp-header {
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    color: #aaa !important;
+    margin-bottom: 2px !important;
+}
+.lp-counter-container .lp-number {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 1.1rem !important;
+    font-weight: 900 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+}
+
+/* Custom LP Calculator Swal Modal styling for mobile landscape mode */
+.calc-swal-popup {
+    border: 1.5px solid var(--primary-color, #00d2ff) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3), 0 0 20px rgba(0, 0, 0, 0.9) !important;
+    padding: 12px !important;
+    max-width: 320px !important;
+    width: 90vw !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+
+.calc-swal-popup .swal2-title {
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: #ffd32d !important;
+    margin-bottom: 5px !important;
+    padding: 0 !important;
+}
+
+.calc-swal-popup .btn-calc {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+.calc-swal-popup .btn-calc:active,
+.calc-swal-popup .btn-calc:hover {
+    background: var(--primary-color, #00d2ff) !important;
+    color: #000000 !important;
+    border-color: #00d2ff !important;
+}
+
+.calc-swal-popup .btn-calc-op.btn-danger {
+    background: #ff4757 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+}
+
+.calc-swal-popup .btn-calc-op.btn-success {
+    background: #2ed573 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+}
+
+.calc-swal-popup .btn-calc-op.btn-warning {
+    background: #ff9f43 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+}
+
+.calc-swal-popup .btn-calc-clear {
+    background: #4b6584 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+}
+
+@media (max-height: 480px) {
+    .calc-swal-popup {
+        padding: 6px 10px !important;
+        max-width: 300px !important;
     }
-    .lp-counter-container .lp-header {
-        font-size: 0.65rem !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        color: #aaa !important;
+    .calc-swal-popup .swal2-title {
+        font-size: 0.95rem !important;
         margin-bottom: 2px !important;
     }
-    .lp-counter-container .lp-number {
-        font-family: 'Orbitron', sans-serif !important;
+    #calc-current-display {
         font-size: 1.1rem !important;
-        font-weight: 900 !important;
-        color: #fff !important;
-        cursor: pointer !important;
+        margin-bottom: 4px !important;
+        padding: 4px !important;
+    }
+    #calc-input-value {
+        font-size: 1.1rem !important;
+        margin: 4px auto !important;
+        height: 32px !important;
     }
 }
 
@@ -2506,4 +2589,42 @@ body.rotated-board.layout-yugioh .lp-counter-container.p2-lp-container,
 body.rotated-board.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
     right: auto !important;
     left: 10px !important;
+}
+
+/* Hand Navigation Arrow Styles */
+.hand-cards-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    pointer-events: auto !important;
+}
+
+.hand-nav-arrow {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(10, 15, 22, 0.9);
+    border: 1.5px solid #00f2fe;
+    color: #00f2fe;
+    font-size: 16px;
+    font-weight: bold;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2500;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+    transition: transform 0.15s ease, background 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: auto !important;
+}
+
+.hand-nav-arrow:active {
+    transform: scale(0.9);
+    background: rgba(0, 242, 254, 0.4);
 }
