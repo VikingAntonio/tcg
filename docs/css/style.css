@@ -5179,7 +5179,9 @@ body.focus-mode-active .event-card {
 
 /* 2. COSMIC - SPECTACULAR Galaxy Density & Shimmering Nebula Effect */
 .style-cosmic {
-    background: radial-gradient(ellipse at center, #0d0618 0%, #03010a 60%, #000000 100%) !important;
+    background: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
     overflow: hidden !important;
     position: relative !important;
 }

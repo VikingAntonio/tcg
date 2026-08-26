@@ -640,6 +640,12 @@
         gap: 10px !important;
     }
 
+    .inv-form-row-switches {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+        padding: 12px 14px !important;
+    }
+
     .inv-form-row-full {
         grid-template-columns: 1fr !important;
     }
@@ -838,26 +844,20 @@
 
     /* Deck (Slide) Mode Mobile Adjustments */
     .investment-slide-layout .swiper {
-        max-width: 240px !important;
-        height: 380px !important;
+        max-width: 82vw !important;
+        height: 60vh !important;
+        max-height: 480px !important;
+        min-height: 360px !important;
     }
 
     .investment-slide-layout .swiper-slide img {
-        max-height: 180px !important;
+        height: 100% !important;
+        max-height: 100% !important;
         width: auto !important;
         max-width: 100% !important;
         object-fit: contain !important;
         display: block !important;
         margin: 0 auto !important;
-    }
-
-    .investment-slide-layout .inv-card-info-overlay {
-        padding: 10px !important;
-        margin-top: 10px !important;
-    }
-
-    .investment-slide-layout .inv-card-info-overlay h4 {
-        font-size: 0.8rem !important;
     }
 
     /* List Mode Mobile Adjustments */

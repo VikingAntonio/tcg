@@ -432,8 +432,16 @@ async function updateInvestmentCategory(id, data, refresh = false) {
             icon: 'error',
             customClass: { popup: 'inv-swal-popup' }
         });
-    } else if (refresh) {
-        loadInvestmentCategories();
+    } else {
+        if (currentInvestmentCategory && currentInvestmentCategory.id === id) {
+            Object.assign(currentInvestmentCategory, data);
+        }
+        if (refresh) {
+            loadInvestmentCategories();
+            if ($('#view-investment-details').is(':visible') && currentInvestmentCategoryId === id) {
+                loadInvestmentCards();
+            }
+        }
     }
 }
 
@@ -528,6 +536,20 @@ async function openInvestmentCategory(cat) {
 async function loadInvestmentCards() {
     $('#investment-card-container').html('<div class="loading">Cargando cartas...</div>');
 
+    if (currentInvestmentCategoryId) {
+        const { data: catData } = await _supabase
+            .from('investment_categories')
+            .select('*')
+            .eq('id', currentInvestmentCategoryId)
+            .single();
+        if (catData) {
+            currentInvestmentCategory = catData;
+            const upperName = catData.name.toUpperCase();
+            $('#inv-category-title').text(upperName);
+            $('#inv-category-title-mobile').text(upperName);
+        }
+    }
+
     const { data: cards, error } = await _supabase
         .from('investment_cards')
         .select('*')
@@ -602,7 +624,7 @@ function renderAlbumMode($container) {
     // Front Cover with Space/Cosmic Particles and no title/text
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: 10px solid #111;"></div>
+            <div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: none;"></div>
         </div>
     `);
 
@@ -712,7 +734,7 @@ function renderAlbumMode($container) {
     // Back Cover with Space/Cosmic Particles
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: 10px solid #111;"></div>
+            <div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: none;"></div>
         </div>
     `);
 
@@ -746,8 +768,8 @@ function renderSlideMode($container) {
     $container.addClass('investment-slide-layout').removeClass('investment-list-layout investment-album-layout');
     const isMobile = window.innerWidth <= 768;
     const swiperId = `inv-swiper-${Date.now()}`;
-    const swiperWidth = isMobile ? '260px' : '350px';
-    const swiperHeight = isMobile ? '420px' : '500px';
+    const swiperWidth = isMobile ? '82vw' : '350px';
+    const swiperHeight = isMobile ? '60vh' : '500px';
 
     const $swiper = $(`
         <div class="swiper ${swiperId}" style="width: 100%; max-width: ${swiperWidth}; margin: 0 auto; height: ${swiperHeight}; padding: 20px 0;">

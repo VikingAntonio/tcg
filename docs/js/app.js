@@ -4032,7 +4032,6 @@ async function loadPublicInvestmentCategories() {
         .from('investment_categories')
         .select('*')
         .eq('user_id', userId)
-        .eq('is_public', true)
         .order('position', { ascending: true });
 
     if (error || !categories) {
@@ -4040,7 +4039,9 @@ async function loadPublicInvestmentCategories() {
         return;
     }
 
-    if (categories.length === 0) {
+    const publicCategories = categories.filter(cat => cat.is_public !== false);
+
+    if (publicCategories.length === 0) {
         $('#public-investment-categories').html('<div class="empty">No hay colecciones de inversión públicas.</div>');
         return;
     }
@@ -4048,7 +4049,7 @@ async function loadPublicInvestmentCategories() {
     const $container = $('#public-investment-categories');
     $container.empty();
 
-    categories.forEach(cat => {
+    publicCategories.forEach(cat => {
         const $card = $(`
             <div class="inv-category-item" data-id="${cat.id}" style="border: 1px solid #000; border-radius: 4px; overflow: hidden; background: #fff;">
                 <div class="inv-category-preview" style="height: 120px; background: #eee;">
@@ -4126,25 +4127,30 @@ function renderPublicInvestmentCards() {
 
 function renderPublicInvAlbumMode($container) {
     $container.addClass('investment-album-layout').removeClass('investment-list-layout investment-slide-layout');
-    const $albumWrapper = $('<div class="album-wrapper"><div class="album public-inv-album"></div></div>');
+    const { width, height } = typeof window.getAlbumSize === 'function' ? window.getAlbumSize($container) : { width: 600, height: 420 };
+    const $albumWrapper = $(`<div class="album-wrapper" style="width: ${width}px; height: ${height}px;"><div class="album public-inv-album"></div></div>`);
     const $album = $albumWrapper.find('.album');
     $container.append($albumWrapper);
 
+    const gridLayout = (currentPublicInvCategory && currentPublicInvCategory.grid_layout) ? currentPublicInvCategory.grid_layout : '3x3';
+    let numSlots = 9;
+    if (gridLayout === '4x3') numSlots = 12;
+    else if (gridLayout === '4x4') numSlots = 16;
+    else if (gridLayout === '2x2') numSlots = 4;
+    else if (gridLayout === '1x1') numSlots = 1;
+
     $album.append(`
         <div class="page cover-page">
-            <div class="textured-cover" style="background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #111;">
-                <h2 style="color:white; text-align:center; padding: 10%; font-size: 1.5rem; letter-spacing: 0.1em; border-top: 1px solid white; border-bottom: 1px solid white; width: 80%;">${escapeHtml(currentPublicInvCategory.name).toUpperCase()}</h2>
-                <div style="text-align:center; color:rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.3em; margin-top: 20px; font-weight: 800;">VAULT COLLECTION</div>
-            </div>
+            <div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: none;"></div>
         </div>
     `);
 
-    for (let i = 0; i < publicInvCards.length; i += 9) {
-        const pageCards = publicInvCards.slice(i, i + 9);
+    for (let i = 0; i < publicInvCards.length; i += numSlots) {
+        const pageCards = publicInvCards.slice(i, i + numSlots);
         const $page = $('<div class="page album-page"></div>');
-        const $grid = $('<div class="grid-container"></div>');
+        const $grid = $(`<div class="grid-container grid-layout-${gridLayout}"></div>`);
 
-        for (let j = 0; j < 9; j++) {
+        for (let j = 0; j < numSlots; j++) {
             const card = pageCards[j];
             const $slot = $('<div class="card-slot"></div>');
             if (card) {
@@ -4174,12 +4180,12 @@ function renderPublicInvAlbumMode($container) {
         $album.append('<div class="page album-page"></div>');
     }
 
-    $album.append('<div class="page cover-page"><div class="textured-cover" style="background-color: #000"></div></div>');
+    $album.append('<div class="page cover-page"><div class="textured-cover style-cosmic" style="background-color: #000000; width: 100%; height: 100%; border: none;"></div></div>');
 
     setTimeout(() => {
         $album.turn({
-            width: 600,
-            height: 420,
+            width: width,
+            height: height,
             autoCenter: true,
             display: 'double',
             acceleration: true,
