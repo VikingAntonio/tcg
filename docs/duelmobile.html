@@ -253,6 +253,9 @@
             touch-action: pan-x !important;
             box-sizing: border-box !important;
         }
+        .hand-cards-container.has-scroll .duel-card:last-child {
+            margin-right: 45px !important;
+        }
         .hand-cards-container::-webkit-scrollbar {
             display: none !important;
             width: 0 !important;
@@ -917,7 +920,7 @@
                 if (!container) return;
 
                 const isLeft = $(this).hasClass("nav-left");
-                const scrollAmount = isLeft ? -90 : 90;
+                const scrollAmount = isLeft ? -130 : 130;
                 container.scrollBy({ left: scrollAmount, behavior: "smooth" });
             });
 
@@ -958,12 +961,12 @@
                                 const $wrapper = $(elem).closest(".hand-cards-wrapper");
                                 const cardCount = $(elem).children(".duel-card").length;
                                 if (cardCount >= 7) {
-                                    $(elem).css("overflow-x", "auto");
+                                    $(elem).addClass("has-scroll").css("overflow-x", "auto");
                                     if ($wrapper.length) {
                                         $wrapper.find(".hand-nav-arrow").css("display", "flex");
                                     }
                                 } else {
-                                    $(elem).css("overflow-x", "hidden");
+                                    $(elem).removeClass("has-scroll").css("overflow-x", "hidden");
                                     elem.scrollLeft = 0;
                                     if ($wrapper.length) {
                                         $wrapper.find(".hand-nav-arrow").css("display", "none");
