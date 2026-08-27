@@ -4021,8 +4021,19 @@ async function showGeneralEventDetails(id) {
 // --- PUBLIC INVESTMENTS ---
 
 async function loadPublicInvestmentCategories() {
-    const userId = window.currentStoreId;
-    if (!userId) return;
+    return new Promise(async (resolve) => {
+    let userId = window.currentStoreId;
+    if (!userId) {
+        const identifier = window.currentStoreIdentifier || new URLSearchParams(window.location.search).get('id') || new URLSearchParams(window.location.search).get('store') || new URLSearchParams(window.location.search).get('user');
+        if (identifier) {
+            const user = await resolveUser(identifier);
+            if (user) {
+                userId = user.id;
+                window.currentStoreId = userId;
+            }
+        }
+    }
+    if (!userId) { resolve(); return; }
 
     $('#public-investment-categories').show().html('<div class="loading">Cargando colecciones...</div>');
     $('#public-investment-cards').hide();
@@ -4064,6 +4075,8 @@ async function loadPublicInvestmentCategories() {
         `);
         $card.find('.btn-view-public-inv').click(() => openPublicInvestmentCategory(cat));
         $container.append($card);
+    });
+    resolve();
     });
 }
 

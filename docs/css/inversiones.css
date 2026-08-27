@@ -928,6 +928,59 @@
         margin-left: 5px !important;
         font-size: 0.9rem !important;
     }
+
+    /* Modal DATOS and IMAGES mobile responsiveness */
+    #inv-tab-datos {
+        padding: 15px 12px !important;
+    }
+
+    .inv-modal-datos-container {
+        flex-direction: column !important;
+        gap: 15px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .inv-search-container {
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .inv-search-container > div {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    #inv-add-preview-container {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        max-width: 180px !important;
+        margin: 10px auto 0 auto !important;
+        padding-top: 0 !important;
+    }
+
+    #inv-tab-images {
+        padding: 15px 12px !important;
+    }
+
+    .inv-modal-images-container {
+        flex-direction: column !important;
+        gap: 20px !important;
+        height: auto !important;
+    }
+
+    .inv-modal-images-right {
+        border-left: none !important;
+        padding-left: 0 !important;
+        border-top: 1px solid #eee !important;
+        padding-top: 15px !important;
+    }
+
+    #inv-card-notes {
+        height: 180px !important;
+        padding: 12px !important;
+    }
 }
 
 /* --- STAMP UNAVAILABLE OVERLAY --- */
