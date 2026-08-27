@@ -253,6 +253,9 @@
             touch-action: pan-x !important;
             box-sizing: border-box !important;
         }
+        .hand-cards-container.has-scroll {
+            justify-content: flex-start !important;
+        }
         .hand-cards-container.has-scroll .duel-card:last-child {
             margin-right: 45px !important;
         }
@@ -920,7 +923,8 @@
                 if (!container) return;
 
                 const isLeft = $(this).hasClass("nav-left");
-                const scrollAmount = isLeft ? -130 : 130;
+                const step = Math.max(140, Math.floor(container.clientWidth * 0.65));
+                const scrollAmount = isLeft ? -step : step;
                 container.scrollBy({ left: scrollAmount, behavior: "smooth" });
             });
 
