@@ -796,33 +796,56 @@ function renderSlideMode($container) {
 
     $container.append($swiper);
 
-    $swiper.find('.inv-card-item').click(function(e) {
+    $(document).off('click.invSlide', `.${swiperId} .inv-card-item`).on('click.invSlide', `.${swiperId} .inv-card-item`, function(e) {
         if ($(e.target).closest('button').length) return;
         e.preventDefault();
         e.stopPropagation();
-        const id = $(this).data('id');
-        const card = localInvestmentCards.find(c => c.id === id);
-        openInvestmentCardModal(card);
+        const id = $(this).attr('data-id');
+        if (!id) return;
+        const card = localInvestmentCards.find(c => String(c.id) === String(id));
+        if (card) {
+            openInvestmentCardModal(card);
+        }
     });
 
-    $swiper.find('.btn-edit-inv-card-slide').click(function(e) {
+    $(document).off('click.invSlideEdit', `.${swiperId} .btn-edit-inv-card-slide`).on('click.invSlideEdit', `.${swiperId} .btn-edit-inv-card-slide`, function(e) {
+        e.preventDefault();
         e.stopPropagation();
-        const id = $(this).data('id');
-        const card = localInvestmentCards.find(c => c.id === id);
-        openInvestmentCardModal(card);
+        const id = $(this).attr('data-id');
+        const card = localInvestmentCards.find(c => String(c.id) === String(id));
+        if (card) {
+            openInvestmentCardModal(card);
+        }
     });
 
-    $swiper.find('.btn-delete-inv-card-slide').click(function(e) {
+    $(document).off('click.invSlideDel', `.${swiperId} .btn-delete-inv-card-slide`).on('click.invSlideDel', `.${swiperId} .btn-delete-inv-card-slide`, function(e) {
+        e.preventDefault();
         e.stopPropagation();
-        const id = $(this).data('id');
-        deleteInvestmentCard(id);
+        const id = $(this).attr('data-id');
+        if (id) {
+            deleteInvestmentCard(id);
+        }
     });
 
-    new Swiper(`.${swiperId}`, {
+    const invSwiper = new Swiper(`.${swiperId}`, {
         effect: "cards",
         grabCursor: true,
         centeredSlides: true,
-        slidesPerView: 'auto'
+        slidesPerView: 'auto',
+        on: {
+            click: function(swiper, event) {
+                const clickedSlide = event.target.closest('.inv-card-item');
+                if (clickedSlide && !event.target.closest('button')) {
+                    const id = $(clickedSlide).attr('data-id');
+                    if (id) {
+                        const card = localInvestmentCards.find(c => String(c.id) === String(id));
+                        if (card) {
+                            openInvestmentCardModal(card);
+                        }
+                    }
+                }
+            }
+        }
     });
 }
 
