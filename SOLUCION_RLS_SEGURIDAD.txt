@@ -1,0 +1,137 @@
+================================================================================
+DIAGNÓSTICO Y SOLUCIÓN DE ALERTAS DE SEGURIDAD RLS EN SUPABASE - VIKING TCG
+================================================================================
+
+Supabase notificó las siguientes vulnerabilidades críticas en tu proyecto "tcg toon store":
+1. [CRITICAL] RLS Disabled in Public: public.projects
+2. [CRITICAL] RLS Disabled in Public: public.bdd_users
+3. [WARNING] Sensitive Columns Exposed: public.bdd_users
+
+================================================================================
+1. ¿POR QUÉ APARECIERON ESTAS ALERTAS Y QUÉ SIGNIFICA?
+================================================================================
+
+Tras analizar minuciosamente el código fuente completo de tu aplicación Viking TCG:
+
+- LA TABLA `public.bdd_users`:
+  En la aplicación actual de Viking TCG, los usuarios se gestionan a través de la
+  tabla `public.usuarios` (conectada a `auth.users` de Supabase). La tabla `bdd_users`
+  NO es utilizada por ninguna pantalla, script ni vista de tu proyecto.
+  Esa tabla probablemente fue creada durante pruebas anteriores, migraciones pasadas o
+  un script previo. Como contiene columnas sensibles (como emails o datos PII) y está
+  en el esquema público con Row-Level Security (RLS) desactivado, Supabase emitió la
+  alerta de que cualquier usuario anónimo con tu URL y anon key podría leer o modificar
+  sus filas vía API PostgREST.
+
+- LA TABLA `public.projects`:
+  La tabla `projects` tampoco es utilizada en ninguna parte de la plataforma Viking TCG.
+  Fue creada en el esquema público `public` sin RLS activo, por lo que Supabase la
+  marca como accesible públicamente.
+
+================================================================================
+2. ¿CÓMO SOLUCIONARLO SIN AFECTAR EN NADA A TU PROYECTO?
+================================================================================
+
+Como tu proyecto utiliza `public.usuarios` y NO usa `bdd_users` ni `projects`, proteger
+o restringir estas dos tablas NO alterará en lo absoluto el funcionamiento de tu sitio.
+Tus usuarios podrán seguir iniciando sesión, creando decks, administrando carpetas,
+subastas, reclamaciones (claims), inversiones y carrito sin interrupción alguna.
+
+A continuación tienes dos opciones limpias para corregirlo desde el Editor SQL de Supabase.
+
+--------------------------------------------------------------------------------
+OPCIÓN A (RECOMENDADA): HABILITAR RLS Y BLOQUEAR API ANÓNIMA/AUTENTICADA
+--------------------------------------------------------------------------------
+Si deseas conservar las tablas en la base de datos por historial o respaldo,
+este script activa RLS en ambas tablas y les revoca el acceso a través de la API REST:
+
+1. Ve a tu panel de Supabase: https://supabase.com/dashboard
+2. Abre tu proyecto ("tcg toon store").
+3. En el menú lateral izquierdo, haz clic en "SQL Editor".
+4. Crea una nueva consulta ("New Query").
+5. Pega y ejecuta (Run) el siguiente comando SQL:
+
+--------------------------------------------------------------------------------
+-- SCRIPT 1: ACTIVAR RLS Y BLOQUEAR EXPONER TABLAS EN LA API REST
+--------------------------------------------------------------------------------
+
+-- 1. Habilitar Row Level Security (RLS) en ambas tablas
+ALTER TABLE IF EXISTS public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.bdd_users ENABLE ROW LEVEL SECURITY;
+
+-- 2. Revocar todos los permisos de API para roles públicos/autenticados
+REVOKE ALL ON public.projects FROM anon, authenticated, public;
+REVOKE ALL ON public.bdd_users FROM anon, authenticated, public;
+
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+OPCIÓN B: ELIMINAR TABLAS HUÉRFANAS QUE NO SE UTILIZAN
+--------------------------------------------------------------------------------
+Si confirmas que `bdd_users` y `projects` son tablas antiguas o de prueba que no
+necesitas conservar, puedes eliminarlas directamente para limpiar tu esquema:
+
+1. Abre el "SQL Editor" en Supabase.
+2. Pega y ejecuta (Run) el siguiente comando SQL:
+
+--------------------------------------------------------------------------------
+-- SCRIPT 2: ELIMINAR TABLAS HUÉRFANAS DE SEGURIDAD
+--------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS public.bdd_users CASCADE;
+DROP TABLE IF EXISTS public.projects CASCADE;
+
+--------------------------------------------------------------------------------
+
+
+================================================================================
+3. MEDIDA PREVENTIVA DE RLS PARA TODAS LAS TABLAS DEL PROYECTO VIKING TCG
+================================================================================
+
+Para asegurarte de que Supabase NUNCA vuelva a enviar un mensaje de "RLS Disabled in Public"
+en ninguna de las tablas que sí usa tu proyecto (`usuarios`, `albums`, `pages`, `card_slots`,
+`decks`, `deck_cards`, `investment_cards`, `investment_categories`, `claims`, `subastas`,
+`sealed_products`, `events`, `viking_data`, `spirits`, `build_assets`, `build_assignments`, etc.),
+puedes correr este script de verificación global que activa RLS en todas tus tablas activas:
+
+--------------------------------------------------------------------------------
+-- SCRIPT 3: ASEGURAMIENTO PREVENTIVO RLS PARA LAS TABLAS ACTIVAS DEL PROYECTO
+--------------------------------------------------------------------------------
+
+ALTER TABLE IF EXISTS public.usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.albums ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.card_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.decks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.deck_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.investment_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.investment_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.investment_price_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.subastas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.subastas_pujas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.sealed_products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.viking_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.spirits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.build_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.build_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.wishlist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.bot_messages ENABLE ROW LEVEL SECURITY;
+
+--------------------------------------------------------------------------------
+
+
+================================================================================
+4. RESUMEN DE COMPROBACIÓN Y GARANTÍA
+================================================================================
+
+- Ningún archivo HTML, CSS o JS de tu repositorio ha sido alterado de forma perjudicial.
+- La lógica de autenticación de tu sitio (`signInWithPassword`, `signUp`) funciona
+  con la tabla `usuarios` y la API de autenticación de Supabase (`auth.users`).
+- Tras ejecutar el Script 1 (o Script 2) en el SQL Editor de Supabase, las alertas de
+  "Table publicly accessible", "RLS Disabled in Public" y "Sensitive Columns Exposed"
+  desaparecerán inmediatamente del panel de Supabase.
+================================================================================
