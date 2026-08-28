@@ -636,18 +636,45 @@
     }
 
     .inv-form-row {
-        grid-template-columns: 1fr !important;
-        gap: 12px !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 10px !important;
     }
 
     .inv-form-row-switches {
-        grid-template-columns: 1fr !important;
-        gap: 12px !important;
-        padding: 12px 14px !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        padding: 10px 12px !important;
+        margin-bottom: 10px !important;
     }
 
     .inv-form-row-full {
         grid-template-columns: 1fr !important;
+        margin-bottom: 10px !important;
+    }
+
+    .inv-search-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+
+    .inv-search-container {
+        padding: 12px 14px !important;
+        margin-bottom: 12px !important;
+    }
+
+    #inv-tab-datos {
+        padding: 15px 12px !important;
+    }
+
+    .inv-form-group label {
+        font-size: 0.65rem !important;
+        margin-bottom: 3px !important;
+    }
+
+    .inv-form-group input {
+        padding: 8px 10px !important;
+        font-size: 0.85rem !important;
     }
 
     #inv-card-search-results {
@@ -947,9 +974,9 @@
         margin-bottom: 12px !important;
     }
 
-    .inv-search-container > div {
+    .inv-search-container .inv-search-grid {
         grid-template-columns: 1fr !important;
-        gap: 12px !important;
+        gap: 10px !important;
     }
 
     #inv-add-preview-container {

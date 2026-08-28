@@ -113,10 +113,14 @@
             }
 
             .inv-form-row {
-                grid-template-columns: 1fr !important;
-                gap: 12px !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px !important;
                 width: 100% !important;
                 box-sizing: border-box !important;
+            }
+
+            .inv-form-row-full {
+                grid-template-columns: 1fr !important;
             }
 
             .inv-form-group {
@@ -359,14 +363,14 @@
                             </div>
 
                             <!-- Main Asset Form Fields (Original Fields Only) -->
-                            <div class="inv-form-row inv-form-row-full" style="margin-bottom: 18px;">
-                                <div class="inv-form-group" style="grid-column: span 2;">
+                            <div class="inv-form-row inv-form-row-full" style="margin-bottom: 10px;">
+                                <div class="inv-form-group">
                                     <label>Nombre de la Carta</label>
                                     <input type="text" id="inv-card-name" placeholder="Ej: Blue-Eyes White Dragon">
                                 </div>
                             </div>
 
-                            <div class="inv-form-row" style="margin-bottom: 18px;">
+                            <div class="inv-form-row inv-form-row-inline" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                                 <div class="inv-form-group">
                                     <label>Rareza</label>
                                     <input type="text" id="inv-card-rarity-input" placeholder="Ej: Ultra Rare">
@@ -377,7 +381,7 @@
                                 </div>
                             </div>
 
-                            <div class="inv-form-row" style="margin-bottom: 18px;">
+                            <div class="inv-form-row inv-form-row-inline" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                                 <div class="inv-form-group">
                                     <label>Precio Compra ($)</label>
                                     <input type="number" id="inv-card-purchase-price" step="0.01" placeholder="0.00">
@@ -388,25 +392,25 @@
                                 </div>
                             </div>
 
-                            <div class="inv-form-row inv-form-row-switches" style="margin-bottom: 18px; background: #f9f9f9; padding: 12px 15px; border-radius: 6px; border: 1px solid #eee; align-items: center;">
-                                <div class="inv-form-group" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
-                                    <label style="margin: 0; font-size: 0.7rem; font-weight: 800; color: #333;"><i class="fas fa-eye"></i> LINK PÚBLICO</label>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="inv-form-row inv-form-row-switches" style="margin-bottom: 10px; background: #f9f9f9; padding: 10px 12px; border-radius: 6px; border: 1px solid #eee; align-items: center;">
+                                <div class="inv-form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="margin: 0; font-size: 0.65rem; font-weight: 800; color: #333;"><i class="fas fa-eye"></i> LINK PÚBLICO</label>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
                                         <label class="switch" style="margin: 0;">
                                             <input type="checkbox" id="inv-card-public-toggle" checked>
                                             <span class="slider"></span>
                                         </label>
-                                        <span id="inv-card-public-status" style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">PÚBLICO</span>
+                                        <span id="inv-card-public-status" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">PÚBLICO</span>
                                     </div>
                                 </div>
-                                <div class="inv-form-group" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
-                                    <label style="margin: 0; font-size: 0.7rem; font-weight: 800; color: #333;"><i class="fas fa-tag"></i> ESTADO</label>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="inv-form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="margin: 0; font-size: 0.65rem; font-weight: 800; color: #333;"><i class="fas fa-tag"></i> ESTADO</label>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
                                         <label class="switch" style="margin: 0;">
                                             <input type="checkbox" id="inv-card-available-toggle" checked>
                                             <span class="slider"></span>
                                         </label>
-                                        <span id="inv-card-available-status" style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #2ed573;">DISPONIBLE</span>
+                                        <span id="inv-card-available-status" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #2ed573;">DISPONIBLE</span>
                                     </div>
                                 </div>
                             </div>

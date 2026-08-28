@@ -4026,98 +4026,67 @@ async function showGeneralEventDetails(id) {
 
 async function loadPublicInvestmentCategories() {
     return new Promise(async (resolve) => {
-    let userId = window.currentStoreId;
-    const identifier = window.currentStoreIdentifier || new URLSearchParams(window.location.search).get('id') || new URLSearchParams(window.location.search).get('store') || new URLSearchParams(window.location.search).get('user');
+        let userId = window.currentStoreId;
+        const identifier = window.currentStoreIdentifier || new URLSearchParams(window.location.search).get('id') || new URLSearchParams(window.location.search).get('store') || new URLSearchParams(window.location.search).get('user');
 
-    if (!userId && identifier) {
-        const user = await resolveUser(identifier);
-        if (user) {
-            userId = user.id;
-            window.currentStoreId = userId;
+        if (!userId && identifier) {
+            const user = await resolveUser(identifier);
+            if (user) {
+                userId = user.id;
+                window.currentStoreId = userId;
+            }
         }
-    }
 
-    if (!userId) {
-        // Fallback query for any public investment categories if no specific user context is supplied
-        const { data: publicCats, error: err } = await _supabase
+        $('#public-investment-categories').show().html('<div class="loading">Cargando colecciones...</div>');
+        $('#public-investment-cards').hide();
+        $('#public-inv-header, #public-investment-tabs').hide();
+
+        let query = _supabase
             .from('investment_categories')
             .select('*')
-            .eq('is_public', true)
             .order('position', { ascending: true });
 
-        if (err || !publicCats || publicCats.length === 0) {
-            $('#public-investment-categories').show().html('<div class="empty">No hay colecciones de inversión públicas.</div>');
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
+
+        const { data: categories, error } = await query;
+
+        if (error || !categories) {
+            console.error("Error loading public investment categories:", error);
+            $('#public-investment-categories').html('<div class="error">Error al cargar inversiones.</div>');
             resolve();
             return;
         }
 
-        $('#public-investment-categories').show();
-        $('#public-investment-cards').hide();
-        $('#public-inv-header, #public-investment-tabs').hide();
+        const publicCategories = categories.filter(cat => cat.is_public !== false);
+
+        if (publicCategories.length === 0) {
+            $('#public-investment-categories').html('<div class="empty">No hay colecciones de inversión públicas.</div>');
+            resolve();
+            return;
+        }
+
         const $container = $('#public-investment-categories');
         $container.empty();
-        publicCats.forEach(cat => {
+
+        publicCategories.forEach(cat => {
             const $card = $(`
-                <div class="inv-category-item" data-id="${cat.id}" style="border: 1px solid #000; border-radius: 4px; overflow: hidden; background: #fff;">
+                <div class="inv-category-item" data-id="${cat.id}" style="border: 1px solid #000; border-radius: 4px; overflow: hidden; background: #fff; cursor: pointer;">
                     <div class="inv-category-preview" style="height: 120px; background: #eee;">
                         <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=800&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%);">
                     </div>
                     <div class="inv-category-info" style="padding: 20px; text-align: center;">
                         <h3 style="margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; font-size: 1rem; color: #000;">${escapeHtml(cat.name).toUpperCase()}</h3>
-                        <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; margin-top: 5px; font-weight: 800; text-transform: uppercase;">Private Asset Vault</div>
+                        <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; margin-top: 5px; font-weight: 800; text-transform: uppercase;">Asset Vault</div>
                         <button class="btn-inv-main btn-view-public-inv" style="width: 100%; margin-top: 20px;">ACCESS VAULT</button>
                     </div>
                 </div>
             `);
-            $card.find('.btn-view-public-inv').click(() => openPublicInvestmentCategory(cat));
+            $card.on('click', () => openPublicInvestmentCategory(cat));
             $container.append($card);
         });
         resolve();
-        return;
-    }
-
-    $('#public-investment-categories').show().html('<div class="loading">Cargando colecciones...</div>');
-    $('#public-investment-cards').hide();
-    $('#public-inv-header, #public-investment-tabs').hide();
-
-    const { data: categories, error } = await _supabase
-        .from('investment_categories')
-        .select('*')
-        .eq('user_id', userId)
-        .order('position', { ascending: true });
-
-    if (error || !categories) {
-        $('#public-investment-categories').html('<div class="error">Error al cargar inversiones.</div>');
-        return;
-    }
-
-    const publicCategories = categories.filter(cat => cat.is_public !== false);
-
-    if (publicCategories.length === 0) {
-        $('#public-investment-categories').html('<div class="empty">No hay colecciones de inversión públicas.</div>');
-        return;
-    }
-
-    const $container = $('#public-investment-categories');
-    $container.empty();
-
-    publicCategories.forEach(cat => {
-        const $card = $(`
-            <div class="inv-category-item" data-id="${cat.id}" style="border: 1px solid #000; border-radius: 4px; overflow: hidden; background: #fff;">
-                <div class="inv-category-preview" style="height: 120px; background: #eee;">
-                    <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=800&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%);">
-                </div>
-                <div class="inv-category-info" style="padding: 20px; text-align: center;">
-                    <h3 style="margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; font-size: 1rem; color: #000;">${escapeHtml(cat.name).toUpperCase()}</h3>
-                    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #999; margin-top: 5px; font-weight: 800; text-transform: uppercase;">Private Asset Vault</div>
-                    <button class="btn-inv-main btn-view-public-inv" style="width: 100%; margin-top: 20px;">ACCESS VAULT</button>
-                </div>
-            </div>
-        `);
-        $card.find('.btn-view-public-inv').click(() => openPublicInvestmentCategory(cat));
-        $container.append($card);
-    });
-    resolve();
     });
 }
 

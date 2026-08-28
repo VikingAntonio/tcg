@@ -388,6 +388,10 @@ async function saveInvestmentCategory(data) {
         customClass: { popup: 'inv-swal-popup' }
     });
 
+    if (data.is_public === undefined) {
+        data.is_public = true;
+    }
+
     let { error } = await _supabase
         .from('investment_categories')
         .insert([{ ...data, user_id: currentUser.id }]);
@@ -796,34 +800,35 @@ function renderSlideMode($container) {
 
     $container.append($swiper);
 
-    $(document).off('click.invSlide', `.${swiperId} .inv-card-item`).on('click.invSlide', `.${swiperId} .inv-card-item`, function(e) {
+    let lastOpenTime = 0;
+    const tryOpenModal = (cardId) => {
+        const now = Date.now();
+        if (now - lastOpenTime < 400) return;
+        lastOpenTime = now;
+        const card = localInvestmentCards.find(c => String(c.id) === String(cardId));
+        if (card) {
+            openInvestmentCardModal(card);
+        }
+    };
+
+    let startX = 0, startY = 0;
+    $swiper.on('pointerdown touchstart', '.inv-card-item', function(e) {
+        const touch = e.originalEvent && e.originalEvent.touches ? e.originalEvent.touches[0] : e;
+        startX = touch.clientX || 0;
+        startY = touch.clientY || 0;
+    });
+
+    $swiper.on('pointerup touchend click', '.inv-card-item', function(e) {
         if ($(e.target).closest('button').length) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const id = $(this).attr('data-id');
-        if (!id) return;
-        const card = localInvestmentCards.find(c => String(c.id) === String(id));
-        if (card) {
-            openInvestmentCardModal(card);
-        }
-    });
-
-    $(document).off('click.invSlideEdit', `.${swiperId} .btn-edit-inv-card-slide`).on('click.invSlideEdit', `.${swiperId} .btn-edit-inv-card-slide`, function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = $(this).attr('data-id');
-        const card = localInvestmentCards.find(c => String(c.id) === String(id));
-        if (card) {
-            openInvestmentCardModal(card);
-        }
-    });
-
-    $(document).off('click.invSlideDel', `.${swiperId} .btn-delete-inv-card-slide`).on('click.invSlideDel', `.${swiperId} .btn-delete-inv-card-slide`, function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = $(this).attr('data-id');
-        if (id) {
-            deleteInvestmentCard(id);
+        const touch = e.originalEvent && e.originalEvent.changedTouches ? e.originalEvent.changedTouches[0] : e;
+        const endX = touch.clientX !== undefined ? touch.clientX : startX;
+        const endY = touch.clientY !== undefined ? touch.clientY : startY;
+        const dist = Math.hypot(endX - startX, endY - startY);
+        if (dist < 15) {
+            const id = $(this).attr('data-id');
+            if (id) {
+                tryOpenModal(id);
+            }
         }
     });
 
@@ -832,7 +837,7 @@ function renderSlideMode($container) {
         grabCursor: true,
         centeredSlides: true,
         slidesPerView: 'auto',
-        slideToClickedSlide: true,
+        threshold: 8,
         preventClicks: false,
         preventClicksPropagation: false,
         on: {
@@ -841,10 +846,7 @@ function renderSlideMode($container) {
                 if (targetSlide && !(event && event.target && event.target.closest('button'))) {
                     const id = $(targetSlide).attr('data-id');
                     if (id) {
-                        const card = localInvestmentCards.find(c => String(c.id) === String(id));
-                        if (card) {
-                            openInvestmentCardModal(card);
-                        }
+                        tryOpenModal(id);
                     }
                 }
             }
