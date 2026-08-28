@@ -636,8 +636,8 @@
     }
 
     .inv-form-row {
-        grid-template-columns: 1fr 1fr !important;
-        gap: 10px !important;
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
     }
 
     .inv-form-row-switches {

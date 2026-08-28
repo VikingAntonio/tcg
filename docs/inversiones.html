@@ -97,7 +97,41 @@
             }
 
             .inv-detail-modal-content {
-                height: 95vh !important;
+                height: 92vh !important;
+                max-height: 92vh !important;
+                width: 95% !important;
+                max-width: 95% !important;
+                margin: 10px auto !important;
+                box-sizing: border-box !important;
+            }
+
+            .inv-search-grid,
+            .inv-search-container > div {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                width: 100% !important;
+            }
+
+            .inv-form-row {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            .inv-form-group {
+                width: 100% !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            .inv-form-group input,
+            .inv-form-group select,
+            .inv-form-group textarea,
+            .inv-search-input {
+                width: 100% !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
             }
         }
     </style>
@@ -301,7 +335,7 @@
                         <div style="flex: 1; min-width: 0;">
                             <!-- Top Tools: Search API + Local Image Upload side-by-side on PC -->
                             <div class="inv-search-container" id="inv-card-search-container" style="margin-bottom: 20px; background: #f9f9f9; padding: 18px 20px; border-radius: 8px; border: 1px solid #eee;">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="inv-search-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                     <div style="display: flex; flex-direction: column; gap: 6px;">
                                         <label style="font-size: 0.7rem; font-weight: 800; color: var(--inv-gray-700);"><i class="fas fa-search"></i> BUSCAR EN BASES DE DATOS</label>
                                         <div style="display: flex; gap: 8px;">
@@ -642,6 +676,7 @@
 
         const originalOpenInvestmentCardModal = window.openInvestmentCardModal;
         window.openInvestmentCardModal = function(card = null, defaultTab = 'inv-tab-resumen') {
+            $('#companion-wrapper').hide();
             // First call original to set up state
             if (typeof originalOpenInvestmentCardModal === 'function') {
                 originalOpenInvestmentCardModal(card, defaultTab);
