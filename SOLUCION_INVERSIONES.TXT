@@ -1,56 +1,49 @@
-===============================================================================
-SOLUCIÓN TÉCNICA Y DOCUMENTACIÓN DE CAMBIOS - MODULO DE INVERSIONES
-===============================================================================
+==============================================================================
+DOCUMENTACIÓN DE SOLUCIÓN: MÓDULO DE INVERSIONES (SOLUCION_INVERSIONES.TXT)
+==============================================================================
 
-FECHA: 2026-08-28
-MODULOS AFECTADOS:
-- docs/js/inversiones.js
-- docs/js/app.js
-- docs/inversiones.html
-- docs/css/inversiones.css
+1. POPUP DE INFORMACIÓN EN VIKINGSLIDE (TODAS LAS CARTAS)
+------------------------------------------------------------------------------
+Causa Raíz:
+El componente Swiper en modo "cards" (vikingSlide) capturaba los eventos de arrastre y desplazamiento touch/pointer, lo que provocaba que la propagación del evento 'click' estándar no se ejecutara correctamente en las cartas secundarias o posteriores a la primera.
 
--------------------------------------------------------------------------------
-1. SOLUCIÓN AL PROBLEMA DE VIKINGSLIDE (POPUP DE INFORMACIÓN SOLO ABRÍA EN 1RA CARTA)
--------------------------------------------------------------------------------
-* Diagnóstico:
-  En el modo VikingSlide (`renderSlideMode`), la instancia de Swiper interceptaba los eventos de toque/arrastre de la pantalla y anulaba la propagación de clics nativos hacia el listener delegado de jQuery `click.invSlide`. Además, la función `on: { click: ... }` interna de Swiper intentaba resolver el elemento cliqueado usando `event.target.closest('.inv-card-item')`, lo cual fallaba al desplazar (slide) a cartas secundarias o terciarias debido a la jerarquía de interacción de Swiper.
+Solución Aplicada:
+- En `docs/js/inversiones.js` (función `renderSlideMode`), se implementó una función controladora de apertura (`tryOpenModal`) con debounce de 400ms para evitar cierres o aperturas duplicadas.
+- Se agregaron manejadores de eventos con cálculo de desplazamiento (distancia < 15px entre `pointerdown`/`touchstart` y `pointerup`/`touchend`/`click`) adjuntos a la estructura del carrusel `$swiper`.
+- Se configuró la opción `threshold: 8` en la instancia de Swiper para diferenciar movimientos táctiles/arrastres de toques intencionados.
+- De esta manera, hacer click o tap en cualquier carta del vikingSlide (primera, segunda, tercera, etc.) abre de forma fluida el modal interactivo de la carta (`openInvestmentCardModal`).
 
-* Solución Aplicada:
-  - En `docs/js/inversiones.js`, se configuró Swiper con las siguientes propiedades explícitas:
-    * `slideToClickedSlide: true`: Permite centrar y enfocar automáticamente cualquier carta cliqueada.
-    * `preventClicks: false` y `preventClicksPropagation: false`: Impide que Swiper suprima la emisión del evento clic.
-  - En la callback `click(swiper, event)`, se utilizó `swiper.clickedSlide` para obtener con precisión la carta seleccionada sin importar la posición o el índice del carrusel:
-    `const targetSlide = swiper.clickedSlide || (event && event.target ? event.target.closest('.inv-card-item') : null);`
-  - Esto garantiza que al hacer clic en cualquier carta del carrusel (1ra, 2da, 3ra, etc.), se abra correctamente el modal interactivo de detalles (`openInvestmentCardModal`).
+2. CARGA DE VAULTS Y CARTAS EN EL LINK PÚBLICO
+------------------------------------------------------------------------------
+Causa Raíz:
+Al acceder al link público de inversiones (`public.html?id=...#investments`), `loadPublicInvestmentCategories` en `docs/js/app.js` no lograba resolver correctamente la identidad de la tienda/usuario si el parámetro venía como `id`, `store` o `user`, dejando la vista en blanco o mostrando "No hay colecciones de inversión públicas". Además, al crear un nuevo Vault en la interfaz privada, no se asignaba explícitamente la propiedad `is_public: true` por defecto.
 
--------------------------------------------------------------------------------
-2. SOLUCIÓN AL LINK PÚBLICO DE INVERSIONES (VAULTS Y CARTAS PÚBLICAS VACÍAS)
--------------------------------------------------------------------------------
-* Diagnóstico:
-  - Al ingresar mediante un link público (ejemplo: `public.html?id=<UUID>#investments`), la función `resolveUser(identifier)` en `docs/js/app.js` solo consultaba `.or('store_name.eq,username.eq')`. Cuando el parámetro `id` correspondía a un UUID de usuario, `resolveUser` retornaba `null`.
-  - Asimismo, `loadPublicInvestmentCategories` en `docs/js/app.js` realizaba una salida temprana síncrona `if (!userId) return;` antes de que la resolución asíncrona de la tienda terminara o sin ofrecer un mecanismo de respaldo (fallback) para listar colecciones marcadas como públicas (`is_public = true`).
+Solución Aplicada:
+- En `docs/js/inversiones.js` (`saveInvestmentCategory`), se estableció que por defecto `is_public = true` al crear colecciones/vaults de inversión.
+- En `docs/js/app.js` (`loadPublicInvestmentCategories`), se refactorizó la función para:
+  1. Identificar el contexto del usuario mediante `resolveUser(identifier)` utilizando los parámetros de URL (`id`, `store`, `user`) o `window.currentStoreIdentifier`.
+  2. Ejecutar la consulta en Supabase filtrando adecuadamente por `user_id` (o consulta global si no hay tienda específica).
+  3. Filtrar colecciones activas mediante `cat.is_public !== false` para asegurar que todas las colecciones públicas se muestren sin omitir registros.
+  4. Delegar la apertura de Vaults de forma interactiva con `openPublicInvestmentCategory(cat)`.
 
-* Solución Aplicada:
-  - En `docs/js/app.js`, se actualizó `resolveUser(identifier)` para detectar sintaxis UUID (`/^[0-9a-f]{8}-.../i`) e incluir la búsqueda por `id.eq."${safeId}"`.
-  - En `loadPublicInvestmentCategories()`, se agregó la resolución asíncrona `await resolveUser(identifier)` si `currentStoreId` no está asignado al instante de cambio de vista.
-  - Se implementó una consulta fallback que extrae y despliega todas las colecciones de inversión públicas (`.eq('is_public', true)`) en caso de acceder sin un identificador explícito, garantizando que el usuario público siempre visualice sus vaults y cartas públicas gapless.
+3. DISEÑO RESPONSIVO Y COMPACTO DEL FORMULARIO EN MÓVIL (MODAL DE CARTAS)
+------------------------------------------------------------------------------
+Causa Raíz:
+El diseño anterior forzaba una sola columna vertical gigante para cada campo individual (Nombre, Rareza, Cantidad, Precios, Switches, etc.), haciendo el formulario excesivamente largo y obligando al usuario a realizar un scroll vertical constante. En pantallas pequeñas también existían desfasamientos con botones y previews.
 
--------------------------------------------------------------------------------
-3. SOLUCIÓN AL DISEÑO RESPONSIVO DEL FORMULARIO DE ASSETS / MODAL EN MÓVILES
--------------------------------------------------------------------------------
-* Diagnóstico:
-  - El modal `#investment-card-modal` presentaba desbordamientos horizontales en dispositivos móviles. La fila de búsqueda y carga de imagen local mantenía una estructura de 2 columnas rígidas (`grid-template-columns: 1fr 1fr`), al igual que las filas del formulario (`.inv-form-row`), lo que causaba que los inputs se salieran de los límites de la pantalla del celular y requirieran scroll horizontal.
-  - La pestaña IMAGES mantenía una disposición de 2 columnas con bordes desalineados, y el compañero 3D (`#companion-wrapper`) se sobreponía encima de los botones del modal dificultando la lectura.
+Solución Aplicada:
+- En `docs/css/inversiones.css` (reglas media query `@media (max-width: 768px)`):
+  - Rareza y Cantidad: Se organizaron lado a lado en una fila compacta de 2 columnas (`grid-template-columns: 1fr 1fr !important`).
+  - Precio Compra y Precio Mercado: Se organizaron lado a lado en una fila compacta de 2 columnas (`grid-template-columns: 1fr 1fr !important`).
+  - Switches (Link Público y Estado Disponibilidad): Se organizaron lado a lado en 2 columnas (`grid-template-columns: 1fr 1fr !important`).
+  - Búsqueda en Bases de Datos y Carga Local: Se apilan limpiamente en 1 columna sin salir de los bordes de la pantalla.
+  - Se redujeron márgenes, rellenos (padding 10px-12px) y alturas de inputs para evitar el scroll innecesario y ofrecer un formulario moderno, ultra compacto y totalmente adaptado a teléfonos móviles sin desfasamientos horizontales.
 
-* Solución Aplicada:
-  - En `docs/inversiones.html` y `docs/css/inversiones.css`, se rediseñó la estructura con un sistema vertical ordenado y fluido para dispositivos móviles (`@media (max-width: 768px)`):
-    * `.inv-search-grid`, `.inv-search-container > div`, y `.inv-form-row` fuerzan `grid-template-columns: 1fr !important; width: 100% !important; min-width: 0 !important; box-sizing: border-box !important;`.
-    * Todos los campos de texto, selectores, áreas de notas e inputs tienen `width: 100% !important; min-width: 0 !important; box-sizing: border-box !important;`.
-    * En la pestaña IMAGES, el contenedor de carga y notas adicionales pasa a flex de 1 sola columna vertical sin bordes laterales sobrantes.
-    * El modal se ajusta dinámicamente a la pantalla del dispositivo (`width: 95% !important`, `height: 92vh !important`, `max-height: 92vh !important`), con scroll vertical limpio dentro del área de contenido (`.slot-tab-content`).
-    * Al abrir el modal de activo, el widget del chatbot/compañero se oculta temporalmente (`$('#companion-wrapper').hide()`) y se restaura al cerrar (`$('#companion-wrapper').show()`), evitando interferencias visuales en pantallas pequeñas.
-
-===============================================================================
-RESULTADO:
-Todos los comportamientos requeridos en VikingSlide, Links Públicos de Inversiones y Responsividad de Modales en Móviles han sido completamente resueltos y verificados.
-===============================================================================
+==============================================================================
+ARCHIVOS MODIFICADOS:
+- `docs/js/inversiones.js`
+- `docs/js/app.js`
+- `docs/inversiones.html`
+- `docs/css/inversiones.css`
+- `SOLUCION_INVERSIONES.TXT`
+==============================================================================
