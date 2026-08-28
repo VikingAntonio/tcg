@@ -832,11 +832,14 @@ function renderSlideMode($container) {
         grabCursor: true,
         centeredSlides: true,
         slidesPerView: 'auto',
+        slideToClickedSlide: true,
+        preventClicks: false,
+        preventClicksPropagation: false,
         on: {
             click: function(swiper, event) {
-                const clickedSlide = event.target.closest('.inv-card-item');
-                if (clickedSlide && !event.target.closest('button')) {
-                    const id = $(clickedSlide).attr('data-id');
+                const targetSlide = swiper.clickedSlide || (event && event.target ? event.target.closest('.inv-card-item') : null);
+                if (targetSlide && !(event && event.target && event.target.closest('button'))) {
+                    const id = $(targetSlide).attr('data-id');
                     if (id) {
                         const card = localInvestmentCards.find(c => String(c.id) === String(id));
                         if (card) {
@@ -990,6 +993,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
 $('#close-investment-card-modal').click(() => {
     $('#investment-card-modal').removeClass('active');
     if (window.sharedCard3D) window.sharedCard3D.stop();
+    $('#companion-wrapper').show();
 });
 
 $('#btn-inv-card-search').click(async function() {
