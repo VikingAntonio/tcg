@@ -369,14 +369,21 @@
                     </div>
 
                     <!-- Tokens (YGO) Section -->
-                    <div class="accessories-section ygo-only-tool">
-                        <button class="btn-spawn-token token-action-btn" id="unified-token-btn" style="width: 100%; padding: 8px; font-size: 0.75rem;">
-                            <i class="fas fa-ghost"></i> Invocar Token
-                        </button>
+                    <div class="accessories-section ygo-only-tool" style="text-align: center;">
+                        <div class="btn-spawn-token token-action-btn" id="unified-token-btn" style="cursor: pointer; display: inline-block; text-align: center; transition: transform 0.15s ease;">
+                            <img src="docs/img/tokenyg.jpg" alt="Tokens" style="width: 55px; height: 80px; border-radius: 6px; border: 2px solid #ffd32d; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />
+                            <div style="font-size: 0.7rem; color: #ffd32d; font-weight: bold; margin-top: 3px;">Tokens</div>
+                        </div>
                     </div>
 
                     <!-- Counters/Contadores Section -->
-                    <div class="accessories-section" id="accessories-counters-section-unified">
+                    <div class="accessories-section" id="accessories-counters-section-unified" style="text-align: center;">
+                        <div class="ygo-only-tool ygo-counter-box" style="display: inline-block;">
+                            <div class="counter-source ygo-counter-source" draggable="true" style="cursor: grab; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 60%, #e17055 100%); border: 2px solid #fff; box-shadow: 0 0 8px rgba(253, 203, 110, 0.8); color: #2d3436; font-weight: bold; font-size: 1rem;">
+                                1
+                            </div>
+                            <div style="font-size: 0.7rem; color: #ffd32d; font-weight: bold; margin-top: 3px;">Contadores</div>
+                        </div>
                         <div class="pokemon-only-tool poke-counter-grid" style="display: none; grid-template-columns: repeat(5, 1fr); gap: 4px;">
                             <div class="counter-source poke-counter-source dmg-10" data-val="10" draggable="true">10</div>
                             <div class="counter-source poke-counter-source dmg-20" data-val="20" draggable="true">20</div>
@@ -394,8 +401,8 @@
                     <!-- Custom ATK/DEF Section -->
                     <div class="accessories-section" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
                         <div class="atk-def-custom-inputs" style="display: flex; gap: 6px; margin-bottom: 8px; justify-content: center;">
-                            <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
-                            <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
+                            <input type="number" class="custom-atk-input" placeholder="ATK" readonly style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem; cursor: pointer;" value="" />
+                            <input type="number" class="custom-def-input" placeholder="DEF" readonly style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem; cursor: pointer;" value="" />
                         </div>
                         <div style="text-align: center;">
                             <div class="custom-atk-def-source" draggable="true" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1b2838, #2a475e); border: 2px dashed #00d2ff; border-radius: 6px; color: #fff; cursor: grab; font-weight: bold; text-align: center; font-size: 0.75rem; box-shadow: 0 0 5px rgba(0, 210, 255, 0.3);">
