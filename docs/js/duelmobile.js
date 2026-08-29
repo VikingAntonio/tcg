@@ -675,6 +675,23 @@ function renderAllCards() {
     }
     // ENFORCE SANITIZATION RULES SECURELY
     state.cards.forEach(card => {
+        // Clear counters and custom ATK/DEF if card is not on field
+        const isFieldCard = card.zone === "field_free" ||
+                            card.zone.startsWith("monster_") ||
+                            card.zone.startsWith("spell_") ||
+                            card.zone.startsWith("field_") ||
+                            card.zone.startsWith("pendulum_") ||
+                            card.zone.startsWith("stadium_") ||
+                            card.zone.startsWith("extra_monster_") ||
+                            card.zone.startsWith("active_") ||
+                            card.zone.startsWith("bench_");
+
+        if (!isFieldCard) {
+            delete card.customAtkDef;
+            card.counters = 0;
+            if (card.pokemonDamageCounters) card.pokemonDamageCounters = [];
+        }
+
         // If attached, inherit zone of the parent card to stay logically in play
         if (card.attachedTo) {
             const parent = state.cards.find(c => c.instanceId === card.attachedTo);
@@ -4451,11 +4468,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             // 3. Spawning Token Cards with Selective Zone Placing (Yu-Gi-Oh!)
             const DEFAULT_TOKENS = [
-                { name: "Ficha de Monstruo (Token)", imageUrl: "https://images.ygoprodeck.com/images/cards/10000000.jpg", description: "Ficha Especial." },
-                { name: "Ficha de Chivo Expiatorio (Scapegoat)", imageUrl: "https://images.ygoprodeck.com/images/cards/73915051.jpg", description: "Ficha Especial invocada por Chivo Expiatorio." },
-                { name: "Ficha de Kuriboh", imageUrl: "https://images.ygoprodeck.com/images/cards/40640051.jpg", description: "Ficha Especial de Kuriboh." },
-                { name: "Ficha de Planta (Plant)", imageUrl: "https://images.ygoprodeck.com/images/cards/11384281.jpg", description: "Ficha Especial tipo Planta." },
-                { name: "Ficha de Dragón (Dragon)", imageUrl: "https://images.ygoprodeck.com/images/cards/84687107.jpg", description: "Ficha Especial tipo Dragón." }
+                { name: "Ficha de Monstruo (Token)", imageUrl: "docs/img/tokenyg.jpg", description: "Ficha Especial." }
             ];
 
             $(".token-action-btn").click(function() {
@@ -4469,93 +4482,73 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 const userTokens = state.deckTokens && state.deckTokens[activeRoleKey] ? state.deckTokens[activeRoleKey] : [];
 
                 let availableTokens = [];
-                if (userTokens.length > 0) {
+                if (userTokens && userTokens.length > 0) {
                     availableTokens = userTokens;
                 } else {
                     availableTokens = DEFAULT_TOKENS;
                 }
 
-                // Show a SweetAlert2 dialog with tokens to choose from
+                let tokensHtml = `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-height: 320px; overflow-y: auto; padding: 10px 5px;">`;
+                availableTokens.forEach((t, idx) => {
+                    const imgUrl = t.imageUrl || t.image_url || "docs/img/tokenyg.jpg";
+                    tokensHtml += `
+                        <div class="token-choice-item" data-token-index="${idx}" style="cursor: pointer; width: 95px; text-align: center; border: 2px solid rgba(255,211,45,0.4); border-radius: 8px; padding: 6px; background: rgba(255,255,255,0.05); transition: transform 0.15s ease, border-color 0.15s ease;">
+                            <img src="${imgUrl}" alt="${t.name || 'Token'}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+                            <div style="font-size: 0.75rem; color: #ffd32d; font-weight: bold; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.name || 'Token'}</div>
+                        </div>
+                    `;
+                });
+                tokensHtml += `</div>`;
+
+                // Show a SweetAlert2 dialog with tokens grid to choose from
                 Swal.fire({
                     title: 'Invocar Token',
-                    html: `
-                        <div style="margin-bottom: 15px; text-align: left;">
-                            <label for="token-select" style="display:block; margin-bottom: 5px; color:#ffd32d; font-weight:bold; font-size: 0.9rem;">Selecciona un Token:</label>
-                            <select id="token-select" class="swal2-select" style="display: block; width: 100%; box-sizing: border-box; margin: 0 auto; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 8px;">
-                                <!-- populated via JS -->
-                            </select>
-                        </div>
-                        <div style="margin-bottom: 15px; text-align: center;">
-                            <img id="token-preview-img" style="max-height: 180px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;" src="" alt="Token Preview" />
-                        </div>
-                    `,
+                    html: tokensHtml,
                     showCancelButton: true,
-                    confirmButtonText: 'Invocar',
+                    showConfirmButton: false,
                     cancelButtonText: 'Cancelar',
                     background: '#12181e',
                     color: '#fff',
-                    confirmButtonColor: '#ffd32d',
                     cancelButtonColor: '#ff4a4a',
                     didOpen: () => {
-                        const select = document.getElementById('token-select');
-                        const img = document.getElementById('token-preview-img');
-
-                        availableTokens.forEach((t, i) => {
-                            const opt = document.createElement('option');
-                            opt.value = i;
-                            opt.textContent = t.name;
-                            select.appendChild(opt);
-                        });
-
-                        const updatePreview = () => {
-                            const selectedIdx = select.value;
-                            if (availableTokens[selectedIdx]) {
-                                img.src = availableTokens[selectedIdx].imageUrl || availableTokens[selectedIdx].image_url;
-                                img.style.display = 'inline-block';
-                            } else {
-                                img.style.display = 'none';
+                        $(".token-choice-item").off("click").on("click", function() {
+                            const idx = $(this).data("token-index");
+                            const selectedToken = availableTokens[idx];
+                            Swal.close();
+                            if (selectedToken) {
+                                spawnTokenOnField(selectedToken);
                             }
-                        };
-
-                        select.addEventListener('change', updatePreview);
-                        updatePreview();
-                    },
-                    preConfirm: () => {
-                        const select = document.getElementById('token-select');
-                        const selectedIdx = select.value;
-                        return availableTokens[selectedIdx];
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed && result.value) {
-                        const token = result.value;
-
-                        const newTokenObj = {
-                            instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                            name: token.name,
-                            imageUrl: token.imageUrl || token.image_url,
-                            owner: activeRoleKey,
-                            controller: activeRoleKey,
-                            zone: `monster_${pSuffix}_3`, // placeholder
-                            faceDown: false,
-                            tapped: false, // Default to Attack Position
-                            counters: 0,
-                            attachedTo: null,
-                            x: 430,
-                            y: pSuffix === 1 ? 320 : 160,
-                            z: state.cards.length + 10,
-                            isExtra: false,
-                            isToken: true,
-                            description: token.description || token.effect || "Ficha Especial."
-                        };
-
-                        state.cards.push(newTokenObj);
-
-                        setTimeout(() => {
-                            startGraphicalTargeting(newTokenObj, "summon");
-                            sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
-                        }, 200);
+                        });
                     }
                 });
+
+                function spawnTokenOnField(token) {
+                    const newTokenObj = {
+                        instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                        name: token.name || "Token",
+                        imageUrl: token.imageUrl || token.image_url || "docs/img/tokenyg.jpg",
+                        owner: activeRoleKey,
+                        controller: activeRoleKey,
+                        zone: `monster_${pSuffix}_3`, // placeholder
+                        faceDown: false,
+                        tapped: false, // Default to Attack Position
+                        counters: 0,
+                        attachedTo: null,
+                        x: 430,
+                        y: pSuffix === 1 ? 320 : 160,
+                        z: state.cards.length + 10,
+                        isExtra: false,
+                        isToken: true,
+                        description: token.description || token.effect || "Ficha Especial."
+                    };
+
+                    state.cards.push(newTokenObj);
+
+                    setTimeout(() => {
+                        startGraphicalTargeting(newTokenObj, "summon");
+                        sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
+                    }, 200);
+                }
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
@@ -4579,7 +4572,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     }
                 } else {
                     // Determine counter type
-                    if ($(this).hasClass("ygo-counter-source")) {
+                    if ($(this).hasClass("ygo-placed-counter")) {
+                        const instId = $(this).data("instance-id");
+                        activeCounterDragVal = { type: "MOVE_YGO_COUNTER", cardInstanceId: instId };
+                    } else if ($(this).hasClass("ygo-counter-source")) {
                         activeCounterDragVal = "YGO";
                     } else {
                         activeCounterDragVal = parseInt($(this).data("val"));
@@ -4608,6 +4604,28 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     if (oldCard) {
                         delete oldCard.customAtkDef;
                         sendGameAction(`Quitó ATK/DEF personalizado de ${oldCard.name}`);
+                        window.renderAllCards();
+                    }
+                    activeCounterDragVal = null;
+                } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_YGO_COUNTER") {
+                    e.preventDefault();
+                    const targetEl = document.elementFromPoint(e.clientX || (e.originalEvent && e.originalEvent.clientX), e.clientY || (e.originalEvent && e.originalEvent.clientY));
+                    const droppedOnCard = $(targetEl).closest(".duel-card");
+                    const sourceCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
+
+                    if (sourceCard && (!droppedOnCard.length || droppedOnCard.data("instance-id") !== sourceCard.instanceId)) {
+                        if (droppedOnCard.length) {
+                            const targetInstId = droppedOnCard.data("instance-id");
+                            const targetCard = state.cards.find(c => c.instanceId === targetInstId);
+                            if (targetCard) {
+                                sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                                targetCard.counters = (targetCard.counters || 0) + 1;
+                                sendGameAction(`Movió 1 contador de ${sourceCard.name} a ${targetCard.name}`);
+                            }
+                        } else {
+                            sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                            sendGameAction(`Quitó 1 contador de ${sourceCard.name} (Restante: ${sourceCard.counters})`);
+                        }
                         window.renderAllCards();
                     }
                     activeCounterDragVal = null;
@@ -4670,6 +4688,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 } else if (activeTouchDragSource.hasClass("custom-atk-def-badge")) {
                     const instId = activeTouchDragSource.data("instance-id");
                     activeCounterDragVal = { type: "REMOVE_ATK_DEF", cardInstanceId: instId };
+                } else if (activeTouchDragSource.hasClass("ygo-placed-counter")) {
+                    const instId = activeTouchDragSource.data("instance-id");
+                    activeCounterDragVal = { type: "MOVE_YGO_COUNTER", cardInstanceId: instId };
                 } else {
                     const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
                     activeCounterDragVal = isYGO ? "YGO" : parseInt(activeTouchDragSource.data("val"));
@@ -4725,6 +4746,13 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                                 delete oldCard.customAtkDef;
                                 sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                             }
+                        } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_YGO_COUNTER") {
+                            const sourceCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
+                            if (sourceCard && sourceCard.instanceId !== cardObj.instanceId) {
+                                sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                                cardObj.counters = (cardObj.counters || 0) + 1;
+                                sendGameAction(`Movió 1 contador de ${sourceCard.name} a ${cardObj.name}`);
+                            }
                         } else if (activeCounterDragVal === "YGO") {
                             if (isYGOLayout(state.layout)) {
                                 cardObj.counters = (cardObj.counters || 0) + 1;
@@ -4749,6 +4777,13 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         if (oldCard) {
                             delete oldCard.customAtkDef;
                             sendGameAction(`Quitó ATK/DEF personalizado de ${oldCard.name}`);
+                            window.renderAllCards();
+                        }
+                    } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_YGO_COUNTER") {
+                        const sourceCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
+                        if (sourceCard) {
+                            sourceCard.counters = Math.max(0, (sourceCard.counters || 0) - 1);
+                            sendGameAction(`Quitó 1 contador de ${sourceCard.name} (Restante: ${sourceCard.counters})`);
                             window.renderAllCards();
                         }
                     }
@@ -4779,16 +4814,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
                     if (isYGOLayout(state.layout)) {
                         if (card.counters && card.counters > 0) {
-                            let beadsHtml = "";
-                            const visibleBeadsCount = Math.min(card.counters, 5); // Limit stacked nodes visually to 5 beads maximum
-                            for (let i = 0; i < visibleBeadsCount; i++) {
-                                beadsHtml += `<div class="stacked-counter-bead ygo-bead" style="transform: translateX(${i * -3}px) translateY(${i * -2}px); z-index: ${10 - i};"></div>`;
-                            }
-
                             $card.append(`
-                                <div class="card-counter-container" data-instance-id="${card.instanceId}" ${styleOverride}>
-                                    ${beadsHtml}
-                                    <div class="counter-tooltip">Contadores: ${card.counters}</div>
+                                <div class="card-counter-badge counter-source ygo-placed-counter" data-instance-id="${card.instanceId}" draggable="true" style="position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 60%, #e17055 100%); border: 2px solid #fff; box-shadow: 0 0 8px rgba(253, 203, 110, 0.9); color: #2d3436; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: grab; user-select: none;">
+                                    ${card.counters}
                                 </div>
                             `);
                         }
@@ -4833,7 +4861,161 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 });
             };
 
-            // Click/Edit Custom ATK/DEF badge
+            // Custom Keypad helper function for ATK/DEF
+            function openCustomAtkDefKeypadModal(initialAtk, initialDef, titleText, onConfirm, showDeleteOption, onDelete) {
+                let activeField = "atk";
+                let currentAtk = initialAtk !== undefined && initialAtk !== null ? String(initialAtk) : "";
+                let currentDef = initialDef !== undefined && initialDef !== null ? String(initialDef) : "";
+
+                function updateDisplay() {
+                    $("#keypad-atk-val").text(currentAtk || "0");
+                    $("#keypad-def-val").text(currentDef || "0");
+                    if (activeField === "atk") {
+                        $("#keypad-atk-box").css({"border-color": "#ff4a4a", "background": "#3a2530"});
+                        $("#keypad-def-box").css({"border-color": "#4f5f73", "background": "#2a3540"});
+                    } else {
+                        $("#keypad-atk-box").css({"border-color": "#4f5f73", "background": "#2a3540"});
+                        $("#keypad-def-box").css({"border-color": "#00d2ff", "background": "#1e374d"});
+                    }
+                }
+
+                const deleteBtnHtml = showDeleteOption ? `<button id="keypad-btn-delete" type="button" class="swal2-deny swal2-styled" style="background-color: #ff4a4a;">Eliminar</button>` : '';
+
+                Swal.fire({
+                    title: titleText || 'Ajustar ATK/DEF',
+                    html: `
+                        <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 15px;">
+                            <div id="keypad-atk-box" style="flex: 1; padding: 10px; border: 2px solid #ff4a4a; border-radius: 8px; background: #3a2530; cursor: pointer; text-align: center;">
+                                <div style="font-size: 0.75rem; color: #ff4a4a; font-weight: bold; margin-bottom: 4px;">ATK</div>
+                                <div id="keypad-atk-val" style="font-size: 1.3rem; font-weight: bold; color: #fff;">0</div>
+                            </div>
+                            <div id="keypad-def-box" style="flex: 1; padding: 10px; border: 2px solid #4f5f73; border-radius: 8px; background: #2a3540; cursor: pointer; text-align: center;">
+                                <div style="font-size: 0.75rem; color: #00d2ff; font-weight: bold; margin-bottom: 4px;">DEF</div>
+                                <div id="keypad-def-val" style="font-size: 1.3rem; font-weight: bold; color: #fff;">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Quick preset buttons -->
+                        <div style="display: flex; gap: 6px; justify-content: center; margin-bottom: 12px;">
+                            <button type="button" class="keypad-preset-btn" data-val="100" style="padding: 4px 8px; font-size: 0.75rem; background: #2a3540; color: #ffd32d; border: 1px solid #4f5f73; border-radius: 4px; cursor: pointer;">+100</button>
+                            <button type="button" class="keypad-preset-btn" data-val="500" style="padding: 4px 8px; font-size: 0.75rem; background: #2a3540; color: #ffd32d; border: 1px solid #4f5f73; border-radius: 4px; cursor: pointer;">+500</button>
+                            <button type="button" class="keypad-preset-btn" data-val="1000" style="padding: 4px 8px; font-size: 0.75rem; background: #2a3540; color: #ffd32d; border: 1px solid #4f5f73; border-radius: 4px; cursor: pointer;">+1000</button>
+                        </div>
+
+                        <!-- Numeric Keypad Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 240px; margin: 0 auto;">
+                            <button type="button" class="keypad-num-btn" data-num="1" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">1</button>
+                            <button type="button" class="keypad-num-btn" data-num="2" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">2</button>
+                            <button type="button" class="keypad-num-btn" data-num="3" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">3</button>
+                            <button type="button" class="keypad-num-btn" data-num="4" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">4</button>
+                            <button type="button" class="keypad-num-btn" data-num="5" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">5</button>
+                            <button type="button" class="keypad-num-btn" data-num="6" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">6</button>
+                            <button type="button" class="keypad-num-btn" data-num="7" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">7</button>
+                            <button type="button" class="keypad-num-btn" data-num="8" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">8</button>
+                            <button type="button" class="keypad-num-btn" data-num="9" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">9</button>
+                            <button type="button" id="keypad-clear-btn" style="padding: 12px; font-size: 0.85rem; font-weight: bold; background: #3a2530; color: #ff4a4a; border: 1px solid #ff4a4a; border-radius: 6px; cursor: pointer;">C</button>
+                            <button type="button" class="keypad-num-btn" data-num="0" style="padding: 12px; font-size: 1.1rem; font-weight: bold; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;">0</button>
+                            <button type="button" id="keypad-backspace-btn" style="padding: 12px; font-size: 1rem; font-weight: bold; background: #2a3540; color: #ffd32d; border: 1px solid #4f5f73; border-radius: 6px; cursor: pointer;"><i class="fas fa-backspace"></i></button>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Aplicar',
+                    cancelButtonText: 'Cancelar',
+                    background: '#12181e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd32d',
+                    cancelButtonColor: '#6c757d',
+                    didOpen: () => {
+                        updateDisplay();
+
+                        if (showDeleteOption) {
+                            $(".swal2-actions").append(deleteBtnHtml);
+                            $("#keypad-btn-delete").on("click", function() {
+                                Swal.close();
+                                if (onDelete) onDelete();
+                            });
+                        }
+
+                        $("#keypad-atk-box").on("click", function() {
+                            activeField = "atk";
+                            updateDisplay();
+                        });
+
+                        $("#keypad-def-box").on("click", function() {
+                            activeField = "def";
+                            updateDisplay();
+                        });
+
+                        $(".keypad-num-btn").on("click", function() {
+                            const num = $(this).data("num");
+                            if (activeField === "atk") {
+                                if (currentAtk === "0") currentAtk = String(num);
+                                else currentAtk += String(num);
+                            } else {
+                                if (currentDef === "0") currentDef = String(num);
+                                else currentDef += String(num);
+                            }
+                            updateDisplay();
+                        });
+
+                        $(".keypad-preset-btn").on("click", function() {
+                            const val = parseInt($(this).data("val")) || 0;
+                            if (activeField === "atk") {
+                                const currentNum = parseInt(currentAtk) || 0;
+                                currentAtk = String(currentNum + val);
+                            } else {
+                                const currentNum = parseInt(currentDef) || 0;
+                                currentDef = String(currentNum + val);
+                            }
+                            updateDisplay();
+                        });
+
+                        $("#keypad-clear-btn").on("click", function() {
+                            if (activeField === "atk") currentAtk = "";
+                            else currentDef = "";
+                            updateDisplay();
+                        });
+
+                        $("#keypad-backspace-btn").on("click", function() {
+                            if (activeField === "atk") currentAtk = currentAtk.slice(0, -1);
+                            else currentDef = currentDef.slice(0, -1);
+                            updateDisplay();
+                        });
+                    },
+                    preConfirm: () => {
+                        return {
+                            atk: parseInt(currentAtk) || 0,
+                            def: parseInt(currentDef) || 0
+                        };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && onConfirm) {
+                        onConfirm(result.value.atk, result.value.def);
+                    }
+                });
+            }
+
+            // Click ATK/DEF sidebar inputs to adjust values with keypad
+            $(document).on("click", ".custom-atk-input, .custom-def-input", function(e) {
+                e.preventDefault();
+                const $section = $(this).closest(".accessories-section");
+                const $atkInput = $section.find(".custom-atk-input");
+                const $defInput = $section.find(".custom-def-input");
+
+                openCustomAtkDefKeypadModal(
+                    $atkInput.val(),
+                    $defInput.val(),
+                    'Ajustar ATK/DEF Personalizado',
+                    (atk, def) => {
+                        $atkInput.val(atk);
+                        $defInput.val(def);
+                    },
+                    false
+                );
+            });
+
+            // Edit Custom ATK/DEF when badge on card is clicked
             $(document).on("click", ".custom-atk-def-badge", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -4842,48 +5024,22 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj || !cardObj.customAtkDef) return;
 
-                Swal.fire({
-                    title: `Modificar ATK/DEF - ${cardObj.name}`,
-                    html: `
-                        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
-                            <div>
-                                <label style="display: block; font-weight: bold; color: #ff4a4a; margin-bottom: 5px; font-size: 0.9rem;">ATK:</label>
-                                <input type="number" id="edit-atk-input" class="swal2-input" value="${cardObj.customAtkDef.atk}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
-                            </div>
-                            <div>
-                                <label style="display: block; font-weight: bold; color: #00d2ff; margin-bottom: 5px; font-size: 0.9rem;">DEF:</label>
-                                <input type="number" id="edit-def-input" class="swal2-input" value="${cardObj.customAtkDef.def}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
-                            </div>
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    showDenyButton: true,
-                    confirmButtonText: 'Guardar',
-                    denyButtonText: 'Eliminar',
-                    cancelButtonText: 'Cancelar',
-                    background: '#12181e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd32d',
-                    denyButtonColor: '#ff4a4a',
-                    preConfirm: () => {
-                        const atk = parseInt(document.getElementById('edit-atk-input').value) || 0;
-                        const def = parseInt(document.getElementById('edit-def-input').value) || 0;
-                        return { atk, def };
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        cardObj.customAtkDef = {
-                            atk: result.value.atk,
-                            def: result.value.def
-                        };
-                        sendGameAction(`Modificó ATK/DEF en ${cardObj.name} (ATK: ${result.value.atk} / DEF: ${result.value.def})`);
+                openCustomAtkDefKeypadModal(
+                    cardObj.customAtkDef.atk,
+                    cardObj.customAtkDef.def,
+                    `Modificar ATK/DEF - ${cardObj.name}`,
+                    (newAtk, newDef) => {
+                        cardObj.customAtkDef = { atk: newAtk, def: newDef };
+                        sendGameAction(`Modificó ATK/DEF en ${cardObj.name} (ATK: ${newAtk} / DEF: ${newDef})`);
                         window.renderAllCards();
-                    } else if (result.isDenied) {
+                    },
+                    true,
+                    () => {
                         delete cardObj.customAtkDef;
                         sendGameAction(`Quitó ATK/DEF personalizado de ${cardObj.name}`);
                         window.renderAllCards();
                     }
-                });
+                );
             });
 
             // Remove/Click Individual counters easily
