@@ -947,6 +947,91 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             return [];
         };
 
+        // Dedicated, resilient multi-source Pokémon card search helper
+        const searchPokemonAPI = async (q, sig) => {
+            if (!q || q.length < 1) return [];
+            let results = [];
+
+            // 1. Query TCGAPI.dev (Fast & reliable)
+            try {
+                const tcgResults = await searchTCGAPI(q, 'pokemon');
+                results.push(...tcgResults);
+            } catch(e) {}
+
+            // 2. Query official Pokémon TCG API (api.pokemontcg.io/v2/cards) with quoted queries & fallbacks
+            try {
+                const headers = { "User-Agent": "Mozilla/5.0", "Accept": "application/json" };
+                const qWildcard = `name:"*${q}*"`;
+                let resp = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(qWildcard)}&pageSize=250`, { signal: sig, headers }).catch(() => null);
+
+                if (!resp || !resp.ok) {
+                    const qExact = `name:"${q}"`;
+                    resp = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(qExact)}&pageSize=250`, { signal: sig, headers }).catch(() => null);
+                }
+                if (!resp || !resp.ok) {
+                    const qLower = `name:"${q.toLowerCase()}"`;
+                    resp = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(qLower)}&pageSize=250`, { signal: sig, headers }).catch(() => null);
+                }
+
+                if (resp && resp.ok) {
+                    const pData = await resp.json();
+                    if (pData.data && Array.isArray(pData.data)) {
+                        pData.data.forEach(c => {
+                            if (c.images && c.images.small) {
+                                results.push({
+                                    name: c.name,
+                                    image: c.images.small,
+                                    high_res: c.images.large || c.images.small,
+                                    set: c.set?.name,
+                                    number: c.number,
+                                    rarity: c.rarity,
+                                    game: 'pokemon',
+                                    external_id: c.id
+                                });
+                            }
+                        });
+                    }
+                }
+            } catch(e) {}
+
+            // 3. Query TCGdex (Multilingual) with short timeout
+            const fetchTCGdex = async (lang) => {
+                const timeoutController = new AbortController();
+                const timeoutId = setTimeout(() => timeoutController.abort(), 2500);
+                try {
+                    const r = await fetch(`https://api.tcgdex.net/v2/${lang}/cards?name=${encodeURIComponent(q)}`, { signal: timeoutController.signal });
+                    clearTimeout(timeoutId);
+                    if (!r.ok) return [];
+                    const d = await r.json();
+                    return Array.isArray(d) ? d : [];
+                } catch(e) {
+                    clearTimeout(timeoutId);
+                    return [];
+                }
+            };
+
+            try {
+                const [dexEn, dexEs, dexJa] = await Promise.all([
+                    fetchTCGdex('en'),
+                    fetchTCGdex('es'),
+                    fetchTCGdex('ja')
+                ]);
+
+                [...dexEn, ...dexEs, ...dexJa].forEach(c => {
+                    if (c.image) {
+                        results.push({
+                            name: c.name,
+                            image: `${c.image}/low.webp`,
+                            high_res: `${c.image}/high.webp`,
+                            game: 'pokemon'
+                        });
+                    }
+                });
+            } catch(e) {}
+
+            return results;
+        };
+
         // TCGAPI.dev Search (Multi-game)
         const searchTCGAPI = async (q, game) => {
             if (!window.TCG_API_KEY || q.length < 1) return [];
@@ -961,7 +1046,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                     name: c.name,
                     image: c.image_url || `https://images.tcgplayer.com/product/${c.id}_200w.jpg`,
                     high_res: c.image_url || `https://images.tcgplayer.com/product/${c.id}_400w.jpg`,
-                    set: c.set,
+                    set: c.set_name || c.set,
                     number: c.number,
                     rarity: c.rarity,
                     price: c.price || c.market_price || 0,
@@ -982,14 +1067,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             // Special YGO Search
             ygoSpecialSearch(),
 
-            // Pokémon TCGdex - English
-            (query.length >= 1 && !filters.format) ? fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
-
-            // Pokémon TCGdex - Spanish
-            (query.length >= 1 && !filters.format) ? fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
-
-            // Pokémon TCGdex - Japanese
-            (query.length >= 1 && !filters.format) ? fetch(`https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(query)}`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            // Pokémon multi-source search (TCGAPI + Pokemon TCG API + TCGdex)
+            (query.length >= 1 && !filters.format) ? searchPokemonAPI(query, signal) : Promise.resolve([]),
 
             // Lorcana Search
             (query.length >= 1 && !filters.format) ? fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`, { signal }).then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([]),
@@ -997,8 +1076,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             // Viking Search
             (query.length >= 1 && !filters.format) ? (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])) : Promise.resolve([]),
 
-            // TCGAPI.dev (Top games)
-            (!filters.format) ? searchTCGAPI(query, 'pokemon') : Promise.resolve([]),
+            // TCGAPI.dev (Other games)
             (!filters.format) ? searchTCGAPI(query, 'yugioh') : Promise.resolve([]),
             (!filters.format) ? searchTCGAPI(query, 'magic') : Promise.resolve([]),
             (!filters.format) ? searchTCGAPI(query, 'onepiece') : Promise.resolve([]),
@@ -1008,7 +1086,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             (filters.format && filters.format.toLowerCase() === 'rush duel') ? window.searchYamlYugiRush(query, filters, signal) : Promise.resolve([])
         ];
 
-        const [ygName, ygCode, ygSpecial, pkEn, pkEs, pkJa, lorResults, vikResults, tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor, rushResults] = await Promise.all(searchPromises);
+        const [ygName, ygCode, ygSpecial, pkResults, lorResults, vikResults, tcgYgo, tcgMg, tcgOp, tcgLor, rushResults] = await Promise.all(searchPromises);
 
         let combinedResults = [];
 
@@ -1022,8 +1100,13 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             combinedResults.push(...vikResults);
         }
 
+        // Process Pokémon Results
+        if (Array.isArray(pkResults)) {
+            combinedResults.push(...pkResults);
+        }
+
         // Process TCGAPI Results
-        [tcgPk, tcgYgo, tcgMg, tcgOp, tcgLor].forEach(list => {
+        [tcgYgo, tcgMg, tcgOp, tcgLor].forEach(list => {
             combinedResults.push(...list);
         });
 
@@ -1050,18 +1133,6 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                         high_res: img.image_url
                     });
                 } );
-            }
-        });
-
-        // Process Pokémon Results
-        const pkResults = [...(pkEn || []), ...(pkEs || []), ...(pkJa || [])];
-        pkResults.forEach(c => {
-            if (c.image) {
-                combinedResults.push({
-                    name: c.name,
-                    image: `${c.image}/low.webp`,
-                    high_res: `${c.image}/high.webp`
-                });
             }
         });
 
