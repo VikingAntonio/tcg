@@ -651,6 +651,51 @@
         </div>
     </div>
 
+    <!-- Public Investment Card Detail Modal -->
+    <div id="public-inv-card-modal" class="overlay">
+        <div class="overlay-content" style="max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; background: rgba(15, 15, 20, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 25px; color: #fff;">
+            <span id="close-public-inv-card-modal" class="close-btn" style="top: 15px; right: 20px;">&times;</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 25px; margin-top: 10px;">
+                <div style="flex: 1; min-width: 260px; text-align: center;">
+                    <div id="public-inv-modal-img-container" style="position: relative; margin-bottom: 15px; display: inline-block; width: 100%; max-width: 280px;">
+                        <img id="public-inv-modal-img" src="" alt="Carta" style="width: 100%; border-radius: 8px; border: 2px solid #000; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: block; margin: 0 auto;">
+                        <div id="public-inv-modal-stamp" style="display: none;"></div>
+                    </div>
+                    <div id="public-inv-modal-extra-images" style="display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; justify-content: center;">
+                        <!-- Extra images thumbs -->
+                    </div>
+                </div>
+                <div style="flex: 1.2; min-width: 280px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div id="public-inv-modal-set" style="font-size: 0.75rem; font-weight: 800; color: #00d2ff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">-</div>
+                        <h2 id="public-inv-modal-title" style="font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0 0 15px 0; text-transform: uppercase; line-height: 1.2;">-</h2>
+
+                        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 0.7rem; color: #aaa; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">PRECIO AL PÚBLICO</div>
+                            <div id="public-inv-modal-price" style="font-size: 2rem; font-weight: 900; color: #00ff88; margin-top: 2px;">$0.00</div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase;">RAREZA</div>
+                                <div id="public-inv-modal-rarity" style="font-size: 0.9rem; font-weight: 800; color: #fff;">-</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase;">CANTIDAD</div>
+                                <div id="public-inv-modal-qty" style="font-size: 0.9rem; font-weight: 800; color: #fff;">1</div>
+                            </div>
+                        </div>
+
+                        <div id="public-inv-modal-notes-container" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; display: none;">
+                            <div style="font-size: 0.65rem; color: #888; font-weight: 700; margin-bottom: 4px; text-transform: uppercase;">NOTAS / DESCRIPCIÓN</div>
+                            <div id="public-inv-modal-notes" style="font-size: 0.85rem; color: #ddd; white-space: pre-wrap; line-height: 1.4;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Deck List Modal -->
     <div id="deck-list-overlay" class="overlay">
         <div class="deck-list-modal">

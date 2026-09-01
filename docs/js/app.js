@@ -4177,6 +4177,7 @@ function renderPublicInvAlbumMode($container) {
             const card = pageCards[j];
             const $slot = $('<div class="card-slot"></div>');
             if (card) {
+                $slot.attr('data-id', card.id).css('cursor', 'pointer');
                 const isUp = card.current_price > card.previous_price;
                 const isDown = card.current_price < card.previous_price;
                 const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
@@ -4192,6 +4193,10 @@ function renderPublicInvAlbumMode($container) {
                 if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
                     window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
                 }
+                $slot.on('click', function(e) {
+                    e.stopPropagation();
+                    openPublicInvestmentCardModal(card);
+                });
             }
             $grid.append($slot);
         }
@@ -4233,13 +4238,13 @@ function renderPublicInvSlideMode($container) {
                     const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
 
                     return `
-                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent;"
+                    <div class="swiper-slide card-slot inv-card-item" style="background: transparent; cursor: pointer;" data-id="${card.id}"
                          data-show-foil="${card.show_foil}" data-holo="${card.holo_effect || ''}" data-mask="${card.custom_mask_url || ''}">
                         <img src="${card.image_url}" style="width: 100%; border-radius: 4px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1;">
                         ${stampOverlay}
                         <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center; position: relative; z-index: 110;">
                             <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
-                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</p>
+                            <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name || '')} - ${escapeHtml(card.rarity || '')}</p>
                             <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                         </div>
                     </div>
@@ -4253,7 +4258,9 @@ function renderPublicInvSlideMode($container) {
         effect: "cards",
         grabCursor: true,
         centeredSlides: true,
-        slidesPerView: 'auto'
+        slidesPerView: 'auto',
+        slideToClickedSlide: true,
+        preventClicks: false
     });
 
     // Apply foil to slides
@@ -4261,6 +4268,20 @@ function renderPublicInvSlideMode($container) {
         const card = publicInvCards[idx];
         if (card && card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
             window.applyFoilToElement($(this), card.holo_effect, card.custom_mask_url);
+        }
+    });
+
+    let isSwiperDragging = false;
+    $container.find('.swiper-slide').on('pointerdown touchstart', function() {
+        isSwiperDragging = false;
+    }).on('pointermove touchmove', function() {
+        isSwiperDragging = true;
+    }).on('click', function(e) {
+        if (isSwiperDragging) return;
+        const cardId = $(this).attr('data-id');
+        const card = publicInvCards.find(c => String(c.id) === String(cardId));
+        if (card) {
+            openPublicInvestmentCardModal(card);
         }
     });
 }
@@ -4279,27 +4300,85 @@ function renderPublicInvListMode($container) {
         const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">NO DISPONIBLE</div>` : '';
 
         const $item = $(`
-            <div class="inv-list-item" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px;">
+            <div class="inv-list-item" data-id="${card.id}" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px; cursor: pointer;">
                 <div class="inv-list-img-wrapper" style="position: relative; width: 50px; height: 70px; flex-shrink: 0;">
                     <img src="${card.image_url}" class="inv-list-thumb" style="width: 100%; height: 100%; object-fit: contain; border: 1px solid #000; border-radius: 2px; position: relative; z-index: 1;">
                     ${stampOverlay}
                 </div>
                 <div class="inv-list-details" style="flex: 1;">
                     <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.85rem; color: #000; display: flex; align-items: center; flex-wrap: wrap;">${escapeHtml(card.card_name).toUpperCase()} ${unavailableBadge}</div>
-                    <div class="inv-list-set" style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
+                    <div class="inv-list-set" style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name || '')} - ${escapeHtml(card.rarity || '')}</div>
                 </div>
                 <div class="inv-list-prices" style="text-align: right;">
-                    <div class="inv-price-row"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999; display: block;">Market Price</span> <b style="color: #000; font-size: 1.1rem;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                    <div class="inv-price-row"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999; display: block;">Precio al Público</span> <b style="color: #000; font-size: 1.1rem;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
                 </div>
             </div>
         `);
         if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
             window.applyFoilToElement($item.find('.inv-list-img-wrapper'), card.holo_effect, card.custom_mask_url);
         }
+        $item.on('click', function(e) {
+            e.stopPropagation();
+            openPublicInvestmentCardModal(card);
+        });
         $list.append($item);
     });
     $container.append($list);
 }
+
+function openPublicInvestmentCardModal(card) {
+    if (!card) return;
+    $('#public-inv-modal-img').attr('src', card.image_url || 'https://vikingtcg.xyz/favi.png');
+    $('#public-inv-modal-title').text((card.card_name || 'Carta').toUpperCase());
+    $('#public-inv-modal-set').text(`${card.set_name || ''} ${card.set_number ? '#' + card.set_number : ''}`.trim() || 'COLECCIÓN PÚBLICA');
+    $('#public-inv-modal-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
+    $('#public-inv-modal-rarity').text(card.rarity || 'Normal');
+    $('#public-inv-modal-qty').text(card.quantity || 1);
+
+    if (card.is_available === false) {
+        $('#public-inv-modal-stamp').html('<div class="inv-stamp-unavailable">NO DISPONIBLE</div>').show();
+    } else {
+        $('#public-inv-modal-stamp').empty().hide();
+    }
+
+    if (card.notes && card.notes.trim()) {
+        $('#public-inv-modal-notes').text(card.notes);
+        $('#public-inv-modal-notes-container').show();
+    } else {
+        $('#public-inv-modal-notes-container').hide();
+    }
+
+    // Extra images
+    const $extraContainer = $('#public-inv-modal-extra-images');
+    $extraContainer.empty();
+    if (card.extra_images && Array.isArray(card.extra_images) && card.extra_images.length > 0) {
+        // Add main image thumb first
+        const $mainThumb = $(`<img src="${card.image_url}" style="width: 45px; height: 60px; object-fit: contain; border: 2px solid #00d2ff; border-radius: 4px; cursor: pointer;">`);
+        $mainThumb.on('click', () => $('#public-inv-modal-img').attr('src', card.image_url));
+        $extraContainer.append($mainThumb);
+
+        card.extra_images.forEach(imgUrl => {
+            const $thumb = $(`<img src="${imgUrl}" style="width: 45px; height: 60px; object-fit: contain; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">`);
+            $thumb.on('click', () => $('#public-inv-modal-img').attr('src', imgUrl));
+            $extraContainer.append($thumb);
+        });
+        $extraContainer.show();
+    } else {
+        $extraContainer.hide();
+    }
+
+    $('#public-inv-card-modal').addClass('active');
+}
+
+$(document).on('click', '#close-public-inv-card-modal', function() {
+    $('#public-inv-card-modal').removeClass('active');
+});
+
+$(document).on('click', '#public-inv-card-modal', function(e) {
+    if ($(e.target).is('#public-inv-card-modal')) {
+        $('#public-inv-card-modal').removeClass('active');
+    }
+});
 
 function getCoverHtml(style, title, color) {
     let styleClass = "style-cosmic";
