@@ -1033,6 +1033,7 @@ $(document).ready(async function() {
         });
 
         const name = $('#input-deck-name').val();
+        const format_tag = $('#input-deck-format').val() || $('#nexus-input-deck-format').val() || 'Avanzado';
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
@@ -1041,11 +1042,11 @@ $(document).ready(async function() {
         const coin = window.selectedCoin || null;
         const mats = window.selectedMats || null;
 
-        let updateData = { name, is_public, use_special_price, special_price, sleeves, deckbox, coin, mats };
+        let updateData = { name, is_public, format_tag, use_special_price, special_price, sleeves, deckbox, coin, mats };
 
         try {
             // 1. Save Deck Metadata & Cards in parallel if possible, but cards need deck to exist (it does)
-            const deckUpdatePromise = _supabase
+            let deckUpdatePromise = _supabase
                 .from('decks')
                 .update(updateData)
                 .eq('id', currentDeckId);
@@ -1085,18 +1086,25 @@ $(document).ready(async function() {
             let [deckRes, insRes] = await Promise.all([deckUpdatePromise, insPromise]);
 
             if (deckRes.error && deckRes.error.code === '42703') {
-                // Try without mats
-                const fallbackData = { name, is_public, use_special_price, special_price, sleeves, deckbox, coin };
-                const retryRes = await _supabase.from('decks').update(fallbackData).eq('id', currentDeckId);
+                // Try without format_tag first if column missing
+                delete updateData.format_tag;
+                let retryRes = await _supabase.from('decks').update(updateData).eq('id', currentDeckId);
 
                 if (retryRes.error && retryRes.error.code === '42703') {
-                    // Try without any accessories
-                    const basicRes = await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
-                    deckRes = basicRes;
-                    console.warn("La tabla decks no tiene las columnas de accesorios. Se guardo sin accesorios.");
+                    // Try without mats
+                    const fallbackData = { name, is_public, use_special_price, special_price, sleeves, deckbox, coin };
+                    retryRes = await _supabase.from('decks').update(fallbackData).eq('id', currentDeckId);
+
+                    if (retryRes.error && retryRes.error.code === '42703') {
+                        // Try without any accessories
+                        const basicRes = await _supabase.from('decks').update({ name, is_public }).eq('id', currentDeckId);
+                        deckRes = basicRes;
+                        console.warn("La tabla decks no tiene las columnas opcionales. Se guardo el deck con info básica.");
+                    } else {
+                        deckRes = retryRes;
+                    }
                 } else {
                     deckRes = retryRes;
-                    console.warn("La tabla decks no tiene la columna mats. Se guardó con los demás accesorios.");
                 }
             } else if (deckRes.error) throw deckRes.error;
 
@@ -2082,6 +2090,8 @@ function copyPublicLink() {
 
 // Data Functions
 // Deck Functions
+window.userDecksCache = [];
+
 async function loadDecks() {
     const scrollPos = captureScroll();
     if ($('#deck-list').children().length === 0) {
@@ -2097,9 +2107,6 @@ async function loadDecks() {
 
     if (error) {
         console.warn("Supabase error loading decks, trying to continue...", error);
-        // If we have an error (like offline), we might still get data from the Service Worker cache
-        // But the SDK 'error' object will be populated if the fetch actually failed.
-        // If 'decks' is null or undefined, we truly have no data.
         if (!decks) {
             $('#deck-list').html('<div class="error">Error al cargar decks. Revisa tu conexión.</div>');
             return;
@@ -2107,20 +2114,70 @@ async function loadDecks() {
     }
 
     if (!decks || decks.length === 0) {
+        window.userDecksCache = [];
         $('#deck-list').html('<div class="empty">No tienes decks. Crea uno para empezar.</div>');
         return;
     }
 
+    window.userDecksCache = decks;
+    populateDeckFilterOptions(decks);
+    renderFilteredDecks(scrollPos);
+}
+
+function populateDeckFilterOptions(decks) {
+    const $select = $('#filter-deck-tag');
+    if (!$select.length) return;
+    const currentVal = $select.val() || '';
+
+    const defaultOptions = ['Avanzado', 'Time Wizard', 'Pokemon', 'Rush duel', 'Speed duel'];
+    const customTags = new Set(defaultOptions);
+
+    (decks || []).forEach(d => {
+        if (d.format_tag && d.format_tag.trim()) {
+            customTags.add(d.format_tag.trim());
+        }
+    });
+
+    let html = '<option value="">Todos los Formatos / Claves</option>';
+    customTags.forEach(tag => {
+        html += `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`;
+    });
+
+    $select.html(html);
+    $select.val(currentVal);
+}
+
+function renderFilteredDecks(scrollPos) {
+    const decks = window.userDecksCache || [];
+    const searchQuery = ($('#filter-deck-search').val() || '').toLowerCase().trim();
+    const tagFilter = ($('#filter-deck-tag').val() || '').toLowerCase().trim();
+
+    const filtered = decks.filter(deck => {
+        const nameMatch = !searchQuery || (deck.name || '').toLowerCase().includes(searchQuery);
+        const formatTag = (deck.format_tag || 'Avanzado').toLowerCase().trim();
+        const tagMatch = !tagFilter || formatTag === tagFilter || formatTag.includes(tagFilter);
+        return nameMatch && tagMatch;
+    });
+
+    if (filtered.length === 0) {
+        $('#deck-list').html('<div class="empty" style="grid-column: 1/-1; text-align: center; padding: 30px; color: #80b3ff;">No se encontraron decks con los filtros seleccionados.</div>');
+        return;
+    }
+
     const $tempContainer = $('<div></div>');
-    decks.forEach(deck => {
+    filtered.forEach(deck => {
         const isPublic = deck.is_public !== false;
+        const formatTag = deck.format_tag || 'Avanzado';
         const publicSwitch = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <label class="switch">
-                    <input type="checkbox" class="toggle-public" data-id="${deck.id}" data-type="decks" ${isPublic ? 'checked' : ''}>
-                    <span class="slider"></span>
-                </label>
-                <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label class="switch">
+                        <input type="checkbox" class="toggle-public" data-id="${deck.id}" data-type="decks" ${isPublic ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                    <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
+                </div>
+                <span class="badge-format-tag" style="background: rgba(0,210,255,0.15); color: #00d2ff; border: 1px solid rgba(0,210,255,0.3); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: bold;">${escapeHtml(formatTag)}</span>
             </div>
         `;
 
@@ -2128,14 +2185,14 @@ async function loadDecks() {
             <div class="album-card deck-item" data-id="${deck.id}">
                 <div class="deck-preview-icon"><i class="fas fa-layer-group fa-3x"></i></div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                    <h3 style="margin:0;">${deck.name}</h3>
+                    <h3 style="margin:0;">${escapeHtml(deck.name)}</h3>
                 </div>
-                <div style="margin-top: 5px;">
+                <div style="margin-top: 8px;">
                     ${publicSwitch}
                 </div>
-                <div style="display:flex; gap:10px; margin-top:auto; flex-wrap: wrap;">
+                <div style="display:flex; gap:10px; margin-top:15px; flex-wrap: wrap;">
                     <button class="btn btn-edit-deck" data-id="${deck.id}" style="flex: 1;">Editar</button>
-                    <button class="btn btn-secondary" onclick="openShareModal('${deck.name.replace(/'/g, "\\'")}', 'decks', '${deck.id}')" style="padding: 10px 15px;"><i class="fas fa-share-alt"></i></button>
+                    <button class="btn btn-secondary" onclick="openShareModal('${(deck.name || '').replace(/'/g, "\\'")}', 'decks', '${deck.id}')" style="padding: 10px 15px;"><i class="fas fa-share-alt"></i></button>
                     <button class="btn btn-danger btn-delete-deck" data-id="${deck.id}" style="flex: 1;">Eliminar</button>
                 </div>
             </div>
@@ -2147,9 +2204,15 @@ async function loadDecks() {
         $tempContainer.append($card);
     });
     $('#deck-list').html($tempContainer.contents());
-    restoreScroll(scrollPos);
-    // initDecksSorting(); // Blocked reordering from main view
+    if (scrollPos) restoreScroll(scrollPos);
 }
+
+$(document).on('input', '#filter-deck-search', function() {
+    renderFilteredDecks();
+});
+$(document).on('change', '#filter-deck-tag', function() {
+    renderFilteredDecks();
+});
 
 function initDecksSorting() {
     const el = document.getElementById('deck-list');
@@ -2209,6 +2272,8 @@ async function editDeck(deck) {
     currentDeckId = target.id;
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
+    $('#input-deck-format').val(target.format_tag || 'Avanzado');
+    $('#nexus-input-deck-format').val(target.format_tag || 'Avanzado');
     $('#input-deck-public').prop('checked', target.is_public !== false);
     $('#input-deck-show-foil').hide();
     $('[for="input-deck-show-foil"]').hide();
