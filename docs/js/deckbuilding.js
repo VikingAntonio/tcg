@@ -214,6 +214,7 @@ async function loadUserDecksList() {
                         <h3>${deck.name}</h3>
                         <p class="deck-card-meta">
                             <span><i class="fas fa-eye"></i> ${deck.is_public !== false ? 'Público' : 'Privado'}</span>
+                            <span style="margin-left: 8px; background: rgba(0,210,255,0.15); color: #00d2ff; padding: 2px 6px; border-radius: 4px; font-size: 11px;"><i class="fas fa-tag"></i> ${deck.format_tag || 'Avanzado'}</span>
                         </p>
                     </div>
                     <div class="deck-card-actions">

@@ -892,6 +892,24 @@
                     <button id="btn-organize-decks" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
                 </div>
             </div>
+            <!-- Filter Bar for Decks -->
+            <div id="deck-filter-bar" style="display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.03); padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;">
+                    <i class="fas fa-search" style="color: #00d2ff;"></i>
+                    <input type="text" id="filter-deck-search" placeholder="Buscar deck por nombre..." style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 200px;">
+                    <i class="fas fa-tags" style="color: #00d2ff;"></i>
+                    <select id="filter-deck-tag" style="width: 100%; background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;">
+                        <option value="">Todos los Formatos / Claves</option>
+                        <option value="Avanzado">Avanzado</option>
+                        <option value="Time Wizard">Time Wizard</option>
+                        <option value="Pokemon">Pokemon</option>
+                        <option value="Rush duel">Rush duel</option>
+                        <option value="Speed duel">Speed duel</option>
+                    </select>
+                </div>
+            </div>
             <div id="deck-list" class="album-list">
                 <!-- Decks will be loaded here -->
                 <div class="loading">Cargando decks...</div>
@@ -929,7 +947,11 @@
                             <label>Nombre del Deck</label>
                             <input type="text" class="nexus-input-sync" data-target="#input-deck-name">
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label>Clave / Tipo de Deck</label>
+                            <input type="text" id="nexus-input-deck-format" class="nexus-input-sync" data-target="#input-deck-format" list="deck-format-presets" placeholder="Ej: Avanzado, Time Wizard, Pokemon..." style="width: 100%;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px;">
                             <label class="nexus-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
                                 <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-public" checked>
                                 <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Público</span>
@@ -1063,6 +1085,17 @@
                     <div class="form-group">
                         <label>Nombre del Deck</label>
                         <input type="text" id="input-deck-name" placeholder="Nuevo Deck">
+                    </div>
+                    <div class="form-group">
+                        <label>Clave / Tipo de Deck</label>
+                        <input type="text" id="input-deck-format" list="deck-format-presets" placeholder="Ej: Avanzado, Time Wizard, Pokemon, Rush duel...">
+                        <datalist id="deck-format-presets">
+                            <option value="Avanzado">
+                            <option value="Time Wizard">
+                            <option value="Pokemon">
+                            <option value="Rush duel">
+                            <option value="Speed duel">
+                        </datalist>
                     </div>
                     <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                         <label class="switch">
