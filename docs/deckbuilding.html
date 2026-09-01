@@ -70,8 +70,16 @@
         <header class="workspace-header">
             <button id="btn-back" class="btn btn-header-back"><i class="fas fa-arrow-left"></i> Volver</button>
             <h1 id="deck-title" style="display: none;">Cargando Deck...</h1>
-            <div class="header-meta-container" style="display: flex; align-items: center; gap: 15px; margin-left: 15px; margin-right: auto;">
-                <input type="text" id="deck-name-input" placeholder="Nombre del deck" style="background: #0f172a; border: 1px solid #475569; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.9rem; width: 220px; font-family: inherit;">
+            <div class="header-meta-container" style="display: flex; align-items: center; gap: 12px; margin-left: 15px; margin-right: auto;">
+                <input type="text" id="deck-name-input" placeholder="Nombre del deck" style="background: #0f172a; border: 1px solid #475569; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.9rem; width: 200px; font-family: inherit;">
+                <input type="text" id="deck-format-input" list="deck-format-presets" placeholder="Formato / Clave (ej: Avanzado, Pokemon...)" style="background: #0f172a; border: 1px solid #475569; color: #00d2ff; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; width: 190px; font-family: inherit; font-weight: bold;">
+                <datalist id="deck-format-presets">
+                    <option value="Avanzado">
+                    <option value="Time Wizard">
+                    <option value="Pokemon">
+                    <option value="Rush duel">
+                    <option value="Speed duel">
+                </datalist>
                 <div class="toggle-group-compact" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 700;">
                     <label class="switch">
                         <input type="checkbox" id="deck-public-checkbox" checked>
