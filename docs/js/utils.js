@@ -878,7 +878,7 @@ window.searchYamlYugiRush = async function(query, filters, signal) {
 window.searchAbortControllers = window.searchAbortControllers || {};
 
 window.searchExternalCard = async function(inputSelector, resultsSelector, onSelectCallback, filters = {}) {
-    const query = $(inputSelector).val().trim();
+    const query = $(inputSelector).val() ? $(inputSelector).val().trim() : '';
 
     // Abort previous request for this specific input
     if (window.searchAbortControllers[inputSelector]) {
@@ -890,7 +890,7 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
 
     // Support search from 1 character as requested for Nexus-style real-time search
     if (query.length < 1 && !Object.values(filters).some(v => v !== '')) {
-        // Only skip if no name AND no filters
+        $(resultsSelector).empty().hide();
         return;
     }
 

@@ -1,11 +1,42 @@
-Hola,
+==============================================================================
+EXPLICACIÓN Y SOLUCIÓN: VISIBILIDAD DE VAULTS Y CARTAS PÚBLICAS (PORQUE.TXT)
+==============================================================================
 
-Entiendo perfectamente tu inquietud y te pido disculpas si parecía que no estábamos tocando los archivos principales de tu proyecto (`duel.html`, `duel.css`, `duel.js`) en las últimas 4 sesiones. Permíteme explicarte detalladamente por qué ocurrió esto:
+1. DIAGNÓSTICO: ¿POR QUÉ NO SALÍA NADA EN EL LINK PÚBLICO?
+------------------------------------------------------------------------------
+Causa 1: Valor por defecto de 'is_public' en la Base de Datos
+Al crear un Vault (categoría) o guardar una carta de inversión sin especificar explícitamente la propiedad 'is_public = true', la base de datos de Supabase asignaba por defecto 'false' (o null) según la definición del esquema original (ATCG.txt).
 
-1. Prioridad en la Estabilidad y Pruebas Automatizadas: En las sesiones previas, estuvimos diseñando e implementando un robusto sistema de verificación automática mediante scripts de Playwright en Python (ubicados en la carpeta `verification/`). El objetivo de estos scripts (`verify_mobile_duel.py`, `verify_duel_features.py`, etc.) era simular interacciones reales de usuarios en PC y móviles para asegurarnos de que el simulador no tuviera "regresiones" (es decir, errores introducidos por accidente).
-2. Foco en "Magic Mode" y Configuración: También dedicamos esfuerzos a la creación y perfeccionamiento del nuevo simulador libre "Magic Mode" (`magic.html`, `magic.js`, `magic.css`) y su configurador (`configMagic.html`), así como la sincronización en tiempo real y la base de datos, lo cual requirió cambios en otros archivos del repositorio para dar soporte a estas nuevas características sin alterar el duelo tradicional.
-3. Evitar Modificaciones Innecesarias: Para proteger la integridad del simulador principal `duel.html` y que siguiera funcionando de forma idéntica, evitamos realizar cambios directos en él a menos que fuera estrictamente necesario, garantizando así que no se rompiera tu lógica existente mientras refinábamos las otras capas del sistema.
+Causa 2: Políticas de Seguridad Row Level Security (RLS) en Supabase
+Tanto en la tabla 'investment_categories' como en 'investment_cards', Supabase tiene activadas las siguientes políticas RLS:
+- "Anyone can view public investment categories" -> USING (is_public = true)
+- "Anyone can view public investment cards" -> USING (is_public = true)
 
-A partir de ahora, todo nuestro foco vuelve a estar directamente sobre `duel.html`, `duel.css` y `duel.js` para resolver exactamente los tres puntos que me has solicitado (arreglar los clics en cementerio/banish/extra deck, quitar los menús de hover en el campo reemplazándolos por clic izquierdo/derecho unificados, y eliminar todas las barras de scroll).
+Cuando un visitante público o usuario no autenticado entra al link público (ej: public.html?id=USUARIO#investments), la consulta PostgREST a Supabase evalúa RLS. Si el Vault o la carta tenían 'is_public = false' (o null), Supabase bloqueaba los registros por seguridad y devolvía un arreglo vacío ([]). Por eso parecía que el Vault "solo se activaba y no mostraba nada de lo guardado".
 
-Muchas gracias por tu paciencia y por ayudarnos a mejorar el proyecto.
+Causa 3: Orden de Resolución del Identificador de Usuario en public.html
+Al ingresar directamente con el parámetro de URL (ej: ?id=tienda), si la función 'loadPublicInvestmentCategories' se ejecutaba antes de que 'loadStoreData' terminara de resolver el UUID del usuario, la variable 'window.currentStoreId' quedaba nula, impidiendo consultar los Vaults de esa tienda.
+
+2. SOLUCIÓN APLICADA
+------------------------------------------------------------------------------
+1) Garantizar 'is_public = true' por Defecto:
+   En 'docs/js/inversiones.js', las funciones 'saveInvestmentCategory' y 'btn-save-investment-card' ahora fuerzan 'is_public = true' por defecto tanto en la creación de nuevos Vaults como en la de cartas de inversión.
+
+2) Resolución de Usuario Robusta en public.html:
+   En 'docs/js/app.js' ('loadPublicInvestmentCategories' y 'openPublicInvestmentCategory'), se integró la resolución asíncrona 'resolveUser(identifier)' usando los parámetros de URL (?id=, ?store=, ?user=), garantizando que el UUID del usuario siempre esté disponible para realizar la consulta en Supabase.
+
+3) Muestra de Precios en Link Público:
+   En la vista pública ('public.html' y modal público 'openPublicInvestmentCardModal'), únicamente se muestra el 'Precio venta'. Los campos 'Precio compra' y 'Precio mercado' se mantienen estrictamente privados y no se envían ni se renderizan en el enlace público. Tampoco se muestran avisos innecesarios ni textos redundantes de "privado".
+
+4) Galería de Imágenes Adicionales:
+   Si una carta tiene imágenes cargadas en la pestaña IMAGES, en el link público se renderiza una vista tipo galería con la imagen principal arriba y una tira de vistas previas deslizables abajo para alternar las fotos de la carta.
+
+==============================================================================
+ARCHIVOS MODIFICADOS:
+- PORQUE.txt
+- docs/inversiones.html
+- docs/js/inversiones.js
+- docs/js/app.js
+- docs/css/inversiones.css
+- docs/sw.js
+==============================================================================
