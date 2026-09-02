@@ -1033,7 +1033,7 @@ $(document).ready(async function() {
         });
 
         const name = $('#input-deck-name').val();
-        const format_tag = $('#input-deck-format').val() || $('#nexus-input-deck-format').val() || 'Avanzado';
+        const format_tag = $('#input-deck-format').val() || $('#nexus-input-deck-format').val() || '';
         const is_public = $('#input-deck-public').is(':checked');
         const use_special_price = $('#input-deck-use-special').is(':checked');
         const special_price = $('#input-deck-special-price').val();
@@ -2126,25 +2126,32 @@ async function loadDecks() {
 
 function populateDeckFilterOptions(decks) {
     const $select = $('#filter-deck-tag');
-    if (!$select.length) return;
-    const currentVal = $select.val() || '';
+    const $datalist = $('#deck-format-presets');
+    const currentVal = $select.length ? ($select.val() || '') : '';
 
-    const defaultOptions = ['Avanzado', 'Time Wizard', 'Pokemon', 'Rush duel', 'Speed duel'];
-    const customTags = new Set(defaultOptions);
-
+    const customTags = new Set();
     (decks || []).forEach(d => {
         if (d.format_tag && d.format_tag.trim()) {
             customTags.add(d.format_tag.trim());
         }
     });
 
-    let html = '<option value="">Todos los Formatos / Claves</option>';
-    customTags.forEach(tag => {
-        html += `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`;
-    });
+    if ($select.length) {
+        let html = '<option value="">Todos</option>';
+        customTags.forEach(tag => {
+            html += `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`;
+        });
+        $select.html(html);
+        $select.val(currentVal);
+    }
 
-    $select.html(html);
-    $select.val(currentVal);
+    if ($datalist.length) {
+        let optionsHtml = '';
+        customTags.forEach(tag => {
+            optionsHtml += `<option value="${escapeHtml(tag)}">`;
+        });
+        $datalist.html(optionsHtml);
+    }
 }
 
 function renderFilteredDecks(scrollPos) {
@@ -2154,7 +2161,7 @@ function renderFilteredDecks(scrollPos) {
 
     const filtered = decks.filter(deck => {
         const nameMatch = !searchQuery || (deck.name || '').toLowerCase().includes(searchQuery);
-        const formatTag = (deck.format_tag || 'Avanzado').toLowerCase().trim();
+        const formatTag = (deck.format_tag || '').toLowerCase().trim();
         const tagMatch = !tagFilter || formatTag === tagFilter || formatTag.includes(tagFilter);
         return nameMatch && tagMatch;
     });
@@ -2167,7 +2174,8 @@ function renderFilteredDecks(scrollPos) {
     const $tempContainer = $('<div></div>');
     filtered.forEach(deck => {
         const isPublic = deck.is_public !== false;
-        const formatTag = deck.format_tag || 'Avanzado';
+        const formatTag = deck.format_tag || '';
+        const tagBadge = (formatTag && formatTag.trim()) ? `<span class="badge-format-tag" style="background: rgba(0,210,255,0.15); color: #00d2ff; border: 1px solid rgba(0,210,255,0.3); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: bold;">${escapeHtml(formatTag.trim())}</span>` : '';
         const publicSwitch = `
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -2177,7 +2185,7 @@ function renderFilteredDecks(scrollPos) {
                     </label>
                     <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
                 </div>
-                <span class="badge-format-tag" style="background: rgba(0,210,255,0.15); color: #00d2ff; border: 1px solid rgba(0,210,255,0.3); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: bold;">${escapeHtml(formatTag)}</span>
+                ${tagBadge}
             </div>
         `;
 
@@ -2272,8 +2280,8 @@ async function editDeck(deck) {
     currentDeckId = target.id;
     $('#deck-editor-title').text(`Editando: ${target.name}`);
     $('#input-deck-name').val(target.name);
-    $('#input-deck-format').val(target.format_tag || 'Avanzado');
-    $('#nexus-input-deck-format').val(target.format_tag || 'Avanzado');
+    $('#input-deck-format').val(target.format_tag || '');
+    $('#nexus-input-deck-format').val(target.format_tag || '');
     $('#input-deck-public').prop('checked', target.is_public !== false);
     $('#input-deck-show-foil').hide();
     $('[for="input-deck-show-foil"]').hide();
