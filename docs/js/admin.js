@@ -2137,7 +2137,7 @@ function populateDeckFilterOptions(decks) {
     });
 
     if ($select.length) {
-        let html = '<option value="">Todos</option>';
+        let html = '<option value="">Todos los Tags</option>';
         customTags.forEach(tag => {
             html += `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`;
         });
@@ -2153,6 +2153,111 @@ function populateDeckFilterOptions(decks) {
         $datalist.html(optionsHtml);
     }
 }
+
+// Interactive Tag Picker Modal
+async function openFormatTagSelectorModal() {
+    const decks = window.userDecksCache || [];
+    const customTags = new Set();
+    decks.forEach(d => {
+        if (d.format_tag && d.format_tag.trim()) {
+            customTags.add(d.format_tag.trim());
+        }
+    });
+
+    // Also collect any runtime created tags attached to window.availableCustomTags
+    if (window.availableCustomTags && Array.isArray(window.availableCustomTags)) {
+        window.availableCustomTags.forEach(t => {
+            if (t && t.trim()) customTags.add(t.trim());
+        });
+    }
+
+    const currentTag = $('#nexus-input-deck-format').val() || $('#input-deck-format').val() || '';
+
+    let tagsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 220px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px;">`;
+
+    // Sin Tag option
+    const isNoneActive = !currentTag;
+    tagsHtml += `
+        <button type="button" class="btn-select-tag-pill ${isNoneActive ? 'active' : ''}" data-tag="" style="background: ${isNoneActive ? '#00d2ff' : 'rgba(255,255,255,0.08)'}; color: ${isNoneActive ? '#000' : '#fff'}; border: 1px solid rgba(0,210,255,0.4); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+            <i class="fas fa-ban" style="margin-right: 4px;"></i> Sin Tag (Vacío)
+        </button>
+    `;
+
+    customTags.forEach(tag => {
+        const isActive = currentTag.toLowerCase().trim() === tag.toLowerCase().trim();
+        tagsHtml += `
+            <button type="button" class="btn-select-tag-pill ${isActive ? 'active' : ''}" data-tag="${escapeHtml(tag)}" style="background: ${isActive ? '#00d2ff' : 'rgba(255,255,255,0.08)'}; color: ${isActive ? '#000' : '#fff'}; border: 1px solid rgba(0,210,255,0.4); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+                ${escapeHtml(tag)}
+            </button>
+        `;
+    });
+
+    tagsHtml += `</div>`;
+
+    const result = await Swal.fire({
+        title: '<i class="fas fa-tags" style="color: #00d2ff; margin-right: 8px;"></i> Seleccionar Tag',
+        html: `
+            <p style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Elige un tag existente o crea uno nuevo para tu deck:</p>
+            ${tagsHtml}
+            <button type="button" id="swal-btn-create-tag" class="btn" style="width: 100%; background: linear-gradient(135deg, #00d2ff, #0072ff); color: #fff; font-weight: bold; padding: 10px; border-radius: 10px; cursor: pointer; border: none;">
+                <i class="fas fa-plus-circle" style="margin-right: 6px;"></i> Crear Nuevo Tag
+            </button>
+        `,
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: '#121212',
+        color: '#fff',
+        customClass: {
+            popup: 'animated fadeInDown'
+        },
+        didOpen: () => {
+            const popup = Swal.getPopup();
+            $(popup).find('.btn-select-tag-pill').on('click', function() {
+                const selectedTag = $(this).data('tag') || '';
+                setDeckFormatTag(selectedTag);
+                Swal.close();
+            });
+
+            $(popup).find('#swal-btn-create-tag').on('click', async function() {
+                const { value: newTag } = await Swal.fire({
+                    title: 'Crear Nuevo Tag',
+                    input: 'text',
+                    inputLabel: 'Nombre del Tag',
+                    inputPlaceholder: 'Ej: Time Wizard, Pokemon, Speed Duel...',
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar Tag',
+                    cancelButtonText: 'Cancelar',
+                    background: '#121212',
+                    color: '#fff',
+                    inputValidator: (val) => {
+                        if (!val || !val.trim()) {
+                            return 'Debes ingresar un nombre para el tag';
+                        }
+                    }
+                });
+
+                if (newTag && newTag.trim()) {
+                    const trimmedTag = newTag.trim();
+                    if (!window.availableCustomTags) window.availableCustomTags = [];
+                    window.availableCustomTags.push(trimmedTag);
+                    setDeckFormatTag(trimmedTag);
+                    populateDeckFilterOptions(window.userDecksCache || []);
+                }
+            });
+        }
+    });
+}
+
+function setDeckFormatTag(tag) {
+    const val = tag ? tag.trim() : '';
+    $('#input-deck-format').val(val);
+    $('#nexus-input-deck-format').val(val);
+}
+
+$(document).on('click', '#nexus-input-deck-format, #input-deck-format, .open-tag-picker-btn', function(e) {
+    e.preventDefault();
+    openFormatTagSelectorModal();
+});
 
 function renderFilteredDecks(scrollPos) {
     const decks = window.userDecksCache || [];
