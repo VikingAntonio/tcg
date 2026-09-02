@@ -135,7 +135,7 @@ function initInvestmentListeners() {
     });
 
     // Auto-clear or select-all on focus for price and quantity inputs to avoid annoying manual backspacing
-    $(document).on('focus', '#inv-card-purchase-price, #inv-card-current-price, #inv-card-quantity', function() {
+    $(document).on('focus', '#inv-card-purchase-price, #inv-card-current-price, #inv-card-sale-price, #inv-card-quantity', function() {
         const val = $(this).val().trim();
         if (val === '0' || val === '0.0' || val === '0.00' || val === '0.000') {
             $(this).val('');
@@ -218,9 +218,9 @@ function initInvestmentListeners() {
 
     // Real-time automatic search on typing & auto-clear when search input is empty
     let invSearchDebounceTimer = null;
-    $(document).on('input', '#inv-card-search-input', function() {
+    $(document).on('input keyup change search', '#inv-card-search-input', function() {
         clearTimeout(invSearchDebounceTimer);
-        const term = $(this).val().trim();
+        const term = $(this).val() ? $(this).val().trim() : '';
         if (!term) {
             $('#inv-card-search-results').empty().hide();
             return;
@@ -782,16 +782,13 @@ function renderSlideMode($container) {
     `);
 
     localInvestmentCards.forEach(card => {
-        const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
-        const privateBadge = isPrivate ? `<div class="inv-card-private-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(255, 71, 87, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; z-index: 115;" title="Privado (Oculto en link público)"><i class="fas fa-lock"></i> PRIVADO</div>` : '';
         const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
 
         const $slide = $(`
             <div class="swiper-slide inv-card-slot inv-card-item" data-id="${card.id}" style="background: transparent; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; height: 100%;">
                 <img src="${card.image_url}" style="width: auto; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 2px solid #000; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; z-index: 1; display: block; margin: 0 auto;">
                 ${stampOverlay}
-                ${privateBadge}
             </div>
         `);
 
@@ -859,14 +856,11 @@ function renderListMode($container) {
     const $list = $('<div class="inv-list-container" style="margin: 20px 0;"></div>');
 
     localInvestmentCards.forEach(card => {
-        const diff = (card.current_price || 0) - (card.purchase_price || 0);
-        const diffClass = diff >= 0 ? 'price-up' : 'price-down';
         const trend = getTrendIcon(card.current_price, card.previous_price);
-        const isPrivate = card.is_public === false;
         const isUnavailable = card.is_available === false;
-        const privateBadge = isPrivate ? `<span style="background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-lock"></i> PRIVADO</span>` : '';
         const unavailableBadge = isUnavailable ? `<span style="background: rgba(0, 0, 0, 0.85); color: #ff3344; border: 1px solid #ff3344; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-ban"></i> NO DISPONIBLE</span>` : '';
         const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">NO DISPONIBLE</div>` : '';
+        const salePrice = card.sale_price !== null && card.sale_price !== undefined ? card.sale_price : (card.current_price || 0);
 
         const $item = $(`
             <div class="inv-list-item" style="border: 1px solid #eee; border-radius: 4px; padding: 15px; background: white; margin-bottom: 10px; display: flex; align-items: center; gap: 20px; cursor: pointer;">
@@ -875,12 +869,13 @@ function renderListMode($container) {
                     ${stampOverlay}
                 </div>
                 <div class="inv-list-details" style="flex: 1;">
-                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000; display: flex; align-items: center; flex-wrap: wrap;">${escapeHtml(card.card_name)} ${privateBadge} ${unavailableBadge}</div>
+                    <div class="inv-list-name" style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #000; display: flex; align-items: center; flex-wrap: wrap;">${escapeHtml(card.card_name)} ${unavailableBadge}</div>
                     <div class="inv-list-set" style="font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name)} - ${escapeHtml(card.rarity)}</div>
                 </div>
-                <div class="inv-list-prices" style="display: flex; gap: 30px; text-align: right;">
-                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Purchase</span> <b style="color: #000;">$${parseFloat(card.purchase_price || 0).toFixed(2)}</b></div>
-                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Market</span> <b class="${diffClass}" style="color: #000;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                <div class="inv-list-prices" style="display: flex; gap: 20px; text-align: right;">
+                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Compra</span> <b style="color: #000;">$${parseFloat(card.purchase_price || 0).toFixed(2)}</b></div>
+                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Mercado</span> <b style="color: #000;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
+                    <div class="inv-price-row" style="display: flex; flex-direction: column;"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999;">Venta</span> <b style="color: #2ed573;">$${parseFloat(salePrice).toFixed(2)}</b></div>
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn-inv-outline btn-edit-inv-card" data-id="${card.id}" style="padding: 8px 12px;"><i class="fas fa-pen"></i></button>
@@ -935,6 +930,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-name').val('').prop('readonly', false);
         $('#inv-card-purchase-price').val('');
         $('#inv-card-current-price').val('');
+        $('#inv-card-sale-price').val('');
         $('#inv-card-quantity').val(1);
         $('#inv-card-rarity-input').val('');
         $('#inv-card-notes').val('');
@@ -964,6 +960,7 @@ function openInvestmentCardModal(card = null, defaultTab = 'inv-tab-resumen') {
         $('#inv-card-name').val(card.card_name ? card.card_name.toUpperCase() : '');
         $('#inv-card-purchase-price').val(card.purchase_price !== null && card.purchase_price !== undefined ? card.purchase_price : '');
         $('#inv-card-current-price').val(card.current_price !== null && card.current_price !== undefined ? card.current_price : '');
+        $('#inv-card-sale-price').val(card.sale_price !== null && card.sale_price !== undefined ? card.sale_price : (card.current_price !== null && card.current_price !== undefined ? card.current_price : ''));
         $('#inv-card-quantity').val(card.quantity || 1);
         $('#inv-card-rarity-input').val(card.rarity || '');
         $('#inv-card-notes').val(card.notes || '');
@@ -1011,6 +1008,7 @@ $('#btn-inv-card-search').click(async function() {
         $('#inv-card-rarity').val(card.rarity || '');
         $('#inv-card-rarity-input').val(card.rarity || '');
         $('#inv-card-current-price').val(card.price ? card.price : '');
+        $('#inv-card-sale-price').val(card.price ? card.price : '');
         $('#inv-card-game').val(card.game || 'pokemon');
         $('#inv-card-external-id').val(card.external_id || card.id || '');
 
@@ -1031,8 +1029,11 @@ $('#btn-inv-card-search').click(async function() {
 $('#btn-save-investment-card').click(async function() {
     const purchaseVal = $('#inv-card-purchase-price').val();
     const currentVal = $('#inv-card-current-price').val();
-    const newPrice = currentVal !== '' ? parseFloat(currentVal) : 0;
+    const saleVal = $('#inv-card-sale-price').val();
+
     const purchasePrice = purchaseVal !== '' ? parseFloat(purchaseVal) : 0;
+    const newPrice = currentVal !== '' ? parseFloat(currentVal) : 0;
+    const salePrice = saleVal !== '' ? parseFloat(saleVal) : newPrice;
 
     const cardData = {
         category_id: currentInvestmentCategoryId,
@@ -1046,6 +1047,7 @@ $('#btn-save-investment-card').click(async function() {
         set_number: $('#inv-card-set-number').val(),
         purchase_price: purchasePrice,
         current_price: newPrice,
+        sale_price: salePrice,
         quantity: parseInt($('#inv-card-quantity').val()) || 1,
         show_foil: false,
         notes: $('#inv-card-notes').val(),
@@ -1076,39 +1078,50 @@ $('#btn-save-investment-card').click(async function() {
         let error;
         let finalCardId = currentEditingInvCardId;
 
-        if (currentEditingInvCardId) {
-            // Check if price changed to update previous_price and history
-            const oldCard = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
-            if (oldCard && oldCard.current_price !== newPrice) {
-                cardData.previous_price = oldCard.current_price;
-                // Log history
-                await _supabase.from('investment_price_history').insert([{
-                    card_id: currentEditingInvCardId,
-                    price: newPrice
-                }]);
-            }
+        const executeSave = async (dataToSave) => {
+            if (currentEditingInvCardId) {
+                // Check if price changed to update previous_price and history
+                const oldCard = localInvestmentCards.find(c => c.id === currentEditingInvCardId);
+                if (oldCard && oldCard.current_price !== newPrice) {
+                    dataToSave.previous_price = oldCard.current_price;
+                    // Log history
+                    await _supabase.from('investment_price_history').insert([{
+                        card_id: currentEditingInvCardId,
+                        price: newPrice
+                    }]);
+                }
 
-            const { error: err } = await _supabase
-                .from('investment_cards')
-                .update(cardData)
-                .eq('id', currentEditingInvCardId);
-            error = err;
-        } else {
-            cardData.position = localInvestmentCards.length;
-            const { data: newCards, error: err } = await _supabase
-                .from('investment_cards')
-                .insert([cardData])
-                .select();
-            error = err;
-            if (!error && newCards.length > 0) {
-                finalCardId = newCards[0].id;
-                currentEditingInvCardId = finalCardId; // Update state to "editing"
-                // Log initial history
-                await _supabase.from('investment_price_history').insert([{
-                    card_id: finalCardId,
-                    price: newPrice
-                }]);
+                return await _supabase
+                    .from('investment_cards')
+                    .update(dataToSave)
+                    .eq('id', currentEditingInvCardId);
+            } else {
+                dataToSave.position = localInvestmentCards.length;
+                return await _supabase
+                    .from('investment_cards')
+                    .insert([dataToSave])
+                    .select();
             }
+        };
+
+        let res = await executeSave(cardData);
+        error = res.error;
+
+        // Fallback if sale_price column does not exist in DB schema yet
+        if (error && (error.code === '42703' || (error.message && error.message.includes('sale_price')))) {
+            const fallbackData = { ...cardData };
+            delete fallbackData.sale_price;
+            res = await executeSave(fallbackData);
+            error = res.error;
+        }
+
+        if (!error && !currentEditingInvCardId && res.data && res.data.length > 0) {
+            finalCardId = res.data[0].id;
+            currentEditingInvCardId = finalCardId;
+            await _supabase.from('investment_price_history').insert([{
+                card_id: finalCardId,
+                price: newPrice
+            }]);
         }
 
         if (error) throw error;

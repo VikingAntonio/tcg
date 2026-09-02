@@ -636,6 +636,12 @@
     }
 
     .inv-form-row {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .inv-form-row-inline {
         grid-template-columns: 1fr 1fr !important;
         gap: 10px !important;
         margin-bottom: 10px !important;
