@@ -465,6 +465,7 @@ async function loadDeckData() {
         currentDeck = deck;
         $('#deck-title').text(deck.name);
         $('#deck-name-input').val(deck.name);
+        $('#deck-format-input').val(deck.format_tag || 'Avanzado');
         $('#deck-public-checkbox').prop('checked', deck.is_public !== false);
 
         // Accessories init
@@ -736,10 +737,13 @@ async function saveDeck() {
     }
 
     try {
+        const formatTag = $('#deck-format-input').val().trim() || 'Avanzado';
+
         // 1. Update deck metadata & accessories
         const deckUpdate = {
             name,
             is_public,
+            format_tag: formatTag,
             sleeves: selectedSleeves,
             deckbox: selectedDeckbox,
             coin: selectedCoin,

@@ -551,20 +551,19 @@
 
                 <div class="form-group">
                     <label>Tu Deck (P1) <span>*</span></label>
-                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <select id="practice-deck-filter" class="select-input" style="flex: 1; padding: 6px 10px; font-size: 12px; height: auto;">
-                            <option value="">Todos los Formatos/Claves</option>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="practice-deck-filter" class="select-input" style="width: 110px; padding: 10px 8px; font-size: 0.8rem; height: 100%;" title="Filtrar por formato">
+                            <option value="">Todos</option>
                             <option value="Avanzado">Avanzado</option>
                             <option value="Time Wizard">Time Wizard</option>
                             <option value="Pokemon">Pokemon</option>
                             <option value="Rush duel">Rush duel</option>
                             <option value="Speed duel">Speed duel</option>
                         </select>
-                        <input type="text" id="practice-deck-search" class="select-input" placeholder="Buscar..." style="width: 100px; padding: 6px 10px; font-size: 12px; height: auto;">
+                        <select id="practice-deck1" class="select-input" style="flex: 1;">
+                            <option value="mock">Cargando decks...</option>
+                        </select>
                     </div>
-                    <select id="practice-deck1" class="select-input">
-                        <option value="mock">Cargando decks...</option>
-                    </select>
                 </div>
 
                 <div class="form-group">
@@ -620,20 +619,19 @@
 
                         <div class="form-group">
                             <label>Tu Deck <span>*</span></label>
-                            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                                <select id="multi-deck-filter" class="select-input" style="flex: 1; padding: 6px 10px; font-size: 12px; height: auto;">
-                                    <option value="">Todos los Formatos/Claves</option>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="multi-deck-filter" class="select-input" style="width: 110px; padding: 10px 8px; font-size: 0.8rem;" title="Filtrar por formato">
+                                    <option value="">Todos</option>
                                     <option value="Avanzado">Avanzado</option>
                                     <option value="Time Wizard">Time Wizard</option>
                                     <option value="Pokemon">Pokemon</option>
                                     <option value="Rush duel">Rush duel</option>
                                     <option value="Speed duel">Speed duel</option>
                                 </select>
-                                <input type="text" id="multi-deck-search" class="select-input" placeholder="Buscar..." style="width: 100px; padding: 6px 10px; font-size: 12px; height: auto;">
+                                <select id="host-deck" class="select-input" style="flex: 1;">
+                                    <option value="">Cargando tus decks...</option>
+                                </select>
                             </div>
-                            <select id="host-deck" class="select-input">
-                                <option value="">Cargando tus decks...</option>
-                            </select>
                         </div>
 
                         <button id="btn-create-room" class="btn-play btn-play-multiplayer">
@@ -879,7 +877,7 @@
                     }
                 });
 
-                let html = '<option value="">Todos los Formatos/Claves</option>';
+                let html = '<option value="">Todos</option>';
                 customTags.forEach(tag => {
                     html += `<option value="${tag}">${tag}</option>`;
                 });
@@ -897,29 +895,25 @@
                 $deck2.empty();
 
                 const tagFilter = ($("#practice-deck-filter").val() || "").toLowerCase().trim();
-                const searchQuery = ($("#practice-deck-search").val() || "").toLowerCase().trim();
 
                 const filterFn = d => {
                     const formatTag = (d.format_tag || "Avanzado").toLowerCase().trim();
-                    const name = (d.name || "").toLowerCase().trim();
-                    const tagMatch = !tagFilter || formatTag === tagFilter || formatTag.includes(tagFilter);
-                    const nameMatch = !searchQuery || name.includes(searchQuery) || formatTag.includes(searchQuery);
-                    return tagMatch && nameMatch;
+                    return !tagFilter || formatTag === tagFilter || formatTag.includes(tagFilter);
                 };
 
                 if (preselectedDeck) {
-                    const pTagStr = preselectedDeck.format_tag ? ` (${preselectedDeck.format_tag})` : '';
+                    const pTagStr = preselectedDeck.format_tag ? ` [${preselectedDeck.format_tag}]` : '';
                     $deck1.append(`<option value="${preselectedDeck.id}" selected>${preselectedDeck.name}${pTagStr}</option>`);
                     $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
 
                     const filteredPub = (publicAccountDecks || []).filter(filterFn);
                     if (filteredPub.length > 0) {
                         filteredPub.forEach(d => {
-                            const tagStr = d.format_tag ? ` (${d.format_tag})` : '';
+                            const tagStr = d.format_tag ? ` [${d.format_tag}]` : '';
                             $deck2.append(`<option value="${d.id}">${d.name}${tagStr}</option>`);
                         });
                     } else if (publicAccountDecks && publicAccountDecks.length > 0) {
-                        $deck2.append('<option value="">Sin coincidencias para el filtro</option>');
+                        $deck2.append('<option value="">Sin decks para este formato</option>');
                     }
                     $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
                 } else {
@@ -927,21 +921,21 @@
 
                     if (filteredDecks.length > 0) {
                         filteredDecks.forEach(d => {
-                            const tagStr = d.format_tag ? ` (${d.format_tag})` : '';
+                            const tagStr = d.format_tag ? ` [${d.format_tag}]` : '';
                             $deck1.append(`<option value="${d.id}">${d.name}${tagStr}</option>`);
                         });
                     } else if (decks.length > 0) {
-                        $deck1.append('<option value="">Sin coincidencias para el filtro</option>');
+                        $deck1.append('<option value="">Sin decks para este formato</option>');
                     }
                     $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
 
                     if (filteredDecks.length > 0) {
                         filteredDecks.forEach(d => {
-                            const tagStr = d.format_tag ? ` (${d.format_tag})` : '';
+                            const tagStr = d.format_tag ? ` [${d.format_tag}]` : '';
                             $deck2.append(`<option value="${d.id}">${d.name}${tagStr}</option>`);
                         });
                     } else if (decks.length > 0) {
-                        $deck2.append('<option value="">Sin coincidencias para el filtro</option>');
+                        $deck2.append('<option value="">Sin decks para este formato</option>');
                     }
                     $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
                 }
@@ -965,34 +959,30 @@
                 }
 
                 const tagFilter = ($("#multi-deck-filter").val() || "").toLowerCase().trim();
-                const searchQuery = ($("#multi-deck-search").val() || "").toLowerCase().trim();
 
                 let filteredDecks = multiDecks.filter(d => {
                     const formatTag = (d.format_tag || "Avanzado").toLowerCase().trim();
-                    const name = (d.name || "").toLowerCase().trim();
-                    const tagMatch = !tagFilter || formatTag === tagFilter || formatTag.includes(tagFilter);
-                    const nameMatch = !searchQuery || name.includes(searchQuery) || formatTag.includes(searchQuery);
-                    return tagMatch && nameMatch;
+                    return !tagFilter || formatTag === tagFilter || formatTag.includes(tagFilter);
                 });
 
                 if (filteredDecks.length === 0) {
-                    $hostDeck.append('<option value="">Sin coincidencias para el filtro</option>');
-                    $guestDeck.append('<option value="">Sin coincidencias para el filtro</option>');
+                    $hostDeck.append('<option value="">Sin decks para este formato</option>');
+                    $guestDeck.append('<option value="">Sin decks para este formato</option>');
                     return;
                 }
 
                 filteredDecks.forEach(d => {
                     const selected = (preselectedDeck && d.id == preselectedDeck.id) ? 'selected' : '';
-                    const tagStr = d.format_tag ? ` (${d.format_tag})` : '';
+                    const tagStr = d.format_tag ? ` [${d.format_tag}]` : '';
                     $hostDeck.append(`<option value="${d.id}" ${selected}>${d.name}${tagStr}</option>`);
                     $guestDeck.append(`<option value="${d.id}" ${selected}>${d.name}${tagStr}</option>`);
                 });
             }
 
-            $(document).on("change input", "#practice-deck-filter, #practice-deck-search", function() {
+            $(document).on("change", "#practice-deck-filter", function() {
                 populatePracticeDecks(userDecks);
             });
-            $(document).on("change input", "#multi-deck-filter, #multi-deck-search", function() {
+            $(document).on("change", "#multi-deck-filter", function() {
                 populateMultiplayerDecks(userDecks);
             });
 
