@@ -205,8 +205,25 @@ async function loadUserDecksList() {
             return;
         }
 
+        // Populate custom format tags into datalist
+        const customTags = new Set();
+        decks.forEach(d => {
+            if (d.format_tag && d.format_tag.trim()) {
+                customTags.add(d.format_tag.trim());
+            }
+        });
+        const $datalist = $('#deck-format-presets');
+        if ($datalist.length) {
+            let optionsHtml = '';
+            customTags.forEach(tag => {
+                optionsHtml += `<option value="${tag}">`;
+            });
+            $datalist.html(optionsHtml);
+        }
+
         decks.forEach(deck => {
             const matImg = deck.mats || 'https://via.placeholder.com/300x150?text=Viking+TCG';
+            const tagBadge = (deck.format_tag && deck.format_tag.trim()) ? `<span style="margin-left: 8px; background: rgba(0,210,255,0.15); color: #00d2ff; padding: 2px 6px; border-radius: 4px; font-size: 11px;"><i class="fas fa-tag"></i> ${deck.format_tag.trim()}</span>` : '';
             const $card = $(`
                 <div class="deck-selection-card">
                     <div class="deck-card-bg" style="background-image: linear-gradient(rgba(15,23,42,0.6), rgba(15,23,42,0.95)), url('${matImg}');"></div>
@@ -214,6 +231,7 @@ async function loadUserDecksList() {
                         <h3>${deck.name}</h3>
                         <p class="deck-card-meta">
                             <span><i class="fas fa-eye"></i> ${deck.is_public !== false ? 'Público' : 'Privado'}</span>
+                            ${tagBadge}
                         </p>
                     </div>
                     <div class="deck-card-actions">
@@ -464,6 +482,7 @@ async function loadDeckData() {
         currentDeck = deck;
         $('#deck-title').text(deck.name);
         $('#deck-name-input').val(deck.name);
+        $('#deck-format-input').val(deck.format_tag || '');
         $('#deck-public-checkbox').prop('checked', deck.is_public !== false);
 
         // Accessories init
@@ -735,10 +754,13 @@ async function saveDeck() {
     }
 
     try {
+        const formatTag = $('#deck-format-input').val().trim();
+
         // 1. Update deck metadata & accessories
         const deckUpdate = {
             name,
             is_public,
+            format_tag: formatTag,
             sleeves: selectedSleeves,
             deckbox: selectedDeckbox,
             coin: selectedCoin,

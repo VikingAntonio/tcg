@@ -392,6 +392,139 @@
             color: var(--primary-color);
         }
 
+        /* Custom Deck Picker Button & Trigger */
+        .deck-picker-trigger {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1.5px solid var(--glass-border);
+            border-radius: 10px;
+            color: white;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .deck-picker-trigger:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        .deck-picker-trigger span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Deck Picker Modal */
+        .picker-modal-content {
+            max-width: 500px;
+            width: 92%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+        }
+
+        .picker-search-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 8px 14px;
+            gap: 10px;
+        }
+
+        .picker-search-bar i {
+            color: var(--primary-color);
+        }
+
+        .picker-search-bar input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            width: 100%;
+            outline: none;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .picker-tags-pills {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            scrollbar-width: thin;
+        }
+
+        .picker-tag-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #aaa;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .picker-tag-pill:hover, .picker-tag-pill.active {
+            background: var(--primary-color);
+            color: #000;
+            border-color: var(--primary-color);
+        }
+
+        .picker-deck-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            max-height: 50vh;
+            padding-right: 5px;
+        }
+
+        .picker-deck-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .picker-deck-item:hover {
+            background: rgba(0, 210, 255, 0.1);
+            border-color: var(--primary-color);
+            transform: translateX(3px);
+        }
+
+        .picker-deck-item .deck-title-text {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .picker-deck-item .deck-tag-badge {
+            font-size: 0.7rem;
+            background: rgba(0, 210, 255, 0.15);
+            color: var(--primary-color);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 800;
+        }
+
         /* Modal Simple Login Overlay */
         .modal-overlay {
             position: fixed;
@@ -551,14 +684,22 @@
 
                 <div class="form-group">
                     <label>Tu Deck (P1) <span>*</span></label>
-                    <select id="practice-deck1" class="select-input">
+                    <div id="btn-select-practice-deck1" class="deck-picker-trigger" data-target="#practice-deck1">
+                        <span id="label-practice-deck1">Cargando decks...</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <select id="practice-deck1" class="select-input" style="display: none;">
                         <option value="mock">Cargando decks...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label>Deck Contrincante (P2) <span>*</span></label>
-                    <select id="practice-deck2" class="select-input">
+                    <div id="btn-select-practice-deck2" class="deck-picker-trigger" data-target="#practice-deck2">
+                        <span id="label-practice-deck2">Preestablecido (Mock Deck)</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <select id="practice-deck2" class="select-input" style="display: none;">
                         <option value="mock">Preestablecido (Mock Deck)</option>
                     </select>
                 </div>
@@ -609,7 +750,11 @@
 
                         <div class="form-group">
                             <label>Tu Deck <span>*</span></label>
-                            <select id="host-deck" class="select-input">
+                            <div id="btn-select-host-deck" class="deck-picker-trigger" data-target="#host-deck">
+                                <span id="label-host-deck">Cargando tus decks...</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <select id="host-deck" class="select-input" style="display: none;">
                                 <option value="">Cargando tus decks...</option>
                             </select>
                         </div>
@@ -628,7 +773,11 @@
 
                         <div class="form-group">
                             <label>Tu Deck <span>*</span></label>
-                            <select id="guest-deck" class="select-input">
+                            <div id="btn-select-guest-deck" class="deck-picker-trigger" data-target="#guest-deck">
+                                <span id="label-guest-deck">Cargando tus decks...</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <select id="guest-deck" class="select-input" style="display: none;">
                                 <option value="">Cargando tus decks...</option>
                             </select>
                         </div>
@@ -641,6 +790,27 @@
             </div>
         </section>
     </main>
+
+    <!-- Deck Picker Modal -->
+    <div id="deck-picker-modal" class="modal-overlay">
+        <div class="modal-content picker-modal-content">
+            <button class="modal-close" id="btn-close-deck-picker">&times;</button>
+            <h3 id="deck-picker-title">Selecciona un Deck</h3>
+
+            <div class="picker-search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="picker-search-input" placeholder="Buscar por nombre o clave...">
+            </div>
+
+            <div class="picker-tags-pills" id="picker-tags-container">
+                <button class="picker-tag-pill active" data-tag="">Todos</button>
+            </div>
+
+            <div class="picker-deck-list" id="picker-deck-list">
+                <!-- Dynamically rendered items -->
+            </div>
+        </div>
+    </div>
 
     <!-- Simple Login Modal -->
     <div id="login-modal" class="modal-overlay">
@@ -690,7 +860,7 @@
                 try {
                     const { data, error } = await _supabase
                         .from('decks')
-                        .select('id, name, user_id')
+                        .select('id, name, format_tag, user_id')
                         .eq('id', preselectedDeckId)
                         .maybeSingle();
                     if (!error && data) {
@@ -699,7 +869,7 @@
                         // Fetch all decks belonging to the owner of this public deck
                         const { data: oDecks, error: oError } = await _supabase
                             .from('decks')
-                            .select('id, name')
+                            .select('id, name, format_tag')
                             .eq('user_id', preselectedDeck.user_id);
                         if (!oError && oDecks) {
                             publicAccountDecks = oDecks;
@@ -833,7 +1003,7 @@
                 try {
                     const { data: decks, error } = await _supabase
                         .from('decks')
-                        .select('id, name')
+                        .select('id, name, format_tag')
                         .eq('user_id', userId);
 
                     if (error) throw error;
@@ -846,6 +1016,129 @@
                 }
             }
 
+            let currentPickerTarget = null;
+            let currentPickerTag = '';
+
+            function openDeckPicker(targetSelectId, titleText) {
+                currentPickerTarget = targetSelectId;
+                $('#deck-picker-title').text(titleText || 'Selecciona un Deck');
+                $('#picker-search-input').val('');
+                currentPickerTag = '';
+
+                // Build unique tags pills
+                const customTags = new Set();
+                userDecks.concat(publicAccountDecks || []).forEach(d => {
+                    if (d.format_tag && d.format_tag.trim()) {
+                        customTags.add(d.format_tag.trim());
+                    }
+                });
+
+                let pillsHtml = '<button class="picker-tag-pill active" data-tag="">Todos</button>';
+                customTags.forEach(tag => {
+                    pillsHtml += `<button class="picker-tag-pill" data-tag="${tag}">${tag}</button>`;
+                });
+                $('#picker-tags-container').html(pillsHtml);
+
+                renderPickerDeckList();
+                $('#deck-picker-modal').css('display', 'flex');
+            }
+
+            function renderPickerDeckList() {
+                const searchQuery = $('#picker-search-input').val().toLowerCase().trim();
+                const $list = $('#picker-deck-list');
+                $list.empty();
+
+                let availableDecks = currentPickerTarget === '#practice-deck2' && publicAccountDecks.length > 0 ? [...publicAccountDecks] : [...userDecks];
+
+                const isPractice = currentPickerTarget === '#practice-deck1' || currentPickerTarget === '#practice-deck2';
+
+                if (preselectedDeck && !availableDecks.some(d => d.id == preselectedDeck.id)) {
+                    availableDecks.unshift(preselectedDeck);
+                }
+
+                let filtered = availableDecks.filter(d => {
+                    const name = (d.name || '').toLowerCase();
+                    const tag = (d.format_tag || '').toLowerCase();
+                    const tagMatch = !currentPickerTag || tag === currentPickerTag.toLowerCase() || tag.includes(currentPickerTag.toLowerCase());
+                    const searchMatch = !searchQuery || name.includes(searchQuery) || tag.includes(searchQuery);
+                    return tagMatch && searchMatch;
+                });
+
+                if (isPractice) {
+                    if (!searchQuery && !currentPickerTag) {
+                        const $mock = $(`
+                            <div class="picker-deck-item" data-id="mock" data-name="Preestablecido (Mock Deck)">
+                                <span class="deck-title-text"><i class="fas fa-robot"></i> Preestablecido (Mock Deck)</span>
+                                <span class="deck-tag-badge" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">Default</span>
+                            </div>
+                        `);
+                        $mock.click(function() {
+                            selectDeckForTarget('mock', 'Preestablecido (Mock Deck)');
+                        });
+                        $list.append($mock);
+                    }
+                }
+
+                if (filtered.length === 0 && availableDecks.length > 0) {
+                    $list.append('<div style="text-align: center; color: #888; padding: 20px;">Sin decks que coincidan con la búsqueda.</div>');
+                    return;
+                }
+
+                filtered.forEach(d => {
+                    const tagBadge = (d.format_tag && d.format_tag.trim()) ? `<span class="deck-tag-badge">${d.format_tag.trim()}</span>` : '';
+                    const $item = $(`
+                        <div class="picker-deck-item" data-id="${d.id}" data-name="${d.name}">
+                            <span class="deck-title-text">${d.name}</span>
+                            ${tagBadge}
+                        </div>
+                    `);
+
+                    $item.click(function() {
+                        selectDeckForTarget(d.id, d.name);
+                    });
+
+                    $list.append($item);
+                });
+            }
+
+            function selectDeckForTarget(id, name) {
+                if (!currentPickerTarget) return;
+                const $select = $(currentPickerTarget);
+
+                if (!$select.find(`option[value="${id}"]`).length) {
+                    $select.append(`<option value="${id}">${name}</option>`);
+                }
+
+                $select.val(id);
+                const labelId = '#label-' + currentPickerTarget.replace('#', '');
+                $(labelId).text(name);
+
+                $('#deck-picker-modal').hide();
+            }
+
+            $('.deck-picker-trigger').click(function() {
+                const target = $(this).data('target');
+                const label = $(this).prev('label').text().replace('*', '').trim();
+                openDeckPicker(target, label);
+            });
+
+            $('#btn-close-deck-picker, #deck-picker-modal').click(function(e) {
+                if (e.target === this || e.target.id === 'btn-close-deck-picker') {
+                    $('#deck-picker-modal').hide();
+                }
+            });
+
+            $(document).on('click', '.picker-tag-pill', function() {
+                $('.picker-tag-pill').removeClass('active');
+                $(this).addClass('active');
+                currentPickerTag = $(this).data('tag');
+                renderPickerDeckList();
+            });
+
+            $('#picker-search-input').on('input', function() {
+                renderPickerDeckList();
+            });
+
             function populatePracticeDecks(decks) {
                 const $deck1 = $("#practice-deck1");
                 const $deck2 = $("#practice-deck2");
@@ -853,34 +1146,16 @@
                 $deck2.empty();
 
                 if (preselectedDeck) {
-                    // P1: ese deck sera el de usuario1
                     $deck1.append(`<option value="${preselectedDeck.id}" selected>${preselectedDeck.name}</option>`);
-                    $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
-
-                    // P2: pueda elegir cualquier deck de esa cuenta de decks públicos
-                    if (publicAccountDecks && publicAccountDecks.length > 0) {
-                        publicAccountDecks.forEach(d => {
-                            $deck2.append(`<option value="${d.id}">${d.name}</option>`);
-                        });
-                    }
-                    $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
-                } else {
-                    // P1: todos los que tengo disponibles en mi cuenta
-                    if (decks.length > 0) {
-                        decks.forEach(d => {
-                            $deck1.append(`<option value="${d.id}">${d.name}</option>`);
-                        });
-                    }
-                    $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
-
-                    // P2: todos los que tengo disponibles en mi cuenta
-                    if (decks.length > 0) {
-                        decks.forEach(d => {
-                            $deck2.append(`<option value="${d.id}">${d.name}</option>`);
-                        });
-                    }
-                    $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+                    $('#label-practice-deck1').text(preselectedDeck.name);
+                } else if (decks.length > 0) {
+                    $deck1.append(`<option value="${decks[0].id}" selected>${decks[0].name}</option>`);
+                    $('#label-practice-deck1').text(decks[0].name);
                 }
+                $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+
+                $deck2.append('<option value="mock" selected>Preestablecido (Mock Deck)</option>');
+                $('#label-practice-deck2').text('Preestablecido (Mock Deck)');
             }
 
             function populateMultiplayerDecks(decks) {
@@ -889,22 +1164,19 @@
                 $hostDeck.empty();
                 $guestDeck.empty();
 
-                let multiDecks = [...decks];
-                if (preselectedDeck && !multiDecks.some(d => d.id == preselectedDeck.id)) {
-                    multiDecks.unshift(preselectedDeck);
-                }
-
-                if (multiDecks.length === 0) {
+                if (decks.length === 0) {
                     $hostDeck.append('<option value="">No tienes ningún deck configurado</option>');
                     $guestDeck.append('<option value="">No tienes ningún deck configurado</option>');
+                    $('#label-host-deck').text('No tienes ningún deck configurado');
+                    $('#label-guest-deck').text('No tienes ningún deck configurado');
                     return;
                 }
 
-                multiDecks.forEach(d => {
-                    const selected = (preselectedDeck && d.id == preselectedDeck.id) ? 'selected' : '';
-                    $hostDeck.append(`<option value="${d.id}" ${selected}>${d.name}</option>`);
-                    $guestDeck.append(`<option value="${d.id}" ${selected}>${d.name}</option>`);
-                });
+                const firstDeck = preselectedDeck || decks[0];
+                $hostDeck.append(`<option value="${firstDeck.id}" selected>${firstDeck.name}</option>`);
+                $guestDeck.append(`<option value="${firstDeck.id}" selected>${firstDeck.name}</option>`);
+                $('#label-host-deck').text(firstDeck.name);
+                $('#label-guest-deck').text(firstDeck.name);
             }
 
             // 4. Action Handlers for redirection

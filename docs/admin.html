@@ -892,6 +892,20 @@
                     <button id="btn-organize-decks" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
                 </div>
             </div>
+            <!-- Filter Bar for Decks -->
+            <div id="deck-filter-bar" style="display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.03); padding: 10px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                <div style="display: flex; align-items: center; position: relative; flex: 2; min-width: 260px;">
+                    <i class="fas fa-search" style="position: absolute; left: 14px; color: #00d2ff; font-size: 14px; pointer-events: none;"></i>
+                    <input type="text" id="filter-deck-search" placeholder="Buscar deck por nombre..." style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 10px 16px 10px 38px; border-radius: 10px; font-size: 13px; outline: none; transition: border-color 0.2s;">
+                </div>
+                <div style="display: flex; align-items: center; position: relative; flex: 1; min-width: 180px;">
+                    <i class="fas fa-filter" style="position: absolute; left: 14px; color: #00d2ff; font-size: 13px; pointer-events: none; z-index: 2;"></i>
+                    <select id="filter-deck-tag" style="width: 100%; background: #1a2332; color: #00d2ff; font-weight: 600; border: 1px solid rgba(255,255,255,0.15); padding: 10px 14px 10px 36px; border-radius: 10px; font-size: 13px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none;">
+                        <option value="">Todos los Tags</option>
+                    </select>
+                    <i class="fas fa-chevron-down" style="position: absolute; right: 14px; color: rgba(255,255,255,0.4); font-size: 11px; pointer-events: none;"></i>
+                </div>
+            </div>
             <div id="deck-list" class="album-list">
                 <!-- Decks will be loaded here -->
                 <div class="loading">Cargando decks...</div>
@@ -929,7 +943,16 @@
                             <label>Nombre del Deck</label>
                             <input type="text" class="nexus-input-sync" data-target="#input-deck-name">
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label>Clave / Tipo de Deck</label>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <input type="text" id="nexus-input-deck-format" class="nexus-input-sync" data-target="#input-deck-format" placeholder="Seleccionar Tag (Vacío)" readonly style="width: 100%; cursor: pointer; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #00d2ff; font-weight: 600; padding: 8px 12px; border-radius: 8px; font-size: 13px;">
+                                <button type="button" id="btn-nexus-select-tag" class="btn btn-secondary open-tag-picker-btn" style="padding: 8px 12px; white-space: nowrap; font-size: 12px;" title="Seleccionar o Crear Tag">
+                                    <i class="fas fa-tags"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px;">
                             <label class="nexus-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
                                 <input type="checkbox" class="nexus-check-sync" data-target="#input-deck-public" checked>
                                 <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Público</span>
@@ -1063,6 +1086,17 @@
                     <div class="form-group">
                         <label>Nombre del Deck</label>
                         <input type="text" id="input-deck-name" placeholder="Nuevo Deck">
+                    </div>
+                    <div class="form-group">
+                        <label>Clave / Tipo de Deck</label>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <input type="text" id="input-deck-format" placeholder="Seleccionar Tag (Vacío)" readonly style="width: 100%; cursor: pointer; color: #00d2ff; font-weight: 600;">
+                            <button type="button" id="btn-mobile-select-tag" class="btn btn-secondary open-tag-picker-btn" style="padding: 10px 14px;" title="Seleccionar o Crear Tag">
+                                <i class="fas fa-tags"></i>
+                            </button>
+                        </div>
+                        <datalist id="deck-format-presets">
+                        </datalist>
                     </div>
                     <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                         <label class="switch">
