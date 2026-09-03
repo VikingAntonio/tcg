@@ -374,7 +374,16 @@ async function loadInvestmentCategories() {
         $card.find('.btn-edit-inv-cat').click(() => editInvestmentCategory(cat));
         $card.find('.btn-delete-inv-cat').click(() => deleteInvestmentCategory(cat.id));
         $card.find('.toggle-inv-cat-public').change(function() {
-            updateInvestmentCategory(cat.id, { is_public: $(this).is(':checked') });
+            const isChecked = $(this).is(':checked');
+            updateInvestmentCategory(cat.id, { is_public: isChecked });
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: isChecked ? 'success' : 'info',
+                title: isChecked ? 'Bóveda pública: Visible en el link público' : 'Bóveda privada',
+                showConfirmButton: false,
+                timer: 2000
+            });
         });
 
         $container.append($card);
