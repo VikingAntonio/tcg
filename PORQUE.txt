@@ -1,42 +1,63 @@
-==============================================================================
-EXPLICACIÓN Y SOLUCIÓN: VISIBILIDAD DE VAULTS Y CARTAS PÚBLICAS (PORQUE.TXT)
-==============================================================================
+================================================================================
+EXPLICACIÓN TÉCNICA: VISIBILIDAD DE BÓVEDAS (VAULTS) Y CARTAS EN EL LINK PÚBLICO
+================================================================================
 
-1. DIAGNÓSTICO: ¿POR QUÉ NO SALÍA NADA EN EL LINK PÚBLICO?
-------------------------------------------------------------------------------
-Causa 1: Valor por defecto de 'is_public' en la Base de Datos
-Al crear un Vault (categoría) o guardar una carta de inversión sin especificar explícitamente la propiedad 'is_public = true', la base de datos de Supabase asignaba por defecto 'false' (o null) según la definición del esquema original (ATCG.txt).
+1. DIAGNÓSTICO DEL PROBLEMA
+--------------------------------------------------------------------------------
+A) Falta de Notificación de Guardado (UI Toast):
+   Al cambiar los switches de visibilidad ("Público / Privado") de las bóvedas
+   y cartas en el módulo de Inversiones, las modificaciones se enviaban a Supabase,
+   pero la interfaz de usuario no mostraba ninguna confirmación o toast de guardado.
+   Esto daba la impresión de que las bóvedas no se estaban guardando o activando.
 
-Causa 2: Políticas de Seguridad Row Level Security (RLS) en Supabase
-Tanto en la tabla 'investment_categories' como en 'investment_cards', Supabase tiene activadas las siguientes políticas RLS:
-- "Anyone can view public investment categories" -> USING (is_public = true)
-- "Anyone can view public investment cards" -> USING (is_public = true)
+B) Carga de Datos en El Link Público (docs/js/app.js - resolveUser):
+   Al cargar public.html con el parámetro de usuario/tienda (ej. public.html?id=USERNAME&view=investments),
+   la función 'loadPublicInvestmentCategories()' se ejecutaba antes o de forma asíncrona
+   a que 'resolveUser()' guardara 'window.currentStoreId'. Cuando 'window.currentStoreId'
+   estaba indefinido, la consulta a Supabase no filtraba por el usuario del enlace y no
+   se mostraba el contenido del usuario.
 
-Cuando un visitante público o usuario no autenticado entra al link público (ej: public.html?id=USUARIO#investments), la consulta PostgREST a Supabase evalúa RLS. Si el Vault o la carta tenían 'is_public = false' (o null), Supabase bloqueaba los registros por seguridad y devolvía un arreglo vacío ([]). Por eso parecía que el Vault "solo se activaba y no mostraba nada de lo guardado".
+C) Filtro de Registros Públicos (is_public):
+   Tanto las categorías ('investment_categories') como las cartas ('investment_cards')
+   requieren que la propiedad 'is_public' no sea explícitamente 'false' para poder
+   visualizarse de forma pública. En consultas previas, si un registro nuevo no
+   tenía la columna definida o RLS bloqueaba la consulta anon, el resultado retornaba
+   vacío (0 bóvedas) para los visitantes no autenticados.
 
-Causa 3: Orden de Resolución del Identificador de Usuario en public.html
-Al ingresar directamente con el parámetro de URL (ej: ?id=tienda), si la función 'loadPublicInvestmentCategories' se ejecutaba antes de que 'loadStoreData' terminara de resolver el UUID del usuario, la variable 'window.currentStoreId' quedaba nula, impidiendo consultar los Vaults de esa tienda.
 
-2. SOLUCIÓN APLICADA
-------------------------------------------------------------------------------
-1) Garantizar 'is_public = true' por Defecto:
-   En 'docs/js/inversiones.js', las funciones 'saveInvestmentCategory' y 'btn-save-investment-card' ahora fuerzan 'is_public = true' por defecto tanto en la creación de nuevos Vaults como en la de cartas de inversión.
+2. SOLUCIONES Y MEJORAS IMPLEMENTADAS
+--------------------------------------------------------------------------------
+A) Notificaciones Toast de Confirmación (docs/js/inversiones.js):
+   - Se agregaron alertas Toast (SweetAlert2) de respuesta inmediata tanto al
+     cambiar el estado público de una Bóveda (.toggle-inv-cat-public) como al
+     modificar el switch de una carta individual (#inv-card-public-toggle).
+   - Al activar el switch, la pantalla confirma:
+     "Bóveda pública: Visible en el link público" o "Carta pública: Visible en el link público".
 
-2) Resolución de Usuario Robusta en public.html:
-   En 'docs/js/app.js' ('loadPublicInvestmentCategories' y 'openPublicInvestmentCategory'), se integró la resolución asíncrona 'resolveUser(identifier)' usando los parámetros de URL (?id=, ?store=, ?user=), garantizando que el UUID del usuario siempre esté disponible para realizar la consulta en Supabase.
+B) Resolución Dinámica del Usuario en Link Público (docs/js/app.js):
+   - Se actualizó 'loadPublicInvestmentCategories()' para resolver asíncronamente
+     el ID del propietario mediante 'resolveUser(identifier)' si 'window.currentStoreId'
+     aún no ha sido asignado al momento de cargar el tab de inversiones.
+   - La consulta filtra únicamente las bóvedas pertenecientes a ese propietario
+     y valida 'is_public !== false'.
 
-3) Muestra de Precios en Link Público:
-   En la vista pública ('public.html' y modal público 'openPublicInvestmentCardModal'), únicamente se muestra el 'Precio venta'. Los campos 'Precio compra' y 'Precio mercado' se mantienen estrictamente privados y no se envían ni se renderizan en el enlace público. Tampoco se muestran avisos innecesarios ni textos redundantes de "privado".
+C) Despliegue de Cartas e Imágenes Públicas (docs/js/app.js):
+   - Al abrir una bóveda pública en el link público, 'openPublicInvestmentCategory()'
+     obtiene únicamente las cartas con 'is_public !== false'.
+   - En la vista del modal público (#public-inv-card-modal), se ocultan estrictamente
+     los costos de compra y mercado privados (sin mostrar etiquetas molestas de "Privado"),
+     mostrando únicamente el 'Precio venta'.
+   - Si la carta contiene imágenes secundarias subidas en la pestaña "IMAGES",
+     el modal público las presenta en una galería de vistas previas responsiva bajo
+     la imagen principal.
 
-4) Galería de Imágenes Adicionales:
-   Si una carta tiene imágenes cargadas en la pestaña IMAGES, en el link público se renderiza una vista tipo galería con la imagen principal arriba y una tira de vistas previas deslizables abajo para alternar las fotos de la carta.
-
-==============================================================================
-ARCHIVOS MODIFICADOS:
-- PORQUE.txt
-- docs/inversiones.html
-- docs/js/inversiones.js
-- docs/js/app.js
-- docs/css/inversiones.css
-- docs/sw.js
-==============================================================================
+D) Formato de Formulario y Búsqueda en inversiones.html:
+   - La pestaña DATOS cuenta con 5 filas responsivas limpias:
+     1. Nombre de la carta (Fila completa)
+     2. Rareza / Cantidad
+     3. Precio compra / Precio mercado
+     4. Precio venta
+     5. Publicar / Estado
+   - La sección del buscador en DATOS se limpia automáticamente al borrar el texto del input.
+   - La pestaña IMAGES contiene la zona de arrastre (drag and drop) para imágenes adicionales
+     junto con las notas, alineado perfectamente sin barras de desplazamiento vertical.
