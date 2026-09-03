@@ -91,6 +91,7 @@ let deckCardsToDelete = [];
 let localVikingData = [];
 let bddQueue = [];
 let currentAlbumExtraImages = [];
+let currentSlotExtraImages = [];
 
 // Mask editor state is now global in utils.js
 
@@ -727,9 +728,13 @@ $(document).ready(async function() {
             custom_mask_url: $('#slot-custom-mask').val() || '',
             rarity: $('#slot-rarity').val() || '',
             expansion: $('#slot-expansion').val() || '',
-            condition: $('#slot-condition').val() || 'M',
+            condition: $('#slot-condition').val() || '',
             quantity: parseInt($('#slot-quantity').val()) || 1,
             price: $('#slot-price').val() || '',
+            language: $('#slot-language').val() || '',
+            edition: $('#slot-edition').val() || '',
+            description: $('#slot-description').val() || '',
+            extra_images: currentSlotExtraImages,
             obtained: $('#slot-modal').data('current-obtained') !== false
         };
 
@@ -1289,6 +1294,65 @@ $(document).ready(async function() {
     $(document).on('change', '#input-album-extra-files', function() {
         if (this.files.length > 0) {
             handleAlbumExtraImagesUpload(this.files);
+        }
+    });
+
+    // Slot Extra Images Upload Handlers
+    async function handleSlotExtraImagesUpload(files) {
+        const $fileName = $('#drop-zone-slot-extra .file-name');
+        $fileName.text("Subiendo imágenes...").css('color', '#aaa');
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const url = await CloudinaryUpload.uploadImage(files[i]);
+                currentSlotExtraImages.push(url);
+            }
+            $fileName.text("¡Cargadas!").css('color', '#00ff88');
+            setTimeout(() => $fileName.text(""), 2000);
+            renderSlotExtraImagesPreview();
+        } catch (err) {
+            $fileName.text("Error al subir").css('color', '#ff4757');
+            Swal.fire('Error', 'No se pudieron subir las imágenes: ' + err.message, 'error');
+        }
+    }
+
+    function renderSlotExtraImagesPreview() {
+        const $preview = $('#slot-extra-images-preview');
+        if (!$preview.length) return;
+        $preview.empty();
+
+        currentSlotExtraImages.forEach((url, idx) => {
+            const $item = $(`
+                <div style="position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15);">
+                    <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div class="btn-delete-card-top btn-delete-slot-extra-img" data-index="${idx}" style="position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; line-height: 18px; font-size: 10px; background: #ff4757; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white;">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+            `);
+
+            $item.find('.btn-delete-slot-extra-img').click(function(e) {
+                e.stopPropagation();
+                currentSlotExtraImages.splice(idx, 1);
+                renderSlotExtraImagesPreview();
+            });
+
+            $preview.append($item);
+        });
+    }
+
+    $(document).on('drop', '#drop-zone-slot-extra', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleSlotExtraImagesUpload(files);
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-slot-extra', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-slot-extra', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('change', '#input-slot-extra-files', function() {
+        if (this.files.length > 0) {
+            handleSlotExtraImagesUpload(this.files);
         }
     });
 
@@ -2855,6 +2919,12 @@ function editDeckCard(card) {
     $('#slot-condition').val(card.condition || '');
     $('#slot-quantity').val(card.quantity || 1);
     $('#slot-price').val(card.price || '');
+    $('#slot-language').val(card.language || '');
+    $('#slot-edition').val(card.edition || '');
+    $('#slot-description').val(card.description || '');
+
+    currentSlotExtraImages = card.extra_images || [];
+    renderSlotExtraImagesPreview();
 
     $('#slot-modal').addClass('active');
 }
@@ -3565,6 +3635,12 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-condition').val('');
     $('#slot-quantity').val('');
     $('#slot-price').val('');
+    $('#slot-language').val('');
+    $('#slot-edition').val('');
+    $('#slot-description').val('');
+
+    currentSlotExtraImages = [];
+    renderSlotExtraImagesPreview();
 
     // Reset second holo elements
     $('#slot-second-holo-container').hide();
@@ -3657,7 +3733,12 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-condition').val(data.condition || '');
         $('#slot-quantity').val(data.quantity || '');
         $('#slot-price').val(data.price || '');
+        $('#slot-language').val(data.language || '');
+        $('#slot-edition').val(data.edition || '');
+        $('#slot-description').val(data.description || '');
 
+        currentSlotExtraImages = data.extra_images || [];
+        renderSlotExtraImagesPreview();
     }
 
     $('#slot-modal').addClass('active');

@@ -689,13 +689,20 @@ $(document).ready(async function() {
     $(document).on('click', '#btn-add-to-cart', function(e) {
         e.preventDefault();
         if (window.currentCardData) {
-            Cart.add(window.currentCardData);
+            const qtyToBuy = parseInt($('#card-purchase-quantity').val()) || 1;
+            const maxAvail = parseInt(window.currentCardData.quantity) || 1;
+            const itemToAdd = {
+                ...window.currentCardData,
+                cart_quantity: Math.min(maxAvail, Math.max(1, qtyToBuy)),
+                max_quantity: maxAvail
+            };
+            Cart.add(itemToAdd);
             if (window.botInstance) {
-                window.botInstance.say(`¡Excelente elección! He añadido ${window.currentCardData.name} a tu carrito. Puedes ver tus opciones de compra por WhatsApp o Messenger.`, { duration: 8 });
+                window.botInstance.say(`¡Excelente elección! He añadido ${itemToAdd.cart_quantity} copia(s) de ${window.currentCardData.name} a tu carrito. Puedes ver tus opciones de compra por WhatsApp o Messenger.`, { duration: 8 });
             }
             Swal.fire({
                 title: '¡Añadido!',
-                text: `${window.currentCardData.name} se ha agregado al carrito.`,
+                text: `Se ha agregado ${itemToAdd.cart_quantity} copia(s) de ${window.currentCardData.name} al carrito.`,
                 icon: 'success',
                 timer: 1500,
                 showConfirmButton: false,
@@ -898,14 +905,17 @@ async function openCardModal($slot) {
 
     const id = $slot.data("id");
     const name = $slot.data("name") || "Carta de Colección";
-    const rarity = $slot.data("rarity") || "-";
+    const rarity = $slot.data("rarity") || "";
     const holo = $slot.data("holo") || "";
     const mask = $slot.data("mask") || "";
     let use3d = $slot.data("3d") !== false && $slot.data("3d") !== "false";
-    const expansion = $slot.data("expansion") || "-";
-    const condition = $slot.data("condition") || "-";
+    const expansion = $slot.data("expansion") || "";
+    const condition = $slot.data("condition") || "";
     const quantity = $slot.data("quantity") || "1";
-    const price = $slot.data("price") || "-";
+    const price = $slot.data("price") || "";
+    const language = $slot.data("language") || "";
+    const edition = $slot.data("edition") || "";
+    const description = $slot.data("description") || "";
     const isWishlist = $slot.hasClass('wishlist-card-item');
     const isDeckCard = $slot.closest('.deck-public-item').length > 0 || $slot.hasClass('grid-card-item');
 
@@ -1104,23 +1114,83 @@ async function openCardModal($slot) {
         $('#visitor-card-info').show();
 
         $("#card-name").text(name);
-        $("#card-rarity").text(rarity);
-        $("#card-expansion").text(expansion);
-        $("#card-condition").text(condition);
-        $("#card-quantity").text(quantity);
-        $("#card-price").text(price);
+
+        function setOrHideField(valSelector, itemSelector, valStr) {
+            const cleanVal = (valStr || "").toString().trim();
+            if (cleanVal && cleanVal !== "-") {
+                $(valSelector).text(cleanVal);
+                $(itemSelector).show();
+            } else {
+                $(itemSelector).hide();
+            }
+        }
+
+        setOrHideField("#card-rarity", "#rarity-item", rarity);
+        setOrHideField("#card-expansion", "#expansion-item", expansion);
+        setOrHideField("#card-condition", "#condition-item", condition);
+        setOrHideField("#card-quantity", "#quantity-item", quantity);
+        setOrHideField("#card-price", "#price-item", price);
+        setOrHideField("#card-language", "#language-item", language);
+        setOrHideField("#card-edition", "#edition-item", edition);
+        setOrHideField("#card-description", "#description-item", description);
+
+        let extraImages = [];
+        try {
+            const rawExtra = $slot.data('extra-images') || $slot.attr('data-extra-images');
+            if (typeof rawExtra === 'string') extraImages = JSON.parse(rawExtra);
+            else if (Array.isArray(rawExtra)) extraImages = rawExtra;
+        } catch (e) { extraImages = []; }
+
+        const $gallery = $('#card-extra-images-gallery');
+        $gallery.empty();
+        if (extraImages && extraImages.length > 0) {
+            const allThumbs = [imgSrc, ...extraImages];
+            allThumbs.forEach((thumbUrl, idx) => {
+                const $thumb = $(`<img src="${thumbUrl}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1.5px solid ${idx === 0 ? '#00d2ff' : 'rgba(255,255,255,0.2)'}; transition: all 0.2s;">`);
+                $thumb.on('click', function() {
+                    $('#expanded-image').attr('src', thumbUrl);
+                    $gallery.find('img').css('border-color', 'rgba(255,255,255,0.2)');
+                    $(this).css('border-color', '#00d2ff');
+                });
+                $gallery.append($thumb);
+            });
+            $gallery.css('display', 'grid');
+        } else {
+            $gallery.hide();
+        }
+
+        const totalAvail = Math.max(1, parseInt(quantity) || 1);
+        $('#card-purchase-quantity').attr('max', totalAvail).attr('min', 1).val(1);
 
         if (isWishlist) {
             $('#wishlist-contact-buttons').css('display', 'flex');
             $('#btn-add-to-cart').hide();
+            $('#cart-quantity-selector-container').hide();
             $('#expansion-item, #condition-item, #price-item').hide();
             $('#card-notes').text(notes || 'Sin notas adicionales.');
             $('#wishlist-info-extra').css('display', 'flex');
         } else {
             $('#wishlist-contact-buttons').hide();
             $('#btn-add-to-cart').show();
-            $('#expansion-item, #condition-item, #price-item').show();
+            $('#cart-quantity-selector-container').show();
             $('#wishlist-info-extra').hide();
+
+            $('#btn-qty-minus').off('click').on('click', function() {
+                let cur = parseInt($('#card-purchase-quantity').val()) || 1;
+                if (cur > 1) $('#card-purchase-quantity').val(cur - 1);
+            });
+
+            $('#btn-qty-plus').off('click').on('click', function() {
+                let cur = parseInt($('#card-purchase-quantity').val()) || 1;
+                if (cur < totalAvail) $('#card-purchase-quantity').val(cur + 1);
+            });
+
+            $('#card-purchase-quantity').off('change input').on('change input', function() {
+                let cur = parseInt($(this).val()) || 1;
+                if (cur < 1) cur = 1;
+                if (cur > totalAvail) cur = totalAvail;
+                $(this).val(cur);
+            });
         }
     }
 
@@ -2413,7 +2483,11 @@ function renderAlbum(album) {
                     'data-expansion': slotData.expansion || '',
                     'data-condition': slotData.condition || '',
                     'data-quantity': slotData.quantity || '',
-                    'data-price': slotData.price || ''
+                    'data-price': slotData.price || '',
+                    'data-language': slotData.language || '',
+                    'data-edition': slotData.edition || '',
+                    'data-description': slotData.description || '',
+                    'data-extra-images': JSON.stringify(slotData.extra_images || [])
                 });
                 if (slotData.image_url) {
                     const cardAlt = slotData.name || 'Carta';
