@@ -1522,7 +1522,7 @@
                             </div>
                             <div style="text-align: center;">
                                 <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Valor Personalizado:</label>
-                                <input type="number" id="swal-poke-custom-add" class="swal2-input" placeholder="Ej: 130" style="width: 120px; margin: 0 auto; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
+                                <input type="number" id="swal-poke-custom-add" class="swal2-input" placeholder="" style="width: 120px; margin: 0 auto; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
                             </div>
                         `,
                         showCancelButton: true,
@@ -1610,7 +1610,7 @@
                             </div>
                             <div style="text-align: center; margin-bottom: 10px;">
                                 <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Monto a Quitar:</label>
-                                <input type="number" id="swal-poke-custom-sub" class="swal2-input" placeholder="Ej: 30" style="width: 120px; margin: 0 auto; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
+                                <input type="number" id="swal-poke-custom-sub" class="swal2-input" placeholder="" style="width: 120px; margin: 0 auto; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
                             </div>
                         `,
                         showCancelButton: true,
@@ -2565,8 +2565,8 @@
                     $(".pokemon-only-tool").show();
                     $(".counter-section-title").text("Daño Pokémon");
                     $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
-                    $("#menu-add-counter").html('<i class="fas fa-plus-circle"></i> Agregar Daño (Pokémon)');
-                    $("#menu-sub-counter").html('<i class="fas fa-minus-circle"></i> Quitar / Modificar Daño');
+                    $("#menu-add-counter").html('<i class="fas fa-plus-circle"></i> Agregar Daño');
+                    $("#menu-sub-counter").html('<i class="fas fa-minus-circle"></i> Quitar Daño');
                 }
             };
             updateLayoutFeatureVisibility();
