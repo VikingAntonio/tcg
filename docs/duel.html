@@ -955,47 +955,52 @@
             z-index: 160;
             animation: counterPulse 1.5s infinite alternate;
         }
-        .stacked-counter-bead {
-            width: 16px;
-            height: 16px;
+        .placed-counter-bead {
+            position: absolute;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            border: 1px solid white;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            transition: transform 0.15s;
-            position: relative;
-        }
-        .stacked-counter-bead:hover {
-            transform: scale(1.3) translateY(-2px);
-            z-index: 100;
-        }
-        .ygo-bead {
-            background: radial-gradient(circle at center, rgba(0, 210, 255, 0.8) 0%, rgba(0, 66, 128, 0.95) 100%);
-            border-color: var(--primary-color);
-            box-shadow: 0 0 6px rgba(0, 210, 255, 0.5);
-        }
-        .poke-bead {
-            width: 20px;
-            height: 20px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.45rem;
-            font-weight: 900;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.55rem;
+            font-weight: 900;
+            color: #fff;
+            cursor: grab;
+            user-select: none;
+            z-index: 180;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+            transition: transform 0.1s ease;
+            touch-action: none;
         }
-        .poke-bead.dmg-10, .poke-bead.dmg-20, .poke-bead.dmg-30, .poke-bead.dmg-40 {
-            background: radial-gradient(circle at center, rgba(255, 211, 45, 0.85) 0%, rgba(128, 10, 0, 0.95) 100%);
-            border-color: #ffd32d;
+        .placed-counter-bead:hover {
+            transform: scale(1.3);
+            z-index: 200;
         }
-        .poke-bead.dmg-50, .poke-bead.dmg-60, .poke-bead.dmg-70 {
-            background: radial-gradient(circle at center, rgba(255, 140, 0, 0.85) 0%, rgba(128, 60, 0, 0.95) 100%);
-            border-color: #ff8c00;
+        .placed-counter-bead:active {
+            cursor: grabbing;
         }
-        .poke-bead.dmg-80, .poke-bead.dmg-90, .poke-bead.dmg-100 {
-            background: radial-gradient(circle at center, rgba(255, 27, 107, 0.85) 0%, rgba(128, 10, 50, 0.95) 100%);
-            border-color: #ff1b6b;
+        .ygo-placed-bead {
+            background: radial-gradient(circle at center, rgba(0, 210, 255, 0.95) 0%, rgba(0, 66, 128, 0.95) 100%);
+            border: 1.5px solid #00d2ff;
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.7);
+            color: #fff;
+        }
+        .poke-placed-bead.dmg-10, .poke-placed-bead.dmg-20, .poke-placed-bead.dmg-30, .poke-placed-bead.dmg-40 {
+            background: radial-gradient(circle at center, rgba(255, 211, 45, 0.95) 0%, rgba(180, 100, 0, 0.95) 100%);
+            border: 1.5px solid #ffd32d;
+            color: #000;
+        }
+        .poke-placed-bead.dmg-50, .poke-placed-bead.dmg-60, .poke-placed-bead.dmg-70 {
+            background: radial-gradient(circle at center, rgba(255, 140, 0, 0.95) 0%, rgba(180, 40, 0, 0.95) 100%);
+            border: 1.5px solid #ff8c00;
+            color: #fff;
+        }
+        .poke-placed-bead.dmg-80, .poke-placed-bead.dmg-90, .poke-placed-bead.dmg-100 {
+            background: radial-gradient(circle at center, rgba(255, 27, 107, 0.95) 0%, rgba(140, 0, 50, 0.95) 100%);
+            border: 1.5px solid #ff1b6b;
+            color: #fff;
         }
 
         /* Tooltips */
@@ -1474,6 +1479,182 @@
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (cardObj) {
                     window.performDirectAttack(cardObj);
+                }
+            });
+
+            // Bind menu counter add/sub options dynamically depending on layout (YGO vs Pokémon)
+            $("#menu-add-counter").click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!activeMenuCard) return;
+                const cardObj = activeMenuCard;
+                $("#card-menu").removeClass("active");
+
+                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                    if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                    const idx = cardObj.placedCounters.length;
+                    const defaultX = 10 + (idx % 3) * 22;
+                    const defaultY = 60 + Math.floor(idx / 3) * 22;
+                    cardObj.placedCounters.push({
+                        id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        x: defaultX,
+                        y: defaultY
+                    });
+                    cardObj.counters = cardObj.placedCounters.length;
+                    sendGameAction(`Agregó un contador a ${cardObj.name} (Total: ${cardObj.counters})`);
+                    window.renderAllCards();
+                } else {
+                    // Pokémon damage add modal
+                    const currentDmg = (cardObj.pokemonDamageCounters || []).reduce((a, b) => a + b, 0);
+                    Swal.fire({
+                        title: `Agregar Daño - ${cardObj.name}`,
+                        html: `
+                            <div style="margin-bottom: 12px; font-family: 'Orbitron', sans-serif; color: #ffd32d; font-weight: bold; font-size: 1.1rem;">
+                                Daño Actual: ${currentDmg}
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 15px;">
+                                <button type="button" class="swal-poke-preset btn btn-warning" data-val="10" style="padding: 6px 12px; font-weight: bold;">+10</button>
+                                <button type="button" class="swal-poke-preset btn btn-warning" data-val="20" style="padding: 6px 12px; font-weight: bold;">+20</button>
+                                <button type="button" class="swal-poke-preset btn btn-warning" data-val="30" style="padding: 6px 12px; font-weight: bold;">+30</button>
+                                <button type="button" class="swal-poke-preset btn btn-warning" data-val="50" style="padding: 6px 12px; font-weight: bold;">+50</button>
+                                <button type="button" class="swal-poke-preset btn btn-warning" data-val="100" style="padding: 6px 12px; font-weight: bold;">+100</button>
+                                <button type="button" class="swal-poke-preset btn btn-warning" data-val="130" style="padding: 6px 12px; font-weight: bold;">+130</button>
+                            </div>
+                            <div style="text-align: center;">
+                                <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Valor Personalizado:</label>
+                                <input type="number" id="swal-poke-custom-add" class="swal2-input" placeholder="Ej: 130" style="width: 120px; margin: 0 auto; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Agregar',
+                        cancelButtonText: 'Cancelar',
+                        background: '#12181e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd32d',
+                        didOpen: () => {
+                            $(".swal-poke-preset").click(function() {
+                                const val = parseInt($(this).data("val")) || 0;
+                                $("#swal-poke-custom-add").val(val);
+                            });
+                        },
+                        preConfirm: () => {
+                            return parseInt(document.getElementById('swal-poke-custom-add').value) || 0;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed && result.value > 0) {
+                            const addVal = result.value;
+                            if (!cardObj.placedPokeCounters) cardObj.placedPokeCounters = [];
+                            const idx = cardObj.placedPokeCounters.length;
+                            const defaultX = 6 + (idx % 3) * 23;
+                            const defaultY = 40 + Math.floor(idx / 3) * 23;
+                            cardObj.placedPokeCounters.push({
+                                id: `poke_cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                val: addVal,
+                                x: defaultX,
+                                y: defaultY
+                            });
+                            cardObj.pokemonDamageCounters = cardObj.placedPokeCounters.map(c => c.val);
+                            const totalDmg = cardObj.pokemonDamageCounters.reduce((a, b) => a + b, 0);
+                            sendGameAction(`Agregó contador de daño de ${addVal} a ${cardObj.name} (Daño total: ${totalDmg})`);
+                            window.renderAllCards();
+                        }
+                    });
+                }
+            });
+
+            $("#menu-sub-counter").click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!activeMenuCard) return;
+                const cardObj = activeMenuCard;
+                $("#card-menu").removeClass("active");
+
+                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                    if (cardObj.placedCounters && cardObj.placedCounters.length > 0) {
+                        cardObj.placedCounters.pop();
+                        cardObj.counters = cardObj.placedCounters.length;
+                    } else {
+                        cardObj.counters = Math.max(0, (cardObj.counters || 0) - 1);
+                    }
+                    sendGameAction(`Quitó un contador de ${cardObj.name} (Total restante: ${cardObj.counters})`);
+                    window.renderAllCards();
+                } else {
+                    // Pokémon damage remove/clear modal
+                    const currentDmg = (cardObj.pokemonDamageCounters || []).reduce((a, b) => a + b, 0);
+                    if (currentDmg <= 0) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'bottom',
+                            timer: 2000,
+                            icon: 'info',
+                            title: 'La carta no tiene contadores de daño',
+                            background: '#12181e',
+                            color: '#fff'
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: `Quitar / Reducir Daño - ${cardObj.name}`,
+                        html: `
+                            <div style="margin-bottom: 12px; font-family: 'Orbitron', sans-serif; color: #ff1b6b; font-weight: bold; font-size: 1.1rem;">
+                                Daño Actual: ${currentDmg}
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 15px;">
+                                <button type="button" class="swal-poke-sub-preset btn btn-danger" data-val="10" style="padding: 6px 12px; font-weight: bold;">-10</button>
+                                <button type="button" class="swal-poke-sub-preset btn btn-danger" data-val="20" style="padding: 6px 12px; font-weight: bold;">-20</button>
+                                <button type="button" class="swal-poke-sub-preset btn btn-danger" data-val="30" style="padding: 6px 12px; font-weight: bold;">-30</button>
+                                <button type="button" class="swal-poke-sub-preset btn btn-danger" data-val="50" style="padding: 6px 12px; font-weight: bold;">-50</button>
+                                <button type="button" class="swal-poke-sub-preset btn btn-danger" data-val="100" style="padding: 6px 12px; font-weight: bold;">-100</button>
+                                <button type="button" class="swal-poke-sub-preset btn btn-danger" data-val="130" style="padding: 6px 12px; font-weight: bold;">-130</button>
+                            </div>
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Monto a Quitar:</label>
+                                <input type="number" id="swal-poke-custom-sub" class="swal2-input" placeholder="Ej: 30" style="width: 120px; margin: 0 auto; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: 'Quitar Mencionados',
+                        denyButtonText: 'Quitar Todo (Curar)',
+                        cancelButtonText: 'Cancelar',
+                        background: '#12181e',
+                        color: '#fff',
+                        confirmButtonColor: '#ff1b6b',
+                        denyButtonColor: '#ff4a4a',
+                        didOpen: () => {
+                            $(".swal-poke-sub-preset").click(function() {
+                                const val = parseInt($(this).data("val")) || 0;
+                                $("#swal-poke-custom-sub").val(val);
+                            });
+                        },
+                        preConfirm: () => {
+                            return parseInt(document.getElementById('swal-poke-custom-sub').value) || 0;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            let subVal = result.value || 0;
+                            if (subVal > 0) {
+                                // Reduce damage value
+                                let targetDmg = Math.max(0, currentDmg - subVal);
+                                if (targetDmg === 0) {
+                                    cardObj.placedPokeCounters = [];
+                                    cardObj.pokemonDamageCounters = [];
+                                } else {
+                                    // Re-assign damage counters to match targetDmg
+                                    cardObj.placedPokeCounters = [];
+                                    cardObj.pokemonDamageCounters = [targetDmg];
+                                }
+                                sendGameAction(`Redujo ${subVal} de daño a ${cardObj.name} (Daño restante: ${targetDmg})`);
+                                window.renderAllCards();
+                            }
+                        } else if (result.isDenied) {
+                            cardObj.placedPokeCounters = [];
+                            cardObj.pokemonDamageCounters = [];
+                            sendGameAction(`Quitó todo el daño de ${cardObj.name}`);
+                            window.renderAllCards();
+                        }
+                    });
                 }
             });
 
@@ -2233,6 +2414,8 @@
                                 localCard.tapped = remoteCard.tapped;
                                 localCard.counters = remoteCard.counters;
                                 localCard.pokemonDamageCounters = remoteCard.pokemonDamageCounters;
+                                localCard.placedCounters = remoteCard.placedCounters;
+                                localCard.placedPokeCounters = remoteCard.placedPokeCounters;
                                 localCard.attachedTo = remoteCard.attachedTo;
                                 localCard.controller = remoteCard.controller;
                                 localCard.isExtra = remoteCard.isExtra;
@@ -2375,11 +2558,15 @@
                     $(".pokemon-only-tool").hide();
                     $(".counter-section-title").text("Contadores YGO");
                     $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
+                    $("#menu-add-counter").html('<i class="fas fa-plus-circle"></i> Agregar Contador (+1)');
+                    $("#menu-sub-counter").html('<i class="fas fa-minus-circle"></i> Quitar Contador (-1)');
                 } else {
                     $(".ygo-only-tool").hide();
                     $(".pokemon-only-tool").show();
                     $(".counter-section-title").text("Daño Pokémon");
                     $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+                    $("#menu-add-counter").html('<i class="fas fa-plus-circle"></i> Agregar Daño (Pokémon)');
+                    $("#menu-sub-counter").html('<i class="fas fa-minus-circle"></i> Quitar / Modificar Daño');
                 }
             };
             updateLayoutFeatureVisibility();
@@ -2650,9 +2837,9 @@
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
-            let activeCounterDragVal = null; // null for YGO, integer (10, 20... 100) for Pokémon, or object for CUSTOM_ATK_DEF / REMOVE_ATK_DEF
+            let activeCounterDragVal = null; // null for YGO, integer for Pokémon, or object for CUSTOM_ATK_DEF / REMOVE_ATK_DEF / MOVE_PLACED_COUNTER
 
-            $(document).on("dragstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
+            $(document).on("dragstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge, .placed-counter-bead", function(e) {
                 if ($(this).hasClass("custom-atk-def-source")) {
                     const $parent = $(this).closest(".accessories-section");
                     const atk = parseInt($parent.find(".custom-atk-input").val()) || 0;
@@ -2667,15 +2854,23 @@
                     if (e.originalEvent.dataTransfer) {
                         e.originalEvent.dataTransfer.setData("text/plain", "remove_atk_def");
                     }
+                } else if ($(this).hasClass("placed-counter-bead")) {
+                    const instId = $(this).data("instance-id");
+                    const counterId = $(this).data("counter-id");
+                    const isYGO = $(this).hasClass("ygo-placed-bead");
+                    const val = isYGO ? 1 : (parseInt($(this).data("val")) || 10);
+                    activeCounterDragVal = { type: "MOVE_PLACED_COUNTER", cardInstanceId: instId, counterId: counterId, isYGO: isYGO, val: val };
+                    if (e.originalEvent.dataTransfer) {
+                        e.originalEvent.dataTransfer.setData("text/plain", "move_placed_counter");
+                    }
                 } else {
-                    // Determine counter type
+                    // Determine counter type from sidebar toolbar
                     if ($(this).hasClass("ygo-counter-source")) {
                         activeCounterDragVal = "YGO";
                     } else {
                         activeCounterDragVal = parseInt($(this).data("val"));
                     }
 
-                    // Keep clone image invisible or custom
                     if (e.originalEvent.dataTransfer) {
                         e.originalEvent.dataTransfer.setData("text/plain", "counter");
                     }
@@ -2701,6 +2896,32 @@
                         window.renderAllCards();
                     }
                     activeCounterDragVal = null;
+                } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_PLACED_COUNTER") {
+                    // Dragged a placed counter bead OFF any card -> REMOVE IT!
+                    e.preventDefault();
+                    const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
+                    if (oldCard) {
+                        if (activeCounterDragVal.isYGO) {
+                            if (oldCard.placedCounters) {
+                                oldCard.placedCounters = oldCard.placedCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                oldCard.counters = oldCard.placedCounters.length;
+                            } else {
+                                oldCard.counters = Math.max(0, (oldCard.counters || 1) - 1);
+                            }
+                            sendGameAction(`Quitó un contador de ${oldCard.name}`);
+                        } else {
+                            if (oldCard.placedPokeCounters) {
+                                oldCard.placedPokeCounters = oldCard.placedPokeCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                oldCard.pokemonDamageCounters = oldCard.placedPokeCounters.map(c => c.val);
+                            } else if (oldCard.pokemonDamageCounters) {
+                                oldCard.pokemonDamageCounters.pop();
+                            }
+                            const totalDmg = (oldCard.pokemonDamageCounters || []).reduce((a, b) => a + b, 0);
+                            sendGameAction(`Quitó contador de daño de ${activeCounterDragVal.val} a ${oldCard.name} (Daño restante: ${totalDmg})`);
+                        }
+                        window.renderAllCards();
+                    }
+                    activeCounterDragVal = null;
                 }
             });
 
@@ -2711,6 +2932,13 @@
                 const instId = $(this).data("instance-id");
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
+
+                // Calculate relative drop coordinates on the target card
+                const offset = $(this).offset();
+                const dropX = (e.clientX || (e.originalEvent && e.originalEvent.clientX)) - offset.left - 11;
+                const dropY = (e.clientY || (e.originalEvent && e.originalEvent.clientY)) - offset.top - 11;
+                const relX = Math.max(0, Math.min($(this).width() - 22, dropX));
+                const relY = Math.max(0, Math.min($(this).height() - 22, dropY));
 
                 if (activeCounterDragVal && activeCounterDragVal.type === "CUSTOM_ATK_DEF") {
                     cardObj.customAtkDef = {
@@ -2725,18 +2953,58 @@
                         delete oldCard.customAtkDef;
                         sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                     }
+                } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_PLACED_COUNTER") {
+                    const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
+                    if (oldCard) {
+                        if (activeCounterDragVal.isYGO) {
+                            if (oldCard.placedCounters) {
+                                oldCard.placedCounters = oldCard.placedCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                oldCard.counters = oldCard.placedCounters.length;
+                            }
+                            if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                            cardObj.placedCounters.push({ id: activeCounterDragVal.counterId, x: relX, y: relY });
+                            cardObj.counters = cardObj.placedCounters.length;
+                            if (oldCard.instanceId === cardObj.instanceId) {
+                                sendGameAction(`Movió contador en ${cardObj.name}`);
+                            } else {
+                                sendGameAction(`Movió contador de ${oldCard.name} a ${cardObj.name}`);
+                            }
+                        } else {
+                            if (oldCard.placedPokeCounters) {
+                                oldCard.placedPokeCounters = oldCard.placedPokeCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                oldCard.pokemonDamageCounters = oldCard.placedPokeCounters.map(c => c.val);
+                            }
+                            if (!cardObj.placedPokeCounters) cardObj.placedPokeCounters = [];
+                            cardObj.placedPokeCounters.push({ id: activeCounterDragVal.counterId, val: activeCounterDragVal.val, x: relX, y: relY });
+                            cardObj.pokemonDamageCounters = cardObj.placedPokeCounters.map(c => c.val);
+                            const totalDmg = cardObj.pokemonDamageCounters.reduce((a, b) => a + b, 0);
+                            if (oldCard.instanceId === cardObj.instanceId) {
+                                sendGameAction(`Movió contador de daño de ${activeCounterDragVal.val} en ${cardObj.name}`);
+                            } else {
+                                sendGameAction(`Movió contador de daño de ${activeCounterDragVal.val} de ${oldCard.name} a ${cardObj.name} (Daño total: ${totalDmg})`);
+                            }
+                        }
+                    }
                 } else if (activeCounterDragVal === "YGO") {
                     if (state.layout !== 'yugioh' && state.layout !== 'yugioh_advanced') return;
-                    cardObj.counters = (cardObj.counters || 0) + 1;
+                    if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                    cardObj.placedCounters.push({
+                        id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        x: relX,
+                        y: relY
+                    });
+                    cardObj.counters = cardObj.placedCounters.length;
                     sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                 } else if (typeof activeCounterDragVal === "number") {
                     if (state.layout !== 'pokemon') return;
-                    if (!cardObj.pokemonDamageCounters) {
-                        cardObj.pokemonDamageCounters = [];
-                    }
-                    cardObj.pokemonDamageCounters.push(activeCounterDragVal);
-
-                    // Sum counters for overall Pokémon tracking
+                    if (!cardObj.placedPokeCounters) cardObj.placedPokeCounters = [];
+                    cardObj.placedPokeCounters.push({
+                        id: `poke_cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        val: activeCounterDragVal,
+                        x: relX,
+                        y: relY
+                    });
+                    cardObj.pokemonDamageCounters = cardObj.placedPokeCounters.map(c => c.val);
                     const totalDmg = cardObj.pokemonDamageCounters.reduce((a, b) => a + b, 0);
                     sendGameAction(`Agregó contador de daño de ${activeCounterDragVal} a ${cardObj.name} (Daño total: ${totalDmg})`);
                 }
@@ -2749,7 +3017,7 @@
             let activeTouchDragSource = null;
             let $activeTouchDragClone = null;
 
-            $(document).on("touchstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
+            $(document).on("touchstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge, .placed-counter-bead", function(e) {
                 activeTouchDragSource = $(this);
                 if (activeTouchDragSource.hasClass("custom-atk-def-source")) {
                     const $parent = activeTouchDragSource.closest(".accessories-section");
@@ -2759,6 +3027,12 @@
                 } else if (activeTouchDragSource.hasClass("custom-atk-def-badge")) {
                     const instId = activeTouchDragSource.data("instance-id");
                     activeCounterDragVal = { type: "REMOVE_ATK_DEF", cardInstanceId: instId };
+                } else if (activeTouchDragSource.hasClass("placed-counter-bead")) {
+                    const instId = activeTouchDragSource.data("instance-id");
+                    const counterId = activeTouchDragSource.data("counter-id");
+                    const isYGO = activeTouchDragSource.hasClass("ygo-placed-bead");
+                    const val = isYGO ? 1 : (parseInt(activeTouchDragSource.data("val")) || 10);
+                    activeCounterDragVal = { type: "MOVE_PLACED_COUNTER", cardInstanceId: instId, counterId: counterId, isYGO: isYGO, val: val };
                 } else {
                     const isYGO = activeTouchDragSource.hasClass("ygo-counter-source");
                     activeCounterDragVal = isYGO ? "YGO" : parseInt(activeTouchDragSource.data("val"));
@@ -2801,6 +3075,12 @@
                     const instId = cardElem.data("instance-id");
                     const cardObj = state.cards.find(c => c.instanceId === instId);
                     if (cardObj) {
+                        const offset = cardElem.offset();
+                        const dropX = coords.x - offset.left - 11;
+                        const dropY = coords.y - offset.top - 11;
+                        const relX = Math.max(0, Math.min(cardElem.width() - 22, dropX));
+                        const relY = Math.max(0, Math.min(cardElem.height() - 22, dropY));
+
                         if (activeCounterDragVal && activeCounterDragVal.type === "CUSTOM_ATK_DEF") {
                             cardObj.customAtkDef = {
                                 atk: activeCounterDragVal.atk,
@@ -2814,17 +3094,51 @@
                                 delete oldCard.customAtkDef;
                                 sendGameAction(`Movió ATK/DEF personalizado de ${oldCard.name} a ${cardObj.name}`);
                             }
+                        } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_PLACED_COUNTER") {
+                            const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
+                            if (oldCard) {
+                                if (activeCounterDragVal.isYGO) {
+                                    if (oldCard.placedCounters) {
+                                        oldCard.placedCounters = oldCard.placedCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                        oldCard.counters = oldCard.placedCounters.length;
+                                    }
+                                    if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                                    cardObj.placedCounters.push({ id: activeCounterDragVal.counterId, x: relX, y: relY });
+                                    cardObj.counters = cardObj.placedCounters.length;
+                                    sendGameAction(`Movió contador de ${oldCard.name} a ${cardObj.name}`);
+                                } else {
+                                    if (oldCard.placedPokeCounters) {
+                                        oldCard.placedPokeCounters = oldCard.placedPokeCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                        oldCard.pokemonDamageCounters = oldCard.placedPokeCounters.map(c => c.val);
+                                    }
+                                    if (!cardObj.placedPokeCounters) cardObj.placedPokeCounters = [];
+                                    cardObj.placedPokeCounters.push({ id: activeCounterDragVal.counterId, val: activeCounterDragVal.val, x: relX, y: relY });
+                                    cardObj.pokemonDamageCounters = cardObj.placedPokeCounters.map(c => c.val);
+                                    const totalDmg = cardObj.pokemonDamageCounters.reduce((a, b) => a + b, 0);
+                                    sendGameAction(`Movió contador de daño de ${activeCounterDragVal.val} de ${oldCard.name} a ${cardObj.name} (Daño total: ${totalDmg})`);
+                                }
+                            }
                         } else if (activeCounterDragVal === "YGO") {
                             if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
-                                cardObj.counters = (cardObj.counters || 0) + 1;
+                                if (!cardObj.placedCounters) cardObj.placedCounters = [];
+                                cardObj.placedCounters.push({
+                                    id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    x: relX,
+                                    y: relY
+                                });
+                                cardObj.counters = cardObj.placedCounters.length;
                                 sendGameAction(`Colocó un contador en ${cardObj.name} (Total: ${cardObj.counters})`);
                             }
                         } else if (typeof activeCounterDragVal === "number") {
                             if (state.layout === 'pokemon') {
-                                if (!cardObj.pokemonDamageCounters) {
-                                    cardObj.pokemonDamageCounters = [];
-                                }
-                                cardObj.pokemonDamageCounters.push(activeCounterDragVal);
+                                if (!cardObj.placedPokeCounters) cardObj.placedPokeCounters = [];
+                                cardObj.placedPokeCounters.push({
+                                    id: `poke_cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    val: activeCounterDragVal,
+                                    x: relX,
+                                    y: relY
+                                });
+                                cardObj.pokemonDamageCounters = cardObj.placedPokeCounters.map(c => c.val);
                                 const totalDmg = cardObj.pokemonDamageCounters.reduce((a, b) => a + b, 0);
                                 sendGameAction(`Agregó contador de daño de ${activeCounterDragVal} a ${cardObj.name} (Daño total: ${totalDmg})`);
                             }
@@ -2832,12 +3146,31 @@
                         window.renderAllCards();
                     }
                 } else {
-                    // Touch dropped outside any card
+                    // Touch dropped outside any card -> remove placed item
                     if (activeCounterDragVal && activeCounterDragVal.type === "REMOVE_ATK_DEF") {
                         const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
                         if (oldCard) {
                             delete oldCard.customAtkDef;
                             sendGameAction(`Quitó ATK/DEF personalizado de ${oldCard.name}`);
+                            window.renderAllCards();
+                        }
+                    } else if (activeCounterDragVal && activeCounterDragVal.type === "MOVE_PLACED_COUNTER") {
+                        const oldCard = state.cards.find(c => c.instanceId === activeCounterDragVal.cardInstanceId);
+                        if (oldCard) {
+                            if (activeCounterDragVal.isYGO) {
+                                if (oldCard.placedCounters) {
+                                    oldCard.placedCounters = oldCard.placedCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                    oldCard.counters = oldCard.placedCounters.length;
+                                }
+                                sendGameAction(`Quitó un contador de ${oldCard.name}`);
+                            } else {
+                                if (oldCard.placedPokeCounters) {
+                                    oldCard.placedPokeCounters = oldCard.placedPokeCounters.filter(c => c.id !== activeCounterDragVal.counterId);
+                                    oldCard.pokemonDamageCounters = oldCard.placedPokeCounters.map(c => c.val);
+                                }
+                                const totalDmg = (oldCard.pokemonDamageCounters || []).reduce((a, b) => a + b, 0);
+                                sendGameAction(`Quitó contador de daño de ${activeCounterDragVal.val} a ${oldCard.name} (Daño restante: ${totalDmg})`);
+                            }
                             window.renderAllCards();
                         }
                     }
@@ -2847,7 +3180,7 @@
                 activeCounterDragVal = null;
             });
 
-            // Override original renderAllCards to draw our stacked counters overlay cleanly
+            // Override original renderAllCards to draw our placed counter beads cleanly
             const baseRenderAllCards = window.renderAllCards;
             window.renderAllCards = function() {
                 baseRenderAllCards();
@@ -2857,54 +3190,89 @@
                     const $card = $(`#${card.instanceId}`);
                     if (!$card.length) return;
 
-                    // Remove legacy single counter badge if needed, but we keep it safe.
-                    // Instead, let's inject a beautiful clean stacked indicator overlay.
+                    // Remove existing placed counter elements
+                    $card.find(".placed-counter-bead").remove();
+                    $card.find(".pokemon-damage-badge").remove();
                     $card.find(".card-counter-container").remove();
                     $card.find(".counter-tooltip").remove();
 
-                    const styleOverride = card.counterPosition
-                        ? `style="left: ${card.counterPosition.left}px; top: ${card.counterPosition.top}px; bottom: auto; transform: none;"`
-                        : "";
-
                     if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
-                        if (card.counters && card.counters > 0) {
-                            let beadsHtml = "";
-                            const visibleBeadsCount = Math.min(card.counters, 5); // Limit stacked nodes visually to 5 beads maximum
-                            for (let i = 0; i < visibleBeadsCount; i++) {
-                                beadsHtml += `<div class="stacked-counter-bead ygo-bead" style="transform: translateX(${i * -3}px) translateY(${i * -2}px); z-index: ${10 - i};"></div>`;
+                        // Normalize placedCounters array with counters count
+                        if (!card.placedCounters) card.placedCounters = [];
+                        if (card.counters && card.placedCounters.length !== card.counters) {
+                            // Sync placedCounters to match counters count if modified externally via menu or code
+                            while (card.placedCounters.length < card.counters) {
+                                const idx = card.placedCounters.length;
+                                const defaultX = 10 + (idx % 3) * 22;
+                                const defaultY = 60 + Math.floor(idx / 3) * 22;
+                                card.placedCounters.push({
+                                    id: `cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    x: defaultX,
+                                    y: defaultY
+                                });
                             }
+                            while (card.placedCounters.length > card.counters) {
+                                card.placedCounters.pop();
+                            }
+                        }
 
+                        card.placedCounters.forEach(cnt => {
                             $card.append(`
-                                <div class="card-counter-container" data-instance-id="${card.instanceId}" ${styleOverride}>
-                                    ${beadsHtml}
-                                    <div class="counter-tooltip">Contadores: ${card.counters}</div>
+                                <div class="placed-counter-bead ygo-placed-bead"
+                                     draggable="true"
+                                     data-instance-id="${card.instanceId}"
+                                     data-counter-id="${cnt.id}"
+                                     style="left: ${cnt.x}px; top: ${cnt.y}px;"
+                                     title="Arrastra fuera para eliminar | Clic para quitar">
+                                     +1
                                 </div>
                             `);
-                        }
+                        });
                     } else {
                         // Pokémon Layout damage counters
                         const dmgArray = card.pokemonDamageCounters || [];
+                        if (!card.placedPokeCounters) card.placedPokeCounters = [];
+
+                        // Keep placedPokeCounters in sync with pokemonDamageCounters array
+                        if (dmgArray.length !== card.placedPokeCounters.length) {
+                            // Rebuild placedPokeCounters cleanly
+                            card.placedPokeCounters = dmgArray.map((val, idx) => {
+                                const defaultX = 6 + (idx % 3) * 23;
+                                const defaultY = 40 + Math.floor(idx / 3) * 23;
+                                const existing = card.placedPokeCounters[idx];
+                                return {
+                                    id: existing ? existing.id : `poke_cnt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                                    val: val,
+                                    x: existing ? existing.x : defaultX,
+                                    y: existing ? existing.y : defaultY
+                                };
+                            });
+                        }
+
                         if (dmgArray.length > 0) {
-                            let beadsHtml = "";
                             const totalDmg = dmgArray.reduce((a, b) => a + b, 0);
-                            const visibleBeadsCount = Math.min(dmgArray.length, 4);
 
-                            for (let i = 0; i < visibleBeadsCount; i++) {
-                                const val = dmgArray[i];
+                            card.placedPokeCounters.forEach(cnt => {
                                 let colorClass = "dmg-10";
-                                if (val >= 50 && val < 80) colorClass = "dmg-50";
-                                else if (val >= 80) colorClass = "dmg-80";
+                                if (cnt.val >= 50 && cnt.val < 80) colorClass = "dmg-50";
+                                else if (cnt.val >= 80) colorClass = "dmg-80";
 
-                                beadsHtml += `<div class="stacked-counter-bead poke-bead ${colorClass}" style="transform: translateX(${i * -4}px) translateY(${i * -2}px); z-index: ${10 - i};" data-idx="${i}">${val}</div>`;
-                            }
+                                $card.append(`
+                                    <div class="placed-counter-bead poke-placed-bead ${colorClass}"
+                                         draggable="true"
+                                         data-instance-id="${card.instanceId}"
+                                         data-counter-id="${cnt.id}"
+                                         data-val="${cnt.val}"
+                                         style="left: ${cnt.x}px; top: ${cnt.y}px;"
+                                         title="Daño: ${cnt.val} | Arrastra fuera para eliminar">
+                                         ${cnt.val}
+                                    </div>
+                                `);
+                            });
 
-                            // Inject visible damage total badge on top left of the card in addition to details
+                            // Inject visible damage total badge on top left of the card
                             $card.append(`
                                 <div class="pokemon-damage-badge">${totalDmg}</div>
-                                <div class="card-counter-container" data-instance-id="${card.instanceId}" ${styleOverride}>
-                                    ${beadsHtml}
-                                    <div class="counter-tooltip">Daño Total: ${totalDmg}</div>
-                                </div>
                             `);
                         }
                     }
@@ -2975,26 +3343,35 @@
                 });
             });
 
-            // Remove/Click Individual counters easily
-            $(document).on("click", ".card-counter-container .stacked-counter-bead", function(e) {
+            // Remove/Click Individual placed counter beads directly on the card
+            $(document).on("click", ".placed-counter-bead", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                const instId = $(this).closest(".card-counter-container").data("instance-id");
+                const instId = $(this).data("instance-id");
+                const counterId = $(this).data("counter-id");
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
 
-                if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
-                    cardObj.counters = Math.max(0, (cardObj.counters || 0) - 1);
+                if ($(this).hasClass("ygo-placed-bead")) {
+                    if (cardObj.placedCounters) {
+                        cardObj.placedCounters = cardObj.placedCounters.filter(c => c.id !== counterId);
+                        cardObj.counters = cardObj.placedCounters.length;
+                    } else {
+                        cardObj.counters = Math.max(0, (cardObj.counters || 1) - 1);
+                    }
                     sendGameAction(`Quitó un contador de ${cardObj.name} (Total restante: ${cardObj.counters})`);
                 } else {
-                    const idx = $(this).data("idx");
-                    const dmgArray = cardObj.pokemonDamageCounters || [];
-                    if (dmgArray.length > 0) {
-                        const removedDmg = dmgArray.splice(idx !== undefined ? idx : dmgArray.length - 1, 1)[0];
-                        const totalDmg = dmgArray.reduce((a, b) => a + b, 0);
-                        sendGameAction(`Quitó un contador de daño de ${removedDmg} a ${cardObj.name} (Daño restante: ${totalDmg})`);
+                    const val = parseInt($(this).data("val")) || 10;
+                    if (cardObj.placedPokeCounters) {
+                        cardObj.placedPokeCounters = cardObj.placedPokeCounters.filter(c => c.id !== counterId);
+                        cardObj.pokemonDamageCounters = cardObj.placedPokeCounters.map(c => c.val);
+                    } else if (cardObj.pokemonDamageCounters) {
+                        const idx = cardObj.pokemonDamageCounters.indexOf(val);
+                        if (idx !== -1) cardObj.pokemonDamageCounters.splice(idx, 1);
                     }
+                    const totalDmg = (cardObj.pokemonDamageCounters || []).reduce((a, b) => a + b, 0);
+                    sendGameAction(`Quitó contador de daño de ${val} a ${cardObj.name} (Daño restante: ${totalDmg})`);
                 }
 
                 window.renderAllCards();
@@ -3273,6 +3650,8 @@
                         tapped: card.tapped,
                         counters: card.counters,
                         pokemonDamageCounters: card.pokemonDamageCounters ? [...card.pokemonDamageCounters] : [],
+                        placedCounters: card.placedCounters ? JSON.parse(JSON.stringify(card.placedCounters)) : [],
+                        placedPokeCounters: card.placedPokeCounters ? JSON.parse(JSON.stringify(card.placedPokeCounters)) : [],
                         attachedTo: card.attachedTo,
                         controller: card.controller
                     };
