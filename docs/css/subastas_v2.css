@@ -868,16 +868,20 @@ body.admin-body {
 
 .btn-nav-auctions-pill i { font-size: 1rem; }
 
-.btn-nav-auctions-pill .nav-badge {
+.btn-nav-auctions-pill .nav-badge, .nav-badge {
     background: #ff4757;
     color: white;
     font-size: 10px;
+    font-weight: 800;
     min-width: 18px; height: 18px;
-    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+    box-sizing: border-box;
+    align-items: center; justify-content: center;
     border-radius: 50%;
     position: absolute;
     top: -5px; right: -5px;
     box-shadow: 0 0 10px rgba(255, 71, 87, 0.6);
+    border: none;
 }
 
 /* Public Grid Responsive */

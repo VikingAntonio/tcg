@@ -66,7 +66,7 @@ $(document).ready(async function() {
         }
 
         if (typeof Cart !== 'undefined') {
-            $('#cart-count').text(Cart.getCount());
+            Cart.updateBadge();
         }
     }
 

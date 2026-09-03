@@ -78,11 +78,10 @@ const Cart = {
 
     updateBadge: function() {
         const count = this.getCount();
-        $('#cart-count').text(count);
         if (count > 0) {
-            $('#cart-count').show();
+            $('#cart-count').text(count).css('display', 'flex').show();
         } else {
-            $('#cart-count').hide();
+            $('#cart-count').text('').css('display', 'none').hide();
         }
     }
 };
