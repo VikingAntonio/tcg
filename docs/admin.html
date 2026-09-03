@@ -412,8 +412,40 @@
                 justify-content: center;
             }
 
-            /* Shared Card Styles */
-            #view-deck-editor .nexus-card {
+        /* Hide scrollbars for Album Editor views and modals */
+        #view-editor,
+        #view-editor *,
+        #slot-modal,
+        #slot-modal .modal-scrollable-body,
+        #slot-modal .slot-tabs-body,
+        #external-search-results {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        #view-editor::-webkit-scrollbar,
+        #view-editor *::-webkit-scrollbar,
+        #slot-modal::-webkit-scrollbar,
+        #slot-modal .modal-scrollable-body::-webkit-scrollbar,
+        #slot-modal .slot-tabs-body::-webkit-scrollbar,
+        #external-search-results::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* Expand Card Slot Modal on PC for better search grid visibility */
+        #slot-modal .overlay-content {
+            max-width: 850px !important;
+            width: 90% !important;
+        }
+
+        #external-search-results {
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important;
+            max-height: 280px !important;
+        }
+
+        /* Shared Card Styles */
+        #view-deck-editor .nexus-card {
                 width: 75px;
                 height: 105px;
                 background: #111;
@@ -1761,6 +1793,17 @@
                     </label>
                     <label style="margin-bottom: 0; cursor: pointer;" for="input-album-public">Público/Privado</label>
                 </div>
+
+                <div class="form-group" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px;">
+                    <label style="font-weight: 800; color: var(--primary-color);"><i class="fas fa-images"></i> Imágenes Adicionales (Galería / Carrusel)</label>
+                    <label class="file-drop-zone" id="drop-zone-album-extra" for="input-album-extra-files" style="display: block; margin-top: 8px;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Arrastra varias imágenes aquí o haz clic para cargar</p>
+                        <input type="file" id="input-album-extra-files" accept="image/*" multiple style="display: none;">
+                        <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                    </label>
+                    <div id="album-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 12px;"></div>
+                </div>
             </div>
 
             <div class="admin-header">
@@ -2255,15 +2298,7 @@
                         <label>Precio</label>
                         <input type="text" id="slot-price">
                     </div>
-                        <div class="form-group" id="slot-foil-list-container" style="display: none; grid-column: span 2;">
-                            <label class="switch-searching" style="position: relative; top: 0; left: 0;">
-                                <label class="switch switch-mini">
-                                    <input type="checkbox" id="slot-show-foil-list">
-                                    <span class="slider"></span>
-                                </label>
-                                <span style="margin-left: 10px; font-size: 0.85rem; color: #aaa;">Aplicar Foil</span>
-                            </label>
-                        </div>
+                        <!-- Apply foil switch removed as foil is now applied automatically whenever a holo effect is selected -->
                     </div>
                 </div>
             </div>
