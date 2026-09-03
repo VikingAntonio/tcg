@@ -1,63 +1,33 @@
 ================================================================================
-EXPLICACIÓN TÉCNICA: VISIBILIDAD DE BÓVEDAS (VAULTS) Y CARTAS EN EL LINK PÚBLICO
+PORQUE.txt - EXPLICACIÓN TÉCNICA Y DIAGNÓSTICO DEL MÓDULO DE INVERSIONES
 ================================================================================
 
-1. DIAGNÓSTICO DEL PROBLEMA
+1. DIAGNÓSTICO: ¿POR QUÉ EL LINK PÚBLICO MOSTRABA CONTENIDO VACÍO?
 --------------------------------------------------------------------------------
-A) Falta de Notificación de Guardado (UI Toast):
-   Al cambiar los switches de visibilidad ("Público / Privado") de las bóvedas
-   y cartas en el módulo de Inversiones, las modificaciones se enviaban a Supabase,
-   pero la interfaz de usuario no mostraba ninguna confirmación o toast de guardado.
-   Esto daba la impresión de que las bóvedas no se estaban guardando o activando.
+A) Desfase de la columna `user_id`:
+   En `docs/js/inversiones.js`, cada Vault o Carta se registra en Supabase con la
+   columna `user_id` igual al UUID autenticado de la cuenta (`currentUser.id`).
+   En `docs/js/app.js` (vista pública), la función `loadPublicInvestmentCategories()`
+   intentaba filtrar las categorías usando el registro de la tienda `storeData.id`.
+   Al no coincidir `storeData.id` con el `user_id` (UUID), la consulta retornaba 0 registros,
+   provocando que el link público se mostrara en blanco / vacío.
 
-B) Carga de Datos en El Link Público (docs/js/app.js - resolveUser):
-   Al cargar public.html con el parámetro de usuario/tienda (ej. public.html?id=USERNAME&view=investments),
-   la función 'loadPublicInvestmentCategories()' se ejecutaba antes o de forma asíncrona
-   a que 'resolveUser()' guardara 'window.currentStoreId'. Cuando 'window.currentStoreId'
-   estaba indefinido, la consulta a Supabase no filtraba por el usuario del enlace y no
-   se mostraba el contenido del usuario.
+B) Notificación de Guardado (Toast):
+   Al cambiar la visibilidad pública o guardar registros en `inversiones.html`,
+   faltaba una confirmación visual (Toast) inmediata para informarle al usuario
+   que su cambio ya estaba activo en la base de datos.
 
-C) Filtro de Registros Públicos (is_public):
-   Tanto las categorías ('investment_categories') como las cartas ('investment_cards')
-   requieren que la propiedad 'is_public' no sea explícitamente 'false' para poder
-   visualizarse de forma pública. En consultas previas, si un registro nuevo no
-   tenía la columna definida o RLS bloqueaba la consulta anon, el resultado retornaba
-   vacío (0 bóvedas) para los visitantes no autenticados.
-
-
-2. SOLUCIONES Y MEJORAS IMPLEMENTADAS
+2. SOLUCIÓN IMPLEMENTADA
 --------------------------------------------------------------------------------
-A) Notificaciones Toast de Confirmación (docs/js/inversiones.js):
-   - Se agregaron alertas Toast (SweetAlert2) de respuesta inmediata tanto al
-     cambiar el estado público de una Bóveda (.toggle-inv-cat-public) como al
-     modificar el switch de una carta individual (#inv-card-public-toggle).
-   - Al activar el switch, la pantalla confirma:
-     "Bóveda pública: Visible en el link público" o "Carta pública: Visible en el link público".
+A) Corrección de consulta en `docs/js/app.js`:
+   `loadPublicInvestmentCategories()` resuelve el `user_id` real (UUID de la tabla `usuarios`)
+   usando `resolveUser(identifier)`. De esta forma, `public.html` toma exactamente la data
+   creada en `docs/inversiones.html`.
 
-B) Resolución Dinámica del Usuario en Link Público (docs/js/app.js):
-   - Se actualizó 'loadPublicInvestmentCategories()' para resolver asíncronamente
-     el ID del propietario mediante 'resolveUser(identifier)' si 'window.currentStoreId'
-     aún no ha sido asignado al momento de cargar el tab de inversiones.
-   - La consulta filtra únicamente las bóvedas pertenecientes a ese propietario
-     y valida 'is_public !== false'.
-
-C) Despliegue de Cartas e Imágenes Públicas (docs/js/app.js):
-   - Al abrir una bóveda pública en el link público, 'openPublicInvestmentCategory()'
-     obtiene únicamente las cartas con 'is_public !== false'.
-   - En la vista del modal público (#public-inv-card-modal), se ocultan estrictamente
-     los costos de compra y mercado privados (sin mostrar etiquetas molestas de "Privado"),
-     mostrando únicamente el 'Precio venta'.
-   - Si la carta contiene imágenes secundarias subidas en la pestaña "IMAGES",
-     el modal público las presenta en una galería de vistas previas responsiva bajo
-     la imagen principal.
-
-D) Formato de Formulario y Búsqueda en inversiones.html:
-   - La pestaña DATOS cuenta con 5 filas responsivas limpias:
-     1. Nombre de la carta (Fila completa)
-     2. Rareza / Cantidad
-     3. Precio compra / Precio mercado
-     4. Precio venta
-     5. Publicar / Estado
-   - La sección del buscador en DATOS se limpia automáticamente al borrar el texto del input.
-   - La pestaña IMAGES contiene la zona de arrastre (drag and drop) para imágenes adicionales
-     junto con las notas, alineado perfectamente sin barras de desplazamiento vertical.
+B) Ajustes de UI y Formularios en `inversiones.html`:
+   - Formularios reorganizados en 5 filas responsivas limpias.
+   - 3 campos de precio independientes: `Precio compra`, `Precio mercado` y `Precio venta`.
+   - En el link público se muestra EXCLUSIVAMENTE el `Precio venta`, manteniendo privados
+     los precios de compra y mercado sin mostrar mensajes molestos de aviso.
+   - Pestaña IMAGES con zona Drag & Drop y notas alineados en columna responsiva.
+   - Galería de miniaturas interactiva en la vista modal del link público.

@@ -1,0 +1,52 @@
+================================================================================
+CONFIRMACIÓN TÉCNICA: ORIGEN DE DATOS Y VÍNCULO ENTRE INVERSIONES.HTML Y PUBLIC.HTML
+================================================================================
+
+1. CONFIRMACIÓN Y VERIFICACIÓN DE FUENTE DE DATOS
+--------------------------------------------------------------------------------
+A) `inversiones.html` ES LA ÚNICA FUENTE DE DATOS DE INVERSIONES:
+   - La administración de Inversiones es un módulo completamente independiente
+     ubicado en `docs/inversiones.html` y gestionado por `docs/js/inversiones.js`.
+   - En `docs/admin.html`, los botones de acceso ("Mis Inversiones" y el Tile verde "Inversiones")
+     son enlaces directos `href="inversiones.html"`. No existe lógica interna ni tablas
+     separadas de inversiones dentro de `admin.html`.
+
+B) TABLAS COMPARTIDAS EN SUPABASE:
+   - Tanto la interfaz privada (`docs/inversiones.html` / `docs/js/inversiones.js`) como la
+     vista pública (`docs/public.html` / `docs/js/app.js`) operan exactamente sobre las
+     mismas tablas en la base de datos de Supabase:
+     * `public.investment_categories` (Bóvedas / Vaults)
+     * `public.investment_cards` (Cartas pertenecientes a cada Bóveda)
+
+2. COMPROBACIÓN DEL FLUJO DE DATOS
+--------------------------------------------------------------------------------
+1. ESCRITURA DESDE `inversiones.html` (`docs/js/inversiones.js`):
+   - Al crear o guardar una Bóveda:
+     _supabase.from('investment_categories').insert([{ name, user_id: currentUser.id, is_public: true }]);
+   - Al crear o guardar una Carta:
+     _supabase.from('investment_cards').insert([{ category_id, user_id: currentUser.id, card_name, sale_price, is_public: true }]);
+
+2. LECTURA DESDE `public.html` (`docs/js/app.js`):
+   - Al visitar la tienda pública (ejemplo: `public.html?id=MI_TIENDA&view=investments`),
+     la función `loadPublicInvestmentCategories()` en `docs/js/app.js` ejecuta:
+     _supabase.from('investment_categories').select('*').eq('user_id', userId);
+   - Luego, al abrir una categoría:
+     _supabase.from('investment_cards').select('*').eq('category_id', cat.id);
+
+3. ¿POR QUÉ ANTES EL LINK PÚBLICO MOSTRABA VACÍO Y CÓMO QUEDÓ SOLUCIONADO?
+--------------------------------------------------------------------------------
+- DIAGNÓSTICO DEL ERROR ANTERIOR:
+  En `docs/js/app.js`, la función pública usaba de forma incorrecta `storeData.id`
+  (el ID numérico/interno de la tabla `store_settings`) en lugar del UUID de autenticación
+  `user_id` guardado por `inversiones.js`. Como `storeData.id != user_id`, la consulta a Supabase
+  no encontraba ninguna bóveda y la vista pública quedaba completamente VACÍA.
+
+- SOLUCIÓN APLICADA:
+  Se actualizó `docs/js/app.js` para resolver correctamente el `user_id` (UUID de la tabla `usuarios`)
+  asociado al nombre de tienda o usuario mediante `resolveUser(identifier)`.
+
+- CONFIRMACIÓN FINAL:
+  Toda información creada, editada o configurada dentro de `docs/inversiones.html`
+  (Bóvedas, cartas, precios de venta, imágenes de la galería, visibilidad pública) se
+  refleja inmediatamente en la vista pública `public.html` al consultar las tablas
+  `investment_categories` e `investment_cards`.
