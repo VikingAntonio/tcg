@@ -90,6 +90,7 @@ let localDeckCards = [];
 let deckCardsToDelete = [];
 let localVikingData = [];
 let bddQueue = [];
+let currentAlbumExtraImages = [];
 
 // Mask editor state is now global in utils.js
 
@@ -548,7 +549,8 @@ $(document).ready(async function() {
             back_color: backColor,
             cover_style: 'style-cosmic',
             is_public,
-            grid_layout
+            grid_layout,
+            extra_images: currentAlbumExtraImages
         };
 
         try {
@@ -558,9 +560,10 @@ $(document).ready(async function() {
                 .update(updateData)
                 .eq('id', currentAlbumId);
 
-            if (albumErr && (albumErr.code === '42703' || (albumErr.message && (albumErr.message.includes('is_public') || albumErr.message.includes('grid_layout'))))) {
+            if (albumErr && (albumErr.code === '42703' || (albumErr.message && (albumErr.message.includes('is_public') || albumErr.message.includes('grid_layout') || albumErr.message.includes('extra_images'))))) {
                 delete updateData.is_public;
                 delete updateData.grid_layout;
+                delete updateData.extra_images;
                 const retry = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
                 albumErr = retry.error;
             }
@@ -701,12 +704,9 @@ $(document).ready(async function() {
             holoEffect = 'multiFoils';
         }
 
-        // Apply L: prefix if checkbox is checked
-        const shouldShowInList = $('#slot-show-foil-list').is(':checked');
-        if (shouldShowInList && !holoEffect.startsWith('L:')) {
+        // Always apply L: prefix when a holo effect is selected so foil is always active
+        if (holoEffect && !holoEffect.startsWith('L:')) {
             holoEffect = 'L:' + holoEffect;
-        } else if (!shouldShowInList && holoEffect.startsWith('L:')) {
-            holoEffect = holoEffect.substring(2);
         }
 
         // Serialize second holo if present
@@ -901,9 +901,33 @@ $(document).ready(async function() {
         $('#mask-editor-overlay').removeClass('active');
     });
 
-    // --- External Search Logic ---
+    // --- External Search Logic (Debounced Real-time for Album Card Search) ---
+    let albumCardSearchTimeout = null;
+    $(document).on('input', '#external-search-input', function() {
+        clearTimeout(albumCardSearchTimeout);
+        const q = $(this).val().trim();
+        if (q.length < 1) {
+            $('#external-search-results').empty();
+            return;
+        }
+        albumCardSearchTimeout = setTimeout(() => {
+            window.searchExternalCard('#external-search-input', '#external-search-results', function(card) {
+                $('#slot-name').val(card.name);
+                $('#slot-image-url').val(card.high_res);
+                Swal.fire({
+                    title: 'Carta Seleccionada',
+                    text: card.name,
+                    icon: 'success',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+            });
+        }, 250);
+    });
+
     $('#btn-external-search').click(function(e) {
         e.preventDefault();
+        clearTimeout(albumCardSearchTimeout);
         window.searchExternalCard('#external-search-input', '#external-search-results', function(card) {
             $('#slot-name').val(card.name);
             $('#slot-image-url').val(card.high_res);
@@ -1232,6 +1256,40 @@ $(document).ready(async function() {
     $(document).on('dragleave dragend drop', '#drop-zone-album-back', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
     $(document).on('change', '#input-album-back-file', function() {
         if (this.files.length > 0) handleCloudinaryUpload(this.files[0], '#input-album-back', '#drop-zone-album-back .file-name');
+    });
+
+    // Album Extra Images Drag & Drop
+    async function handleAlbumExtraImagesUpload(files) {
+        const $fileName = $('#drop-zone-album-extra .file-name');
+        $fileName.text("Subiendo imágenes...").css('color', '#aaa');
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const url = await CloudinaryUpload.uploadImage(files[i]);
+                currentAlbumExtraImages.push(url);
+            }
+            $fileName.text("¡Cargadas!").css('color', '#00ff88');
+            setTimeout(() => $fileName.text(""), 2000);
+            renderAlbumExtraImagesPreview();
+        } catch (err) {
+            $fileName.text("Error al subir").css('color', '#ff4757');
+            Swal.fire('Error', 'No se pudieron subir las imágenes: ' + err.message, 'error');
+        }
+    }
+
+    $(document).on('drop', '#drop-zone-album-extra', async function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).removeClass('dragover');
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleAlbumExtraImagesUpload(files);
+        }
+    });
+    $(document).on('dragover dragenter', '#drop-zone-album-extra', function(e) { e.preventDefault(); e.stopPropagation(); $(this).addClass('dragover'); });
+    $(document).on('dragleave dragend drop', '#drop-zone-album-extra', function(e) { e.preventDefault(); e.stopPropagation(); $(this).removeClass('dragover'); });
+    $(document).on('change', '#input-album-extra-files', function() {
+        if (this.files.length > 0) {
+            handleAlbumExtraImagesUpload(this.files);
+        }
     });
 
     // Deck Drop Zone
@@ -3000,8 +3058,36 @@ async function editAlbum(album) {
 
     $('#input-album-public').prop('checked', target.is_public !== false);
 
+    currentAlbumExtraImages = target.extra_images || [];
+    renderAlbumExtraImagesPreview();
+
     showView('editor');
     loadAlbumPages(target.id, true);
+}
+
+function renderAlbumExtraImagesPreview() {
+    const $preview = $('#album-extra-images-preview');
+    if (!$preview.length) return;
+    $preview.empty();
+
+    currentAlbumExtraImages.forEach((url, idx) => {
+        const $item = $(`
+            <div style="position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15);">
+                <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="btn-delete-card-top btn-delete-album-extra-img" data-index="${idx}" style="position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; line-height: 18px; font-size: 10px; background: #ff4757; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white;">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+        `);
+
+        $item.find('.btn-delete-album-extra-img').click(function(e) {
+            e.stopPropagation();
+            currentAlbumExtraImages.splice(idx, 1);
+            renderAlbumExtraImagesPreview();
+        });
+
+        $preview.append($item);
+    });
 }
 
 async function deleteAlbum(id) {

@@ -2310,6 +2310,24 @@ function loadPageImages($album, page) {
 
 function renderAlbum(album) {
     return new Promise(async (resolve) => {
+    let extraImagesGalleryHtml = '';
+    if (album.extra_images && Array.isArray(album.extra_images) && album.extra_images.length > 0) {
+        extraImagesGalleryHtml = `
+            <div class="album-extra-gallery" style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); width: 100%; box-sizing: border-box;">
+                <div style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-images"></i> Imágenes Adicionales
+                </div>
+                <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+                    ${album.extra_images.map(imgUrl => `
+                        <div class="album-extra-thumb" style="flex: 0 0 90px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; background: #000;">
+                            <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'" onclick="openAlbumExtraImageModal('${imgUrl.replace(/'/g, "\\'")}')">
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
     const $albumContainer = $(`
         <div class="public-album-item" id="album-container-${album.id}">
             <div class="public-album-header">
@@ -2325,6 +2343,7 @@ function renderAlbum(album) {
             <div class="album-wrapper">
                 <div id="album-${album.id}" class="album"></div>
             </div>
+            ${extraImagesGalleryHtml}
             <div class="public-album-footer-title" style="text-align: center; margin-top: 15px; font-size: 1.5rem; font-weight: 800; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px;">
                 <span>${album.title}</span>
                 <button class="btn-share-item btn-share-bottom" onclick="openShareModal('${album.title.replace(/'/g, "\\'")}', 'albums', '${album.id}')" title="Compartir Álbum">
@@ -4379,6 +4398,22 @@ $(document).on('click', '#public-inv-card-modal', function(e) {
         $('#public-inv-card-modal').removeClass('active');
     }
 });
+
+window.openAlbumExtraImageModal = function(imgUrl) {
+    if (!imgUrl) return;
+    Swal.fire({
+        imageUrl: imgUrl,
+        imageAlt: 'Imagen adicional del álbum',
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: '#0f172a',
+        color: '#fff',
+        customClass: {
+            popup: 'custom-swal-zoom-popup',
+            image: 'custom-swal-zoom-image'
+        }
+    });
+};
 
 function getCoverHtml(style, title, color) {
     let styleClass = "style-cosmic";
