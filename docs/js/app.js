@@ -4178,14 +4178,17 @@ function renderPublicInvAlbumMode($container) {
             const $slot = $('<div class="card-slot"></div>');
             if (card) {
                 $slot.attr('data-id', card.id).css('cursor', 'pointer');
+                const isUp = card.current_price > card.previous_price;
+                const isDown = card.current_price < card.previous_price;
+                const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                            isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                 const isUnavailable = card.is_available === false;
                 const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
-                const publicPrice = card.sale_price !== null && card.sale_price !== undefined ? card.sale_price : (card.current_price || 0);
 
                 $slot.append(`
                     <img src="${card.image_url}" class="tcg-card" style="border-radius: 4px; border: 1px solid #000; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;">
                     ${stampOverlay}
-                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; z-index: 110;">$${parseFloat(publicPrice).toFixed(2)}</div>
+                    <div class="inv-card-info-badge" style="background: #000; border-radius: 2px; z-index: 110;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                 `);
                 if (card.show_foil && card.holo_effect && typeof window.applyFoilToElement === 'function') {
                     window.applyFoilToElement($slot, card.holo_effect, card.custom_mask_url);
@@ -4227,9 +4230,12 @@ function renderPublicInvSlideMode($container) {
         <div class="swiper ${swiperId}" style="width: 100%; max-width: 350px; margin: 0 auto; min-height: 550px; padding: 20px 0;">
             <div class="swiper-wrapper">
                 ${publicInvCards.map(card => {
+                    const isUp = card.current_price > card.previous_price;
+                    const isDown = card.current_price < card.previous_price;
+                    const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.7rem;"></i>' :
+                                isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.7rem;"></i>' : '';
                     const isUnavailable = card.is_available === false;
                     const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable">NO DISPONIBLE</div>` : '';
-                    const publicPrice = card.sale_price !== null && card.sale_price !== undefined ? card.sale_price : (card.current_price || 0);
 
                     return `
                     <div class="swiper-slide card-slot inv-card-item" style="background: transparent; cursor: pointer;" data-id="${card.id}"
@@ -4239,7 +4245,7 @@ function renderPublicInvSlideMode($container) {
                         <div class="inv-card-info-overlay" style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 4px; border: 1px solid #000; margin-top: 15px; text-align: center; position: relative; z-index: 110;">
                             <h4 style="margin: 0; font-weight: 800; text-transform: uppercase; color: #000; font-size: 0.9rem;">${escapeHtml(card.card_name).toUpperCase()}</h4>
                             <p style="margin: 5px 0; font-size: 0.7rem; color: #666; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name || '')} - ${escapeHtml(card.rarity || '')}</p>
-                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(publicPrice).toFixed(2)}</div>
+                            <div class="inv-price-tag" style="font-weight: 900; color: #000; font-size: 1.1rem; margin-top: 10px;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</div>
                         </div>
                     </div>
                 `}).join('')}
@@ -4285,10 +4291,13 @@ function renderPublicInvListMode($container) {
     const $list = $('<div class="inv-list-container"></div>');
 
     publicInvCards.forEach(card => {
+        const isUp = card.current_price > card.previous_price;
+        const isDown = card.current_price < card.previous_price;
+        const trend = isUp ? '<i class="fas fa-arrow-up" style="color: #00ff00; margin-left: 5px; font-size: 0.8rem;"></i>' :
+                    isDown ? '<i class="fas fa-arrow-down" style="color: #ff0000; margin-left: 5px; font-size: 0.8rem;"></i>' : '';
         const isUnavailable = card.is_available === false;
         const unavailableBadge = isUnavailable ? `<span style="background: rgba(0, 0, 0, 0.85); color: #ff3344; border: 1px solid #ff3344; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 800; margin-left: 8px;"><i class="fas fa-ban"></i> NO DISPONIBLE</span>` : '';
         const stampOverlay = isUnavailable ? `<div class="inv-stamp-unavailable" style="font-size: 0.65rem; padding: 2px 6px;">NO DISPONIBLE</div>` : '';
-        const publicPrice = card.sale_price !== null && card.sale_price !== undefined ? card.sale_price : (card.current_price || 0);
 
         const $item = $(`
             <div class="inv-list-item" data-id="${card.id}" style="border-bottom: 1px solid #eee; padding: 20px 0; display: flex; align-items: center; gap: 20px; cursor: pointer;">
@@ -4301,7 +4310,7 @@ function renderPublicInvListMode($container) {
                     <div class="inv-list-set" style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;">${escapeHtml(card.set_name || '')} - ${escapeHtml(card.rarity || '')}</div>
                 </div>
                 <div class="inv-list-prices" style="text-align: right;">
-                    <div class="inv-price-row"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999; display: block;">Precio venta</span> <b style="color: #2ed573; font-size: 1.1rem;">$${parseFloat(publicPrice).toFixed(2)}</b></div>
+                    <div class="inv-price-row"><span style="font-size: 0.6rem; text-transform: uppercase; color: #999; display: block;">Precio al Público</span> <b style="color: #000; font-size: 1.1rem;">$${parseFloat(card.current_price || 0).toFixed(2)} ${trend}</b></div>
                 </div>
             </div>
         `);
@@ -4319,12 +4328,10 @@ function renderPublicInvListMode($container) {
 
 function openPublicInvestmentCardModal(card) {
     if (!card) return;
-    const publicPrice = card.sale_price !== null && card.sale_price !== undefined ? card.sale_price : (card.current_price || 0);
-
     $('#public-inv-modal-img').attr('src', card.image_url || 'https://vikingtcg.xyz/favi.png');
     $('#public-inv-modal-title').text((card.card_name || 'Carta').toUpperCase());
     $('#public-inv-modal-set').text(`${card.set_name || ''} ${card.set_number ? '#' + card.set_number : ''}`.trim() || 'COLECCIÓN PÚBLICA');
-    $('#public-inv-modal-price').text(`$${parseFloat(publicPrice).toFixed(2)}`);
+    $('#public-inv-modal-price').text(`$${parseFloat(card.current_price || 0).toFixed(2)}`);
     $('#public-inv-modal-rarity').text(card.rarity || 'Normal');
     $('#public-inv-modal-qty').text(card.quantity || 1);
 
@@ -4341,28 +4348,21 @@ function openPublicInvestmentCardModal(card) {
         $('#public-inv-modal-notes-container').hide();
     }
 
-    // Extra images gallery
+    // Extra images
     const $extraContainer = $('#public-inv-modal-extra-images');
     $extraContainer.empty();
+    if (card.extra_images && Array.isArray(card.extra_images) && card.extra_images.length > 0) {
+        // Add main image thumb first
+        const $mainThumb = $(`<img src="${card.image_url}" style="width: 45px; height: 60px; object-fit: contain; border: 2px solid #00d2ff; border-radius: 4px; cursor: pointer;">`);
+        $mainThumb.on('click', () => $('#public-inv-modal-img').attr('src', card.image_url));
+        $extraContainer.append($mainThumb);
 
-    const allImages = [card.image_url];
-    if (card.extra_images && Array.isArray(card.extra_images)) {
-        card.extra_images.forEach(url => {
-            if (url && !allImages.includes(url)) allImages.push(url);
-        });
-    }
-
-    if (allImages.length > 1) {
-        allImages.forEach((imgUrl, idx) => {
-            const $thumb = $(`<img src="${imgUrl}" style="width: 50px; height: 68px; object-fit: contain; border: ${idx === 0 ? '2px solid #00d2ff' : '1px solid rgba(255,255,255,0.2)'}; border-radius: 4px; cursor: pointer; flex-shrink: 0;">`);
-            $thumb.on('click', function() {
-                $('#public-inv-modal-extra-images img').css('border', '1px solid rgba(255,255,255,0.2)');
-                $(this).css('border', '2px solid #00d2ff');
-                $('#public-inv-modal-img').attr('src', imgUrl);
-            });
+        card.extra_images.forEach(imgUrl => {
+            const $thumb = $(`<img src="${imgUrl}" style="width: 45px; height: 60px; object-fit: contain; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">`);
+            $thumb.on('click', () => $('#public-inv-modal-img').attr('src', imgUrl));
             $extraContainer.append($thumb);
         });
-        $extraContainer.css({ 'display': 'flex', 'gap': '8px', 'overflow-x': 'auto', 'padding': '8px 0', 'max-width': '100%' }).show();
+        $extraContainer.show();
     } else {
         $extraContainer.hide();
     }
