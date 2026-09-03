@@ -1315,31 +1315,6 @@ $(document).ready(async function() {
         }
     }
 
-    function renderSlotExtraImagesPreview() {
-        const $preview = $('#slot-extra-images-preview');
-        if (!$preview.length) return;
-        $preview.empty();
-
-        currentSlotExtraImages.forEach((url, idx) => {
-            const $item = $(`
-                <div style="position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15);">
-                    <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
-                    <div class="btn-delete-card-top btn-delete-slot-extra-img" data-index="${idx}" style="position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; line-height: 18px; font-size: 10px; background: #ff4757; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white;">
-                        <i class="fas fa-times"></i>
-                    </div>
-                </div>
-            `);
-
-            $item.find('.btn-delete-slot-extra-img').click(function(e) {
-                e.stopPropagation();
-                currentSlotExtraImages.splice(idx, 1);
-                renderSlotExtraImagesPreview();
-            });
-
-            $preview.append($item);
-        });
-    }
-
     $(document).on('drop', '#drop-zone-slot-extra', async function(e) {
         e.preventDefault(); e.stopPropagation();
         $(this).removeClass('dragover');
@@ -3154,6 +3129,31 @@ function renderAlbumExtraImagesPreview() {
             e.stopPropagation();
             currentAlbumExtraImages.splice(idx, 1);
             renderAlbumExtraImagesPreview();
+        });
+
+        $preview.append($item);
+    });
+}
+
+function renderSlotExtraImagesPreview() {
+    const $preview = $('#slot-extra-images-preview');
+    if (!$preview.length) return;
+    $preview.empty();
+
+    currentSlotExtraImages.forEach((url, idx) => {
+        const $item = $(`
+            <div style="position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15);">
+                <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="btn-delete-card-top btn-delete-slot-extra-img" data-index="${idx}" style="position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; line-height: 18px; font-size: 10px; background: #ff4757; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white;">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+        `);
+
+        $item.find('.btn-delete-slot-extra-img').click(function(e) {
+            e.stopPropagation();
+            currentSlotExtraImages.splice(idx, 1);
+            renderSlotExtraImagesPreview();
         });
 
         $preview.append($item);
