@@ -964,8 +964,8 @@ function bindCardDragEvents() {
     });
 
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
-        // If clicking on any quick-action button, menu, or counter container, do NOT drag or intercept!
-        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container').length) {
+        // If clicking on any quick-action button, menu, counter container or placed counter bead, do NOT drag or intercept card!
+        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container, .placed-counter-bead, .pokemon-damage-badge, .custom-atk-def-badge').length) {
             return;
         }
 
@@ -2941,17 +2941,6 @@ function setupEventListeners() {
         renderAllCards();
     });
 
-    $("#menu-add-counter").click(function() {
-        if (!activeMenuCard) return;
-        activeMenuCard.counters += 1;
-        renderAllCards();
-    });
-
-    $("#menu-sub-counter").click(function() {
-        if (!activeMenuCard) return;
-        activeMenuCard.counters = Math.max(0, activeMenuCard.counters - 1);
-        renderAllCards();
-    });
 
     $("#menu-to-hand").click(function() {
         if (!activeMenuCard) return;
