@@ -567,7 +567,7 @@
                 <div id="visitor-card-info" style="width: 100%;">
                     <div id="card-name" class="card-name">Nombre de la Carta</div>
                     <div class="info-grid">
-                        <div class="info-item">
+                        <div class="info-item" id="rarity-item">
                             <div class="info-label">Rareza</div>
                             <div id="card-rarity" class="info-value">-</div>
                         </div>
@@ -579,18 +579,39 @@
                             <div class="info-label">Estado</div>
                             <div id="card-condition" class="info-value">-</div>
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">Cantidad</div>
+                        <div class="info-item" id="quantity-item">
+                            <div class="info-label">Disponible</div>
                             <div id="card-quantity" class="info-value">1</div>
                         </div>
-                        <div class="info-item price-item">
-                            <div class="info-label">Precio Estimado</div>
+                        <div class="info-item price-item" id="price-item">
+                            <div class="info-label">Precio</div>
                             <div id="card-price" class="info-value">-</div>
                         </div>
+                        <div class="info-item" id="language-item">
+                            <div class="info-label">Idioma</div>
+                            <div id="card-language" class="info-value">-</div>
+                        </div>
+                        <div class="info-item" id="edition-item">
+                            <div class="info-label">Edición</div>
+                            <div id="card-edition" class="info-value">-</div>
+                        </div>
+                    </div>
+                    <div id="description-item" style="display: none; flex-direction: column; gap: 5px; width: 100%; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                        <div class="info-label" style="font-size: 0.8rem; opacity: 0.7; text-align: left;">Descripción:</div>
+                        <div id="card-description" style="font-size: 0.9rem; color: white; line-height: 1.4; text-align: left;">-</div>
                     </div>
                     <div id="wishlist-info-extra" style="display: none; flex-direction: column; gap: 5px; width: 100%; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
                         <div class="info-label" style="font-size: 0.8rem; opacity: 0.7; text-align: left;">Notas:</div>
                         <div id="card-notes" style="font-size: 0.9rem; color: white; line-height: 1.4; text-align: left;">-</div>
+                    </div>
+                    <div id="card-extra-images-gallery" style="display: none; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; margin-top: 15px; width: 100%;"></div>
+                    <div id="cart-quantity-selector-container" style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                        <label style="font-size: 0.9rem; font-weight: 700; color: #fff; margin: 0;">Cantidad a comprar:</label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button id="btn-qty-minus" type="button" class="btn btn-secondary btn-sm" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border-radius: 8px;">-</button>
+                            <input type="number" id="card-purchase-quantity" value="1" min="1" max="1" style="width: 55px; text-align: center; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 5px; font-weight: bold; font-size: 1rem;">
+                            <button id="btn-qty-plus" type="button" class="btn btn-secondary btn-sm" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border-radius: 8px;">+</button>
+                        </div>
                     </div>
                 </div>
 

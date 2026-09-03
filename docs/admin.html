@@ -2078,6 +2078,7 @@
                 <div class="slot-modal-tabs">
                     <button class="slot-tab-btn active" data-tab="slot-tab-info">Información</button>
                     <button class="slot-tab-btn" data-tab="slot-tab-details">Detalles</button>
+                    <button class="slot-tab-btn" data-tab="slot-tab-images">Imágenes</button>
                 </div>
 
                 <div class="slot-tabs-body">
@@ -2280,26 +2281,51 @@
                 <div class="info-grid">
                     <div class="form-group">
                         <label>Rareza</label>
-                        <input type="text" id="slot-rarity">
+                        <input type="text" id="slot-rarity" placeholder="Ej: Secret Rare">
                     </div>
                     <div class="form-group">
                         <label>Expansión</label>
-                        <input type="text" id="slot-expansion">
+                        <input type="text" id="slot-expansion" placeholder="Ej: LOB-001">
                     </div>
                     <div class="form-group">
                         <label>Estado</label>
-                        <input type="text" id="slot-condition">
+                        <input type="text" id="slot-condition" placeholder="Ej: Near Mint / NM">
                     </div>
                     <div class="form-group">
                         <label>Cantidad</label>
-                        <input type="text" id="slot-quantity">
+                        <input type="text" id="slot-quantity" placeholder="1">
                     </div>
                     <div class="form-group price-item">
                         <label>Precio</label>
-                        <input type="text" id="slot-price">
+                        <input type="text" id="slot-price" placeholder="Ej: $15.00">
                     </div>
-                        <!-- Apply foil switch removed as foil is now applied automatically whenever a holo effect is selected -->
+                    <div class="form-group">
+                        <label>Idioma</label>
+                        <input type="text" id="slot-language" placeholder="Ej: Español / Inglés">
                     </div>
+                    <div class="form-group">
+                        <label>Edición</label>
+                        <input type="text" id="slot-edition" placeholder="Ej: 1ra Edición">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Descripción / Notas</label>
+                        <textarea id="slot-description" rows="2" style="width: 100%; background: #252525; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; resize: vertical;" placeholder="Descripción o detalles opcionales de la carta..."></textarea>
+                    </div>
+                </div>
+                </div>
+
+                <!-- Tab 3: Images -->
+                <div id="slot-tab-images" class="slot-tab-content">
+                    <div class="form-group">
+                        <label>Imágenes Adicionales de la Carta</label>
+                        <label class="drop-zone file-drop-zone" id="drop-zone-slot-extra" for="input-slot-extra-files" style="display: block; cursor: pointer;">
+                            <i class="fas fa-images" style="font-size: 1.5rem; color: #00d2ff; margin-bottom: 8px;"></i>
+                            <p style="margin: 0; font-size: 12px; color: #aaa;">Arrastra imágenes adicionales aquí o haz clic para subir</p>
+                            <input type="file" id="input-slot-extra-files" multiple accept="image/*" style="display: none;">
+                            <div class="file-name" style="font-size: 12px; color: #00d2ff; margin-top: 5px;"></div>
+                        </label>
+                    </div>
+                    <div id="slot-extra-images-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px;"></div>
                 </div>
             </div>
             </div>

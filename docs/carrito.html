@@ -310,14 +310,27 @@
             $('#empty-cart-msg').hide();
 
             items.forEach(item => {
+                const qty = parseInt(item.cart_quantity) || 1;
+                const maxQty = Math.max(1, parseInt(item.max_quantity || item.quantity) || 1);
+                const priceUnitStr = (item.price || "0").toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+                const unitPrice = parseFloat(priceUnitStr) || 0;
+                const subtotal = unitPrice * qty;
+
                 const detailParts = [];
                 if (item.rarity && item.rarity !== '-') detailParts.push(item.rarity);
                 if (item.expansion && item.expansion !== '-') detailParts.push(item.expansion);
                 if (item.condition && item.condition !== '-') detailParts.push(item.condition);
+                if (item.language && item.language !== '-') detailParts.push(`Idioma: ${item.language}`);
+                if (item.edition && item.edition !== '-') detailParts.push(`Edición: ${item.edition}`);
                 if (item.tcg) detailParts.push(item.tcg.toUpperCase());
-                if (item.description) detailParts.push(item.description);
+                if (item.description && item.description !== '-') detailParts.push(item.description);
 
                 const detailsText = detailParts.length > 0 ? detailParts.join(' | ') : 'Producto';
+
+                let qtyOptions = '';
+                for (let i = 1; i <= maxQty; i++) {
+                    qtyOptions += `<option value="${i}" ${i === qty ? 'selected' : ''}>${i}</option>`;
+                }
 
                 const $itemRow = $(`
                     <div class="cart-item">
@@ -325,9 +338,17 @@
                         <div class="cart-item-info">
                             <h3>${item.name}</h3>
                             <p>${detailsText}</p>
+                            <div style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">Precio unitario: $${unitPrice.toFixed(2)}</div>
                         </div>
-                        <div class="cart-item-price">${item.price || '$0.00'}</div>
-                        <button class="btn-remove" onclick="removeItem('${item.cart_id}')" title="Quitar">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <label style="font-size: 0.85rem; color: #ccc; margin: 0;">Copias:</label>
+                            <select class="cart-qty-select" style="background: #252525; color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 5px 8px; font-weight: bold; font-size: 0.95rem;" onchange="updateItemQty('${item.cart_id}', this.value)">
+                                ${qtyOptions}
+                            </select>
+                            <span style="font-size: 0.75rem; color: #888;">(máx ${maxQty})</span>
+                        </div>
+                        <div class="cart-item-price">$${subtotal.toFixed(2)}</div>
+                        <button class="btn-remove" onclick="removeItem('${item.cart_id}')" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -337,6 +358,11 @@
 
             $('#cart-total-display').text('$' + Cart.getTotal().toFixed(2));
         }
+
+        window.updateItemQty = function(id, newQty) {
+            Cart.updateQuantity(id, newQty);
+            renderCart();
+        };
 
         window.removeItem = function(id) {
             Cart.remove(id);
@@ -385,7 +411,16 @@
 
             let message = "Hola, estoy interesado en comprar estas cartas de TCG Dual:\n\n";
             items.forEach((item, index) => {
-                message += `${index + 1}. ${item.name} (${item.rarity}) - ${item.price}\n`;
+                const qty = parseInt(item.cart_quantity) || 1;
+                const priceUnitStr = (item.price || "0").toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+                const unitPrice = parseFloat(priceUnitStr) || 0;
+                const subtotal = unitPrice * qty;
+                const detailParts = [];
+                if (item.rarity && item.rarity !== '-') detailParts.push(item.rarity);
+                if (item.language && item.language !== '-') detailParts.push(item.language);
+                if (item.edition && item.edition !== '-') detailParts.push(item.edition);
+                const tag = detailParts.length > 0 ? ` (${detailParts.join(' - ')})` : '';
+                message += `${index + 1}. ${item.name}${tag} x${qty} - $${subtotal.toFixed(2)}\n`;
             });
             message += `\nTotal Estimado: $${Cart.getTotal().toFixed(2)}`;
 
