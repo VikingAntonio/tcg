@@ -948,46 +948,56 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
         };
 
         // Helper to fetch with timeout signal so slow APIs never block fast APIs
-        const fetchWithTimeout = async (url, options = {}, ms = 1500) => {
+        const fetchWithTimeout = async (url, options = {}, ms = 4000) => {
             const timeoutController = new AbortController();
             const timeoutId = setTimeout(() => timeoutController.abort(), ms);
-            const combinedSignal = options.signal ?
-                (sig.aborted ? sig : timeoutController.signal) : timeoutController.signal;
+            const parentSig = options.signal;
+            const combinedSignal = parentSig ?
+                (parentSig.aborted ? parentSig : timeoutController.signal) : timeoutController.signal;
 
             // Link main signal if provided
             const onParentAbort = () => timeoutController.abort();
-            if (sig && !sig.aborted) {
-                sig.addEventListener('abort', onParentAbort, { once: true });
+            if (parentSig && !parentSig.aborted) {
+                parentSig.addEventListener('abort', onParentAbort, { once: true });
             }
 
             try {
                 const response = await fetch(url, { ...options, signal: combinedSignal });
                 clearTimeout(timeoutId);
-                if (sig) sig.removeEventListener('abort', onParentAbort);
+                if (parentSig) parentSig.removeEventListener('abort', onParentAbort);
                 return response;
             } catch (err) {
                 clearTimeout(timeoutId);
-                if (sig) sig.removeEventListener('abort', onParentAbort);
+                if (parentSig) parentSig.removeEventListener('abort', onParentAbort);
                 return null;
             }
         };
 
-        // Dedicated, ultra-fast Pokémon card search helper with short timeout
+        // Dedicated, resilient multi-source Pokémon card search helper
         const searchPokemonAPI = async (q, parentSig) => {
             if (!q || q.length < 1) return [];
             let results = [];
 
             // Execute Pokémon sub-searches concurrently
             const pkSearchPromises = [
-                // 1. Query TCGAPI.dev (Fast)
-                searchTCGAPI(q, 'pokemon', 1200),
+                // 1. Query TCGAPI.dev (Fast & reliable)
+                searchTCGAPI(q, 'pokemon', 3500),
 
-                // 2. Query official Pokémon TCG API with 1500ms timeout
+                // 2. Query official Pokémon TCG API with fallbacks and 4000ms timeout
                 (async () => {
                     try {
                         const headers = { "User-Agent": "Mozilla/5.0", "Accept": "application/json" };
                         const qWildcard = `name:"*${q}*"`;
-                        const resp = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(qWildcard)}&pageSize=250`, { signal: parentSig, headers }, 1500);
+                        let resp = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(qWildcard)}&pageSize=250`, { signal: parentSig, headers }, 4000);
+
+                        if (!resp || !resp.ok) {
+                            const qExact = `name:"${q}"`;
+                            resp = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(qExact)}&pageSize=250`, { signal: parentSig, headers }, 3000);
+                        }
+                        if (!resp || !resp.ok) {
+                            const qLower = `name:"${q.toLowerCase()}"`;
+                            resp = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(qLower)}&pageSize=250`, { signal: parentSig, headers }, 3000);
+                        }
 
                         if (resp && resp.ok) {
                             const pData = await resp.json();
@@ -1014,11 +1024,11 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                     return [];
                 })(),
 
-                // 3. Query TCGdex (Multilingual) with 1200ms timeout
+                // 3. Query TCGdex (Multilingual) with 3500ms timeout
                 (async () => {
                     const fetchTCGdex = async (lang) => {
                         try {
-                            const r = await fetchWithTimeout(`https://api.tcgdex.net/v2/${lang}/cards?name=${encodeURIComponent(q)}`, { signal: parentSig }, 1200);
+                            const r = await fetchWithTimeout(`https://api.tcgdex.net/v2/${lang}/cards?name=${encodeURIComponent(q)}`, { signal: parentSig }, 3500);
                             if (!r || !r.ok) return [];
                             const d = await r.json();
                             return Array.isArray(d) ? d : [];
@@ -1028,13 +1038,14 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                     };
 
                     try {
-                        const [dexEn, dexEs] = await Promise.all([
+                        const [dexEn, dexEs, dexJa] = await Promise.all([
                             fetchTCGdex('en'),
-                            fetchTCGdex('es')
+                            fetchTCGdex('es'),
+                            fetchTCGdex('ja')
                         ]);
 
                         const list = [];
-                        [...dexEn, ...dexEs].forEach(c => {
+                        [...dexEn, ...dexEs, ...dexJa].forEach(c => {
                             if (c.image) {
                                 list.push({
                                     name: c.name,
@@ -1057,8 +1068,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             return results;
         };
 
-        // TCGAPI.dev Search (Multi-game) with strict short timeout
-        const searchTCGAPI = async (q, game, timeoutMs = 1200) => {
+        // TCGAPI.dev Search (Multi-game)
+        const searchTCGAPI = async (q, game, timeoutMs = 3500) => {
             if (!window.TCG_API_KEY || q.length < 1) return [];
             try {
                 const response = await fetchWithTimeout(`${window.TCG_API_BASE}/search?q=${encodeURIComponent(q)}&game=${game}`, {
@@ -1095,8 +1106,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
             // Pokémon multi-source search (TCGAPI + Pokemon TCG API + TCGdex)
             (query.length >= 1 && !filters.format) ? searchPokemonAPI(query, signal) : Promise.resolve([]),
 
-            // Lorcana Search (with 1500ms timeout)
-            (query.length >= 1 && !filters.format) ? fetchWithTimeout(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`, { signal }, 1500).then(r => (r && r.ok) ? r.json() : []).catch(() => []) : Promise.resolve([]),
+            // Lorcana Search (with 3500ms timeout)
+            (query.length >= 1 && !filters.format) ? fetchWithTimeout(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image;cost;set_num`, { signal }, 3500).then(r => (r && r.ok) ? r.json() : []).catch(() => []) : Promise.resolve([]),
 
             // Viking Search
             (query.length >= 1 && !filters.format) ? (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([])) : Promise.resolve([]),
