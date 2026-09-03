@@ -594,7 +594,7 @@ function renderAllCards() {
                 <div class="card-img-wrapper">
                     <img src="${card.imageUrl}" alt="${card.name}">
                 </div>
-                ${card.counters > 0 ? `<div class="card-counter">${card.counters}</div>` : ""}
+                ${(card.counters > 0 && (!card.placedCounters || card.placedCounters.length === 0)) ? `<div class="card-counter">${card.counters}</div>` : ""}
                 ${attachedBadgeHTML}
                 ${handActionOverlayHTML}
                 ${fieldActionOverlayHTML}
