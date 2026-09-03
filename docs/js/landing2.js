@@ -414,7 +414,7 @@ $(document).ready(async function() {
     // --- Cart Logic ---
     function updateCartCount() {
         if (typeof Cart !== 'undefined') {
-            $('#cart-count').text(Cart.getCount());
+            Cart.updateBadge();
         }
     }
 
