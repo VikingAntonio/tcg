@@ -965,7 +965,7 @@ function bindCardDragEvents() {
 
     cards.off('mousedown touchstart').on('mousedown touchstart', function(e) {
         // If clicking on any quick-action button, menu, counter container or placed counter bead, do NOT drag or intercept card!
-        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container, .placed-counter-bead, .pokemon-damage-badge, .custom-atk-def-badge').length) {
+        if ($(e.target).closest('.hand-card-actions, .field-card-actions, .field-action-btn, .hand-action-btn, .card-counter-container, .placed-counter-bead, .pokemon-damage-badge, .ygo-counter-badge, .custom-atk-def-badge').length) {
             return;
         }
 

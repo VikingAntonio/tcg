@@ -934,11 +934,12 @@
             pointer-events: auto; /* Allow hovering/clicking counters specifically */
             z-index: 150;
         }
-        /* Top-left static damage counter total label for Pokemon cards */
+        /* Top-right static damage counter total label for Pokemon cards */
         .pokemon-damage-badge {
             position: absolute;
             top: -12px;
-            left: -12px;
+            right: -12px;
+            left: auto;
             background: linear-gradient(135deg, #ff1b6b, #ff8c00);
             border: 2px solid white;
             border-radius: 50%;
@@ -952,6 +953,29 @@
             font-size: 0.65rem;
             color: white;
             box-shadow: 0 0 10px rgba(255, 27, 107, 0.8);
+            z-index: 160;
+            animation: counterPulse 1.5s infinite alternate;
+        }
+
+        /* Top-right static counter total badge for Yu-Gi-Oh! cards */
+        .ygo-counter-badge {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            left: auto;
+            background: linear-gradient(135deg, #00d2ff, #0055ff);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.65rem;
+            color: white;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
             z-index: 160;
             animation: counterPulse 1.5s infinite alternate;
         }
@@ -3217,13 +3241,15 @@
                     // Remove existing placed counter elements
                     $card.find(".placed-counter-bead").remove();
                     $card.find(".pokemon-damage-badge").remove();
+                    $card.find(".ygo-counter-badge").remove();
+                    $card.find(".card-counter").remove();
                     $card.find(".card-counter-container").remove();
                     $card.find(".counter-tooltip").remove();
 
                     if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
                         // Normalize placedCounters array with counters count
                         if (!card.placedCounters) card.placedCounters = [];
-                        if (card.counters && card.placedCounters.length !== card.counters) {
+                        if (typeof card.counters !== 'undefined' && card.placedCounters.length !== card.counters) {
                             // Sync placedCounters to match counters count if modified externally via menu or code
                             while (card.placedCounters.length < card.counters) {
                                 const idx = card.placedCounters.length;
@@ -3239,6 +3265,7 @@
                                 card.placedCounters.pop();
                             }
                         }
+                        card.counters = card.placedCounters.length;
 
                         card.placedCounters.forEach(cnt => {
                             $card.append(`
@@ -3252,6 +3279,13 @@
                                 </div>
                             `);
                         });
+
+                        const totalCounters = card.placedCounters.length;
+                        if (totalCounters > 0) {
+                            $card.append(`
+                                <div class="ygo-counter-badge" data-instance-id="${card.instanceId}">${totalCounters}</div>
+                            `);
+                        }
                     } else {
                         // Pokémon Layout damage counters
                         const dmgArray = card.pokemonDamageCounters || [];
@@ -3294,10 +3328,11 @@
                                 `);
                             });
 
-                            // Inject visible damage total badge on top left of the card
-                            $card.append(`
-                                <div class="pokemon-damage-badge">${totalDmg}</div>
-                            `);
+                            if (totalDmg > 0) {
+                                $card.append(`
+                                    <div class="pokemon-damage-badge" data-instance-id="${card.instanceId}">${totalDmg}</div>
+                                `);
+                            }
                         }
                     }
 
@@ -3401,18 +3436,40 @@
                 window.renderAllCards();
             });
 
+            // Remove/Click static YGO counter total badge directly decrements counter
+            $(document).on("click", ".ygo-counter-badge", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const instId = $(this).data("instance-id") || $(this).closest(".duel-card").data("instance-id");
+                const cardObj = state.cards.find(c => c.instanceId === instId);
+                if (!cardObj) return;
+
+                if (cardObj.placedCounters && cardObj.placedCounters.length > 0) {
+                    cardObj.placedCounters.pop();
+                    cardObj.counters = cardObj.placedCounters.length;
+                } else {
+                    cardObj.counters = Math.max(0, (cardObj.counters || 0) - 1);
+                }
+                sendGameAction(`Quitó un contador de ${cardObj.name} (Total restante: ${cardObj.counters})`);
+                window.renderAllCards();
+            });
+
             // Remove/Click static Pokemon damage total badge directly clears latest or heals 10
             $(document).on("click", ".pokemon-damage-badge", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                const instId = $(this).closest(".duel-card").data("instance-id");
+                const instId = $(this).data("instance-id") || $(this).closest(".duel-card").data("instance-id");
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
 
                 const dmgArray = cardObj.pokemonDamageCounters || [];
                 if (dmgArray.length > 0) {
                     const removedDmg = dmgArray.pop();
+                    if (cardObj.placedPokeCounters && cardObj.placedPokeCounters.length > 0) {
+                        cardObj.placedPokeCounters.pop();
+                    }
                     const totalDmg = dmgArray.reduce((a, b) => a + b, 0);
                     sendGameAction(`Quitó un contador de daño de ${removedDmg} a ${cardObj.name} (Daño restante: ${totalDmg})`);
                     window.renderAllCards();
