@@ -450,6 +450,21 @@ function renderAllCards() {
             }
         }
 
+        const isNonFieldZone = card.zone.startsWith("hand_") ||
+                              card.zone.startsWith("deck_") ||
+                              card.zone.startsWith("grave_") ||
+                              card.zone.startsWith("banished_") ||
+                              (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster"));
+
+        if (isNonFieldZone) {
+            card.counters = 0;
+            card.placedCounters = [];
+            card.placedPokeCounters = [];
+            card.pokemonDamageCounters = [];
+            delete card.customAtkDef;
+            delete card.equippedTo;
+        }
+
         // Rule 1: Hand cards are always face-up, upright, and not tilted
         if (card.zone.startsWith("hand_")) {
             card.faceDown = false;
@@ -2179,6 +2194,115 @@ function openAttachedCardsModal(parentId) {
     });
 }
 
+let equipSourceCard = null;
+
+window.triggerEquipIndicator = function(cardObj) {
+    if (!cardObj || typeof state === "undefined" || !state.cards) return;
+
+    let equipGroupIds = new Set();
+
+    // 1. If this card is equipping another card
+    if (cardObj.equippedTo) {
+        equipGroupIds.add(String(cardObj.instanceId));
+        equipGroupIds.add(String(cardObj.equippedTo));
+    }
+
+    // 2. If this card has other cards equipped to it or shares the target monster
+    state.cards.forEach(c => {
+        if (c.equippedTo && String(c.equippedTo) === String(cardObj.instanceId)) {
+            equipGroupIds.add(String(cardObj.instanceId));
+            equipGroupIds.add(String(c.instanceId));
+        }
+        if (cardObj.equippedTo && c.equippedTo && String(c.equippedTo) === String(cardObj.equippedTo)) {
+            equipGroupIds.add(String(c.instanceId));
+        }
+    });
+
+    if (equipGroupIds.size > 0) {
+        if (window.equipIndicatorTimers) {
+            window.equipIndicatorTimers.forEach(t => clearTimeout(t));
+        }
+        window.equipIndicatorTimers = [];
+
+        $(".equip-indicator-icon").remove();
+
+        equipGroupIds.forEach(id => {
+            const $elem = $(`#${id}`);
+            if ($elem.length) {
+                const $icon = $('<img src="img/Equip.webp" class="equip-indicator-icon" alt="Equipped">');
+                $elem.append($icon);
+
+                const t1 = setTimeout(() => {
+                    $icon.css('opacity', '0');
+                    const t2 = setTimeout(() => {
+                        $icon.remove();
+                    }, 300);
+                    if (window.equipIndicatorTimers) window.equipIndicatorTimers.push(t2);
+                }, 4000);
+                if (window.equipIndicatorTimers) window.equipIndicatorTimers.push(t1);
+            }
+        });
+    }
+};
+
+function startEquipTargeting(cardObj) {
+    equipSourceCard = cardObj;
+
+    $("#zone-picker-overlay").html(`
+        <div class="zone-picker-toast" style="background: linear-gradient(135deg, #00d2ff, #0072ff); box-shadow: 0 10px 30px rgba(0, 210, 255, 0.5);">
+            <i class="fas fa-link animate-pulse"></i> Elige una carta en el campo para equipar esta carta
+        </div>
+    `).fadeIn(200).css("display", "flex");
+
+    $("#playmat").addClass("selecting-zone");
+
+    setTimeout(() => {
+        $(".duel-card").not(`#${cardObj.instanceId}`).off("click.equip").on("click.equip", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetInstId = $(this).data("instance-id") || $(this).attr("id");
+            const targetCardObj = state.cards.find(c => c.instanceId === targetInstId);
+
+            if (targetCardObj && equipSourceCard) {
+                equipSourceCard.equippedTo = targetCardObj.instanceId;
+
+                renderAllCards();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Carta Equipada',
+                    text: `${equipSourceCard.name} equipada a ${targetCardObj.name}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                if (typeof window.triggerEquipIndicator === "function") {
+                    window.triggerEquipIndicator(equipSourceCard);
+                }
+            }
+
+            stopEquipTargeting();
+        });
+    }, 100);
+
+    $(document).off("keydown.equip").on("keydown.equip", function(e) {
+        if (e.key === "Escape") {
+            stopEquipTargeting();
+        }
+    });
+}
+
+function stopEquipTargeting() {
+    equipSourceCard = null;
+    $("#zone-picker-overlay").fadeOut(200);
+    $("#playmat").removeClass("selecting-zone");
+    $(".duel-card").off("click.equip");
+    $(document).off("keydown.equip");
+}
+
 // Dynamic Graphical Attachment Targeting Mode
 function startAttachmentTargeting(cardObj) {
     attachingCard = cardObj;
@@ -2816,6 +2940,7 @@ function openCardContextMenu(cardObj, clientX, clientY) {
         $("#menu-pendulum").hide();
         $("#menu-control").hide();
         $("#menu-detach").hide();
+        $("#menu-equip-option").hide();
     } else {
         $("#menu-destroy-token").hide();
         $("#menu-to-hand").show();
@@ -2826,6 +2951,13 @@ function openCardContextMenu(cardObj, clientX, clientY) {
         $("#menu-to-extra").show();
         $("#menu-pendulum").show();
         $("#menu-control").show();
+
+        const isFieldCard = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !(cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
+        if (isFieldCard) {
+            $("#menu-equip-option").show();
+        } else {
+            $("#menu-equip-option").hide();
+        }
 
         // Check if there are attached cards to show detach option
         const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
@@ -2989,6 +3121,12 @@ function openCardContextMenu(cardObj, clientX, clientY) {
         renderAllCards();
     });
 
+
+    $(document).on("click", "#menu-equip-option", function() {
+        if (!activeMenuCard) return;
+        startEquipTargeting(activeMenuCard);
+        $("#card-menu").removeClass("active");
+    });
 
     $("#menu-to-hand").click(function() {
         if (!activeMenuCard) return;
