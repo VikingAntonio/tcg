@@ -993,9 +993,17 @@ function bindCardDragEvents() {
             return;
         }
 
-        // Prevent dragging deck cards or attached cards
-        if (cardObj.zone.startsWith("deck_") || cardObj.attachedTo) {
+        // Prevent dragging attached cards, or deck cards that are NOT the top card of their deck pile
+        if (cardObj.attachedTo) {
             return;
+        }
+        if (cardObj.zone.startsWith("deck_")) {
+            const cardsInDeck = state.cards.filter(c => c.zone === cardObj.zone);
+            cardsInDeck.sort((a, b) => (a.movedToPileAt || 0) - (b.movedToPileAt || 0));
+            const topCard = cardsInDeck[cardsInDeck.length - 1];
+            if (!topCard || topCard.instanceId !== cardObj.instanceId) {
+                return;
+            }
         }
 
         e.preventDefault();
@@ -1275,6 +1283,9 @@ $(window).on('mouseup touchend', function(e) {
                 cardObj.tiltAngle = 0;
             } else {
                 cardObj.zone = hoverZone.id;
+                if (oldZone.startsWith("deck_")) {
+                    cardObj.faceDown = false;
+                }
             }
             cardObj.attachedTo = null; // Detach if dragged to a fresh board zone
             // Snap coordinates are mapped to zone centers automatically in render
@@ -1318,6 +1329,9 @@ $(window).on('mouseup touchend', function(e) {
                 cardObj.attachedTo = droppedOnCard.instanceId;
                 cardObj.attachedAt = Date.now() + Math.random(); // tracking timestamp
                 cardObj.zone = droppedOnCard.zone;
+                if (oldZone.startsWith("deck_")) {
+                    cardObj.faceDown = false;
+                }
 
                 Swal.fire({
                     icon: 'success',
@@ -1331,6 +1345,9 @@ $(window).on('mouseup touchend', function(e) {
             } else {
                 // Card was dropped freely on field
                 cardObj.zone = "field_free";
+                if (oldZone.startsWith("deck_")) {
+                    cardObj.faceDown = false;
+                }
                 cardObj.attachedTo = null; // Detach if dragged freely to the board background
             }
         }
