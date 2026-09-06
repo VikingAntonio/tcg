@@ -978,6 +978,16 @@ function bindCardDragEvents() {
             return;
         }
 
+        // If selecting-zone is active, allow capturing click for targeting on any field card (including attached cards)
+        if ($("#playmat").hasClass("selecting-zone")) {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCard = $(this);
+            dragStartCoords = getEventCoords(e);
+            dragStartTime = Date.now();
+            return;
+        }
+
         // Prevent dragging deck cards or attached cards
         if (cardObj.zone.startsWith("deck_") || cardObj.attachedTo) {
             return;
@@ -1195,23 +1205,12 @@ $(window).on('mouseup touchend', function(e) {
         }
 
         // This is a click!
-        // Toggle tilt on cardObj if it's on the field (not in hand, deck, extra, grave, banished)
+        // Open options menu on top field card (never open list modal on top card)
         const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !(cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
         if (isField) {
-            // Check if this card has attached cards!
-            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
-            if (hasAttached) {
-                openAttachedCardsModal(cardObj.instanceId);
-            } else {
-                if (cardObj.tiltAngle && cardObj.tiltAngle !== 0) {
-                    cardObj.tiltAngle = 0;
-                } else {
-                    // Set a small random angle between -8 and 8 (excluding -2 to 2)
-                    const sign = Math.random() < 0.5 ? -1 : 1;
-                    const angle = sign * (4 + Math.random() * 5); // 4 to 9 degrees
-                    cardObj.tiltAngle = Math.round(angle);
-                }
-            }
+            openCardContextMenu(cardObj, endPos.x || dragStartCoords.x, endPos.y || dragStartCoords.y);
+            dragCard = null;
+            return;
         }
     } else {
         // Center point of dropped card
@@ -1880,56 +1879,100 @@ function startXYZTargeting(cardObj) {
 
     $("#playmat").addClass("selecting-zone");
 
-    // Bind temporary click event exclusively to visible field parent cards
+    const performXYZInvocation = function(targetCardObj) {
+        if (!targetCardObj || !xyzCard) return;
+
+        // If the clicked card is itself attached to another card, resolve to root parent
+        let parentCardObj = targetCardObj;
+        if (targetCardObj.attachedTo) {
+            const rootParent = state.cards.find(c => c.instanceId === targetCardObj.attachedTo);
+            if (rootParent) {
+                parentCardObj = rootParent;
+            }
+        }
+
+        // Bring xyzCard to front so it is visually on top of everything
+        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+        xyzCard.z = maxZ + 1;
+
+        // Set xyzCard position and zone
+        xyzCard.zone = parentCardObj.zone;
+        xyzCard.x = parentCardObj.x;
+        xyzCard.y = parentCardObj.y;
+        xyzCard.faceDown = false;
+        xyzCard.tapped = parentCardObj.tapped;
+        xyzCard.isExtra = true;
+
+        // Move all currently attached cards of target to the new parent (xyzCard)
+        state.cards.forEach(c => {
+            if (c.attachedTo === parentCardObj.instanceId) {
+                c.attachedTo = xyzCard.instanceId;
+            }
+        });
+
+        // Parent itself gets attached to xyzCard
+        parentCardObj.attachedTo = xyzCard.instanceId;
+        parentCardObj.attachedAt = Date.now() + Math.random();
+
+        renderAllCards();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Invocación XYZ',
+            text: `${xyzCard.name} ha sido colocada encima de ${parentCardObj.name} (XYZ).`,
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+        stopXYZTargeting();
+    };
+
+    // Bind temporary click event to ALL visible field cards (including attached cascades) and board zones
     setTimeout(() => {
-        // Prevent clicking any card that is currently attached
-        $(".duel-card").not(".attached-card-cascade").off("click.xyz").on("click.xyz", function(e) {
+        $(".duel-card").off("click.xyz").on("click.xyz", function(e) {
             e.preventDefault();
             e.stopPropagation();
 
             const targetInstId = $(this).data("instance-id");
-            const parentCardObj = state.cards.find(c => c.instanceId === targetInstId);
+            const targetCardObj = state.cards.find(c => c.instanceId === targetInstId);
+            if (targetCardObj) {
+                performXYZInvocation(targetCardObj);
+            }
+        });
 
-            if (parentCardObj && xyzCard) {
-                // Bring xyzCard to front so it is visually on top of everything
+        $(".board-zone").off("click.xyz").on("click.xyz", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const zoneId = $(this).data("id");
+            const cardInZone = state.cards.find(c => c.zone === zoneId && !c.attachedTo);
+            if (cardInZone) {
+                performXYZInvocation(cardInZone);
+            } else if (xyzCard) {
+                xyzCard.zone = zoneId;
+                xyzCard.faceDown = false;
+                xyzCard.tapped = false;
+                xyzCard.isExtra = true;
                 const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
                 xyzCard.z = maxZ + 1;
-
-                // target/parentCardObj becomes attached to the new xyzCard
-                xyzCard.zone = parentCardObj.zone;
-                xyzCard.x = parentCardObj.x;
-                xyzCard.y = parentCardObj.y;
-                xyzCard.faceDown = false;
-                xyzCard.tapped = parentCardObj.tapped;
-                xyzCard.isExtra = true;
-
-                // Move all currently attached cards of target to the new parent (xyzCard)
-                state.cards.forEach(c => {
-                    if (c.attachedTo === parentCardObj.instanceId) {
-                        c.attachedTo = xyzCard.instanceId;
-                    }
-                });
-
-                // Parent itself gets attached to xyzCard
-                parentCardObj.attachedTo = xyzCard.instanceId;
-                parentCardObj.attachedAt = Date.now() + Math.random();
-
                 renderAllCards();
 
                 Swal.fire({
                     icon: 'success',
                     title: 'Invocación XYZ',
-                    text: `${xyzCard.name} ha sido colocada encima de ${parentCardObj.name} (XYZ).`,
+                    text: `${xyzCard.name} ha sido colocada en la zona seleccionada.`,
                     toast: true,
                     position: 'top-end',
                     timer: 2000,
                     showConfirmButton: false
                 });
-            }
 
-            stopXYZTargeting();
+                stopXYZTargeting();
+            }
         });
-    }, 100);
+    }, 50);
 
     // Cancel on ESC
     $(document).off("keydown.xyz").on("keydown.xyz", function(e) {
@@ -1948,6 +1991,7 @@ function stopXYZTargeting() {
     `);
     $("#playmat").removeClass("selecting-zone");
     $(".duel-card").off("click.xyz");
+    $(".board-zone").off("click.xyz");
     $(document).off("keydown.xyz");
 }
 
@@ -2703,6 +2747,96 @@ function setupEventListeners() {
         });
     });
 
+function openCardContextMenu(cardObj, clientX, clientY) {
+    if (!cardObj) return;
+
+    // If card is inside a deck zone, open the deck menu instead of card menu
+    if (cardObj.zone.startsWith("deck_")) {
+        activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+        $("#card-menu").removeClass("active");
+        $("#deck-menu").css({
+            left: `${clientX}px`,
+            top: `${clientY}px`
+        }).addClass("active");
+        return;
+    }
+
+    // If card is inside an extra deck zone, open the Extra Deck overlay instead
+    if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
+        const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
+        openExtraDeckModal(playerKey);
+        return;
+    }
+
+    // If card is inside a graveyard zone, open the Graveyard Pile modal viewer instead
+    if (cardObj.zone.startsWith("grave_")) {
+        const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
+        openPileModal(playerKey, "grave");
+        return;
+    }
+
+    // If card is inside a banished zone, open the Banished Pile modal viewer instead
+    if (cardObj.zone.startsWith("banished_")) {
+        const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
+        openPileModal(playerKey, "banished");
+        return;
+    }
+
+    activeMenuCard = cardObj;
+    $("#deck-menu").removeClass("active");
+
+    // Dynamically toggle and adjust pokemon/yugioh menu items
+    const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
+    if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
+        $("#menu-swap-active-bench").show();
+    } else {
+        $("#menu-swap-active-bench").hide();
+    }
+
+    if (state.layout === 'yugioh') {
+        $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
+    } else {
+        $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
+    }
+
+    // Token specific menu items adjustment
+    if (cardObj.isToken) {
+        $("#menu-destroy-token").show();
+        $("#menu-to-hand").hide();
+        $("#menu-to-grave").hide();
+        $("#menu-to-banish").hide();
+        $("#menu-to-deck-top").hide();
+        $("#menu-to-deck-bottom").hide();
+        $("#menu-to-extra").hide();
+        $("#menu-pendulum").hide();
+        $("#menu-control").hide();
+        $("#menu-detach").hide();
+    } else {
+        $("#menu-destroy-token").hide();
+        $("#menu-to-hand").show();
+        $("#menu-to-grave").show();
+        $("#menu-to-banish").show();
+        $("#menu-to-deck-top").show();
+        $("#menu-to-deck-bottom").show();
+        $("#menu-to-extra").show();
+        $("#menu-pendulum").show();
+        $("#menu-control").show();
+
+        // Check if there are attached cards to show detach option
+        const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
+        if (hasAttached) {
+            $("#menu-detach").show();
+        } else {
+            $("#menu-detach").hide();
+        }
+    }
+
+    $("#card-menu").css({
+        left: `${clientX}px`,
+        top: `${clientY}px`
+    }).addClass("active");
+}
+
     // Right click context menu overrides on card items
     $(document).on("contextmenu", ".duel-card", function(e) {
         // If targeting mode is active, do not interrupt
@@ -2712,101 +2846,10 @@ function setupEventListeners() {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
-        // If card is inside a deck zone, open the deck menu instead of card menu
-        if (cardObj.zone.startsWith("deck_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
-            $("#card-menu").removeClass("active");
-            $("#deck-menu").css({
-                left: `${e.clientX}px`,
-                top: `${e.clientY}px`
-            }).addClass("active");
-            return;
-        }
-
-        // If card is inside an extra deck zone, open the Extra Deck overlay instead
-        if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
-            openExtraDeckModal(playerKey);
-            return;
-        }
-
-        // If card is inside a graveyard zone, open the Graveyard Pile modal viewer instead
-        if (cardObj.zone.startsWith("grave_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
-            openPileModal(playerKey, "grave");
-            return;
-        }
-
-        // If card is inside a banished zone, open the Banished Pile modal viewer instead
-        if (cardObj.zone.startsWith("banished_")) {
-            e.preventDefault();
-            e.stopPropagation();
-            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
-            openPileModal(playerKey, "banished");
-            return;
-        }
-
         e.preventDefault();
         e.stopPropagation();
-        activeMenuCard = cardObj;
-        $("#deck-menu").removeClass("active");
 
-        // Dynamically toggle and adjust pokemon/yugioh menu items
-        const isPokeFieldCard = cardObj.zone && (cardObj.zone.startsWith("active_") || cardObj.zone.startsWith("bench_"));
-        if (state.layout === "pokemon" && isPokeFieldCard && !cardObj.isToken) {
-            $("#menu-swap-active-bench").show();
-        } else {
-            $("#menu-swap-active-bench").hide();
-        }
-
-        if (state.layout === 'yugioh') {
-            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Desterrado');
-        } else {
-            $("#menu-to-banish").html('<i class="fas fa-ban"></i> Enviar a Removido');
-        }
-
-        // Token specific menu items adjustment
-        if (cardObj.isToken) {
-            $("#menu-destroy-token").show();
-            $("#menu-to-hand").hide();
-            $("#menu-to-grave").hide();
-            $("#menu-to-banish").hide();
-            $("#menu-to-deck-top").hide();
-            $("#menu-to-deck-bottom").hide();
-            $("#menu-to-extra").hide();
-            $("#menu-pendulum").hide();
-            $("#menu-control").hide();
-            $("#menu-detach").hide();
-        } else {
-            $("#menu-destroy-token").hide();
-            $("#menu-to-hand").show();
-            $("#menu-to-grave").show();
-            $("#menu-to-banish").show();
-            $("#menu-to-deck-top").show();
-            $("#menu-to-deck-bottom").show();
-            $("#menu-to-extra").show();
-            $("#menu-pendulum").show();
-            $("#menu-control").show();
-
-            // Check if there are attached cards to show detach option
-            const hasAttached = state.cards.some(c => c.attachedTo === cardObj.instanceId);
-            if (hasAttached) {
-                $("#menu-detach").show();
-            } else {
-                $("#menu-detach").hide();
-            }
-        }
-
-        $("#card-menu").css({
-            left: `${e.clientX}px`,
-            top: `${e.clientY}px`
-        }).addClass("active");
+        openCardContextMenu(cardObj, e.clientX, e.clientY);
     });
 
     // Handle left click directly on a deck, extra deck, grave, or banished card to toggle correct overlays/menus
