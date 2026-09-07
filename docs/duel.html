@@ -422,6 +422,32 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 27, 107, 0.05);
         }
 
+        /* Equipped Cards Indicator style - centered small icon with 70% opacity and blinking animation */
+        .equip-indicator-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+            opacity: 0.7;
+            z-index: 10006;
+            pointer-events: none;
+            animation: equipBlink 0.6s infinite alternate ease-in-out;
+            transition: opacity 0.3s ease;
+        }
+        @keyframes equipBlink {
+            0% {
+                opacity: 0.2;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            100% {
+                opacity: 0.95;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
         /* Speech bubble styling for GLTF characters */
         .spirit-speech-bubble {
             position: absolute;
@@ -1158,8 +1184,8 @@
                     <div class="accessories-section" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
                         <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #ff1b6b;">ATK/DEF Custom</h3>
                         <div class="atk-def-custom-inputs" style="display: flex; gap: 6px; margin-bottom: 8px; justify-content: center;">
-                            <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
-                            <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="1000" />
+                            <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="" />
+                            <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="" />
                         </div>
                         <div style="text-align: center;">
                             <div class="custom-atk-def-source" draggable="true" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1b2838, #2a475e); border: 2px dashed #00d2ff; border-radius: 6px; color: #fff; cursor: grab; font-weight: bold; text-align: center; font-size: 0.75rem; box-shadow: 0 0 5px rgba(0, 210, 255, 0.3);">
@@ -1367,6 +1393,7 @@
         <div class="menu-item" id="menu-destroy-token" style="display: none; color: #ff4a4a; font-weight: bold;"><i class="fas fa-trash-alt"></i> Destruir Ficha (Token)</div>
         <hr>
         <div class="menu-item" id="menu-control"><i class="fas fa-exchange-alt"></i> Tomar Control</div>
+        <div class="menu-item" id="menu-equip-option"><i class="fas fa-link"></i> Equipar</div>
     </div>
 
     <!-- Click handler bindings for targeting attacks -->
@@ -1407,6 +1434,20 @@
                 $("#playmat").removeClass("targeting-attack");
                 $(document).off("keydown.attacktarget");
             };
+
+            // Equipped cards click interaction indicator (shows Equip.webp blinking icon over all linked equipped cards)
+            $(document).on("click", ".duel-card", function(e) {
+                if ($("#playmat").hasClass("selecting-zone")) return;
+                const instId = $(this).data("instance-id") || $(this).attr("id");
+                if (!instId || typeof state === "undefined" || !state.cards) return;
+
+                const clickedCard = state.cards.find(c => String(c.instanceId) === String(instId));
+                if (!clickedCard) return;
+
+                if (typeof window.triggerEquipIndicator === "function") {
+                    window.triggerEquipIndicator(clickedCard);
+                }
+            });
 
             // Delegated global click handler for target cards - Immune to any DOM refreshes or dynamic card rendering!
             $(document).on("click", ".duel-card", function(e) {
