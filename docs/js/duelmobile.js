@@ -1184,8 +1184,8 @@ function bindCardDragEvents() {
             return;
         }
 
-        // Prevent dragging deck cards or attached cards
-        if (cardObj.zone.startsWith("deck_") || cardObj.attachedTo) {
+        // Prevent dragging attached cards
+        if (cardObj.attachedTo) {
             return;
         }
 
@@ -5881,8 +5881,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         return;
                     }
 
-                    if (cardObj.zone.startsWith("deck_")) {
-                        // Prevent dragging deck entirely
+                    if (cardObj.attachedTo) {
                         return;
                     }
 
@@ -6109,8 +6108,12 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
                             cardObj.zone = `deck_${originalSuffix}`;
                             cardObj.controller = cardObj.owner;
+                            cardObj.faceDown = true;
                         } else {
                             cardObj.zone = hoverZone.id;
+                            if (oldZone.startsWith("deck_")) {
+                                cardObj.faceDown = false;
+                            }
                             if (cardObj.faceDown) {
                                 const isMonster = hoverZone.type === "monster" || hoverZone.id.startsWith("monster_") || hoverZone.id.startsWith("extra_monster_");
                                 cardObj.tapped = isMonster ? true : false;
@@ -6142,9 +6145,13 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
                         cardObj.zone = `hand_${originalSuffix}`;
                         cardObj.controller = cardObj.owner;
+                        cardObj.faceDown = false;
                     } else {
                         cardObj.zone = "field_free";
                         cardObj.attachedTo = null;
+                        if (oldZone.startsWith("deck_")) {
+                            cardObj.faceDown = false;
+                        }
                     }
                 }
 
