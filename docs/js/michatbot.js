@@ -305,7 +305,7 @@ async function initMichatbot(forceRefresh = false) {
                 <div id="michatbot-model-container" style="width: 100%; height: 100%;"></div>
 
                 <div id="michatbot-menu">
-                    <div class="michatbot-menu-item" id="michatbot-opt-chat"><i class="fas fa-comment-dots"></i> Chatear IA</div>
+                    <div class="michatbot-menu-item" id="michatbot-opt-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-mute"></div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play-duel"><i class="fas fa-gamepad"></i> Jugar</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play"><i class="fas fa-bolt"></i> Hora del duelo</div>
@@ -424,12 +424,7 @@ async function initMichatbot(forceRefresh = false) {
         $('#michatbot-menu').fadeOut(250);
         if ($('#michatbot-chat-messages').is(':empty')) {
             const spiritName = window.currentSpirit ? window.currentSpirit.name : "Espíritu TCG";
-            const isAdmin = checkIsAdminSession();
-            if (isAdmin) {
-                addBotMessage(`¡Hola! Soy **${spiritName}**, tu asistente IA. Tengo acceso total a tu panel de administración. Puedes pedirme consultar cartas, precios, crear álbumes, agregar cartas a decks, o actualizar datos.`);
-            } else {
-                addBotMessage(`¡Hola! Soy **${spiritName}**, tu asistente IA. Puedo resolver cualquier duda sobre cartas disponibles, álbumes, decks, productos sellados e información de la tienda.`);
-            }
+            addBotMessage(`¡Hola! Soy **${spiritName}**, ¿en qué puedo ayudarte?`);
         }
     });
 
