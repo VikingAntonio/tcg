@@ -502,41 +502,61 @@ REGLAS OBLIGATORIAS:
       ]
     };
 
+    // Dynamically fetch available models from Google Gemini API endpoint
+    let selectedModel = "";
+    try {
+      const listModelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+      const listRes = await fetch(listModelsUrl);
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        const availableModels = (listData.models || [])
+          .filter((m: any) => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+          .map((m: any) => m.name.replace("models/", ""));
+
+        console.log("Modelos Gemini disponibles para esta API key:", availableModels);
+
+        // Find best available model for content generation
+        const preferredModels = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-pro"];
+        for (const pref of preferredModels) {
+          if (availableModels.includes(pref)) {
+            selectedModel = pref;
+            break;
+          }
+        }
+        if (!selectedModel && availableModels.length > 0) {
+          selectedModel = availableModels[0];
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudo listar modelos dinámicamente:", e);
+    }
+
+    if (!selectedModel) {
+      selectedModel = "gemini-1.5-flash";
+    }
+
+    console.log(`Usando modelo Gemini seleccionado: ${selectedModel}`);
+
     // Construct conversation payload for Gemini API
     const contents = [...conversation_history, { role: "user", parts: [{ text: message }] }];
 
-    // List of model candidates to try in order of preference
-    const modelCandidates = ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash"];
+    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+    let response = await fetch(geminiApiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents,
+        systemInstruction,
+        tools
+      })
+    });
 
-    let response: Response | null = null;
-    let resData: any = null;
-    let activeModel = "gemini-2.0-flash";
+    let resData = await response.json();
 
-    for (const model of modelCandidates) {
-      activeModel = model;
-      const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      response = await fetch(geminiApiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents,
-          systemInstruction,
-          tools
-        })
-      });
-
-      resData = await response.json();
-      if (response.ok) {
-        break;
-      } else {
-        console.warn(`Modelo ${model} no disponible o falló:`, resData.error?.message);
-      }
-    }
-
-    if (!response || !response.ok) {
+    if (!response.ok) {
       console.error("Gemini API Error final:", resData);
       return new Response(JSON.stringify({ error: resData?.error?.message || "Error al comunicarse con la API de Gemini." }), {
-        status: response ? response.status : 500,
+        status: response.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -569,9 +589,9 @@ REGLAS OBLIGATORIAS:
         parts: functionResponses
       });
 
-      const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${apiKey}`;
+      const loopUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
 
-      response = await fetch(geminiApiUrl, {
+      response = await fetch(loopUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
