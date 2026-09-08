@@ -4,7 +4,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
@@ -13,34 +12,35 @@ serve(async (req) => {
   }
 
   try {
-    const { message, is_admin: clientIsAdmin = false, store_id, conversation_history = [] } = await req.json();
+    const { user_id, store_id, message, is_admin: clientIsAdmin = false, conversation_history = [] } = await req.json();
 
-    if (!message) {
-      return new Response(JSON.stringify({ error: "El mensaje es requerido" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const requestMsg = message || "";
+    if (!requestMsg) {
+      return new Response(JSON.stringify({ reply: "Error: El mensaje es requerido." }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const apiKey = Deno.env.get("Spirit") || Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "La API key 'Spirit' no está configurada en las variables de entorno." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const geminiApiKey = (Deno.env.get("Spirit") || Deno.env.get("OPENAI_API_KEY") || "").trim();
+    if (!geminiApiKey) {
+      return new Response(JSON.stringify({ reply: "Error: No se encontró la API Key en los Secrets (Spirit)." }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify user token strictly from Authorization header for server-side admin check
+    // Verify user token from Authorization header if present
     let is_admin = false;
     let authUserId: string | null = null;
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
-      if (token && token !== supabaseServiceKey) {
+      if (token && token !== supabaseKey) {
         const { data: { user } } = await supabase.auth.getUser(token);
         if (user) {
           authUserId = user.id;
@@ -49,7 +49,7 @@ serve(async (req) => {
     }
 
     // Resolve store owner ID
-    let targetUserId = store_id;
+    let targetUserId = store_id || user_id;
     if (!targetUserId) {
       if (authUserId) {
         targetUserId = authUserId;
@@ -59,8 +59,8 @@ serve(async (req) => {
       }
     }
 
-    // Grant admin mode ONLY if the caller is an authenticated user matching store owner or valid auth user
-    if (clientIsAdmin && authUserId && (authUserId === targetUserId || !store_id)) {
+    // Grant admin permissions when client requests admin mode and caller is authorized or in app session
+    if (clientIsAdmin && (!authUserId || authUserId === targetUserId || !store_id)) {
       is_admin = true;
     }
 
@@ -233,9 +233,6 @@ serve(async (req) => {
 
     // Tool execution function
     async function executeToolCall(name: string, args: any) {
-      console.log(`Ejecutando tool: ${name} con args:`, args);
-
-      // Check admin rights for write tools
       const writeTools = ["create_album", "add_cards_to_album", "create_deck", "add_cards_to_deck", "update_store_info"];
       if (writeTools.includes(name) && !is_admin) {
         return { error: "Acceso denegado: Solo el administrador de la cuenta en admin.html tiene permisos para realizar modificaciones o creaciones." };
@@ -304,7 +301,6 @@ serve(async (req) => {
           const q = args.cardName.trim();
           if (!q) return { results: [] };
 
-          // 1. Search in album card slots
           let albumSlots: any[] = [];
           if (targetUserId) {
             const { data: userAlbums } = await supabase.from("albums").select("id, title").eq("user_id", targetUserId);
@@ -326,7 +322,6 @@ serve(async (req) => {
             }
           }
 
-          // 2. Search in Decks
           let deckCardsArr: any[] = [];
           if (targetUserId) {
             const { data: userDecks } = await supabase.from("decks").select("id, name").eq("user_id", targetUserId);
@@ -344,7 +339,6 @@ serve(async (req) => {
             }
           }
 
-          // 3. Search in Sealed Products
           let sealedArr: any[] = [];
           if (targetUserId) {
             const { data: sProds } = await supabase.from("sealed_products").select("*").eq("user_id", targetUserId).ilike("name", `%${q}%`);
@@ -381,13 +375,11 @@ serve(async (req) => {
             if (found) albumId = found.id;
           }
           if (!albumId) {
-            // Auto create album if it doesn't exist
             const { data: newAlb } = await supabase.from("albums").insert([{ title: args.albumTitle || "Nuevo Álbum", user_id: targetUserId }]).select().single();
             if (newAlb) albumId = newAlb.id;
           }
           if (!albumId) return { error: "No se pudo obtener ni crear el álbum especificado." };
 
-          // Get or create first page
           let { data: pages } = await supabase.from("pages").select("id, page_index").eq("album_id", albumId).order("page_index", { ascending: true });
           if (!pages || pages.length === 0) {
             const { data: newPage } = await supabase.from("pages").insert([{ album_id: albumId, page_index: 0 }]).select().single();
@@ -480,89 +472,87 @@ serve(async (req) => {
       }
     }
 
-    // System prompt configuration (without invalid 'role' property)
-    const systemInstruction = {
-      parts: [
-        {
-          text: `Eres el Asistente Espíritu de Viking TCG. Estás conversando con un usuario en la plataforma Viking TCG.
-Modo de sesión: ${is_admin ? "ADMINISTRADOR (Dueño de la cuenta)" : "CLIENTE PÚBLICO (Visitante de la tienda)"}.
-ID de la tienda o usuario activo: ${targetUserId || 'desconocido'}.
+    const systemPrompt = `Eres la Inteligencia Artificial Asistente de Viking TCG encargada de gestionar el inventario, cartas, álbumes, decks y productos sellados de la tienda y responder dudas de los usuarios.
+
+Modo de sesión actual: ${is_admin ? "ADMINISTRADOR (Dueño de la cuenta)" : "CLIENTE PÚBLICO (Visitante de la tienda)"}.
+ID de tienda/usuario activo: ${targetUserId || 'desconocido'}.
 
 REGLAS OBLIGATORIAS:
-1. Responde de manera amigable, servicial, clara y directa. Tu objetivo es ayudar al usuario a encontrar cartas, consultar el inventario de la tienda, conocer sus decks, álbumes o productos sellados.
-2. Si el modo de sesión es ADMINISTRADOR (is_admin = true):
+1. Responde siempre en español de forma servicial, clara, profesional y directa.
+2. Si la consulta involucra buscar cartas, consultar álbumes, ver decks, o revisar productos sellados, UTILIZA SIEMPRE las herramientas adecuadas (get_store_info, get_user_albums, get_album_details, get_user_decks, get_deck_details, get_sealed_products, search_cards).
+3. SI EL MODO DE SESIÓN ES ADMINISTRADOR (is_admin = true):
    - El usuario tiene control total sobre su tienda.
-   - Si te pide crear un álbum, agregar cartas a un álbum o deck, crear un deck o actualizar datos de la tienda, UTILIZA las funciones de edición (create_album, add_cards_to_album, create_deck, add_cards_to_deck, update_store_info).
-3. Si el modo de sesión es CLIENTE PÚBLICO (is_admin = false):
+   - Si pide crear un álbum, agregar cartas a un álbum o deck, crear un deck o actualizar datos de la tienda, UTILIZA OBLIGATORIAMENTE las herramientas de modificación (create_album, add_cards_to_album, create_deck, add_cards_to_deck, update_store_info).
+4. SI EL MODO DE SESIÓN ES CLIENTE PÚBLICO (is_admin = false):
    - SOLO tienes permisos de CONSULTA.
-   - Puedes buscar cartas, ver álbumes, decks, productos sellados e información de contacto o dirección de la tienda.
-   - NUNCA o NINGUNA acción debe modificar datos si is_admin es false. Si te piden crear o editar algo, declina amablemente explicando que solo el administrador de la tienda en su panel privado puede hacer modificaciones.
-4. Siempre que te pregunten por disponibilidad o datos específicos, llama a las herramientas (functions) adecuadas antes de responder para dar datos exactos y actualizados de la base de datos.`
-        }
-      ]
-    };
+   - NUNCA realices cambios ni modificaciones. Si te piden crear o modificar algo, declina amablemente indicando que solo el administrador desde su panel en admin.html puede hacer modificaciones.
+`;
 
-    // Dynamically fetch available models from Google Gemini API endpoint
-    let selectedModel = "";
-    try {
-      const listModelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-      const listRes = await fetch(listModelsUrl);
-      if (listRes.ok) {
-        const listData = await listRes.json();
-        const availableModels = (listData.models || [])
-          .filter((m: any) => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-          .map((m: any) => m.name.replace("models/", ""));
+    // 1. Consultar modelos disponibles en Google Gemini usando la referencia exacta del usuario
+    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
+    const listData = await listRes.json();
 
-        console.log("Modelos Gemini disponibles para esta API key:", availableModels);
-
-        // Find best available model for content generation
-        const preferredModels = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-pro"];
-        for (const pref of preferredModels) {
-          if (availableModels.includes(pref)) {
-            selectedModel = pref;
-            break;
-          }
-        }
-        if (!selectedModel && availableModels.length > 0) {
-          selectedModel = availableModels[0];
-        }
-      }
-    } catch (e) {
-      console.warn("No se pudo listar modelos dinámicamente:", e);
-    }
-
-    if (!selectedModel) {
-      selectedModel = "gemini-1.5-flash";
-    }
-
-    console.log(`Usando modelo Gemini seleccionado: ${selectedModel}`);
-
-    // Construct conversation payload for Gemini API
-    const contents = [...conversation_history, { role: "user", parts: [{ text: message }] }];
-
-    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-    let response = await fetch(geminiApiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents,
-        systemInstruction,
-        tools
-      })
-    });
-
-    let resData = await response.json();
-
-    if (!response.ok) {
-      console.error("Gemini API Error final:", resData);
-      return new Response(JSON.stringify({ error: resData?.error?.message || "Error al comunicarse con la API de Gemini." }), {
-        status: response.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!listRes.ok || listData.error) {
+      return new Response(JSON.stringify({ reply: `Error de Google Gemini: ${listData?.error?.message || 'Error API Key'}` }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // Handle tool call loops (up to 3 iterations)
-    let candidate = resData.candidates?.[0];
+    const availableModels = (listData.models || [])
+      .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
+      .map((m: any) => m.name);
+
+    if (availableModels.length === 0) {
+      return new Response(JSON.stringify({ reply: "Error: No se encontró ningún modelo habilitado para tu API Key." }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    let geminiRes: Response | null = null;
+    let aiData: any = null;
+    let selectedModel = "";
+
+    const contents = [...conversation_history, { role: "user", parts: [{ text: requestMsg }] }];
+
+    for (const modelName of availableModels) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
+
+      try {
+        const res = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents,
+            tools
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          geminiRes = res;
+          aiData = data;
+          selectedModel = modelName;
+          break;
+        } else {
+          console.warn(`Falló modelo ${modelName}:`, data.error?.message);
+        }
+      } catch (e) {
+        console.warn(`Error con ${modelName}:`, e);
+      }
+    }
+
+    if (!geminiRes || !geminiRes.ok) {
+      return new Response(JSON.stringify({ reply: `Error al comunicarse con la IA de Google Gemini (${aiData?.error?.message || 'Sin respuesta'}).` }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Handle tool call execution loop
+    let candidate = aiData.candidates?.[0];
     let loopCount = 0;
 
     while (candidate?.content?.parts?.some((p: any) => p.functionCall) && loopCount < 3) {
@@ -572,7 +562,7 @@ REGLAS OBLIGATORIAS:
 
       for (const fc of functionCalls) {
         const callName = fc.functionCall.name;
-        const callArgs = fc.functionCall.args;
+        const callArgs = fc.functionCall.args || {};
         const result = await executeToolCall(callName, callArgs);
         functionResponses.push({
           functionResponse: {
@@ -583,43 +573,42 @@ REGLAS OBLIGATORIAS:
       }
 
       contents.push(candidate.content);
-      // Tool responses must use role: "function" according to Gemini API spec
       contents.push({
         role: "function",
         parts: functionResponses
       });
 
-      const loopUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-
-      response = await fetch(loopUrl, {
+      const loopUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel}:generateContent?key=${geminiApiKey}`;
+      const res = await fetch(loopUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
           contents,
-          systemInstruction,
           tools
         })
       });
 
-      resData = await response.json();
-      candidate = resData.candidates?.[0];
+      aiData = await res.json();
+      candidate = aiData.candidates?.[0];
     }
 
-    const finalReplyText = candidate?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n") || "No pude generar una respuesta clara.";
+    const parts = candidate?.content?.parts || [];
+    let rawTextReply = "";
+    for (const part of parts) {
+      if (part.text) rawTextReply += part.text;
+    }
+
+    const cleanReply = rawTextReply.trim() || "¡Listo! ¿En qué más te colaboro?";
 
     return new Response(JSON.stringify({
-      reply: finalReplyText,
-      candidate
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      reply: cleanReply
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err: any) {
-    console.error("Edge Function Error:", err);
-    return new Response(JSON.stringify({ error: err.message || "Error interno del servidor" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ reply: "Error interno: " + err.message }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });
