@@ -156,6 +156,8 @@ const state = {
 // Active drag tracking
 let dragCard = null;
 let dragOffset = { x: 0, y: 0 };
+let pendingDragElem = null;
+let pendingCardObj = null;
 
 // Global selection sets for batch transfers
 let selectedHandCards = { player1: [], player2: [] };
@@ -1027,43 +1029,12 @@ function bindCardDragEvents() {
         // Visual preview selection
         updatePreview(cardObj);
 
-        dragCard = $(this);
-        dragCard.addClass("dragging").removeClass("snapping");
-
-        // Bring to front physically on screen
-        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-        cardObj.z = maxZ + 1;
-        dragCard.css("z-index", cardObj.z);
+        // Store pending drag state without activating drag mode or modifying DOM/styles
+        pendingDragElem = $(this);
+        pendingCardObj = cardObj;
+        dragCard = null;
 
         const pos = getEventCoords(e);
-        const matOffset = $("#playmat").offset();
-        const rect = $("#playmat")[0].getBoundingClientRect();
-        const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
-
-        if (cardObj.zone.startsWith("hand_")) {
-            // Move element to playmat container to escape flex relative layout
-            $("#field-cards-container").append(dragCard);
-            const initialX = (pos.x - matOffset.left) / scale - 40;
-            const initialY = (pos.y - matOffset.top) / scale - 58;
-            dragCard.css({
-                position: "absolute",
-                width: "80px",
-                height: "116px",
-                left: `${initialX}px`,
-                top: `${initialY}px`,
-                margin: "0"
-            });
-            cardObj.x = initialX;
-            cardObj.y = initialY;
-            dragOffset.x = 40;
-            dragOffset.y = 58;
-        } else {
-            const cardOffset = $(this).offset();
-            const elemLeft = (cardOffset.left - matOffset.left) / scale;
-            const elemTop = (cardOffset.top - matOffset.top) / scale;
-            dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
-            dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
-        }
         dragStartCoords = { x: pos.x, y: pos.y };
         dragStartTime = Date.now();
     });
@@ -1090,7 +1061,63 @@ window.addEventListener('touchmove', function(e) {
 
 // Global window event listeners for active drag tracking
 $(window).on('mousemove touchmove', function(e) {
-    if (!dragCard) return;
+    if (!dragCard) {
+        if (pendingDragElem && pendingCardObj) {
+            const pos = getEventCoords(e);
+            const dx = pos.x - dragStartCoords.x;
+            const dy = pos.y - dragStartCoords.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Activate drag mode ONLY when mouse/touch movement exceeds 5px threshold!
+            if (dist >= 5) {
+                dragCard = pendingDragElem;
+                pendingDragElem = null;
+                const cardObj = pendingCardObj;
+                pendingCardObj = null;
+
+                dragCard.addClass("dragging").removeClass("snapping");
+
+                // Bring to front physically on screen
+                const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                cardObj.z = maxZ + 1;
+                dragCard.css("z-index", cardObj.z);
+
+                const matOffset = $("#playmat").offset();
+                const rect = $("#playmat")[0].getBoundingClientRect();
+                const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+
+                if (cardObj.zone.startsWith("hand_")) {
+                    // Move element to playmat container to escape flex relative layout
+                    $("#field-cards-container").append(dragCard);
+                    const initialX = (pos.x - matOffset.left) / scale - 40;
+                    const initialY = (pos.y - matOffset.top) / scale - 58;
+                    dragCard.css({
+                        position: "absolute",
+                        width: "80px",
+                        height: "116px",
+                        left: `${initialX}px`,
+                        top: `${initialY}px`,
+                        margin: "0"
+                    });
+                    cardObj.x = initialX;
+                    cardObj.y = initialY;
+                    dragOffset.x = 40;
+                    dragOffset.y = 58;
+                } else {
+                    const cardOffset = dragCard.offset();
+                    const elemLeft = (cardOffset.left - matOffset.left) / scale;
+                    const elemTop = (cardOffset.top - matOffset.top) / scale;
+                    dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
+                    dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+                }
+            } else {
+                return;
+            }
+        } else {
+            return;
+        }
+    }
+
     e.preventDefault();
 
     const instId = dragCard.data("instance-id");
@@ -1133,11 +1160,102 @@ $(window).on('mousemove touchmove', function(e) {
 });
 
 $(window).on('mouseup touchend', function(e) {
-    if (!dragCard) return;
+    if (!dragCard && !pendingDragElem) return;
+
+    // If mouse/touch was released without exceeding drag distance threshold (simple click!)
+    if (!dragCard && pendingDragElem) {
+        const cardObj = pendingCardObj;
+        const clickedElem = pendingDragElem;
+        pendingDragElem = null;
+        pendingCardObj = null;
+
+        if (!cardObj) return;
+
+        const endPos = getEventCoords(e);
+
+        if ($("#playmat").hasClass("selecting-zone") || $("#playmat").hasClass("targeting-attack")) {
+            const targetEl = clickedElem[0];
+            if (targetEl) {
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                targetEl.dispatchEvent(clickEvent);
+            }
+            return;
+        }
+
+        // Check if hand multi-select mode is active for this card's zone
+        const isHandCard = cardObj.zone.startsWith("hand_");
+        if (isHandCard) {
+            const playerKey = cardObj.zone === "hand_1" ? "player1" : "player2";
+            const $toggle = $(`.hand-multi-select-toggle[data-player="${playerKey}"]`);
+            if ($toggle.is(":checked")) {
+                e.preventDefault();
+                e.stopPropagation();
+                const idx = selectedHandCards[playerKey].indexOf(cardObj.instanceId);
+                if (idx > -1) {
+                    selectedHandCards[playerKey].splice(idx, 1);
+                    $(`#${cardObj.instanceId}`).removeClass("selected-for-batch");
+                } else {
+                    selectedHandCards[playerKey].push(cardObj.instanceId);
+                    $(`#${cardObj.instanceId}`).addClass("selected-for-batch");
+                }
+                renderAllCards();
+                return;
+            }
+            return;
+        }
+
+        // Check if card was in deck, grave, banished, or extra deck!
+        if (cardObj.zone.startsWith("deck_")) {
+            activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+            $("#card-menu").removeClass("active");
+            $("#deck-menu").css({
+                left: `${endPos.x || dragStartCoords.x}px`,
+                top: `${endPos.y || dragStartCoords.y}px`
+            }).addClass("active");
+            return;
+        }
+
+        if (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) {
+            const playerKey = cardObj.zone === "extra_1" ? "player1" : "player2";
+            openExtraDeckModal(playerKey);
+            return;
+        }
+
+        if (cardObj.zone.startsWith("grave_")) {
+            const playerKey = cardObj.zone === "grave_1" ? "player1" : "player2";
+            openPileModal(playerKey, "grave");
+            return;
+        }
+
+        if (cardObj.zone.startsWith("banished_")) {
+            const playerKey = cardObj.zone === "banished_1" ? "player1" : "player2";
+            openPileModal(playerKey, "banished");
+            return;
+        }
+
+        // This is a click on a field card! Open options context menu
+        const isField = !cardObj.zone.startsWith("hand_") && !cardObj.zone.startsWith("deck_") && !(cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) && !cardObj.zone.startsWith("grave_") && !cardObj.zone.startsWith("banished_");
+        if (isField) {
+            openCardContextMenu(cardObj, endPos.x || dragStartCoords.x, endPos.y || dragStartCoords.y);
+            return;
+        }
+
+        return;
+    }
+
+    pendingDragElem = null;
+    pendingCardObj = null;
 
     const instId = dragCard.data("instance-id");
     const cardObj = state.cards.find(c => c.instanceId === instId);
-    if (!cardObj) return;
+    if (!cardObj) {
+        dragCard = null;
+        return;
+    }
 
     const endPos = getEventCoords(e);
     const dx = endPos.x - dragStartCoords.x;
