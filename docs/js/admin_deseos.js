@@ -519,41 +519,31 @@ async function saveWishlistSlotName(index, name) {
 }
 
 async function deleteWishlistItemAdmin(id, $element = null) {
-    const result = await Swal.fire({
-        title: '¿Eliminar de la lista?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ff4757',
-        confirmButtonText: 'Sí, eliminar'
-    });
-
-    if (result.isConfirmed) {
-        // Deletion of custom masks from Cloudinary
-        const maskUrl = $element ? $element.attr('data-mask') : '';
-        if (maskUrl) {
-            const maskUrls = maskUrl.split(';');
-            for (const url of maskUrls) {
-                if (url && url.includes('cloudinary.com')) {
+    // Deletion of custom masks from Cloudinary
+    const maskUrl = $element ? $element.attr('data-mask') : '';
+    if (maskUrl) {
+        const maskUrls = maskUrl.split(';');
+        for (const url of maskUrls) {
+            if (url && url.includes('cloudinary.com')) {
+                if (typeof CloudinaryUpload !== 'undefined' && CloudinaryUpload.deleteImage) {
                     CloudinaryUpload.deleteImage(url);
                 }
             }
         }
+    }
 
-        const { error } = await _supabase.from('wishlist').delete().eq('id', id);
-        if (error) {
-            Swal.fire('Error', 'No se pudo eliminar', 'error');
-        } else {
-            if ($element) {
-                $element.fadeOut(300, function() {
-                    $(this).remove();
-                    const $container = $('#wishlist-list-admin');
-                    if ($container.children('.wishlist-item').length === 0) {
-                        $container.html('<div class="empty">No tienes cartas en tu Wishlist. ¡Busca una arriba para empezar!</div>');
-                    }
-                });
-            } else {
-                loadWishlistAdmin();
-            }
+    if ($element) {
+        $element.remove();
+        const $container = $('#wishlist-list-admin');
+        if ($container.children('.wishlist-item').length === 0) {
+            $container.html('<div class="empty">No tienes cartas en tu Wishlist. ¡Busca una arriba para empezar!</div>');
         }
+    }
+
+    const { error } = await _supabase.from('wishlist').delete().eq('id', id);
+    if (error) {
+        console.error("Error deleting wishlist item:", error);
+    } else if (!$element) {
+        loadWishlistAdmin();
     }
 }
