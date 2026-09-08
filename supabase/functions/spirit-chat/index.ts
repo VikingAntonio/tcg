@@ -34,7 +34,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify user token from Authorization header if provided for server-side admin check
+    // Verify user token strictly from Authorization header for server-side admin check
     let is_admin = false;
     let authUserId: string | null = null;
     const authHeader = req.headers.get("Authorization");
@@ -59,14 +59,9 @@ serve(async (req) => {
       }
     }
 
-    // If client requested admin mode, verify auth user matches store owner or is authenticated
-    if (clientIsAdmin) {
-      if (authUserId && (authUserId === targetUserId || !store_id)) {
-        is_admin = true;
-      } else if (clientIsAdmin) {
-        // Fallback for custom session auth used in local app context
-        is_admin = true;
-      }
+    // Grant admin mode ONLY if the caller is an authenticated user matching store owner or valid auth user
+    if (clientIsAdmin && authUserId && (authUserId === targetUserId || !store_id)) {
+      is_admin = true;
     }
 
     // Tools definition for Gemini API
@@ -485,9 +480,8 @@ serve(async (req) => {
       }
     }
 
-    // System prompt configuration
+    // System prompt configuration (without invalid 'role' property)
     const systemInstruction = {
-      role: "system",
       parts: [
         {
           text: `Eres el Asistente Espíritu de Viking TCG. Estás conversando con un usuario en la plataforma Viking TCG.
@@ -511,24 +505,38 @@ REGLAS OBLIGATORIAS:
     // Construct conversation payload for Gemini API
     const contents = [...conversation_history, { role: "user", parts: [{ text: message }] }];
 
-    let geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // List of model candidates to try in order of preference
+    const modelCandidates = ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash"];
 
-    let response = await fetch(geminiApiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents,
-        systemInstruction,
-        tools
-      })
-    });
+    let response: Response | null = null;
+    let resData: any = null;
+    let activeModel = "gemini-2.0-flash";
 
-    let resData = await response.json();
+    for (const model of modelCandidates) {
+      activeModel = model;
+      const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      response = await fetch(geminiApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents,
+          systemInstruction,
+          tools
+        })
+      });
 
-    if (!response.ok) {
-      console.error("Gemini API Error:", resData);
-      return new Response(JSON.stringify({ error: resData.error?.message || "Error al comunicarse con Gemini API" }), {
-        status: response.status,
+      resData = await response.json();
+      if (response.ok) {
+        break;
+      } else {
+        console.warn(`Modelo ${model} no disponible o falló:`, resData.error?.message);
+      }
+    }
+
+    if (!response || !response.ok) {
+      console.error("Gemini API Error final:", resData);
+      return new Response(JSON.stringify({ error: resData?.error?.message || "Error al comunicarse con la API de Gemini." }), {
+        status: response ? response.status : 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -555,10 +563,13 @@ REGLAS OBLIGATORIAS:
       }
 
       contents.push(candidate.content);
+      // Tool responses must use role: "function" according to Gemini API spec
       contents.push({
-        role: "user",
+        role: "function",
         parts: functionResponses
       });
+
+      const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${apiKey}`;
 
       response = await fetch(geminiApiUrl, {
         method: "POST",
