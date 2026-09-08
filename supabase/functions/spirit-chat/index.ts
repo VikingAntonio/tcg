@@ -34,7 +34,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify user token from Authorization header if present
     let is_admin = false;
     let authUserId: string | null = null;
     const authHeader = req.headers.get("Authorization");
@@ -48,7 +47,6 @@ serve(async (req) => {
       }
     }
 
-    // Resolve store owner ID
     let targetUserId = store_id || user_id;
     if (!targetUserId) {
       if (authUserId) {
@@ -59,105 +57,116 @@ serve(async (req) => {
       }
     }
 
-    // Grant admin permissions when client requests admin mode and caller is authorized or in app session
     if (clientIsAdmin && (!authUserId || authUserId === targetUserId || !store_id)) {
       is_admin = true;
     }
 
-    // Tools definition for Gemini API
+    // Helper to query YGOPRODeck external database
+    async function queryYGOPRODeck(cardName: string) {
+      try {
+        const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(cardName.trim())}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.data && data.data.length > 0) {
+            return data.data.map((c: any) => ({
+              card_name: c.name,
+              type: c.type,
+              rarity: c.card_sets?.[0]?.set_rarity || c.rarity || "Common",
+              image_url: c.card_images?.[0]?.image_url || "",
+              desc: c.desc || ""
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn("YGOPRODeck fetch error:", e);
+      }
+      return [];
+    }
+
+    // Tools definition
     const tools = [
       {
         functionDeclarations: [
           {
             name: "get_store_info",
-            description: "Obtiene la información del perfil de la tienda o usuario (nombre de tienda, usuario, WhatsApp, redes, descripción, dirección o detalles de contacto).",
+            description: "Obtiene información del perfil de la tienda (nombre, WhatsApp, redes, contacto).",
             parameters: {
               type: "OBJECT",
               properties: {
-                userId: { type: "STRING", description: "ID del usuario o tienda (opcional, por defecto la tienda actual)" }
+                userId: { type: "STRING" }
               }
             }
           },
           {
             name: "get_user_albums",
-            description: "Obtiene la lista de álbumes del usuario/tienda con sus nombres e IDs.",
-            parameters: {
-              type: "OBJECT",
-              properties: {}
-            }
+            description: "Lista todos los álbumes de la tienda.",
+            parameters: { type: "OBJECT", properties: {} }
           },
           {
             name: "get_album_details",
-            description: "Obtiene las páginas y cartas contenidas en un álbum específico dado su ID o título.",
+            description: "Obtiene páginas y cartas de un álbum por ID o título.",
             parameters: {
               type: "OBJECT",
               properties: {
-                albumId: { type: "STRING", description: "ID del álbum" },
-                albumTitle: { type: "STRING", description: "Título del álbum si no se tiene el ID" }
+                albumId: { type: "STRING" },
+                albumTitle: { type: "STRING" }
               }
             }
           },
           {
             name: "get_user_decks",
-            description: "Obtiene la lista de decks creados por el usuario/tienda.",
-            parameters: {
-              type: "OBJECT",
-              properties: {}
-            }
+            description: "Lista todos los decks creados por la tienda.",
+            parameters: { type: "OBJECT", properties: {} }
           },
           {
             name: "get_deck_details",
-            description: "Obtiene las cartas de un deck específico dado su ID o nombre.",
+            description: "Obtiene las cartas de un deck por ID o nombre.",
             parameters: {
               type: "OBJECT",
               properties: {
-                deckId: { type: "STRING", description: "ID del deck" },
-                deckName: { type: "STRING", description: "Nombre del deck si no se tiene el ID" }
+                deckId: { type: "STRING" },
+                deckName: { type: "STRING" }
               }
             }
           },
           {
             name: "get_sealed_products",
-            description: "Obtiene los productos sellados disponibles en la tienda con sus precios, stock y categoría.",
-            parameters: {
-              type: "OBJECT",
-              properties: {}
-            }
+            description: "Obtiene productos sellados disponibles.",
+            parameters: { type: "OBJECT", properties: {} }
           },
           {
             name: "search_cards",
-            description: "Busca cartas por nombre en álbumes, decks y productos sellados para verificar disponibilidad o precios.",
+            description: "Busca cartas en álbumes, decks, productos sellados e incluye consulta externa TCG (YGOPRODeck) si no está en la base local.",
             parameters: {
               type: "OBJECT",
               properties: {
-                cardName: { type: "STRING", description: "Nombre o fragmento del nombre de la carta a buscar" }
+                cardName: { type: "STRING", description: "Nombre de la carta a buscar" }
               },
               required: ["cardName"]
             }
           },
           {
             name: "create_album",
-            description: "[SOLO ADMIN] Crea un nuevo álbum para la tienda. Solo permitido si is_admin es verdadero.",
+            description: "[SOLO ADMIN] Crea un nuevo álbum para la tienda.",
             parameters: {
               type: "OBJECT",
               properties: {
-                title: { type: "STRING", description: "Título del nuevo álbum" },
-                coverImageUrl: { type: "STRING", description: "URL de la portada (opcional)" }
+                title: { type: "STRING" },
+                coverImageUrl: { type: "STRING" }
               },
               required: ["title"]
             }
           },
           {
             name: "add_cards_to_album",
-            description: "[SOLO ADMIN] Agrega una o varias cartas a un álbum especificado. Solo permitido si is_admin es verdadero.",
+            description: "[SOLO ADMIN] Agrega cartas a un álbum. Si no se especifican imágenes, las busca automáticamente en la base externa TCG.",
             parameters: {
               type: "OBJECT",
               properties: {
-                albumId: { type: "STRING", description: "ID del álbum objetivo" },
-                albumTitle: { type: "STRING", description: "Título del álbum objetivo si no se conoce el ID" },
+                albumId: { type: "STRING" },
+                albumTitle: { type: "STRING" },
                 cards: {
                   type: "ARRAY",
-                  description: "Lista de cartas a agregar con nombre, precio, rareza, cantidad, etc.",
                   items: {
                     type: "OBJECT",
                     properties: {
@@ -178,33 +187,32 @@ serve(async (req) => {
           },
           {
             name: "create_deck",
-            description: "[SOLO ADMIN] Crea un nuevo deck para la tienda. Solo permitido si is_admin es verdadero.",
+            description: "[SOLO ADMIN] Crea un nuevo deck.",
             parameters: {
               type: "OBJECT",
               properties: {
-                name: { type: "STRING", description: "Nombre del nuevo deck" },
-                format_tag: { type: "STRING", description: "Formato o tag del deck (ej. Speed Duel, Rush Duel, Edison, YGO, etc.)" }
+                name: { type: "STRING" },
+                format_tag: { type: "STRING" }
               },
               required: ["name"]
             }
           },
           {
             name: "add_cards_to_deck",
-            description: "[SOLO ADMIN] Agrega cartas a un deck. Solo permitido si is_admin es verdadero.",
+            description: "[SOLO ADMIN] Agrega cartas a un deck.",
             parameters: {
               type: "OBJECT",
               properties: {
-                deckId: { type: "STRING", description: "ID del deck" },
-                deckName: { type: "STRING", description: "Nombre del deck" },
+                deckId: { type: "STRING" },
+                deckName: { type: "STRING" },
                 cards: {
                   type: "ARRAY",
-                  description: "Lista de cartas a agregar al deck",
                   items: {
                     type: "OBJECT",
                     properties: {
                       card_name: { type: "STRING" },
                       quantity: { type: "NUMBER" },
-                      section: { type: "STRING", description: "main, extra, side o token" },
+                      section: { type: "STRING" },
                       card_type: { type: "STRING" },
                       image_url: { type: "STRING" }
                     },
@@ -217,13 +225,13 @@ serve(async (req) => {
           },
           {
             name: "update_store_info",
-            description: "[SOLO ADMIN] Actualiza la información del perfil de la tienda (nombre de la tienda, whatsapp, etc.). Solo permitido si is_admin es verdadero.",
+            description: "[SOLO ADMIN] Actualiza los datos de la tienda.",
             parameters: {
               type: "OBJECT",
               properties: {
-                store_name: { type: "STRING", description: "Nuevo nombre de la tienda" },
-                whatsapp_link: { type: "STRING", description: "Nuevo número o link de WhatsApp" },
-                messenger_link: { type: "STRING", description: "Nuevo link de Messenger" }
+                store_name: { type: "STRING" },
+                whatsapp_link: { type: "STRING" },
+                messenger_link: { type: "STRING" }
               }
             }
           }
@@ -231,26 +239,23 @@ serve(async (req) => {
       }
     ];
 
-    // Tool execution function
     async function executeToolCall(name: string, args: any) {
       const writeTools = ["create_album", "add_cards_to_album", "create_deck", "add_cards_to_deck", "update_store_info"];
       if (writeTools.includes(name) && !is_admin) {
-        return { error: "Acceso denegado: Solo el administrador de la cuenta en admin.html tiene permisos para realizar modificaciones o creaciones." };
+        return { error: "Acceso denegado: Solo el administrador en admin.html puede realizar cambios." };
       }
 
       switch (name) {
         case "get_store_info": {
           const uId = args.userId || targetUserId;
           if (!uId) return { error: "No se encontró ID de usuario." };
-          const { data: userRow, error } = await supabase.from("usuarios").select("id, username, store_name, whatsapp_link, messenger_link, profile_picture_url, store_banner_url").eq("id", uId).maybeSingle();
-          if (error) return { error: error.message };
-          return userRow || { message: "No se encontró perfil para este usuario." };
+          const { data: userRow } = await supabase.from("usuarios").select("id, username, store_name, whatsapp_link, messenger_link, profile_picture_url, store_banner_url").eq("id", uId).maybeSingle();
+          return userRow || { message: "No se encontró perfil." };
         }
 
         case "get_user_albums": {
           if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
-          const { data: albums, error } = await supabase.from("albums").select("id, title, cover_image_url, position").eq("user_id", targetUserId).order("position", { ascending: true });
-          if (error) return { error: error.message };
+          const { data: albums } = await supabase.from("albums").select("id, title, cover_image_url, position").eq("user_id", targetUserId).order("position", { ascending: true });
           return { albums: albums || [] };
         }
 
@@ -272,8 +277,7 @@ serve(async (req) => {
 
         case "get_user_decks": {
           if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
-          const { data: decks, error } = await supabase.from("decks").select("id, name, format_tag, is_public, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false });
-          if (error) return { error: error.message };
+          const { data: decks } = await supabase.from("decks").select("id, name, format_tag, is_public, created_at").eq("user_id", targetUserId).order("created_at", { ascending: false });
           return { decks: decks || [] };
         }
 
@@ -292,8 +296,7 @@ serve(async (req) => {
 
         case "get_sealed_products": {
           if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
-          const { data: products, error } = await supabase.from("sealed_products").select("*").eq("user_id", targetUserId);
-          if (error) return { error: error.message };
+          const { data: products } = await supabase.from("sealed_products").select("*").eq("user_id", targetUserId);
           return { sealed_products: products || [] };
         }
 
@@ -347,11 +350,15 @@ serve(async (req) => {
             }
           }
 
+          // Search in external TCG API if no local matches or to enrich details
+          const externalMatch = await queryYGOPRODeck(q);
+
           return {
             query: q,
             in_albums: albumSlots,
             in_decks: deckCardsArr,
-            sealed_products: sealedArr
+            sealed_products: sealedArr,
+            external_tcg_database: externalMatch
           };
         }
 
@@ -364,7 +371,7 @@ serve(async (req) => {
           ]).select().single();
 
           if (error) return { error: error.message };
-          return { success: true, message: `Álbum '${args.title}' creado con éxito.`, album: newAlbum };
+          return { success: true, message: `Álbum '${args.title}' creado.`, album: newAlbum };
         }
 
         case "add_cards_to_album": {
@@ -378,14 +385,14 @@ serve(async (req) => {
             const { data: newAlb } = await supabase.from("albums").insert([{ title: args.albumTitle || "Nuevo Álbum", user_id: targetUserId }]).select().single();
             if (newAlb) albumId = newAlb.id;
           }
-          if (!albumId) return { error: "No se pudo obtener ni crear el álbum especificado." };
+          if (!albumId) return { error: "No se pudo obtener el álbum." };
 
           let { data: pages } = await supabase.from("pages").select("id, page_index").eq("album_id", albumId).order("page_index", { ascending: true });
           if (!pages || pages.length === 0) {
             const { data: newPage } = await supabase.from("pages").insert([{ album_id: albumId, page_index: 0 }]).select().single();
             if (newPage) pages = [newPage];
           }
-          if (!pages || pages.length === 0) return { error: "No se pudo crear la página del álbum." };
+          if (!pages || pages.length === 0) return { error: "No se pudo crear página." };
 
           const targetPageId = pages[0].id;
           const { data: existingSlots } = await supabase.from("card_slots").select("slot_index").eq("page_id", targetPageId);
@@ -397,15 +404,26 @@ serve(async (req) => {
             while (occupied.has(currentSlot) && currentSlot < 20) {
               currentSlot++;
             }
+
+            let cardImg = card.image_url || "";
+            let cardRarity = card.rarity || "";
+            if (!cardImg) {
+              const ext = await queryYGOPRODeck(card.card_name);
+              if (ext && ext.length > 0) {
+                cardImg = ext[0].image_url;
+                if (!cardRarity) cardRarity = ext[0].rarity;
+              }
+            }
+
             slotsToInsert.push({
               page_id: targetPageId,
               slot_index: currentSlot,
               card_name: card.card_name,
               price: card.price || 0,
-              rarity: card.rarity || "",
+              rarity: cardRarity || "",
               edition: card.edition || "",
               language: card.language || "",
-              image_url: card.image_url || "",
+              image_url: cardImg,
               foil_type: card.foil_type || ""
             });
             occupied.add(currentSlot);
@@ -424,7 +442,7 @@ serve(async (req) => {
           ]).select().single();
 
           if (error) return { error: error.message };
-          return { success: true, message: `Deck '${args.name}' creado con éxito.`, deck: newDeck };
+          return { success: true, message: `Deck '${args.name}' creado.`, deck: newDeck };
         }
 
         case "add_cards_to_deck": {
@@ -438,16 +456,26 @@ serve(async (req) => {
             const { data: newD } = await supabase.from("decks").insert([{ name: args.deckName || "Nuevo Deck", user_id: targetUserId, is_public: true }]).select().single();
             if (newD) deckId = newD.id;
           }
-          if (!deckId) return { error: "No se pudo obtener ni crear el deck especificado." };
+          if (!deckId) return { error: "No se pudo obtener el deck." };
 
-          const cardsToInsert = args.cards.map((c: any) => ({
-            deck_id: deckId,
-            card_name: c.card_name,
-            quantity: c.quantity || 1,
-            section: c.section || "main",
-            card_type: c.card_type || "monster",
-            image_url: c.image_url || ""
-          }));
+          const cardsToInsert = [];
+          for (const c of args.cards) {
+            let cardImg = c.image_url || "";
+            if (!cardImg) {
+              const ext = await queryYGOPRODeck(c.card_name);
+              if (ext && ext.length > 0) {
+                cardImg = ext[0].image_url;
+              }
+            }
+            cardsToInsert.push({
+              deck_id: deckId,
+              card_name: c.card_name,
+              quantity: c.quantity || 1,
+              section: c.section || "main",
+              card_type: c.card_type || "monster",
+              image_url: cardImg
+            });
+          }
 
           const { error: insErr } = await supabase.from("deck_cards").insert(cardsToInsert);
           if (insErr) return { error: insErr.message };
@@ -464,7 +492,7 @@ serve(async (req) => {
 
           const { error } = await supabase.from("usuarios").update(updateData).eq("id", targetUserId);
           if (error) return { error: error.message };
-          return { success: true, message: "Información de la tienda actualizada con éxito.", updated: updateData };
+          return { success: true, message: "Información de la tienda actualizada.", updated: updateData };
         }
 
         default:
@@ -472,23 +500,20 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Eres la Inteligencia Artificial Asistente de Viking TCG encargada de gestionar el inventario, cartas, álbumes, decks y productos sellados de la tienda y responder dudas de los usuarios.
+    const systemPrompt = `Eres la Inteligencia Artificial Asistente de Viking TCG.
 
-Modo de sesión actual: ${is_admin ? "ADMINISTRADOR (Dueño de la cuenta)" : "CLIENTE PÚBLICO (Visitante de la tienda)"}.
-ID de tienda/usuario activo: ${targetUserId || 'desconocido'}.
+REGLAS OBLIGATORIAS DE RESPUESTA:
+1. RESPONDE SIEMPRE EN ESPAÑOL DE FORMA DIRECTA Y ULTRA CORTA.
+2. NUNCA MUESTRES PENSAMIENTOS INTERNOS, PASOS DE RAZONAMIENTO, PLANES DE RESPUESTA NI TEXTO EN INGLÉS COMO "The user said", "Plan:", "This is a simple...". Responde de inmediato al usuario.
+3. SI TE PIDEN AGREGAR O CREAR CARTAS, ÁLBUMES O DECKS Y NO TIENES TODOS LOS DATOS (como imagen o rareza), NO PIDAS MÁS DATOS AL USUARIO. UTILIZA LAS HERRAMIENTAS Y AGREGA LA CARTA DE INMEDIATO (las imágenes y detalles se buscan automáticamente en la base TCG externa).
+4. SI TE HACEN UNA PREGUNTA DIRECTA, RESPONDE SOLAMENTE EL RESULTADO O RESPUESTA DIRECTA SIN EXPLICACIONES EXTENSAS NI BIENVENIDAS LARGAS.
+5. SI EL MODO DE SESIÓN ES ADMINISTRADOR (is_admin = true), EJECUTA LAS ACCIONES SOLICITADAS DIRECTAMENTE USANDO LAS HERRAMIENTAS CORRESPONDIENTES.
 
-REGLAS OBLIGATORIAS:
-1. Responde siempre en español de forma servicial, clara, profesional y directa.
-2. Si la consulta involucra buscar cartas, consultar álbumes, ver decks, o revisar productos sellados, UTILIZA SIEMPRE las herramientas adecuadas (get_store_info, get_user_albums, get_album_details, get_user_decks, get_deck_details, get_sealed_products, search_cards).
-3. SI EL MODO DE SESIÓN ES ADMINISTRADOR (is_admin = true):
-   - El usuario tiene control total sobre su tienda.
-   - Si pide crear un álbum, agregar cartas a un álbum o deck, crear un deck o actualizar datos de la tienda, UTILIZA OBLIGATORIAMENTE las herramientas de modificación (create_album, add_cards_to_album, create_deck, add_cards_to_deck, update_store_info).
-4. SI EL MODO DE SESIÓN ES CLIENTE PÚBLICO (is_admin = false):
-   - SOLO tienes permisos de CONSULTA.
-   - NUNCA realices cambios ni modificaciones. Si te piden crear o modificar algo, declina amablemente indicando que solo el administrador desde su panel en admin.html puede hacer modificaciones.
+Modo de sesión actual: ${is_admin ? "ADMINISTRADOR" : "CLIENTE PÚBLICO"}.
+ID de tienda: ${targetUserId || 'desconocido'}.
 `;
 
-    // 1. Consultar modelos disponibles en Google Gemini usando la referencia exacta del usuario
+    // Fetch available Gemini models
     const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
     const listData = await listRes.json();
 
@@ -551,7 +576,7 @@ REGLAS OBLIGATORIAS:
       });
     }
 
-    // Handle tool call execution loop
+    // Handle tool execution loop
     let candidate = aiData.candidates?.[0];
     let loopCount = 0;
 
@@ -599,7 +624,19 @@ REGLAS OBLIGATORIAS:
       if (part.text) rawTextReply += part.text;
     }
 
-    const cleanReply = rawTextReply.trim() || "¡Listo! ¿En qué más te colaboro?";
+    // Strict cleaning of reasoning/thinking lines in English or plans
+    let cleanReply = rawTextReply.trim();
+    if (cleanReply.includes("The user said") || cleanReply.includes("Plan:") || cleanReply.includes("Role:") || cleanReply.includes("The search for")) {
+      const lines = cleanReply.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      const filteredLines = lines.filter(l => !l.startsWith("The user") && !l.startsWith("Plan:") && !l.startsWith("Role:") && !l.startsWith("Purpose:") && !l.startsWith("Response plan:") && !l.startsWith("The search for"));
+      if (filteredLines.length > 0) {
+        cleanReply = filteredLines.join("\n");
+      } else {
+        cleanReply = "¡Listo!";
+      }
+    }
+
+    if (!cleanReply) cleanReply = "¡Listo!";
 
     return new Response(JSON.stringify({
       reply: cleanReply
