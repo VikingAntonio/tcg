@@ -61,26 +61,70 @@ serve(async (req) => {
       is_admin = true;
     }
 
-    // Helper to query YGOPRODeck external database
-    async function queryYGOPRODeck(cardName: string) {
+    // Helper to query external multi-TCG databases (Yu-Gi-Oh!, Pokémon TCG, Lorcana, etc.)
+    async function queryExternalTCGCard(cardName: string) {
+      const trimmed = cardName.trim();
+      const results: any[] = [];
+
+      // 1. Try Yu-Gi-Oh! via YGOPRODeck
       try {
-        const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(cardName.trim())}`);
+        const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(trimmed)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.data && data.data.length > 0) {
-            return data.data.map((c: any) => ({
-              card_name: c.name,
-              type: c.type,
-              rarity: c.card_sets?.[0]?.set_rarity || c.rarity || "Common",
-              image_url: c.card_images?.[0]?.image_url || "",
-              desc: c.desc || ""
-            }));
+            data.data.slice(0, 5).forEach((c: any) => {
+              results.push({
+                card_name: c.name,
+                type: c.type || "Monster",
+                rarity: c.card_sets?.[0]?.set_rarity || c.rarity || "Common",
+                image_url: c.card_images?.[0]?.image_url || "",
+                desc: c.desc || "",
+                tcg: "yugioh"
+              });
+            });
           }
         }
       } catch (e) {
         console.warn("YGOPRODeck fetch error:", e);
       }
-      return [];
+
+      // 2. Try Pokémon TCG via Pokédex / TCGdex / Pokémon API
+      try {
+        const pokeRes = await fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(trimmed)}`);
+        if (pokeRes.ok) {
+          const pokeData = await pokeRes.json();
+          if (Array.isArray(pokeData) && pokeData.length > 0) {
+            for (const pc of pokeData.slice(0, 3)) {
+              if (pc.image) {
+                results.push({
+                  card_name: pc.name,
+                  type: "Pokémon",
+                  rarity: "Uncommon",
+                  image_url: pc.image.endsWith('/high.webp') || pc.image.endsWith('/high.png') ? pc.image : `${pc.image}/high.png`,
+                  desc: `Set: ${pc.id || 'Pokémon TCG'}`,
+                  tcg: "pokemon"
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("TCGdex fetch error:", e);
+      }
+
+      // Fallback placeholder image generator if no external API returned image
+      if (results.length === 0) {
+        results.push({
+          card_name: trimmed,
+          type: "Carta TCG",
+          rarity: "Standard",
+          image_url: `https://images.ygoprodeck.com/images/cards/back_high.jpg`,
+          desc: "Carta agregada por Espíritu IA",
+          tcg: "generic"
+        });
+      }
+
+      return results;
     }
 
     // Tools definition
@@ -351,7 +395,7 @@ serve(async (req) => {
           }
 
           // Search in external TCG API if no local matches or to enrich details
-          const externalMatch = await queryYGOPRODeck(q);
+          const externalMatch = await queryExternalTCGCard(q);
 
           return {
             query: q,
@@ -392,23 +436,47 @@ serve(async (req) => {
             const { data: newPage } = await supabase.from("pages").insert([{ album_id: albumId, page_index: 0 }]).select().single();
             if (newPage) pages = [newPage];
           }
-          if (!pages || pages.length === 0) return { error: "No se pudo crear página." };
+          if (!pages || pages.length === 0) return { error: "No se pudo crear o recuperar página del álbum." };
 
-          const targetPageId = pages[0].id;
-          const { data: existingSlots } = await supabase.from("card_slots").select("slot_index").eq("page_id", targetPageId);
-          const occupied = new Set((existingSlots || []).map((s: any) => s.slot_index));
+          let currentPageIndex = 0;
+          let currentPageId = pages[currentPageIndex].id;
 
-          let currentSlot = 0;
+          const { data: existingSlots } = await supabase.from("card_slots").select("page_id, slot_index").in("page_id", pages.map((p: any) => p.id));
+          const pageSlotMap = new Map<string, Set<number>>();
+          pages.forEach((p: any) => pageSlotMap.set(p.id, new Set()));
+          (existingSlots || []).forEach((s: any) => {
+            if (pageSlotMap.has(s.page_id)) {
+              pageSlotMap.get(s.page_id)!.add(s.slot_index);
+            }
+          });
+
           const slotsToInsert = [];
           for (const card of args.cards) {
+            let occupied = pageSlotMap.get(currentPageId) || new Set();
+            let currentSlot = 0;
             while (occupied.has(currentSlot) && currentSlot < 20) {
               currentSlot++;
+            }
+
+            if (currentSlot >= 20) {
+              currentPageIndex++;
+              if (currentPageIndex < pages.length) {
+                currentPageId = pages[currentPageIndex].id;
+              } else {
+                const { data: newPage, error: pageErr } = await supabase.from("pages").insert([{ album_id: albumId, page_index: currentPageIndex }]).select().single();
+                if (pageErr || !newPage) return { error: "Límite de páginas alcanzado o error al crear nueva página." };
+                pages.push(newPage);
+                currentPageId = newPage.id;
+                pageSlotMap.set(currentPageId, new Set());
+              }
+              occupied = pageSlotMap.get(currentPageId)!;
+              currentSlot = 0;
             }
 
             let cardImg = card.image_url || "";
             let cardRarity = card.rarity || "";
             if (!cardImg) {
-              const ext = await queryYGOPRODeck(card.card_name);
+              const ext = await queryExternalTCGCard(card.card_name);
               if (ext && ext.length > 0) {
                 cardImg = ext[0].image_url;
                 if (!cardRarity) cardRarity = ext[0].rarity;
@@ -416,7 +484,7 @@ serve(async (req) => {
             }
 
             slotsToInsert.push({
-              page_id: targetPageId,
+              page_id: currentPageId,
               slot_index: currentSlot,
               card_name: card.card_name,
               price: card.price || 0,
@@ -430,7 +498,7 @@ serve(async (req) => {
           }
 
           const { error: insertErr } = await supabase.from("card_slots").upsert(slotsToInsert, { onConflict: "page_id,slot_index" });
-          if (insertErr) return { error: insertErr.message };
+          if (insertErr) return { error: `Error al guardar en base de datos: ${insertErr.message}` };
 
           return { success: true, message: `Se agregaron ${slotsToInsert.length} carta(s) al álbum.`, cards_added: slotsToInsert };
         }
@@ -462,7 +530,7 @@ serve(async (req) => {
           for (const c of args.cards) {
             let cardImg = c.image_url || "";
             if (!cardImg) {
-              const ext = await queryYGOPRODeck(c.card_name);
+              const ext = await queryExternalTCGCard(c.card_name);
               if (ext && ext.length > 0) {
                 cardImg = ext[0].image_url;
               }
@@ -632,11 +700,13 @@ ID de tienda: ${targetUserId || 'desconocido'}.
       if (filteredLines.length > 0) {
         cleanReply = filteredLines.join("\n");
       } else {
-        cleanReply = "¡Listo!";
+        cleanReply = "";
       }
     }
 
-    if (!cleanReply) cleanReply = "¡Listo!";
+    if (!cleanReply) {
+      cleanReply = "Operación procesada correctamente.";
+    }
 
     return new Response(JSON.stringify({
       reply: cleanReply

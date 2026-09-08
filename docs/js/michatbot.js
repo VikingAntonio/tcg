@@ -524,7 +524,7 @@ async function handleSendAIChatMessage() {
     $input.val('');
 
     const $c = $('#michatbot-chat-messages');
-    const $loadingMsg = $('<div class="msg-bot-loading" id="michatbot-loading"><i class="fas fa-spinner fa-spin"></i> Consultando a Gemini IA...</div>');
+    const $loadingMsg = $('<div class="msg-bot-loading" id="michatbot-loading"><i class="fas fa-spinner fa-spin"></i> Espera unos instantes...</div>');
     $c.append($loadingMsg);
     $c.scrollTop($c[0].scrollHeight);
 
