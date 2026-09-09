@@ -193,8 +193,8 @@ async function initMichatbot(forceRefresh = false) {
                         left: 0 !important;
                         top: 0 !important;
                         width: 100vw !important;
-                        height: 100vh !important;
-                        max-height: 100vh !important;
+                        height: 100dvh !important;
+                        max-height: 100dvh !important;
                         border-radius: 0 !important;
                         border: none !important;
                     }
@@ -286,6 +286,8 @@ async function initMichatbot(forceRefresh = false) {
                     font-size: 0.88rem;
                     line-height: 1.45;
                     word-wrap: break-word;
+                    white-space: pre-wrap;
+                    word-break: break-word;
                     box-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);
                 }
 
@@ -396,7 +398,7 @@ async function initMichatbot(forceRefresh = false) {
                     100% { transform: scale(1); }
                 }
 
-                .chat-input-wrapper input {
+                .chat-input-wrapper textarea {
                     flex: 1;
                     background: transparent;
                     border: none;
@@ -404,9 +406,17 @@ async function initMichatbot(forceRefresh = false) {
                     outline: none;
                     font-family: 'Montserrat', sans-serif;
                     font-size: 0.88rem;
+                    resize: none;
+                    rows: 1;
+                    max-height: 120px;
+                    line-height: 1.35;
+                    padding: 4px 0;
+                    margin: 0;
+                    overflow-y: auto;
+                    box-sizing: border-box;
                 }
 
-                .chat-input-wrapper input::placeholder {
+                .chat-input-wrapper textarea::placeholder {
                     color: #64748b;
                 }
 
@@ -568,7 +578,7 @@ async function initMichatbot(forceRefresh = false) {
                         <input type="file" id="michatbot-file-input" accept="image/*" style="display: none;">
                         <div class="chat-action-btn" id="michatbot-btn-attach" title="Adjuntar imagen"><i class="fas fa-image"></i></div>
                         <div class="chat-action-btn" id="michatbot-btn-mic" title="Dictar por voz"><i class="fas fa-microphone"></i></div>
-                        <input type="text" id="michatbot-chat-input" placeholder="Escribe tu mensaje..." autocomplete="off">
+                        <textarea id="michatbot-chat-input" placeholder="Escribe tu mensaje..." rows="1" autocomplete="off"></textarea>
                         <div class="chat-send-btn" id="michatbot-chat-send"><i class="fas fa-paper-plane"></i></div>
                     </div>
                 </div>
@@ -660,12 +670,7 @@ async function initMichatbot(forceRefresh = false) {
 
     $('#michatbot-opt-chat').off('click').on('click', function(e) {
         e.stopPropagation();
-        $('#michatbot-chat-container').css('display', 'flex').hide().fadeIn(300);
-        $('#michatbot-menu').fadeOut(250);
-        if ($('#michatbot-chat-messages').is(':empty')) {
-            const spiritName = window.currentSpirit ? window.currentSpirit.name : "VikingTCG";
-            addBotMessage(`¡Hola! Soy **${spiritName}**, ¿En qué te puedo ayudar hoy?`);
-        }
+        openMichatbotChat();
     });
 
     $('#michatbot-opt-mute').off('click').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleMute(); });
@@ -716,8 +721,18 @@ async function initMichatbot(forceRefresh = false) {
     $('#michatbot-scale-slider').on('input', function() { window.botInstance.setScale($(this).val()); });
 
     $('#michatbot-chat-send').off('click').on('click', function() { handleSendAIChatMessage(); });
-    $('#michatbot-chat-input').off('keypress').on('keypress', (e) => { if (e.which === 13) handleSendAIChatMessage(); });
-    $('#close-michatbot-chat').on('click', () => $('#michatbot-chat-container').fadeOut(250));
+    $('#michatbot-chat-input').off('keydown input').on('keydown', function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            if (!e.shiftKey) {
+                e.preventDefault();
+                handleSendAIChatMessage();
+            }
+        }
+    }).on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+    $('#close-michatbot-chat').on('click', closeMichatbotChat);
     $('#close-michatbot-detail').on('click touchend', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -851,6 +866,7 @@ async function handleSendAIChatMessage() {
     addUserMessage(text, imageBase64);
 
     $input.val('');
+    $input.css('height', 'auto');
     window.selectedChatImageBase64 = null;
     $('#michatbot-file-input').val('');
     $('#michatbot-image-preview-container').hide();
@@ -935,6 +951,99 @@ function formatMarkdownResponse(text) {
         .replace(/\n/g, "<br>");
 
     return formatted;
+}
+
+let cleanupMobileViewportEvents = null;
+
+function openMichatbotChat() {
+    const $container = $('#michatbot-chat-container');
+    $container.css('display', 'flex').hide().fadeIn(300);
+    $('#michatbot-menu').fadeOut(250);
+
+    if ($('#michatbot-chat-messages').is(':empty')) {
+        const spiritName = window.currentSpirit ? window.currentSpirit.name : "VikingTCG";
+        addBotMessage(`¡Hola! Soy **${spiritName}**, ¿En qué te puedo ayudar hoy?`);
+    }
+
+    setupMobileViewportKeyboardHandling();
+}
+
+function closeMichatbotChat() {
+    $('#michatbot-chat-container').fadeOut(250);
+    resetMobileViewportChatLayout();
+}
+
+function setupMobileViewportKeyboardHandling() {
+    const isMobile = window.innerWidth <= 640 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    const container = document.getElementById('michatbot-chat-container');
+    const input = document.getElementById('michatbot-chat-input');
+    if (!container) return;
+
+    if (cleanupMobileViewportEvents) {
+        cleanupMobileViewportEvents();
+    }
+
+    const updateLayout = () => {
+        if (!container || $(container).is(':hidden')) return;
+
+        if (window.visualViewport) {
+            const viewport = window.visualViewport;
+            container.style.position = 'fixed';
+            container.style.top = viewport.offsetTop + 'px';
+            container.style.left = viewport.offsetLeft + 'px';
+            container.style.width = viewport.width + 'px';
+            container.style.height = viewport.height + 'px';
+            container.style.maxHeight = viewport.height + 'px';
+        }
+
+        const $c = $('#michatbot-chat-messages');
+        if ($c.length) {
+            $c.scrollTop($c[0].scrollHeight);
+        }
+    };
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateLayout);
+        window.visualViewport.addEventListener('scroll', updateLayout);
+    }
+
+    const handleFocus = () => {
+        setTimeout(updateLayout, 100);
+        setTimeout(updateLayout, 300);
+    };
+
+    if (input) {
+        input.addEventListener('focus', handleFocus);
+    }
+
+    cleanupMobileViewportEvents = () => {
+        if (window.visualViewport) {
+            window.visualViewport.removeEventListener('resize', updateLayout);
+            window.visualViewport.removeEventListener('scroll', updateLayout);
+        }
+        if (input) {
+            input.removeEventListener('focus', handleFocus);
+        }
+    };
+
+    updateLayout();
+}
+
+function resetMobileViewportChatLayout() {
+    if (cleanupMobileViewportEvents) {
+        cleanupMobileViewportEvents();
+        cleanupMobileViewportEvents = null;
+    }
+    const container = document.getElementById('michatbot-chat-container');
+    if (container) {
+        container.style.top = '';
+        container.style.left = '';
+        container.style.width = '';
+        container.style.height = '';
+        container.style.maxHeight = '';
+    }
 }
 
 function addUserMessage(text, imageBase64 = null) {
