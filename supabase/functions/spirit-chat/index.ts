@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, store_id, message, is_admin: clientIsAdmin = false, conversation_history = [] } = await req.json();
+    const { user_id, store_id, message, image_base64, image_mime = "image/jpeg", is_admin: clientIsAdmin = false, conversation_history = [] } = await req.json();
 
     const requestMsg = message || "";
-    if (!requestMsg) {
-      return new Response(JSON.stringify({ reply: "¡Hola! Dime en qué te puedo ayudar hoy." }), {
+    if (!requestMsg && !image_base64) {
+      return new Response(JSON.stringify({ reply: "Dime en qué te puedo ayudar hoy." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -119,7 +119,7 @@ serve(async (req) => {
           type: "Carta TCG",
           rarity: "Standard",
           image_url: `https://images.ygoprodeck.com/images/cards/back_high.jpg`,
-          desc: "Carta agregada por Espíritu IA",
+          desc: "Carta agregada",
           tcg: "generic"
         });
       }
@@ -164,7 +164,7 @@ serve(async (req) => {
           },
           {
             name: "get_deck_details",
-            description: "Obtiene las cartas de un deck por ID o nombre (útil para responder qué cartas contiene o analizar faltantes).",
+            description: "Obtiene las cartas de un deck por ID o nombre.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -185,12 +185,12 @@ serve(async (req) => {
           },
           {
             name: "get_cart_and_payment_info",
-            description: "Obtiene información sobre las opciones de pago, carrito de compras, horario y métodos de entrega de la tienda.",
+            description: "Obtiene información sobre opciones de pago, carrito de compras, horario y métodos de entrega de la tienda.",
             parameters: { type: "OBJECT", properties: {} }
           },
           {
             name: "search_cards",
-            description: "Busca cartas en el inventario local (álbumes, decks, sellados, wishlist) y consulta bases TCG externas si es necesario.",
+            description: "Busca cartas en el inventario local (álbumes, decks, sellados, wishlist) y bases TCG externas.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -213,7 +213,7 @@ serve(async (req) => {
           },
           {
             name: "add_cards_to_album",
-            description: "[SOLO ADMIN] Agrega cartas a un álbum. Si no hay imagen, se busca automáticamente en bases TCG externas.",
+            description: "[SOLO ADMIN] Agrega cartas a un álbum. Las imágenes se buscan automáticamente si no se especifican.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -241,7 +241,7 @@ serve(async (req) => {
           },
           {
             name: "remove_cards_from_album",
-            description: "[SOLO ADMIN] Elimina una o más cartas de un álbum.",
+            description: "[SOLO ADMIN] Elimina cartas de un álbum.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -292,7 +292,7 @@ serve(async (req) => {
           },
           {
             name: "remove_cards_from_deck",
-            description: "[SOLO ADMIN] Elimina una o más cartas de un deck.",
+            description: "[SOLO ADMIN] Elimina cartas de un deck.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -329,7 +329,7 @@ serve(async (req) => {
           },
           {
             name: "remove_from_wishlist",
-            description: "[SOLO ADMIN] Elimina una carta de la lista de deseos por nombre o ID.",
+            description: "[SOLO ADMIN] Elimina una carta de la lista de deseos.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -753,16 +753,15 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Eres el asistente virtual / espíritu guía de Viking TCG. Hablas de forma amigable, cálida, entusiasta y totalmente humana en español.
+    const systemPrompt = `Eres la entidad virtual o espíritu guía de Viking TCG. Hablas de forma totalmente natural, cercana y humana en español.
 
 REGLAS OBLIGATORIAS DE RESPUESTA:
-1. HABLA COMO UN HUMANO NATURAL. Responde directamente lo que el usuario pide sin frases frías ni texto tipo log técnico.
-2. NUNCA MUESTRES PENSAMIENTOS INTERNOS, PLANES NI RAZONAMIENTOS. Prohibido incluir textos en inglés como "The user said...", "Plan:", "Thought:", "Role:" o "Action:".
-3. NO MUESTRES CÓDIGO JSON O ESTRUCTURAS RAW DE LAS HERRAMIENTAS. Transforma los datos en respuestas claras, bonitas y bien formateadas.
-4. MODO ADMINISTRADOR (is_admin = true): Puedes crear, consultar, agregar y eliminar cartas/elementos de Álbumes, Decks y Wishlist. Si te piden agregar cartas y falta algún dato (como imagen o rareza), no pidas más datos; usa las herramientas directamente (las imágenes se buscan en las bases TCG automáticamente).
-5. MODO CLIENTE PÚBLICO (is_admin = false): Ayuda a consultar disponibilidad de cartas, precios de venta, lista de buscados, información de la tienda, carrito de compras, horarios y opciones de pago.
-6. CONSULTAS Y ANÁLISIS DE DECKS/ÁLBUMES: Si te preguntan qué cartas contiene un deck o qué cartas faltan, consulta la información con las herramientas y entrega un resumen claro y bien ordenado.
-7. SI ALGO FALLA EN LA HERRAMIENTA: Explica con amabilidad el error exacto que ocurrió sin mentir ni decir que la operación se completó si devolvió un error.
+1. NO USES EMOJIS. Queda estrictamente prohibido incluir emojis o caritas gráficas en tus respuestas. Responde únicamente en texto plano o con formato Markdown sencillo.
+2. NO MUESTRES PENSAMIENTOS INTERNOS, LOGS NI METADATOS. Está rotundamente prohibido escribir texto en inglés o fragmentos técnicos como "* Role:", "* Tone:", "Check against rules:", "Plan:", "Thought:" o listas de verificación.
+3. RESPONDE DIRECTO Y HUMANO. Da respuestas directas, serviciales y conversacionales. Nunca digas que eres un "asistente virtual", simplemente actúa con naturalidad según tu nombre.
+4. MODO ADMINISTRADOR (is_admin = true): Puedes crear, consultar, agregar y eliminar cartas/elementos de Álbumes, Decks y Wishlist. Si falta información como imagen o rareza, agrégala de inmediato usando las herramientas (las imágenes se buscan solas en las APIs TCG).
+5. MODO CLIENTE PÚBLICO (is_admin = false): Ayuda con consultas de productos, precios, disponibilidad de stock, horario, métodos de pago e instrucciones del carrito.
+6. SI SE ENVÍA UNA IMAGEN ADJUNTA: Analízala y responde en relación a la carta o producto mostrado.
 
 Modo de sesión actual: ${is_admin ? "ADMINISTRADOR (Acceso CRUD completo)" : "CLIENTE PÚBLICO (Modo consulta)"}.
 ID de tienda/usuario: ${targetUserId || 'desconocido'}.
@@ -794,7 +793,19 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     let aiData: any = null;
     let selectedModel = "";
 
-    const contents = [...conversation_history, { role: "user", parts: [{ text: requestMsg }] }];
+    const userParts: any[] = [];
+    if (requestMsg) userParts.push({ text: requestMsg });
+    if (image_base64) {
+      const cleanBase64 = image_base64.replace(/^data:image\/\w+;base64,/, "");
+      userParts.push({
+        inlineData: {
+          mimeType: image_mime,
+          data: cleanBase64
+        }
+      });
+    }
+
+    const contents = [...conversation_history, { role: "user", parts: userParts }];
 
     for (const modelName of availableModels) {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
@@ -825,7 +836,7 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     }
 
     if (!geminiRes || !geminiRes.ok) {
-      return new Response(JSON.stringify({ reply: `No fue posible conectar con el servicio de IA (${aiData?.error?.message || 'Sin respuesta'}).` }), {
+      return new Response(JSON.stringify({ reply: `No fue posible conectar con la IA (${aiData?.error?.message || 'Sin respuesta'}).` }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -879,22 +890,28 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
       if (part.text) rawTextReply += part.text;
     }
 
-    // Strict post-processing to eliminate log-like or reasoning text
+    // Aggressive post-processing to remove log blocks, thinking steps, markdown code blocks, emojis and technical bullet points
     let cleanReply = rawTextReply
       .replace(/```json[\s\S]*?```/gi, "")
       .replace(/```[\s\S]*?```/gi, "")
       .trim();
 
+    // Strip out lines starting with reasoning prefixes
     const lines = cleanReply.split("\n");
     const filteredLines = lines.filter(l => {
       const trimmed = l.trim();
-      return !/^(The user|Plan:|Role:|Purpose:|Response plan:|The search for|Thought:|Action:|Observation:)/i.test(trimmed);
+      if (/^(\*|\-)?\s*(Role|Tone|Current Session Mode|User ID|Plan|Thought|Action|Observation|Check against rules|Acknowledge|Confirm|Maintain|Avoid):/i.test(trimmed)) return false;
+      if (/^(The user|The search for|Response plan|Here is the response|System:)/i.test(trimmed)) return false;
+      return true;
     });
 
     cleanReply = filteredLines.join("\n").trim();
 
+    // Strip out emojis from the reply
+    cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+
     if (!cleanReply) {
-      cleanReply = "¡Listo! He procesado tu solicitud con éxito.";
+      cleanReply = "Listo, he completado tu solicitud.";
     }
 
     return new Response(JSON.stringify({
