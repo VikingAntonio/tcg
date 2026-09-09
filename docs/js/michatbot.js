@@ -258,7 +258,8 @@ async function initMichatbot(forceRefresh = false) {
                 }
 
                 .chat-messages {
-                    flex: 1;
+                    flex: 1 1 auto;
+                    min-height: 0;
                     overflow-y: auto;
                     padding: 18px 16px;
                     display: flex;
@@ -355,8 +356,11 @@ async function initMichatbot(forceRefresh = false) {
 
                 .chat-footer {
                     padding: 12px 16px;
-                    background: rgba(15, 23, 42, 0.8);
-                    border-top: 1px solid rgba(255, 255, 255, 0.08);
+                    background: rgba(15, 23, 42, 0.95);
+                    border-top: 1px solid rgba(255, 255, 255, 0.12);
+                    flex-shrink: 0;
+                    position: relative;
+                    z-index: 10;
                 }
 
                 .chat-input-wrapper {
@@ -424,18 +428,26 @@ async function initMichatbot(forceRefresh = false) {
                     width: 38px;
                     height: 38px;
                     border-radius: 50%;
-                    background: linear-gradient(135deg, #38bdf8, #0284c7);
-                    color: #fff;
+                    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+                    color: #ffffff;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
                 }
 
-                .chat-send-btn:hover {
-                    transform: scale(1.05);
-                    box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+                .chat-send-btn:hover, .chat-send-btn:active {
+                    transform: scale(1.08);
+                    background: linear-gradient(135deg, #38bdf8, #0369a1);
+                    box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+                }
+
+                .chat-send-btn i {
+                    font-size: 0.95rem;
+                    transform: translateX(1px);
                 }
 
                 .michatbot-dragging-active { user-select: none !important; -webkit-user-select: none !important; }
@@ -996,6 +1008,8 @@ function setupMobileViewportKeyboardHandling() {
             container.style.width = viewport.width + 'px';
             container.style.height = viewport.height + 'px';
             container.style.maxHeight = viewport.height + 'px';
+            window.scrollTo(0, 0);
+            document.body.scrollTop = 0;
         }
 
         const $c = $('#michatbot-chat-messages');
@@ -1010,12 +1024,14 @@ function setupMobileViewportKeyboardHandling() {
     }
 
     const handleFocus = () => {
-        setTimeout(updateLayout, 100);
-        setTimeout(updateLayout, 300);
+        setTimeout(updateLayout, 50);
+        setTimeout(updateLayout, 200);
+        setTimeout(updateLayout, 400);
     };
 
     if (input) {
         input.addEventListener('focus', handleFocus);
+        input.addEventListener('click', handleFocus);
     }
 
     cleanupMobileViewportEvents = () => {
@@ -1025,6 +1041,7 @@ function setupMobileViewportKeyboardHandling() {
         }
         if (input) {
             input.removeEventListener('focus', handleFocus);
+            input.removeEventListener('click', handleFocus);
         }
     };
 
