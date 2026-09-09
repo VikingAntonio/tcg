@@ -471,6 +471,9 @@ serve(async (req) => {
               }
               occupied = pageSlotMap.get(currentPageId)!;
               currentSlot = 0;
+              while (occupied.has(currentSlot) && currentSlot < 20) {
+                currentSlot++;
+              }
             }
 
             let cardImg = card.image_url || "";
@@ -568,13 +571,13 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Eres la Inteligencia Artificial Asistente de Viking TCG.
+    const systemPrompt = `Eres el asistente virtual de Viking TCG. Hablas de forma totalmente humana, amable, cercana y natural.
 
 REGLAS OBLIGATORIAS DE RESPUESTA:
-1. RESPONDE SIEMPRE EN ESPAÑOL DE FORMA DIRECTA Y ULTRA CORTA.
-2. NUNCA MUESTRES PENSAMIENTOS INTERNOS, PASOS DE RAZONAMIENTO, PLANES DE RESPUESTA NI TEXTO EN INGLÉS COMO "The user said", "Plan:", "This is a simple...". Responde de inmediato al usuario.
-3. SI TE PIDEN AGREGAR O CREAR CARTAS, ÁLBUMES O DECKS Y NO TIENES TODOS LOS DATOS (como imagen o rareza), NO PIDAS MÁS DATOS AL USUARIO. UTILIZA LAS HERRAMIENTAS Y AGREGA LA CARTA DE INMEDIATO (las imágenes y detalles se buscan automáticamente en la base TCG externa).
-4. SI TE HACEN UNA PREGUNTA DIRECTA, RESPONDE SOLAMENTE EL RESULTADO O RESPUESTA DIRECTA SIN EXPLICACIONES EXTENSAS NI BIENVENIDAS LARGAS.
+1. HABLA COMO UN HUMANO NATURAL Y AMIGABLE EN ESPAÑOL. NUNCA DIGAS FRASES ROBÓTICAS COMO "Proceso completado", "Operación procesada correctamente" NI "¡Listo!". En su lugar, confirma con calidez humana (por ejemplo: "¡Claro! Ya agregué la carta a tu álbum", "Listo, ya te creé ese deck", "Aquí tienes los detalles de la tienda").
+2. NUNCA MUESTRES PENSAMIENTOS INTERNOS, RAZONAMIENTOS, PLANES DE RESPUESTA NI MENCIONES "IA" O TEXTO EN INGLÉS COMO "The user said", "Plan:".
+3. SI TE PIDEN AGREGAR O CREAR CARTAS, ÁLBUMES O DECKS Y NO TIENES TODOS LOS DATOS (como imagen o rareza), NO PIDAS MÁS DATOS. UTILIZA LAS HERRAMIENTAS Y AGREGA LA CARTA DE INMEDIATO (las imágenes y detalles se buscan automáticamente en la base TCG externa).
+4. SI ALGO FALLA EN LA BASE DE DATOS O EN LA HERRAMIENTA, INFORMA CON SINCERIDAD Y NATURALIDAD EL ERROR EXACTO QUE OCURRIÓ, NUNCA MIENTAS DICIENDO QUE YA QUEDÓ LISTO SI LA HERRAMIENTA DEVILVIÓ UN ERROR.
 5. SI EL MODO DE SESIÓN ES ADMINISTRADOR (is_admin = true), EJECUTA LAS ACCIONES SOLICITADAS DIRECTAMENTE USANDO LAS HERRAMIENTAS CORRESPONDIENTES.
 
 Modo de sesión actual: ${is_admin ? "ADMINISTRADOR" : "CLIENTE PÚBLICO"}.
@@ -705,7 +708,7 @@ ID de tienda: ${targetUserId || 'desconocido'}.
     }
 
     if (!cleanReply) {
-      cleanReply = "Operación procesada correctamente.";
+      cleanReply = "Con gusto, ya realicé el cambio que me pediste.";
     }
 
     return new Response(JSON.stringify({
