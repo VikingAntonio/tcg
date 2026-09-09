@@ -179,6 +179,11 @@ serve(async (req) => {
             parameters: { type: "OBJECT", properties: {} }
           },
           {
+            name: "get_store_claims",
+            description: "Obtiene la lista de claims activos (artículos en claim/dinámicas activas) de la tienda.",
+            parameters: { type: "OBJECT", properties: {} }
+          },
+          {
             name: "get_user_wishlist",
             description: "Obtiene las cartas de la lista de deseos (Wishlist/Buscamos) de la tienda.",
             parameters: { type: "OBJECT", properties: {} }
@@ -420,6 +425,12 @@ serve(async (req) => {
           return { sealed_products: products || [] };
         }
 
+        case "get_store_claims": {
+          if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
+          const { data: claims } = await supabase.from("claims").select("*").eq("user_id", targetUserId).eq("status", "Activa");
+          return { claims: claims || [], total_active_claims: claims?.length || 0 };
+        }
+
         case "get_user_wishlist": {
           if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
           const { data: wishlist } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).order("created_at", { ascending: false });
@@ -488,6 +499,14 @@ serve(async (req) => {
             }
           }
 
+          let claimsArr: any[] = [];
+          if (targetUserId) {
+            const { data: cProds } = await supabase.from("claims").select("*").eq("user_id", targetUserId).eq("status", "Activa").ilike("title", `%${q}%`);
+            if (cProds) {
+              claimsArr = cProds.map((c: any) => ({ ...c, location: "Claim Activo" }));
+            }
+          }
+
           let wishlistArr: any[] = [];
           if (targetUserId) {
             const { data: wCards } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).ilike("card_name", `%${q}%`);
@@ -504,6 +523,7 @@ serve(async (req) => {
             in_albums: albumSlots,
             in_decks: deckCardsArr,
             sealed_products: sealedArr,
+            in_claims: claimsArr,
             in_wishlist: wishlistArr,
             external_tcg_database: externalMatch
           };
@@ -753,15 +773,15 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Eres la entidad virtual o espíritu guía de Viking TCG. Hablas de forma totalmente natural, cercana y humana en español.
+    const systemPrompt = `Eres la entidad virtual y espíritu guía oficial de Viking TCG. Hablas SIEMPRE Y ÚNICAMENTE en español de forma totalmente natural, profesional, clara y directa.
 
-REGLAS OBLIGATORIAS DE RESPUESTA:
-1. NO USES EMOJIS. Queda estrictamente prohibido incluir emojis o caritas gráficas en tus respuestas. Responde únicamente en texto plano o con formato Markdown sencillo.
-2. NO MUESTRES PENSAMIENTOS INTERNOS, LOGS NI METADATOS. Está rotundamente prohibido escribir texto en inglés o fragmentos técnicos como "* Role:", "* Tone:", "Check against rules:", "Plan:", "Thought:" o listas de verificación.
-3. RESPONDE DIRECTO Y HUMANO. Da respuestas directas, serviciales y conversacionales. Nunca digas que eres un "asistente virtual", simplemente actúa con naturalidad según tu nombre.
-4. MODO ADMINISTRADOR (is_admin = true): Puedes crear, consultar, agregar y eliminar cartas/elementos de Álbumes, Decks y Wishlist. Si falta información como imagen o rareza, agrégala de inmediato usando las herramientas (las imágenes se buscan solas en las APIs TCG).
-5. MODO CLIENTE PÚBLICO (is_admin = false): Ayuda con consultas de productos, precios, disponibilidad de stock, horario, métodos de pago e instrucciones del carrito.
-6. SI SE ENVÍA UNA IMAGEN ADJUNTA: Analízala y responde en relación a la carta o producto mostrado.
+REGLAS STRICTAS E INVIOLABLES DE RESPUESTA:
+1. IDIOMA 100% ESPAÑOL: Queda estrictamente prohibido responder en inglés o incluir guías de pensamiento, preámbulos, razonamientos o frases en inglés como "Thought:", "Plan:", "Role:", "Tone:", "Here is the response:", "The user is asking...". Responde DIRECTAMENTE la respuesta final al usuario.
+2. NINGÚN EMOJI: Queda prohibido incluir emojis o emoticonos en tus mensajes.
+3. CONSULTA REAL DE DATOS: Cuando te pregunten sobre la tienda, cartas, productos sellados, claims activos, stock, precios o métodos de pago, USA SIEMPRE LAS HERRAMIENTAS CORRESPONDIENTES (como get_store_claims, get_sealed_products, get_user_albums, search_cards, etc.) para consultar la base de datos de la tienda antes de contestar. Si hay claims activos, da los detalles concretos (título, precio, cantidad). Si no hay claims activos, dilo claramente de forma concisa. Nunca mandes al usuario a WhatsApp si puedes consultar la información directamente con las herramientas.
+4. RESPUESTAS CONCRETAS Y PROFESIONALES: Evita rodeos, explicaciones innecesarias o textos largos de relleno. Sé breve, preciso y profesional.
+5. MODO ADMINISTRADOR (is_admin = true): Puedes gestionar y realizar acciones CRUD de Álbumes, Decks y Wishlist.
+6. MODO CLIENTE PÚBLICO (is_admin = false): Brinda información precisa sobre el inventario, productos sellados, claims, precios, carrito y contacto.
 
 Modo de sesión actual: ${is_admin ? "ADMINISTRADOR (Acceso CRUD completo)" : "CLIENTE PÚBLICO (Modo consulta)"}.
 ID de tienda/usuario: ${targetUserId || 'desconocido'}.
@@ -894,14 +914,16 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     let cleanReply = rawTextReply
       .replace(/```json[\s\S]*?```/gi, "")
       .replace(/```[\s\S]*?```/gi, "")
+      .replace(/<think>[\s\S]*?<\/think>/gi, "")
       .trim();
 
-    // Strip out lines starting with reasoning prefixes
+    // Strip out lines starting with reasoning prefixes or English thought steps
     const lines = cleanReply.split("\n");
     const filteredLines = lines.filter(l => {
       const trimmed = l.trim();
-      if (/^(\*|\-)?\s*(Role|Tone|Current Session Mode|User ID|Plan|Thought|Action|Observation|Check against rules|Acknowledge|Confirm|Maintain|Avoid):/i.test(trimmed)) return false;
-      if (/^(The user|The search for|Response plan|Here is the response|System:)/i.test(trimmed)) return false;
+      if (/^(\*|\-)?\s*(Role|Tone|Current Session Mode|User ID|Plan|Thought|Thinking|Action|Observation|Check against rules|Acknowledge|Confirm|Maintain|Avoid|Instruction|Step|Guidelines|Notes):/i.test(trimmed)) return false;
+      if (/^(The user|The search for|Response plan|Here is the response|System:|In Spanish|To answer|I should|I need to|First|Next|Finally)/i.test(trimmed)) return false;
+      if (/^[a-zA-Z\s]{15,}\?$/i.test(trimmed) && !/[áéíóúñ¿¡]/i.test(trimmed)) return false; // Filter stray English question thoughts
       return true;
     });
 
