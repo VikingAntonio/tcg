@@ -324,7 +324,7 @@ async function initMichatbot(forceRefresh = false) {
         $('body').append(`
             <div id="michatbot-chat-container">
                 <div class="chat-header" style="padding: 20px 25px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin:0; font-size: 0.85rem; letter-spacing: 3px; color: #fff;">ESPÍRITU IA - VIKING TCG</h3>
+                    <h3 style="margin:0; font-size: 0.85rem; letter-spacing: 3px; color: #fff;">VIKING TCG</h3>
                     <span id="close-michatbot-chat" style="cursor: pointer; font-size: 1.5rem; color: #555;">&times;</span>
                 </div>
                 <div class="chat-messages" id="michatbot-chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;"></div>
