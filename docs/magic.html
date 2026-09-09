@@ -159,9 +159,9 @@
 
     <!-- Floating Life Points Trackers -->
     <div class="floating-lp-widget p1-lp-widget" id="lp-widget-p1">
-        <div class="lp-widget-header">LP JUGADOR 1</div>
-        <div class="lp-widget-val" id="lp-display-p1">8000</div>
-        <div class="lp-widget-calc">
+        <div class="lp-widget-header"><i class="fas fa-arrows-alt lp-drag-handle"></i> LP JUGADOR 1</div>
+        <div class="lp-widget-val" id="lp-display-p1" title="Haz clic para abrir el calculador">8000</div>
+        <div class="lp-widget-calc" id="lp-calc-box-p1" style="display: none;">
             <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
             <div style="display: flex; gap: 4px;">
                 <button class="lp-widget-btn lp-btn-add" data-player="p1">+</button>
@@ -172,9 +172,9 @@
     </div>
 
     <div class="floating-lp-widget p2-lp-widget" id="lp-widget-p2" style="display: none;">
-        <div class="lp-widget-header">LP JUGADOR 2</div>
-        <div class="lp-widget-val" id="lp-display-p2">8000</div>
-        <div class="lp-widget-calc">
+        <div class="lp-widget-header"><i class="fas fa-arrows-alt lp-drag-handle"></i> LP JUGADOR 2</div>
+        <div class="lp-widget-val" id="lp-display-p2" title="Haz clic para abrir el calculador">8000</div>
+        <div class="lp-widget-calc" id="lp-calc-box-p2" style="display: none;">
             <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
             <div style="display: flex; gap: 4px;">
                 <button class="lp-widget-btn lp-btn-add" data-player="p2">+</button>
@@ -187,9 +187,13 @@
     <!-- Pile Cards View Overlay/Modal (Graveyard / Banished / Deck Search) -->
     <div class="search-overlay" id="pile-overlay">
         <div class="search-modal">
-            <div class="search-header" style="flex-wrap: wrap; gap: 10px;">
+            <div class="search-header" style="flex-wrap: wrap; gap: 10px; align-items: center;">
                 <h3 id="pile-modal-title">Cementerio / Desterrado / Deck</h3>
-                <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; margin-right: auto;">
+                <div class="search-input-wrapper" style="flex: 1; max-width: 250px; min-width: 150px; position: relative; margin-left: 10px;">
+                    <input type="text" id="pile-search-filter" placeholder="Buscar por nombre..." style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 5px 12px 5px 30px; color: #fff; font-size: 0.8rem; outline: none;">
+                    <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #888;"></i>
+                </div>
+                <div style="display: flex; gap: 15px; align-items: center; margin-left: auto;">
                     <label class="theme-switch p1-theme-switch" title="Selección Múltiple" style="margin: 0;">
                         <input type="checkbox" id="pile-multi-select-toggle">
                         <span class="theme-slider"></span>
@@ -210,9 +214,13 @@
     <!-- Extra Deck Cards View Overlay/Modal -->
     <div class="search-overlay" id="extra-overlay">
         <div class="search-modal">
-            <div class="search-header">
+            <div class="search-header" style="flex-wrap: wrap; gap: 10px; align-items: center;">
                 <h3 id="extra-modal-title">Extra Deck</h3>
-                <button class="search-close-btn" id="btn-close-extra"><i class="fas fa-times"></i></button>
+                <div class="search-input-wrapper" style="flex: 1; max-width: 250px; min-width: 150px; position: relative; margin-left: 10px;">
+                    <input type="text" id="extra-search-filter" placeholder="Buscar por nombre..." style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 5px 12px 5px 30px; color: #fff; font-size: 0.8rem; outline: none;">
+                    <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #888;"></i>
+                </div>
+                <button class="search-close-btn" id="btn-close-extra" style="margin-left: auto;"><i class="fas fa-times"></i></button>
             </div>
             <div class="search-body" id="extra-cards-grid">
                 <!-- Extra Deck cards will render here -->
@@ -234,6 +242,8 @@
     </div>
 
     <div class="card-context-menu" id="card-ctx-menu">
+        <div class="menu-item" id="menu-card-view"><i class="fas fa-search-plus" style="color: #00d2ff;"></i> Ver Carta (En Grande)</div>
+        <hr>
         <div class="menu-item" id="menu-card-flip"><i class="fas fa-sync"></i> Voltear (Cara Arriba/Abajo)</div>
         <div class="menu-item" id="menu-card-tap"><i class="fas fa-redo"></i> Girar (Posición Defensa)</div>
         <hr>

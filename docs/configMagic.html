@@ -334,13 +334,21 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Cantidad de Mazos (Jugadores) <span>*</span></label>
+                    <select id="magic-deck-count" class="select-input">
+                        <option value="1">1 Deck (Prueba Individual - Pantalla Completa)</option>
+                        <option value="2">2 Decks (Mazo 1 vs Mazo 2)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Tu Primer Deck (Mazo 1) <span>*</span></label>
                     <select id="magic-deck1" class="select-input">
                         <option value="mock">Cargando decks...</option>
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="group-deck2" style="display: none;">
                     <label>Segundo Deck (Mazo 2) <span style="color: #ff1b6b;">(Opcional)</span></label>
                     <select id="magic-deck2" class="select-input">
                         <option value="none">Ninguno (Solo 1 Mazo/Jugador)</option>
@@ -440,11 +448,26 @@
                 }
             }
 
+            // Handle Deck Count dropdown change
+            $("#magic-deck-count").change(function() {
+                const count = $(this).val();
+                if (count === "1") {
+                    $("#group-deck2").slideUp(200);
+                    $("#magic-deck2").val("none");
+                } else {
+                    $("#group-deck2").slideDown(200);
+                    if ($("#magic-deck2").val() === "none") {
+                        $("#magic-deck2").val("mock");
+                    }
+                }
+            });
+
             // Action Handlers for redirection
             $("#btn-start-magic").click(function() {
                 const layout = $("#magic-layout").val();
+                const deckCount = $("#magic-deck-count").val();
                 const deck1 = $("#magic-deck1").val();
-                const deck2 = $("#magic-deck2").val();
+                const deck2 = (deckCount === "1") ? "none" : $("#magic-deck2").val();
                 const mode = $("#magic-mode-type").val();
 
                 window.location.href = `magic.html?layout=${layout}&deck1=${deck1}&deck2=${deck2}&mode=${mode}`;
