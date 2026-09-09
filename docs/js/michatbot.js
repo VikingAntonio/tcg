@@ -55,7 +55,7 @@ window.botInstance = {
 };
 
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V5.0 (Gemini AI)...");
+    console.log("Iniciando Michatbot V5.5 Modern UI...");
 
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
         $('#companion-wrapper').remove();
@@ -64,7 +64,7 @@ async function initMichatbot(forceRefresh = false) {
     if (!$('#michatbot-styles').length) {
         $('head').append(`
             <style id="michatbot-styles">
-                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;600&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
                 #companion-wrapper {
                     position: fixed;
@@ -82,43 +82,50 @@ async function initMichatbot(forceRefresh = false) {
 
                 #michatbot-drag-handle {
                     position: absolute;
-                    top: 10px;
+                    top: 8px;
                     left: 0;
-                    background: #000;
-                    color: #fff;
-                    width: 32px;
-                    height: 32px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #38bdf8;
+                    width: 34px;
+                    height: 34px;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: grab;
                     z-index: 20;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-                    opacity: 0.7;
-                    border: 1px solid rgba(255,255,255,0.3);
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+                    opacity: 0.85;
+                    border: 1px solid rgba(56, 189, 248, 0.3);
                     pointer-events: auto;
+                    transition: transform 0.2s ease, background 0.2s ease;
+                }
+
+                #michatbot-drag-handle:hover {
+                    transform: scale(1.1);
+                    background: rgba(30, 41, 59, 0.95);
                 }
 
                 #michatbot-bubble {
                     position: absolute;
-                    bottom: 90%;
+                    bottom: 92%;
                     left: 50%;
                     transform: translateX(-50%);
-                    background: #000;
-                    color: #fff;
-                    padding: 8px 25px;
-                    border-radius: 50px;
+                    background: rgba(15, 23, 42, 0.92);
+                    backdrop-filter: blur(12px);
+                    color: #f1f5f9;
+                    padding: 8px 20px;
+                    border-radius: 20px;
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 0.85rem;
-                    min-width: 200px;
-                    max-width: 350px;
+                    font-size: 0.82rem;
+                    min-width: 180px;
+                    max-width: 320px;
                     text-align: center;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(56, 189, 248, 0.2);
                     display: none;
                     pointer-events: none;
                     z-index: 15;
-                    border: 1px solid rgba(255,255,255,0.2);
+                    border: 1px solid rgba(56, 189, 248, 0.3);
                 }
 
                 #michatbot-menu {
@@ -126,86 +133,275 @@ async function initMichatbot(forceRefresh = false) {
                     position: absolute;
                     bottom: 100%;
                     left: 0;
-                    background: #000;
-                    border-radius: 15px;
-                    padding: 6px;
-                    min-width: 200px;
-                    border: 1px solid rgba(255,255,255,0.25);
-                    margin-bottom: 20px;
-                    box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+                    background: rgba(15, 23, 42, 0.95);
+                    backdrop-filter: blur(16px);
+                    border-radius: 18px;
+                    padding: 8px;
+                    min-width: 210px;
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    margin-bottom: 15px;
+                    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
                     z-index: 10;
                 }
                 .michatbot-menu-item {
-                    color: #fff;
-                    padding: 10px 18px;
+                    color: #e2e8f0;
+                    padding: 10px 16px;
                     cursor: pointer;
-                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 12px;
                     display: flex;
                     align-items: center;
                     gap: 12px;
                     font-family: 'Montserrat', sans-serif;
                     font-size: 0.8rem;
+                    font-weight: 500;
                     text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    transition: background 0.2s ease, color 0.2s ease;
                 }
-                .michatbot-menu-item:hover { background: rgba(255,255,255,0.1); }
+                .michatbot-menu-item:hover {
+                    background: rgba(56, 189, 248, 0.15);
+                    color: #38bdf8;
+                }
 
                 #michatbot-chat-container {
                     display: none;
                     position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    width: 380px;
-                    height: 600px;
+                    bottom: 25px;
+                    right: 25px;
+                    width: 390px;
+                    height: 620px;
                     max-height: 85vh;
-                    background: rgba(10, 10, 10, 0.95);
+                    background: rgba(10, 15, 28, 0.94);
                     backdrop-filter: blur(25px);
-                    border-radius: 24px;
-                    box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+                    -webkit-backdrop-filter: blur(25px);
+                    border-radius: 28px;
+                    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.85), 0 0 30px rgba(56, 189, 248, 0.12);
                     z-index: 2000000000;
-                    border: 1px solid rgba(255,255,255,0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
                     flex-direction: column;
                     overflow: hidden;
                     font-family: 'Montserrat', sans-serif;
+                    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
                 }
-                @media (max-width: 640px) { #michatbot-chat-container { bottom: 0; right: 0; width: 100vw; height: 100vh; border-radius: 0; } }
+
+                @media (max-width: 640px) {
+                    #michatbot-chat-container {
+                        bottom: 0 !important;
+                        right: 0 !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100vw !important;
+                        height: 100vh !important;
+                        max-height: 100vh !important;
+                        border-radius: 0 !important;
+                        border: none !important;
+                    }
+                }
+
+                .chat-header {
+                    padding: 16px 20px;
+                    background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .chat-header-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .chat-header-avatar {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #0284c7, #6366f1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #fff;
+                    font-size: 1.1rem;
+                    box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+                }
+
+                .chat-status-indicator {
+                    width: 9px;
+                    height: 9px;
+                    background: #22c55e;
+                    border-radius: 50%;
+                    box-shadow: 0 0 8px #22c55e;
+                    display: inline-block;
+                    margin-left: 6px;
+                }
+
+                .chat-close-btn {
+                    cursor: pointer;
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.06);
+                    color: #94a3b8;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.1rem;
+                    transition: background 0.2s ease, color 0.2s ease;
+                }
+
+                .chat-close-btn:hover {
+                    background: rgba(239, 68, 68, 0.2);
+                    color: #ef4444;
+                }
+
+                .chat-messages {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 18px 16px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                    scroll-behavior: smooth;
+                }
+
+                .chat-messages::-webkit-scrollbar {
+                    width: 5px;
+                }
+
+                .chat-messages::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.15);
+                    border-radius: 10px;
+                }
 
                 .msg-user {
                     align-self: flex-end;
-                    background: linear-gradient(135deg, #2b5876, #4e4376);
-                    color: #fff;
-                    padding: 10px 16px;
-                    border-radius: 18px 18px 2px 18px;
-                    max-width: 80%;
+                    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+                    color: #ffffff;
+                    padding: 12px 18px;
+                    border-radius: 20px 20px 4px 20px;
+                    max-width: 82%;
                     font-size: 0.88rem;
+                    line-height: 1.45;
                     word-wrap: break-word;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);
                 }
 
                 .msg-bot {
                     align-self: flex-start;
-                    background: rgba(255, 255, 255, 0.1);
-                    color: #fff;
-                    padding: 12px 18px;
-                    border-radius: 18px 18px 18px 2px;
-                    max-width: 85%;
+                    background: rgba(30, 41, 59, 0.7);
+                    color: #f1f5f9;
+                    padding: 14px 18px;
+                    border-radius: 20px 20px 20px 4px;
+                    max-width: 88%;
                     font-size: 0.88rem;
-                    line-height: 1.4;
+                    line-height: 1.5;
                     word-wrap: break-word;
-                    border: 1px solid rgba(255, 255, 255, 0.15);
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+                }
+
+                .msg-bot strong {
+                    color: #38bdf8;
                 }
 
                 .msg-bot-loading {
                     align-self: flex-start;
-                    background: rgba(255, 255, 255, 0.05);
-                    color: #aaa;
-                    padding: 10px 16px;
-                    border-radius: 18px;
+                    background: rgba(30, 41, 59, 0.5);
+                    color: #38bdf8;
+                    padding: 12px 18px;
+                    border-radius: 20px;
                     font-size: 0.85rem;
-                    font-style: italic;
                     display: flex;
                     align-items: center;
+                    gap: 10px;
+                    border: 1px solid rgba(56, 189, 248, 0.2);
+                }
+
+                /* Quick suggestion chips */
+                .chat-suggestions {
+                    padding: 8px 16px;
+                    display: flex;
                     gap: 8px;
+                    overflow-x: auto;
+                    white-space: nowrap;
+                    border-top: 1px solid rgba(255, 255, 255, 0.05);
+                    background: rgba(15, 23, 42, 0.3);
+                }
+
+                .chat-suggestions::-webkit-scrollbar {
+                    display: none;
+                }
+
+                .suggestion-chip {
+                    background: rgba(30, 41, 59, 0.8);
+                    color: #38bdf8;
+                    border: 1px solid rgba(56, 189, 248, 0.25);
+                    padding: 6px 14px;
+                    border-radius: 20px;
+                    font-size: 0.75rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+
+                .suggestion-chip:hover, .suggestion-chip:active {
+                    background: #0284c7;
+                    color: #fff;
+                    border-color: #0284c7;
+                }
+
+                .chat-footer {
+                    padding: 14px 16px;
+                    background: rgba(15, 23, 42, 0.8);
+                    border-top: 1px solid rgba(255, 255, 255, 0.08);
+                }
+
+                .chat-input-wrapper {
+                    display: flex;
+                    background: rgba(30, 41, 59, 0.7);
+                    border-radius: 30px;
+                    padding: 6px 6px 6px 18px;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    align-items: center;
+                    transition: border-color 0.2s ease;
+                }
+
+                .chat-input-wrapper:focus-within {
+                    border-color: #38bdf8;
+                    box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+                }
+
+                .chat-input-wrapper input {
+                    flex: 1;
+                    background: transparent;
+                    border: none;
+                    color: #f8fafc;
+                    outline: none;
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 0.88rem;
+                }
+
+                .chat-input-wrapper input::placeholder {
+                    color: #64748b;
+                }
+
+                .chat-send-btn {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #38bdf8, #0284c7);
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+
+                .chat-send-btn:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
                 }
 
                 .michatbot-dragging-active { user-select: none !important; -webkit-user-select: none !important; }
@@ -310,8 +506,8 @@ async function initMichatbot(forceRefresh = false) {
                     <div class="michatbot-menu-item" id="michatbot-opt-play-duel"><i class="fas fa-gamepad"></i> Jugar</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play"><i class="fas fa-bolt"></i> Hora del duelo</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-detail"><i class="fas fa-search-plus"></i> Ver Detalle</div>
-                    <div id="michatbot-resize-control" style="padding: 10px 18px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px;">
-                        <input type="range" id="michatbot-scale-slider" min="0.5" max="2.5" step="0.1" value="1.0" style="flex: 1; accent-color: #fff;">
+                    <div id="michatbot-resize-control" style="padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px;">
+                        <input type="range" id="michatbot-scale-slider" min="0.5" max="2.5" step="0.1" value="1.0" style="flex: 1; accent-color: #38bdf8;">
                     </div>
                 </div>
             </div>
@@ -323,15 +519,28 @@ async function initMichatbot(forceRefresh = false) {
     if (!$('#michatbot-chat-container').length) {
         $('body').append(`
             <div id="michatbot-chat-container">
-                <div class="chat-header" style="padding: 20px 25px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin:0; font-size: 0.85rem; letter-spacing: 3px; color: #fff;">VIKING TCG</h3>
-                    <span id="close-michatbot-chat" style="cursor: pointer; font-size: 1.5rem; color: #555;">&times;</span>
+                <div class="chat-header">
+                    <div class="chat-header-title">
+                        <div class="chat-header-avatar"><i class="fas fa-robot"></i></div>
+                        <div>
+                            <h3 style="margin:0; font-size: 0.92rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.5px;">Espíritu Viking TCG</h3>
+                            <div style="font-size: 0.72rem; color: #94a3b8; display: flex; align-items: center;">
+                                En línea <span class="chat-status-indicator"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-close-btn" id="close-michatbot-chat">&times;</div>
                 </div>
-                <div class="chat-messages" id="michatbot-chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;"></div>
-                <div class="chat-footer" style="padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <div class="chat-input-wrapper" style="display: flex; background: rgba(255,255,255,0.05); border-radius: 50px; padding: 5px 5px 5px 20px; border: 1px solid rgba(255,255,255,0.1); align-items: center;">
-                        <input type="text" id="michatbot-chat-input" placeholder="Pregúntame o dame una instrucción..." style="flex: 1; background: transparent; border: none; color: #fff; outline: none; font-family: 'Montserrat', sans-serif;">
-                        <div class="chat-send-btn" id="michatbot-chat-send" style="width: 35px; height: 35px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-paper-plane"></i></div>
+                <div class="chat-messages" id="michatbot-chat-messages"></div>
+
+                <div class="chat-suggestions" id="michatbot-chat-suggestions">
+                    <!-- Dynamic Suggestion Chips -->
+                </div>
+
+                <div class="chat-footer">
+                    <div class="chat-input-wrapper">
+                        <input type="text" id="michatbot-chat-input" placeholder="Pregúntame o dame una instrucción..." autocomplete="off">
+                        <div class="chat-send-btn" id="michatbot-chat-send"><i class="fas fa-paper-plane"></i></div>
                     </div>
                 </div>
             </div>
@@ -347,6 +556,8 @@ async function initMichatbot(forceRefresh = false) {
             </div>
         `);
     }
+
+    renderQuickSuggestions();
 
     if (forceRefresh || !window.currentSpirit) {
         if (typeof _supabase !== 'undefined') {
@@ -424,7 +635,7 @@ async function initMichatbot(forceRefresh = false) {
         $('#michatbot-menu').fadeOut(250);
         if ($('#michatbot-chat-messages').is(':empty')) {
             const spiritName = window.currentSpirit ? window.currentSpirit.name : "Espíritu TCG";
-            addBotMessage(`¡Hola! Soy **${spiritName}**, ¿en qué puedo ayudarte?`);
+            addBotMessage(`¡Hola! Soy **${spiritName}**, tu asistente virtual. ¿En qué te puedo ayudar hoy?`);
         }
     });
 
@@ -487,6 +698,35 @@ async function initMichatbot(forceRefresh = false) {
     setTimeout(checkAuctionStatusOnLoad, 3000);
 }
 
+function renderQuickSuggestions() {
+    const isAdmin = checkIsAdminSession();
+    const $s = $('#michatbot-chat-suggestions');
+    if (!$s.length) return;
+
+    $s.empty();
+    const options = isAdmin ? [
+        "📦 Mis álbumes y decks",
+        "➕ Agregar carta a deck",
+        "❤️ Agregar a Wishlist",
+        "❓ Faltantes en mi deck"
+    ] : [
+        "🔍 Buscar una carta",
+        "💳 Métodos de pago",
+        "🛒 Consultar mi carrito",
+        "🕒 Horario y ubicación"
+    ];
+
+    options.forEach(opt => {
+        const $chip = $(`<div class="suggestion-chip">${opt}</div>`);
+        $chip.on('click', function() {
+            const cleanQuery = opt.replace(/^[^\w\sáéíóúÁÉÍÓÚñÑ]+/, '').trim();
+            $('#michatbot-chat-input').val(cleanQuery);
+            handleSendAIChatMessage();
+        });
+        $s.append($chip);
+    });
+}
+
 function checkIsAdminSession() {
     const isAdminPath = /admin|perfil|scanner|binders|inversiones|build|clientes|tracking/.test(window.location.pathname);
     if (!isAdminPath) return false;
@@ -524,7 +764,7 @@ async function handleSendAIChatMessage() {
     $input.val('');
 
     const $c = $('#michatbot-chat-messages');
-    const $loadingMsg = $('<div class="msg-bot-loading" id="michatbot-loading"><i class="fas fa-spinner fa-spin"></i> Espera unos instantes...</div>');
+    const $loadingMsg = $('<div class="msg-bot-loading" id="michatbot-loading"><i class="fas fa-circle-notch fa-spin"></i> Consultando...</div>');
     $c.append($loadingMsg);
     $c.scrollTop($c[0].scrollHeight);
 
@@ -533,7 +773,7 @@ async function handleSendAIChatMessage() {
 
     try {
         if (typeof _supabase === 'undefined') {
-            throw new Error("Conexión con Supabase no disponible.");
+            throw new Error("Conexión con la base de datos no disponible.");
         }
 
         const payload = {
@@ -551,7 +791,7 @@ async function handleSendAIChatMessage() {
 
         if (error) {
             console.error("Error Edge Function spirit-chat:", error);
-            addBotMessage("Ocurrió un error al consultar a la IA. Revisa tu conexión o que la Edge Function esté desplegada.");
+            addBotMessage("Ocurrió un inconveniente al conectar con el asistente. Por favor intenta de nuevo en unos momentos.");
             return;
         }
 
@@ -568,21 +808,23 @@ async function handleSendAIChatMessage() {
                 if (typeof loadAlbums === 'function') loadAlbums();
                 if (typeof loadDecks === 'function') loadDecks();
                 if (typeof loadProducts === 'function') loadProducts();
+                if (typeof loadWishlist === 'function') loadWishlist();
             }
         } else if (data && data.error) {
             addBotMessage(`⚠️ ${data.error}`);
         } else {
-            addBotMessage("No recibí respuesta de la IA.");
+            addBotMessage("No recibí respuesta del servidor.");
         }
     } catch (err) {
         $('#michatbot-loading').remove();
         console.error("Error mandando mensaje a chatbot IA:", err);
-        addBotMessage("Lo siento, ocurrió un error al procesar tu solicitud.");
+        addBotMessage("Lo siento, ocurrió un error al procesar tu mensaje.");
     }
 }
 
 function formatMarkdownResponse(text) {
     if (!text) return "";
+
     let formatted = text
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -590,7 +832,9 @@ function formatMarkdownResponse(text) {
         .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
         .replace(/\*(.*?)\*/g, "<em>$1</em>")
         .replace(/`([^`]+)`/g, "<code>$1</code>")
+        .replace(/\n\n/g, "<br><br>")
         .replace(/\n/g, "<br>");
+
     return formatted;
 }
 

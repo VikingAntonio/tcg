@@ -16,7 +16,7 @@ serve(async (req) => {
 
     const requestMsg = message || "";
     if (!requestMsg) {
-      return new Response(JSON.stringify({ reply: "Error: El mensaje es requerido." }), {
+      return new Response(JSON.stringify({ reply: "¡Hola! Dime en qué te puedo ayudar hoy." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -24,7 +24,7 @@ serve(async (req) => {
 
     const geminiApiKey = (Deno.env.get("Spirit") || Deno.env.get("OPENAI_API_KEY") || "").trim();
     if (!geminiApiKey) {
-      return new Response(JSON.stringify({ reply: "Error: No se encontró la API Key en los Secrets (Spirit)." }), {
+      return new Response(JSON.stringify({ reply: "Lo siento, la API Key no está configurada correctamente en el servidor." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -133,7 +133,7 @@ serve(async (req) => {
         functionDeclarations: [
           {
             name: "get_store_info",
-            description: "Obtiene información del perfil de la tienda (nombre, WhatsApp, redes, contacto).",
+            description: "Obtiene información general del perfil de la tienda (nombre, contacto, redes, etc.).",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -164,7 +164,7 @@ serve(async (req) => {
           },
           {
             name: "get_deck_details",
-            description: "Obtiene las cartas de un deck por ID o nombre.",
+            description: "Obtiene las cartas de un deck por ID o nombre (útil para responder qué cartas contiene o analizar faltantes).",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -175,12 +175,22 @@ serve(async (req) => {
           },
           {
             name: "get_sealed_products",
-            description: "Obtiene productos sellados disponibles.",
+            description: "Obtiene productos sellados disponibles en la tienda.",
+            parameters: { type: "OBJECT", properties: {} }
+          },
+          {
+            name: "get_user_wishlist",
+            description: "Obtiene las cartas de la lista de deseos (Wishlist/Buscamos) de la tienda.",
+            parameters: { type: "OBJECT", properties: {} }
+          },
+          {
+            name: "get_cart_and_payment_info",
+            description: "Obtiene información sobre las opciones de pago, carrito de compras, horario y métodos de entrega de la tienda.",
             parameters: { type: "OBJECT", properties: {} }
           },
           {
             name: "search_cards",
-            description: "Busca cartas en álbumes, decks, productos sellados e incluye consulta externa TCG (YGOPRODeck) si no está en la base local.",
+            description: "Busca cartas en el inventario local (álbumes, decks, sellados, wishlist) y consulta bases TCG externas si es necesario.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -203,7 +213,7 @@ serve(async (req) => {
           },
           {
             name: "add_cards_to_album",
-            description: "[SOLO ADMIN] Agrega cartas a un álbum. Si no se especifican imágenes, las busca automáticamente en la base externa TCG.",
+            description: "[SOLO ADMIN] Agrega cartas a un álbum. Si no hay imagen, se busca automáticamente en bases TCG externas.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -227,6 +237,19 @@ serve(async (req) => {
                 }
               },
               required: ["cards"]
+            }
+          },
+          {
+            name: "remove_cards_from_album",
+            description: "[SOLO ADMIN] Elimina una o más cartas de un álbum.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                albumId: { type: "STRING" },
+                albumTitle: { type: "STRING" },
+                cardName: { type: "STRING" }
+              },
+              required: ["cardName"]
             }
           },
           {
@@ -268,8 +291,56 @@ serve(async (req) => {
             }
           },
           {
+            name: "remove_cards_from_deck",
+            description: "[SOLO ADMIN] Elimina una o más cartas de un deck.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                deckId: { type: "STRING" },
+                deckName: { type: "STRING" },
+                cardName: { type: "STRING" }
+              },
+              required: ["cardName"]
+            }
+          },
+          {
+            name: "add_to_wishlist",
+            description: "[SOLO ADMIN] Agrega cartas a la lista de deseos / buscados (Wishlist).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                cards: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      card_name: { type: "STRING" },
+                      quantity: { type: "NUMBER" },
+                      rarity: { type: "STRING" },
+                      notes: { type: "STRING" },
+                      image_url: { type: "STRING" }
+                    },
+                    required: ["card_name"]
+                  }
+                }
+              },
+              required: ["cards"]
+            }
+          },
+          {
+            name: "remove_from_wishlist",
+            description: "[SOLO ADMIN] Elimina una carta de la lista de deseos por nombre o ID.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                wishlistId: { type: "STRING" },
+                cardName: { type: "STRING" }
+              }
+            }
+          },
+          {
             name: "update_store_info",
-            description: "[SOLO ADMIN] Actualiza los datos de la tienda.",
+            description: "[SOLO ADMIN] Actualiza la información básica de la tienda.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -284,9 +355,14 @@ serve(async (req) => {
     ];
 
     async function executeToolCall(name: string, args: any) {
-      const writeTools = ["create_album", "add_cards_to_album", "create_deck", "add_cards_to_deck", "update_store_info"];
+      const writeTools = [
+        "create_album", "add_cards_to_album", "remove_cards_from_album",
+        "create_deck", "add_cards_to_deck", "remove_cards_from_deck",
+        "add_to_wishlist", "remove_from_wishlist", "update_store_info"
+      ];
+
       if (writeTools.includes(name) && !is_admin) {
-        return { error: "Acceso denegado: Solo el administrador en admin.html puede realizar cambios." };
+        return { error: "Acceso restringido: Solo el administrador en su panel puede realizar modificaciones." };
       }
 
       switch (name) {
@@ -294,7 +370,7 @@ serve(async (req) => {
           const uId = args.userId || targetUserId;
           if (!uId) return { error: "No se encontró ID de usuario." };
           const { data: userRow } = await supabase.from("usuarios").select("id, username, store_name, whatsapp_link, messenger_link, profile_picture_url, store_banner_url").eq("id", uId).maybeSingle();
-          return userRow || { message: "No se encontró perfil." };
+          return userRow || { message: "Perfil de tienda no encontrado." };
         }
 
         case "get_user_albums": {
@@ -342,6 +418,24 @@ serve(async (req) => {
           if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
           const { data: products } = await supabase.from("sealed_products").select("*").eq("user_id", targetUserId);
           return { sealed_products: products || [] };
+        }
+
+        case "get_user_wishlist": {
+          if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
+          const { data: wishlist } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).order("created_at", { ascending: false });
+          return { wishlist: wishlist || [] };
+        }
+
+        case "get_cart_and_payment_info": {
+          const { data: userRow } = await supabase.from("usuarios").select("store_name, whatsapp_link, messenger_link").eq("id", targetUserId).maybeSingle();
+          return {
+            store_name: userRow?.store_name || "Viking TCG Store",
+            whatsapp: userRow?.whatsapp_link || "",
+            messenger: userRow?.messenger_link || "",
+            metodos_pago: ["Transferencia Bancaria", "Efectivo en Tienda", "Mercado Pago / Tarjeta", "Coordinación directa por WhatsApp"],
+            envios: "Envíos locales y nacionales previo acuerdo por WhatsApp.",
+            instrucciones_compra: "Puedes agregar productos al carrito en la tienda pública y dar clic en 'Enviar Pedido por WhatsApp' para coordinar el pago y entrega."
+          };
         }
 
         case "search_cards": {
@@ -394,7 +488,15 @@ serve(async (req) => {
             }
           }
 
-          // Search in external TCG API if no local matches or to enrich details
+          let wishlistArr: any[] = [];
+          if (targetUserId) {
+            const { data: wCards } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).ilike("card_name", `%${q}%`);
+            if (wCards) {
+              wishlistArr = wCards.map((w: any) => ({ ...w, location: "Wishlist" }));
+            }
+          }
+
+          // Search in external TCG API
           const externalMatch = await queryExternalTCGCard(q);
 
           return {
@@ -402,6 +504,7 @@ serve(async (req) => {
             in_albums: albumSlots,
             in_decks: deckCardsArr,
             sealed_products: sealedArr,
+            in_wishlist: wishlistArr,
             external_tcg_database: externalMatch
           };
         }
@@ -415,7 +518,7 @@ serve(async (req) => {
           ]).select().single();
 
           if (error) return { error: error.message };
-          return { success: true, message: `Álbum '${args.title}' creado.`, album: newAlbum };
+          return { success: true, message: `Álbum '${args.title}' creado con éxito.`, album: newAlbum };
         }
 
         case "add_cards_to_album": {
@@ -429,7 +532,7 @@ serve(async (req) => {
             const { data: newAlb } = await supabase.from("albums").insert([{ title: args.albumTitle || "Nuevo Álbum", user_id: targetUserId }]).select().single();
             if (newAlb) albumId = newAlb.id;
           }
-          if (!albumId) return { error: "No se pudo obtener el álbum." };
+          if (!albumId) return { error: "No se pudo obtener ni crear el álbum." };
 
           let { data: pages } = await supabase.from("pages").select("id, page_index").eq("album_id", albumId).order("page_index", { ascending: true });
           if (!pages || pages.length === 0) {
@@ -464,7 +567,7 @@ serve(async (req) => {
                 currentPageId = pages[currentPageIndex].id;
               } else {
                 const { data: newPage, error: pageErr } = await supabase.from("pages").insert([{ album_id: albumId, page_index: currentPageIndex }]).select().single();
-                if (pageErr || !newPage) return { error: "Límite de páginas alcanzado o error al crear nueva página." };
+                if (pageErr || !newPage) return { error: "Error al crear nueva página en el álbum." };
                 pages.push(newPage);
                 currentPageId = newPage.id;
                 pageSlotMap.set(currentPageId, new Set());
@@ -501,9 +604,27 @@ serve(async (req) => {
           }
 
           const { error: insertErr } = await supabase.from("card_slots").upsert(slotsToInsert, { onConflict: "page_id,slot_index" });
-          if (insertErr) return { error: `Error al guardar en base de datos: ${insertErr.message}` };
+          if (insertErr) return { error: `Error al guardar en álbum: ${insertErr.message}` };
 
           return { success: true, message: `Se agregaron ${slotsToInsert.length} carta(s) al álbum.`, cards_added: slotsToInsert };
+        }
+
+        case "remove_cards_from_album": {
+          let albumId = args.albumId;
+          if (!albumId && args.albumTitle && targetUserId) {
+            const { data: found } = await supabase.from("albums").select("id").eq("user_id", targetUserId).ilike("title", `%${args.albumTitle}%`).limit(1).maybeSingle();
+            if (found) albumId = found.id;
+          }
+          if (!albumId) return { error: "Álbum no encontrado." };
+
+          const { data: pages } = await supabase.from("pages").select("id").eq("album_id", albumId);
+          if (!pages || pages.length === 0) return { error: "No hay páginas en este álbum." };
+
+          const pageIds = pages.map((p: any) => p.id);
+          const { error: delErr } = await supabase.from("card_slots").delete().in("page_id", pageIds).ilike("card_name", `%${args.cardName}%`);
+          if (delErr) return { error: delErr.message };
+
+          return { success: true, message: `Se eliminó '${args.cardName}' del álbum.` };
         }
 
         case "create_deck": {
@@ -513,7 +634,7 @@ serve(async (req) => {
           ]).select().single();
 
           if (error) return { error: error.message };
-          return { success: true, message: `Deck '${args.name}' creado.`, deck: newDeck };
+          return { success: true, message: `Deck '${args.name}' creado con éxito.`, deck: newDeck };
         }
 
         case "add_cards_to_deck": {
@@ -527,7 +648,7 @@ serve(async (req) => {
             const { data: newD } = await supabase.from("decks").insert([{ name: args.deckName || "Nuevo Deck", user_id: targetUserId, is_public: true }]).select().single();
             if (newD) deckId = newD.id;
           }
-          if (!deckId) return { error: "No se pudo obtener el deck." };
+          if (!deckId) return { error: "No se pudo obtener ni crear el deck." };
 
           const cardsToInsert = [];
           for (const c of args.cards) {
@@ -551,7 +672,68 @@ serve(async (req) => {
           const { error: insErr } = await supabase.from("deck_cards").insert(cardsToInsert);
           if (insErr) return { error: insErr.message };
 
-          return { success: true, message: `Se agregaron ${cardsToInsert.length} cartas al deck.`, cards: cardsToInsert };
+          return { success: true, message: `Se agregaron ${cardsToInsert.length} carta(s) al deck.`, cards: cardsToInsert };
+        }
+
+        case "remove_cards_from_deck": {
+          let deckId = args.deckId;
+          if (!deckId && args.deckName && targetUserId) {
+            const { data: found } = await supabase.from("decks").select("id").eq("user_id", targetUserId).ilike("name", `%${args.deckName}%`).limit(1).maybeSingle();
+            if (found) deckId = found.id;
+          }
+          if (!deckId) return { error: "Deck no encontrado." };
+
+          const { error: delErr } = await supabase.from("deck_cards").delete().eq("deck_id", deckId).ilike("card_name", `%${args.cardName}%`);
+          if (delErr) return { error: delErr.message };
+
+          return { success: true, message: `Se eliminó '${args.cardName}' del deck.` };
+        }
+
+        case "add_to_wishlist": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const cardsToInsert = [];
+          for (const c of args.cards) {
+            let cardImg = c.image_url || "";
+            let cardRarity = c.rarity || "";
+            if (!cardImg) {
+              const ext = await queryExternalTCGCard(c.card_name);
+              if (ext && ext.length > 0) {
+                cardImg = ext[0].image_url;
+                if (!cardRarity) cardRarity = ext[0].rarity;
+              }
+            }
+            cardsToInsert.push({
+              user_id: targetUserId,
+              card_name: c.card_name,
+              quantity: c.quantity || 1,
+              rarity: cardRarity || "",
+              notes: c.notes || "",
+              image_url: cardImg,
+              obtained: false
+            });
+          }
+
+          const { error: wErr } = await supabase.from("wishlist").insert(cardsToInsert);
+          if (wErr) return { error: wErr.message };
+
+          return { success: true, message: `Se agregaron ${cardsToInsert.length} carta(s) a la Wishlist.`, cards: cardsToInsert };
+        }
+
+        case "remove_from_wishlist": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          let query = supabase.from("wishlist").delete().eq("user_id", targetUserId);
+          if (args.wishlistId) {
+            query = query.eq("id", args.wishlistId);
+          } else if (args.cardName) {
+            query = query.ilike("card_name", `%${args.cardName}%`);
+          } else {
+            return { error: "Especifica la carta a eliminar de la Wishlist." };
+          }
+
+          const { error: delErr } = await query;
+          if (delErr) return { error: delErr.message };
+
+          return { success: true, message: "Carta eliminada de la Wishlist." };
         }
 
         case "update_store_info": {
@@ -563,25 +745,27 @@ serve(async (req) => {
 
           const { error } = await supabase.from("usuarios").update(updateData).eq("id", targetUserId);
           if (error) return { error: error.message };
-          return { success: true, message: "Información de la tienda actualizada.", updated: updateData };
+          return { success: true, message: "Información de la tienda actualizada con éxito.", updated: updateData };
         }
 
         default:
-          return { error: `Herramienta desconocida: ${name}` };
+          return { error: `Herramienta no reconocida: ${name}` };
       }
     }
 
-    const systemPrompt = `Eres el asistente virtual de Viking TCG. Hablas de forma totalmente humana, amable, cercana y natural.
+    const systemPrompt = `Eres el asistente virtual / espíritu guía de Viking TCG. Hablas de forma amigable, cálida, entusiasta y totalmente humana en español.
 
 REGLAS OBLIGATORIAS DE RESPUESTA:
-1. HABLA COMO UN HUMANO NATURAL Y AMIGABLE EN ESPAÑOL. NUNCA DIGAS FRASES ROBÓTICAS COMO "Proceso completado", "Operación procesada correctamente" NI "¡Listo!". En su lugar, confirma con calidez humana (por ejemplo: "¡Claro! Ya agregué la carta a tu álbum", "Listo, ya te creé ese deck", "Aquí tienes los detalles de la tienda").
-2. NUNCA MUESTRES PENSAMIENTOS INTERNOS, RAZONAMIENTOS, PLANES DE RESPUESTA NI MENCIONES "IA" O TEXTO EN INGLÉS COMO "The user said", "Plan:".
-3. SI TE PIDEN AGREGAR O CREAR CARTAS, ÁLBUMES O DECKS Y NO TIENES TODOS LOS DATOS (como imagen o rareza), NO PIDAS MÁS DATOS. UTILIZA LAS HERRAMIENTAS Y AGREGA LA CARTA DE INMEDIATO (las imágenes y detalles se buscan automáticamente en la base TCG externa).
-4. SI ALGO FALLA EN LA BASE DE DATOS O EN LA HERRAMIENTA, INFORMA CON SINCERIDAD Y NATURALIDAD EL ERROR EXACTO QUE OCURRIÓ, NUNCA MIENTAS DICIENDO QUE YA QUEDÓ LISTO SI LA HERRAMIENTA DEVILVIÓ UN ERROR.
-5. SI EL MODO DE SESIÓN ES ADMINISTRADOR (is_admin = true), EJECUTA LAS ACCIONES SOLICITADAS DIRECTAMENTE USANDO LAS HERRAMIENTAS CORRESPONDIENTES.
+1. HABLA COMO UN HUMANO NATURAL. Responde directamente lo que el usuario pide sin frases frías ni texto tipo log técnico.
+2. NUNCA MUESTRES PENSAMIENTOS INTERNOS, PLANES NI RAZONAMIENTOS. Prohibido incluir textos en inglés como "The user said...", "Plan:", "Thought:", "Role:" o "Action:".
+3. NO MUESTRES CÓDIGO JSON O ESTRUCTURAS RAW DE LAS HERRAMIENTAS. Transforma los datos en respuestas claras, bonitas y bien formateadas.
+4. MODO ADMINISTRADOR (is_admin = true): Puedes crear, consultar, agregar y eliminar cartas/elementos de Álbumes, Decks y Wishlist. Si te piden agregar cartas y falta algún dato (como imagen o rareza), no pidas más datos; usa las herramientas directamente (las imágenes se buscan en las bases TCG automáticamente).
+5. MODO CLIENTE PÚBLICO (is_admin = false): Ayuda a consultar disponibilidad de cartas, precios de venta, lista de buscados, información de la tienda, carrito de compras, horarios y opciones de pago.
+6. CONSULTAS Y ANÁLISIS DE DECKS/ÁLBUMES: Si te preguntan qué cartas contiene un deck o qué cartas faltan, consulta la información con las herramientas y entrega un resumen claro y bien ordenado.
+7. SI ALGO FALLA EN LA HERRAMIENTA: Explica con amabilidad el error exacto que ocurrió sin mentir ni decir que la operación se completó si devolvió un error.
 
-Modo de sesión actual: ${is_admin ? "ADMINISTRADOR" : "CLIENTE PÚBLICO"}.
-ID de tienda: ${targetUserId || 'desconocido'}.
+Modo de sesión actual: ${is_admin ? "ADMINISTRADOR (Acceso CRUD completo)" : "CLIENTE PÚBLICO (Modo consulta)"}.
+ID de tienda/usuario: ${targetUserId || 'desconocido'}.
 `;
 
     // Fetch available Gemini models
@@ -589,7 +773,7 @@ ID de tienda: ${targetUserId || 'desconocido'}.
     const listData = await listRes.json();
 
     if (!listRes.ok || listData.error) {
-      return new Response(JSON.stringify({ reply: `Error de Google Gemini: ${listData?.error?.message || 'Error API Key'}` }), {
+      return new Response(JSON.stringify({ reply: `Error de Google Gemini: ${listData?.error?.message || 'Error de API Key'}` }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -600,7 +784,7 @@ ID de tienda: ${targetUserId || 'desconocido'}.
       .map((m: any) => m.name);
 
     if (availableModels.length === 0) {
-      return new Response(JSON.stringify({ reply: "Error: No se encontró ningún modelo habilitado para tu API Key." }), {
+      return new Response(JSON.stringify({ reply: "No se encontró ningún modelo habilitado en Google Gemini." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -641,7 +825,7 @@ ID de tienda: ${targetUserId || 'desconocido'}.
     }
 
     if (!geminiRes || !geminiRes.ok) {
-      return new Response(JSON.stringify({ reply: `Error al comunicarse con la IA de Google Gemini (${aiData?.error?.message || 'Sin respuesta'}).` }), {
+      return new Response(JSON.stringify({ reply: `No fue posible conectar con el servicio de IA (${aiData?.error?.message || 'Sin respuesta'}).` }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -695,20 +879,22 @@ ID de tienda: ${targetUserId || 'desconocido'}.
       if (part.text) rawTextReply += part.text;
     }
 
-    // Strict cleaning of reasoning/thinking lines in English or plans
-    let cleanReply = rawTextReply.trim();
-    if (cleanReply.includes("The user said") || cleanReply.includes("Plan:") || cleanReply.includes("Role:") || cleanReply.includes("The search for")) {
-      const lines = cleanReply.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-      const filteredLines = lines.filter(l => !l.startsWith("The user") && !l.startsWith("Plan:") && !l.startsWith("Role:") && !l.startsWith("Purpose:") && !l.startsWith("Response plan:") && !l.startsWith("The search for"));
-      if (filteredLines.length > 0) {
-        cleanReply = filteredLines.join("\n");
-      } else {
-        cleanReply = "";
-      }
-    }
+    // Strict post-processing to eliminate log-like or reasoning text
+    let cleanReply = rawTextReply
+      .replace(/```json[\s\S]*?```/gi, "")
+      .replace(/```[\s\S]*?```/gi, "")
+      .trim();
+
+    const lines = cleanReply.split("\n");
+    const filteredLines = lines.filter(l => {
+      const trimmed = l.trim();
+      return !/^(The user|Plan:|Role:|Purpose:|Response plan:|The search for|Thought:|Action:|Observation:)/i.test(trimmed);
+    });
+
+    cleanReply = filteredLines.join("\n").trim();
 
     if (!cleanReply) {
-      cleanReply = "Con gusto, ya realicé el cambio que me pediste.";
+      cleanReply = "¡Listo! He procesado tu solicitud con éxito.";
     }
 
     return new Response(JSON.stringify({
@@ -716,7 +902,7 @@ ID de tienda: ${targetUserId || 'desconocido'}.
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ reply: "Error interno: " + err.message }), {
+    return new Response(JSON.stringify({ reply: "Ocurrió un error interno al procesar la solicitud: " + err.message }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
