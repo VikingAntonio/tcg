@@ -81,6 +81,12 @@ $(document).ready(async function() {
         $("#zone-hand-p2").css("display", "flex");
         $("#zone-grave-p2").css("display", "flex");
         $("#zone-banish-p2").css("display", "flex");
+    } else {
+        $("#zone-hand-p2").hide();
+        $("#zone-grave-p2").hide();
+        $("#zone-banish-p2").hide();
+        $("#zone-prizes-p2").hide();
+        $("#lp-widget-p2").hide();
     }
 
     // Set initial card preview image depending on layout format
@@ -96,6 +102,7 @@ $(document).ready(async function() {
     bindDropdownContextMenus();
     bindBatchSelectionHandlers();
     setupPerspectiveSwitcher();
+    setupSearchFilters();
 
     // Load Decks
     Swal.fire({
@@ -569,8 +576,9 @@ function openSearchModal(owner) {
         return;
     }
 
-    // Reset multiselect state
+    // Reset multiselect state and search filter input
     $("#pile-multi-select-toggle").prop("checked", false).trigger("change");
+    $("#pile-search-filter").val("");
 
     $("#pile-modal-title").text(`Buscador de Deck: ${owner === "player1" ? "Jugador 1" : "Jugador 2"}`);
     const $grid = $("#pile-cards-grid");
@@ -605,6 +613,9 @@ function openExtraModal(owner) {
         Swal.fire('Extra Deck Vacío', 'No hay cartas en el Extra Deck.', 'warning');
         return;
     }
+
+    // Reset extra search filter
+    $("#extra-search-filter").val("");
 
     $("#extra-modal-title").text(`Extra Deck: ${owner === "player1" ? "Jugador 1" : "Jugador 2"}`);
     const $grid = $("#extra-cards-grid");
@@ -1076,6 +1087,9 @@ function setupGlobalEvents() {
         else if (isPrizes) title = "Lista de Cartas en Premios";
         else title = "Lista de Cartas en Cementerio";
 
+        // Reset search filter input
+        $("#pile-search-filter").val("");
+
         $("#pile-modal-title").text(title);
         const $grid = $("#pile-cards-grid");
         $grid.empty();
@@ -1296,8 +1310,14 @@ function setupAccessories() {
     });
 }
 
-// Setup LP Floating Trackers logic
+// Setup LP Floating Trackers logic & Draggable LP
 function setupLPTrackers() {
+    // Click on LP value display to toggle/expand calculator inputs
+    $(".lp-widget-val").click(function() {
+        const $calcBox = $(this).siblings(".lp-widget-calc");
+        $calcBox.slideToggle(150);
+    });
+
     $(".lp-widget-btn").click(function() {
         const player = $(this).attr("data-player");
         const action = $(this).hasClass("lp-btn-add") ? "add" : $(this).hasClass("lp-btn-sub") ? "sub" : "half";
@@ -1318,6 +1338,68 @@ function setupLPTrackers() {
 
         $display.text(current);
         $input.val('');
+    });
+
+    // Make LP widgets freely draggable across the viewport
+    $(".floating-lp-widget").on("mousedown touchstart", function(e) {
+        if ($(e.target).closest("input, button, .lp-widget-val").length) return;
+
+        const $widget = $(this);
+        const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+        const offset = $widget.offset();
+        const deltaX = clientX - offset.left;
+        const deltaY = clientY - offset.top;
+
+        $(document).on("mousemove.lpdrag touchmove.lpdrag", function(moveEvent) {
+            const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
+            const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+            let finalX = mX - deltaX;
+            let finalY = mY - deltaY;
+
+            finalX = Math.max(10, Math.min(window.innerWidth - $widget.outerWidth() - 10, finalX));
+            finalY = Math.max(10, Math.min(window.innerHeight - $widget.outerHeight() - 10, finalY));
+
+            $widget.css({
+                left: finalX + "px",
+                top: finalY + "px",
+                bottom: "auto",
+                right: "auto"
+            });
+        });
+
+        $(document).on("mouseup.lpdrag touchend.lpdrag", function() {
+            $(document).off(".lpdrag");
+        });
+    });
+}
+
+// Live search filter inside search modals (Pile and Extra modals)
+function setupSearchFilters() {
+    $("#pile-search-filter").on("input", function() {
+        const query = $(this).val().toLowerCase().trim();
+        $("#pile-cards-grid .pile-card-container").each(function() {
+            const cardName = ($(this).find("img").attr("alt") || "").toLowerCase();
+            if (!query || cardName.includes(query)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+
+    $("#extra-search-filter").on("input", function() {
+        const query = $(this).val().toLowerCase().trim();
+        $("#extra-cards-grid .pile-card-container").each(function() {
+            const cardName = ($(this).find("img").attr("alt") || "").toLowerCase();
+            if (!query || cardName.includes(query)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
     });
 }
 
@@ -1372,6 +1454,15 @@ function renderAllCards() {
                 } else if (card.owner === "player2" && state.viewPerspective !== "player2") {
                     isMaskedAsBack = true;
                 }
+            }
+        }
+
+        let revealFaceDownClass = "";
+        if (!card.faceUp && !inHand && !inGraveOrBanish && !inPrizes) {
+            if (state.mode === "practice") {
+                revealFaceDownClass = "reveal-face-down";
+            } else if (state.mode === "multiplayer" && card.owner === state.viewPerspective) {
+                revealFaceDownClass = "reveal-face-down";
             }
         }
 
@@ -1456,7 +1547,7 @@ function renderAllCards() {
         }
 
         const html = `
-            <div class="duel-card ${faceClass} ${rotationClass} ${sizeClass}" id="${card.id}" style="left: ${card.x}px; top: ${card.y}px;">
+            <div class="duel-card ${faceClass} ${revealFaceDownClass} ${rotationClass} ${sizeClass}" id="${card.id}" style="left: ${card.x}px; top: ${card.y}px;">
                 <div class="card-counter-container">${counterHtml}</div>
                 <div class="card-img-wrapper" style="${card.tapped ? 'transform: rotate(90deg);' : ''}">
                     <img class="card-img" src="${srcImg}" alt="${card.name}">
@@ -1726,6 +1817,31 @@ function bindDropdownContextMenus() {
     });
 
     // Card actions
+    $("#menu-card-view").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            const card = data.card;
+            const src = card.image_url;
+            const name = card.name || "Detalles de Carta";
+            const desc = card.desc || "Sin descripción disponible.";
+
+            Swal.fire({
+                title: name,
+                html: `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; font-family: 'Montserrat', sans-serif;">
+                        <img src="${src}" style="width: 250px; max-width: 90%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" alt="${name}">
+                        <p style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; font-size: 0.9rem; line-height: 1.5; text-align: left; width: 100%; max-height: 180px; overflow-y: auto; white-space: pre-wrap; color: #eee; border: 1px solid rgba(255,255,255,0.08);">${desc}</p>
+                    </div>
+                `,
+                showCloseButton: true,
+                showConfirmButton: false,
+                background: "#12181e",
+                color: "#fff"
+            });
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
     $("#menu-card-flip").click(function() {
         const data = $("#card-ctx-menu").data("context-data");
         if (data && data.card) {

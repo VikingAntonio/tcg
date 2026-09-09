@@ -377,29 +377,31 @@ body.magic-mode .duel-card.face-down .card-img {
 /* Floating Life Points widgets */
 .floating-lp-widget {
     position: fixed;
-    width: 160px;
-    background: rgba(18, 24, 30, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    width: 150px;
+    background: rgba(18, 24, 30, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(10px);
     border-radius: 12px;
     padding: 10px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-    z-index: 100;
+    z-index: 600;
     font-family: 'Montserrat', sans-serif;
+    user-select: none;
+    cursor: move;
 }
 
 .p1-lp-widget {
     bottom: 15px;
     left: 220px;
     border-left: 3px solid #00d2ff;
-    box-shadow: 0 5px 15px rgba(0, 210, 255, 0.1), 0 10px 25px rgba(0,0,0,0.6);
+    box-shadow: 0 5px 15px rgba(0, 210, 255, 0.15), 0 10px 25px rgba(0,0,0,0.6);
 }
 
 .p2-lp-widget {
     top: 15px;
     left: 15px;
     border-left: 3px solid #ff1b6b;
-    box-shadow: 0 5px 15px rgba(255, 27, 107, 0.1), 0 10px 25px rgba(0,0,0,0.6);
+    box-shadow: 0 5px 15px rgba(255, 27, 107, 0.15), 0 10px 25px rgba(0,0,0,0.6);
 }
 
 .lp-widget-header {
@@ -408,15 +410,30 @@ body.magic-mode .duel-card.face-down .card-img {
     color: #888;
     letter-spacing: 1px;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lp-drag-handle {
+    cursor: move;
+    color: rgba(255, 255, 255, 0.4);
 }
 
 .lp-widget-val {
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 900;
     color: #fff;
-    margin-bottom: 8px;
+    margin-bottom: 0px;
+    cursor: pointer;
     text-shadow: 0 0 10px rgba(255,255,255,0.2);
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.lp-widget-val:hover {
+    transform: scale(1.05);
+    color: #00d2ff;
 }
 
 .p1-lp-widget .lp-widget-val {
