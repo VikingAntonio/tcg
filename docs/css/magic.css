@@ -56,6 +56,7 @@ body.magic-mode .duel-card {
     position: absolute !important;
     transition: transform 0.2s, box-shadow 0.2s;
     user-select: none;
+    touch-action: none !important;
     cursor: grab;
     z-index: 10;
 }
@@ -148,6 +149,7 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     justify-content: center;
     cursor: grab;
     user-select: none;
+    touch-action: none !important;
     z-index: 400;
     pointer-events: auto !important;
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.1s, background-image 0.2s;
@@ -260,6 +262,7 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     align-items: center;
     justify-content: center;
     pointer-events: auto; /* Allow dragging of the zones themselves */
+    touch-action: none !important;
     transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
     z-index: 2;
     cursor: move;
@@ -369,6 +372,7 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     bottom: 15px;
     left: 140px;
     width: 50%;
+    max-width: 600px;
     height: 150px;
     cursor: move;
 }
@@ -376,6 +380,7 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     top: 15px;
     left: 140px;
     width: 50%;
+    max-width: 600px;
     height: 150px;
     cursor: move;
 }
@@ -384,12 +389,14 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     bottom: 175px;
     right: 25px;
     width: 200px;
+    max-width: 35vw;
     height: 165px;
 }
 .landing-zone-banish-p1 {
     bottom: 350px;
     right: 25px;
     width: 200px;
+    max-width: 35vw;
     height: 165px;
 }
 
@@ -397,13 +404,28 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     top: 160px;
     right: 25px;
     width: 200px;
+    max-width: 35vw;
     height: 165px;
 }
 .landing-zone-banish-p2 {
     top: 335px;
     right: 25px;
     width: 200px;
+    max-width: 35vw;
     height: 165px;
+}
+
+@media (max-width: 768px) {
+    .landing-zone-hand-p1, .landing-zone-hand-p2 {
+        width: 75vw !important;
+        left: 15px !important;
+    }
+    .landing-zone-grave-p1, .landing-zone-banish-p1,
+    .landing-zone-grave-p2, .landing-zone-banish-p2 {
+        width: 140px !important;
+        height: 120px !important;
+        right: 10px !important;
+    }
 }
 
 /* Floating Life Points widgets */
@@ -419,6 +441,7 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     z-index: 600;
     font-family: 'Montserrat', sans-serif;
     user-select: none;
+    touch-action: none !important;
     cursor: move;
 }
 
