@@ -99,6 +99,7 @@ $(document).ready(async function() {
     setupCardInteractions();
     setupGlobalEvents();
     makeLandingZonesDraggableAndResizable();
+    setupViewportResizeHandler();
     bindDropdownContextMenus();
     bindBatchSelectionHandlers();
     setupPerspectiveSwitcher();
@@ -418,6 +419,62 @@ function togglePileBackground(selector, count, imgUrl) {
             "box-shadow": "none"
         });
     }
+}
+
+// Responsive viewport recalculation on resize/orientation change
+function setupViewportResizeHandler() {
+    $(window).on("resize orientationchange", function() {
+        const windowW = window.innerWidth;
+        const windowH = window.innerHeight;
+
+        // Clamp landing zones within viewport
+        $(".magic-landing-zone").each(function() {
+            const $zone = $(this);
+            const offset = $zone.offset();
+            const w = $zone.outerWidth() || 150;
+            const h = $zone.outerHeight() || 100;
+
+            let finalX = Math.max(10, Math.min(windowW - w - 10, offset.left));
+            let finalY = Math.max(10, Math.min(windowH - h - 10, offset.top));
+
+            $zone.css({ left: finalX + "px", top: finalY + "px", bottom: "auto", right: "auto" });
+        });
+
+        // Clamp piles within viewport
+        $(".magic-pile-zone").each(function() {
+            const $pile = $(this);
+            const offset = $pile.offset();
+            const w = $pile.outerWidth() || 85;
+            const h = $pile.outerHeight() || 124;
+
+            let finalX = Math.max(10, Math.min(windowW - w - 10, offset.left));
+            let finalY = Math.max(10, Math.min(windowH - h - 10, offset.top));
+
+            $pile.css({ left: finalX + "px", top: finalY + "px", bottom: "auto", right: "auto" });
+        });
+
+        // Clamp floating LP widgets
+        $(".floating-lp-widget").each(function() {
+            const $widget = $(this);
+            const offset = $widget.offset();
+            const w = $widget.outerWidth() || 150;
+            const h = $widget.outerHeight() || 80;
+
+            let finalX = Math.max(10, Math.min(windowW - w - 10, offset.left));
+            let finalY = Math.max(10, Math.min(windowH - h - 10, offset.top));
+
+            $widget.css({ left: finalX + "px", top: finalY + "px", bottom: "auto", right: "auto" });
+        });
+
+        // Clamp all cards on playmat
+        state.cards.forEach(card => {
+            const cardW = 85;
+            const cardH = 124;
+            card.x = Math.max(0, Math.min(windowW - cardW, card.x));
+            card.y = Math.max(0, Math.min(windowH - cardH, card.y));
+            $(`#${card.id}`).css({ left: card.x + "px", top: card.y + "px" });
+        });
+    });
 }
 
 // Calculate containing zone geometrically
@@ -927,9 +984,8 @@ function setupCardInteractions() {
 
         $(this).addClass("dragging");
 
-        // Put active card on top z-index hierarchy
-        state.cards = state.cards.filter(c => c.id !== cardId).concat([dragCard]);
-        renderAllCards();
+        // Elevate card z-index during drag without destroying DOM elements on touchstart
+        $(this).css("z-index", 1000);
 
         $(document).on("mousemove.carddrag touchmove.carddrag", function(moveEvent) {
             if (!dragCard) return;
@@ -983,10 +1039,13 @@ function setupCardInteractions() {
                     dragCard.tapped = false; // Always upright in Cementerio
                 }
 
+                // Reorder card in state array so it stays on top
+                state.cards = state.cards.filter(c => c.id !== cardId).concat([dragCard]);
+
                 // Remove landing hover states
                 $(".magic-landing-zone").removeClass("drag-over");
                 updateLandingZoneCounts();
-                renderAllCards(); // Re-render instantly on mouse up to recalculate card sizes!
+                renderAllCards(); // Re-render instantly on drop!
             }
 
             dragCard = null;
@@ -1598,8 +1657,8 @@ function makeLandingZonesDraggableAndResizable() {
         $zone.css("pointer-events", "auto");
 
         $zone.on("mousedown touchstart", function(e) {
-            // Ignore if clicking on a resize handle, buttons, or child content inputs
-            if ($(e.target).closest(".resize-handle").length || $(e.target).closest("button").length || $(e.target).closest("input").length) return;
+            // Ignore if clicking on cards, resize handle, buttons, or child content inputs
+            if ($(e.target).closest(".duel-card").length || $(e.target).closest(".resize-handle").length || $(e.target).closest("button").length || $(e.target).closest("input").length) return;
             e.preventDefault();
 
             const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
