@@ -159,27 +159,45 @@
 
     <!-- Floating Life Points Trackers -->
     <div class="floating-lp-widget p1-lp-widget" id="lp-widget-p1">
-        <div class="lp-widget-header"><i class="fas fa-arrows-alt lp-drag-handle"></i> LP JUGADOR 1</div>
+        <div class="lp-widget-header">
+            <span class="lp-player-tag">J1</span>
+            <i class="fas fa-arrows-alt lp-drag-handle" title="Arrastrar contador"></i>
+        </div>
         <div class="lp-widget-val" id="lp-display-p1" title="Haz clic para abrir el calculador">8000</div>
         <div class="lp-widget-calc" id="lp-calc-box-p1" style="display: none;">
-            <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
+            <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="Monto..." min="0">
+            <div class="lp-quick-presets">
+                <button class="lp-preset-btn" data-player="p1" data-val="500">+500</button>
+                <button class="lp-preset-btn" data-player="p1" data-val="1000">+1000</button>
+                <button class="lp-preset-btn" data-player="p1" data-val="2000">+2000</button>
+            </div>
             <div style="display: flex; gap: 4px;">
-                <button class="lp-widget-btn lp-btn-add" data-player="p1">+</button>
-                <button class="lp-widget-btn lp-btn-sub" data-player="p1">-</button>
-                <button class="lp-widget-btn lp-btn-half" data-player="p1">/</button>
+                <button class="lp-widget-btn lp-btn-add" data-player="p1" title="Añadir LP"><i class="fas fa-plus"></i></button>
+                <button class="lp-widget-btn lp-btn-sub" data-player="p1" title="Restar LP"><i class="fas fa-minus"></i></button>
+                <button class="lp-widget-btn lp-btn-half" data-player="p1" title="Mitad LP"><i class="fas fa-divide"></i></button>
+                <button class="lp-widget-btn lp-btn-reset" data-player="p1" title="Reiniciar a 8000"><i class="fas fa-rotate-left"></i></button>
             </div>
         </div>
     </div>
 
     <div class="floating-lp-widget p2-lp-widget" id="lp-widget-p2" style="display: none;">
-        <div class="lp-widget-header"><i class="fas fa-arrows-alt lp-drag-handle"></i> LP JUGADOR 2</div>
+        <div class="lp-widget-header">
+            <span class="lp-player-tag">J2</span>
+            <i class="fas fa-arrows-alt lp-drag-handle" title="Arrastrar contador"></i>
+        </div>
         <div class="lp-widget-val" id="lp-display-p2" title="Haz clic para abrir el calculador">8000</div>
         <div class="lp-widget-calc" id="lp-calc-box-p2" style="display: none;">
-            <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
+            <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="Monto..." min="0">
+            <div class="lp-quick-presets">
+                <button class="lp-preset-btn" data-player="p2" data-val="500">+500</button>
+                <button class="lp-preset-btn" data-player="p2" data-val="1000">+1000</button>
+                <button class="lp-preset-btn" data-player="p2" data-val="2000">+2000</button>
+            </div>
             <div style="display: flex; gap: 4px;">
-                <button class="lp-widget-btn lp-btn-add" data-player="p2">+</button>
-                <button class="lp-widget-btn lp-btn-sub" data-player="p2">-</button>
-                <button class="lp-widget-btn lp-btn-half" data-player="p2">/</button>
+                <button class="lp-widget-btn lp-btn-add" data-player="p2" title="Añadir LP"><i class="fas fa-plus"></i></button>
+                <button class="lp-widget-btn lp-btn-sub" data-player="p2" title="Restar LP"><i class="fas fa-minus"></i></button>
+                <button class="lp-widget-btn lp-btn-half" data-player="p2" title="Mitad LP"><i class="fas fa-divide"></i></button>
+                <button class="lp-widget-btn lp-btn-reset" data-player="p2" title="Reiniciar a 8000"><i class="fas fa-rotate-left"></i></button>
             </div>
         </div>
     </div>
