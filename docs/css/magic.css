@@ -364,46 +364,46 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     color: #ff1b6b;
 }
 
-/* Landing Zone Coordinate bounds (Large squares, positioned default-right for Banish & Grave) */
+/* Landing Zone Coordinate bounds (Positioned default-right for Banish & Grave) */
 .landing-zone-hand-p1 {
     bottom: 15px;
-    left: 15%;
-    width: 45%;
+    left: 140px;
+    width: 50%;
     height: 150px;
     cursor: move;
 }
 .landing-zone-hand-p2 {
     top: 15px;
-    left: 15%;
-    width: 45%;
+    left: 140px;
+    width: 50%;
     height: 150px;
     cursor: move;
 }
 
-.landing-zone-banish-p1 {
-    top: 20px;
-    right: 340px;
-    width: 320px;
-    height: 320px;
-}
 .landing-zone-grave-p1 {
-    bottom: 20px;
-    right: 340px;
-    width: 320px;
-    height: 320px;
+    bottom: 175px;
+    right: 25px;
+    width: 200px;
+    height: 165px;
+}
+.landing-zone-banish-p1 {
+    bottom: 350px;
+    right: 25px;
+    width: 200px;
+    height: 165px;
 }
 
-.landing-zone-banish-p2 {
-    top: 20px;
-    right: 680px;
-    width: 320px;
-    height: 320px;
-}
 .landing-zone-grave-p2 {
-    top: 20px;
-    right: 1010px;
-    width: 320px;
-    height: 320px;
+    top: 160px;
+    right: 25px;
+    width: 200px;
+    height: 165px;
+}
+.landing-zone-banish-p2 {
+    top: 335px;
+    right: 25px;
+    width: 200px;
+    height: 165px;
 }
 
 /* Floating Life Points widgets */
