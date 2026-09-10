@@ -41,6 +41,22 @@ const dragOffset = { x: 0, y: 0 };
 let dragStartCoords = { x: 0, y: 0 };
 let dragStartTime = 0;
 let targetingCard = null;
+let lastContextMenuOpenTime = 0;
+
+function getCardDimensions() {
+    const $sample = $(".duel-card").first();
+    if ($sample.length) {
+        return {
+            w: $sample.outerWidth() || 85,
+            h: $sample.outerHeight() || 124
+        };
+    }
+    const isMobile = $("body").hasClass("mobile-magic-mode") || window.innerWidth <= 768;
+    return {
+        w: isMobile ? 58 : 85,
+        h: isMobile ? 84 : 124
+    };
+}
 
 // Initialize Magic Engine
 $(document).ready(async function() {
@@ -182,16 +198,20 @@ function initializePiles() {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    // Deck & Extra coordinates (Main Deck on Right side, Extra Deck on Left side)
-    const p1_deck_x = width - 125;
-    const p1_deck_y = height - 160;
-    const p1_extra_x = 35;
-    const p1_extra_y = height - 160;
+    const isMobile = $("body").hasClass("mobile-magic-mode") || window.innerWidth <= 768;
+    const cardDim = getCardDimensions();
+    const pileMargin = isMobile ? 12 : 35;
 
-    const p2_deck_x = width - 125;
-    const p2_deck_y = 25;
-    const p2_extra_x = 35;
-    const p2_extra_y = 25;
+    // Deck & Extra coordinates (Main Deck on Right side, Extra Deck on Left side / stacked on mobile)
+    const p1_deck_x = width - (cardDim.w + (isMobile ? 12 : 40));
+    const p1_deck_y = height - (cardDim.h + (isMobile ? 15 : 36));
+    const p1_extra_x = isMobile ? (width - (cardDim.w + 12)) : pileMargin;
+    const p1_extra_y = isMobile ? (height - (cardDim.h * 2 + 25)) : (height - (cardDim.h + 36));
+
+    const p2_deck_x = width - (cardDim.w + (isMobile ? 12 : 40));
+    const p2_deck_y = isMobile ? 12 : 25;
+    const p2_extra_x = isMobile ? (width - (cardDim.w + 12)) : pileMargin;
+    const p2_extra_y = isMobile ? (cardDim.h + 20) : 25;
 
     // Render P1 Deck
     createPileElement($container, "deck_1", "Main Deck J1", p1_deck_x, p1_deck_y, "player1", "deck");
@@ -329,8 +349,9 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                     let targetX = mX - dragOffset.x;
                     let targetY = mY - dragOffset.y;
 
-                    targetX = Math.max(0, Math.min(window.innerWidth - 85, targetX));
-                    targetY = Math.max(0, Math.min(window.innerHeight - 124, targetY));
+                    const cardDim = getCardDimensions();
+                    targetX = Math.max(0, Math.min(window.innerWidth - cardDim.w, targetX));
+                    targetY = Math.max(0, Math.min(window.innerHeight - cardDim.h, targetY));
 
                     dragCard.x = targetX;
                     dragCard.y = targetY;
@@ -467,11 +488,10 @@ function setupViewportResizeHandler() {
         });
 
         // Clamp all cards on playmat
+        const cardDim = getCardDimensions();
         state.cards.forEach(card => {
-            const cardW = 85;
-            const cardH = 124;
-            card.x = Math.max(0, Math.min(windowW - cardW, card.x));
-            card.y = Math.max(0, Math.min(windowH - cardH, card.y));
+            card.x = Math.max(0, Math.min(windowW - cardDim.w, card.x));
+            card.y = Math.max(0, Math.min(windowH - cardDim.h, card.y));
             $(`#${card.id}`).css({ left: card.x + "px", top: card.y + "px" });
         });
     });
@@ -506,8 +526,9 @@ function updateLandingZoneCounts() {
 
 // Fetch bounding boxes dynamically
 function getCardCurrentZone(card) {
-    const cardMidX = card.x + 55;
-    const cardMidY = card.y + 80;
+    const cardDim = getCardDimensions();
+    const cardMidX = card.x + (cardDim.w / 2);
+    const cardMidY = card.y + (cardDim.h / 2);
 
     // Hand P1
     if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p1")) return "hand_p1";
@@ -571,8 +592,9 @@ function getHandZonePosition(owner) {
         let cardX = offset.left + paddingLeft + (existingCount * step);
         let cardY = offset.top + paddingTop;
 
-        if (cardX > offset.left + zoneW - 85) {
-            cardX = offset.left + zoneW - 85;
+        const cardDim = getCardDimensions();
+        if (cardX > offset.left + zoneW - cardDim.w) {
+            cardX = offset.left + zoneW - cardDim.w;
         }
 
         return { x: cardX, y: cardY };
@@ -807,9 +829,10 @@ $(document).on("click", ".search-to-field", function(e) {
     }
 
     // Spawn at center of the viewport
+    const cardDim = getCardDimensions();
     const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-    const spawnX = window.innerWidth / 2 - 55;
-    const spawnY = window.innerHeight / 2 - 80;
+    const spawnX = window.innerWidth / 2 - (cardDim.w / 2);
+    const spawnY = window.innerHeight / 2 - (cardDim.h / 2);
 
     state.cards.push({
         id: cardId,
@@ -854,14 +877,15 @@ $(document).on("click", ".search-to-grave, .search-to-banish", function(e) {
     }
 
     // Spawn card
+    const cardDim = getCardDimensions();
     const cardId = "card_" + Math.random().toString(36).substr(2, 9);
     const newCard = {
         id: cardId,
         name: cardData.name,
         image_url: cardData.image_url,
         desc: cardData.desc || "",
-        x: window.innerWidth / 2 - 55,
-        y: window.innerHeight / 2 - 80,
+        x: window.innerWidth / 2 - (cardDim.w / 2),
+        y: window.innerHeight / 2 - (cardDim.h / 2),
         faceUp: true,
         tapped: false,
         counters: { glass: 0, poke: 0 },
@@ -1036,7 +1060,7 @@ function setupCardInteractions() {
             updateLandingHoverState(targetX, targetY);
         });
 
-        $(document).on("mouseup.carddrag touchend.carddrag", function() {
+        $(document).on("mouseup.carddrag touchend.carddrag", function(upEvent) {
             if (dragCard) {
                 const $el = $(`#${dragCard.id}`);
                 $el.removeClass("dragging");
@@ -1045,17 +1069,26 @@ function setupCardInteractions() {
                 const distance = Math.hypot(dragCard.x - dragStartCoords.x, dragCard.y - dragStartCoords.y);
                 const duration = Date.now() - dragStartTime;
 
-                if (distance < 8 && duration < 250) {
+                if (distance < 8 && duration < 350) {
                     // Click trigger: show card sidebar preview & toggle orientation parameters
                     updatePreview(dragCard);
                     if (typeof window.triggerEquipIndicator === "function") {
                         window.triggerEquipIndicator(dragCard);
                     }
+
+                    // Open card context menu on click/tap
+                    const endX = (upEvent.type === "touchend" && upEvent.changedTouches && upEvent.changedTouches.length) ?
+                        upEvent.changedTouches[0].clientX : (upEvent.clientX || dragCard.x + 30);
+                    const endY = (upEvent.type === "touchend" && upEvent.changedTouches && upEvent.changedTouches.length) ?
+                        upEvent.changedTouches[0].clientY : (upEvent.clientY || dragCard.y + 40);
+
+                    showContextMenu("#card-ctx-menu", endX, endY, { card: dragCard });
                 }
 
                 // Check if card is dropped over Main Deck 1 or Main Deck 2
-                const cardMidX = dragCard.x + 42.5;
-                const cardMidY = dragCard.y + 62;
+                const cardDim = getCardDimensions();
+                const cardMidX = dragCard.x + (cardDim.w / 2);
+                const cardMidY = dragCard.y + (cardDim.h / 2);
 
                 let droppedDeckOwner = null;
                 if (isPointInElement(cardMidX, cardMidY, "#zone-deck_1")) {
@@ -1119,8 +1152,9 @@ function setupCardInteractions() {
 }
 
 function updateLandingHoverState(x, y) {
-    const cardMidX = x + 42.5;
-    const cardMidY = y + 62;
+    const cardDim = getCardDimensions();
+    const cardMidX = x + (cardDim.w / 2);
+    const cardMidY = y + (cardDim.h / 2);
 
     $(".magic-landing-zone, .magic-pile-zone").removeClass("drag-over");
 
@@ -1282,8 +1316,9 @@ function setupGlobalEvents() {
         const cardId = $(this).closest(".pile-card-container").attr("data-card-id");
         const cardObj = state.cards.find(c => c.id === cardId);
         if (cardObj) {
-            cardObj.x = window.innerWidth / 2 - 55;
-            cardObj.y = window.innerHeight / 2 - 80;
+            const cardDim = getCardDimensions();
+            cardObj.x = window.innerWidth / 2 - (cardDim.w / 2);
+            cardObj.y = window.innerHeight / 2 - (cardDim.h / 2);
             cardObj.faceUp = true;
             cardObj.tapped = false;
 
@@ -1406,9 +1441,10 @@ function setupAccessories() {
 
     // YGO Token Spawner directly centered on field
     $("#btn-spawn-token").click(function() {
+        const cardDim = getCardDimensions();
         const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-        const spawnX = window.innerWidth / 2 - 55;
-        const spawnY = window.innerHeight / 2 - 80;
+        const spawnX = window.innerWidth / 2 - (cardDim.w / 2);
+        const spawnY = window.innerHeight / 2 - (cardDim.h / 2);
 
         state.cards.push({
             id: cardId,
@@ -1883,6 +1919,7 @@ function makeLandingZonesDraggableAndResizable() {
 
 // Reusable inline context menu positioner
 function showContextMenu(menuId, x, y, contextData = {}) {
+    lastContextMenuOpenTime = Date.now();
     // Hide all context menus first
     $(".card-context-menu, .deck-context-menu").removeClass("active");
 
@@ -1901,17 +1938,17 @@ function showContextMenu(menuId, x, y, contextData = {}) {
         }
     }
 
-    const menuW = $menu.outerWidth() || 230;
-    const menuH = $menu.outerHeight() || 300;
+    const menuW = $menu.outerWidth() || 210;
+    const menuH = $menu.outerHeight() || 280;
 
-    let posX = x;
-    let posY = y;
+    let posX = Math.max(10, x);
+    let posY = Math.max(10, y);
 
     if (posX + menuW > window.innerWidth) {
-        posX = window.innerWidth - menuW - 10;
+        posX = Math.max(10, window.innerWidth - menuW - 10);
     }
     if (posY + menuH > window.innerHeight) {
-        posY = window.innerHeight - menuH - 10;
+        posY = Math.max(10, window.innerHeight - menuH - 10);
     }
 
     $menu.css({
@@ -1921,7 +1958,8 @@ function showContextMenu(menuId, x, y, contextData = {}) {
 }
 
 // Clear active context menus on outer click
-$(document).on("click mousedown", function(e) {
+$(document).on("click mousedown touchstart", function(e) {
+    if (Date.now() - lastContextMenuOpenTime < 200) return;
     if (!$(e.target).closest(".card-context-menu, .deck-context-menu, .pile-menu-trigger").length) {
         $(".card-context-menu, .deck-context-menu").removeClass("active");
     }
@@ -2211,8 +2249,9 @@ function sendCardToZone(card, zoneType) {
         const w = $zone.outerWidth();
         const h = $zone.outerHeight();
         // Place card centered in landing zone
-        card.x = offset.left + (w / 2) - 40;
-        card.y = offset.top + (h / 2) - 58;
+        const cardDim = getCardDimensions();
+        card.x = offset.left + (w / 2) - (cardDim.w / 2);
+        card.y = offset.top + (h / 2) - (cardDim.h / 2);
 
         // Force faceUp and untap/vertical cleanly inside Cementerio/Graveyard
         if (zoneType === "grave") {

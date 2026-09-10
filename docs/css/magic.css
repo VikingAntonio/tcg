@@ -415,16 +415,158 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     height: 165px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), body.mobile-magic-mode {
+    body.magic-mode .duel-card {
+        width: 58px !important;
+        height: 84px !important;
+        z-index: 600 !important;
+    }
+
+    body.magic-mode .duel-card.miniature-card {
+        width: 52px !important;
+        height: 76px !important;
+    }
+
+    .magic-pile-zone {
+        width: 58px !important;
+        height: 84px !important;
+    }
+
+    .magic-pile-zone .pile-label {
+        font-size: 0.5rem;
+        margin-top: 10px;
+    }
+
+    .magic-pile-zone .pile-count-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+        top: -7px;
+        right: -7px;
+    }
+
+    .magic-pile-zone .pile-menu-trigger {
+        font-size: 0.55rem;
+        padding: 2px 4px;
+        bottom: 4px;
+    }
+
     .landing-zone-hand-p1, .landing-zone-hand-p2 {
         width: 75vw !important;
-        left: 15px !important;
+        max-width: 480px;
+        height: 100px !important;
+        left: 10px !important;
     }
+
     .landing-zone-grave-p1, .landing-zone-banish-p1,
     .landing-zone-grave-p2, .landing-zone-banish-p2 {
-        width: 140px !important;
-        height: 120px !important;
+        width: 110px !important;
+        height: 90px !important;
         right: 10px !important;
+    }
+
+    .landing-zone-prizes-p1, .landing-zone-prizes-p2 {
+        height: 100px !important;
+    }
+
+    .zone-counter-badge {
+        font-size: 0.65rem;
+        padding: 2px 8px;
+        top: 8px;
+        left: 8px;
+    }
+
+    .zone-counter-badge button {
+        padding: 1px 4px !important;
+        font-size: 0.55rem !important;
+    }
+
+    .zone-label-text {
+        font-size: 0.65rem;
+        bottom: 8px;
+        right: 8px;
+    }
+
+    .perspective-switcher {
+        padding: 4px 8px !important;
+        gap: 4px !important;
+        top: 10px !important;
+    }
+
+    .perspective-switcher span {
+        font-size: 0.65rem !important;
+    }
+
+    .perspective-btn {
+        padding: 3px 8px !important;
+        font-size: 0.65rem !important;
+    }
+
+    .floating-lp-widget {
+        width: 135px !important;
+        padding: 6px 8px !important;
+    }
+
+    .p1-lp-widget {
+        left: 10px !important;
+        bottom: 120px !important;
+    }
+
+    .lp-widget-val {
+        font-size: 1.4rem !important;
+    }
+
+    .lp-widget-calc .lp-calc-input {
+        padding: 4px 6px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .lp-preset-btn {
+        font-size: 0.55rem !important;
+    }
+
+    .lp-widget-btn {
+        padding: 4px 0 !important;
+        font-size: 0.75rem !important;
+    }
+
+    body.magic-mode .card-context-menu,
+    body.magic-mode .deck-context-menu {
+        max-height: 280px !important;
+        width: 210px !important;
+        padding-bottom: 20px !important;
+        font-size: 0.85rem !important;
+    }
+
+    .card-context-menu .menu-item,
+    .deck-context-menu .menu-item {
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .magic-sidebar {
+        width: 280px !important;
+        padding: 15px !important;
+    }
+
+    .sidebar-toggle-btn {
+        right: 280px !important;
+    }
+
+    .sidebar-toggle-btn.collapsed {
+        right: 0 !important;
+    }
+
+    body.magic-mode .field-card-actions {
+        top: -34px;
+        padding: 2px;
+        gap: 2px;
+        transform: translateX(-50%) scale(0.7);
+    }
+
+    body.magic-mode .field-action-btn {
+        font-size: 0.58rem;
+        padding: 2px 4px;
     }
 }
 
