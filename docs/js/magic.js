@@ -550,6 +550,39 @@ function shuffleDeck(owner) {
     updatePileCounts();
 }
 
+// Helper to calculate target coordinates inside Hand Zone dynamically
+function getHandZonePosition(owner) {
+    const handZoneSelector = (owner === "player1") ? "#zone-hand-p1" : "#zone-hand-p2";
+    const $handZone = $(handZoneSelector);
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+
+    const existingCount = state.cards.filter(c => getCardCurrentZone(c) === (owner === 'player1' ? 'hand_p1' : 'hand_p2')).length;
+
+    if ($handZone.length && $handZone.is(":visible")) {
+        const offset = $handZone.offset();
+        const zoneW = $handZone.outerWidth() || 500;
+
+        const paddingLeft = 15;
+        const paddingTop = 15;
+
+        const step = Math.min(45, Math.max(25, (zoneW - 100) / Math.max(1, existingCount + 1)));
+
+        let cardX = offset.left + paddingLeft + (existingCount * step);
+        let cardY = offset.top + paddingTop;
+
+        if (cardX > offset.left + zoneW - 85) {
+            cardX = offset.left + zoneW - 85;
+        }
+
+        return { x: cardX, y: cardY };
+    }
+
+    const fallbackX = windowW * 0.15 + 50 + (existingCount * 35);
+    const fallbackY = (owner === "player1") ? (windowH - 180) : 40;
+    return { x: fallbackX, y: fallbackY };
+}
+
 // Drawing cards to Hand Zone coordinates
 function drawCards(owner, amount) {
     const deck = state.decks[owner];
@@ -561,12 +594,6 @@ function drawCards(owner, amount) {
     }
 
     const actualDraw = Math.min(amount, mainCards.length);
-    const windowW = window.innerWidth;
-    const windowH = window.innerHeight;
-
-    // Coordinates landing within transparent hand borders
-    const targetXBase = windowW * 0.15 + 50;
-    const targetY = (owner === "player1") ? (windowH - 180) : 40;
 
     for (let i = 0; i < actualDraw; i++) {
         // Find and remove first main card
@@ -574,15 +601,15 @@ function drawCards(owner, amount) {
         const cardData = deck.splice(idx, 1)[0];
 
         const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-        const cardX = targetXBase + (state.cards.filter(c => getCardCurrentZone(c) === (owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
+        const pos = getHandZonePosition(owner);
 
         state.cards.push({
             id: cardId,
             name: cardData.name,
             image_url: cardData.image_url,
             desc: cardData.desc || "",
-            x: cardX,
-            y: targetY,
+            x: pos.x,
+            y: pos.y,
             faceUp: true, // Automatically flip cards face-up in the hand!
             tapped: false,
             counters: { glass: 0, poke: 0 },
@@ -736,18 +763,15 @@ $(document).on("click", ".search-to-hand", function(e) {
 
     // Add card to hand zone coordinates
     const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-    const windowW = window.innerWidth;
-    const windowH = window.innerHeight;
-    const targetX = windowW * 0.15 + 50 + (state.cards.filter(c => getCardCurrentZone(c) === (owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
-    const targetY = (owner === "player1") ? (windowH - 180) : 40;
+    const pos = getHandZonePosition(owner);
 
     state.cards.push({
         id: cardId,
         name: cardData.name,
         image_url: cardData.image_url,
         desc: cardData.desc || "",
-        x: targetX,
-        y: targetY,
+        x: pos.x,
+        y: pos.y,
         faceUp: true, // Automatically flip cards face-up in hand!
         tapped: false,
         counters: { glass: 0, poke: 0 },
@@ -909,16 +933,15 @@ function bindBatchSelectionHandlers() {
             }
 
             const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-            const targetX = windowW * 0.15 + 50 + (state.cards.filter(c => getCardCurrentZone(c) === (item.owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
-            const targetY = (item.owner === "player1") ? (windowH - 180) : 40;
+            const pos = getHandZonePosition(item.owner);
 
             state.cards.push({
                 id: cardId,
                 name: cardData.name,
                 image_url: cardData.image_url,
                 desc: cardData.desc || "",
-                x: targetX,
-                y: targetY,
+                x: pos.x,
+                y: pos.y,
                 faceUp: true, // Automatically flip cards face-up in hand!
                 tapped: false,
                 counters: { glass: 0, poke: 0 },
@@ -1030,6 +1053,47 @@ function setupCardInteractions() {
                     }
                 }
 
+                // Check if card is dropped over Main Deck 1 or Main Deck 2
+                const cardMidX = dragCard.x + 42.5;
+                const cardMidY = dragCard.y + 62;
+
+                let droppedDeckOwner = null;
+                if (isPointInElement(cardMidX, cardMidY, "#zone-deck_1")) {
+                    droppedDeckOwner = "player1";
+                } else if (hasPlayer2 && isPointInElement(cardMidX, cardMidY, "#zone-deck_2")) {
+                    droppedDeckOwner = "player2";
+                }
+
+                if (droppedDeckOwner) {
+                    // Return card to top of the deck face-down
+                    state.decks[droppedDeckOwner].unshift({
+                        name: dragCard.name,
+                        image_url: dragCard.image_url,
+                        desc: dragCard.desc || "",
+                        section: dragCard.section || "Main"
+                    });
+
+                    // Remove card from active playmat cards
+                    state.cards = state.cards.filter(c => c.id !== dragCard.id);
+
+                    $(".magic-landing-zone, .magic-pile-zone").removeClass("drag-over");
+                    updatePileCounts();
+                    renderAllCards();
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Carta devuelta al mazo (boca abajo)',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+
+                    dragCard = null;
+                    $(document).off(".carddrag");
+                    return;
+                }
+
                 // Automatically flip card face-up if dropped inside J1 or J2 Hand / Graveyard zones!
                 const currentZone = getCardCurrentZone(dragCard);
                 if (currentZone === "hand_p1" || currentZone === "hand_p2") {
@@ -1043,7 +1107,7 @@ function setupCardInteractions() {
                 state.cards = state.cards.filter(c => c.id !== cardId).concat([dragCard]);
 
                 // Remove landing hover states
-                $(".magic-landing-zone").removeClass("drag-over");
+                $(".magic-landing-zone, .magic-pile-zone").removeClass("drag-over");
                 updateLandingZoneCounts();
                 renderAllCards(); // Re-render instantly on drop!
             }
@@ -1058,9 +1122,13 @@ function updateLandingHoverState(x, y) {
     const cardMidX = x + 42.5;
     const cardMidY = y + 62;
 
-    $(".magic-landing-zone").removeClass("drag-over");
+    $(".magic-landing-zone, .magic-pile-zone").removeClass("drag-over");
 
-    if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p1")) {
+    if (isPointInElement(cardMidX, cardMidY, "#zone-deck_1")) {
+        $("#zone-deck_1").addClass("drag-over");
+    } else if (hasPlayer2 && isPointInElement(cardMidX, cardMidY, "#zone-deck_2")) {
+        $("#zone-deck_2").addClass("drag-over");
+    } else if (isPointInElement(cardMidX, cardMidY, "#zone-hand-p1")) {
         $("#zone-hand-p1").addClass("drag-over");
     } else if (isPointInElement(cardMidX, cardMidY, "#zone-grave-p1")) {
         $("#zone-grave-p1").addClass("drag-over");
@@ -1195,13 +1263,10 @@ function setupGlobalEvents() {
         const cardId = $(this).closest(".pile-card-container").attr("data-card-id");
         const cardObj = state.cards.find(c => c.id === cardId);
         if (cardObj) {
-            const windowW = window.innerWidth;
-            const windowH = window.innerHeight;
-            const targetX = windowW * 0.15 + 50 + (state.cards.filter(c => getCardCurrentZone(c) === (cardObj.owner === 'player1' ? 'hand_p1' : 'hand_p2')).length * 50);
-            const targetY = (cardObj.owner === "player1") ? (windowH - 180) : 40;
+            const pos = getHandZonePosition(cardObj.owner);
 
-            cardObj.x = targetX;
-            cardObj.y = targetY;
+            cardObj.x = pos.x;
+            cardObj.y = pos.y;
             cardObj.faceUp = true;
             cardObj.tapped = false;
 
@@ -1390,28 +1455,42 @@ function setupLPTrackers() {
     // Click on LP value display to toggle/expand calculator inputs
     $(".lp-widget-val").click(function() {
         const $calcBox = $(this).siblings(".lp-widget-calc");
-        $calcBox.slideToggle(150);
+        $calcBox.slideToggle(180);
     });
 
-    $(".lp-widget-btn").click(function() {
+    // Quick preset buttons (+500, +1000, +2000)
+    $(".lp-preset-btn").click(function() {
+        const val = parseInt($(this).attr("data-val"));
         const player = $(this).attr("data-player");
-        const action = $(this).hasClass("lp-btn-add") ? "add" : $(this).hasClass("lp-btn-sub") ? "sub" : "half";
+        const $input = $(`#lp-calc-${player}`);
+        let currentInput = parseInt($input.val()) || 0;
+        $input.val(currentInput + val);
+    });
 
+    // Action buttons (+, -, /, reset)
+    $(".lp-widget-btn").click(function() {
+        const player = $(this).attr("data-player"); // "p1" or "p2"
         const $input = $(`#lp-calc-${player}`);
         const $display = $(`#lp-display-${player}`);
 
         let val = parseInt($input.val()) || 0;
-        let current = parseInt($display.text()) || 0;
+        let startVal = parseInt($display.text()) || 0;
+        let targetVal = startVal;
 
-        if (action === "add") {
-            current += val;
-        } else if (action === "sub") {
-            current = Math.max(0, current - val);
-        } else {
-            current = Math.ceil(current / 2);
+        if ($(this).hasClass("lp-btn-add")) {
+            targetVal = startVal + val;
+        } else if ($(this).hasClass("lp-btn-sub")) {
+            targetVal = Math.max(0, startVal - val);
+        } else if ($(this).hasClass("lp-btn-half")) {
+            targetVal = Math.ceil(startVal / 2);
+        } else if ($(this).hasClass("lp-btn-reset")) {
+            targetVal = 8000;
         }
 
-        $display.text(current);
+        if (startVal !== targetVal) {
+            animateLPCounter(player, startVal, targetVal);
+        }
+
         $input.val('');
     });
 
@@ -1449,6 +1528,50 @@ function setupLPTrackers() {
             $(document).off(".lpdrag");
         });
     });
+}
+
+function animateLPCounter(player, startValue, endValue, duration = 700) {
+    const $display = $(`#lp-display-${player}`);
+    const $widget = $(`#lp-widget-${player}`);
+    const startTime = performance.now();
+
+    const diff = endValue - startValue;
+    const isAdding = diff > 0;
+    const animClass = isAdding ? "lp-adding" : "lp-subtracting";
+
+    $display.removeClass("lp-adding lp-subtracting").addClass(animClass);
+
+    // Floating indicator
+    $(".lp-change-indicator", $widget).remove();
+    const sign = isAdding ? "+" : "";
+    const indicatorClass = isAdding ? "add" : "sub";
+    const $indicator = $(`<div class="lp-change-indicator ${indicatorClass}">${sign}${diff}</div>`);
+    $widget.append($indicator);
+
+    setTimeout(() => {
+        $indicator.remove();
+    }, 1200);
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOut);
+
+        $display.text(currentValue);
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        } else {
+            $display.text(endValue);
+            setTimeout(() => {
+                $display.removeClass(animClass);
+            }, 300);
+        }
+    }
+
+    requestAnimationFrame(update);
 }
 
 // Live search filter inside search modals (Pile and Extra modals)

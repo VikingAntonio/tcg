@@ -428,117 +428,246 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     }
 }
 
-/* Floating Life Points widgets */
+/* Life Points Floating Trackers Modern Design */
 .floating-lp-widget {
     position: fixed;
-    width: 150px;
-    background: rgba(18, 24, 30, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 10px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    width: 170px;
+    background: rgba(12, 18, 28, 0.92);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(16px);
+    border-radius: 16px;
+    padding: 10px 14px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 15px rgba(0, 0, 0, 0.5);
     z-index: 600;
     font-family: 'Montserrat', sans-serif;
     user-select: none;
     touch-action: none !important;
     cursor: move;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
 }
 
 .p1-lp-widget {
     bottom: 15px;
     left: 220px;
-    border-left: 3px solid #00d2ff;
-    box-shadow: 0 5px 15px rgba(0, 210, 255, 0.15), 0 10px 25px rgba(0,0,0,0.6);
+    border-left: 4px solid #00d2ff;
+    box-shadow: 0 10px 30px rgba(0, 210, 255, 0.2), 0 12px 35px rgba(0,0,0,0.8);
 }
 
 .p2-lp-widget {
     top: 15px;
     left: 15px;
-    border-left: 3px solid #ff1b6b;
-    box-shadow: 0 5px 15px rgba(255, 27, 107, 0.15), 0 10px 25px rgba(0,0,0,0.6);
+    border-left: 4px solid #ff1b6b;
+    box-shadow: 0 10px 30px rgba(255, 27, 107, 0.2), 0 12px 35px rgba(0,0,0,0.8);
+}
+
+.p1-lp-widget:hover {
+    border-color: rgba(0, 210, 255, 0.6);
+    box-shadow: 0 12px 40px rgba(0, 210, 255, 0.35), 0 12px 35px rgba(0,0,0,0.9);
+}
+
+.p2-lp-widget:hover {
+    border-color: rgba(255, 27, 107, 0.6);
+    box-shadow: 0 12px 40px rgba(255, 27, 107, 0.35), 0 12px 35px rgba(0,0,0,0.9);
 }
 
 .lp-widget-header {
     font-size: 0.65rem;
     font-weight: 800;
-    color: #888;
+    color: #8899a6;
     letter-spacing: 1px;
     margin-bottom: 4px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: space-between;
+    text-transform: uppercase;
+}
+
+.lp-player-tag {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.p1-lp-widget .lp-player-tag {
+    background: rgba(0, 210, 255, 0.2);
+    color: #00d2ff;
+    border: 1px solid rgba(0, 210, 255, 0.4);
+}
+
+.p2-lp-widget .lp-player-tag {
+    background: rgba(255, 27, 107, 0.2);
+    color: #ff1b6b;
+    border: 1px solid rgba(255, 27, 107, 0.4);
 }
 
 .lp-drag-handle {
     cursor: move;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.35);
+    transition: color 0.2s;
+}
+
+.lp-drag-handle:hover {
+    color: #fff;
 }
 
 .lp-widget-val {
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.6rem;
+    font-size: 2rem;
     font-weight: 900;
-    color: #fff;
-    margin-bottom: 0px;
+    color: #ffffff;
+    margin: 2px 0;
     cursor: pointer;
-    text-shadow: 0 0 10px rgba(255,255,255,0.2);
-    transition: transform 0.15s ease, color 0.15s ease;
-}
-
-.lp-widget-val:hover {
-    transform: scale(1.05);
-    color: #00d2ff;
+    text-align: center;
+    letter-spacing: 1px;
+    transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28), color 0.2s, text-shadow 0.2s;
+    position: relative;
 }
 
 .p1-lp-widget .lp-widget-val {
-    text-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+    color: #00d2ff;
+    text-shadow: 0 0 15px rgba(0, 210, 255, 0.6);
 }
 
 .p2-lp-widget .lp-widget-val {
-    text-shadow: 0 0 10px rgba(255, 27, 107, 0.4);
+    color: #ff1b6b;
+    text-shadow: 0 0 15px rgba(255, 27, 107, 0.6);
 }
 
-.lp-widget-calc {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.lp-widget-val:hover {
+    transform: scale(1.06);
 }
 
+/* Subtraction / Addition Glowing Animations */
+.lp-widget-val.lp-subtracting {
+    color: #ff3366 !important;
+    text-shadow: 0 0 25px rgba(255, 51, 102, 0.9), 0 0 45px rgba(255, 51, 102, 0.7) !important;
+    animation: lpPulseSub 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.lp-widget-val.lp-adding {
+    color: #00ffaa !important;
+    text-shadow: 0 0 25px rgba(0, 255, 170, 0.9), 0 0 45px rgba(0, 255, 170, 0.7) !important;
+    animation: lpPulseAdd 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes lpPulseSub {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.22); }
+    100% { transform: scale(1); }
+}
+
+@keyframes lpPulseAdd {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.22); }
+    100% { transform: scale(1); }
+}
+
+/* Floating change indicators (+1000 / -500) */
+.lp-change-indicator {
+    position: absolute;
+    top: -24px;
+    right: 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 900;
+    pointer-events: none;
+    animation: floatAndFade 1.2s forwards cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
+}
+
+.lp-change-indicator.sub {
+    color: #ff3366;
+    text-shadow: 0 0 10px rgba(255, 51, 102, 0.8);
+}
+
+.lp-change-indicator.add {
+    color: #00ffaa;
+    text-shadow: 0 0 10px rgba(0, 255, 170, 0.8);
+}
+
+@keyframes floatAndFade {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.7);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(-8px) scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-32px) scale(1);
+    }
+}
+
+/* Expanded Calculator Controls */
 .lp-widget-calc {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.12);
 }
 
 .lp-widget-calc .lp-calc-input {
     width: 100%;
-    background: rgba(0,0,0,0.6);
-    border: 1.5px solid rgba(0, 210, 255, 0.3);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    color: #00d2ff;
+    color: #ffffff;
     padding: 6px 10px;
     font-family: 'Orbitron', sans-serif;
     font-size: 0.9rem;
     font-weight: bold;
     outline: none;
     text-align: center;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .lp-widget-calc .lp-calc-input:focus {
     border-color: #00d2ff;
-    box-shadow: 0 0 8px rgba(0, 210, 255, 0.4), inset 0 2px 5px rgba(0,0,0,0.5);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4), inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.p2-lp-widget .lp-widget-calc .lp-calc-input:focus {
+    border-color: #ff1b6b;
+    box-shadow: 0 0 10px rgba(255, 27, 107, 0.4), inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.lp-quick-presets {
+    display: flex;
+    gap: 4px;
+    justify-content: space-between;
+}
+
+.lp-preset-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #aaa;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 3px 0;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.lp-preset-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .lp-widget-btn {
     flex: 1;
-    background: rgba(255,255,255,0.06);
-    border: 1.5px solid rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
     color: #fff;
     border-radius: 8px;
     padding: 6px 0;
@@ -548,22 +677,25 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     font-weight: 900;
     transition: all 0.2s ease-in-out;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .lp-widget-btn.lp-btn-add:hover {
-    background: rgba(0, 210, 255, 0.25);
-    border-color: #00d2ff;
-    color: #00d2ff;
+    background: rgba(0, 255, 170, 0.25);
+    border-color: #00ffaa;
+    color: #00ffaa;
     transform: translateY(-1px);
-    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 255, 170, 0.4);
 }
 
 .lp-widget-btn.lp-btn-sub:hover {
-    background: rgba(255, 27, 107, 0.25);
-    border-color: #ff1b6b;
-    color: #ff1b6b;
+    background: rgba(255, 51, 102, 0.25);
+    border-color: #ff3366;
+    color: #ff3366;
     transform: translateY(-1px);
-    box-shadow: 0 0 10px rgba(255, 27, 107, 0.4);
+    box-shadow: 0 0 10px rgba(255, 51, 102, 0.4);
 }
 
 .lp-widget-btn.lp-btn-half:hover {
@@ -572,6 +704,14 @@ body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
     color: #ffd32d;
     transform: translateY(-1px);
     box-shadow: 0 0 10px rgba(255, 211, 45, 0.4);
+}
+
+.lp-widget-btn.lp-btn-reset:hover {
+    background: rgba(0, 210, 255, 0.25);
+    border-color: #00d2ff;
+    color: #00d2ff;
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
 }
 
 /* Sidebar Accessory layout */
