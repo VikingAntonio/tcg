@@ -87,7 +87,39 @@ body.magic-mode .card-img {
 
 /* Card face-down styles */
 body.magic-mode .duel-card.face-down .card-img {
-    content: none !important;
+    visibility: hidden;
+}
+
+body.magic-mode .duel-card.face-down .card-img-wrapper {
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.layout-yugioh .duel-card.face-down .card-img-wrapper {
+    background-image: url('../img/bocabajo.jpg') !important;
+}
+
+body.layout-pokemon .duel-card.face-down .card-img-wrapper {
+    background-image: url('../img/pokeBocaAbajo.jpg') !important;
+}
+
+@keyframes faceDownRevealPulse {
+    0% {
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 0.60;
+    }
+    100% {
+        opacity: 0.35;
+    }
+}
+
+body.magic-mode .duel-card.face-down.reveal-face-down .card-img {
+    visibility: visible !important;
+    animation: faceDownRevealPulse 3.5s infinite ease-in-out !important;
 }
 
 /* Piles Stacking Context Overlay */
@@ -450,33 +482,73 @@ body.magic-mode .duel-card.face-down .card-img {
     gap: 6px;
 }
 
+.lp-widget-calc {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
 .lp-widget-calc .lp-calc-input {
     width: 100%;
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px;
-    color: #fff;
-    padding: 4px 8px;
-    font-size: 0.8rem;
+    background: rgba(0,0,0,0.6);
+    border: 1.5px solid rgba(0, 210, 255, 0.3);
+    border-radius: 8px;
+    color: #00d2ff;
+    padding: 6px 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
     font-weight: bold;
     outline: none;
+    text-align: center;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lp-widget-calc .lp-calc-input:focus {
+    border-color: #00d2ff;
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.4), inset 0 2px 5px rgba(0,0,0,0.5);
 }
 
 .lp-widget-btn {
     flex: 1;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.15);
     color: #fff;
-    border-radius: 4px;
-    padding: 3px;
+    border-radius: 8px;
+    padding: 6px 0;
     cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: bold;
-    transition: all 0.15s;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 900;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
-.lp-widget-btn:hover {
-    background: rgba(255,255,255,0.15);
+.lp-widget-btn.lp-btn-add:hover {
+    background: rgba(0, 210, 255, 0.25);
+    border-color: #00d2ff;
+    color: #00d2ff;
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+}
+
+.lp-widget-btn.lp-btn-sub:hover {
+    background: rgba(255, 27, 107, 0.25);
+    border-color: #ff1b6b;
+    color: #ff1b6b;
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(255, 27, 107, 0.4);
+}
+
+.lp-widget-btn.lp-btn-half:hover {
+    background: rgba(255, 211, 45, 0.25);
+    border-color: #ffd32d;
+    color: #ffd32d;
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(255, 211, 45, 0.4);
 }
 
 /* Sidebar Accessory layout */
