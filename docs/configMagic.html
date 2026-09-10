@@ -328,32 +328,42 @@
                 <div class="form-group">
                     <label>Modo de Juego <span>*</span></label>
                     <select id="magic-mode-type" class="select-input">
-                        <option value="practice">Modo Práctica (Ambas manos/sets visibles)</option>
-                        <option value="multiplayer">Modo Dos Jugadores (Ocultar cartas al rival / Anti-Peeking)</option>
+                        <option value="practice">Modo practica</option>
+                        <option value="multiplayer">Online</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label>Cantidad de Mazos (Jugadores) <span>*</span></label>
                     <select id="magic-deck-count" class="select-input">
-                        <option value="1">1 Deck (Prueba Individual - Pantalla Completa)</option>
-                        <option value="2">2 Decks (Mazo 1 vs Mazo 2)</option>
+                        <option value="1">1 jugador</option>
+                        <option value="2">2 jugadores</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label>Tu Primer Deck (Mazo 1) <span>*</span></label>
-                    <select id="magic-deck1" class="select-input">
-                        <option value="mock">Cargando decks...</option>
-                    </select>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="magic-deck1" class="select-input" style="flex: 1;">
+                            <option value="mock">Cargando decks...</option>
+                        </select>
+                        <button type="button" class="nav-btn btn-open-picker" data-target="#magic-deck1" title="Buscar Deck por Tag/Filtro" style="border-radius: 10px; padding: 0 15px; height: 46px;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-group" id="group-deck2" style="display: none;">
                     <label>Segundo Deck (Mazo 2) <span style="color: #ff1b6b;">(Opcional)</span></label>
-                    <select id="magic-deck2" class="select-input">
-                        <option value="none">Ninguno (Solo 1 Mazo/Jugador)</option>
-                        <option value="mock">Preestablecido (Mock Deck)</option>
-                    </select>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="magic-deck2" class="select-input" style="flex: 1;">
+                            <option value="none">Ninguno</option>
+                            <option value="mock">Preestablecido (Mock Deck)</option>
+                        </select>
+                        <button type="button" class="nav-btn btn-open-picker" data-target="#magic-deck2" title="Buscar Deck por Tag/Filtro" style="border-radius: 10px; padding: 0 15px; height: 46px;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button id="btn-start-magic" class="btn-play">
@@ -362,6 +372,78 @@
             </div>
         </section>
     </main>
+
+    <!-- Deck Picker Modal with Tag Filters -->
+    <div id="deck-picker-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--panel-bg); border: 1.5px solid var(--primary-color); border-radius: 20px; width: 100%; max-width: 550px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.7);">
+            <div style="padding: 18px 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="deck-picker-title" style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: #fff; margin: 0;"><i class="fas fa-cards" style="color: var(--primary-color);"></i> Seleccionar Deck</h3>
+                <button type="button" id="btn-close-deck-picker" style="background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding: 15px 20px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--glass-border);">
+                <div style="position: relative;">
+                    <input type="text" id="picker-search-input" placeholder="Buscar por nombre o tag..." style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 14px 10px 36px; color: white; font-size: 0.85rem; outline: none;">
+                    <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888; font-size: 0.85rem;"></i>
+                </div>
+                <!-- Tags Filter Pills -->
+                <div id="picker-tags-container" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 80px; overflow-y: auto;">
+                    <button class="picker-tag-pill active" data-tag="">Todos</button>
+                </div>
+            </div>
+            <div id="picker-deck-list" style="flex: 1; overflow-y: auto; padding: 15px 20px; display: flex; flex-direction: column; gap: 8px;">
+                <!-- Decks render here -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .picker-tag-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #ccc;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .picker-tag-pill:hover, .picker-tag-pill.active {
+            background: rgba(0, 210, 255, 0.2);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .picker-deck-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .picker-deck-item:hover {
+            background: rgba(0, 210, 255, 0.1);
+            border-color: var(--primary-color);
+            transform: translateX(3px);
+        }
+        .picker-deck-item .deck-title-text {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .picker-deck-item .deck-tag-badge {
+            background: rgba(0, 210, 255, 0.15);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+    </style>
 
     <script src="js/supabase-config.js"></script>
     <script>
@@ -411,7 +493,7 @@
                 try {
                     const { data: decks, error } = await _supabase
                         .from('decks')
-                        .select('id, name')
+                        .select('id, name, format_tag')
                         .eq('user_id', userId);
 
                     if (error) throw error;
@@ -433,19 +515,127 @@
                 // Player 1 Decks
                 if (decks.length > 0) {
                     decks.forEach(d => {
-                        $deck1.append(`<option value="${d.id}">${d.name}</option>`);
+                        const tagTxt = d.format_tag ? ` [${d.format_tag}]` : '';
+                        $deck1.append(`<option value="${d.id}">${d.name}${tagTxt}</option>`);
                     });
                 }
                 $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
 
                 // Player 2 Decks
-                $deck2.append('<option value="none">Ninguno (Solo 1 Mazo/Jugador)</option>');
+                $deck2.append('<option value="none">Ninguno</option>');
                 $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
                 if (decks.length > 0) {
                     decks.forEach(d => {
-                        $deck2.append(`<option value="${d.id}">${d.name}</option>`);
+                        const tagTxt = d.format_tag ? ` [${d.format_tag}]` : '';
+                        $deck2.append(`<option value="${d.id}">${d.name}${tagTxt}</option>`);
                     });
                 }
+            }
+
+            let currentPickerTarget = null;
+            let currentPickerTag = '';
+
+            $(".btn-open-picker").click(function() {
+                const target = $(this).data("target");
+                openDeckPicker(target);
+            });
+
+            $("#btn-close-deck-picker, #deck-picker-modal").click(function(e) {
+                if (e.target === this || e.target.id === "btn-close-deck-picker") {
+                    $("#deck-picker-modal").hide();
+                }
+            });
+
+            function openDeckPicker(targetSelectId) {
+                currentPickerTarget = targetSelectId;
+                const titleText = targetSelectId === "#magic-deck1" ? "Seleccionar Deck 1" : "Seleccionar Deck 2";
+                $('#deck-picker-title').html(`<i class="fas fa-cards" style="color: var(--primary-color);"></i> ${titleText}`);
+                $('#picker-search-input').val('');
+                currentPickerTag = '';
+
+                // Build unique tags pills
+                const customTags = new Set();
+                userDecks.forEach(d => {
+                    if (d.format_tag && d.format_tag.trim()) {
+                        customTags.add(d.format_tag.trim());
+                    }
+                });
+
+                let pillsHtml = '<button class="picker-tag-pill active" data-tag="">Todos</button>';
+                customTags.forEach(tag => {
+                    pillsHtml += `<button class="picker-tag-pill" data-tag="${tag}">${tag}</button>`;
+                });
+                $('#picker-tags-container').html(pillsHtml);
+
+                renderPickerDeckList();
+                $('#deck-picker-modal').css('display', 'flex');
+            }
+
+            $(document).on("click", ".picker-tag-pill", function() {
+                $(".picker-tag-pill").removeClass("active");
+                $(this).addClass("active");
+                currentPickerTag = $(this).data("tag");
+                renderPickerDeckList();
+            });
+
+            $("#picker-search-input").on("input", function() {
+                renderPickerDeckList();
+            });
+
+            function renderPickerDeckList() {
+                const searchQuery = $('#picker-search-input').val().toLowerCase().trim();
+                const $list = $('#picker-deck-list');
+                $list.empty();
+
+                let filtered = userDecks.filter(d => {
+                    const name = (d.name || '').toLowerCase();
+                    const tag = (d.format_tag || '').toLowerCase();
+                    const tagMatch = !currentPickerTag || tag === currentPickerTag.toLowerCase();
+                    const searchMatch = !searchQuery || name.includes(searchQuery) || tag.includes(searchQuery);
+                    return tagMatch && searchMatch;
+                });
+
+                // Add Mock Option
+                if (!searchQuery && !currentPickerTag) {
+                    const $mock = $(`
+                        <div class="picker-deck-item">
+                            <span class="deck-title-text"><i class="fas fa-robot"></i> Preestablecido (Mock Deck)</span>
+                            <span class="deck-tag-badge" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">Default</span>
+                        </div>
+                    `);
+                    $mock.click(function() {
+                        selectDeckForTarget('mock');
+                    });
+                    $list.append($mock);
+                }
+
+                if (filtered.length === 0 && userDecks.length > 0) {
+                    $list.append('<div style="text-align: center; color: #888; padding: 20px;">Sin decks que coincidan.</div>');
+                    return;
+                }
+
+                filtered.forEach(d => {
+                    const tagBadge = (d.format_tag && d.format_tag.trim()) ? `<span class="deck-tag-badge">${d.format_tag.trim()}</span>` : '';
+                    const $item = $(`
+                        <div class="picker-deck-item">
+                            <span class="deck-title-text">${d.name}</span>
+                            ${tagBadge}
+                        </div>
+                    `);
+
+                    $item.click(function() {
+                        selectDeckForTarget(d.id);
+                    });
+
+                    $list.append($item);
+                });
+            }
+
+            function selectDeckForTarget(deckId) {
+                if (currentPickerTarget) {
+                    $(currentPickerTarget).val(deckId);
+                }
+                $('#deck-picker-modal').hide();
             }
 
             // Handle Deck Count dropdown change

@@ -253,8 +253,11 @@ function createPileElement($parent, id, label, x, y, owner, type) {
                 let finalX = mX - deltaX;
                 let finalY = mY - deltaY;
 
-                finalX = Math.max(10, Math.min(window.innerWidth - 160, finalX));
-                finalY = Math.max(10, Math.min(window.innerHeight - 230, finalY));
+                const pileW = $el.outerWidth() || 85;
+                const pileH = $el.outerHeight() || 124;
+
+                finalX = Math.max(10, Math.min(window.innerWidth - pileW - 10, finalX));
+                finalY = Math.max(10, Math.min(window.innerHeight - pileH - 10, finalY));
 
                 $el.css({ left: finalX, top: finalY });
             });
@@ -1468,7 +1471,7 @@ function renderAllCards() {
 
         const rotationClass = card.tapped ? "tapped" : "";
         const faceClass = (card.faceUp && !isMaskedAsBack) ? "" : "face-down";
-        const srcImg = (card.faceUp && !isMaskedAsBack) ? card.image_url : backImg;
+        const srcImg = (revealFaceDownClass || (card.faceUp && !isMaskedAsBack)) ? card.image_url : backImg;
 
         let counterHtml = "";
 
