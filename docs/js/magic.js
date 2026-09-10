@@ -1488,6 +1488,14 @@ function setupAccessories() {
 
 // Setup LP Floating Trackers logic & Draggable LP
 function setupLPTrackers() {
+    // Calculator toggle button handler
+    $(document).off("click.lpcalc").on("click.lpcalc", ".lp-calc-toggle-btn", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const player = $(this).attr("data-player");
+        $(`#lp-calc-box-${player}`).slideToggle(180);
+    });
+
     // Quick preset buttons (+500, +1000, +2000)
     $(".lp-preset-btn").click(function(e) {
         e.stopPropagation();
@@ -1539,12 +1547,6 @@ function setupLPTrackers() {
         const deltaX = clientX - offset.left;
         const deltaY = clientY - offset.top;
 
-        const startX = clientX;
-        const startY = clientY;
-        const startTime = Date.now();
-
-        const isValClick = $(e.target).closest(".lp-widget-val").length > 0;
-
         $(document).on("mousemove.lpdrag touchmove.lpdrag", function(moveEvent) {
             const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
             const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
@@ -1563,22 +1565,8 @@ function setupLPTrackers() {
             });
         });
 
-        $(document).on("mouseup.lpdrag touchend.lpdrag", function(upEvent) {
+        $(document).on("mouseup.lpdrag touchend.lpdrag", function() {
             $(document).off(".lpdrag");
-
-            const endX = (upEvent.type === "touchend" && upEvent.changedTouches && upEvent.changedTouches.length) ?
-                upEvent.changedTouches[0].clientX : (upEvent.clientX || startX);
-            const endY = (upEvent.type === "touchend" && upEvent.changedTouches && upEvent.changedTouches.length) ?
-                upEvent.changedTouches[0].clientY : (upEvent.clientY || startY);
-
-            const dist = Math.hypot(endX - startX, endY - startY);
-            const duration = Date.now() - startTime;
-
-            // If simple click/tap on .lp-widget-val without dragging, toggle calc box
-            if (isValClick && dist < 5 && duration < 300) {
-                const $calcBox = $widget.find(".lp-widget-calc");
-                $calcBox.slideToggle(180);
-            }
         });
     });
 }
