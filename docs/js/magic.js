@@ -969,6 +969,9 @@ function setupCardInteractions() {
                 if (distance < 8 && duration < 250) {
                     // Click trigger: show card sidebar preview & toggle orientation parameters
                     updatePreview(dragCard);
+                    if (typeof window.triggerEquipIndicator === "function") {
+                        window.triggerEquipIndicator(dragCard);
+                    }
                 }
 
                 // Automatically flip card face-up if dropped inside J1 or J2 Hand / Graveyard zones!
@@ -1609,12 +1612,29 @@ function makeLandingZonesDraggableAndResizable() {
             const deltaX = clientX - startX;
             const deltaY = clientY - startY;
 
+            // Find all cards currently inside this landing zone at drag start
+            const zoneElemId = $zone.attr("id") || "";
+            let zoneKey = zoneElemId.replace("zone-", "").replace("hand-", "hand_").replace("grave-", "grave_").replace("banish-", "banish_").replace("prizes-", "prizes_");
+
+            const affectedCards = state.cards.filter(card => {
+                return getCardCurrentZone(card) === zoneKey;
+            }).map(card => {
+                return {
+                    cardObj: card,
+                    initialX: card.x,
+                    initialY: card.y
+                };
+            });
+
             $(document).on("mousemove.zonedrag touchmove.zonedrag", function(moveEvent) {
                 const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
                 const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
 
                 let finalX = mX - deltaX;
                 let finalY = mY - deltaY;
+
+                const diffX = finalX - startX;
+                const diffY = finalY - startY;
 
                 // Move container freely in absolute page coordinates
                 $zone.css({
@@ -1623,11 +1643,24 @@ function makeLandingZonesDraggableAndResizable() {
                     bottom: "auto",
                     right: "auto"
                 });
+
+                // Simultaneously move all cards inside this zone!
+                affectedCards.forEach(item => {
+                    item.cardObj.x = item.initialX + diffX;
+                    item.cardObj.y = item.initialY + diffY;
+                    $(`#${item.cardObj.id}`).css({
+                        left: item.cardObj.x + "px",
+                        top: item.cardObj.y + "px"
+                    });
+                });
             });
 
             $(document).on("mouseup.zonedrag touchend.zonedrag", function() {
                 $(document).off(".zonedrag");
                 updateLandingZoneCounts();
+                if (affectedCards.length > 0) {
+                    renderAllCards();
+                }
             });
         });
 
@@ -1851,6 +1884,14 @@ function bindDropdownContextMenus() {
                 background: "#12181e",
                 color: "#fff"
             });
+        }
+        $("#card-ctx-menu").removeClass("active");
+    });
+
+    $("#menu-card-equip").click(function() {
+        const data = $("#card-ctx-menu").data("context-data");
+        if (data && data.card) {
+            startEquipTargeting(data.card);
         }
         $("#card-ctx-menu").removeClass("active");
     });
@@ -2387,4 +2428,118 @@ function drawAttackArrows() {
         $overlay[0].appendChild(path);
         $overlay[0].appendChild(head);
     });
+}
+
+// Equip System Implementation for Magic Mode
+let equipSourceCard = null;
+
+window.triggerEquipIndicator = function(cardObj) {
+    if (!cardObj || typeof state === "undefined" || !state.cards) return;
+
+    let equipGroupIds = new Set();
+
+    // 1. If this card is equipping another card
+    if (cardObj.equippedTo) {
+        equipGroupIds.add(String(cardObj.id));
+        equipGroupIds.add(String(cardObj.equippedTo));
+    }
+
+    // 2. If this card has other cards equipped to it or shares the target monster
+    state.cards.forEach(c => {
+        if (c.equippedTo && String(c.equippedTo) === String(cardObj.id)) {
+            equipGroupIds.add(String(cardObj.id));
+            equipGroupIds.add(String(c.id));
+        }
+        if (cardObj.equippedTo && c.equippedTo && String(c.equippedTo) === String(cardObj.equippedTo)) {
+            equipGroupIds.add(String(c.id));
+        }
+    });
+
+    if (equipGroupIds.size > 0) {
+        if (window.equipIndicatorTimers) {
+            window.equipIndicatorTimers.forEach(t => clearTimeout(t));
+        }
+        window.equipIndicatorTimers = [];
+
+        $(".equip-indicator-icon").remove();
+
+        equipGroupIds.forEach(id => {
+            const $elem = $(`#${id}`);
+            if ($elem.length) {
+                const $icon = $('<img src="img/Equip.webp" class="equip-indicator-icon" alt="Equipped">');
+                $elem.append($icon);
+
+                const t1 = setTimeout(() => {
+                    $icon.css('opacity', '0');
+                    const t2 = setTimeout(() => {
+                        $icon.remove();
+                    }, 300);
+                    if (window.equipIndicatorTimers) window.equipIndicatorTimers.push(t2);
+                }, 4000);
+                if (window.equipIndicatorTimers) window.equipIndicatorTimers.push(t1);
+            }
+        });
+    }
+};
+
+function startEquipTargeting(cardObj) {
+    equipSourceCard = cardObj;
+    $("#playmat").addClass("selecting-zone");
+
+    Swal.fire({
+        toast: true,
+        position: 'bottom',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        icon: 'info',
+        title: 'Elige una carta en el campo para equipar esta carta',
+        background: '#12181e',
+        color: '#fff'
+    });
+
+    setTimeout(() => {
+        $(".duel-card").not(`#${cardObj.id}`).off("click.equip").on("click.equip", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetId = $(this).attr("id");
+            const targetCardObj = state.cards.find(c => c.id === targetId);
+
+            if (targetCardObj && equipSourceCard) {
+                equipSourceCard.equippedTo = targetCardObj.id;
+
+                renderAllCards();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Carta Equipada',
+                    text: `${equipSourceCard.name} equipada a ${targetCardObj.name}.`,
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                if (typeof window.triggerEquipIndicator === "function") {
+                    window.triggerEquipIndicator(equipSourceCard);
+                }
+            }
+
+            stopEquipTargeting();
+        });
+    }, 100);
+
+    $(document).off("keydown.equip").on("keydown.equip", function(e) {
+        if (e.key === "Escape") {
+            stopEquipTargeting();
+        }
+    });
+}
+
+function stopEquipTargeting() {
+    equipSourceCard = null;
+    $("#playmat").removeClass("selecting-zone");
+    $(".duel-card").off("click.equip");
+    $(document).off("keydown.equip");
 }
