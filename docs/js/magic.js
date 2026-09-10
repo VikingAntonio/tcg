@@ -181,16 +181,16 @@ function initializePiles() {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    // Deck & Extra coordinates
-    const p1_deck_x = 35;
-    const p1_deck_y = height - 195;
+    // Deck & Extra coordinates (Main Deck on Right side, Extra Deck on Left side)
+    const p1_deck_x = width - 125;
+    const p1_deck_y = height - 160;
     const p1_extra_x = 35;
-    const p1_extra_y = height - 395;
+    const p1_extra_y = height - 160;
 
-    const p2_deck_x = width - 530;
+    const p2_deck_x = width - 125;
     const p2_deck_y = 25;
-    const p2_extra_x = width - 530;
-    const p2_extra_y = 215;
+    const p2_extra_x = 35;
+    const p2_extra_y = 25;
 
     // Render P1 Deck
     createPileElement($container, "deck_1", "Main Deck J1", p1_deck_x, p1_deck_y, "player1", "deck");
@@ -268,87 +268,97 @@ function createPileElement($parent, id, label, x, y, owner, type) {
             return;
         }
 
-        // Otherwise (clicking anywhere else on the pile container), pull top card!
+        // Defer pulling top card until user actually drags beyond threshold (no action on simple click)
         if (type === "deck") {
             e.preventDefault();
-            const deck = state.decks[owner];
-            const mainCards = deck.filter(c => c.section !== "Extra");
-            if (mainCards.length === 0) {
-                Swal.fire('Deck Vacío', 'No quedan cartas en el Main Deck para arrastrar.', 'warning');
-                return;
-            }
+            const startX = clientX;
+            const startY = clientY;
+            const startOffset = $el.offset();
+            let isDraggingCard = false;
 
-            // Pop top card
-            const idx = deck.findIndex(c => c.section !== "Extra");
-            const cardData = deck.splice(idx, 1)[0];
-
-            const cardId = "card_" + Math.random().toString(36).substr(2, 9);
-            const offset = $el.offset();
-
-            const newCardObj = {
-                id: cardId,
-                name: cardData.name,
-                image_url: cardData.image_url,
-                desc: cardData.desc || "",
-                x: offset.left,
-                y: offset.top,
-                faceUp: true, // Automatically flip cards face-up when added/drawn/pulled!
-                tapped: false,
-                counters: { glass: 0, poke: 0 },
-                owner: owner,
-                section: cardData.section || "Main"
-            };
-
-            state.cards.push(newCardObj);
-            renderAllCards();
-            updatePileCounts();
-
-            // Transition directly into dragging state for the pulled card!
-            dragCard = newCardObj;
-            const $cardEl = $(`#${cardId}`);
-            $cardEl.addClass("dragging");
-
-            dragOffset.x = clientX - dragCard.x;
-            dragOffset.y = clientY - dragCard.y;
-
-            $(document).on("mousemove.carddrag touchmove.carddrag", function(moveEvent) {
-                if (!dragCard) return;
-
+            $(document).on("mousemove.deckpull touchmove.deckpull", function(moveEvent) {
                 const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
                 const mY = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientY : moveEvent.clientY;
 
-                let targetX = mX - dragOffset.x;
-                let targetY = mY - dragOffset.y;
+                const distance = Math.hypot(mX - startX, mY - startY);
 
-                targetX = Math.max(0, Math.min(window.innerWidth - 85, targetX));
-                targetY = Math.max(0, Math.min(window.innerHeight - 124, targetY));
+                if (!isDraggingCard && distance >= 8) {
+                    const deck = state.decks[owner];
+                    const mainCards = deck.filter(c => c.section !== "Extra");
+                    if (mainCards.length === 0) {
+                        $(document).off(".deckpull");
+                        Swal.fire('Deck Vacío', 'No quedan cartas en el Main Deck para arrastrar.', 'warning');
+                        return;
+                    }
 
-                dragCard.x = targetX;
-                dragCard.y = targetY;
+                    isDraggingCard = true;
+                    // Pop top card
+                    const idx = deck.findIndex(c => c.section !== "Extra");
+                    const cardData = deck.splice(idx, 1)[0];
 
-                $(`#${dragCard.id}`).css({ left: targetX, top: targetY });
-                updateLandingHoverState(targetX, targetY);
+                    const cardId = "card_" + Math.random().toString(36).substr(2, 9);
+
+                    const newCardObj = {
+                        id: cardId,
+                        name: cardData.name,
+                        image_url: cardData.image_url,
+                        desc: cardData.desc || "",
+                        x: startOffset.left,
+                        y: startOffset.top,
+                        faceUp: false, // Remains face-down while dragging so nobody knows what card it is!
+                        tapped: false,
+                        counters: { glass: 0, poke: 0 },
+                        owner: owner,
+                        section: cardData.section || "Main"
+                    };
+
+                    state.cards.push(newCardObj);
+                    renderAllCards();
+                    updatePileCounts();
+
+                    dragCard = newCardObj;
+                    const $cardEl = $(`#${cardId}`);
+                    $cardEl.addClass("dragging");
+
+                    dragOffset.x = startX - dragCard.x;
+                    dragOffset.y = startY - dragCard.y;
+                }
+
+                if (isDraggingCard && dragCard) {
+                    let targetX = mX - dragOffset.x;
+                    let targetY = mY - dragOffset.y;
+
+                    targetX = Math.max(0, Math.min(window.innerWidth - 85, targetX));
+                    targetY = Math.max(0, Math.min(window.innerHeight - 124, targetY));
+
+                    dragCard.x = targetX;
+                    dragCard.y = targetY;
+
+                    $(`#${dragCard.id}`).css({ left: targetX, top: targetY });
+                    updateLandingHoverState(targetX, targetY);
+                }
             });
 
-            $(document).on("mouseup.carddrag touchend.carddrag", function() {
-                if (dragCard) {
+            $(document).on("mouseup.deckpull touchend.deckpull", function() {
+                $(document).off(".deckpull");
+
+                if (isDraggingCard && dragCard) {
                     $(`#${dragCard.id}`).removeClass("dragging");
                     $(".magic-landing-zone").removeClass("drag-over");
 
-                    // Automatically flip card face-up if dropped inside J1 or J2 Hand / Graveyard zones!
+                    // Upon release, flip card face-up!
+                    dragCard.faceUp = true;
+
+                    // Automatically handle zone rules
                     const currentZone = getCardCurrentZone(dragCard);
-                    if (currentZone === "hand_p1" || currentZone === "hand_p2") {
-                        dragCard.faceUp = true;
-                    } else if (currentZone === "grave_p1" || currentZone === "grave_p2") {
-                        dragCard.faceUp = true;
+                    if (currentZone === "grave_p1" || currentZone === "grave_p2") {
                         dragCard.tapped = false; // Always upright in Cementerio
                     }
 
                     updateLandingZoneCounts();
-                    renderAllCards(); // Re-render instantly on mouse up to recalculate card sizes!
+                    renderAllCards();
+                    dragCard = null;
                 }
-                dragCard = null;
-                $(document).off(".carddrag");
             });
         }
     });
