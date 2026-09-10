@@ -117,6 +117,15 @@ $(document).ready(async function() {
         }
     });
 
+    // Testear button
+    $('#btn-test-deck').click(function() {
+        if (!currentDeckId) {
+            Swal.fire('Atención', 'Por favor, selecciona o guarda un deck primero.', 'warning');
+            return;
+        }
+        window.location.href = 'magicMobile.html?deck1=' + currentDeckId;
+    });
+
     // Save Button
     $('#btn-save-deck').click(async function() {
         await saveDeck();

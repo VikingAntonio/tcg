@@ -212,6 +212,15 @@ $(document).ready(async function() {
     });
 
 
+    $(document).on('click', '#btn-nexus-test-deck', function(e) {
+        e.preventDefault();
+        if (!currentDeckId) {
+            Swal.fire('Atención', 'Por favor, selecciona o guarda un deck primero.', 'warning');
+            return;
+        }
+        window.location.href = 'magic.html?deck1=' + currentDeckId;
+    });
+
     $(document).on('click', '#btn-show-decks', function(e) {
         e.preventDefault();
         showView('decks');

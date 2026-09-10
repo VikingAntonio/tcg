@@ -3274,6 +3274,49 @@ body.focus-mode-active .event-card {
 /* --- UI ENHANCEMENTS BY JULES --- */
 
 /* Upgrade Button with Animated Gradient */
+.btn-testear-animated {
+    background: linear-gradient(135deg, #00d2ff, #7928ca, #ff0080, #00d2ff);
+    background-size: 300% 300%;
+    animation: testearGradient 4s ease infinite, testearGlow 2s ease-in-out infinite alternate;
+    color: #ffffff !important;
+    font-weight: 800;
+    font-family: inherit;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    user-select: none;
+}
+
+.btn-testear-animated:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 6px 20px rgba(255, 0, 128, 0.6);
+}
+
+.btn-testear-animated:active {
+    transform: translateY(1px) scale(0.98);
+}
+
+@keyframes testearGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes testearGlow {
+    0% { box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); }
+    100% { box-shadow: 0 0 18px rgba(255, 0, 128, 0.7); }
+}
+
 .btn-upgrade {
     background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
     background-size: 400% 400%;
