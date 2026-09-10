@@ -515,8 +515,7 @@
                 // Player 1 Decks
                 if (decks.length > 0) {
                     decks.forEach(d => {
-                        const tagTxt = d.format_tag ? ` [${d.format_tag}]` : '';
-                        $deck1.append(`<option value="${d.id}">${d.name}${tagTxt}</option>`);
+                        $deck1.append(`<option value="${d.id}">${d.name}</option>`);
                     });
                 }
                 $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
@@ -526,8 +525,7 @@
                 $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
                 if (decks.length > 0) {
                     decks.forEach(d => {
-                        const tagTxt = d.format_tag ? ` [${d.format_tag}]` : '';
-                        $deck2.append(`<option value="${d.id}">${d.name}${tagTxt}</option>`);
+                        $deck2.append(`<option value="${d.id}">${d.name}</option>`);
                     });
                 }
             }
@@ -574,7 +572,7 @@
             $(document).on("click", ".picker-tag-pill", function() {
                 $(".picker-tag-pill").removeClass("active");
                 $(this).addClass("active");
-                currentPickerTag = $(this).data("tag");
+                currentPickerTag = $(this).attr("data-tag") || "";
                 renderPickerDeckList();
             });
 
@@ -589,8 +587,9 @@
 
                 let filtered = userDecks.filter(d => {
                     const name = (d.name || '').toLowerCase();
-                    const tag = (d.format_tag || '').toLowerCase();
-                    const tagMatch = !currentPickerTag || tag === currentPickerTag.toLowerCase();
+                    const tag = (d.format_tag || '').trim().toLowerCase();
+                    const selectedTag = (currentPickerTag || '').trim().toLowerCase();
+                    const tagMatch = !selectedTag || tag === selectedTag;
                     const searchMatch = !searchQuery || name.includes(searchQuery) || tag.includes(searchQuery);
                     return tagMatch && searchMatch;
                 });
@@ -600,7 +599,6 @@
                     const $mock = $(`
                         <div class="picker-deck-item">
                             <span class="deck-title-text"><i class="fas fa-robot"></i> Preestablecido (Mock Deck)</span>
-                            <span class="deck-tag-badge" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">Default</span>
                         </div>
                     `);
                     $mock.click(function() {
@@ -615,11 +613,9 @@
                 }
 
                 filtered.forEach(d => {
-                    const tagBadge = (d.format_tag && d.format_tag.trim()) ? `<span class="deck-tag-badge">${d.format_tag.trim()}</span>` : '';
                     const $item = $(`
                         <div class="picker-deck-item">
                             <span class="deck-title-text">${d.name}</span>
-                            ${tagBadge}
                         </div>
                     `);
 
