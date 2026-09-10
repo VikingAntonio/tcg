@@ -1488,14 +1488,9 @@ function setupAccessories() {
 
 // Setup LP Floating Trackers logic & Draggable LP
 function setupLPTrackers() {
-    // Click on LP value display to toggle/expand calculator inputs
-    $(".lp-widget-val").click(function() {
-        const $calcBox = $(this).siblings(".lp-widget-calc");
-        $calcBox.slideToggle(180);
-    });
-
     // Quick preset buttons (+500, +1000, +2000)
-    $(".lp-preset-btn").click(function() {
+    $(".lp-preset-btn").click(function(e) {
+        e.stopPropagation();
         const val = parseInt($(this).attr("data-val"));
         const player = $(this).attr("data-player");
         const $input = $(`#lp-calc-${player}`);
@@ -1504,7 +1499,8 @@ function setupLPTrackers() {
     });
 
     // Action buttons (+, -, /, reset)
-    $(".lp-widget-btn").click(function() {
+    $(".lp-widget-btn").click(function(e) {
+        e.stopPropagation();
         const player = $(this).attr("data-player"); // "p1" or "p2"
         const $input = $(`#lp-calc-${player}`);
         const $display = $(`#lp-display-${player}`);
@@ -1530,9 +1526,10 @@ function setupLPTrackers() {
         $input.val('');
     });
 
-    // Make LP widgets freely draggable across the viewport
+    // Make LP widgets freely draggable across the viewport from anywhere on the widget
     $(".floating-lp-widget").on("mousedown touchstart", function(e) {
-        if ($(e.target).closest("input, button, .lp-widget-val").length) return;
+        // Allow typing/clicking inside input, preset, or buttons without dragging
+        if ($(e.target).closest("input, button, .lp-quick-presets").length) return;
 
         const $widget = $(this);
         const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
@@ -1541,6 +1538,12 @@ function setupLPTrackers() {
         const offset = $widget.offset();
         const deltaX = clientX - offset.left;
         const deltaY = clientY - offset.top;
+
+        const startX = clientX;
+        const startY = clientY;
+        const startTime = Date.now();
+
+        const isValClick = $(e.target).closest(".lp-widget-val").length > 0;
 
         $(document).on("mousemove.lpdrag touchmove.lpdrag", function(moveEvent) {
             const mX = moveEvent.type === "touchmove" ? moveEvent.touches[0].clientX : moveEvent.clientX;
@@ -1560,8 +1563,22 @@ function setupLPTrackers() {
             });
         });
 
-        $(document).on("mouseup.lpdrag touchend.lpdrag", function() {
+        $(document).on("mouseup.lpdrag touchend.lpdrag", function(upEvent) {
             $(document).off(".lpdrag");
+
+            const endX = (upEvent.type === "touchend" && upEvent.changedTouches && upEvent.changedTouches.length) ?
+                upEvent.changedTouches[0].clientX : (upEvent.clientX || startX);
+            const endY = (upEvent.type === "touchend" && upEvent.changedTouches && upEvent.changedTouches.length) ?
+                upEvent.changedTouches[0].clientY : (upEvent.clientY || startY);
+
+            const dist = Math.hypot(endX - startX, endY - startY);
+            const duration = Date.now() - startTime;
+
+            // If simple click/tap on .lp-widget-val without dragging, toggle calc box
+            if (isValClick && dist < 5 && duration < 300) {
+                const $calcBox = $widget.find(".lp-widget-calc");
+                $calcBox.slideToggle(180);
+            }
         });
     });
 }
@@ -1667,7 +1684,7 @@ function renderAllCards() {
         const inGraveOrBanish = (currentZone === "grave_p1" || currentZone === "grave_p2" || currentZone === "banish_p1" || currentZone === "banish_p2");
         const inHand = (currentZone === "hand_p1" || currentZone === "hand_p2");
         const inPrizes = (currentZone === "prizes_p1" || currentZone === "prizes_p2");
-        const sizeClass = (inGraveOrBanish || inHand || inPrizes) ? "miniature-card" : "";
+        const sizeClass = "";
 
         // Anti-peeking logic
         let isMaskedAsBack = false;
