@@ -649,6 +649,10 @@
                 }
             });
 
+            function checkMobileDevice() {
+                return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            }
+
             // Action Handlers for redirection
             $("#btn-start-magic").click(function() {
                 const layout = $("#magic-layout").val();
@@ -657,8 +661,7 @@
                 const deck2 = (deckCount === "1") ? "none" : $("#magic-deck2").val();
                 const mode = $("#magic-mode-type").val();
 
-                const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                const targetPage = isMobile ? 'magicMobile.html' : 'magic.html';
+                const targetPage = checkMobileDevice() ? 'magicMobile.html' : 'magic.html';
 
                 window.location.href = `${targetPage}?layout=${layout}&deck1=${deck1}&deck2=${deck2}&mode=${mode}`;
             });
