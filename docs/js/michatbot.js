@@ -3,6 +3,7 @@
  * Integrado con Gemini AI a través de Supabase Edge Function 'spirit-chat'.
  * Soporta consulta e instrucciones administrativas completas en admin.html
  * e interacción de solo consulta en vistas públicas.
+ * Incluye modo voz (TTS - Text-to-Speech) opcional con lectura de respuestas.
  */
 
 window.botConversationHistory = [];
@@ -12,19 +13,43 @@ window.speechRecognitionInstance = null;
 // Global bot instance
 window.botInstance = {
     isMuted: localStorage.getItem('michatbot_muted') === 'true',
+    isVoiceEnabled: localStorage.getItem('michatbot_voice') === 'true',
+    speak: function(text) {
+        if (!this.isVoiceEnabled || !('speechSynthesis' in window) || !text) return;
+        try {
+            window.speechSynthesis.cancel();
+            const cleanText = text.replace(/[*_#`~]/g, '').replace(/https?:\/\/\S+/g, '').trim();
+            if (!cleanText) return;
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'es-ES';
+            const voices = window.speechSynthesis.getVoices();
+            const esVoice = voices.find(v => v.lang.startsWith('es'));
+            if (esVoice) utterance.voice = esVoice;
+            utterance.rate = 1.05;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        } catch (e) {
+            console.warn("Error en síntesis de voz:", e);
+        }
+    },
     say: function(text, duration = 5000) {
-        if (this.isMuted || !text) return;
-        const $bubble = $('#michatbot-bubble');
-        if (!$bubble.length) return;
-        // Clean markdown symbols for speech bubble display
-        const cleanText = text.replace(/[*_#`~]/g, '').trim();
-        $bubble.find('.bubble-text').text(cleanText.length > 120 ? cleanText.substring(0, 117) + '...' : cleanText);
-        $bubble.stop(true, true).fadeIn(300);
+        if (!text) return;
+        if (!this.isMuted) {
+            const $bubble = $('#michatbot-bubble');
+            if ($bubble.length) {
+                const cleanText = text.replace(/[*_#`~]/g, '').trim();
+                $bubble.find('.bubble-text').text(cleanText.length > 120 ? cleanText.substring(0, 117) + '...' : cleanText);
+                $bubble.stop(true, true).fadeIn(300);
 
-        if (window.bubbleTimeout) clearTimeout(window.bubbleTimeout);
-        window.bubbleTimeout = setTimeout(() => {
-            $bubble.fadeOut(300);
-        }, duration);
+                if (window.bubbleTimeout) clearTimeout(window.bubbleTimeout);
+                window.bubbleTimeout = setTimeout(() => {
+                    $bubble.fadeOut(300);
+                }, duration);
+            }
+        }
+        if (this.isVoiceEnabled) {
+            this.speak(text);
+        }
     },
     setScale: function(scale) {
         const $wrapper = $('#companion-wrapper');
@@ -38,12 +63,36 @@ window.botInstance = {
         localStorage.setItem('michatbot_muted', this.isMuted);
         this.updateMuteUI();
         if (this.isMuted) $('#michatbot-bubble').fadeOut(200);
-        else this.say("Notificaciones activadas");
+        else this.say("Burbuja activada");
+    },
+    toggleVoice: function() {
+        this.isVoiceEnabled = !this.isVoiceEnabled;
+        localStorage.setItem('michatbot_voice', this.isVoiceEnabled);
+        this.updateVoiceUI();
+        if (this.isVoiceEnabled) {
+            this.speak("Voz activada");
+        } else if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
     },
     updateMuteUI: function() {
-        const iconClass = this.isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-        const text = this.isMuted ? 'Activar Sonido' : 'Silenciar';
+        const iconClass = this.isMuted ? 'fas fa-eye-slash' : 'fas fa-eye';
+        const text = this.isMuted ? 'Mostrar Burbuja' : 'Ocultar Burbuja';
         $('#michatbot-opt-mute').html(`<i class="${iconClass}"></i> ${text}`);
+    },
+    updateVoiceUI: function() {
+        const iconClass = this.isVoiceEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+        const text = this.isVoiceEnabled ? 'Desactivar Voz' : 'Activar Voz';
+        $('#michatbot-opt-voice').html(`<i class="${iconClass}"></i> ${text}`);
+
+        const $chatVoiceBtn = $('#michatbot-chat-voice-toggle');
+        if ($chatVoiceBtn.length) {
+            if (this.isVoiceEnabled) {
+                $chatVoiceBtn.css('color', '#38bdf8').attr('title', 'Voz activada (Clic para silenciar)');
+            } else {
+                $chatVoiceBtn.css('color', '#94a3b8').attr('title', 'Voz desactivada (Clic para activar)');
+            }
+        }
     },
     setContext: function(view) {
         console.log("Chatbot context set to:", view);
@@ -56,8 +105,15 @@ window.botInstance = {
     }
 };
 
+// Ensure speech voices are loaded
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
+}
+
 async function initMichatbot(forceRefresh = false) {
-    console.log("Iniciando Michatbot V6.0...");
+    console.log("Iniciando Michatbot V6.1...");
 
     if ($('#companion-wrapper').length && !$('#michatbot-model-container').length) {
         $('#companion-wrapper').remove();
@@ -236,6 +292,31 @@ async function initMichatbot(forceRefresh = false) {
                     box-shadow: 0 0 8px #22c55e;
                     display: inline-block;
                     margin-left: 6px;
+                }
+
+                .chat-header-controls {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .chat-voice-toggle-btn {
+                    cursor: pointer;
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.06);
+                    color: #94a3b8;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1rem;
+                    transition: background 0.2s ease, color 0.2s ease;
+                }
+
+                .chat-voice-toggle-btn:hover {
+                    background: rgba(56, 189, 248, 0.2);
+                    color: #38bdf8;
                 }
 
                 .chat-close-btn {
@@ -548,6 +629,7 @@ async function initMichatbot(forceRefresh = false) {
 
                 <div id="michatbot-menu">
                     <div class="michatbot-menu-item" id="michatbot-opt-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
+                    <div class="michatbot-menu-item" id="michatbot-opt-voice"></div>
                     <div class="michatbot-menu-item" id="michatbot-opt-mute"></div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play-duel"><i class="fas fa-gamepad"></i> Jugar</div>
                     <div class="michatbot-menu-item" id="michatbot-opt-play"><i class="fas fa-bolt"></i> Hora del duelo</div>
@@ -559,6 +641,7 @@ async function initMichatbot(forceRefresh = false) {
             </div>
         `);
         window.botInstance.updateMuteUI();
+        window.botInstance.updateVoiceUI();
         makeMichatbotDraggable();
     }
 
@@ -575,7 +658,10 @@ async function initMichatbot(forceRefresh = false) {
                             </div>
                         </div>
                     </div>
-                    <div class="chat-close-btn" id="close-michatbot-chat">&times;</div>
+                    <div class="chat-header-controls">
+                        <div class="chat-voice-toggle-btn" id="michatbot-chat-voice-toggle" title="Respuesta por voz"><i class="fas fa-volume-up"></i></div>
+                        <div class="chat-close-btn" id="close-michatbot-chat">&times;</div>
+                    </div>
                 </div>
                 <div class="chat-messages" id="michatbot-chat-messages"></div>
 
@@ -596,6 +682,7 @@ async function initMichatbot(forceRefresh = false) {
                 </div>
             </div>
         `);
+        window.botInstance.updateVoiceUI();
     }
 
     if (!$('#michatbot-detail-overlay').length) {
@@ -685,6 +772,8 @@ async function initMichatbot(forceRefresh = false) {
         openMichatbotChat();
     });
 
+    $('#michatbot-opt-voice').off('click').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleVoice(); });
+    $('#michatbot-chat-voice-toggle').off('click').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleVoice(); });
     $('#michatbot-opt-mute').off('click').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleMute(); });
     $('#michatbot-opt-play').off('click').on('click', function(e) { e.stopPropagation(); window.location.href = 'play.html'; });
 
@@ -912,7 +1001,9 @@ async function handleSendAIChatMessage() {
 
         if (error) {
             console.error("Error Edge Function spirit-chat:", error);
-            addBotMessage("Ocurrió un inconveniente al procesar tu solicitud. Intenta de nuevo en unos momentos.");
+            const errReply = "Ocurrió un inconveniente al procesar tu solicitud. Intenta de nuevo en unos momentos.";
+            addBotMessage(errReply);
+            window.botInstance.say(errReply);
             return;
         }
 
@@ -933,14 +1024,20 @@ async function handleSendAIChatMessage() {
                 if (typeof loadWishlist === 'function') loadWishlist();
             }
         } else if (data && data.error) {
-            addBotMessage(removeEmojis(data.error));
+            const errText = removeEmojis(data.error);
+            addBotMessage(errText);
+            window.botInstance.say(errText);
         } else {
-            addBotMessage("No recibí respuesta del servidor.");
+            const fallbackText = "No recibí respuesta del servidor.";
+            addBotMessage(fallbackText);
+            window.botInstance.say(fallbackText);
         }
     } catch (err) {
         $('#michatbot-loading').remove();
         console.error("Error mandando mensaje a chatbot IA:", err);
-        addBotMessage("Ocurrió un error al procesar tu mensaje.");
+        const catchText = "Ocurrió un error al procesar tu mensaje.";
+        addBotMessage(catchText);
+        window.botInstance.say(catchText);
     }
 }
 
@@ -974,7 +1071,9 @@ function openMichatbotChat() {
 
     if ($('#michatbot-chat-messages').is(':empty')) {
         const spiritName = window.currentSpirit ? window.currentSpirit.name : "VikingTCG";
+        const welcomeText = `¡Hola! Soy ${spiritName}, ¿En qué te puedo ayudar hoy?`;
         addBotMessage(`¡Hola! Soy **${spiritName}**, ¿En qué te puedo ayudar hoy?`);
+        window.botInstance.say(welcomeText);
     }
 
     setupMobileViewportKeyboardHandling();
@@ -982,6 +1081,9 @@ function openMichatbotChat() {
 
 function closeMichatbotChat() {
     $('#michatbot-chat-container').fadeOut(250);
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
     resetMobileViewportChatLayout();
 }
 
