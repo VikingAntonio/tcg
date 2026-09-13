@@ -930,8 +930,8 @@ function handleSelectedImageFile(file) {
 }
 
 function checkIsAdminSession() {
-    const isAdminPath = /admin|perfil|scanner|binders|inversiones|build|clientes|tracking/.test(window.location.pathname);
-    if (!isAdminPath) return false;
+    const isPublicSpace = window.location.pathname.includes('public.html') || (window.location.search && window.location.search.includes('store='));
+    if (isPublicSpace) return false;
 
     let user = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
     if (!user) {

@@ -15,8 +15,8 @@ serve(async (req) => {
     const { user_id, store_id, message, image_base64, image_mime = "image/jpeg", is_admin: clientIsAdmin = false, conversation_history = [] } = await req.json();
 
     const requestMsg = message || "";
-    if (!requestMsg && !image_base64) {
-      return new Response(JSON.stringify({ reply: "Dime en qué te puedo ayudar hoy." }), {
+    if (!requestMsg && !image_base64 && conversation_history.length === 0) {
+      return new Response(JSON.stringify({ reply: "Dime en qué te puedo ayudar hoy con tu tienda o tus cartas." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -227,6 +227,19 @@ serve(async (req) => {
             }
           },
           {
+            name: "update_album",
+            description: "[SOLO ADMIN] Actualiza el título o imagen de portada de un álbum existente.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                albumId: { type: "STRING" },
+                albumTitle: { type: "STRING" },
+                newTitle: { type: "STRING" },
+                coverImageUrl: { type: "STRING" }
+              }
+            }
+          },
+          {
             name: "delete_album",
             description: "[SOLO ADMIN] Elimina un álbum de la tienda por ID o título.",
             parameters: {
@@ -266,8 +279,27 @@ serve(async (req) => {
             }
           },
           {
+            name: "update_album_card",
+            description: "[SOLO ADMIN] Edita o actualiza los datos de una carta dentro de un álbum (precio, rareza, edición, idioma, imagen).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                albumId: { type: "STRING" },
+                albumTitle: { type: "STRING" },
+                cardName: { type: "STRING", description: "Nombre de la carta a editar" },
+                newName: { type: "STRING" },
+                price: { type: "NUMBER" },
+                rarity: { type: "STRING" },
+                edition: { type: "STRING" },
+                language: { type: "STRING" },
+                image_url: { type: "STRING" }
+              },
+              required: ["cardName"]
+            }
+          },
+          {
             name: "remove_cards_from_album",
-            description: "[SOLO ADMIN] Elimina cartas de un álbum.",
+            description: "[SOLO ADMIN] Elimina cartas de un álbum por su nombre.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -288,6 +320,19 @@ serve(async (req) => {
                 format_tag: { type: "STRING" }
               },
               required: ["name"]
+            }
+          },
+          {
+            name: "update_deck",
+            description: "[SOLO ADMIN] Actualiza el nombre o tag de formato de un deck.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                deckId: { type: "STRING" },
+                deckName: { type: "STRING" },
+                newName: { type: "STRING" },
+                format_tag: { type: "STRING" }
+              }
             }
           },
           {
@@ -328,6 +373,23 @@ serve(async (req) => {
             }
           },
           {
+            name: "update_deck_card",
+            description: "[SOLO ADMIN] Edita los datos de una carta dentro de un deck (cantidad, sección, tipo de carta, imagen).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                deckId: { type: "STRING" },
+                deckName: { type: "STRING" },
+                cardName: { type: "STRING" },
+                quantity: { type: "NUMBER" },
+                section: { type: "STRING" },
+                card_type: { type: "STRING" },
+                image_url: { type: "STRING" }
+              },
+              required: ["cardName"]
+            }
+          },
+          {
             name: "remove_cards_from_deck",
             description: "[SOLO ADMIN] Elimina cartas de un deck.",
             parameters: {
@@ -356,6 +418,22 @@ serve(async (req) => {
             }
           },
           {
+            name: "update_sealed_product",
+            description: "[SOLO ADMIN] Actualiza el nombre, precio, stock o descripción de un producto sellado.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                productId: { type: "STRING" },
+                name: { type: "STRING" },
+                newName: { type: "STRING" },
+                price: { type: "NUMBER" },
+                stock: { type: "NUMBER" },
+                description: { type: "STRING" },
+                image_url: { type: "STRING" }
+              }
+            }
+          },
+          {
             name: "remove_sealed_product",
             description: "[SOLO ADMIN] Elimina un producto sellado por ID o nombre.",
             parameters: {
@@ -381,13 +459,31 @@ serve(async (req) => {
                       quantity: { type: "NUMBER" },
                       rarity: { type: "STRING" },
                       notes: { type: "STRING" },
-                      image_url: { type: "STRING" }
+                      image_url: { type: "STRING" },
+                      list_index: { type: "NUMBER" }
                     },
                     required: ["card_name"]
                   }
                 }
               },
               required: ["cards"]
+            }
+          },
+          {
+            name: "update_wishlist_card",
+            description: "[SOLO ADMIN] Edita o actualiza una carta en la lista de deseos / Wishlist (cantidad, rareza, notas, estado de conseguida).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                wishlistId: { type: "STRING" },
+                cardName: { type: "STRING" },
+                newName: { type: "STRING" },
+                quantity: { type: "NUMBER" },
+                rarity: { type: "STRING" },
+                notes: { type: "STRING" },
+                obtained: { type: "BOOLEAN" },
+                image_url: { type: "STRING" }
+              }
             }
           },
           {
@@ -453,15 +549,17 @@ serve(async (req) => {
 
     async function executeToolCall(name: string, args: any) {
       const writeTools = [
-        "create_album", "delete_album", "add_cards_to_album", "remove_cards_from_album",
-        "create_deck", "delete_deck", "add_cards_to_deck", "remove_cards_from_deck",
-        "add_sealed_product", "remove_sealed_product",
-        "add_to_wishlist", "remove_from_wishlist",
+        "create_album", "update_album", "delete_album",
+        "add_cards_to_album", "update_album_card", "remove_cards_from_album",
+        "create_deck", "update_deck", "delete_deck",
+        "add_cards_to_deck", "update_deck_card", "remove_cards_from_deck",
+        "add_sealed_product", "update_sealed_product", "remove_sealed_product",
+        "add_to_wishlist", "update_wishlist_card", "remove_from_wishlist",
         "manage_claims", "manage_investments", "update_store_info"
       ];
 
       if (writeTools.includes(name) && !is_admin) {
-        return { error: "Acceso restringido: Solo el administrador en su panel puede realizar modificaciones." };
+        return { error: "Acceso restringido: Solo el administrador con sesión iniciada puede realizar modificaciones." };
       }
 
       switch (name) {
@@ -570,7 +668,7 @@ serve(async (req) => {
                 const pageMap = new Map(albumPages.map((p: any) => [p.id, p.album_id]));
                 const albumTitleMap = new Map(userAlbums.map((a: any) => [a.id, a.title]));
                 const pageIds = albumPages.map((p: any) => p.id);
-                const { data: slots } = await supabase.from("card_slots").select("*").in("page_id", pageIds).ilike("card_name", `%${q}%`);
+                const { data: slots } = await supabase.from("card_slots").select("*").in("page_id", pageIds).ilike("name", `%${q}%`);
                 if (slots) {
                   albumSlots = slots.map((s: any) => {
                     const albId = pageMap.get(s.page_id);
@@ -587,7 +685,7 @@ serve(async (req) => {
             if (userDecks && userDecks.length > 0) {
               const deckMap = new Map(userDecks.map((d: any) => [d.id, d.name]));
               const deckIds = userDecks.map((d: any) => d.id);
-              const { data: dCards } = await supabase.from("deck_cards").select("*").in("deck_id", deckIds).ilike("card_name", `%${q}%`);
+              const { data: dCards } = await supabase.from("deck_cards").select("*").in("deck_id", deckIds).ilike("name", `%${q}%`);
               if (dCards) {
                 deckCardsArr = dCards.map((c: any) => ({
                   ...c,
@@ -616,7 +714,7 @@ serve(async (req) => {
 
           let wishlistArr: any[] = [];
           if (targetUserId) {
-            const { data: wCards } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).ilike("card_name", `%${q}%`);
+            const { data: wCards } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).ilike("name", `%${q}%`);
             if (wCards) {
               wishlistArr = wCards.map((w: any) => ({ ...w, location: "Wishlist" }));
             }
@@ -641,11 +739,27 @@ serve(async (req) => {
           const { data: countData } = await supabase.from("albums").select("*", { count: "exact", head: true }).eq("user_id", targetUserId);
           const pos = countData || 0;
           const { data: newAlbum, error } = await supabase.from("albums").insert([
-            { title: args.title, user_id: targetUserId, cover_image_url: args.coverImageUrl || "", position: pos }
+            { title: args.title, user_id: targetUserId, cover_image_url: args.coverImageUrl || "", position: pos, is_public: true }
           ]).select().single();
 
           if (error) return { error: error.message };
           return { success: true, message: `Álbum '${args.title}' creado con éxito.`, album: newAlbum };
+        }
+
+        case "update_album": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          let query = supabase.from("albums").update({
+            ...(args.newTitle ? { title: args.newTitle } : {}),
+            ...(args.coverImageUrl !== undefined ? { cover_image_url: args.coverImageUrl } : {})
+          }).eq("user_id", targetUserId);
+
+          if (args.albumId) query = query.eq("id", args.albumId);
+          else if (args.albumTitle) query = query.ilike("title", `%${args.albumTitle}%`);
+          else return { error: "Especifica ID o título del álbum a actualizar." };
+
+          const { error } = await query;
+          if (error) return { error: error.message };
+          return { success: true, message: "Álbum actualizado correctamente." };
         }
 
         case "delete_album": {
@@ -653,7 +767,7 @@ serve(async (req) => {
           let query = supabase.from("albums").delete().eq("user_id", targetUserId);
           if (args.albumId) query = query.eq("id", args.albumId);
           else if (args.albumTitle) query = query.ilike("title", `%${args.albumTitle}%`);
-          else return { error: "Especifica ID o título del álbum a eliminar." };
+          else return { error: "Especifica ID o título exacto del álbum a eliminar. Operación cancelada por seguridad." };
 
           const { error } = await query;
           if (error) return { error: error.message };
@@ -668,7 +782,7 @@ serve(async (req) => {
             if (found) albumId = found.id;
           }
           if (!albumId) {
-            const { data: newAlb } = await supabase.from("albums").insert([{ title: args.albumTitle || "Nuevo Álbum", user_id: targetUserId }]).select().single();
+            const { data: newAlb } = await supabase.from("albums").insert([{ title: args.albumTitle || "Nuevo Álbum", user_id: targetUserId, is_public: true }]).select().single();
             if (newAlb) albumId = newAlb.id;
           }
           if (!albumId) return { error: "No se pudo obtener ni crear el álbum." };
@@ -694,6 +808,7 @@ serve(async (req) => {
 
           const slotsToInsert = [];
           for (const card of args.cards) {
+            const cardName = card.card_name || card.name || "Carta";
             let occupied = pageSlotMap.get(currentPageId) || new Set();
             let currentSlot = 0;
             while (occupied.has(currentSlot) && currentSlot < 20) {
@@ -721,7 +836,7 @@ serve(async (req) => {
             let cardImg = card.image_url || "";
             let cardRarity = card.rarity || "";
             if (!cardImg) {
-              const ext = await queryExternalTCGCard(card.card_name);
+              const ext = await queryExternalTCGCard(cardName);
               if (ext && ext.length > 0) {
                 cardImg = ext[0].image_url;
                 if (!cardRarity) cardRarity = ext[0].rarity;
@@ -731,7 +846,7 @@ serve(async (req) => {
             slotsToInsert.push({
               page_id: currentPageId,
               slot_index: currentSlot,
-              card_name: card.card_name,
+              name: cardName,
               price: card.price || 0,
               rarity: cardRarity || "",
               edition: card.edition || "",
@@ -748,7 +863,7 @@ serve(async (req) => {
           return { success: true, message: `Se agregaron ${slotsToInsert.length} carta(s) al álbum.`, cards_added: slotsToInsert };
         }
 
-        case "remove_cards_from_album": {
+        case "update_album_card": {
           let albumId = args.albumId;
           if (!albumId && args.albumTitle && targetUserId) {
             const { data: found } = await supabase.from("albums").select("id").eq("user_id", targetUserId).ilike("title", `%${args.albumTitle}%`).limit(1).maybeSingle();
@@ -760,7 +875,34 @@ serve(async (req) => {
           if (!pages || pages.length === 0) return { error: "No hay páginas en este álbum." };
 
           const pageIds = pages.map((p: any) => p.id);
-          const { error: delErr } = await supabase.from("card_slots").delete().in("page_id", pageIds).ilike("card_name", `%${args.cardName}%`);
+          const upData: any = {};
+          if (args.newName) upData.name = args.newName;
+          if (args.price !== undefined) upData.price = args.price;
+          if (args.rarity) upData.rarity = args.rarity;
+          if (args.edition) upData.edition = args.edition;
+          if (args.language) upData.language = args.language;
+          if (args.image_url) upData.image_url = args.image_url;
+
+          const { error } = await supabase.from("card_slots").update(upData).in("page_id", pageIds).ilike("name", `%${args.cardName}%`);
+          if (error) return { error: error.message };
+
+          return { success: true, message: `Carta '${args.cardName}' actualizada en el álbum.` };
+        }
+
+        case "remove_cards_from_album": {
+          if (!args.cardName) return { error: "Especifica el nombre de la carta a eliminar." };
+          let albumId = args.albumId;
+          if (!albumId && args.albumTitle && targetUserId) {
+            const { data: found } = await supabase.from("albums").select("id").eq("user_id", targetUserId).ilike("title", `%${args.albumTitle}%`).limit(1).maybeSingle();
+            if (found) albumId = found.id;
+          }
+          if (!albumId) return { error: "Álbum no encontrado." };
+
+          const { data: pages } = await supabase.from("pages").select("id").eq("album_id", albumId);
+          if (!pages || pages.length === 0) return { error: "No hay páginas en este álbum." };
+
+          const pageIds = pages.map((p: any) => p.id);
+          const { error: delErr } = await supabase.from("card_slots").delete().in("page_id", pageIds).ilike("name", `%${args.cardName}%`);
           if (delErr) return { error: delErr.message };
 
           return { success: true, message: `Se eliminó '${args.cardName}' del álbum.` };
@@ -776,12 +918,28 @@ serve(async (req) => {
           return { success: true, message: `Deck '${args.name}' creado con éxito.`, deck: newDeck };
         }
 
+        case "update_deck": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const upData: any = {};
+          if (args.newName) upData.name = args.newName;
+          if (args.format_tag !== undefined) upData.format_tag = args.format_tag;
+
+          let query = supabase.from("decks").update(upData).eq("user_id", targetUserId);
+          if (args.deckId) query = query.eq("id", args.deckId);
+          else if (args.deckName) query = query.ilike("name", `%${args.deckName}%`);
+          else return { error: "Especifica ID o nombre del deck a actualizar." };
+
+          const { error } = await query;
+          if (error) return { error: error.message };
+          return { success: true, message: "Deck actualizado correctamente." };
+        }
+
         case "delete_deck": {
           if (!targetUserId) return { error: "No se especificó usuario." };
           let query = supabase.from("decks").delete().eq("user_id", targetUserId);
           if (args.deckId) query = query.eq("id", args.deckId);
           else if (args.deckName) query = query.ilike("name", `%${args.deckName}%`);
-          else return { error: "Especifica ID o nombre del deck a eliminar." };
+          else return { error: "Especifica ID o nombre del deck a eliminar. Operación cancelada por seguridad." };
 
           const { error } = await query;
           if (error) return { error: error.message };
@@ -803,16 +961,17 @@ serve(async (req) => {
 
           const cardsToInsert = [];
           for (const c of args.cards) {
+            const cName = c.card_name || c.name || "Carta";
             let cardImg = c.image_url || "";
             if (!cardImg) {
-              const ext = await queryExternalTCGCard(c.card_name);
+              const ext = await queryExternalTCGCard(cName);
               if (ext && ext.length > 0) {
                 cardImg = ext[0].image_url;
               }
             }
             cardsToInsert.push({
               deck_id: deckId,
-              card_name: c.card_name,
+              name: cName,
               quantity: c.quantity || 1,
               section: c.section || "main",
               card_type: c.card_type || "monster",
@@ -826,7 +985,7 @@ serve(async (req) => {
           return { success: true, message: `Se agregaron ${cardsToInsert.length} carta(s) al deck.`, cards: cardsToInsert };
         }
 
-        case "remove_cards_from_deck": {
+        case "update_deck_card": {
           let deckId = args.deckId;
           if (!deckId && args.deckName && targetUserId) {
             const { data: found } = await supabase.from("decks").select("id").eq("user_id", targetUserId).ilike("name", `%${args.deckName}%`).limit(1).maybeSingle();
@@ -834,7 +993,28 @@ serve(async (req) => {
           }
           if (!deckId) return { error: "Deck no encontrado." };
 
-          const { error: delErr } = await supabase.from("deck_cards").delete().eq("deck_id", deckId).ilike("card_name", `%${args.cardName}%`);
+          const upData: any = {};
+          if (args.quantity !== undefined) upData.quantity = args.quantity;
+          if (args.section) upData.section = args.section;
+          if (args.card_type) upData.card_type = args.card_type;
+          if (args.image_url) upData.image_url = args.image_url;
+
+          const { error } = await supabase.from("deck_cards").update(upData).eq("deck_id", deckId).ilike("name", `%${args.cardName}%`);
+          if (error) return { error: error.message };
+
+          return { success: true, message: `Carta '${args.cardName}' actualizada en el deck.` };
+        }
+
+        case "remove_cards_from_deck": {
+          if (!args.cardName) return { error: "Especifica la carta a eliminar del deck." };
+          let deckId = args.deckId;
+          if (!deckId && args.deckName && targetUserId) {
+            const { data: found } = await supabase.from("decks").select("id").eq("user_id", targetUserId).ilike("name", `%${args.deckName}%`).limit(1).maybeSingle();
+            if (found) deckId = found.id;
+          }
+          if (!deckId) return { error: "Deck no encontrado." };
+
+          const { error: delErr } = await supabase.from("deck_cards").delete().eq("deck_id", deckId).ilike("name", `%${args.cardName}%`);
           if (delErr) return { error: delErr.message };
 
           return { success: true, message: `Se eliminó '${args.cardName}' del deck.` };
@@ -853,11 +1033,31 @@ serve(async (req) => {
             price: args.price || 0,
             stock: args.stock || 1,
             image_url: img,
-            description: args.description || ""
+            description: args.description || "",
+            is_public: true
           }]).select().single();
 
           if (error) return { error: error.message };
           return { success: true, message: `Producto sellado '${args.name}' agregado con éxito.`, product: newProd };
+        }
+
+        case "update_sealed_product": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const upData: any = {};
+          if (args.newName) upData.name = args.newName;
+          if (args.price !== undefined) upData.price = args.price;
+          if (args.stock !== undefined) upData.stock = args.stock;
+          if (args.description !== undefined) upData.description = args.description;
+          if (args.image_url) upData.image_url = args.image_url;
+
+          let query = supabase.from("sealed_products").update(upData).eq("user_id", targetUserId);
+          if (args.productId) query = query.eq("id", args.productId);
+          else if (args.name) query = query.ilike("name", `%${args.name}%`);
+          else return { error: "Especifica ID o nombre del producto sellado a actualizar." };
+
+          const { error } = await query;
+          if (error) return { error: error.message };
+          return { success: true, message: "Producto sellado actualizado con éxito." };
         }
 
         case "remove_sealed_product": {
@@ -865,7 +1065,7 @@ serve(async (req) => {
           let query = supabase.from("sealed_products").delete().eq("user_id", targetUserId);
           if (args.productId) query = query.eq("id", args.productId);
           else if (args.name) query = query.ilike("name", `%${args.name}%`);
-          else return { error: "Especifica ID o nombre del producto a eliminar." };
+          else return { error: "Especifica ID o nombre del producto a eliminar. Operación cancelada por seguridad." };
 
           const { error } = await query;
           if (error) return { error: error.message };
@@ -876,10 +1076,11 @@ serve(async (req) => {
           if (!targetUserId) return { error: "No se especificó usuario." };
           const cardsToInsert = [];
           for (const c of args.cards) {
+            const cardName = c.card_name || c.name || "Carta";
             let cardImg = c.image_url || "";
             let cardRarity = c.rarity || "";
             if (!cardImg) {
-              const ext = await queryExternalTCGCard(c.card_name);
+              const ext = await queryExternalTCGCard(cardName);
               if (ext && ext.length > 0) {
                 cardImg = ext[0].image_url;
                 if (!cardRarity) cardRarity = ext[0].rarity;
@@ -887,11 +1088,12 @@ serve(async (req) => {
             }
             cardsToInsert.push({
               user_id: targetUserId,
-              card_name: c.card_name,
+              name: cardName,
               quantity: c.quantity || 1,
               rarity: cardRarity || "",
               notes: c.notes || "",
               image_url: cardImg,
+              list_index: c.list_index !== undefined ? c.list_index : 0,
               obtained: false
             });
           }
@@ -902,15 +1104,35 @@ serve(async (req) => {
           return { success: true, message: `Se agregaron ${cardsToInsert.length} carta(s) a la Wishlist.`, cards: cardsToInsert };
         }
 
+        case "update_wishlist_card": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const upData: any = {};
+          if (args.newName) upData.name = args.newName;
+          if (args.quantity !== undefined) upData.quantity = args.quantity;
+          if (args.rarity) upData.rarity = args.rarity;
+          if (args.notes !== undefined) upData.notes = args.notes;
+          if (args.obtained !== undefined) upData.obtained = args.obtained;
+          if (args.image_url) upData.image_url = args.image_url;
+
+          let query = supabase.from("wishlist").update(upData).eq("user_id", targetUserId);
+          if (args.wishlistId) query = query.eq("id", args.wishlistId);
+          else if (args.cardName) query = query.ilike("name", `%${args.cardName}%`);
+          else return { error: "Especifica la carta a actualizar en la Wishlist." };
+
+          const { error } = await query;
+          if (error) return { error: error.message };
+          return { success: true, message: "Carta de Wishlist actualizada con éxito." };
+        }
+
         case "remove_from_wishlist": {
           if (!targetUserId) return { error: "No se especificó usuario." };
           let query = supabase.from("wishlist").delete().eq("user_id", targetUserId);
           if (args.wishlistId) {
             query = query.eq("id", args.wishlistId);
           } else if (args.cardName) {
-            query = query.ilike("card_name", `%${args.cardName}%`);
+            query = query.ilike("name", `%${args.cardName}%`);
           } else {
-            return { error: "Especifica la carta a eliminar de la Wishlist." };
+            return { error: "Especifica la carta a eliminar de la Wishlist. Operación cancelada por seguridad." };
           }
 
           const { error: delErr } = await query;
@@ -973,7 +1195,7 @@ serve(async (req) => {
             const { data: invCard, error } = await supabase.from("investment_cards").insert([{
               user_id: targetUserId,
               category_id: categoryId || null,
-              name: name || "Nueva Carta",
+              card_name: name || "Nueva Carta",
               purchase_price: purchase_price || 0,
               current_price: current_price || 0,
               sale_price: sale_price || 0,
@@ -985,7 +1207,7 @@ serve(async (req) => {
           } else if (action === "update_card") {
             if (!cardId) return { error: "cardId requerido para actualizar." };
             const upObj: any = {};
-            if (name) upObj.name = name;
+            if (name) upObj.card_name = name;
             if (purchase_price !== undefined) upObj.purchase_price = purchase_price;
             if (current_price !== undefined) upObj.current_price = current_price;
             if (sale_price !== undefined) upObj.sale_price = sale_price;
@@ -1022,16 +1244,15 @@ serve(async (req) => {
     const systemPrompt = `Eres la entidad virtual, asistente inteligente y espíritu guía oficial de Viking TCG. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, inteligente, amable y directa.
 
 INSTRUCCIONES CLAVE:
-1. IDIOMA 100% ESPAÑOL NATURAL E INTELIGENTE: Responde siempre en español. Responde la pregunta del usuario con inteligencia y precisión. NUNCA envíes respuestas genéricas o mensajes prefabricados vacíos como "Listo, he completado tu solicitud." cuando el usuario te haga una pregunta o consulta general.
-2. NINGÚN PENSAMIENTO O RAZONAMIENTO VISIBLE: No incluyas etiquetas de pensamiento (<think>), "Thought:", "Plan:", ni frases en inglés. Devuelve DIRECTAMENTE la respuesta al usuario.
-3. SI EL USUARIO PREGUNTA QUÉ VENDE LA TIENDA O QUÉ PUEDES HACER: Explícale amablemente qué vende la tienda (cartas sueltas TCG de Yu-Gi-Oh!, Pokémon, Magic, etc., productos sellados, preventas, accesorios, etc.). Si te pregunta si puedes agregar o quitar cartas con su ayuda, aclárale que sí:
-   - Si es el usuario PROPIETARIO (Administrador / en su panel): Dile que SÍ puedes agregar, editar o eliminar cartas de sus álbumes, decks, wishlist, productos sellados, claims e inversiones directamente en la base de datos siguiendo sus órdenes.
-   - Si es un CLIENTE PÚBLICO (en la tienda pública): Dile que le puedes brindar información sobre disponibilidad de cartas, productos sellados, precios, claims, carrito de compra y contacto por WhatsApp para coordinar sus compras.
-4. CONSULTA Y MODIFICACIÓN DE DATOS: Usa tus herramientas disponibles cuando te soliciten consultar o realizar cambios en el inventario o tienda.
-5. SIN EMOJIS: No uses emojis en tus respuestas.
-
-Modo de sesión actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso completo para modificar y gestionar)" : "CLIENTE PÚBLICO (Modo consulta e información)"}.
-ID de tienda/usuario: ${targetUserId || 'desconocido'}.
+1. IDIOMA 100% ESPAÑOL NATURAL E INTELIGENTE: Responde siempre en español de forma fluida, precisa e inteligente. NUNCA envíes respuestas genéricas ni saludos prefabricados como "Hola, ¿en qué te puedo ayudar hoy?" si el usuario ya te dio una instrucción previa o te envía mensajes de seguimiento como "ya te dije que hacer", "hazlo", "inténtalo de nuevo", "sí", etc.
+2. ATENCIÓN AL HISTORIAL (CONVERSATION HISTORY): Cuando el usuario te dé un mensaje de seguimiento o un recordatorio (por ejemplo: "ya te dije que hacer"), DEBES revisar el historial de conversación, identificar la instrucción o búsqueda previa dada por el usuario (por ejemplo: agregar una carta como Elemental HERO Prisma a la wishlist) y EJECUTARLA O REINTENTARLA de inmediato usando tus herramientas disponibles.
+3. BÚSQUEDA Y CORRECCIÓN INTELIGENTE DE CARTAS: Si el usuario te pide buscar o agregar una carta (ej. "Elemental hero prisma" u otros nombres con posibles errores de ortografía o provenientes de Yu-Gi-Oh!, Pokémon, Lorcana, etc.), usa tus herramientas de búsqueda/consulta externa, identifica la carta correcta con su nombre exacto e imagen correspondiente, y ejecuta la acción solicitada.
+4. SIN EMOJIS NI PENSAMIENTO VISIBLE: No incluyas etiquetas de pensamiento (<think>), "Thought:", "Plan:", ni emojis en tus respuestas. Devuelve DIRECTAMENTE la respuesta al usuario.
+5. MODOS DE SESIÓN Y PERMISOS:
+   - Modo actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso completo para modificar y gestionar datos)" : "CLIENTE PÚBLICO (Modo consulta e información)"}.
+   - Si eres PROPIETARIO ADMINISTRADOR (is_admin = true): Puedes realizar todas las operaciones CRUD (crear, consultar, actualizar/editar y eliminar cartas, álbumes, decks, wishlist, productos sellados, claims e inversiones) que te pida el usuario.
+   - Si es CLIENTE PÚBLICO (is_admin = false): Puedes ofrecer información sobre disponibilidad, precios, productos, carrito, etc. Si el usuario pide hacer modificaciones en modo público, aclárale que debe hacerlo desde su panel de administración tras iniciar sesión.
+6. LÍMITES DE SEGURIDAD ESTRICTOS: Tienes estrictamente prohibido eliminar tablas completas o borrar datos masivos sin filtro. Todas las acciones de edición o eliminación deben dirigirse a elementos específicos (por ID, título o nombre de carta/producto).
 `;
 
     // Fetch available Gemini models
@@ -1072,7 +1293,10 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
       });
     }
 
-    const contents = [...conversation_history, { role: "user", parts: userParts }];
+    const contents = [...conversation_history];
+    if (userParts.length > 0) {
+      contents.push({ role: "user", parts: userParts });
+    }
 
     for (const modelName of availableModels) {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
@@ -1113,7 +1337,7 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     let candidate = aiData.candidates?.[0];
     let loopCount = 0;
 
-    while (candidate?.content?.parts?.some((p: any) => p.functionCall) && loopCount < 3) {
+    while (candidate?.content?.parts?.some((p: any) => p.functionCall) && loopCount < 4) {
       loopCount++;
       const functionCalls = candidate.content.parts.filter((p: any) => p.functionCall);
       const functionResponses = [];
@@ -1179,10 +1403,10 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     cleanReply = filteredLines.join("\n").trim();
 
     // Strip out emojis from the reply
-    cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+    cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
     if (!cleanReply) {
-      cleanReply = rawTextReply.trim() || "Hola, en que te puedo ayudar hoy con la tienda o tus cartas.";
+      cleanReply = rawTextReply.trim() || "Entendido. ¿Deseas realizar alguna otra consulta o modificación?";
     }
 
     return new Response(JSON.stringify({
