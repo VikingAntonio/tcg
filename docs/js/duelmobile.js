@@ -1293,8 +1293,31 @@ function checkHandTrayHover(e, traySelector) {
     const w = tray.width();
     const h = tray.height();
 
-    return (coords.x >= offset.left && coords.x <= offset.left + w &&
-            coords.y >= offset.top && coords.y <= offset.top + h);
+    const verticalBuffer = 70;
+    const horizontalBuffer = 50;
+
+    const inBoundingBoxWithBuffer = (
+        coords.x >= offset.left - horizontalBuffer &&
+        coords.x <= offset.left + w + horizontalBuffer &&
+        coords.y >= offset.top - verticalBuffer &&
+        coords.y <= offset.top + h + verticalBuffer
+    );
+
+    if (inBoundingBoxWithBuffer) return true;
+
+    // Fallback based on playmat screen region when dragging in open space
+    const matOffset = $("#playmat").offset();
+    if (matOffset) {
+        const matHeight = $("#playmat").height();
+        if (traySelector === "#hand-tray-p1" && coords.y >= offset.top - 50) {
+            return true;
+        }
+        if (traySelector === "#hand-tray-p2" && coords.y <= offset.top + h + 50) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Side info detailed previewer
@@ -5876,6 +5899,10 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     const instId = $(this).data("instance-id");
                     const cardObj = state.cards.find(c => c.instanceId === instId);
                     if (!cardObj) return;
+
+                    if (typeof window.triggerEquipIndicator === "function") {
+                        window.triggerEquipIndicator(cardObj);
+                    }
 
                     if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
                         return;
