@@ -205,6 +205,16 @@ serve(async (req) => {
             }
           },
           {
+            name: "get_investments",
+            description: "Obtiene las categorías y cartas de inversión registradas.",
+            parameters: { type: "OBJECT", properties: {} }
+          },
+          {
+            name: "get_subastas",
+            description: "Obtiene las subastas activas o registradas de la tienda.",
+            parameters: { type: "OBJECT", properties: {} }
+          },
+          {
             name: "create_album",
             description: "[SOLO ADMIN] Crea un nuevo álbum para la tienda.",
             parameters: {
@@ -214,6 +224,17 @@ serve(async (req) => {
                 coverImageUrl: { type: "STRING" }
               },
               required: ["title"]
+            }
+          },
+          {
+            name: "delete_album",
+            description: "[SOLO ADMIN] Elimina un álbum de la tienda por ID o título.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                albumId: { type: "STRING" },
+                albumTitle: { type: "STRING" }
+              }
             }
           },
           {
@@ -270,6 +291,17 @@ serve(async (req) => {
             }
           },
           {
+            name: "delete_deck",
+            description: "[SOLO ADMIN] Elimina un deck por ID o nombre.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                deckId: { type: "STRING" },
+                deckName: { type: "STRING" }
+              }
+            }
+          },
+          {
             name: "add_cards_to_deck",
             description: "[SOLO ADMIN] Agrega cartas a un deck.",
             parameters: {
@@ -309,6 +341,32 @@ serve(async (req) => {
             }
           },
           {
+            name: "add_sealed_product",
+            description: "[SOLO ADMIN] Agrega o crea un nuevo producto sellado en la tienda.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                name: { type: "STRING" },
+                price: { type: "NUMBER" },
+                stock: { type: "NUMBER" },
+                image_url: { type: "STRING" },
+                description: { type: "STRING" }
+              },
+              required: ["name", "price"]
+            }
+          },
+          {
+            name: "remove_sealed_product",
+            description: "[SOLO ADMIN] Elimina un producto sellado por ID o nombre.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                productId: { type: "STRING" },
+                name: { type: "STRING" }
+              }
+            }
+          },
+          {
             name: "add_to_wishlist",
             description: "[SOLO ADMIN] Agrega cartas a la lista de deseos / buscados (Wishlist).",
             parameters: {
@@ -344,6 +402,40 @@ serve(async (req) => {
             }
           },
           {
+            name: "manage_claims",
+            description: "[SOLO ADMIN] Crea, actualiza o elimina un claim/dinámica.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "create, update, delete" },
+                claimId: { type: "STRING" },
+                title: { type: "STRING" },
+                price: { type: "NUMBER" },
+                image_url: { type: "STRING" },
+                status: { type: "STRING" }
+              },
+              required: ["action"]
+            }
+          },
+          {
+            name: "manage_investments",
+            description: "[SOLO ADMIN] Administra categorías y cartas de inversión (crear, modificar o eliminar).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "create_category, create_card, update_card, delete_card" },
+                categoryId: { type: "STRING" },
+                cardId: { type: "STRING" },
+                name: { type: "STRING" },
+                purchase_price: { type: "NUMBER" },
+                current_price: { type: "NUMBER" },
+                sale_price: { type: "NUMBER" },
+                image_url: { type: "STRING" }
+              },
+              required: ["action"]
+            }
+          },
+          {
             name: "update_store_info",
             description: "[SOLO ADMIN] Actualiza la información básica de la tienda.",
             parameters: {
@@ -361,9 +453,11 @@ serve(async (req) => {
 
     async function executeToolCall(name: string, args: any) {
       const writeTools = [
-        "create_album", "add_cards_to_album", "remove_cards_from_album",
-        "create_deck", "add_cards_to_deck", "remove_cards_from_deck",
-        "add_to_wishlist", "remove_from_wishlist", "update_store_info"
+        "create_album", "delete_album", "add_cards_to_album", "remove_cards_from_album",
+        "create_deck", "delete_deck", "add_cards_to_deck", "remove_cards_from_deck",
+        "add_sealed_product", "remove_sealed_product",
+        "add_to_wishlist", "remove_from_wishlist",
+        "manage_claims", "manage_investments", "update_store_info"
       ];
 
       if (writeTools.includes(name) && !is_admin) {
@@ -435,6 +529,19 @@ serve(async (req) => {
           if (!targetUserId) return { error: "ID de usuario objetivo no especificado." };
           const { data: wishlist } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).order("created_at", { ascending: false });
           return { wishlist: wishlist || [] };
+        }
+
+        case "get_investments": {
+          if (!targetUserId) return { error: "ID de usuario no disponible." };
+          const { data: cats } = await supabase.from("investment_categories").select("*").eq("user_id", targetUserId);
+          const { data: cards } = await supabase.from("investment_cards").select("*").eq("user_id", targetUserId);
+          return { categories: cats || [], investment_cards: cards || [] };
+        }
+
+        case "get_subastas": {
+          if (!targetUserId) return { error: "ID de usuario no disponible." };
+          const { data: subastas } = await supabase.from("subastas").select("*").eq("user_id", targetUserId);
+          return { subastas: subastas || [] };
         }
 
         case "get_cart_and_payment_info": {
@@ -539,6 +646,18 @@ serve(async (req) => {
 
           if (error) return { error: error.message };
           return { success: true, message: `Álbum '${args.title}' creado con éxito.`, album: newAlbum };
+        }
+
+        case "delete_album": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          let query = supabase.from("albums").delete().eq("user_id", targetUserId);
+          if (args.albumId) query = query.eq("id", args.albumId);
+          else if (args.albumTitle) query = query.ilike("title", `%${args.albumTitle}%`);
+          else return { error: "Especifica ID o título del álbum a eliminar." };
+
+          const { error } = await query;
+          if (error) return { error: error.message };
+          return { success: true, message: "Álbum eliminado correctamente." };
         }
 
         case "add_cards_to_album": {
@@ -657,6 +776,18 @@ serve(async (req) => {
           return { success: true, message: `Deck '${args.name}' creado con éxito.`, deck: newDeck };
         }
 
+        case "delete_deck": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          let query = supabase.from("decks").delete().eq("user_id", targetUserId);
+          if (args.deckId) query = query.eq("id", args.deckId);
+          else if (args.deckName) query = query.ilike("name", `%${args.deckName}%`);
+          else return { error: "Especifica ID o nombre del deck a eliminar." };
+
+          const { error } = await query;
+          if (error) return { error: error.message };
+          return { success: true, message: "Deck eliminado correctamente." };
+        }
+
         case "add_cards_to_deck": {
           if (!targetUserId) return { error: "No se especificó usuario." };
           let deckId = args.deckId;
@@ -709,6 +840,38 @@ serve(async (req) => {
           return { success: true, message: `Se eliminó '${args.cardName}' del deck.` };
         }
 
+        case "add_sealed_product": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          let img = args.image_url || "";
+          if (!img) {
+            const ext = await queryExternalTCGCard(args.name);
+            if (ext && ext.length > 0) img = ext[0].image_url;
+          }
+          const { data: newProd, error } = await supabase.from("sealed_products").insert([{
+            user_id: targetUserId,
+            name: args.name,
+            price: args.price || 0,
+            stock: args.stock || 1,
+            image_url: img,
+            description: args.description || ""
+          }]).select().single();
+
+          if (error) return { error: error.message };
+          return { success: true, message: `Producto sellado '${args.name}' agregado con éxito.`, product: newProd };
+        }
+
+        case "remove_sealed_product": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          let query = supabase.from("sealed_products").delete().eq("user_id", targetUserId);
+          if (args.productId) query = query.eq("id", args.productId);
+          else if (args.name) query = query.ilike("name", `%${args.name}%`);
+          else return { error: "Especifica ID o nombre del producto a eliminar." };
+
+          const { error } = await query;
+          if (error) return { error: error.message };
+          return { success: true, message: "Producto sellado eliminado correctamente." };
+        }
+
         case "add_to_wishlist": {
           if (!targetUserId) return { error: "No se especificó usuario." };
           const cardsToInsert = [];
@@ -756,6 +919,89 @@ serve(async (req) => {
           return { success: true, message: "Carta eliminada de la Wishlist." };
         }
 
+        case "manage_claims": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, claimId, title, price, image_url, status } = args;
+
+          if (action === "create") {
+            const { data: newClaim, error } = await supabase.from("claims").insert([{
+              user_id: targetUserId,
+              title: title || "Nuevo Claim",
+              price: price || 0,
+              image_url: image_url || "",
+              status: status || "Activa"
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Claim '${title}' creado con éxito.`, claim: newClaim };
+          } else if (action === "update") {
+            if (!claimId) return { error: "ID de claim requerido para actualizar." };
+            const upData: any = {};
+            if (title) upData.title = title;
+            if (price !== undefined) upData.price = price;
+            if (image_url) upData.image_url = image_url;
+            if (status) upData.status = status;
+            const { error } = await supabase.from("claims").update(upData).eq("id", claimId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Claim actualizado con éxito." };
+          } else if (action === "delete") {
+            if (!claimId) return { error: "ID de claim requerido para eliminar." };
+            const { error } = await supabase.from("claims").delete().eq("id", claimId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Claim eliminado con éxito." };
+          }
+          return { error: "Acción no válida en manage_claims." };
+        }
+
+        case "manage_investments": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, categoryId, cardId, name, purchase_price, current_price, sale_price, image_url } = args;
+
+          if (action === "create_category") {
+            const { data: cat, error } = await supabase.from("investment_categories").insert([{
+              user_id: targetUserId,
+              name: name || "Nueva Categoría",
+              is_public: true
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Categoría de inversión '${name}' creada.`, category: cat };
+          } else if (action === "create_card") {
+            let img = image_url || "";
+            if (!img && name) {
+              const ext = await queryExternalTCGCard(name);
+              if (ext && ext.length > 0) img = ext[0].image_url;
+            }
+            const { data: invCard, error } = await supabase.from("investment_cards").insert([{
+              user_id: targetUserId,
+              category_id: categoryId || null,
+              name: name || "Nueva Carta",
+              purchase_price: purchase_price || 0,
+              current_price: current_price || 0,
+              sale_price: sale_price || 0,
+              image_url: img,
+              is_public: true
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Carta de inversión '${name}' agregada.`, card: invCard };
+          } else if (action === "update_card") {
+            if (!cardId) return { error: "cardId requerido para actualizar." };
+            const upObj: any = {};
+            if (name) upObj.name = name;
+            if (purchase_price !== undefined) upObj.purchase_price = purchase_price;
+            if (current_price !== undefined) upObj.current_price = current_price;
+            if (sale_price !== undefined) upObj.sale_price = sale_price;
+            if (image_url) upObj.image_url = image_url;
+            const { error } = await supabase.from("investment_cards").update(upObj).eq("id", cardId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Carta de inversión actualizada." };
+          } else if (action === "delete_card") {
+            if (!cardId) return { error: "cardId requerido para eliminar." };
+            const { error } = await supabase.from("investment_cards").delete().eq("id", cardId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Carta de inversión eliminada." };
+          }
+          return { error: "Acción no válida en manage_investments." };
+        }
+
         case "update_store_info": {
           if (!targetUserId) return { error: "No se especificó usuario." };
           const updateData: any = {};
@@ -773,17 +1019,16 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Eres la entidad virtual y espíritu guía oficial de Viking TCG. Hablas SIEMPRE Y ÚNICAMENTE en español de forma totalmente natural, profesional, clara y directa.
+    const systemPrompt = `Eres la entidad virtual y espíritu guía oficial de Viking TCG. Tu labor es responder y atender las solicitudes del usuario de forma inmediata, precisa y profesional.
 
 REGLAS STRICTAS E INVIOLABLES DE RESPUESTA:
-1. IDIOMA 100% ESPAÑOL: Queda estrictamente prohibido responder en inglés o incluir guías de pensamiento, preámbulos, razonamientos o frases en inglés como "Thought:", "Plan:", "Role:", "Tone:", "Here is the response:", "The user is asking...". Responde DIRECTAMENTE la respuesta final al usuario.
-2. NINGÚN EMOJI: Queda prohibido incluir emojis o emoticonos en tus mensajes.
-3. CONSULTA REAL DE DATOS: Cuando te pregunten sobre la tienda, cartas, productos sellados, claims activos, stock, precios o métodos de pago, USA SIEMPRE LAS HERRAMIENTAS CORRESPONDIENTES (como get_store_claims, get_sealed_products, get_user_albums, search_cards, etc.) para consultar la base de datos de la tienda antes de contestar. Si hay claims activos, da los detalles concretos (título, precio, cantidad). Si no hay claims activos, dilo claramente de forma concisa. Nunca mandes al usuario a WhatsApp si puedes consultar la información directamente con las herramientas.
-4. RESPUESTAS CONCRETAS Y PROFESIONALES: Evita rodeos, explicaciones innecesarias o textos largos de relleno. Sé breve, preciso y profesional.
-5. MODO ADMINISTRADOR (is_admin = true): Puedes gestionar y realizar acciones CRUD de Álbumes, Decks y Wishlist.
-6. MODO CLIENTE PÚBLICO (is_admin = false): Brinda información precisa sobre el inventario, productos sellados, claims, precios, carrito y contacto.
+1. IDIOMA 100% ESPAÑOL DIRECTO: Responde ÚNICAMENTE en idioma español. Queda ESTRICTAMENTE PROHIBIDO mostrar o incluir pensamientos, reflexiones, razonamientos en inglés, guías como "Thought:", "Plan:", "Role:", "Tone:", "Here is the response:", "<think>..." o traducciones secundarias. Devuelve directa y exclusivamente la respuesta final útil en español.
+2. RESPUESTAS CONCRETAS Y EXACTAS: Responde ÚNICAMENTE lo que el usuario preguntó o solicitó, sin rodeos, sin paja, sin introducciones largas ni duplicados en dos idiomas.
+3. CONSULTA REAL DE DATOS: Cuando te pregunten sobre la tienda, cartas, inventario, productos sellados, claims, inversiones, subastas, stock o precios, USA SIEMPRE LAS HERRAMIENTAS CORRESPONDIENTES para consultar o modificar la base de datos de la tienda antes de contestar.
+4. PODER DE MODIFICACIÓN (is_admin = true): Cuando estés en modo administrador (is_admin = true), tienes acceso total para crear, editar y eliminar álbumes, cartas, decks, productos sellados, wishlist, claims e inversiones en nombre del propietario.
+5. MODO CLIENTE PÚBLICO (is_admin = false): Brinda información exacta del inventario, productos sellados, claims, precios, carrito y contacto.
 
-Modo de sesión actual: ${is_admin ? "ADMINISTRADOR (Acceso CRUD completo)" : "CLIENTE PÚBLICO (Modo consulta)"}.
+Modo de sesión actual: ${is_admin ? "ADMINISTRADOR PROPRIETARIO (Acceso total de lectura y modificación)" : "CLIENTE PÚBLICO (Modo consulta)"}.
 ID de tienda/usuario: ${targetUserId || 'desconocido'}.
 `;
 
@@ -837,7 +1082,13 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents,
-            tools
+            tools,
+            generationConfig: {
+              thinkingConfig: {
+                includeThoughts: false,
+                thinkingBudget: 0
+              }
+            }
           })
         });
 
@@ -896,7 +1147,13 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents,
-          tools
+          tools,
+          generationConfig: {
+            thinkingConfig: {
+              includeThoughts: false,
+              thinkingBudget: 0
+            }
+          }
         })
       });
 
@@ -907,6 +1164,10 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     const parts = candidate?.content?.parts || [];
     let rawTextReply = "";
     for (const part of parts) {
+      if (part.thought) {
+        // Skip thought parts explicitly
+        continue;
+      }
       if (part.text) rawTextReply += part.text;
     }
 
@@ -915,6 +1176,7 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
       .replace(/```json[\s\S]*?```/gi, "")
       .replace(/```[\s\S]*?```/gi, "")
       .replace(/<think>[\s\S]*?<\/think>/gi, "")
+      .replace(/^thought:\s*[\s\S]*?(?=\n\n|\n[A-ZáéíóúÑ])/gi, "")
       .trim();
 
     // Strip out lines starting with reasoning prefixes or English thought steps
@@ -923,7 +1185,7 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
       const trimmed = l.trim();
       if (/^(\*|\-)?\s*(Role|Tone|Current Session Mode|User ID|Plan|Thought|Thinking|Action|Observation|Check against rules|Acknowledge|Confirm|Maintain|Avoid|Instruction|Step|Guidelines|Notes):/i.test(trimmed)) return false;
       if (/^(The user|The search for|Response plan|Here is the response|System:|In Spanish|To answer|I should|I need to|First|Next|Finally)/i.test(trimmed)) return false;
-      if (/^[a-zA-Z\s]{15,}\?$/i.test(trimmed) && !/[áéíóúñ¿¡]/i.test(trimmed)) return false; // Filter stray English question thoughts
+      if (/^[a-zA-Z\s,'.\?]{15,}$/i.test(trimmed) && !/[áéíóúñ¿¡]/i.test(trimmed)) return false; // Filter stray English lines
       return true;
     });
 
