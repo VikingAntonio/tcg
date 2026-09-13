@@ -1019,16 +1019,18 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Eres la entidad virtual y espíritu guía oficial de Viking TCG. Tu labor es responder y atender las solicitudes del usuario de forma inmediata, precisa y profesional.
+    const systemPrompt = `Eres la entidad virtual, asistente inteligente y espíritu guía oficial de Viking TCG. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, inteligente, amable y directa.
 
-REGLAS STRICTAS E INVIOLABLES DE RESPUESTA:
-1. IDIOMA 100% ESPAÑOL DIRECTO: Responde ÚNICAMENTE en idioma español. Queda ESTRICTAMENTE PROHIBIDO mostrar o incluir pensamientos, reflexiones, razonamientos en inglés, guías como "Thought:", "Plan:", "Role:", "Tone:", "Here is the response:", "<think>..." o traducciones secundarias. Devuelve directa y exclusivamente la respuesta final útil en español.
-2. RESPUESTAS CONCRETAS Y EXACTAS: Responde ÚNICAMENTE lo que el usuario preguntó o solicitó, sin rodeos, sin paja, sin introducciones largas ni duplicados en dos idiomas.
-3. CONSULTA REAL DE DATOS: Cuando te pregunten sobre la tienda, cartas, inventario, productos sellados, claims, inversiones, subastas, stock o precios, USA SIEMPRE LAS HERRAMIENTAS CORRESPONDIENTES para consultar o modificar la base de datos de la tienda antes de contestar.
-4. PODER DE MODIFICACIÓN (is_admin = true): Cuando estés en modo administrador (is_admin = true), tienes acceso total para crear, editar y eliminar álbumes, cartas, decks, productos sellados, wishlist, claims e inversiones en nombre del propietario.
-5. MODO CLIENTE PÚBLICO (is_admin = false): Brinda información exacta del inventario, productos sellados, claims, precios, carrito y contacto.
+INSTRUCCIONES CLAVE:
+1. IDIOMA 100% ESPAÑOL NATURAL E INTELIGENTE: Responde siempre en español. Responde la pregunta del usuario con inteligencia y precisión. NUNCA envíes respuestas genéricas o mensajes prefabricados vacíos como "Listo, he completado tu solicitud." cuando el usuario te haga una pregunta o consulta general.
+2. NINGÚN PENSAMIENTO O RAZONAMIENTO VISIBLE: No incluyas etiquetas de pensamiento (<think>), "Thought:", "Plan:", ni frases en inglés. Devuelve DIRECTAMENTE la respuesta al usuario.
+3. SI EL USUARIO PREGUNTA QUÉ VENDE LA TIENDA O QUÉ PUEDES HACER: Explícale amablemente qué vende la tienda (cartas sueltas TCG de Yu-Gi-Oh!, Pokémon, Magic, etc., productos sellados, preventas, accesorios, etc.). Si te pregunta si puedes agregar o quitar cartas con su ayuda, aclárale que sí:
+   - Si es el usuario PROPIETARIO (Administrador / en su panel): Dile que SÍ puedes agregar, editar o eliminar cartas de sus álbumes, decks, wishlist, productos sellados, claims e inversiones directamente en la base de datos siguiendo sus órdenes.
+   - Si es un CLIENTE PÚBLICO (en la tienda pública): Dile que le puedes brindar información sobre disponibilidad de cartas, productos sellados, precios, claims, carrito de compra y contacto por WhatsApp para coordinar sus compras.
+4. CONSULTA Y MODIFICACIÓN DE DATOS: Usa tus herramientas disponibles cuando te soliciten consultar o realizar cambios en el inventario o tienda.
+5. SIN EMOJIS: No uses emojis en tus respuestas.
 
-Modo de sesión actual: ${is_admin ? "ADMINISTRADOR PROPRIETARIO (Acceso total de lectura y modificación)" : "CLIENTE PÚBLICO (Modo consulta)"}.
+Modo de sesión actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso completo para modificar y gestionar)" : "CLIENTE PÚBLICO (Modo consulta e información)"}.
 ID de tienda/usuario: ${targetUserId || 'desconocido'}.
 `;
 
@@ -1082,13 +1084,7 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents,
-            tools,
-            generationConfig: {
-              thinkingConfig: {
-                includeThoughts: false,
-                thinkingBudget: 0
-              }
-            }
+            tools
           })
         });
 
@@ -1147,13 +1143,7 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents,
-          tools,
-          generationConfig: {
-            thinkingConfig: {
-              includeThoughts: false,
-              thinkingBudget: 0
-            }
-          }
+          tools
         })
       });
 
@@ -1165,27 +1155,24 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     let rawTextReply = "";
     for (const part of parts) {
       if (part.thought) {
-        // Skip thought parts explicitly
         continue;
       }
       if (part.text) rawTextReply += part.text;
     }
 
-    // Aggressive post-processing to remove log blocks, thinking steps, markdown code blocks, emojis and technical bullet points
+    // Post-processing: Strip code blocks and thoughts without destroying natural Spanish text
     let cleanReply = rawTextReply
       .replace(/```json[\s\S]*?```/gi, "")
       .replace(/```[\s\S]*?```/gi, "")
       .replace(/<think>[\s\S]*?<\/think>/gi, "")
-      .replace(/^thought:\s*[\s\S]*?(?=\n\n|\n[A-ZáéíóúÑ])/gi, "")
       .trim();
 
-    // Strip out lines starting with reasoning prefixes or English thought steps
+    // Remove specific thought/log header lines if present
     const lines = cleanReply.split("\n");
     const filteredLines = lines.filter(l => {
       const trimmed = l.trim();
       if (/^(\*|\-)?\s*(Role|Tone|Current Session Mode|User ID|Plan|Thought|Thinking|Action|Observation|Check against rules|Acknowledge|Confirm|Maintain|Avoid|Instruction|Step|Guidelines|Notes):/i.test(trimmed)) return false;
-      if (/^(The user|The search for|Response plan|Here is the response|System:|In Spanish|To answer|I should|I need to|First|Next|Finally)/i.test(trimmed)) return false;
-      if (/^[a-zA-Z\s,'.\?]{15,}$/i.test(trimmed) && !/[áéíóúñ¿¡]/i.test(trimmed)) return false; // Filter stray English lines
+      if (/^(Response plan|Here is the response|System:)/i.test(trimmed)) return false;
       return true;
     });
 
@@ -1195,7 +1182,7 @@ ID de tienda/usuario: ${targetUserId || 'desconocido'}.
     cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
     if (!cleanReply) {
-      cleanReply = "Listo, he completado tu solicitud.";
+      cleanReply = rawTextReply.trim() || "Hola, en que te puedo ayudar hoy con la tienda o tus cartas.";
     }
 
     return new Response(JSON.stringify({
