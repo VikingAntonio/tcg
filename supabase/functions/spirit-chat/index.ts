@@ -12,10 +12,20 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, store_id, message, image_base64, image_mime = "image/jpeg", is_admin: clientIsAdmin = false, conversation_history = [] } = await req.json();
+    const {
+      user_id,
+      store_id,
+      message,
+      image_base64,
+      image_mime = "image/jpeg",
+      is_admin: clientIsAdmin = false,
+      conversation_history = [],
+      is_proactive = false,
+      proactive_context = null
+    } = await req.json();
 
     const requestMsg = message || "";
-    if (!requestMsg && !image_base64 && conversation_history.length === 0) {
+    if (!is_proactive && !requestMsg && !image_base64 && conversation_history.length === 0) {
       return new Response(JSON.stringify({ reply: "Dime en qué te puedo ayudar hoy con tu tienda o tus cartas." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -24,7 +34,7 @@ serve(async (req) => {
 
     const geminiApiKey = (Deno.env.get("Spirit") || Deno.env.get("OPENAI_API_KEY") || "").trim();
     if (!geminiApiKey) {
-      return new Response(JSON.stringify({ reply: "Lo siento, la API Key no está configurada correctamente en el servidor." }), {
+      return new Response(JSON.stringify({ reply: "Lo siento, la API Key no está configurada correctamente en el servidor.", should_notify: false }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -59,6 +69,24 @@ serve(async (req) => {
 
     if (clientIsAdmin && (!authUserId || authUserId === targetUserId || !store_id)) {
       is_admin = true;
+    }
+
+    // Fetch user details for proactive analysis if available
+    let userProfile = null;
+    if (targetUserId) {
+      const { data: profile } = await supabase.from("usuarios").select("*").eq("id", targetUserId).maybeSingle();
+      if (profile) {
+        userProfile = {
+          id: profile.id,
+          username: profile.username,
+          store_name: profile.store_name,
+          whatsapp_link: profile.whatsapp_link,
+          messenger_link: profile.messenger_link,
+          role: profile.role,
+          subscription_expires_at: profile.subscription_expires_at || profile.expiration_date || profile.expires_at || null,
+          created_at: profile.created_at
+        };
+      }
     }
 
     // Helper to query external multi-TCG databases (Yu-Gi-Oh!, Pokémon TCG, Lorcana, etc.)
@@ -125,6 +153,97 @@ serve(async (req) => {
       }
 
       return results;
+    }
+
+    // Handle Proactive Evaluation Request
+    if (is_proactive) {
+      const proactiveSystemPrompt = `Eres el asistente virtual proactivo e inteligente de Viking TCG.
+Tu tarea es EVALUAR de forma PROACTIVA si existe alguna recomendación, tip, advertencia o consejo RELEVANTE y ÚTIL para mostrarle al usuario en este momento en su interfaz.
+
+INFORMACIÓN DE CONTEXTO ACTUAL:
+- Página actual: ${proactive_context?.page || 'desconocida'}
+- Evento / Acción detectada: ${proactive_context?.event_type || 'desconocido'}
+- Detalles del evento: ${JSON.stringify(proactive_context?.event_details || {})}
+- Perfil de la tienda / usuario: ${JSON.stringify(userProfile || {})}
+- Historial de notificaciones ya mostradas previamente (IDs): ${JSON.stringify(proactive_context?.history_ids || [])}
+
+REGLAS DE EVALUACIÓN:
+1. NO MOLESTAR: Si no hay nada verdaderamente relevante o útil que decir para la situación o página actual, responde {"should_notify": false}.
+2. UTILIDAD Y CONTEXTO REAL: Genera un mensaje si detectas:
+   - Estado de suscripción (ej. la suscripción vence pronto o venció).
+   - Acciones del usuario (ej. está editando/creando un álbum, deck, wishlist, producto sellado, subastas o inversiones) donde un tip rápido o recomendación práctica le ayude a optimizar su tienda o catálogo.
+   - Datos incompletos importantes (ej. si no tiene enlace de WhatsApp configurado para ventas).
+   - Consejos sobre la página o vista actual.
+3. NO REPETIR: Si la recomendación derivada de este evento/contexto ya está presente en history_ids, responde {"should_notify": false}.
+4. TONO Y FORMATO:
+   - El mensaje DEBE ser 100% generado dinámicamente por ti, en español natural, conciso y amigable.
+   - SIN emojis, SIN bloques de código, SIN etiquetas XML.
+   - Longitud corta (máximo 120 caracteres) apta para aparecer en un globo flotante.
+5. FORMATO DE RESPUESTA:
+   Responde ÚNICAMENTE en JSON válido con esta estructura exacta:
+   {"should_notify": true, "message": "Tu texto aquí", "notification_id": "id_unico_snake_case"}
+   o
+   {"should_notify": false}
+`;
+
+      const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
+      const listData = await listRes.json();
+
+      if (!listRes.ok || listData.error) {
+        return new Response(JSON.stringify({ should_notify: false, error: listData?.error?.message }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const availableModels = (listData.models || [])
+        .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
+        .map((m: any) => m.name);
+
+      if (availableModels.length === 0) {
+        return new Response(JSON.stringify({ should_notify: false }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      for (const modelName of availableModels) {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
+
+        try {
+          const res = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: proactiveSystemPrompt }] }]
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            const cleanText = rawText.replace(/```json/gi, "").replace(/```/gi, "").trim();
+            try {
+              const parsed = JSON.parse(cleanText);
+              if (parsed && typeof parsed.should_notify === 'boolean') {
+                return new Response(JSON.stringify(parsed), {
+                  status: 200,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+              }
+            } catch (e) {
+              console.warn("Error parseando JSON proactivo de Gemini:", e, cleanText);
+            }
+          }
+        } catch (e) {
+          console.warn(`Error en proactivo con ${modelName}:`, e);
+        }
+      }
+
+      return new Response(JSON.stringify({ should_notify: false }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     // Tools definition
@@ -1252,7 +1371,7 @@ INSTRUCCIONES CLAVE:
    - Modo actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso completo para modificar y gestionar datos)" : "CLIENTE PÚBLICO (Modo consulta e información)"}.
    - Si eres PROPIETARIO ADMINISTRADOR (is_admin = true): Puedes realizar todas las operaciones CRUD (crear, consultar, actualizar/editar y eliminar cartas, álbumes, decks, wishlist, productos sellados, claims e inversiones) que te pida el usuario.
    - Si es CLIENTE PÚBLICO (is_admin = false): Puedes ofrecer información sobre disponibilidad, precios, productos, carrito, etc. Si el usuario pide hacer modificaciones en modo público, aclárale que debe hacerlo desde su panel de administración tras iniciar sesión.
-6. LÍMITES DE SEGURIDAD ESTRICTOS: Tienes estrictamente prohibido eliminar tablas completas o borrar datos masivos sin filtro. Todas las acciones de edición o eliminación deben dirigirse a elementos específicos (por ID, título o nombre de carta/producto).
+6. LÍMITES DE SEGURIDAD ESTRICTOS: Tienes strictly prohibido eliminar tablas completas o borrar datos masivos sin filtro. Todas las acciones de edición o eliminación deben dirigirse a elementos específicos (por ID, título o nombre de carta/producto).
 `;
 
     // Fetch available Gemini models
@@ -1403,7 +1522,7 @@ INSTRUCCIONES CLAVE:
     cleanReply = filteredLines.join("\n").trim();
 
     // Strip out emojis from the reply
-    cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+    cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
     if (!cleanReply) {
       cleanReply = rawTextReply.trim() || "Entendido. ¿Deseas realizar alguna otra consulta o modificación?";
