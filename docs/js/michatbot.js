@@ -10,6 +10,110 @@ window.botConversationHistory = [];
 window.selectedChatImageBase64 = null;
 window.speechRecognitionInstance = null;
 
+/**
+ * Proactive AI Assistant System V1.0
+ * Evaluates real-time user context with Gemini AI to trigger dynamic, relevant
+ * proactive notifications via speech bubble without opening the chat modal.
+ */
+window.ProactiveAssistant = {
+    historyKey: 'viking_proactive_history',
+    cooldownMs: 12000, // 12-second minimum interval between proactive AI checks
+    lastCheckTime: 0,
+    debounceTimers: {},
+
+    getHistory: function() {
+        try {
+            const stored = localStorage.getItem(this.historyKey);
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            return [];
+        }
+    },
+
+    saveHistoryId: function(notificationId) {
+        if (!notificationId) return;
+        const history = this.getHistory();
+        if (!history.includes(notificationId)) {
+            history.push(notificationId);
+            // Limit stored history to last 200 IDs
+            if (history.length > 200) history.shift();
+            try {
+                localStorage.setItem(this.historyKey, JSON.stringify(history));
+            } catch (e) {}
+        }
+    },
+
+    clearHistory: function() {
+        try {
+            localStorage.removeItem(this.historyKey);
+        } catch (e) {}
+    },
+
+    trigger: function(eventType, eventDetails = {}, debounceMs = 1500) {
+        if (window.botInstance && window.botInstance.isMuted) return;
+
+        // Debounce frequent rapid triggers of the same event
+        if (this.debounceTimers[eventType]) {
+            clearTimeout(this.debounceTimers[eventType]);
+        }
+
+        this.debounceTimers[eventType] = setTimeout(() => {
+            this._executeTrigger(eventType, eventDetails);
+        }, debounceMs);
+    },
+
+    _executeTrigger: async function(eventType, eventDetails) {
+        const now = Date.now();
+        if (now - this.lastCheckTime < this.cooldownMs) {
+            return;
+        }
+        this.lastCheckTime = now;
+
+        if (typeof _supabase === 'undefined') return;
+
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        const historyIds = this.getHistory();
+        const isAdmin = checkIsAdminSession();
+        const activeStoreId = getActiveStoreId();
+
+        const contextPayload = {
+            page: currentPage,
+            event_type: eventType,
+            event_details: eventDetails,
+            history_ids: historyIds
+        };
+
+        try {
+            const { data, error } = await _supabase.functions.invoke('spirit-chat', {
+                body: {
+                    is_proactive: true,
+                    proactive_context: contextPayload,
+                    is_admin: isAdmin,
+                    store_id: activeStoreId
+                }
+            });
+
+            if (error) {
+                console.warn("Proactive Assistant function error:", error);
+                return;
+            }
+
+            if (data && data.should_notify && data.message) {
+                const notifId = data.notification_id || `notif_${eventType}_${Date.now()}`;
+
+                // Ensure notification was not already shown in history
+                if (!historyIds.includes(notifId)) {
+                    this.saveHistoryId(notifId);
+                    const cleanMsg = removeEmojis(data.message);
+                    window.botInstance.say(cleanMsg, 7000);
+                }
+            }
+        } catch (e) {
+            console.warn("Proactive Assistant trigger error:", e);
+        }
+    }
+};
+
 // Global bot instance
 window.botInstance = {
     isMuted: localStorage.getItem('michatbot_muted') === 'true',
@@ -1253,4 +1357,49 @@ async function checkAuctionStatusOnLoad() {
     } catch (e) {}
 }
 
-$(document).ready(() => initMichatbot());
+function setupProactiveEventObservers() {
+    // 1. Initial page load context evaluation trigger (page_load)
+    setTimeout(() => {
+        if (window.ProactiveAssistant) {
+            window.ProactiveAssistant.trigger('page_load', {
+                url: window.location.href,
+                referrer: document.referrer
+            }, 3000);
+        }
+    }, 4000);
+
+    // 2. Observe album creation / editing modal opens
+    $(document).on('click', '#btn-add-album, .album-slot, #btn-open-slot-modal, [data-target="#slot-modal"], [data-target="#album-modal"]', function() {
+        if (window.ProactiveAssistant) {
+            window.ProactiveAssistant.trigger('album_editing', {
+                target_element: this.id || this.className,
+                action: 'open_album_modal'
+            }, 1000);
+        }
+    });
+
+    // 3. Observe deck building interactions
+    $(document).on('click', '#btn-create-deck, #btn-add-deck, .btn-testear-animated, #nexus-filter-format, .deck-card-item', function() {
+        if (window.ProactiveAssistant) {
+            window.ProactiveAssistant.trigger('deck_building', {
+                target_element: this.id || this.className,
+                action: 'deck_builder_interaction'
+            }, 1000);
+        }
+    });
+
+    // 4. Observe catalog editing / wishlist / sealed products interactions
+    $(document).on('click', '#btn-add-wishlist, #btn-add-product, .btn-add-sealed-modern, #btn-create-inv-card', function() {
+        if (window.ProactiveAssistant) {
+            window.ProactiveAssistant.trigger('catalog_editing', {
+                target_element: this.id || this.className,
+                action: 'catalog_or_investment_action'
+            }, 1000);
+        }
+    });
+}
+
+$(document).ready(() => {
+    initMichatbot();
+    setupProactiveEventObservers();
+});
