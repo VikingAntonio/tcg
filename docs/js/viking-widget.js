@@ -19,7 +19,7 @@
             .trim();
     }
 
-    function loadScript(src) {
+    function loadScript(src, isModule = false) {
         return new Promise((resolve, reject) => {
             if (document.querySelector(`script[src="${src}"]`)) {
                 resolve();
@@ -27,6 +27,7 @@
             }
             const script = document.createElement('script');
             script.src = src;
+            if (isModule) script.type = 'module';
             script.crossOrigin = 'anonymous';
             script.onload = resolve;
             script.onerror = reject;
@@ -58,106 +59,101 @@
             const rawDomain = attrDomain || hostDomain || '';
             const targetDomain = cleanDomain(rawDomain);
 
-            console.log('[VikingChatbot] Iniciando custom label widget. Dominio objetivo:', targetDomain);
+            console.log('[VikingChatbot] Custom Label inicializado. Dominio:', targetDomain || '(no especificado)');
 
             try {
-                // Load fontawesome and Montserrat font
+                // Ensure dependencies loaded
                 loadCSS('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
                 loadCSS('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
-                // Ensure Supabase SDK loaded
                 if (typeof window.supabase === 'undefined') {
                     await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
                 }
 
-                // Ensure model-viewer custom element loaded
                 if (!customElements.get('model-viewer')) {
-                    const mvModule = document.createElement('script');
-                    mvModule.type = 'module';
-                    mvModule.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js';
-                    document.head.appendChild(mvModule);
+                    await loadScript('https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js', true);
                 }
 
-                const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-                if (!supabaseClient) {
-                    console.error('[VikingChatbot] No se pudo instanciar el cliente Supabase.');
-                    return;
-                }
-                this._supabase = supabaseClient;
-
-                // 1. Query active widget domains
-                const { data: domains, error: domainErr } = await this._supabase
-                    .from('widget_domains')
-                    .select('user_id, is_active, domain')
-                    .eq('is_active', true);
-
-                let matchedUserId = null;
-
-                if (domains && domains.length > 0) {
-                    const found = domains.find(d => cleanDomain(d.domain) === targetDomain);
-                    if (found) matchedUserId = found.user_id;
+                if (window.supabase) {
+                    this._supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 }
 
-                // 2. Fallback check against usuarios custom_domain
-                if (!matchedUserId) {
-                    const { data: usersWithDomain } = await this._supabase
-                        .from('usuarios')
-                        .select('id, custom_domain')
-                        .not('custom_domain', 'is', null);
+                if (this._supabase && targetDomain) {
+                    let matchedUserId = null;
 
-                    if (usersWithDomain && usersWithDomain.length > 0) {
-                        const foundUser = usersWithDomain.find(u => cleanDomain(u.custom_domain) === targetDomain);
-                        if (foundUser) matchedUserId = foundUser.id;
+                    // Step 1: Check widget_domains table
+                    try {
+                        const { data: domains } = await this._supabase
+                            .from('widget_domains')
+                            .select('user_id, is_active, domain')
+                            .eq('is_active', true);
+
+                        if (domains && domains.length > 0) {
+                            const found = domains.find(d => cleanDomain(d.domain) === targetDomain);
+                            if (found) matchedUserId = found.user_id;
+                        }
+                    } catch (e) {
+                        console.info('[VikingChatbot] widget_domains query:', e);
+                    }
+
+                    // Step 2: Fallback check against usuarios custom_domain, store_name or username
+                    if (!matchedUserId) {
+                        try {
+                            const { data: users } = await this._supabase
+                                .from('usuarios')
+                                .select('id, custom_domain, store_name, username');
+
+                            if (users && users.length > 0) {
+                                const foundUser = users.find(u => {
+                                    return (u.custom_domain && cleanDomain(u.custom_domain) === targetDomain) ||
+                                           (u.store_name && cleanDomain(u.store_name) === targetDomain) ||
+                                           (u.username && cleanDomain(u.username) === targetDomain);
+                                });
+                                if (foundUser) matchedUserId = foundUser.id;
+                            }
+                        } catch (e) {
+                            console.info('[VikingChatbot] usuarios query:', e);
+                        }
+                    }
+
+                    if (matchedUserId) {
+                        this.activeStoreId = matchedUserId;
+
+                        const { data: userRow } = await this._supabase
+                            .from('usuarios')
+                            .select('id, username, store_name, selected_spirit_id')
+                            .eq('id', this.activeStoreId)
+                            .maybeSingle();
+
+                        if (userRow) {
+                            this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
+
+                            if (userRow.selected_spirit_id) {
+                                const { data: spirit } = await this._supabase
+                                    .from('spirits')
+                                    .select('*')
+                                    .eq('id', userRow.selected_spirit_id)
+                                    .maybeSingle();
+                                if (spirit) this.currentSpirit = spirit;
+                            }
+                        }
                     }
                 }
 
-                // 3. Fallback for local preview (VS Code Live Server, localhost, 127.0.0.1, file://)
-                const isLocalPreview = hostDomain === 'localhost' || hostDomain === '127.0.0.1' || hostDomain === '' || window.location.protocol === 'file:';
-                if (!matchedUserId && isLocalPreview) {
-                    console.info('[VikingChatbot] Entorno de prueba local detectado. Buscando dominio activo coincidente o predeterminado.');
-                    if (domains && domains.length > 0) {
-                        matchedUserId = domains[0].user_id;
-                    }
-                }
-
-                if (!matchedUserId) {
-                    console.warn('[VikingChatbot] El dominio no está autorizado o no se encuentra activo:', targetDomain);
-                    return;
-                }
-
-                this.activeStoreId = matchedUserId;
-
-                // Fetch store owner and selected 3D GLTF spirit
-                const { data: userRow } = await this._supabase
-                    .from('usuarios')
-                    .select('id, username, store_name, selected_spirit_id')
-                    .eq('id', this.activeStoreId)
-                    .maybeSingle();
-
-                if (userRow) {
-                    this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
-
-                    if (userRow.selected_spirit_id) {
-                        const { data: spirit } = await this._supabase
+                // Step 3: Fetch public default spirit if none assigned
+                if (!this.currentSpirit && this._supabase) {
+                    try {
+                        const { data: defaultSpirit } = await this._supabase
                             .from('spirits')
                             .select('*')
-                            .eq('id', userRow.selected_spirit_id)
+                            .eq('is_public', true)
+                            .limit(1)
                             .maybeSingle();
-                        if (spirit) this.currentSpirit = spirit;
-                    }
+                        if (defaultSpirit) this.currentSpirit = defaultSpirit;
+                    } catch (e) {}
                 }
 
-                if (!this.currentSpirit) {
-                    const { data: defaultSpirit } = await this._supabase
-                        .from('spirits')
-                        .select('*')
-                        .eq('is_public', true)
-                        .limit(1)
-                        .maybeSingle();
-                    if (defaultSpirit) this.currentSpirit = defaultSpirit;
-                }
-
-                // Fallback guarantee: Never stay blank
+                // Step 4: Absolute fallback guarantee so element is NEVER empty
                 if (!this.currentSpirit) {
                     this.currentSpirit = {
                         name: 'Espíritu Guía',
@@ -165,10 +161,14 @@
                     };
                 }
 
-                console.log('[VikingChatbot] Widget cargado correctamente para la tienda:', this.storeName, 'Personaje:', this.currentSpirit.name);
+                console.log('[VikingChatbot] Renderizando personaje 3D:', this.currentSpirit.name, 'GLTF:', this.currentSpirit.gltf_url);
                 this.renderWidget();
-            } catch (e) {
-                console.error('[VikingChatbot] Error al inicializar widget:', e);
+            } catch (err) {
+                console.error('[VikingChatbot] Error en inicialización, aplicando renderizado fallback:', err);
+                if (!this.currentSpirit) {
+                    this.currentSpirit = { name: 'Espíritu Guía', gltf_url: DEFAULT_GLTF_URL };
+                }
+                this.renderWidget();
             }
         }
 
@@ -606,6 +606,8 @@
             msgContainer.scrollTop = msgContainer.scrollHeight;
 
             try {
+                if (!this._supabase) throw new Error('Supabase no disponible');
+
                 const { data, error } = await this._supabase.functions.invoke('spirit-chat', {
                     body: {
                         message: text,
