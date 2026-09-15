@@ -4534,19 +4534,54 @@ function loadPublicLearnItems() {
             $container.empty();
 
             learnItems.forEach(item => {
+                const itemType = (item.type || 'nota').toLowerCase();
+                let typeLabel = 'General';
+                let badgeColor = 'color: #38bdf8; background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.3);';
+                let titleText = escapeHtml(item.title || item.sheet_name || item.question || 'Registro');
+                let bodyContent = '';
+
+                if (itemType === 'qa') {
+                    typeLabel = 'Q&A / FAQ';
+                    badgeColor = 'color: #c084fc; background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3);';
+                    bodyContent = `
+                        <div style="margin-bottom: 8px;"><strong style="color: #38bdf8;">P:</strong> ${escapeHtml(item.question || item.title)}</div>
+                        <div><strong style="color: #c084fc;">R:</strong> ${escapeHtml(item.answer || item.content)}</div>
+                    `;
+                } else if (itemType === 'sheet') {
+                    typeLabel = 'Google Sheets';
+                    badgeColor = 'color: #4ade80; background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3);';
+                    bodyContent = `
+                        <div style="margin-bottom: 10px;">${escapeHtml(item.content || '')}</div>
+                        ${item.sheet_url ? `<a href="${escapeHtml(item.sheet_url)}" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; color: #4ade80; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); padding: 8px 14px; border-radius: 10px; font-size: 0.82rem; font-weight: 700; text-decoration: none;"><i class="fas fa-external-link-alt"></i> Abrir Google Sheets</a>` : ''}
+                    `;
+                } else if (itemType === 'file') {
+                    typeLabel = 'Documento';
+                    badgeColor = 'color: #fb923c; background: rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.3);';
+                    bodyContent = `<div>${escapeHtml(item.content || '')}</div>`;
+                } else {
+                    typeLabel = 'Nota / Guía';
+                    badgeColor = 'color: #38bdf8; background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.3);';
+                    bodyContent = `<div>${escapeHtml(item.content)}</div>`;
+                }
+
+                const categoryLabel = item.category ? `<span style="font-size: 0.72rem; font-weight: 700; color: #94a3b8; background: rgba(255, 255, 255, 0.05); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">${escapeHtml(item.category)}</span>` : '';
+
                 const $card = $(`
                     <div class="deck-public-item sealed-product-item" style="position: relative; padding: 22px; text-align: left; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; backdrop-filter: blur(16px);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <span style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.3); text-transform: uppercase;">
-                                ${escapeHtml(item.category || 'General')}
-                            </span>
-                            <button class="btn-share-item btn-share-floating" onclick="openShareModal('${escapeHtml((item.title || '').replace(/'/g, "\\'"))}', 'learn', '${item.id}')" title="Compartir">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 0.72rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; border: 1px solid; text-transform: uppercase; ${badgeColor}">
+                                    ${typeLabel}
+                                </span>
+                                ${categoryLabel}
+                            </div>
+                            <button class="btn-share-item btn-share-floating" onclick="openShareModal('${escapeHtml(titleText.replace(/'/g, "\\'"))}', 'learn', '${item.id}')" title="Compartir">
                                 <i class="fas fa-share-alt"></i>
                             </button>
                         </div>
-                        <h3 style="margin: 0 0 10px 0; font-size: 1.15rem; font-weight: 800; color: #f8fafc; line-height: 1.35;">${escapeHtml(item.title)}</h3>
-                        <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; margin: 0 0 15px 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(item.content)}</p>
-                        ${item.image_url ? `<img src="${item.image_url}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);" alt="Imagen">` : ''}
+                        <h3 style="margin: 0 0 12px 0; font-size: 1.15rem; font-weight: 800; color: #f8fafc; line-height: 1.35;">${titleText}</h3>
+                        <div style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${bodyContent}</div>
+                        ${item.image_url ? `<img src="${item.image_url}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 14px;" alt="Imagen">` : ''}
                     </div>
                 `);
                 $container.append($card);

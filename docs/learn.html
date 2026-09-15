@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aprender - Viking TCG</title>
+    <title>Base de Conocimiento & Aprendizaje - Viking TCG</title>
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -21,18 +21,17 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
+            min-height: 100vh;
             background-color: #0b0f19;
             color: #f8fafc;
             font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
         }
 
         .learn-page-wrapper {
             display: flex;
             flex-direction: column;
-            height: 100%;
+            min-height: 100vh;
             width: 100%;
         }
 
@@ -45,7 +44,8 @@
             background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
+            position: sticky;
+            top: 0;
             z-index: 100;
         }
 
@@ -62,6 +62,7 @@
             height: 38px;
             border-radius: 50%;
             object-fit: cover;
+            border: 2px solid #38bdf8;
         }
 
         .logo-integrated h1 {
@@ -84,7 +85,7 @@
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #f8fafc;
-            padding: 7px 14px;
+            padding: 8px 16px;
             border-radius: 20px;
             font-weight: 600;
             font-size: 0.82rem;
@@ -102,72 +103,82 @@
             color: #38bdf8;
         }
 
-        /* Viewport Main Layout */
-        .learn-main-stage {
+        /* Responsive Main Container */
+        .learn-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px 20px;
+            display: grid;
+            grid-template-columns: 480px 1fr;
+            gap: 24px;
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-            gap: 16px;
-            position: relative;
-            overflow: hidden;
         }
 
-        /* 3D Character Hero Section */
-        .learn-avatar-container {
-            position: relative;
-            width: 100%;
-            max-width: 480px;
-            flex: 1;
-            min-height: 200px;
-            max-height: 360px;
+        @media (max-width: 1024px) {
+            .learn-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Column 1: Hero & Input Station */
+        .learn-left-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hero-avatar-card {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 20px;
+            backdrop-filter: blur(16px);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            min-height: 280px;
         }
 
         .thought-bubble {
-            position: absolute;
-            top: 5px;
+            position: relative;
             background: rgba(15, 23, 42, 0.95);
             border: 2px solid #38bdf8;
-            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
-            border-radius: 25px;
-            padding: 10px 22px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+            border-radius: 20px;
+            padding: 10px 20px;
             color: #ffffff;
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 0.95rem;
             text-align: center;
+            margin-bottom: 10px;
             z-index: 10;
             animation: bubbleFloat 3s ease-in-out infinite alternate;
-            backdrop-filter: blur(12px);
         }
 
         .thought-bubble::after {
             content: '';
             position: absolute;
-            bottom: -11px;
+            bottom: -10px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 9px solid transparent;
-            border-right: 9px solid transparent;
-            border-top: 11px solid #38bdf8;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 10px solid #38bdf8;
         }
 
         @keyframes bubbleFloat {
             0% { transform: translateY(0); }
-            100% { transform: translateY(-6px); }
+            100% { transform: translateY(-5px); }
         }
 
-        .spirit-3d-wrapper {
+        .spirit-3d-stage {
             width: 100%;
-            height: 100%;
-            margin-top: 25px;
+            height: 230px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -179,39 +190,149 @@
             --poster-color: transparent;
         }
 
-        /* Input Controls Dock */
-        .learn-controls-dock {
-            width: 100%;
-            max-width: 900px;
+        /* Form Card & Mode Tabs */
+        .form-station-card {
             background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 24px;
-            padding: 16px 20px;
+            padding: 20px;
             backdrop-filter: blur(16px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            flex-shrink: 0;
+            gap: 16px;
         }
 
-        .dock-grid {
+        .form-station-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-station-header h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Nav Pills for Input Mode */
+        .mode-nav-tabs {
             display: grid;
-            grid-template-columns: 1.2fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            background: rgba(30, 41, 59, 0.7);
+            padding: 6px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-tab-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 10px;
+            border-radius: 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .mode-tab-btn:hover {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mode-tab-btn.active {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        /* Form Tab Panes */
+        .tab-pane {
+            display: none;
+            flex-direction: column;
             gap: 12px;
+            animation: fadeIn 0.3s ease;
         }
 
-        @media (max-width: 768px) {
-            .dock-grid {
-                grid-template-columns: 1fr;
-            }
+        .tab-pane.active {
+            display: flex;
         }
 
-        /* Dropzone Component */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .custom-input {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #f8fafc;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .custom-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .custom-textarea {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #f8fafc;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            outline: none;
+            resize: vertical;
+            min-height: 80px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .custom-textarea:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+
+        /* File Dropzone */
         .file-dropzone {
             border: 2px dashed rgba(56, 189, 248, 0.4);
             border-radius: 16px;
-            padding: 14px;
+            padding: 18px;
             text-align: center;
             background: rgba(30, 41, 59, 0.5);
             cursor: pointer;
@@ -220,8 +341,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            min-height: 90px;
+            gap: 8px;
         }
 
         .file-dropzone:hover, .file-dropzone.dragover {
@@ -231,7 +351,7 @@
         }
 
         .file-dropzone i {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             color: #38bdf8;
         }
 
@@ -245,82 +365,15 @@
             display: none;
         }
 
-        /* Direct Input Forms */
-        .dock-inputs-column {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .dock-input-group {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .dock-input-group i {
-            position: absolute;
-            left: 14px;
-            color: #38bdf8;
-            font-size: 0.9rem;
-        }
-
-        .dock-input {
-            width: 100%;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 10px 14px 10px 38px;
-            color: #f8fafc;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.85rem;
-            outline: none;
-            transition: border-color 0.2s ease;
-        }
-
-        .dock-input:focus {
-            border-color: #38bdf8;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
-        }
-
-        .dock-textarea {
-            width: 100%;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 10px 14px;
-            color: #f8fafc;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.85rem;
-            outline: none;
-            resize: none;
-            height: 60px;
-            transition: border-color 0.2s ease;
-        }
-
-        .dock-textarea:focus {
-            border-color: #38bdf8;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
-        }
-
-        /* Action Bar */
-        .dock-action-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-top: 4px;
-        }
-
         .btn-learn-submit {
-            flex: 1;
+            width: 100%;
             background: linear-gradient(135deg, #0ea5e9, #6366f1);
             color: #ffffff;
             border: none;
-            border-radius: 12px;
-            padding: 10px 18px;
+            border-radius: 14px;
+            padding: 12px 20px;
             font-family: 'Montserrat', sans-serif;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 800;
             cursor: pointer;
             text-transform: uppercase;
@@ -330,168 +383,303 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
+            margin-top: 6px;
         }
 
         .btn-learn-submit:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.5);
         }
 
-        .btn-view-items {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            color: #38bdf8;
-            padding: 10px 16px;
-            border-radius: 12px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.82rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .btn-view-items:hover {
-            background: rgba(56, 189, 248, 0.2);
-            border-color: #38bdf8;
-        }
-
-        /* Learned Items Modal/Drawer */
-        .items-drawer-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .items-drawer-modal.active {
-            display: flex;
-        }
-
-        .items-drawer-content {
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 650px;
-            max-height: 80vh;
+        /* Column 2: Live Knowledge List Panel */
+        .learn-right-col {
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+            gap: 16px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            min-height: 500px;
         }
 
-        .items-drawer-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        .kb-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 14px;
         }
 
-        .items-drawer-header h3 {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: #38bdf8;
+        .kb-header-title {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
-        .btn-close-drawer {
-            background: none;
-            border: none;
-            color: #94a3b8;
+        .kb-header-title h2 {
+            margin: 0;
             font-size: 1.2rem;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-
-        .btn-close-drawer:hover {
+            font-weight: 800;
             color: #f8fafc;
         }
 
-        .items-drawer-body {
-            padding: 16px 20px;
-            overflow-y: auto;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        .kb-count-badge {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 800;
         }
 
-        .learn-item-card {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
-            padding: 14px 16px;
+        /* Filter Controls Bar */
+        .kb-filter-bar {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .kb-search-box {
+            flex: 1;
+            min-width: 200px;
             position: relative;
         }
 
-        .learn-item-card-header {
+        .kb-search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #38bdf8;
+            font-size: 0.85rem;
+        }
+
+        .kb-search-input {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 9px 14px 9px 38px;
+            color: #f8fafc;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.82rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .kb-search-input:focus {
+            border-color: #38bdf8;
+        }
+
+        .kb-type-pills {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        .kb-type-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .kb-type-pill:hover {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .kb-type-pill.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+            color: #38bdf8;
+        }
+
+        /* Knowledge Items List */
+        .knowledge-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 6px;
+            overflow-y: auto;
+            max-height: 700px;
+            padding-right: 4px;
+        }
+
+        .knowledge-items-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .knowledge-items-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        .kb-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .kb-card:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            background: rgba(30, 41, 59, 0.85);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .kb-card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 10px;
         }
 
-        .learn-item-tag {
-            font-size: 0.7rem;
+        .kb-card-tags {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .type-badge {
+            font-size: 0.68rem;
             font-weight: 800;
-            color: #38bdf8;
-            background: rgba(56, 189, 248, 0.15);
-            padding: 3px 8px;
+            padding: 3px 9px;
             border-radius: 12px;
-            border: 1px solid rgba(56, 189, 248, 0.3);
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
 
-        .btn-delete-item {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
+        .type-badge.qa { background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; }
+        .type-badge.sheet { background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; }
+        .type-badge.file { background: rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.4); color: #fb923c; }
+        .type-badge.nota { background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; }
+
+        .category-pill {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .kb-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-card-action {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #cbd5e1;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            font-size: 0.8rem;
         }
 
-        .btn-delete-item:hover {
-            background: rgba(239, 68, 68, 0.3);
-            transform: scale(1.05);
+        .btn-card-action:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+            color: #38bdf8;
         }
 
-        .learn-item-title {
+        .btn-card-action.btn-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .kb-card-title {
             font-size: 0.95rem;
-            font-weight: 700;
-            margin: 0;
+            font-weight: 800;
             color: #f8fafc;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .learn-item-body-text {
+        .kb-card-body {
             font-size: 0.82rem;
             color: #cbd5e1;
-            line-height: 1.4;
+            line-height: 1.5;
             white-space: pre-wrap;
             word-break: break-word;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sheet-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #4ade80;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin-top: 4px;
+        }
+
+        .sheet-link-btn:hover {
+            background: rgba(34, 197, 94, 0.25);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+        }
+
+        .empty-kb-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .empty-kb-state i {
+            font-size: 2.5rem;
+            color: rgba(56, 189, 248, 0.3);
         }
     </style>
 </head>
@@ -510,76 +698,163 @@
             </div>
         </header>
 
-        <!-- Main Single-Page Stage -->
-        <main class="learn-main-stage">
+        <!-- Main Responsive Layout -->
+        <div class="learn-container">
 
-            <!-- Center 3D Avatar Hero -->
-            <div class="learn-avatar-container">
-                <div class="thought-bubble">
-                    ¿Qué voy a aprender hoy?
-                </div>
-                <div class="spirit-3d-wrapper">
-                    <model-viewer
-                        id="learn-spirit-viewer"
-                        src="https://models.readyplayer.me/64b0f9f3f9f8c6d7a1234567.glb"
-                        camera-controls
-                        auto-rotate
-                        shadow-intensity="1"
-                        environment-image="neutral"
-                        exposure="1.2"
-                        interaction-prompt="none"
-                        camera-orbit="auto 75deg auto"
-                        disable-zoom
-                        disable-pan
-                        style="background: transparent;">
-                    </model-viewer>
-                </div>
-            </div>
+            <!-- Column 1: Hero 3D Avatar & Form Station -->
+            <div class="learn-left-col">
 
-            <!-- Input Controls Dock -->
-            <div class="learn-controls-dock">
-                <div class="dock-grid">
-                    <!-- Dropzone -->
-                    <div class="file-dropzone" id="file-dropzone">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <span id="dropzone-text">Arrastra tus documentos o imágenes aquí</span>
-                        <input type="file" id="file-input" accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg">
+                <!-- 3D Avatar Stage -->
+                <div class="hero-avatar-card">
+                    <div class="thought-bubble">
+                        ¿Qué voy a aprender hoy?
+                    </div>
+                    <div class="spirit-3d-stage">
+                        <model-viewer
+                            id="learn-spirit-viewer"
+                            src="https://models.readyplayer.me/64b0f9f3f9f8c6d7a1234567.glb"
+                            camera-controls
+                            auto-rotate
+                            shadow-intensity="1"
+                            environment-image="neutral"
+                            exposure="1.2"
+                            interaction-prompt="none"
+                            camera-orbit="auto 75deg auto"
+                            disable-zoom
+                            disable-pan
+                            style="background: transparent;">
+                        </model-viewer>
+                    </div>
+                </div>
+
+                <!-- Input Form Station -->
+                <div class="form-station-card">
+                    <div class="form-station-header">
+                        <h3><i class="fas fa-plus-circle"></i> Agregar Conocimiento</h3>
                     </div>
 
-                    <!-- Input Fields -->
-                    <div class="dock-inputs-column">
-                        <div class="dock-input-group">
-                            <i class="fas fa-table"></i>
-                            <input type="url" id="sheets-url-input" class="dock-input" placeholder="Conectar Google Sheets URL...">
+                    <!-- Input Type Selector Tabs -->
+                    <div class="mode-nav-tabs">
+                        <button type="button" class="mode-tab-btn active" data-tab="qa">
+                            <i class="fas fa-question-circle"></i> Q&A / FAQ
+                        </button>
+                        <button type="button" class="mode-tab-btn" data-tab="sheet">
+                            <i class="fas fa-table"></i> Google Sheets
+                        </button>
+                        <button type="button" class="mode-tab-btn" data-tab="file">
+                            <i class="fas fa-file-alt"></i> Archivo
+                        </button>
+                        <button type="button" class="mode-tab-btn" data-tab="note">
+                            <i class="fas fa-sticky-note"></i> Nota / Texto
+                        </button>
+                    </div>
+
+                    <!-- Tab Pane 1: Pregunta y Respuesta (Q&A) -->
+                    <div class="tab-pane active" id="pane-qa">
+                        <div class="input-group">
+                            <label><i class="fas fa-question text-sky"></i> Pregunta Frecuente *</label>
+                            <input type="text" id="qa-question-input" class="custom-input" placeholder="Ej: ¿Cuáles son sus métodos de pago?">
                         </div>
-                        <textarea id="note-text-input" class="dock-textarea" placeholder="Escribe texto plano o notas sobre tu negocio..."></textarea>
+                        <div class="input-group">
+                            <label><i class="fas fa-comment-dots text-purple"></i> Respuesta Detallada *</label>
+                            <textarea id="qa-answer-input" class="custom-textarea" placeholder="Ej: Aceptamos transferencias, tarjetas de crédito y PayPal."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label><i class="fas fa-tag"></i> Categoría / Etiqueta</label>
+                            <input type="text" id="qa-category-input" class="custom-input" placeholder="Ej: Pagos, Envíos, Horarios">
+                        </div>
                     </div>
-                </div>
 
-                <!-- Action Bar -->
-                <div class="dock-action-bar">
-                    <button type="button" class="btn-view-items" id="btn-open-drawer">
-                        <i class="fas fa-database"></i> Ver Conocimientos (<span id="items-count-badge">0</span>)
-                    </button>
+                    <!-- Tab Pane 2: Google Sheets -->
+                    <div class="tab-pane" id="pane-sheet">
+                        <div class="input-group">
+                            <label><i class="fas fa-heading text-green"></i> Nombre del Sheet / Identificador *</label>
+                            <input type="text" id="sheet-name-input" class="custom-input" placeholder="Ej: Inventario de Cartas Yu-Gi-Oh!">
+                        </div>
+                        <div class="input-group">
+                            <label><i class="fas fa-link text-green"></i> Link URL de Google Sheets *</label>
+                            <input type="url" id="sheet-url-input" class="custom-input" placeholder="https://docs.google.com/spreadsheets/d/...">
+                        </div>
+                        <div class="input-group">
+                            <label><i class="fas fa-align-left"></i> Notas adicionales</label>
+                            <textarea id="sheet-desc-input" class="custom-textarea" placeholder="Ej: Contiene precios actualizados y stock disponible en tienda."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Tab Pane 3: Archivos / Documentos -->
+                    <div class="tab-pane" id="pane-file">
+                        <div class="input-group">
+                            <label><i class="fas fa-heading text-orange"></i> Título del Documento *</label>
+                            <input type="text" id="file-title-input" class="custom-input" placeholder="Ej: Políticas de la Tienda 2025">
+                        </div>
+                        <div class="file-dropzone" id="file-dropzone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span id="dropzone-text">Arrastra tu archivo aquí o haz clic para examinar</span>
+                            <input type="file" id="file-input" accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg">
+                        </div>
+                        <div class="input-group">
+                            <label><i class="fas fa-tag"></i> Categoría</label>
+                            <input type="text" id="file-category-input" class="custom-input" placeholder="Ej: Documentos, Reglamento">
+                        </div>
+                    </div>
+
+                    <!-- Tab Pane 4: Notas / Texto Plano -->
+                    <div class="tab-pane" id="pane-note">
+                        <div class="input-group">
+                            <label><i class="fas fa-heading text-sky"></i> Título de la Nota *</label>
+                            <input type="text" id="note-title-input" class="custom-input" placeholder="Ej: Promoción Especial de Fin de Semana">
+                        </div>
+                        <div class="input-group">
+                            <label><i class="fas fa-align-left text-sky"></i> Contenido / Información *</label>
+                            <textarea id="note-content-input" class="custom-textarea" style="min-height: 100px;" placeholder="Escribe cualquier detalle importante sobre tus productos o tienda..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label><i class="fas fa-tag"></i> Categoría</label>
+                            <input type="text" id="note-category-input" class="custom-input" placeholder="Ej: Promociones, General">
+                        </div>
+                    </div>
+
+                    <!-- Submit Action Button -->
                     <button type="button" class="btn-learn-submit" id="btn-save-knowledge">
                         <i class="fas fa-brain"></i> Guardar Data
                     </button>
                 </div>
+
             </div>
 
-        </main>
-    </div>
+            <!-- Column 2: Knowledge Base Interactive List -->
+            <div class="learn-right-col">
+                <div class="kb-header">
+                    <div class="kb-header-title">
+                        <h2><i class="fas fa-database text-sky"></i> Base de Conocimientos</h2>
+                        <span class="kb-count-badge" id="items-count-badge">0 registros</span>
+                    </div>
+                </div>
 
-    <!-- Modal Drawer for Items -->
-    <div class="items-drawer-modal" id="items-drawer-modal">
-        <div class="items-drawer-content">
-            <div class="items-drawer-header">
-                <h3><i class="fas fa-book-reader"></i> Información Aprendida</h3>
-                <button class="btn-close-drawer" id="btn-close-drawer"><i class="fas fa-times"></i></button>
+                <!-- Filter & Search Controls -->
+                <div class="kb-filter-bar">
+                    <div class="kb-search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="kb-search-input" class="kb-search-input" placeholder="Buscar preguntas, sheets, notas...">
+                    </div>
+                    <div class="kb-type-pills">
+                        <button type="button" class="kb-type-pill active" data-filter="all">Todos</button>
+                        <button type="button" class="kb-type-pill" data-filter="qa">Q&A</button>
+                        <button type="button" class="kb-type-pill" data-filter="sheet">Sheets</button>
+                        <button type="button" class="kb-type-pill" data-filter="file">Archivos</button>
+                        <button type="button" class="kb-type-pill" data-filter="nota">Notas</button>
+                    </div>
+                </div>
+
+                <!-- Live Items List Container -->
+                <div class="knowledge-items-list" id="knowledge-items-list">
+                    <div class="empty-kb-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Cargando datos aprendidos...</span>
+                    </div>
+                </div>
             </div>
-            <div class="items-drawer-body" id="items-drawer-body">
-                <div style="text-align: center; color: #94a3b8; padding: 20px;">Cargando conocimientos...</div>
-            </div>
+
         </div>
     </div>
 
@@ -588,13 +863,39 @@
         let currentUserId = null;
         let currentUserProfile = null;
         let learnItems = [];
+        let activeTab = 'qa';
+        let activeFilter = 'all';
+        let searchQuery = '';
         let loadedFileContent = null;
         let loadedFileName = null;
 
         $(document).ready(async function() {
             await initLearnPage();
 
-            // File Dropzone logic
+            // Mode Navigation Tabs
+            $('.mode-tab-btn').on('click', function() {
+                $('.mode-tab-btn').removeClass('active');
+                $(this).addClass('active');
+                activeTab = $(this).data('tab');
+                $('.tab-pane').removeClass('active');
+                $(`#pane-${activeTab}`).addClass('active');
+            });
+
+            // Filter Type Pills
+            $('.kb-type-pill').on('click', function() {
+                $('.kb-type-pill').removeClass('active');
+                $(this).addClass('active');
+                activeFilter = $(this).data('filter');
+                renderKnowledgeList();
+            });
+
+            // Real-time Search
+            $('#kb-search-input').on('input', function() {
+                searchQuery = $(this).val().toLowerCase().trim();
+                renderKnowledgeList();
+            });
+
+            // File Dropzone setup
             const $dropzone = $('#file-dropzone');
             const $fileInput = $('#file-input');
 
@@ -625,24 +926,9 @@
                 }
             });
 
-            // Save Knowledge action
+            // Save Action
             $('#btn-save-knowledge').on('click', async function() {
                 await handleSaveKnowledge();
-            });
-
-            // Modal Drawer toggles
-            $('#btn-open-drawer').on('click', function() {
-                $('#items-drawer-modal').addClass('active');
-            });
-
-            $('#btn-close-drawer').on('click', function() {
-                $('#items-drawer-modal').removeClass('active');
-            });
-
-            $('#items-drawer-modal').on('click', function(e) {
-                if ($(e.target).is('#items-drawer-modal')) {
-                    $('#items-drawer-modal').removeClass('active');
-                }
             });
         });
 
@@ -705,7 +991,10 @@
 
         function handleFileSelection(file) {
             loadedFileName = file.name;
-            $('#dropzone-text').text(`📄 Archivo: ${file.name}`);
+            $('#dropzone-text').html(`📄 Archivo cargado: <strong>${escapeHtml(file.name)}</strong>`);
+            if (!$('#file-title-input').val().trim()) {
+                $('#file-title-input').val(file.name.replace(/\.[^/.]+$/, ""));
+            }
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -729,101 +1018,286 @@
             }
 
             learnItems = data || [];
-            $('#items-count-badge').text(learnItems.length);
-            renderDrawerItems();
+            $('#items-count-badge').text(`${learnItems.length} registros`);
+            renderKnowledgeList();
         }
 
-        function renderDrawerItems() {
-            const $body = $('#items-drawer-body');
-            $body.empty();
+        function renderKnowledgeList() {
+            const $container = $('#knowledge-items-list');
+            $container.empty();
 
-            if (learnItems.length === 0) {
-                $body.html('<div style="text-align: center; color: #94a3b8; padding: 20px;">Aún no has guardado información de tu negocio.</div>');
+            let filtered = learnItems.filter(item => {
+                const itemType = (item.type || 'nota').toLowerCase();
+                if (activeFilter !== 'all' && itemType !== activeFilter) return false;
+
+                if (searchQuery) {
+                    const fullText = `${item.title || ''} ${item.content || ''} ${item.question || ''} ${item.answer || ''} ${item.sheet_name || ''} ${item.category || ''}`.toLowerCase();
+                    if (!fullText.includes(searchQuery)) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                $container.html(`
+                    <div class="empty-kb-state">
+                        <i class="fas fa-folder-open"></i>
+                        <span>No se encontraron registros de conocimiento.</span>
+                    </div>
+                `);
                 return;
             }
 
-            learnItems.forEach(item => {
+            filtered.forEach(item => {
+                const itemType = (item.type || 'nota').toLowerCase();
+                let typeBadgeHtml = '';
+                let titleText = escapeHtml(item.title || item.sheet_name || item.question || 'Registro sin título');
+                let bodyHtml = '';
+
+                if (itemType === 'qa') {
+                    typeBadgeHtml = `<span class="type-badge qa"><i class="fas fa-question-circle"></i> Q&A</span>`;
+                    bodyHtml = `
+                        <div style="font-weight: 700; color: #38bdf8; margin-bottom: 4px;">P: ${escapeHtml(item.question || item.title)}</div>
+                        <div>R: ${escapeHtml(item.answer || item.content)}</div>
+                    `;
+                } else if (itemType === 'sheet') {
+                    typeBadgeHtml = `<span class="type-badge sheet"><i class="fas fa-table"></i> Google Sheets</span>`;
+                    bodyHtml = `
+                        <div>${escapeHtml(item.content || 'Sin descripción adicional.')}</div>
+                        ${item.sheet_url ? `<a href="${escapeHtml(item.sheet_url)}" target="_blank" class="sheet-link-btn"><i class="fas fa-external-link-alt"></i> Abrir Google Sheets</a>` : ''}
+                    `;
+                } else if (itemType === 'file') {
+                    typeBadgeHtml = `<span class="type-badge file"><i class="fas fa-file-alt"></i> Archivo</span>`;
+                    bodyHtml = `<div>${escapeHtml(item.content || 'Documento adjunto.')}</div>`;
+                } else {
+                    typeBadgeHtml = `<span class="type-badge nota"><i class="fas fa-sticky-note"></i> Nota</span>`;
+                    bodyHtml = `<div>${escapeHtml(item.content)}</div>`;
+                }
+
+                const categoryHtml = item.category ? `<span class="category-pill">${escapeHtml(item.category)}</span>` : '';
+
                 const $card = $(`
-                    <div class="learn-item-card">
-                        <div class="learn-item-card-header">
-                            <span class="learn-item-tag">${escapeHtml(item.category || 'General')}</span>
-                            <button class="btn-delete-item" onclick="deleteLearnItem('${item.id}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                    <div class="kb-card">
+                        <div class="kb-card-header">
+                            <div class="kb-card-tags">
+                                ${typeBadgeHtml}
+                                ${categoryHtml}
+                            </div>
+                            <div class="kb-card-actions">
+                                <button class="btn-card-action" onclick="editLearnItem('${item.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button class="btn-card-action btn-delete" onclick="deleteLearnItem('${item.id}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                            </div>
                         </div>
-                        <h4 class="learn-item-title">${escapeHtml(item.title)}</h4>
-                        <div class="learn-item-body-text">${escapeHtml(item.content)}</div>
+                        <h4 class="kb-card-title">${titleText}</h4>
+                        <div class="kb-card-body">${bodyHtml}</div>
                     </div>
                 `);
-                $body.append($card);
+
+                $container.append($card);
             });
         }
 
         async function handleSaveKnowledge() {
-            const sheetsUrl = $('#sheets-url-input').val().trim();
-            const noteText = $('#note-text-input').val().trim();
+            if (!currentUserId) return;
 
-            if (!loadedFileContent && !sheetsUrl && !noteText) {
-                Swal.fire('Campos vacíos', 'Sube un archivo, ingresa un link de Google Sheets o escribe notas.', 'warning');
-                return;
+            let payload = {
+                user_id: currentUserId,
+                type: activeTab,
+                is_public: true
+            };
+
+            if (activeTab === 'qa') {
+                const question = $('#qa-question-input').val().trim();
+                const answer = $('#qa-answer-input').val().trim();
+                const category = $('#qa-category-input').val().trim() || 'FAQ';
+
+                if (!question || !answer) {
+                    Swal.fire('Campos requeridos', 'Por favor ingresa la pregunta y la respuesta.', 'warning');
+                    return;
+                }
+
+                payload.title = `P: ${question}`;
+                payload.question = question;
+                payload.answer = answer;
+                payload.content = answer;
+                payload.category = category;
+
+            } else if (activeTab === 'sheet') {
+                const sheetName = $('#sheet-name-input').val().trim();
+                const sheetUrl = $('#sheet-url-input').val().trim();
+                const sheetDesc = $('#sheet-desc-input').val().trim();
+
+                if (!sheetName || !sheetUrl) {
+                    Swal.fire('Campos requeridos', 'Ingresa el nombre del Sheet y la URL de Google Sheets.', 'warning');
+                    return;
+                }
+
+                payload.title = sheetName;
+                payload.sheet_name = sheetName;
+                payload.sheet_url = sheetUrl;
+                payload.content = sheetDesc || `Google Sheets: ${sheetUrl}`;
+                payload.category = 'Google Sheets';
+
+            } else if (activeTab === 'file') {
+                const fileTitle = $('#file-title-input').val().trim();
+                const category = $('#file-category-input').val().trim() || 'Documentos';
+
+                if (!fileTitle) {
+                    Swal.fire('Título requerido', 'Por favor ingresa un título para el documento.', 'warning');
+                    return;
+                }
+
+                payload.title = fileTitle;
+                payload.file_name = loadedFileName || fileTitle;
+                payload.content = loadedFileContent || 'Archivo o documento guardado.';
+                payload.category = category;
+
+            } else if (activeTab === 'note') {
+                const noteTitle = $('#note-title-input').val().trim();
+                const noteContent = $('#note-content-input').val().trim();
+                const category = $('#note-category-input').val().trim() || 'Notas';
+
+                if (!noteTitle || !noteContent) {
+                    Swal.fire('Campos requeridos', 'Por favor ingresa el título y contenido de la nota.', 'warning');
+                    return;
+                }
+
+                payload.title = noteTitle;
+                payload.content = noteContent;
+                payload.category = category;
             }
 
             Swal.fire({ title: 'Guardando datos...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-            let saveCount = 0;
-
-            if (loadedFileContent) {
-                await _supabase.from('learn_items').insert([{
-                    user_id: currentUserId,
-                    title: `Documento: ${loadedFileName}`,
-                    category: 'Documento',
-                    content: loadedFileContent,
-                    is_public: true
-                }]);
-                saveCount++;
-            }
-
-            if (sheetsUrl) {
-                await _supabase.from('learn_items').insert([{
-                    user_id: currentUserId,
-                    title: 'Google Sheets Conectado',
-                    category: 'Google Sheets',
-                    content: `Link de datos: ${sheetsUrl}`,
-                    is_public: true
-                }]);
-                saveCount++;
-            }
-
-            if (noteText) {
-                await _supabase.from('learn_items').insert([{
-                    user_id: currentUserId,
-                    title: 'Nota / Data de Negocio',
-                    category: 'Notas',
-                    content: noteText,
-                    is_public: true
-                }]);
-                saveCount++;
-            }
+            const { error } = await _supabase.from('learn_items').insert([payload]);
 
             Swal.close();
-            Swal.fire({ icon: 'success', title: 'Data guardada exitosamente', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
 
-            // Reset inputs
+            if (error) {
+                Swal.fire('Error', 'No se pudo guardar la información: ' + error.message, 'error');
+            } else {
+                Swal.fire({ icon: 'success', title: 'Data guardada exitosamente', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+                resetFormInputs();
+                await loadLearnItems();
+            }
+        }
+
+        function resetFormInputs() {
+            $('#qa-question-input').val('');
+            $('#qa-answer-input').val('');
+            $('#qa-category-input').val('');
+
+            $('#sheet-name-input').val('');
+            $('#sheet-url-input').val('');
+            $('#sheet-desc-input').val('');
+
+            $('#file-title-input').val('');
+            $('#file-category-input').val('');
             loadedFileContent = null;
             loadedFileName = null;
-            $('#dropzone-text').text('Arrastra tus documentos o imágenes aquí');
+            $('#dropzone-text').text('Arrastra tu archivo aquí o haz clic para examinar');
             $('#file-input').val('');
-            $('#sheets-url-input').val('');
-            $('#note-text-input').val('');
 
-            await loadLearnItems();
+            $('#note-title-input').val('');
+            $('#note-content-input').val('');
+            $('#note-category-input').val('');
         }
+
+        window.editLearnItem = async function(id) {
+            const item = learnItems.find(i => i.id === id);
+            if (!item) return;
+
+            let htmlInputs = '';
+            const itemType = (item.type || 'nota').toLowerCase();
+
+            if (itemType === 'qa') {
+                htmlInputs = `
+                    <div style="text-align: left;">
+                        <label style="font-size:0.8rem; font-weight:700;">Pregunta Frecuente:</label>
+                        <input id="swal-qa-q" class="swal2-input" value="${escapeHtml(item.question || item.title)}" placeholder="Pregunta">
+                        <label style="font-size:0.8rem; font-weight:700; margin-top:8px;">Respuesta:</label>
+                        <textarea id="swal-qa-a" class="swal2-textarea" placeholder="Respuesta">${escapeHtml(item.answer || item.content)}</textarea>
+                        <label style="font-size:0.8rem; font-weight:700; margin-top:8px;">Categoría:</label>
+                        <input id="swal-qa-c" class="swal2-input" value="${escapeHtml(item.category || '')}" placeholder="Categoría">
+                    </div>
+                `;
+            } else if (itemType === 'sheet') {
+                htmlInputs = `
+                    <div style="text-align: left;">
+                        <label style="font-size:0.8rem; font-weight:700;">Nombre del Sheet:</label>
+                        <input id="swal-sheet-name" class="swal2-input" value="${escapeHtml(item.sheet_name || item.title)}" placeholder="Nombre">
+                        <label style="font-size:0.8rem; font-weight:700; margin-top:8px;">URL de Google Sheets:</label>
+                        <input id="swal-sheet-url" class="swal2-input" value="${escapeHtml(item.sheet_url || '')}" placeholder="URL">
+                        <label style="font-size:0.8rem; font-weight:700; margin-top:8px;">Descripción / Notas:</label>
+                        <textarea id="swal-sheet-desc" class="swal2-textarea" placeholder="Notas">${escapeHtml(item.content || '')}</textarea>
+                    </div>
+                `;
+            } else {
+                htmlInputs = `
+                    <div style="text-align: left;">
+                        <label style="font-size:0.8rem; font-weight:700;">Título:</label>
+                        <input id="swal-title" class="swal2-input" value="${escapeHtml(item.title || '')}" placeholder="Título">
+                        <label style="font-size:0.8rem; font-weight:700; margin-top:8px;">Contenido:</label>
+                        <textarea id="swal-content" class="swal2-textarea" placeholder="Contenido">${escapeHtml(item.content || '')}</textarea>
+                        <label style="font-size:0.8rem; font-weight:700; margin-top:8px;">Categoría:</label>
+                        <input id="swal-category" class="swal2-input" value="${escapeHtml(item.category || '')}" placeholder="Categoría">
+                    </div>
+                `;
+            }
+
+            const { isConfirmed } = await Swal.fire({
+                title: 'Editar Registro',
+                html: htmlInputs,
+                showCancelButton: true,
+                confirmButtonText: 'Guardar Cambios',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    let updateData = {};
+                    if (itemType === 'qa') {
+                        const q = $('#swal-qa-q').val().trim();
+                        const a = $('#swal-qa-a').val().trim();
+                        const c = $('#swal-qa-c').val().trim();
+                        if (!q || !a) { Swal.showValidationMessage('Pregunta y respuesta son requeridas'); return false; }
+                        updateData = { title: `P: ${q}`, question: q, answer: a, content: a, category: c };
+                    } else if (itemType === 'sheet') {
+                        const name = $('#swal-sheet-name').val().trim();
+                        const url = $('#swal-sheet-url').val().trim();
+                        const desc = $('#swal-sheet-desc').val().trim();
+                        if (!name || !url) { Swal.showValidationMessage('Nombre y URL de Google Sheets son requeridos'); return false; }
+                        updateData = { title: name, sheet_name: name, sheet_url: url, content: desc || `Google Sheets: ${url}` };
+                    } else {
+                        const t = $('#swal-title').val().trim();
+                        const cont = $('#swal-content').val().trim();
+                        const cat = $('#swal-category').val().trim();
+                        if (!t) { Swal.showValidationMessage('El título es requerido'); return false; }
+                        updateData = { title: t, content: cont, category: cat };
+                    }
+                    return updateData;
+                }
+            });
+
+            if (isConfirmed && Swal.getPopup()) {
+                const updateData = Swal.getPopup().formValues || {};
+                Swal.fire({ title: 'Actualizando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const { error } = await _supabase.from('learn_items').update(updateData).eq('id', id).eq('user_id', currentUserId);
+                Swal.close();
+                if (error) {
+                    Swal.fire('Error', 'No se pudo actualizar: ' + error.message, 'error');
+                } else {
+                    Swal.fire({ icon: 'success', title: 'Registro actualizado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+                    await loadLearnItems();
+                }
+            }
+        };
 
         window.deleteLearnItem = async function(id) {
             const { isConfirmed } = await Swal.fire({
                 title: '¿Eliminar este registro?',
+                text: 'Esta acción borrará la información de tu base de datos.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Sí, eliminar'
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
             });
 
             if (isConfirmed) {
