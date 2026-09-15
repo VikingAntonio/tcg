@@ -140,16 +140,23 @@ window.botInstance = {
         if (!text) return;
         if (!this.isMuted) {
             const $bubble = $('#michatbot-bubble');
-            if ($bubble.length) {
-                const cleanText = text.replace(/[*_#`~]/g, '').trim();
-                $bubble.find('.bubble-text').text(cleanText.length > 120 ? cleanText.substring(0, 117) + '...' : cleanText);
-                $bubble.stop(true, true).fadeIn(300);
+            const $chatGltfBubble = $('#chat-gltf-bubble');
+            const cleanText = text.replace(/[*_#`~]/g, '').trim();
+            const shortText = cleanText.length > 120 ? cleanText.substring(0, 117) + '...' : cleanText;
 
-                if (window.bubbleTimeout) clearTimeout(window.bubbleTimeout);
-                window.bubbleTimeout = setTimeout(() => {
-                    $bubble.fadeOut(300);
-                }, duration);
+            if ($bubble.length) {
+                $bubble.find('.bubble-text').text(shortText);
+                $bubble.stop(true, true).fadeIn(300);
             }
+            if ($chatGltfBubble.length) {
+                $chatGltfBubble.text(shortText).stop(true, true).fadeIn(300);
+            }
+
+            if (window.bubbleTimeout) clearTimeout(window.bubbleTimeout);
+            window.bubbleTimeout = setTimeout(() => {
+                if ($bubble.length) $bubble.fadeOut(300);
+                if ($chatGltfBubble.length) $chatGltfBubble.fadeOut(300);
+            }, duration);
         }
         if (this.isVoiceEnabled) {
             this.speak(text);
@@ -375,25 +382,49 @@ async function initMichatbot(forceRefresh = false) {
                     gap: 12px;
                 }
 
-                .chat-header-avatar {
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, #0284c7, #6366f1);
+                #chat-gltf-stage {
+                    width: 100%;
+                    height: 170px;
+                    position: relative;
+                    background: radial-gradient(circle at center, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.75) 80%);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    flex-shrink: 0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    color: #fff;
-                    font-size: 1.1rem;
-                    box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
                     overflow: hidden;
-                    border: 1px solid rgba(56, 189, 248, 0.5);
                 }
 
-                .chat-header-avatar model-viewer {
+                @media (max-width: 640px) {
+                    #chat-gltf-stage {
+                        height: 135px;
+                    }
+                }
+
+                #chat-gltf-stage model-viewer {
                     width: 100%;
                     height: 100%;
                     background: transparent;
+                }
+
+                #chat-gltf-bubble {
+                    position: absolute;
+                    top: 10px;
+                    right: 12px;
+                    left: 12px;
+                    background: rgba(15, 23, 42, 0.92);
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(56, 189, 248, 0.4);
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 12px rgba(56, 189, 248, 0.25);
+                    border-radius: 16px;
+                    padding: 8px 14px;
+                    color: #38bdf8;
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    text-align: center;
+                    z-index: 10;
+                    display: none;
+                    pointer-events: none;
                 }
 
                 .chat-status-indicator {
@@ -762,7 +793,7 @@ async function initMichatbot(forceRefresh = false) {
             <div id="michatbot-chat-container">
                 <div class="chat-header">
                     <div class="chat-header-title">
-                        <div class="chat-header-avatar" id="michatbot-header-avatar-container"><i class="fas fa-robot"></i></div>
+                        <i class="fas fa-robot" style="color: #38bdf8; font-size: 1.1rem;"></i>
                         <div>
                             <h3 id="michatbot-header-name" style="margin:0; font-size: 0.95rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.5px;">VikingTCG</h3>
                             <div style="font-size: 0.72rem; color: #38bdf8; display: flex; align-items: center;">
@@ -775,6 +806,13 @@ async function initMichatbot(forceRefresh = false) {
                         <div class="chat-close-btn" id="close-michatbot-chat">&times;</div>
                     </div>
                 </div>
+
+                <!-- 3D GLTF Stage inside Chat -->
+                <div id="chat-gltf-stage">
+                    <div id="chat-gltf-bubble">¡Hola! ¿En qué puedo ayudarte?</div>
+                    <div id="chat-gltf-viewer-wrapper" style="width: 100%; height: 100%;"></div>
+                </div>
+
                 <div class="chat-messages" id="michatbot-chat-messages"></div>
 
                 <div id="michatbot-image-preview-container">
@@ -1184,15 +1222,17 @@ function openMichatbotChat() {
     if (window.currentSpirit) {
         $('#michatbot-header-name').text(window.currentSpirit.name || "VikingTCG");
         if (window.currentSpirit.gltf_url) {
-            $('#michatbot-header-avatar-container').html(`
+            $('#chat-gltf-viewer-wrapper').html(`
                 <model-viewer
                     src="${window.currentSpirit.gltf_url}"
                     auto-rotate
+                    camera-controls
+                    shadow-intensity="1"
+                    exposure="1.2"
+                    environment-image="neutral"
                     interaction-prompt="none"
                     disable-zoom
                     disable-pan
-                    shadow-intensity="0"
-                    exposure="1.2"
                     camera-orbit="auto 75deg auto"
                     style="width: 100%; height: 100%; background: transparent;">
                 </model-viewer>
