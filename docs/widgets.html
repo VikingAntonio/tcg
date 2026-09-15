@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Widgets & Custom Labels - Viking TCG</title>
+    <title>Widgets & Custom Labels - Viking TCG</title>
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -43,11 +43,8 @@
         }
         .btn-header-nav:hover { background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; }
         .widgets-container {
-            max-width: 1400px; width: 100%; margin: 0 auto; padding: 24px 20px;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1;
-        }
-        @media (max-width: 1024px) {
-            .widgets-container { grid-template-columns: 1fr; }
+            max-width: 1000px; width: 100%; margin: 0 auto; padding: 24px 20px;
+            display: flex; flex-direction: column; gap: 24px; flex: 1;
         }
         .widget-card {
             background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);
@@ -60,56 +57,19 @@
         }
         .input-group { display: flex; flex-direction: column; gap: 6px; }
         .input-group label { font-size: 0.82rem; font-weight: 700; color: #cbd5e1; }
-        .custom-input {
-            width: 100%; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px; padding: 10px 14px; color: #f8fafc; font-family: 'Montserrat', sans-serif;
-            font-size: 0.88rem; outline: none; transition: border-color 0.2s ease;
-        }
-        .custom-input:focus { border-color: #38bdf8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3); }
-        .btn-primary {
-            background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; border: none;
-            border-radius: 14px; padding: 12px 20px; font-family: 'Montserrat', sans-serif;
-            font-size: 0.9rem; font-weight: 800; cursor: pointer; text-transform: uppercase;
-            letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); transition: all 0.2s ease;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(56, 189, 248, 0.5); }
         .code-snippet-box {
             background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 14px; padding: 16px; position: relative; font-family: monospace;
-            font-size: 0.85rem; color: #38bdf8; word-break: break-all; white-space: pre-wrap;
+            border-radius: 14px; padding: 18px; position: relative; font-family: monospace;
+            font-size: 0.88rem; color: #38bdf8; word-break: break-all; white-space: pre-wrap;
+            line-height: 1.5;
         }
         .btn-copy-code {
             position: absolute; top: 12px; right: 12px; background: rgba(56, 189, 248, 0.2);
-            border: 1px solid rgba(56, 189, 248, 0.5); color: #38bdf8; padding: 6px 12px;
-            border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 0.75rem;
+            border: 1px solid rgba(56, 189, 248, 0.5); color: #38bdf8; padding: 6px 14px;
+            border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 0.78rem;
             font-weight: 700; cursor: pointer; transition: all 0.2s ease;
         }
         .btn-copy-code:hover { background: #38bdf8; color: #0b0f19; }
-        .domains-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-        .domain-item {
-            background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px; padding: 14px 18px; display: flex; align-items: center;
-            justify-content: space-between; gap: 12px; transition: all 0.2s ease;
-        }
-        .domain-item:hover { background: rgba(30, 41, 59, 0.9); border-color: rgba(56, 189, 248, 0.4); }
-        .domain-info { display: flex; flex-direction: column; gap: 4px; }
-        .domain-name { font-weight: 700; font-size: 0.92rem; color: #f8fafc; }
-        .domain-owner { font-size: 0.75rem; color: #94a3b8; }
-        .domain-status {
-            font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 20px;
-            text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .status-active { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
-        .status-inactive { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
-        .domain-actions { display: flex; align-items: center; gap: 8px; }
-        .btn-action {
-            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #f8fafc; width: 34px; height: 34px; border-radius: 8px; display: flex;
-            align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;
-        }
-        .btn-action:hover { background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; }
-        .btn-action.btn-delete:hover { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #ef4444; }
     </style>
 </head>
 <body>
@@ -126,43 +86,20 @@
         </header>
 
         <div class="widgets-container">
-            <!-- Left Column: Custom Label Generator & Code Snippets -->
+            <!-- Custom Labels Generator Card -->
             <div class="widget-card">
                 <h3 class="card-title"><i class="fas fa-code"></i> Custom Labels Disponibles</h3>
-                <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0;">
-                    Copia y pega la siguiente etiqueta en tu sitio web. Configura tu personaje 3D y su conocimiento en nuestro panel, y se actualizará automáticamente en tu propio dominio.
+                <p style="font-size: 0.88rem; color: #cbd5e1; margin: 0; line-height: 1.5;">
+                    Copia y pega la siguiente etiqueta en tu código de tu propio dominio. Toda la configuración (elegir personaje 3D y agregar datos a la IA) se realiza en nuestro dominio y se actualizará en tiempo real en tu sitio web siempre que tu dominio se encuentre autorizado.
                 </p>
 
                 <div class="input-group">
-                    <label><i class="fas fa-robot text-sky"></i> Etiqueta Custom Chatbot (&lt;viking-chatbot&gt;)</label>
-                    <div class="code-snippet-box" id="code-snippet-box">
-                        <button class="btn-copy-code" id="btn-copy-snippet"><i class="fas fa-copy"></i> Copiar</button>
+                    <label><i class="fas fa-robot text-sky"></i> Chatbot 3D Guía (&lt;viking-chatbot&gt;)</label>
+                    <div class="code-snippet-box">
+                        <button class="btn-copy-code" id="btn-copy-snippet"><i class="fas fa-copy"></i> Copiar Código</button>
                         <span id="code-snippet-text">&lt;!-- VikingTCG Chatbot Widget --&gt;
 &lt;script src="https://vikingtcg.xyz/js/viking-widget.js" defer&gt;&lt;/script&gt;
 &lt;viking-chatbot&gt;&lt;/viking-chatbot&gt;</span>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label><i class="fas fa-plus-circle"></i> Registrar Nuevo Dominio</label>
-                    <input type="text" id="domain-input" class="custom-input" placeholder="Ej: misitio.com o tudominio.com">
-                </div>
-
-                <button type="button" class="btn-primary" id="btn-register-domain">
-                    <i class="fas fa-globe"></i> Registrar Dominio para Custom Label
-                </button>
-            </div>
-
-            <!-- Right Column: Registered Domains List & Admin Controls -->
-            <div class="widget-card">
-                <h3 class="card-title"><i class="fas fa-shield-alt"></i> Dominios Registrados &amp; Permisos</h3>
-                <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0;">
-                    Para que tu Custom Label funcione en tu web, el dominio debe estar activo. El administrador puede habilitar o inhabilitar dominios en cualquier momento.
-                </p>
-
-                <div class="domains-list" id="domains-list">
-                    <div style="text-align: center; padding: 20px; color: #94a3b8;">
-                        <i class="fas fa-spinner fa-spin"></i> Cargando dominios...
                     </div>
                 </div>
             </div>
@@ -171,11 +108,20 @@
 
     <script src="js/supabase-config.js"></script>
     <script>
-        let currentUserId = null;
-        let isAdmin = false;
-
         $(document).ready(async function() {
-            await initWidgetsPage();
+            if (typeof _supabase !== 'undefined') {
+                const { data: { session } } = await _supabase.auth.getSession();
+                let uid = session?.user?.id;
+                if (!uid) {
+                    const stored = localStorage.getItem('tcg_session');
+                    if (stored) { try { uid = JSON.parse(stored).id; } catch(e){} }
+                }
+                if (uid) {
+                    const { data: profile } = await _supabase.from('usuarios').select('store_name, store_logo').eq('id', uid).maybeSingle();
+                    if (profile?.store_name) $('#user-store-name').text(profile.store_name);
+                    if (profile?.store_logo) $('#user-store-logo').attr('src', profile.store_logo);
+                }
+            }
 
             $('#btn-copy-snippet').on('click', function() {
                 const text = $('#code-snippet-text').text();
@@ -190,182 +136,7 @@
                     });
                 });
             });
-
-            $('#btn-register-domain').on('click', async function() {
-                await handleRegisterDomain();
-            });
         });
-
-        async function initWidgetsPage() {
-            if (typeof _supabase === 'undefined') return;
-
-            const { data: { session } } = await _supabase.auth.getSession();
-            let sessionUser = session ? session.user : null;
-
-            if (!sessionUser) {
-                const stored = localStorage.getItem('tcg_session');
-                if (stored) {
-                    try { sessionUser = JSON.parse(stored); } catch (e) {}
-                }
-            }
-
-            if (!sessionUser) {
-                Swal.fire({
-                    title: 'Sesión requerida',
-                    text: 'Debes iniciar sesión para configurar tus custom labels.',
-                    icon: 'warning'
-                }).then(() => { window.location.href = 'index.html'; });
-                return;
-            }
-
-            currentUserId = sessionUser.id;
-
-            const { data: profile } = await _supabase.from('usuarios').select('*').eq('id', currentUserId).maybeSingle();
-            if (profile) {
-                if (profile.store_name) $('#user-store-name').text(profile.store_name);
-                if (profile.store_logo) $('#user-store-logo').attr('src', profile.store_logo);
-                if (profile.role === 'admin') isAdmin = true;
-            }
-
-            await loadRegisteredDomains();
-        }
-
-        function cleanDomain(d) {
-            if (!d) return '';
-            return d.toLowerCase()
-                .replace(/^https?:\/\//i, '')
-                .replace(/^www\./i, '')
-                .split('/')[0]
-                .split(':')[0]
-                .trim();
-        }
-
-        async function loadRegisteredDomains() {
-            if (!currentUserId) return;
-
-            let query = _supabase.from('widget_domains').select('*, usuarios(username, store_name)').order('created_at', { ascending: false });
-
-            if (!isAdmin) {
-                query = query.eq('user_id', currentUserId);
-            }
-
-            const { data, error } = await query;
-            const $list = $('#domains-list');
-            $list.empty();
-
-            if (error) {
-                console.error("Error al cargar dominios:", error);
-                $list.html('<div style="color: #ef4444; padding: 10px;">Error al cargar la lista de dominios.</div>');
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                $list.html('<div style="color: #94a3b8; text-align: center; padding: 30px;">No hay dominios registrados.</div>');
-                return;
-            }
-
-            data.forEach(item => {
-                const ownerName = item.usuarios?.store_name || item.usuarios?.username || 'Usuario';
-                const statusBadge = item.is_active
-                    ? '<span class="domain-status status-active"><i class="fas fa-check-circle"></i> Activo</span>'
-                    : '<span class="domain-status status-inactive"><i class="fas fa-times-circle"></i> Inactivo</span>';
-
-                let toggleBtn = '';
-                if (isAdmin) {
-                    const iconClass = item.is_active ? 'fas fa-toggle-on' : 'fas fa-toggle-off';
-                    const toggleTitle = item.is_active ? 'Desactivar dominio' : 'Activar dominio';
-                    toggleBtn = `<button class="btn-action" onclick="toggleDomainActive('${item.id}', ${!item.is_active})" title="${toggleTitle}"><i class="${iconClass}" style="color: ${item.is_active ? '#4ade80' : '#f87171'}"></i></button>`;
-                }
-
-                const $item = $(`
-                    <div class="domain-item">
-                        <div class="domain-info">
-                            <span class="domain-name"><i class="fas fa-globe text-sky"></i> ${escapeHtml(item.domain)}</span>
-                            <span class="domain-owner"><i class="fas fa-user"></i> ${escapeHtml(ownerName)} | Label: ${escapeHtml(item.widget_type)}</span>
-                        </div>
-                        <div class="domain-actions">
-                            ${statusBadge}
-                            ${toggleBtn}
-                            <button class="btn-action btn-delete" onclick="deleteDomain('${item.id}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
-                        </div>
-                    </div>
-                `);
-
-                $list.append($item);
-            });
-        }
-
-        async function handleRegisterDomain() {
-            const rawDomain = $('#domain-input').val().trim();
-            const domain = cleanDomain(rawDomain);
-
-            if (!domain) {
-                Swal.fire('Dominio requerido', 'Ingresa un dominio válido.', 'warning');
-                return;
-            }
-
-            Swal.fire({ title: 'Registrando dominio...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-            const payload = {
-                user_id: currentUserId,
-                domain: domain,
-                widget_type: 'chatbot',
-                is_active: true
-            };
-
-            const { error } = await _supabase.from('widget_domains').insert([payload]);
-
-            Swal.close();
-
-            if (error) {
-                if (error.code === '23505') {
-                    Swal.fire('Dominio ya registrado', 'Este dominio ya está registrado para el custom label seleccionado.', 'info');
-                } else {
-                    Swal.fire('Error', 'No se pudo registrar el dominio: ' + error.message, 'error');
-                }
-            } else {
-                Swal.fire({ icon: 'success', title: 'Dominio registrado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
-                $('#domain-input').val('');
-                await loadRegisteredDomains();
-            }
-        }
-
-        window.toggleDomainActive = async function(id, newStatus) {
-            Swal.fire({ title: 'Actualizando permiso...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            const { error } = await _supabase.from('widget_domains').update({ is_active: newStatus }).eq('id', id);
-            Swal.close();
-            if (error) {
-                Swal.fire('Error', 'No se pudo actualizar el dominio: ' + error.message, 'error');
-            } else {
-                await loadRegisteredDomains();
-            }
-        };
-
-        window.deleteDomain = async function(id) {
-            const { isConfirmed } = await Swal.fire({
-                title: '¿Eliminar dominio?',
-                text: 'El custom label dejará de funcionar inmediatamente en ese dominio.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            });
-
-            if (isConfirmed) {
-                const { error } = await _supabase.from('widget_domains').delete().eq('id', id);
-                if (error) {
-                    Swal.fire('Error', 'No se pudo eliminar el dominio: ' + error.message, 'error');
-                } else {
-                    await loadRegisteredDomains();
-                }
-            }
-        };
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
     </script>
 </body>
 </html>
