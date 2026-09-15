@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprender - Vikingdev TCG</title>
+    <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Integrated Header */
+        header.integrated-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 30px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-integrated {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .logo-integrated img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .logo-integrated h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-header-nav {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f8fafc;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-header-nav:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+            color: #38bdf8;
+            transform: translateY(-1px);
+        }
+
+        /* Main Container */
+        .learn-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px 60px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 3D Hero Section */
+        .learn-hero-stage {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .thought-bubble {
+            position: absolute;
+            top: -10px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #38bdf8;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
+            border-radius: 25px;
+            padding: 14px 28px;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-align: center;
+            z-index: 10;
+            animation: bubbleFloat 3s ease-in-out infinite alternate;
+            backdrop-filter: blur(10px);
+        }
+
+        .thought-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 12px solid #38bdf8;
+        }
+
+        @keyframes bubbleFloat {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+        }
+
+        .spirit-3d-wrapper {
+            width: 100%;
+            height: 320px;
+            margin-top: 40px;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            --poster-color: transparent;
+        }
+
+        /* Main Management Section */
+        .learn-content-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .learn-content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .learn-card-panel {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin: 0 0 20px 0;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group-learn {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group-learn label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input-learn, .form-textarea-learn, .form-select-learn {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #f8fafc;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input-learn:focus, .form-textarea-learn:focus, .form-select-learn:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+        }
+
+        .form-textarea-learn {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn-submit-learn {
+            width: 100%;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.4);
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .btn-submit-learn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(56, 189, 248, 0.6);
+        }
+
+        /* Items List */
+        .learn-items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .learn-items-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .learn-items-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        .learn-item-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .learn-item-card:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            background: rgba(30, 41, 59, 0.85);
+        }
+
+        .learn-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .learn-item-category {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            text-transform: uppercase;
+        }
+
+        .learn-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-item-action {
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: #cbd5e1;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-item-action:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .btn-item-action.edit:hover {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+        }
+
+        .learn-item-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin: 0;
+        }
+
+        .learn-item-content {
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .learn-item-img {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .empty-learn-msg {
+            text-align: center;
+            color: #94a3b8;
+            padding: 40px 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Integrated Header -->
+    <header class="integrated-header">
+        <a href="admin.html" class="logo-integrated">
+            <img id="user-store-logo" src="https://vikingtcg.xyz/favi.png" alt="Logo">
+            <h1 id="user-store-name">Viking TCG</h1>
+        </a>
+        <div class="header-actions">
+            <a href="admin.html" class="btn-header-nav"><i class="fas fa-lock"></i> Panel Admin</a>
+            <a href="#" id="btn-public-link" class="btn-header-nav" target="_blank"><i class="fas fa-external-link-alt"></i> Ver Link Público</a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="learn-container">
+
+        <!-- 3D Hero Section -->
+        <div class="learn-hero-stage">
+            <div class="thought-bubble" id="learn-thought-bubble">
+                ¿Qué voy a aprender hoy?
+            </div>
+            <div class="spirit-3d-wrapper">
+                <model-viewer
+                    id="learn-spirit-viewer"
+                    src="https://models.readyplayer.me/64b0f9f3f9f8c6d7a1234567.glb"
+                    camera-controls
+                    auto-rotate
+                    shadow-intensity="1"
+                    environment-image="neutral"
+                    exposure="1.2"
+                    interaction-prompt="none"
+                    camera-orbit="auto 75deg auto"
+                    disable-zoom
+                    disable-pan
+                    style="background: transparent;">
+                </model-viewer>
+            </div>
+        </div>
+
+        <!-- Management Panel -->
+        <div class="learn-content-grid">
+
+            <!-- Form Panel -->
+            <div class="learn-card-panel">
+                <h3 class="panel-title"><i class="fas fa-edit"></i> <span id="form-title-text">Agregar Información / Data</span></h3>
+                <form id="form-learn-item">
+                    <input type="hidden" id="learn-item-id" value="">
+
+                    <div class="form-group-learn">
+                        <label for="learn-title">Título *</label>
+                        <input type="text" id="learn-title" class="form-input-learn" placeholder="Ej: Horarios de Atención / Reglas de Torneos" required>
+                    </div>
+
+                    <div class="form-group-learn">
+                        <label for="learn-category">Categoría</label>
+                        <select id="learn-category" class="form-select-learn">
+                            <option value="General">General</option>
+                            <option value="Negocio">Información de Negocio</option>
+                            <option value="Guías">Guías y Aprendizaje</option>
+                            <option value="Anuncios">Anuncios / Eventos</option>
+                            <option value="Preguntas Frecuentes">Preguntas Frecuentes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group-learn">
+                        <label for="learn-content">Contenido / Data *</label>
+                        <textarea id="learn-content" class="form-textarea-learn" placeholder="Escribe aquí los datos o información que quieras mostrar en tu link público..." required></textarea>
+                    </div>
+
+                    <div class="form-group-learn">
+                        <label for="learn-image">URL de Imagen (Opcional)</label>
+                        <input type="url" id="learn-image" class="form-input-learn" placeholder="https://...">
+                    </div>
+
+                    <div class="form-group-learn" style="flex-direction: row; align-items: center; justify-content: space-between; margin-top: 6px;">
+                        <label for="learn-public" style="margin: 0; cursor: pointer;">Mostrar en Link Público</label>
+                        <input type="checkbox" id="learn-public" checked style="width: 18px; height: 18px; accent-color: #38bdf8; cursor: pointer;">
+                    </div>
+
+                    <button type="submit" class="btn-submit-learn" id="btn-save-learn">
+                        <i class="fas fa-save"></i> Guardar Data
+                    </button>
+                    <button type="button" class="btn-header-nav" id="btn-cancel-edit" style="width: 100%; margin-top: 8px; justify-content: center; display: none;">
+                        Cancelar Edición
+                    </button>
+                </form>
+            </div>
+
+            <!-- List Panel -->
+            <div class="learn-card-panel">
+                <h3 class="panel-title"><i class="fas fa-list-ul"></i> Tu Data de Negocio / Aprendizaje</h3>
+                <div class="learn-items-container" id="learn-items-list">
+                    <div class="empty-learn-msg">Cargando datos...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/supabase-config.js"></script>
+    <script>
+        let currentUserId = null;
+        let currentUserProfile = null;
+        let learnItems = [];
+
+        $(document).ready(async function() {
+            await initLearnPage();
+
+            $('#form-learn-item').on('submit', async function(e) {
+                e.preventDefault();
+                await handleSaveLearnItem();
+            });
+
+            $('#btn-cancel-edit').on('click', function() {
+                resetForm();
+            });
+        });
+
+        async function initLearnPage() {
+            if (typeof _supabase === 'undefined') {
+                Swal.fire('Error', 'No se pudo conectar con Supabase.', 'error');
+                return;
+            }
+
+            const { data: { session } } = await _supabase.auth.getSession();
+            let sessionUser = session ? session.user : null;
+
+            if (!sessionUser) {
+                const stored = localStorage.getItem('tcg_session');
+                if (stored) {
+                    try { sessionUser = JSON.parse(stored); } catch (e) {}
+                }
+            }
+
+            if (!sessionUser) {
+                Swal.fire({
+                    title: 'Sesión requerida',
+                    text: 'Debes iniciar sesión para administrar la información de tu negocio.',
+                    icon: 'warning',
+                    confirmButtonText: 'Iniciar Sesión'
+                }).then(() => {
+                    window.location.href = 'index.html';
+                });
+                return;
+            }
+
+            currentUserId = sessionUser.id;
+
+            // Fetch profile
+            const { data: profile } = await _supabase.from('usuarios').select('*').eq('id', currentUserId).maybeSingle();
+            if (profile) {
+                currentUserProfile = profile;
+                if (profile.store_name) {
+                    $('#user-store-name').text(profile.store_name);
+                } else if (profile.username) {
+                    $('#user-store-name').text(profile.username);
+                }
+
+                if (profile.store_logo) {
+                    $('#user-store-logo').attr('src', profile.store_logo);
+                }
+
+                const publicIdentifier = profile.store_name || profile.username || currentUserId;
+                $('#btn-public-link').attr('href', `public.html?id=${encodeURIComponent(publicIdentifier)}&view=learn`);
+
+                // Load selected 3D spirit
+                if (profile.selected_spirit_id) {
+                    const { data: spirit } = await _supabase.from('spirits').select('*').eq('id', profile.selected_spirit_id).maybeSingle();
+                    if (spirit && spirit.gltf_url) {
+                        $('#learn-spirit-viewer').attr('src', spirit.gltf_url);
+                    }
+                } else {
+                    const { data: defaultSpirit } = await _supabase.from('spirits').select('*').eq('is_public', true).limit(1).maybeSingle();
+                    if (defaultSpirit && defaultSpirit.gltf_url) {
+                        $('#learn-spirit-viewer').attr('src', defaultSpirit.gltf_url);
+                    }
+                }
+            }
+
+            await loadLearnItems();
+        }
+
+        async function loadLearnItems() {
+            if (!currentUserId) return;
+
+            const { data, error } = await _supabase
+                .from('learn_items')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .order('created_at', { ascending: false });
+
+            const $list = $('#learn-items-list');
+            $list.empty();
+
+            if (error) {
+                console.error("Error cargando learn_items:", error);
+                $list.html('<div class="empty-learn-msg">Error al cargar datos. Verifica la tabla learn_items.</div>');
+                return;
+            }
+
+            learnItems = data || [];
+
+            if (learnItems.length === 0) {
+                $list.html('<div class="empty-learn-msg">Aún no has agregado datos de negocio o aprendizaje. ¡Agrega tu primer registro arriba!</div>');
+                return;
+            }
+
+            learnItems.forEach(item => {
+                const $card = $(`
+                    <div class="learn-item-card" id="learn-card-${item.id}">
+                        <div class="learn-item-header">
+                            <span class="learn-item-category">${escapeHtml(item.category || 'General')}</span>
+                            <div class="learn-item-actions">
+                                <button class="btn-item-action edit" onclick="editLearnItem('${item.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button class="btn-item-action" onclick="deleteLearnItem('${item.id}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                        <h4 class="learn-item-title">${escapeHtml(item.title)}</h4>
+                        <div class="learn-item-content">${escapeHtml(item.content)}</div>
+                        ${item.image_url ? `<img src="${item.image_url}" class="learn-item-img" alt="Imagen">` : ''}
+                    </div>
+                `);
+                $list.append($card);
+            });
+        }
+
+        async function handleSaveLearnItem() {
+            const itemId = $('#learn-item-id').val();
+            const title = $('#learn-title').val().trim();
+            const category = $('#learn-category').val();
+            const content = $('#learn-content').val().trim();
+            const imageUrl = $('#learn-image').val().trim();
+            const isPublic = $('#learn-public').is(':checked');
+
+            if (!title || !content) {
+                Swal.fire('Campos requeridos', 'Por favor llena el título y contenido.', 'warning');
+                return;
+            }
+
+            const payload = {
+                user_id: currentUserId,
+                title,
+                category,
+                content,
+                image_url: imageUrl,
+                is_public: isPublic
+            };
+
+            Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            let err = null;
+            if (itemId) {
+                const { error } = await _supabase.from('learn_items').update(payload).eq('id', itemId).eq('user_id', currentUserId);
+                err = error;
+            } else {
+                const { error } = await _supabase.from('learn_items').insert([payload]);
+                err = error;
+            }
+
+            Swal.close();
+
+            if (err) {
+                console.error("Error en learn_items:", err);
+                Swal.fire('Error', 'No se pudo guardar: ' + err.message, 'error');
+            } else {
+                Swal.fire({ icon: 'success', title: 'Guardado con éxito', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+                resetForm();
+                await loadLearnItems();
+            }
+        }
+
+        window.editLearnItem = function(id) {
+            const item = learnItems.find(i => String(i.id) === String(id));
+            if (!item) return;
+
+            $('#learn-item-id').val(item.id);
+            $('#learn-title').val(item.title);
+            $('#learn-category').val(item.category || 'General');
+            $('#learn-content').val(item.content);
+            $('#learn-image').val(item.image_url || '');
+            $('#learn-public').prop('checked', item.is_public !== false);
+
+            $('#form-title-text').text('Editar Información / Data');
+            $('#btn-save-learn').html('<i class="fas fa-sync-alt"></i> Actualizar Data');
+            $('#btn-cancel-edit').show();
+
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+        };
+
+        window.deleteLearnItem = async function(id) {
+            const { isConfirmed } = await Swal.fire({
+                title: '¿Eliminar registro?',
+                text: 'Esta acción eliminará la información seleccionada.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, eliminar'
+            });
+
+            if (isConfirmed) {
+                const { error } = await _supabase.from('learn_items').delete().eq('id', id).eq('user_id', currentUserId);
+                if (error) {
+                    Swal.fire('Error', 'No se pudo eliminar: ' + error.message, 'error');
+                } else {
+                    Swal.fire({ icon: 'success', title: 'Eliminado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+                    await loadLearnItems();
+                }
+            }
+        };
+
+        function resetForm() {
+            $('#learn-item-id').val('');
+            $('#form-learn-item')[0].reset();
+            $('#learn-public').prop('checked', true);
+            $('#form-title-text').text('Agregar Información / Data');
+            $('#btn-save-learn').html('<i class="fas fa-save"></i> Guardar Data');
+            $('#btn-cancel-edit').hide();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

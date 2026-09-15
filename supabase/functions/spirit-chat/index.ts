@@ -334,6 +334,11 @@ REGLAS DE EVALUACIÓN:
             parameters: { type: "OBJECT", properties: {} }
           },
           {
+            name: "get_user_learn_items",
+            description: "Obtiene la información de aprendizaje o datos de negocio registrados en learn.html de la tienda.",
+            parameters: { type: "OBJECT", properties: {} }
+          },
+          {
             name: "create_album",
             description: "[SOLO ADMIN] Crea un nuevo álbum para la tienda.",
             parameters: {
@@ -651,6 +656,23 @@ REGLAS DE EVALUACIÓN:
             }
           },
           {
+            name: "manage_learn_items",
+            description: "[SOLO ADMIN] Administra la información de aprendizaje/negocio de learn.html (crear, modificar o eliminar).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "create, update, delete" },
+                itemId: { type: "STRING" },
+                title: { type: "STRING" },
+                content: { type: "STRING" },
+                category: { type: "STRING" },
+                image_url: { type: "STRING" },
+                is_public: { type: "BOOLEAN" }
+              },
+              required: ["action"]
+            }
+          },
+          {
             name: "update_store_info",
             description: "[SOLO ADMIN] Actualiza la información básica de la tienda.",
             parameters: {
@@ -674,7 +696,7 @@ REGLAS DE EVALUACIÓN:
         "add_cards_to_deck", "update_deck_card", "remove_cards_from_deck",
         "add_sealed_product", "update_sealed_product", "remove_sealed_product",
         "add_to_wishlist", "update_wishlist_card", "remove_from_wishlist",
-        "manage_claims", "manage_investments", "update_store_info"
+        "manage_claims", "manage_investments", "manage_learn_items", "update_store_info"
       ];
 
       if (writeTools.includes(name) && !is_admin) {
@@ -759,6 +781,12 @@ REGLAS DE EVALUACIÓN:
           if (!targetUserId) return { error: "ID de usuario no disponible." };
           const { data: subastas } = await supabase.from("subastas").select("*").eq("user_id", targetUserId);
           return { subastas: subastas || [] };
+        }
+
+        case "get_user_learn_items": {
+          if (!targetUserId) return { error: "ID de usuario no disponible." };
+          const { data: learnItems } = await supabase.from("learn_items").select("*").eq("user_id", targetUserId).order("created_at", { ascending: false });
+          return { learn_items: learnItems || [] };
         }
 
         case "get_cart_and_payment_info": {
@@ -1341,6 +1369,41 @@ REGLAS DE EVALUACIÓN:
             return { success: true, message: "Carta de inversión eliminada." };
           }
           return { error: "Acción no válida en manage_investments." };
+        }
+
+        case "manage_learn_items": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, itemId, title, content, category, image_url, is_public } = args;
+
+          if (action === "create") {
+            const { data: newItem, error } = await supabase.from("learn_items").insert([{
+              user_id: targetUserId,
+              title: title || "Nuevo Aprendizaje / Información",
+              content: content || "",
+              category: category || "General",
+              image_url: image_url || "",
+              is_public: is_public !== undefined ? is_public : true
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Información/Aprendizaje '${title}' guardado con éxito.`, item: newItem };
+          } else if (action === "update") {
+            if (!itemId) return { error: "itemId requerido para actualizar." };
+            const upData: any = {};
+            if (title) upData.title = title;
+            if (content !== undefined) upData.content = content;
+            if (category) upData.category = category;
+            if (image_url !== undefined) upData.image_url = image_url;
+            if (is_public !== undefined) upData.is_public = is_public;
+            const { error } = await supabase.from("learn_items").update(upData).eq("id", itemId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Información de learn.html actualizada." };
+          } else if (action === "delete") {
+            if (!itemId) return { error: "itemId requerido para eliminar." };
+            const { error } = await supabase.from("learn_items").delete().eq("id", itemId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Elemento de learn.html eliminado." };
+          }
+          return { error: "Acción no válida en manage_learn_items." };
         }
 
         case "update_store_info": {

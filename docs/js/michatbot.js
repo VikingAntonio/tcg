@@ -376,8 +376,8 @@ async function initMichatbot(forceRefresh = false) {
                 }
 
                 .chat-header-avatar {
-                    width: 38px;
-                    height: 38px;
+                    width: 44px;
+                    height: 44px;
                     border-radius: 50%;
                     background: linear-gradient(135deg, #0284c7, #6366f1);
                     display: flex;
@@ -385,7 +385,15 @@ async function initMichatbot(forceRefresh = false) {
                     justify-content: center;
                     color: #fff;
                     font-size: 1.1rem;
-                    box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+                    box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+                    overflow: hidden;
+                    border: 1px solid rgba(56, 189, 248, 0.5);
+                }
+
+                .chat-header-avatar model-viewer {
+                    width: 100%;
+                    height: 100%;
+                    background: transparent;
                 }
 
                 .chat-status-indicator {
@@ -754,11 +762,11 @@ async function initMichatbot(forceRefresh = false) {
             <div id="michatbot-chat-container">
                 <div class="chat-header">
                     <div class="chat-header-title">
-                        <div class="chat-header-avatar"><i class="fas fa-robot"></i></div>
+                        <div class="chat-header-avatar" id="michatbot-header-avatar-container"><i class="fas fa-robot"></i></div>
                         <div>
-                            <h3 style="margin:0; font-size: 0.95rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.5px;">VikingTCG</h3>
-                            <div style="font-size: 0.72rem; color: #94a3b8; display: flex; align-items: center;">
-                                En línea <span class="chat-status-indicator"></span>
+                            <h3 id="michatbot-header-name" style="margin:0; font-size: 0.95rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.5px;">VikingTCG</h3>
+                            <div style="font-size: 0.72rem; color: #38bdf8; display: flex; align-items: center;">
+                                Tu Espíritu Guía <span class="chat-status-indicator"></span>
                             </div>
                         </div>
                     </div>
@@ -1173,6 +1181,25 @@ function openMichatbotChat() {
     $container.css('display', 'flex').hide().fadeIn(300);
     $('#michatbot-menu').fadeOut(250);
 
+    if (window.currentSpirit) {
+        $('#michatbot-header-name').text(window.currentSpirit.name || "VikingTCG");
+        if (window.currentSpirit.gltf_url) {
+            $('#michatbot-header-avatar-container').html(`
+                <model-viewer
+                    src="${window.currentSpirit.gltf_url}"
+                    auto-rotate
+                    interaction-prompt="none"
+                    disable-zoom
+                    disable-pan
+                    shadow-intensity="0"
+                    exposure="1.2"
+                    camera-orbit="auto 75deg auto"
+                    style="width: 100%; height: 100%; background: transparent;">
+                </model-viewer>
+            `);
+        }
+    }
+
     if ($('#michatbot-chat-messages').is(':empty')) {
         const spiritName = window.currentSpirit ? window.currentSpirit.name : "VikingTCG";
         const welcomeText = `¡Hola! Soy ${spiritName}, ¿En qué te puedo ayudar hoy?`;
@@ -1214,6 +1241,9 @@ function setupMobileViewportKeyboardHandling() {
             container.style.width = viewport.width + 'px';
             container.style.height = viewport.height + 'px';
             container.style.maxHeight = viewport.height + 'px';
+            container.style.bottom = 'auto';
+            container.style.right = 'auto';
+
             window.scrollTo(0, 0);
             document.body.scrollTop = 0;
         }
@@ -1231,13 +1261,15 @@ function setupMobileViewportKeyboardHandling() {
 
     const handleFocus = () => {
         setTimeout(updateLayout, 50);
-        setTimeout(updateLayout, 200);
-        setTimeout(updateLayout, 400);
+        setTimeout(updateLayout, 150);
+        setTimeout(updateLayout, 300);
+        setTimeout(updateLayout, 500);
     };
 
     if (input) {
         input.addEventListener('focus', handleFocus);
         input.addEventListener('click', handleFocus);
+        input.addEventListener('touchstart', handleFocus, { passive: true });
     }
 
     cleanupMobileViewportEvents = () => {
@@ -1248,6 +1280,7 @@ function setupMobileViewportKeyboardHandling() {
         if (input) {
             input.removeEventListener('focus', handleFocus);
             input.removeEventListener('click', handleFocus);
+            input.removeEventListener('touchstart', handleFocus);
         }
     };
 
