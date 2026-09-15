@@ -377,7 +377,7 @@ $(document).ready(async function() {
     // --- Initial Entry Logic ---
     try {
         // Validation for the initial view (fixes common truncations like "albu")
-        const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+        const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
         if (!validViews.includes(initialView)) {
             if (initialView.startsWith('albu')) initialView = 'albums';
             else if (initialView.startsWith('deck')) initialView = 'decks';
@@ -388,6 +388,7 @@ $(document).ready(async function() {
             else if (initialView.startsWith('claim')) initialView = 'claims';
             else if (initialView.startsWith('auct') || initialView.startsWith('suba')) initialView = 'auctions';
             else if (initialView.startsWith('invest')) initialView = 'investments';
+            else if (initialView.startsWith('learn')) initialView = 'learn';
             else initialView = 'home';
         }
 
@@ -1386,7 +1387,7 @@ async function switchView(view, skipPush = false) {
     }
 
     // Robust View Validation (fixes common truncations like "albu")
-    const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+    const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
     const originalView = view;
     let wasCorrected = false;
 
@@ -1400,6 +1401,7 @@ async function switchView(view, skipPush = false) {
         else if (view.startsWith('claim')) view = 'claims';
         else if (view.startsWith('auct') || view.startsWith('suba')) view = 'auctions';
         else if (view.startsWith('invest')) view = 'investments';
+        else if (view.startsWith('learn')) view = 'learn';
         else view = 'home';
 
         if (view !== originalView) wasCorrected = true;
@@ -1541,6 +1543,8 @@ async function switchView(view, skipPush = false) {
         }
     } else if (view === 'investments') {
         await loadPublicInvestmentCategories();
+    } else if (view === 'learn') {
+        await loadPublicLearnItems();
     }
 
     if (window.botInstance) {
@@ -4488,6 +4492,79 @@ window.openAlbumExtraImageModal = function(imgUrl) {
         }
     });
 };
+
+function loadPublicLearnItems() {
+    return new Promise(async (resolve) => {
+        let userId = window.currentStoreId;
+        const identifier = window.currentStoreIdentifier || new URLSearchParams(window.location.search).get('id') || new URLSearchParams(window.location.search).get('store') || new URLSearchParams(window.location.search).get('user');
+
+        if (!userId && identifier) {
+            const user = await resolveUser(identifier);
+            if (user) {
+                userId = user.id;
+                window.currentStoreId = userId;
+            }
+        }
+
+        if (!userId) {
+            $('#learn-container').html('<div class="error" style="grid-column: 1/-1; padding: 40px; text-align: center;">Tienda o Usuario no encontrado.</div>');
+            resolve();
+            return;
+        }
+
+        $('#learn-container').html('<div class="loading" style="grid-column: 1/-1; padding: 60px; text-align: center; color: #38bdf8;"><i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>Cargando información...</div>');
+
+        try {
+            const { data: learnItems, error } = await _supabase
+                .from('learn_items')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('is_public', true)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!learnItems || learnItems.length === 0) {
+                $('#learn-container').html('<div class="empty" style="grid-column: 1/-1; padding: 60px; text-align: center; color: #94a3b8;">Esta tienda aún no tiene información o guías públicas.</div>');
+                resolve();
+                return;
+            }
+
+            const $container = $('#learn-container');
+            $container.empty();
+
+            learnItems.forEach(item => {
+                const $card = $(`
+                    <div class="deck-public-item sealed-product-item" style="position: relative; padding: 22px; text-align: left; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; backdrop-filter: blur(16px);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <span style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.3); text-transform: uppercase;">
+                                ${escapeHtml(item.category || 'General')}
+                            </span>
+                            <button class="btn-share-item btn-share-floating" onclick="openShareModal('${escapeHtml((item.title || '').replace(/'/g, "\\'"))}', 'learn', '${item.id}')" title="Compartir">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                        <h3 style="margin: 0 0 10px 0; font-size: 1.15rem; font-weight: 800; color: #f8fafc; line-height: 1.35;">${escapeHtml(item.title)}</h3>
+                        <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; margin: 0 0 15px 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(item.content)}</p>
+                        ${item.image_url ? `<img src="${item.image_url}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);" alt="Imagen">` : ''}
+                    </div>
+                `);
+                $container.append($card);
+            });
+
+        } catch (e) {
+            console.error("Error al cargar learn_items públicos:", e);
+            $('#learn-container').html('<div class="error" style="grid-column: 1/-1; padding: 40px; text-align: center; color: #ef4444;">Error al cargar información.</div>');
+        } finally {
+            resolve();
+        }
+    });
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 
 function getCoverHtml(style, title, color) {
     let styleClass = "style-cosmic";
