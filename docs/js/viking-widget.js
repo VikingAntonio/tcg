@@ -7,6 +7,7 @@
 (function () {
     const SUPABASE_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRefiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
+    const DEFAULT_GLTF_URL = 'https://models.readyplayer.me/64b0f9f3f9f8c6d7a1234567.glb';
 
     function cleanDomain(d) {
         if (!d) return '';
@@ -52,48 +53,52 @@
         }
 
         async connectedCallback() {
-            const rawDomain = this.getAttribute('domain') || window.location.hostname || '';
-            const domain = cleanDomain(rawDomain);
+            const attrDomain = this.getAttribute('domain') || '';
+            const hostDomain = window.location.hostname || '';
+            const rawDomain = attrDomain || hostDomain || '';
+            const targetDomain = cleanDomain(rawDomain);
 
-            if (!domain) {
-                console.warn('[VikingChatbot] No domain provided or detected.');
-                return;
-            }
+            console.log('[VikingChatbot] Iniciando custom label widget. Dominio objetivo:', targetDomain);
 
             try {
-                // Ensure dependencies loaded
-                if (typeof window.supabase === 'undefined' && typeof window.createClient === 'undefined') {
+                // Load fontawesome and Montserrat font
+                loadCSS('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+                loadCSS('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+                // Ensure Supabase SDK loaded
+                if (typeof window.supabase === 'undefined') {
                     await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
                 }
+
+                // Ensure model-viewer custom element loaded
                 if (!customElements.get('model-viewer')) {
                     const mvModule = document.createElement('script');
                     mvModule.type = 'module';
                     mvModule.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js';
                     document.head.appendChild(mvModule);
                 }
-                loadCSS('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
-                loadCSS('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
                 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
                 if (!supabaseClient) {
-                    console.error('[VikingChatbot] Failed to initialize Supabase client.');
+                    console.error('[VikingChatbot] No se pudo instanciar el cliente Supabase.');
                     return;
                 }
                 this._supabase = supabaseClient;
 
-                // Lookup active domain authorization
-                const { data: domains } = await this._supabase
+                // 1. Query active widget domains
+                const { data: domains, error: domainErr } = await this._supabase
                     .from('widget_domains')
                     .select('user_id, is_active, domain')
                     .eq('is_active', true);
 
                 let matchedUserId = null;
+
                 if (domains && domains.length > 0) {
-                    const found = domains.find(d => cleanDomain(d.domain) === domain);
+                    const found = domains.find(d => cleanDomain(d.domain) === targetDomain);
                     if (found) matchedUserId = found.user_id;
                 }
 
-                // Fallback check against usuarios custom_domain
+                // 2. Fallback check against usuarios custom_domain
                 if (!matchedUserId) {
                     const { data: usersWithDomain } = await this._supabase
                         .from('usuarios')
@@ -101,36 +106,45 @@
                         .not('custom_domain', 'is', null);
 
                     if (usersWithDomain && usersWithDomain.length > 0) {
-                        const foundUser = usersWithDomain.find(u => cleanDomain(u.custom_domain) === domain);
+                        const foundUser = usersWithDomain.find(u => cleanDomain(u.custom_domain) === targetDomain);
                         if (foundUser) matchedUserId = foundUser.id;
                     }
                 }
 
+                // 3. Fallback for local preview (VS Code Live Server, localhost, 127.0.0.1, file://)
+                const isLocalPreview = hostDomain === 'localhost' || hostDomain === '127.0.0.1' || hostDomain === '' || window.location.protocol === 'file:';
+                if (!matchedUserId && isLocalPreview) {
+                    console.info('[VikingChatbot] Entorno de prueba local detectado. Buscando dominio activo coincidente o predeterminado.');
+                    if (domains && domains.length > 0) {
+                        matchedUserId = domains[0].user_id;
+                    }
+                }
+
                 if (!matchedUserId) {
-                    console.info('[VikingChatbot] Widget domain not authorized or not active:', domain);
+                    console.warn('[VikingChatbot] El dominio no está autorizado o no se encuentra activo:', targetDomain);
                     return;
                 }
 
                 this.activeStoreId = matchedUserId;
 
-                // Fetch store owner and companion spirit details
+                // Fetch store owner and selected 3D GLTF spirit
                 const { data: userRow } = await this._supabase
                     .from('usuarios')
                     .select('id, username, store_name, selected_spirit_id')
                     .eq('id', this.activeStoreId)
                     .maybeSingle();
 
-                if (!userRow) return;
+                if (userRow) {
+                    this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
 
-                this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
-
-                if (userRow.selected_spirit_id) {
-                    const { data: spirit } = await this._supabase
-                        .from('spirits')
-                        .select('*')
-                        .eq('id', userRow.selected_spirit_id)
-                        .maybeSingle();
-                    if (spirit) this.currentSpirit = spirit;
+                    if (userRow.selected_spirit_id) {
+                        const { data: spirit } = await this._supabase
+                            .from('spirits')
+                            .select('*')
+                            .eq('id', userRow.selected_spirit_id)
+                            .maybeSingle();
+                        if (spirit) this.currentSpirit = spirit;
+                    }
                 }
 
                 if (!this.currentSpirit) {
@@ -143,17 +157,24 @@
                     if (defaultSpirit) this.currentSpirit = defaultSpirit;
                 }
 
+                // Fallback guarantee: Never stay blank
+                if (!this.currentSpirit) {
+                    this.currentSpirit = {
+                        name: 'Espíritu Guía',
+                        gltf_url: DEFAULT_GLTF_URL
+                    };
+                }
+
+                console.log('[VikingChatbot] Widget cargado correctamente para la tienda:', this.storeName, 'Personaje:', this.currentSpirit.name);
                 this.renderWidget();
             } catch (e) {
-                console.error('[VikingChatbot] Error during initialization:', e);
+                console.error('[VikingChatbot] Error al inicializar widget:', e);
             }
         }
 
         renderWidget() {
-            if (!this.currentSpirit) return;
-
-            const spiritName = this.currentSpirit.name || 'VikingTCG';
-            const gltfUrl = this.currentSpirit.gltf_url;
+            const spiritName = (this.currentSpirit && this.currentSpirit.name) ? this.currentSpirit.name : 'Espíritu Guía';
+            const gltfUrl = (this.currentSpirit && this.currentSpirit.gltf_url) ? this.currentSpirit.gltf_url : DEFAULT_GLTF_URL;
 
             this.innerHTML = `
                 <style>
@@ -225,7 +246,7 @@
                         backdrop-filter: blur(16px);
                         border-radius: 18px;
                         padding: 8px;
-                        min-width: 200px;
+                        min-width: 190px;
                         border: 1px solid rgba(255, 255, 255, 0.15);
                         margin-bottom: 12px;
                         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
@@ -385,7 +406,7 @@
                             <div class="vk-menu-item" id="vk-opt-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
                             <div class="vk-slider-box">
                                 <i class="fas fa-search-plus" style="color: #38bdf8; font-size: 0.8rem;"></i>
-                                <input type="range" id="vk-scale-slider" min="0.5" max="2.5" step="0.1" value="1.0">
+                                <input type="range" id="vk-scale-slider" min="0.5" max="2.5" step="0.1" value="1.0" title="Tamaño del personaje">
                             </div>
                         </div>
                     </div>
@@ -478,34 +499,44 @@
                 }
             });
 
-            optChat.addEventListener('click', (e) => {
-                e.stopPropagation();
-                menu.style.display = 'none';
-                chatContainer.style.display = 'flex';
-            });
+            if (optChat) {
+                optChat.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menu.style.display = 'none';
+                    chatContainer.style.display = 'flex';
+                });
+            }
 
-            chatClose.addEventListener('click', () => {
-                chatContainer.style.display = 'none';
-            });
+            if (chatClose) {
+                chatClose.addEventListener('click', () => {
+                    chatContainer.style.display = 'none';
+                });
+            }
 
-            slider.addEventListener('input', (e) => {
-                const scaleVal = parseFloat(e.target.value);
-                const wrapper = this.querySelector('#vk-companion-wrapper');
-                if (wrapper) {
-                    const size = 150 * scaleVal;
-                    wrapper.style.width = size + 'px';
-                    wrapper.style.height = size + 'px';
-                }
-            });
+            if (slider) {
+                slider.addEventListener('input', (e) => {
+                    const scaleVal = parseFloat(e.target.value);
+                    const wrapper = this.querySelector('#vk-companion-wrapper');
+                    if (wrapper) {
+                        const size = 150 * scaleVal;
+                        wrapper.style.width = size + 'px';
+                        wrapper.style.height = size + 'px';
+                    }
+                });
+            }
 
-            sendBtn.addEventListener('click', () => this.handleSendMessage());
+            if (sendBtn) {
+                sendBtn.addEventListener('click', () => this.handleSendMessage());
+            }
 
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.handleSendMessage();
-                }
-            });
+            if (input) {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.handleSendMessage();
+                    }
+                });
+            }
         }
 
         makeDraggable() {
