@@ -1373,7 +1373,7 @@ REGLAS DE EVALUACIÓN:
 
         case "manage_learn_items": {
           if (!targetUserId) return { error: "No se especificó usuario." };
-          const { action, itemId, title, content, category, image_url, is_public } = args;
+          const { action, itemId, title, content, category, image_url, is_public, type, sheet_name, sheet_url, file_url, file_name, question, answer } = args;
 
           if (action === "create") {
             const { data: newItem, error } = await supabase.from("learn_items").insert([{
@@ -1382,6 +1382,13 @@ REGLAS DE EVALUACIÓN:
               content: content || "",
               category: category || "General",
               image_url: image_url || "",
+              type: type || "nota",
+              sheet_name: sheet_name || "",
+              sheet_url: sheet_url || "",
+              file_url: file_url || "",
+              file_name: file_name || "",
+              question: question || "",
+              answer: answer || "",
               is_public: is_public !== undefined ? is_public : true
             }]).select().single();
             if (error) return { error: error.message };
@@ -1394,6 +1401,13 @@ REGLAS DE EVALUACIÓN:
             if (category) upData.category = category;
             if (image_url !== undefined) upData.image_url = image_url;
             if (is_public !== undefined) upData.is_public = is_public;
+            if (type) upData.type = type;
+            if (sheet_name !== undefined) upData.sheet_name = sheet_name;
+            if (sheet_url !== undefined) upData.sheet_url = sheet_url;
+            if (file_url !== undefined) upData.file_url = file_url;
+            if (file_name !== undefined) upData.file_name = file_name;
+            if (question !== undefined) upData.question = question;
+            if (answer !== undefined) upData.answer = answer;
             const { error } = await supabase.from("learn_items").update(upData).eq("id", itemId).eq("user_id", targetUserId);
             if (error) return { error: error.message };
             return { success: true, message: "Información de learn.html actualizada." };
