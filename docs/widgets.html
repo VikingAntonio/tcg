@@ -61,7 +61,7 @@
             background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(56, 189, 248, 0.3);
             border-radius: 14px; padding: 18px; position: relative; font-family: monospace;
             font-size: 0.88rem; color: #38bdf8; word-break: break-all; white-space: pre-wrap;
-            line-height: 1.5;
+            line-height: 1.5; margin-bottom: 12px;
         }
         .btn-copy-code {
             position: absolute; top: 12px; right: 12px; background: rgba(56, 189, 248, 0.2);
@@ -70,6 +70,11 @@
             font-weight: 700; cursor: pointer; transition: all 0.2s ease;
         }
         .btn-copy-code:hover { background: #38bdf8; color: #0b0f19; }
+        .no-domains-warning {
+            background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3);
+            color: #fde047; padding: 16px; border-radius: 14px; font-size: 0.85rem;
+            line-height: 1.5; display: flex; align-items: center; gap: 12px;
+        }
     </style>
 </head>
 <body>
@@ -95,11 +100,10 @@
 
                 <div class="input-group">
                     <label><i class="fas fa-robot text-sky"></i> Chatbot 3D Guía (&lt;viking-chatbot&gt;)</label>
-                    <div class="code-snippet-box">
-                        <button class="btn-copy-code" id="btn-copy-snippet"><i class="fas fa-copy"></i> Copiar Código</button>
-                        <span id="code-snippet-text">&lt;!-- VikingTCG Chatbot Widget --&gt;
-&lt;script src="https://vikingtcg.xyz/js/viking-widget.js" defer&gt;&lt;/script&gt;
-&lt;viking-chatbot&gt;&lt;/viking-chatbot&gt;</span>
+                    <div id="snippets-list-container">
+                        <div style="text-align: center; padding: 20px; color: #94a3b8;">
+                            <i class="fas fa-spinner fa-spin"></i> Obteniendo tu código custom label...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -109,6 +113,7 @@
     <script src="js/supabase-config.js"></script>
     <script>
         $(document).ready(async function() {
+            let currentUserId = null;
             if (typeof _supabase !== 'undefined') {
                 const { data: { session } } = await _supabase.auth.getSession();
                 let uid = session?.user?.id;
@@ -116,27 +121,92 @@
                     const stored = localStorage.getItem('tcg_session');
                     if (stored) { try { uid = JSON.parse(stored).id; } catch(e){} }
                 }
+                currentUserId = uid;
+
                 if (uid) {
-                    const { data: profile } = await _supabase.from('usuarios').select('store_name, store_logo').eq('id', uid).maybeSingle();
+                    const { data: profile } = await _supabase.from('usuarios').select('store_name, store_logo, custom_domain').eq('id', uid).maybeSingle();
                     if (profile?.store_name) $('#user-store-name').text(profile.store_name);
                     if (profile?.store_logo) $('#user-store-logo').attr('src', profile.store_logo);
+
+                    window.userCustomDomain = profile?.custom_domain || '';
                 }
             }
 
-            $('#btn-copy-snippet').on('click', function() {
-                const text = $('#code-snippet-text').text();
-                navigator.clipboard.writeText(text).then(() => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Código copiado al portapapeles',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+            await loadUserCustomSnippets(currentUserId);
+        });
+
+        async function loadUserCustomSnippets(uid) {
+            const $container = $('#snippets-list-container');
+            $container.empty();
+
+            let domains = [];
+
+            if (uid && typeof _supabase !== 'undefined') {
+                const { data: registered } = await _supabase
+                    .from('widget_domains')
+                    .select('domain')
+                    .eq('user_id', uid);
+
+                if (registered && registered.length > 0) {
+                    domains = registered.map(r => r.domain);
+                }
+            }
+
+            if (domains.length === 0 && window.userCustomDomain) {
+                domains.push(window.userCustomDomain);
+            }
+
+            if (domains.length === 0) {
+                // Render placeholder default or info box
+                const defaultSnippetText = `<!-- VikingTCG Chatbot Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<viking-chatbot domain="tudominio.com"></viking-chatbot>`;
+
+                $container.append(`
+                    <div class="no-domains-warning" style="margin-bottom: 12px;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 1.4rem;"></i>
+                        <div>
+                            <strong>Dominio no asignado aún.</strong> El administrador registrará tu dominio en el sistema para que quede activo. Mientras tanto, puedes usar <code>domain="tudominio.com"</code> reemplazando por tu dominio web real.
+                        </div>
+                    </div>
+                    <div class="code-snippet-box">
+                        <button class="btn-copy-code" onclick="copySnippetText(this)"><i class="fas fa-copy"></i> Copiar Código</button>
+                        <span class="snippet-text-content">${escapeHtml(defaultSnippetText)}</span>
+                    </div>
+                `);
+                return;
+            }
+
+            domains.forEach(d => {
+                const cleanD = d.toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].split(':')[0].trim();
+                const snippetText = `<!-- VikingTCG Chatbot Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<viking-chatbot domain="${cleanD}"></viking-chatbot>`;
+
+                const $box = $(`
+                    <div class="code-snippet-box">
+                        <button class="btn-copy-code" onclick="copySnippetText(this)"><i class="fas fa-copy"></i> Copiar Código (${escapeHtml(cleanD)})</button>
+                        <span class="snippet-text-content">${escapeHtml(snippetText)}</span>
+                    </div>
+                `);
+                $container.append($box);
+            });
+        }
+
+        window.copySnippetText = function(btn) {
+            const text = $(btn).siblings('.snippet-text-content').text();
+            navigator.clipboard.writeText(text).then(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Código copiado al portapapeles',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 1500
                 });
             });
-        });
+        };
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
     </script>
 </body>
 </html>
