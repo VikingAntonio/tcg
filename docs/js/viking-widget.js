@@ -7,7 +7,7 @@
 (function () {
     const SUPABASE_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRefiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
-    const DEFAULT_GLTF_URL = 'https://models.readyplayer.me/64b0f9f3f9f8c6d7a1234567.glb';
+    const DEFAULT_GLTF_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co/storage/v1/object/public/spirits/models/1771399601193_706/ash.gltf';
 
     function cleanDomain(d) {
         if (!d) return '';
@@ -200,6 +200,10 @@
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
+                    viking-chatbot {
+                        display: block !important;
+                    }
+
                     .vk-widget-root * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
 
                     #vk-companion-wrapper {
@@ -255,6 +259,22 @@
                         pointer-events: none;
                         z-index: 15;
                         border: 1px solid rgba(56, 189, 248, 0.3);
+                    }
+
+                    #vk-model-container {
+                        width: 100% !important;
+                        height: 100% !important;
+                        position: relative !important;
+                    }
+
+                    #vk-model-container model-viewer, #vk-gltf-stage model-viewer {
+                        width: 100% !important;
+                        height: 100% !important;
+                        display: block !important;
+                        position: absolute !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        background: transparent !important;
                     }
 
                     #vk-menu {
@@ -405,10 +425,11 @@
                     <div id="vk-companion-wrapper">
                         <div id="vk-drag-handle" title="Mover"><i class="fas fa-arrows-alt"></i></div>
                         <div id="vk-bubble"><span>¡Hola!</span></div>
-                        <div id="vk-model-container" style="width: 100%; height: 100%;">
+                        <div id="vk-model-container">
                             <model-viewer
                                 id="vk-viewer"
                                 src="${gltfUrl}"
+                                loading="eager"
                                 auto-rotate
                                 camera-controls
                                 shadow-intensity="1"
@@ -447,6 +468,7 @@
                         <div id="vk-gltf-stage">
                             <model-viewer
                                 src="${gltfUrl}"
+                                loading="eager"
                                 auto-rotate
                                 camera-controls
                                 shadow-intensity="1"
