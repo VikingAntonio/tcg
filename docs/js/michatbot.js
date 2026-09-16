@@ -796,8 +796,8 @@ async function initMichatbot(forceRefresh = false) {
                         <i class="fas fa-robot" style="color: #38bdf8; font-size: 1.1rem;"></i>
                         <div>
                             <h3 id="michatbot-header-name" style="margin:0; font-size: 0.95rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.5px;">VikingTCG</h3>
-                            <div style="font-size: 0.72rem; color: #38bdf8; display: flex; align-items: center;">
-                                Tu Espíritu Guía <span class="chat-status-indicator"></span>
+                            <div style="font-size: 0.72rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                                <span id="michatbot-header-sub">En línea</span> <span class="chat-status-indicator"></span>
                             </div>
                         </div>
                     </div>
