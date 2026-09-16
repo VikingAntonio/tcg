@@ -368,7 +368,13 @@
                     #vk-model-container {
                         width: 100% !important;
                         height: 100% !important;
-                        position: relative !important;
+                        position: absolute !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        bottom: 0 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
                         display: flex !important;
                         align-items: center !important;
                         justify-content: center !important;
@@ -380,6 +386,7 @@
                         height: 100% !important;
                         display: block !important;
                         margin: auto !important;
+                        padding: 0 !important;
                         background: transparent !important;
                         cursor: pointer;
                     }
