@@ -6,7 +6,9 @@
 
 (function () {
     const SUPABASE_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRefiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
+    const DEFAULT_GLTF_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co/storage/v1/object/public/spirits/models/1771399870010_984/wingedKuriboh.gltf';
+    const DEFAULT_SPIRIT_NAME = 'Winged Kuriboh';
 
     function cleanDomain(d) {
         if (!d) return '';
@@ -61,7 +63,7 @@
             super();
             this.activeStoreId = null;
             this.selectedSpiritId = null;
-            this.currentSpirit = { name: '', gltf_url: '' };
+            this.currentSpirit = { name: DEFAULT_SPIRIT_NAME, gltf_url: DEFAULT_GLTF_URL };
             this.storeName = 'VikingTCG';
             this.conversationHistory = [];
             this._realtimeChannel = null;
@@ -73,7 +75,7 @@
 
             console.log('[VikingChatbot] Renderizando componente custom label para dominio:', targetDomain || '(local/preview)');
 
-            // 1. Render base structure
+            // 1. Render base structure immediately with default fallback GLTF so model viewer is NEVER blank
             this.renderWidget();
 
             // 2. Asynchronously verify domain authorization and load user's selected 3D spirit
@@ -221,7 +223,7 @@
                 .limit(1)
                 .maybeSingle();
 
-            if (spirit) {
+            if (spirit && spirit.gltf_url) {
                 this.currentSpirit = spirit;
             }
         }
@@ -265,12 +267,14 @@
         }
 
         updateWidgetData() {
-            const spiritName = this.currentSpirit?.name || 'Asistente';
-            const gltfUrl = this.currentSpirit?.gltf_url || '';
+            const spiritName = this.currentSpirit?.name || DEFAULT_SPIRIT_NAME;
+            const gltfUrl = this.currentSpirit?.gltf_url || DEFAULT_GLTF_URL;
 
             const viewers = this.querySelectorAll('model-viewer');
             viewers.forEach(v => {
-                if (gltfUrl) v.setAttribute('src', gltfUrl);
+                if (gltfUrl && v.getAttribute('src') !== gltfUrl) {
+                    v.setAttribute('src', gltfUrl);
+                }
             });
 
             const storeEl = this.querySelector('#vk-store-name-label');
@@ -286,8 +290,15 @@
         }
 
         renderWidget() {
-            const spiritName = this.currentSpirit?.name || 'Asistente';
-            const gltfUrl = this.currentSpirit?.gltf_url || '';
+            const spiritName = this.currentSpirit?.name || DEFAULT_SPIRIT_NAME;
+            const gltfUrl = this.currentSpirit?.gltf_url || DEFAULT_GLTF_URL;
+
+            // Embedded SVG icons for guaranteed rendering regardless of external FontAwesome CSS loading
+            const svgDrag = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`;
+            const svgChat = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+            const svgSearch = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`;
+            const svgRobot = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg>`;
+            const svgSend = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
 
             this.innerHTML = `
                 <style>
@@ -520,7 +531,7 @@
                 <div class="vk-widget-root">
                     <!-- Floating 3D Companion Avatar -->
                     <div id="vk-companion-wrapper">
-                        <div id="vk-drag-handle" title="Mover"><i class="fas fa-arrows-alt"></i></div>
+                        <div id="vk-drag-handle" title="Mover">${svgDrag}</div>
                         <div id="vk-bubble"><span>¡Hola!</span></div>
                         <div id="vk-model-container">
                             <model-viewer
@@ -550,9 +561,9 @@
 
                         <!-- Companion Popup Menu -->
                         <div id="vk-menu">
-                            <div class="vk-menu-item" id="vk-opt-chat"><i class="fas fa-comment-dots"></i> Chatear</div>
+                            <div class="vk-menu-item" id="vk-opt-chat">${svgChat} Chatear</div>
                             <div class="vk-slider-box">
-                                <i class="fas fa-search-plus" style="color: #38bdf8; font-size: 0.8rem;"></i>
+                                <span style="color: #38bdf8; display: flex; align-items: center;">${svgSearch}</span>
                                 <input type="range" id="vk-scale-slider" min="0.5" max="2.5" step="0.1" value="1.0" title="Tamaño del personaje">
                             </div>
                         </div>
@@ -562,7 +573,7 @@
                     <div id="vk-chat-container">
                         <div class="vk-chat-header">
                             <div class="vk-chat-title">
-                                <i class="fas fa-robot" style="color: #38bdf8;"></i>
+                                ${svgRobot}
                                 <div>
                                     <h4 class="vk-spirit-name-label">${spiritName}</h4>
                                     <div class="vk-chat-sub"><span class="vk-status-dot"></span> <span id="vk-store-name-label">${this.storeName}</span></div>
@@ -598,7 +609,7 @@
                         <div class="vk-chat-footer">
                             <div class="vk-input-box">
                                 <input type="text" id="vk-chat-input" placeholder="Escribe tu consulta..." autocomplete="off">
-                                <button class="vk-send-btn" id="vk-chat-send"><i class="fas fa-paper-plane"></i></button>
+                                <button class="vk-send-btn" id="vk-chat-send">${svgSend}</button>
                             </div>
                         </div>
                     </div>
@@ -757,7 +768,7 @@
             const lMsg = document.createElement('div');
             lMsg.className = 'vk-msg-loading';
             lMsg.id = 'vk-loading';
-            lMsg.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Pensando...';
+            lMsg.innerHTML = 'Pensando...';
             msgContainer.appendChild(lMsg);
             msgContainer.scrollTop = msgContainer.scrollHeight;
 
