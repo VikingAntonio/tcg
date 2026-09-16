@@ -89,29 +89,38 @@
                     this._supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 }
 
-                if (!this._supabase || !targetDomain) return;
+                if (!this._supabase) return;
 
                 let matchedUserId = null;
                 let isDomainExplicitlyDisabled = false;
 
-                // Step A: Query widget_domains table
+                // Check active session user first (for widgets.html / admin preview)
+                let sessionUser = null;
                 try {
-                    const { data: allDomains } = await this._supabase
-                        .from('widget_domains')
-                        .select('user_id, is_active, domain');
+                    const stored = localStorage.getItem('tcg_session');
+                    if (stored) sessionUser = JSON.parse(stored);
+                } catch(e) {}
 
-                    if (allDomains && allDomains.length > 0) {
-                        const found = allDomains.find(d => cleanDomain(d.domain) === targetDomain);
-                        if (found) {
-                            if (!found.is_active) {
-                                isDomainExplicitlyDisabled = true;
-                            } else {
-                                matchedUserId = found.user_id;
+                // Step A: Query widget_domains table
+                if (targetDomain) {
+                    try {
+                        const { data: allDomains } = await this._supabase
+                            .from('widget_domains')
+                            .select('user_id, is_active, domain');
+
+                        if (allDomains && allDomains.length > 0) {
+                            const found = allDomains.find(d => cleanDomain(d.domain) === targetDomain);
+                            if (found) {
+                                if (!found.is_active) {
+                                    isDomainExplicitlyDisabled = true;
+                                } else {
+                                    matchedUserId = found.user_id;
+                                }
                             }
                         }
+                    } catch (e) {
+                        console.info('[VikingChatbot] widget_domains lookup error:', e);
                     }
-                } catch (e) {
-                    console.info('[VikingChatbot] widget_domains lookup error:', e);
                 }
 
                 // If explicitly turned off by admin in dominios.html, hide the widget
@@ -122,7 +131,7 @@
                 }
 
                 // Step B: Fallback check against usuarios custom_domain, store_name, or username
-                if (!matchedUserId) {
+                if (!matchedUserId && targetDomain) {
                     try {
                         const { data: users } = await this._supabase
                             .from('usuarios')
@@ -143,10 +152,15 @@
                     }
                 }
 
+                // Step C: Fallback to logged-in session user if no domain match or testing in preview/widgets.html
+                if (!matchedUserId && sessionUser?.id) {
+                    matchedUserId = sessionUser.id;
+                }
+
                 if (matchedUserId) {
                     this.activeStoreId = matchedUserId;
 
-                    // Fetch user details & active spirit selected by the user
+                    // Fetch user details & active spirit selected by the user in admin.html
                     const { data: userRow } = await this._supabase
                         .from('usuarios')
                         .select('id, username, store_name, selected_spirit_id')
@@ -164,36 +178,7 @@
                                 .maybeSingle();
                             if (spirit && spirit.gltf_url) {
                                 this.currentSpirit = spirit;
-                            }
-                        }
-                    }
-                } else {
-                    // Fallback to checking active session user if domain matched current session or local testing
-                    let sessionUser = null;
-                    try {
-                        const stored = localStorage.getItem('tcg_session');
-                        if (stored) sessionUser = JSON.parse(stored);
-                    } catch(e) {}
-
-                    if (sessionUser?.id) {
-                        this.activeStoreId = sessionUser.id;
-                        const { data: userRow } = await this._supabase
-                            .from('usuarios')
-                            .select('id, username, store_name, selected_spirit_id')
-                            .eq('id', sessionUser.id)
-                            .maybeSingle();
-
-                        if (userRow) {
-                            this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
-                            if (userRow.selected_spirit_id) {
-                                const { data: spirit } = await this._supabase
-                                    .from('spirits')
-                                    .select('*')
-                                    .eq('id', userRow.selected_spirit_id)
-                                    .maybeSingle();
-                                if (spirit && spirit.gltf_url) {
-                                    this.currentSpirit = spirit;
-                                }
+                                console.log('[VikingChatbot] Espíritu del usuario encontrado:', spirit.name, spirit.gltf_url);
                             }
                         }
                     }
@@ -306,6 +291,7 @@
                         height: 100% !important;
                         display: block !important;
                         background: transparent !important;
+                        cursor: pointer;
                     }
 
                     #vk-menu {
@@ -541,7 +527,7 @@
         }
 
         bindEvents() {
-            const viewer = this.querySelector('#vk-viewer');
+            const modelContainer = this.querySelector('#vk-model-container');
             const menu = this.querySelector('#vk-menu');
             const chatContainer = this.querySelector('#vk-chat-container');
             const chatClose = this.querySelector('#vk-chat-close');
@@ -554,24 +540,28 @@
             let startX, startY;
             let isMoved = false;
 
-            if (viewer) {
-                viewer.addEventListener('pointerdown', (e) => {
+            if (modelContainer) {
+                modelContainer.addEventListener('pointerdown', (e) => {
+                    if (e.target.closest('#vk-drag-handle')) return;
                     touchStartTime = Date.now();
                     startX = e.clientX;
                     startY = e.clientY;
                     isMoved = false;
                 });
 
-                viewer.addEventListener('pointermove', (e) => {
+                modelContainer.addEventListener('pointermove', (e) => {
                     if (startX === undefined) return;
                     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
                     if (dist > 8) isMoved = true;
                 });
 
-                viewer.addEventListener('click', (e) => {
-                    if (Date.now() - touchStartTime < 300 && !isMoved) {
+                modelContainer.addEventListener('click', (e) => {
+                    if (e.target.closest('#vk-drag-handle')) return;
+                    if (Date.now() - touchStartTime < 400 && !isMoved) {
                         e.stopPropagation();
-                        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                        if (menu) {
+                            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+                        }
                     }
                 });
             }
