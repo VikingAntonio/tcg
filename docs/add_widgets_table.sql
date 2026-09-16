@@ -19,10 +19,10 @@ CREATE INDEX IF NOT EXISTS idx_widget_domains_user ON widget_domains(user_id);
 -- Enable RLS
 ALTER TABLE widget_domains ENABLE ROW LEVEL SECURITY;
 
--- Policy 1: Everyone (anon and authenticated) can query active widget domain authorizations
+-- Policy 1: Everyone (anon and authenticated) can query widget domain authorizations to check active status
 CREATE POLICY "Public domain authorization lookup" ON widget_domains
     FOR SELECT
-    USING (is_active = true);
+    USING (true);
 
 -- Policy 2: Authenticated users can view all their registered domains (active or inactive)
 CREATE POLICY "Users can select own widget domains" ON widget_domains

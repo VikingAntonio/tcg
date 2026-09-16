@@ -265,6 +265,10 @@
                         width: 100% !important;
                         height: 100% !important;
                         position: relative !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        overflow: hidden !important;
                     }
 
                     #vk-model-container model-viewer, #vk-gltf-stage model-viewer {
@@ -272,8 +276,9 @@
                         height: 100% !important;
                         display: block !important;
                         position: absolute !important;
-                        top: 0 !important;
-                        left: 0 !important;
+                        top: 50% !important;
+                        left: 50% !important;
+                        transform: translate(-50%, -50%) !important;
                         background: transparent !important;
                     }
 
@@ -437,7 +442,8 @@
                                 interaction-prompt="none"
                                 disable-zoom
                                 disable-pan
-                                camera-orbit="auto 75deg auto"
+                                camera-orbit="0deg 75deg 105%"
+                                bounds="tight"
                                 style="width: 100%; height: 100%; background: transparent;">
                             </model-viewer>
                         </div>
@@ -476,7 +482,8 @@
                                 interaction-prompt="none"
                                 disable-zoom
                                 disable-pan
-                                camera-orbit="auto 75deg auto"
+                                camera-orbit="0deg 75deg 105%"
+                                bounds="tight"
                                 style="width: 100%; height: 100%; background: transparent;">
                             </model-viewer>
                         </div>
