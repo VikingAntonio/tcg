@@ -1,7 +1,7 @@
 /**
  * viking-widget.js - Custom Label Web Components for VikingTCG
  * Embeds the active 3D Spirit Companion and AI Chatbot on authorized client websites (<viking-chatbot domain="example.com">).
- * Uses the `domain` attribute as the user/store identifier and checks activation status in Supabase.
+ * Immediately renders the 3D companion UI and dynamically checks authorization in Supabase.
  */
 
 (function () {
@@ -19,7 +19,28 @@
             .trim();
     }
 
-    function loadScript(src, isModule = false) {
+    function ensureHeadAssets() {
+        if (!document.querySelector('link[href*="font-awesome"]')) {
+            const css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+            document.head.appendChild(css);
+        }
+        if (!document.querySelector('link[href*="Montserrat"]')) {
+            const font = document.createElement('link');
+            font.rel = 'stylesheet';
+            font.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap';
+            document.head.appendChild(font);
+        }
+        if (!document.querySelector('script[src*="model-viewer"]')) {
+            const mv = document.createElement('script');
+            mv.type = 'module';
+            mv.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js';
+            document.head.appendChild(mv);
+        }
+    }
+
+    function loadScript(src) {
         return new Promise((resolve, reject) => {
             if (document.querySelector(`script[src="${src}"]`)) {
                 resolve();
@@ -27,7 +48,6 @@
             }
             const script = document.createElement('script');
             script.src = src;
-            if (isModule) script.type = 'module';
             script.crossOrigin = 'anonymous';
             script.onload = resolve;
             script.onerror = reject;
@@ -35,61 +55,46 @@
         });
     }
 
-    function loadCSS(href) {
-        if (document.querySelector(`link[href="${href}"]`)) return;
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = href;
-        document.head.appendChild(link);
-    }
+    ensureHeadAssets();
 
     class VikingChatbotElement extends HTMLElement {
         constructor() {
             super();
             this.activeStoreId = null;
-            this.currentSpirit = null;
+            this.currentSpirit = { name: 'Espíritu Guía', gltf_url: DEFAULT_GLTF_URL };
             this.storeName = 'VikingTCG';
             this.conversationHistory = [];
-            this.scale = 1.0;
         }
 
         async connectedCallback() {
             const attrDomain = this.getAttribute('domain') || window.location.hostname || '';
             const targetDomain = cleanDomain(attrDomain);
 
-            if (!targetDomain) {
-                console.warn('[VikingChatbot] No se especificó un dominio identificador en <viking-chatbot domain="...">');
-                return;
-            }
+            console.log('[VikingChatbot] Renderizando componente custom label para dominio:', targetDomain || '(local/preview)');
 
-            console.log('[VikingChatbot] Evaluando permiso para identificador de dominio:', targetDomain);
+            // 1. Render immediately so the 3D companion avatar is NEVER blank or empty
+            this.renderWidget();
 
+            // 2. Asynchronously verify domain authorization and load custom spirit
+            this.verifyAndFetchData(targetDomain);
+        }
+
+        async verifyAndFetchData(targetDomain) {
             try {
-                // Load dependencies
-                loadCSS('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
-                loadCSS('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
-
                 if (typeof window.supabase === 'undefined') {
                     await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-                }
-
-                if (!customElements.get('model-viewer')) {
-                    await loadScript('https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js', true);
                 }
 
                 if (window.supabase) {
                     this._supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 }
 
-                if (!this._supabase) {
-                    console.error('[VikingChatbot] No se pudo conectar a Supabase.');
-                    return;
-                }
+                if (!this._supabase || !targetDomain) return;
 
                 let matchedUserId = null;
-                let isDomainActive = false;
+                let isDomainExplicitlyDisabled = false;
 
-                // Step 1: Check widget_domains table for targetDomain identifier
+                // Step A: Query widget_domains table
                 try {
                     const { data: allDomains } = await this._supabase
                         .from('widget_domains')
@@ -99,18 +104,24 @@
                         const found = allDomains.find(d => cleanDomain(d.domain) === targetDomain);
                         if (found) {
                             if (!found.is_active) {
-                                console.warn('[VikingChatbot] El dominio identificador está DESACTIVADO por el administrador:', targetDomain);
-                                return; // Do NOT render anything if explicitly turned off by admin
+                                isDomainExplicitlyDisabled = true;
+                            } else {
+                                matchedUserId = found.user_id;
                             }
-                            matchedUserId = found.user_id;
-                            isDomainActive = true;
                         }
                     }
                 } catch (e) {
-                    console.info('[VikingChatbot] Error buscando en widget_domains:', e);
+                    console.info('[VikingChatbot] widget_domains lookup error:', e);
                 }
 
-                // Step 2: Fallback check against usuarios custom_domain, store_name, or username if not in widget_domains
+                // If explicitly turned off by admin in dominios.html, hide the widget
+                if (isDomainExplicitlyDisabled) {
+                    console.warn('[VikingChatbot] Widget DESACTIVADO por el administrador para:', targetDomain);
+                    this.style.display = 'none';
+                    return;
+                }
+
+                // Step B: Fallback check against usuarios custom_domain, store_name, or username
                 if (!matchedUserId) {
                     try {
                         const { data: users } = await this._supabase
@@ -125,63 +136,60 @@
                             });
                             if (foundUser) {
                                 matchedUserId = foundUser.id;
-                                isDomainActive = true;
                             }
                         }
                     } catch (e) {
-                        console.info('[VikingChatbot] Error buscando en usuarios:', e);
+                        console.info('[VikingChatbot] usuarios lookup error:', e);
                     }
                 }
 
-                if (!matchedUserId || !isDomainActive) {
-                    console.warn('[VikingChatbot] Dominio no autorizado o desactivado:', targetDomain);
-                    return; // Return silently without rendering anything
-                }
+                if (matchedUserId) {
+                    this.activeStoreId = matchedUserId;
 
-                this.activeStoreId = matchedUserId;
-
-                // Step 3: Fetch store owner and selected 3D GLTF spirit
-                const { data: userRow } = await this._supabase
-                    .from('usuarios')
-                    .select('id, username, store_name, selected_spirit_id')
-                    .eq('id', this.activeStoreId)
-                    .maybeSingle();
-
-                if (userRow) {
-                    this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
-
-                    if (userRow.selected_spirit_id) {
-                        const { data: spirit } = await this._supabase
-                            .from('spirits')
-                            .select('*')
-                            .eq('id', userRow.selected_spirit_id)
-                            .maybeSingle();
-                        if (spirit) this.currentSpirit = spirit;
-                    }
-                }
-
-                if (!this.currentSpirit) {
-                    const { data: defaultSpirit } = await this._supabase
-                        .from('spirits')
-                        .select('*')
-                        .eq('is_public', true)
-                        .limit(1)
+                    // Fetch user details & active spirit
+                    const { data: userRow } = await this._supabase
+                        .from('usuarios')
+                        .select('id, username, store_name, selected_spirit_id')
+                        .eq('id', this.activeStoreId)
                         .maybeSingle();
-                    if (defaultSpirit) this.currentSpirit = defaultSpirit;
+
+                    if (userRow) {
+                        this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
+
+                        if (userRow.selected_spirit_id) {
+                            const { data: spirit } = await this._supabase
+                                .from('spirits')
+                                .select('*')
+                                .eq('id', userRow.selected_spirit_id)
+                                .maybeSingle();
+                            if (spirit && spirit.gltf_url) {
+                                this.currentSpirit = spirit;
+                            }
+                        }
+                    }
                 }
 
-                if (!this.currentSpirit) {
-                    this.currentSpirit = {
-                        name: 'Espíritu Guía',
-                        gltf_url: DEFAULT_GLTF_URL
-                    };
-                }
-
-                console.log('[VikingChatbot] Dominio ACTIVO. Renderizando 3D Spirit para:', this.storeName, '| Personaje:', this.currentSpirit.name);
-                this.renderWidget();
+                // Update model viewer and titles with user's customized spirit
+                this.updateWidgetData();
             } catch (err) {
-                console.error('[VikingChatbot] Error en inicialización del widget:', err);
+                console.error('[VikingChatbot] Error en verificación:', err);
             }
+        }
+
+        updateWidgetData() {
+            const spiritName = (this.currentSpirit && this.currentSpirit.name) ? this.currentSpirit.name : 'Espíritu Guía';
+            const gltfUrl = (this.currentSpirit && this.currentSpirit.gltf_url) ? this.currentSpirit.gltf_url : DEFAULT_GLTF_URL;
+
+            const viewers = this.querySelectorAll('model-viewer');
+            viewers.forEach(v => v.setAttribute('src', gltfUrl));
+
+            const storeEl = this.querySelector('#vk-store-name-label');
+            if (storeEl) storeEl.textContent = this.storeName;
+
+            const spiritEls = this.querySelectorAll('.vk-spirit-name-label');
+            spiritEls.forEach(el => el.textContent = spiritName);
+
+            console.log('[VikingChatbot] Widget actualizado con personaje:', spiritName, '| Tienda:', this.storeName);
         }
 
         renderWidget() {
@@ -429,8 +437,8 @@
                             <div class="vk-chat-title">
                                 <i class="fas fa-robot" style="color: #38bdf8;"></i>
                                 <div>
-                                    <h4>${spiritName}</h4>
-                                    <div class="vk-chat-sub"><span class="vk-status-dot"></span> ${this.storeName}</div>
+                                    <h4 class="vk-spirit-name-label">${spiritName}</h4>
+                                    <div class="vk-chat-sub"><span class="vk-status-dot"></span> <span id="vk-store-name-label">${this.storeName}</span></div>
                                 </div>
                             </div>
                             <div class="vk-chat-close" id="vk-chat-close">&times;</div>
@@ -452,7 +460,7 @@
                         </div>
 
                         <div class="vk-chat-messages" id="vk-chat-messages">
-                            <div class="vk-msg-bot">¡Hola! Soy <strong>${spiritName}</strong>, el asistente virtual de <strong>${this.storeName}</strong>. ¿En qué te puedo ayudar hoy?</div>
+                            <div class="vk-msg-bot">¡Hola! Soy <strong class="vk-spirit-name-label">${spiritName}</strong>, el asistente virtual de <strong id="vk-store-name-msg-label">${this.storeName}</strong>. ¿En qué te puedo ayudar hoy?</div>
                         </div>
 
                         <div class="vk-chat-footer">
