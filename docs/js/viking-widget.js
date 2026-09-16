@@ -146,7 +146,7 @@
                 if (matchedUserId) {
                     this.activeStoreId = matchedUserId;
 
-                    // Fetch user details & active spirit
+                    // Fetch user details & active spirit selected by the user
                     const { data: userRow } = await this._supabase
                         .from('usuarios')
                         .select('id, username, store_name, selected_spirit_id')
@@ -164,6 +164,36 @@
                                 .maybeSingle();
                             if (spirit && spirit.gltf_url) {
                                 this.currentSpirit = spirit;
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback to checking active session user if domain matched current session or local testing
+                    let sessionUser = null;
+                    try {
+                        const stored = localStorage.getItem('tcg_session');
+                        if (stored) sessionUser = JSON.parse(stored);
+                    } catch(e) {}
+
+                    if (sessionUser?.id) {
+                        this.activeStoreId = sessionUser.id;
+                        const { data: userRow } = await this._supabase
+                            .from('usuarios')
+                            .select('id, username, store_name, selected_spirit_id')
+                            .eq('id', sessionUser.id)
+                            .maybeSingle();
+
+                        if (userRow) {
+                            this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
+                            if (userRow.selected_spirit_id) {
+                                const { data: spirit } = await this._supabase
+                                    .from('spirits')
+                                    .select('*')
+                                    .eq('id', userRow.selected_spirit_id)
+                                    .maybeSingle();
+                                if (spirit && spirit.gltf_url) {
+                                    this.currentSpirit = spirit;
+                                }
                             }
                         }
                     }
@@ -275,10 +305,6 @@
                         width: 100% !important;
                         height: 100% !important;
                         display: block !important;
-                        position: absolute !important;
-                        top: 50% !important;
-                        left: 50% !important;
-                        transform: translate(-50%, -50%) !important;
                         background: transparent !important;
                     }
 
@@ -438,12 +464,19 @@
                                 auto-rotate
                                 camera-controls
                                 shadow-intensity="1"
-                                exposure="1.1"
+                                environment-image="neutral"
+                                exposure="1"
                                 interaction-prompt="none"
+                                camera-orbit="auto 75deg auto"
+                                field-of-view="auto"
+                                min-field-of-view="5deg"
+                                max-field-of-view="45deg"
                                 disable-zoom
                                 disable-pan
-                                camera-orbit="0deg 75deg 105%"
                                 bounds="tight"
+                                interpolation-decay="200"
+                                auto-rotate-delay="0"
+                                rotation-speed="0.5"
                                 style="width: 100%; height: 100%; background: transparent;">
                             </model-viewer>
                         </div>
@@ -478,11 +511,12 @@
                                 auto-rotate
                                 camera-controls
                                 shadow-intensity="1"
-                                exposure="1.1"
+                                environment-image="neutral"
+                                exposure="1.2"
                                 interaction-prompt="none"
                                 disable-zoom
                                 disable-pan
-                                camera-orbit="0deg 75deg 105%"
+                                camera-orbit="auto 75deg auto"
                                 bounds="tight"
                                 style="width: 100%; height: 100%; background: transparent;">
                             </model-viewer>
