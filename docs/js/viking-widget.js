@@ -1,13 +1,12 @@
 /**
  * viking-widget.js - Custom Label Web Components for VikingTCG
  * Embeds the active 3D Spirit Companion and AI Chatbot on authorized client websites (<viking-chatbot domain="example.com">).
- * Immediately renders the 3D companion UI and dynamically checks authorization in Supabase.
+ * Strictly loads the user's selected 3D Spirit Companion configured in admin.html and updates in real-time.
  */
 
 (function () {
     const SUPABASE_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRefiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
-    const DEFAULT_GLTF_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co/storage/v1/object/public/spirits/models/1771399601193_706/ash.gltf';
 
     function cleanDomain(d) {
         if (!d) return '';
@@ -61,9 +60,11 @@
         constructor() {
             super();
             this.activeStoreId = null;
-            this.currentSpirit = { name: 'Espíritu Guía', gltf_url: DEFAULT_GLTF_URL };
+            this.selectedSpiritId = null;
+            this.currentSpirit = { name: '', gltf_url: '' };
             this.storeName = 'VikingTCG';
             this.conversationHistory = [];
+            this._realtimeChannel = null;
         }
 
         async connectedCallback() {
@@ -72,11 +73,17 @@
 
             console.log('[VikingChatbot] Renderizando componente custom label para dominio:', targetDomain || '(local/preview)');
 
-            // 1. Render immediately so the 3D companion avatar is NEVER blank or empty
+            // 1. Render base structure
             this.renderWidget();
 
-            // 2. Asynchronously verify domain authorization and load custom spirit
-            this.verifyAndFetchData(targetDomain);
+            // 2. Asynchronously verify domain authorization and load user's selected 3D spirit
+            await this.verifyAndFetchData(targetDomain);
+        }
+
+        disconnectedCallback() {
+            if (this._realtimeChannel && this._supabase) {
+                this._supabase.removeChannel(this._realtimeChannel);
+            }
         }
 
         async verifyAndFetchData(targetDomain) {
@@ -169,37 +176,108 @@
 
                     if (userRow) {
                         this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
+                        this.selectedSpiritId = userRow.selected_spirit_id;
 
-                        if (userRow.selected_spirit_id) {
-                            const { data: spirit } = await this._supabase
-                                .from('spirits')
-                                .select('*')
-                                .eq('id', userRow.selected_spirit_id)
-                                .maybeSingle();
-                            if (spirit && spirit.gltf_url) {
-                                this.currentSpirit = spirit;
-                                console.log('[VikingChatbot] Espíritu del usuario encontrado:', spirit.name, spirit.gltf_url);
-                            }
+                        if (this.selectedSpiritId) {
+                            await this.fetchSpiritById(this.selectedSpiritId);
+                        } else {
+                            // If user has not selected a spirit yet, fetch default public spirit
+                            await this.fetchDefaultSpirit();
                         }
+
+                        // Subscribe to real-time updates for user changes (e.g. changing spirit in admin.html)
+                        this.subscribeToRealtimeUserChanges(matchedUserId);
                     }
+                } else {
+                    await this.fetchDefaultSpirit();
                 }
 
-                // Update model viewer and titles with user's customized spirit
                 this.updateWidgetData();
             } catch (err) {
                 console.error('[VikingChatbot] Error en verificación:', err);
             }
         }
 
+        async fetchSpiritById(spiritId) {
+            if (!spiritId || !this._supabase) return;
+            const { data: spirit } = await this._supabase
+                .from('spirits')
+                .select('*')
+                .eq('id', spiritId)
+                .maybeSingle();
+
+            if (spirit && spirit.gltf_url) {
+                this.currentSpirit = spirit;
+                console.log('[VikingChatbot] Personaje 3D seleccionado cargado:', spirit.name, spirit.gltf_url);
+            }
+        }
+
+        async fetchDefaultSpirit() {
+            if (!this._supabase) return;
+            const { data: spirit } = await this._supabase
+                .from('spirits')
+                .select('*')
+                .eq('is_public', true)
+                .limit(1)
+                .maybeSingle();
+
+            if (spirit) {
+                this.currentSpirit = spirit;
+            }
+        }
+
+        subscribeToRealtimeUserChanges(userId) {
+            if (!this._supabase || !userId) return;
+
+            if (this._realtimeChannel) {
+                this._supabase.removeChannel(this._realtimeChannel);
+            }
+
+            this._realtimeChannel = this._supabase
+                .channel(`realtime-viking-widget-${userId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'usuarios',
+                        filter: `id=eq.${userId}`
+                    },
+                    async (payload) => {
+                        console.log('[VikingChatbot] Cambio detectado en usuario:', payload.new);
+                        if (payload.new) {
+                            if (payload.new.store_name) {
+                                this.storeName = payload.new.store_name;
+                            }
+                            if (payload.new.selected_spirit_id !== this.selectedSpiritId) {
+                                this.selectedSpiritId = payload.new.selected_spirit_id;
+                                if (this.selectedSpiritId) {
+                                    await this.fetchSpiritById(this.selectedSpiritId);
+                                } else {
+                                    await this.fetchDefaultSpirit();
+                                }
+                            }
+                            this.updateWidgetData();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
         updateWidgetData() {
-            const spiritName = (this.currentSpirit && this.currentSpirit.name) ? this.currentSpirit.name : 'Espíritu Guía';
-            const gltfUrl = (this.currentSpirit && this.currentSpirit.gltf_url) ? this.currentSpirit.gltf_url : DEFAULT_GLTF_URL;
+            const spiritName = this.currentSpirit?.name || 'Asistente';
+            const gltfUrl = this.currentSpirit?.gltf_url || '';
 
             const viewers = this.querySelectorAll('model-viewer');
-            viewers.forEach(v => v.setAttribute('src', gltfUrl));
+            viewers.forEach(v => {
+                if (gltfUrl) v.setAttribute('src', gltfUrl);
+            });
 
             const storeEl = this.querySelector('#vk-store-name-label');
             if (storeEl) storeEl.textContent = this.storeName;
+
+            const storeMsgEl = this.querySelector('#vk-store-name-msg-label');
+            if (storeMsgEl) storeMsgEl.textContent = this.storeName;
 
             const spiritEls = this.querySelectorAll('.vk-spirit-name-label');
             spiritEls.forEach(el => el.textContent = spiritName);
@@ -208,8 +286,8 @@
         }
 
         renderWidget() {
-            const spiritName = (this.currentSpirit && this.currentSpirit.name) ? this.currentSpirit.name : 'Espíritu Guía';
-            const gltfUrl = (this.currentSpirit && this.currentSpirit.gltf_url) ? this.currentSpirit.gltf_url : DEFAULT_GLTF_URL;
+            const spiritName = this.currentSpirit?.name || 'Asistente';
+            const gltfUrl = this.currentSpirit?.gltf_url || '';
 
             this.innerHTML = `
                 <style>
@@ -290,6 +368,7 @@
                         width: 100% !important;
                         height: 100% !important;
                         display: block !important;
+                        margin: auto !important;
                         background: transparent !important;
                         cursor: pointer;
                     }
@@ -395,6 +474,7 @@
                         width: 100%; height: 155px; position: relative;
                         background: radial-gradient(circle at center, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.75) 80%);
                         border-bottom: 1px solid rgba(255, 255, 255, 0.1); flex-shrink: 0;
+                        display: flex; align-items: center; justify-content: center; overflow: hidden;
                     }
 
                     .vk-chat-messages {
@@ -454,6 +534,7 @@
                                 exposure="1"
                                 interaction-prompt="none"
                                 camera-orbit="auto 75deg auto"
+                                camera-target="auto auto auto"
                                 field-of-view="auto"
                                 min-field-of-view="5deg"
                                 max-field-of-view="45deg"
@@ -463,7 +544,7 @@
                                 interpolation-decay="200"
                                 auto-rotate-delay="0"
                                 rotation-speed="0.5"
-                                style="width: 100%; height: 100%; background: transparent;">
+                                style="width: 100%; height: 100%; display: block; margin: auto; background: transparent;">
                             </model-viewer>
                         </div>
 
@@ -503,8 +584,10 @@
                                 disable-zoom
                                 disable-pan
                                 camera-orbit="auto 75deg auto"
+                                camera-target="auto auto auto"
+                                field-of-view="auto"
                                 bounds="tight"
-                                style="width: 100%; height: 100%; background: transparent;">
+                                style="width: 100%; height: 100%; display: block; margin: auto; background: transparent;">
                             </model-viewer>
                         </div>
 
