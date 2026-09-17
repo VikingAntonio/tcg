@@ -717,10 +717,8 @@ function renderAllCards() {
         }
     });
 
-    // Clear field and hand containers
-    $("#field-cards-container").empty();
-    $("#hand-p1").empty();
-    $("#hand-p2").empty();
+    // Set of active rendered card element IDs in this frame
+    const activeRenderedIds = new Set();
 
     // Reset zone stack trackers
     const zoneCounts = {};
@@ -743,14 +741,65 @@ function renderAllCards() {
             zoneCounts[card.zone] = (zoneCounts[card.zone] || 0) + 1;
         }
 
-        // Render card (Including Hand and Field action overlays dynamically for interactive play)
-        let handActionOverlayHTML = "";
-        let fieldActionOverlayHTML = "";
-
         // Find count of cards attached to this parent
         const attachedCards = state.cards.filter(c => c.attachedTo === card.instanceId);
         const attachedCount = attachedCards.length;
 
+        // Sleeve and styling
+        const sleeveUrl = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : "";
+        const sleeveStyle = sleeveUrl ? `--custom-sleeve: url('${sleeveUrl}');` : "";
+
+        let revealFaceDownClass = "";
+        if (card.faceDown && !isHand && !isPile) {
+            const viewerRole = window.currentRole || "player1";
+            if (state.mode === "practice") {
+                revealFaceDownClass = "reveal-face-down";
+            } else if (state.mode === "multiplayer" && card.owner === viewerRole) {
+                revealFaceDownClass = "reveal-face-down";
+            }
+        }
+        if (card.zone && card.zone.startsWith("prize_")) {
+            revealFaceDownClass = "";
+        }
+
+        // Determine target container and positioning
+        let targetContainer = null;
+        let posX = card.x;
+        let posY = card.y;
+
+        if (isHand) {
+            targetContainer = card.zone === "hand_1" ? "#hand-p1" : "#hand-p2";
+        } else if (isPile) {
+            const cardsInThisZone = state.cards.filter(c => c.zone === card.zone);
+            cardsInThisZone.sort((a, b) => (a.movedToPileAt || 0) - (b.movedToPileAt || 0));
+            const topCard = cardsInThisZone[cardsInThisZone.length - 1];
+
+            if (topCard && topCard.instanceId === card.instanceId) {
+                targetContainer = "#field-cards-container";
+                const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
+                if (zoneObj) {
+                    posX = zoneObj.x;
+                    posY = zoneObj.y;
+                }
+            } else {
+                return; // Not top card in pile
+            }
+        } else {
+            targetContainer = "#field-cards-container";
+            const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
+            if (zoneObj) {
+                posX = zoneObj.x;
+                posY = zoneObj.y;
+            }
+        }
+
+        if (!targetContainer) return;
+
+        activeRenderedIds.add(card.instanceId);
+
+        // Build overlays HTML strings if needed
+        let handActionOverlayHTML = "";
+        let fieldActionOverlayHTML = "";
         if (isHand) {
             handActionOverlayHTML = `
                 <div class="hand-card-actions">
@@ -768,7 +817,6 @@ function renderAllCards() {
                 </div>
             `;
         } else if (!isPile) {
-            // Cards on active playmat slots get a quick field action horizontal ribbon bar - Text only (No icons)
             const returnBtnLabel = card.isExtra ? "Deck" : "Mano";
             const isP2 = card.owner === "player2" || card.zone.endsWith("_2") || card.zone === "hand_2";
             const p2Class = isP2 ? "p2-card-actions" : "";
@@ -793,92 +841,102 @@ function renderAllCards() {
             `;
         }
 
-        // Attached badge for visual tracking of quantity
         const attachedBadgeHTML = attachedCount > 0 ? `<div class="card-attached-badge">📎${attachedCount}</div>` : "";
+        const counterHTML = card.counters > 0 ? `<div class="card-counter">${card.counters}</div>` : "";
 
-        const zIndexStyle = isHand ? "" : `z-index: ${card.z};`;
+        // DOM reconciliation: update existing card element in-place to eliminate flickering
+        const $existing = $(document.getElementById(card.instanceId));
+        if ($existing.length > 0 && !$existing.hasClass("attached-card-cascade")) {
+            const isDraggingThisCard = typeof dragCard !== "undefined" && dragCard && dragCard[0] === $existing[0];
 
-        const sleeveUrl = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : "";
-        const sleeveStyle = sleeveUrl ? `--custom-sleeve: url('${sleeveUrl}');` : "";
-
-        let revealFaceDownClass = "";
-        if (card.faceDown && !isHand && !isPile) {
-            const viewerRole = window.currentRole || "player1";
-            if (state.mode === "practice") {
-                revealFaceDownClass = "reveal-face-down";
-            } else if (state.mode === "multiplayer" && card.owner === viewerRole) {
-                revealFaceDownClass = "reveal-face-down";
-            }
-        }
-        if (card.zone && card.zone.startsWith("prize_")) {
-            revealFaceDownClass = "";
-        }
-
-        const cardHTML = `
-            <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${revealFaceDownClass} ${card.tapped ? 'tapped' : ''}"
-                 id="${card.instanceId}"
-                 data-instance-id="${card.instanceId}"
-                 style="--tilt: ${card.tiltAngle || 0}deg; ${sleeveStyle} ${zIndexStyle}">
-                <div class="card-img-wrapper">
-                    <img src="${card.imageUrl}" alt="${card.name}">
-                </div>
-                ${card.counters > 0 ? `<div class="card-counter">${card.counters}</div>` : ""}
-                ${attachedBadgeHTML}
-                ${handActionOverlayHTML}
-                ${fieldActionOverlayHTML}
-            </div>
-        `;
-
-        if (isHand) {
-            // Render inside Hand Tray
-            const targetTray = card.zone === "hand_1" ? "#hand-p1" : "#hand-p2";
-            $(targetTray).append(cardHTML);
-        } else if (isPile) {
-            // Stacked card at pile position (Only render top card or none, but with active count badge)
-            // To make dragging pile top card interactive, we render only the TOP CARD of the deck/pile!
-            const totalInPile = zoneCounts[card.zone];
-
-            // Check if this card is indeed the top card in pile
-            const cardsInThisZone = state.cards.filter(c => c.zone === card.zone);
-            cardsInThisZone.sort((a, b) => (a.movedToPileAt || 0) - (b.movedToPileAt || 0));
-            const topCard = cardsInThisZone[cardsInThisZone.length - 1];
-
-            if (topCard && topCard.instanceId === card.instanceId) {
-                $("#field-cards-container").append(cardHTML);
-                // Position card at zone coordinates
-                const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
-                if (zoneObj) {
-                    $(`#${card.instanceId}`).css({
-                        left: `${zoneObj.x}px`,
-                        top: `${zoneObj.y}px`
-                    });
+            if (!isDraggingThisCard) {
+                const currentParent = $existing.parent();
+                const $targetElem = $(targetContainer);
+                if (currentParent[0] !== $targetElem[0]) {
+                    $existing.appendTo($targetElem);
                 }
             }
-        } else {
-            // Render freely on playmat
-            $("#field-cards-container").append(cardHTML);
 
-            // Determine position
-            const zoneObj = BOARD_LAYOUTS[state.layout].find(z => z.id === card.zone);
-            let finalX = card.x;
-            let finalY = card.y;
-            if (zoneObj) {
-                finalX = zoneObj.x;
-                finalY = zoneObj.y;
+            $existing.toggleClass("face-down", !!card.faceDown);
+            $existing.toggleClass("tapped", !!card.tapped);
+            $existing.toggleClass("reveal-face-down", revealFaceDownClass !== "");
+
+            const $img = $existing.find(".card-img-wrapper img");
+            if ($img.length && $img.attr("src") !== card.imageUrl) {
+                $img.attr("src", card.imageUrl);
             }
 
-            $(`#${card.instanceId}`).css({
-                left: `${finalX}px`,
-                top: `${finalY}px`
-            });
+            if (!isDraggingThisCard) {
+                const cssObj = {
+                    "--tilt": `${card.tiltAngle || 0}deg`
+                };
+                if (!isHand) {
+                    cssObj.left = `${posX}px`;
+                    cssObj.top = `${posY}px`;
+                    cssObj["z-index"] = card.z;
+                } else {
+                    cssObj.left = "";
+                    cssObj.top = "";
+                    cssObj.position = "";
+                    cssObj["z-index"] = "";
+                }
+                if (sleeveUrl) {
+                    $existing[0].style.setProperty("--custom-sleeve", `url('${sleeveUrl}')`);
+                } else {
+                    $existing[0].style.removeProperty("--custom-sleeve");
+                }
+                $existing.css(cssObj);
+            }
 
-            // RENDER ATTACHED CARDS UNDER THIS PARENT CARD AS A SLIGHT CASCADE
+            $existing.find(".card-counter").remove();
+            if (counterHTML) $existing.append(counterHTML);
+
+            $existing.find(".card-attached-badge").remove();
+            if (attachedBadgeHTML) $existing.append(attachedBadgeHTML);
+
+            $existing.find(".hand-card-actions").remove();
+            if (handActionOverlayHTML) $existing.append(handActionOverlayHTML);
+
+            $existing.find(".field-card-actions").remove();
+            if (fieldActionOverlayHTML) $existing.append(fieldActionOverlayHTML);
+
+        } else {
+            if ($existing.hasClass("attached-card-cascade")) {
+                $existing.remove();
+            }
+            const zIndexStyle = isHand ? "" : `z-index: ${card.z};`;
+            const cardHTML = `
+                <div class="duel-card ${card.faceDown ? 'face-down' : ''} ${revealFaceDownClass} ${card.tapped ? 'tapped' : ''}"
+                     id="${card.instanceId}"
+                     data-instance-id="${card.instanceId}"
+                     style="--tilt: ${card.tiltAngle || 0}deg; ${sleeveStyle} ${zIndexStyle}">
+                    <div class="card-img-wrapper">
+                        <img src="${card.imageUrl}" alt="${card.name}">
+                    </div>
+                    ${counterHTML}
+                    ${attachedBadgeHTML}
+                    ${handActionOverlayHTML}
+                    ${fieldActionOverlayHTML}
+                </div>
+            `;
+            $(targetContainer).append(cardHTML);
+
+            if (!isHand) {
+                $(`#${card.instanceId}`).css({
+                    left: `${posX}px`,
+                    top: `${posY}px`
+                });
+            }
+        }
+
+        // RENDER ATTACHED CARDS UNDER THIS PARENT CARD AS A SLIGHT CASCADE
+        if (!isHand && !isPile) {
             const attachedCards = state.cards.filter(c => c.attachedTo === card.instanceId);
             attachedCards.sort((a, b) => {
                 const aExtra = a.isExtra ? 1 : 0;
                 const bExtra = b.isExtra ? 1 : 0;
                 if (aExtra !== bExtra) {
-                    return bExtra - aExtra; // 1 (Extra Deck) comes before 0 (Normal)
+                    return bExtra - aExtra;
                 }
                 const aTime = a.attachedAt || 0;
                 const bTime = b.attachedAt || 0;
@@ -888,9 +946,11 @@ function renderAllCards() {
             let cumulativeOffset = 0;
             attachedCards.forEach((childCard, idx) => {
                 if (idx < 2) {
-                    cumulativeOffset += 14; // cascade offset only for first two cards
+                    cumulativeOffset += 14;
                 }
-                const childZ = card.z - 14 * (idx + 1); // Maintain correct stacking order below the parent and each other
+                const childZ = card.z - 14 * (idx + 1);
+
+                activeRenderedIds.add(childCard.instanceId);
 
                 const childSleeveUrl = (childCard.owner && state.deckSleeves && state.deckSleeves[childCard.owner]) ? state.deckSleeves[childCard.owner] : "";
                 const childSleeveStyle = childSleeveUrl ? `--custom-sleeve: url('${childSleeveUrl}');` : "";
@@ -904,23 +964,55 @@ function renderAllCards() {
                         childRevealClass = "reveal-face-down";
                     }
                 }
-                if (childCard.zone && childCard.zone.startsWith("prize_")) {
-                    childRevealClass = "";
-                }
 
-                const childCardHTML = `
-                    <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childRevealClass} ${childCard.tapped ? 'tapped' : ''}"
-                         id="${childCard.instanceId}"
-                         data-instance-id="${childCard.instanceId}"
-                         data-parent-id="${card.instanceId}"
-                         style="left: ${finalX + cumulativeOffset}px; top: ${finalY + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg; ${childSleeveStyle}">
-                        <div class="card-img-wrapper">
-                            <img src="${childCard.imageUrl}" alt="${childCard.name}">
+                const childX = posX + cumulativeOffset;
+                const childY = posY + cumulativeOffset;
+
+                const $childElem = $(document.getElementById(childCard.instanceId));
+                if ($childElem.length > 0 && $childElem.hasClass("attached-card-cascade")) {
+                    $childElem.toggleClass("face-down", !!childCard.faceDown);
+                    $childElem.toggleClass("tapped", !!childCard.tapped);
+                    $childElem.toggleClass("reveal-face-down", childRevealClass !== "");
+                    $childElem.attr("data-parent-id", card.instanceId);
+
+                    const $img = $childElem.find(".card-img-wrapper img");
+                    if ($img.length && $img.attr("src") !== childCard.imageUrl) {
+                        $img.attr("src", childCard.imageUrl);
+                    }
+
+                    $childElem.css({
+                        left: `${childX}px`,
+                        top: `${childY}px`,
+                        "z-index": childZ,
+                        "--tilt": `${childCard.tiltAngle || 0}deg`
+                    });
+                } else {
+                    if ($childElem.length > 0) $childElem.remove();
+
+                    const childCardHTML = `
+                        <div class="duel-card attached-card-cascade ${childCard.faceDown ? 'face-down' : ''} ${childRevealClass} ${childCard.tapped ? 'tapped' : ''}"
+                             id="${childCard.instanceId}"
+                             data-instance-id="${childCard.instanceId}"
+                             data-parent-id="${card.instanceId}"
+                             style="left: ${childX}px; top: ${childY}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg; ${childSleeveStyle}">
+                            <div class="card-img-wrapper">
+                                <img src="${childCard.imageUrl}" alt="${childCard.name}">
+                            </div>
                         </div>
-                    </div>
-                `;
-                $("#field-cards-container").append(childCardHTML);
+                    `;
+                    $("#field-cards-container").append(childCardHTML);
+                }
             });
+        }
+    });
+
+    // Remove any orphan card elements from DOM that are no longer active
+    $(".duel-card").each(function() {
+        const id = this.id;
+        if (id && !activeRenderedIds.has(id)) {
+            if (typeof dragCard === "undefined" || !dragCard || dragCard[0] !== this) {
+                $(this).remove();
+            }
         }
     });
 
@@ -1289,12 +1381,38 @@ function checkHandTrayHover(e, traySelector) {
     if (!tray.length) return false;
 
     const coords = getEventCoords(e);
-    const offset = tray.offset();
-    const w = tray.width();
-    const h = tray.height();
+    const bufferY = 80;
+    const bufferX = 60;
 
-    return (coords.x >= offset.left && coords.x <= offset.left + w &&
-            coords.y >= offset.top && coords.y <= offset.top + h);
+    // Check main tray rect
+    const trayEl = tray[0];
+    const rect = trayEl.getBoundingClientRect();
+    if (coords.x >= rect.left - bufferX && coords.x <= rect.right + bufferX &&
+        coords.y >= rect.top - bufferY && coords.y <= rect.bottom + bufferY) {
+        return true;
+    }
+
+    // Check hand container inside tray
+    const container = tray.find(".hand-cards-container");
+    if (container.length) {
+        const cRect = container[0].getBoundingClientRect();
+        if (coords.x >= cRect.left - bufferX && coords.x <= cRect.right + bufferX &&
+            coords.y >= cRect.top - bufferY && coords.y <= cRect.bottom + bufferY) {
+            return true;
+        }
+    }
+
+    // Check wrapper inside tray
+    const wrapper = tray.find(".hand-cards-wrapper");
+    if (wrapper.length) {
+        const wRect = wrapper[0].getBoundingClientRect();
+        if (coords.x >= wRect.left - bufferX && coords.x <= wRect.right + bufferX &&
+            coords.y >= wRect.top - bufferY && coords.y <= wRect.bottom + bufferY) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Side info detailed previewer
@@ -6076,8 +6194,19 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     };
 
                     const hoverZone = findOverlappingZone(centerCoords);
-                    const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
-                    const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+                    let isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
+                    let isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+
+                    // Fallback region check: if no board slot is hovered and event is near top/bottom screen regions
+                    if (!hoverZone && !isOverP1Hand && !isOverP2Hand) {
+                        const evtPos = getEventCoords(e);
+                        const winH = $(window).height();
+                        if (evtPos.y > winH * 0.70 || cardObj.y > 480) {
+                            isOverP1Hand = true;
+                        } else if (evtPos.y < winH * 0.30 || cardObj.y < 100) {
+                            isOverP2Hand = true;
+                        }
+                    }
 
                     if (cardObj.isToken) {
                         if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
@@ -6142,10 +6271,19 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             }
                         }
                     } else if (isOverP1Hand || isOverP2Hand) {
-                        const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
-                        cardObj.zone = `hand_${originalSuffix}`;
-                        cardObj.controller = cardObj.owner;
+                        let targetHandSuffix;
+                        if (isOverP1Hand && !isOverP2Hand) {
+                            targetHandSuffix = 1;
+                        } else if (isOverP2Hand && !isOverP1Hand) {
+                            targetHandSuffix = 2;
+                        } else {
+                            targetHandSuffix = cardObj.owner === "player1" ? 1 : 2;
+                        }
+                        cardObj.zone = `hand_${targetHandSuffix}`;
+                        cardObj.controller = targetHandSuffix === 1 ? "player1" : "player2";
                         cardObj.faceDown = false;
+                        cardObj.tapped = false;
+                        cardObj.attachedTo = null;
                     } else {
                         cardObj.zone = "field_free";
                         cardObj.attachedTo = null;
