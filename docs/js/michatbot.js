@@ -927,6 +927,19 @@ async function initMichatbot(forceRefresh = false) {
     $('#michatbot-opt-mute').off('click').on('click', function(e) { e.stopPropagation(); window.botInstance.toggleMute(); });
     $('#michatbot-opt-play').off('click').on('click', function(e) { e.stopPropagation(); window.location.href = 'play.html'; });
 
+    // Add "Mira Esto" Hands-free Camera Command listener in companion menu
+    if (!$('#michatbot-opt-look-this').length) {
+        $('#michatbot-opt-chat').after(`
+            <div class="michatbot-menu-item" id="michatbot-opt-look-this" title="Decir 'Mira esto' para escanear con la cámara"><i class="fas fa-eye"></i> Escuchar "Mira esto"</div>
+        `);
+    }
+
+    $('#michatbot-opt-look-this').off('click').on('click', function(e) {
+        e.stopPropagation();
+        $('#michatbot-menu').fadeOut(250);
+        window.toggleHandsFreeLookCommand();
+    });
+
     // Handle "Jugar" button click with device auto-detection
     $('#michatbot-opt-play-duel').off('click').on('click', function(e) {
         e.stopPropagation();
@@ -991,6 +1004,168 @@ async function initMichatbot(forceRefresh = false) {
     });
 
     setTimeout(checkAuctionStatusOnLoad, 3000);
+    setupContinuousVoiceCommandListener();
+}
+
+/**
+ * Hands-Free Camera & Vision Command System ("Mira esto")
+ * Listens for speech phrases like "mira esto", "mira esto gemini", "qué ves", "escanea esto",
+ * automatically triggers camera frame capture, sends snapshot to Gemini Vision Edge Function,
+ * and speaks the response aloud using TTS.
+ */
+window.isHandsFreeListening = localStorage.getItem('michatbot_handsfree') === 'true';
+window.handsFreeRecognizer = null;
+window.isProcessingHandsFreeVision = false;
+
+window.toggleHandsFreeLookCommand = function() {
+    window.isHandsFreeListening = !window.isHandsFreeListening;
+    localStorage.setItem('michatbot_handsfree', window.isHandsFreeListening);
+    if (window.isHandsFreeListening) {
+        window.botInstance.say("Escuchando comando 'Mira esto'...");
+        startContinuousVoiceCommandListener();
+    } else {
+        stopContinuousVoiceCommandListener();
+        window.botInstance.say("Comando 'Mira esto' desactivado.");
+    }
+};
+
+function setupContinuousVoiceCommandListener() {
+    if (window.isHandsFreeListening) {
+        startContinuousVoiceCommandListener();
+    }
+}
+
+function startContinuousVoiceCommandListener() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    if (window.handsFreeRecognizer) {
+        try { window.handsFreeRecognizer.stop(); } catch (e) {}
+    }
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'es-ES';
+    rec.continuous = true;
+    rec.interimResults = false;
+
+    rec.onresult = function(event) {
+        if (window.isProcessingHandsFreeVision) return;
+
+        const lastResultIndex = event.results.length - 1;
+        const transcript = (event.results[lastResultIndex][0].transcript || "").toLowerCase().trim();
+        console.log("Comando de voz detectado:", transcript);
+
+        const triggers = ["mira esto", "mira esto gemini", "mira gemini", "que ves", "qué ves", "escanea esto", "mira esta carta", "qué carta es esta", "que carta es esta"];
+        const matched = triggers.some(trig => transcript.includes(trig));
+
+        if (matched) {
+            window.botInstance.say("Viendo...");
+            captureAndProcessHandsFreeVision();
+        }
+    };
+
+    rec.onerror = function(err) {
+        if (window.isHandsFreeListening && err.error !== 'aborted') {
+            setTimeout(() => {
+                if (window.isHandsFreeListening) startContinuousVoiceCommandListener();
+            }, 3000);
+        }
+    };
+
+    rec.onend = function() {
+        if (window.isHandsFreeListening) {
+            setTimeout(() => {
+                if (window.isHandsFreeListening) startContinuousVoiceCommandListener();
+            }, 1000);
+        }
+    };
+
+    window.handsFreeRecognizer = rec;
+    try {
+        rec.start();
+    } catch (e) {}
+}
+
+function stopContinuousVoiceCommandListener() {
+    if (window.handsFreeRecognizer) {
+        try { window.handsFreeRecognizer.stop(); } catch (e) {}
+        window.handsFreeRecognizer = null;
+    }
+}
+
+async function captureAndProcessHandsFreeVision() {
+    if (window.isProcessingHandsFreeVision) return;
+    window.isProcessingHandsFreeVision = true;
+
+    let mediaStream = null;
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+
+        const video = document.createElement('video');
+        video.srcObject = mediaStream;
+        video.setAttribute('playsinline', 'true');
+        video.muted = true;
+        await video.play();
+
+        // Wait brief moment for camera feed stabilization
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        const canvas = document.createElement('canvas');
+        const targetWidth = 640;
+        const targetHeight = Math.round((video.videoHeight || 720) * (640 / (video.videoWidth || 1280)));
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+        const base64Data = canvas.toDataURL('image/jpeg', 0.65);
+
+        // Stop camera tracks immediately after frame capture
+        mediaStream.getTracks().forEach(track => track.stop());
+
+        if (typeof _supabase === 'undefined') {
+            window.botInstance.say("Error de conexión a la base de datos.");
+            window.isProcessingHandsFreeVision = false;
+            return;
+        }
+
+        const isAdmin = checkIsAdminSession();
+        const targetStoreId = getActiveStoreId();
+
+        const { data, error } = await _supabase.functions.invoke('spirit-chat', {
+            body: {
+                message: "Analiza la imagen capturada. Si es una carta de TCG, dime su nombre exacto y detalles. Si es un objeto, describe brevemente qué estás viendo.",
+                image_base64: base64Data,
+                image_mime: 'image/jpeg',
+                is_admin: isAdmin,
+                store_id: targetStoreId
+            }
+        });
+
+        if (error) {
+            window.botInstance.say("No pude procesar la imagen en este momento.");
+        } else if (data && data.reply) {
+            const cleanReply = removeEmojis(data.reply);
+            window.botInstance.say(cleanReply, 10000);
+
+            // Add to chat history
+            addUserMessage("Mira esto [Captura de cámara]", base64Data);
+            addBotMessage(formatMarkdownResponse(cleanReply));
+        } else {
+            window.botInstance.say("No pude determinar qué estoy viendo.");
+        }
+    } catch (e) {
+        console.error("Error en captura hands-free:", e);
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        window.botInstance.say("No pude acceder a la cámara para tomar la foto.");
+    } finally {
+        window.isProcessingHandsFreeVision = false;
+    }
 }
 
 function setupImageUploadAndVoiceHandlers() {
