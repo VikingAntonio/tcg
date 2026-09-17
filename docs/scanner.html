@@ -298,6 +298,39 @@
             flex-shrink: 0;
         }
 
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            background: rgba(15, 15, 26, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .bottom-nav .nav-item {
+            color: #fff;
+            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .bottom-nav .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
         @media (max-width: 600px) {
             .scanner-layout { padding-top: 50px; }
             .back-btn { top: 15px; left: 15px; width: 35px; height: 35px; }
@@ -518,8 +551,43 @@ async function loadDestinations(type) {
             $select.append(`<option value="${item.id}">${item.title || item.name}</option>`);
         });
     } else {
-        $select.append(`<option value="">No hay ${type}s</option>`);
+        const defaultName = type === 'album' ? 'Álbum Principal' : 'Deck Principal';
+        const field = type === 'album' ? 'title' : 'name';
+        const { data: created } = await _supabase
+            .from(table)
+            .insert([{ [field]: defaultName, user_id: currentUser.id, is_public: true }])
+            .select();
+
+        if (created && created.length > 0) {
+            $select.append(`<option value="${created[0].id}">${created[0].title || created[0].name}</option>`);
+        } else {
+            $select.append(`<option value="">No hay ${type}s</option>`);
+        }
     }
+}
+
+async function ensureDestination() {
+    let destId = $('#select-dest').val();
+    if (destId) return destId;
+
+    const targetType = $('#select-target-type').val();
+    const table = targetType === 'album' ? 'albums' : 'decks';
+    const defaultName = targetType === 'album' ? 'Álbum Principal' : 'Deck Principal';
+    const field = targetType === 'album' ? 'title' : 'name';
+
+    if (currentUser) {
+        const { data: newDest } = await _supabase
+            .from(table)
+            .insert([{ [field]: defaultName, user_id: currentUser.id, is_public: true }])
+            .select();
+
+        if (newDest && newDest.length > 0) {
+            await loadDestinations(targetType);
+            $('#select-dest').val(newDest[0].id);
+            return newDest[0].id;
+        }
+    }
+    return null;
 }
 
 async function createNewDestination() {
@@ -737,19 +805,20 @@ async function showManualPrompt(failedIdentifier) {
 }
 
 async function handleFoundCode(code, name, type = null, visionData = null) {
-    const identifier = code || name;
+    const identifier = name || code || (visionData && visionData.card_name);
     if (!identifier) return false;
 
     $('#status-text').text('Buscando detalles...');
     let cardData = await fetchCardData(code, name, type || currentCardType);
 
-    if (!cardData && visionData && visionData.card_name) {
+    if (!cardData) {
+        const fallbackName = name || (visionData && visionData.card_name) || code;
         cardData = {
-            name: visionData.card_name,
-            image_url: 'https://images.ygoprodeck.com/images/cards/back_high.jpg',
-            rarity: visionData.rarity || '',
-            expansion: visionData.expansion || '',
-            type: visionData.game || currentCardType
+            name: fallbackName,
+            image_url: (visionData && visionData.image_url) || 'https://images.ygoprodeck.com/images/cards/back_high.jpg',
+            rarity: (visionData && visionData.rarity) || '',
+            expansion: (visionData && visionData.expansion) || '',
+            type: (visionData && visionData.game) || type || currentCardType
         };
     }
 
@@ -828,7 +897,11 @@ async function fetchCardData(code, name, type) {
 function formatPokemonCard(card) { return { name: card.name, image_url: card.images.large, rarity: card.rarity || '', expansion: card.set.name || '', type: 'pokemon' }; }
 
 async function saveCard(cardData) {
-    const targetType = $('#select-target-type').val(), destId = $('#select-dest').val();
+    const targetType = $('#select-target-type').val();
+    let destId = $('#select-dest').val();
+    if (!destId) {
+        destId = await ensureDestination();
+    }
     if (!destId) return false;
     try {
         if (targetType === 'album') {

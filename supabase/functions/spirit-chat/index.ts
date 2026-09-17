@@ -287,7 +287,7 @@ Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre d
 }`;
 
       const targetMime = image_mime || "image/jpeg";
-      const candidateModels = ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-1.0-pro"];
+      const candidateModels = ["models/gemini-1.5-flash", "models/gemini-2.0-flash", "models/gemini-1.5-pro"];
 
       for (const modelName of candidateModels) {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
@@ -317,7 +317,14 @@ Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre d
           if (res.ok) {
             const data = await res.json();
             const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            const cleanText = rawText.replace(/```json/gi, "").replace(/```/gi, "").trim();
+            let cleanText = rawText.replace(/```json/gi, "").replace(/```/gi, "").trim();
+
+            // Extract JSON object if surrounded by non-JSON conversational text
+            const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              cleanText = jsonMatch[0];
+            }
+
             try {
               const parsed = JSON.parse(cleanText);
               if (parsed) {
