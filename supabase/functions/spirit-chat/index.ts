@@ -23,7 +23,10 @@ serve(async (req) => {
       is_proactive = false,
       proactive_context = null,
       is_scan = false,
-      game_type = null
+      game_type = null,
+      auto_add = false,
+      target_type = "album",
+      target_id = null
     } = await req.json();
 
     const requestMsg = message || "";
@@ -258,19 +261,19 @@ REGLAS DE EVALUACIÓN:
       }
 
       const cleanBase64 = image_base64.replace(/^data:image\/\w+;base64,/, "");
-      const scanPrompt = `Eres Gemini Vision TCG Scanner, un sistema experto en visión por computadora para identificar cartas coleccionables TCG (Yu-Gi-Oh!, Pokémon, Magic The Gathering, Lorcana, One Piece, Digimon, Dragon Ball, etc.).
-Analiza con alta precisión la imagen adjunta de la carta y extrae sus datos clave.
-Tipo de juego preferido/seleccionado por el usuario: ${game_type || 'Desconocido / Indeterminado'}.
+      const scanPrompt = `Eres Gemini Vision TCG Fast Scanner, un motor ultrarrápido y experto en visión por computadora para identificar cartas coleccionables TCG (Yu-Gi-Oh!, Pokémon, Magic The Gathering, Lorcana, One Piece, Digimon, Dragon Ball, etc.).
+Analiza con alta precisión y de forma inmediata la imagen de la carta.
+Juego preferido: ${game_type || 'Desconocido'}.
 
 INSTRUCCIONES:
-1. Identifica el nombre exacto de la carta (card_name) en español o inglés tal como figura en la carta.
-2. Identifica el código de carta (code) si está visible en la carta (ej. LOB-001, LOB-EN001, 123/456, OP01-001, ST01-001, o passcode de 8 dígitos para Yu-Gi-Oh!).
+1. Identifica el nombre exacto de la carta (card_name) en español o inglés (ej. "Dark Magician", "Blue-Eyes White Dragon", "Pikachu").
+2. Identifica el código de carta o passcode (code) si está visible (ej. LOB-001, LOB-EN001, 123/456, 46986414).
 3. Identifica el juego (game): "yugioh", "pokemon", "magic", "onepiece", "lorcana" u "otro".
-4. Identifica la expansión / set (expansion) si es visible o conocida.
-5. Identifica la rareza (rarity) si es visible o deducible.
+4. Identifica la expansión (expansion) si es visible.
+5. Identifica la rareza (rarity) si es deducible.
 
 FORMATO DE RESPUESTA:
-Responde ÚNICAMENTE en JSON válido con este formato exacto, sin markdown ni bloques de código adicionales:
+Responde ÚNICAMENTE en JSON válido con este formato exacto, sin texto conversacional ni markdown:
 {
   "success": true,
   "card_name": "Nombre Exacto de la Carta",
@@ -280,14 +283,15 @@ Responde ÚNICAMENTE en JSON válido con este formato exacto, sin markdown ni bl
   "rarity": "Rareza"
 }
 
-Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre de la carta, responde:
+Si la imagen NO es una carta o no se distingue, responde:
 {
   "success": false,
   "error": "No se pudo identificar una carta válida en la imagen"
 }`;
 
       const targetMime = image_mime || "image/jpeg";
-      const candidateModels = ["models/gemini-1.5-flash", "models/gemini-2.0-flash", "models/gemini-1.5-pro"];
+      // Prioritize gemini-2.0-flash for high speed and accuracy
+      const candidateModels = ["models/gemini-2.0-flash", "models/gemini-1.5-flash", "models/gemini-1.5-pro"];
 
       for (const modelName of candidateModels) {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
@@ -310,7 +314,11 @@ Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre d
                     }
                   ]
                 }
-              ]
+              ],
+              generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 256
+              }
             })
           });
 
@@ -319,7 +327,6 @@ Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre d
             const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
             let cleanText = rawText.replace(/```json/gi, "").replace(/```/gi, "").trim();
 
-            // Extract JSON object if surrounded by non-JSON conversational text
             const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               cleanText = jsonMatch[0];
@@ -327,7 +334,76 @@ Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre d
 
             try {
               const parsed = JSON.parse(cleanText);
-              if (parsed) {
+              if (parsed && parsed.success && parsed.card_name) {
+                // Execute parallel internal and external database search for instant matching
+                const cardName = parsed.card_name.trim();
+
+                // 1. External database search
+                const externalResults = await queryExternalTCGCard(cardName);
+                const bestExternalMatch = externalResults && externalResults.length > 0 ? externalResults[0] : null;
+
+                // 2. Internal database search
+                let internalMatches: any = { in_albums: [], in_decks: [], in_wishlist: [] };
+                if (targetUserId) {
+                  const { data: userAlbums } = await supabase.from("albums").select("id, title").eq("user_id", targetUserId);
+                  if (userAlbums && userAlbums.length > 0) {
+                    const albumIds = userAlbums.map((a: any) => a.id);
+                    const { data: albumPages } = await supabase.from("pages").select("id, album_id").in("album_id", albumIds);
+                    if (albumPages && albumPages.length > 0) {
+                      const pageIds = albumPages.map((p: any) => p.id);
+                      const { data: slots } = await supabase.from("card_slots").select("*").in("page_id", pageIds).ilike("name", `%${cardName}%`);
+                      if (slots) internalMatches.in_albums = slots;
+                    }
+                  }
+
+                  const { data: userDecks } = await supabase.from("decks").select("id, name").eq("user_id", targetUserId);
+                  if (userDecks && userDecks.length > 0) {
+                    const deckIds = userDecks.map((d: any) => d.id);
+                    const { data: dCards } = await supabase.from("deck_cards").select("*").in("deck_id", deckIds).ilike("name", `%${cardName}%`);
+                    if (dCards) internalMatches.in_decks = dCards;
+                  }
+
+                  const { data: wCards } = await supabase.from("wishlist").select("*").eq("user_id", targetUserId).ilike("name", `%${cardName}%`);
+                  if (wCards) internalMatches.in_wishlist = wCards;
+                }
+
+                parsed.external_data = bestExternalMatch;
+                parsed.internal_matches = internalMatches;
+
+                // Optionally auto-add card directly to specified album or deck for batch scanning speed
+                let autoAddResult = null;
+                if (auto_add && targetUserId && target_id) {
+                  if (target_type === "album") {
+                    const addRes = await executeToolCall("add_cards_to_album", {
+                      albumId: target_id,
+                      cards: [{
+                        card_name: cardName,
+                        rarity: parsed.rarity || bestExternalMatch?.rarity || "Common",
+                        image_url: bestExternalMatch?.image_url || ""
+                      }]
+                    });
+                    autoAddResult = addRes;
+                  } else if (target_type === "deck") {
+                    const addRes = await executeToolCall("add_cards_to_deck", {
+                      deckId: target_id,
+                      cards: [{
+                        card_name: cardName,
+                        quantity: 1,
+                        image_url: bestExternalMatch?.image_url || ""
+                      }]
+                    });
+                    autoAddResult = addRes;
+                  }
+                }
+                if (autoAddResult) {
+                  parsed.auto_added = autoAddResult;
+                }
+
+                return new Response(JSON.stringify(parsed), {
+                  status: 200,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+              } else if (parsed) {
                 return new Response(JSON.stringify(parsed), {
                   status: 200,
                   headers: { ...corsHeaders, "Content-Type": "application/json" }
