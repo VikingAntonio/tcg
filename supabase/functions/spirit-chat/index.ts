@@ -21,11 +21,13 @@ serve(async (req) => {
       is_admin: clientIsAdmin = false,
       conversation_history = [],
       is_proactive = false,
-      proactive_context = null
+      proactive_context = null,
+      is_scan = false,
+      game_type = null
     } = await req.json();
 
     const requestMsg = message || "";
-    if (!is_proactive && !requestMsg && !image_base64 && conversation_history.length === 0) {
+    if (!is_scan && !is_proactive && !requestMsg && !image_base64 && conversation_history.length === 0) {
       return new Response(JSON.stringify({ reply: "Dime en qué te puedo ayudar hoy con tu tienda o tus cartas." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -241,6 +243,117 @@ REGLAS DE EVALUACIÓN:
       }
 
       return new Response(JSON.stringify({ should_notify: false }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Handle Card Vision Scanner Request
+    if (is_scan || proactive_context?.action === "scan_card") {
+      if (!image_base64) {
+        return new Response(JSON.stringify({ success: false, error: "No se proporcionó imagen para escanear" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const cleanBase64 = image_base64.replace(/^data:image\/\w+;base64,/, "");
+      const scanPrompt = `Eres Gemini Vision TCG Scanner, un sistema experto en visión por computadora para identificar cartas coleccionables TCG (Yu-Gi-Oh!, Pokémon, Magic The Gathering, Lorcana, One Piece, Digimon, Dragon Ball, etc.).
+Analiza con alta precisión la imagen adjunta de la carta y extrae sus datos clave.
+Tipo de juego preferido/seleccionado por el usuario: ${game_type || 'Desconocido / Indeterminado'}.
+
+INSTRUCCIONES:
+1. Identifica el nombre exacto de la carta (card_name) en español o inglés tal como figura en la carta.
+2. Identifica el código de carta (code) si está visible en la carta (ej. LOB-001, LOB-EN001, 123/456, OP01-001, ST01-001, o passcode de 8 dígitos para Yu-Gi-Oh!).
+3. Identifica el juego (game): "yugioh", "pokemon", "magic", "onepiece", "lorcana" u "otro".
+4. Identifica la expansión / set (expansion) si es visible o conocida.
+5. Identifica la rareza (rarity) si es visible o deducible.
+
+FORMATO DE RESPUESTA:
+Responde ÚNICAMENTE en JSON válido con este formato exacto, sin markdown ni bloques de código adicionales:
+{
+  "success": true,
+  "card_name": "Nombre Exacto de la Carta",
+  "code": "CÓDIGO O PASSCODE",
+  "game": "yugioh | pokemon | magic | onepiece | lorcana | otro",
+  "expansion": "Nombre del Set/Expansión",
+  "rarity": "Rareza"
+}
+
+Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre de la carta, responde:
+{
+  "success": false,
+  "error": "No se pudo identificar una carta válida en la imagen"
+}`;
+
+      const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
+      const listData = await listRes.json();
+
+      if (!listRes.ok || listData.error) {
+        return new Response(JSON.stringify({ success: false, error: listData?.error?.message || "Error al conectar con Gemini" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const availableModels = (listData.models || [])
+        .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
+        .map((m: any) => m.name);
+
+      if (availableModels.length === 0) {
+        return new Response(JSON.stringify({ success: false, error: "No hay modelos de Gemini disponibles" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      for (const modelName of availableModels) {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
+
+        try {
+          const res = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { text: scanPrompt },
+                    {
+                      inlineData: {
+                        mimeType: image_mime || "image/jpeg",
+                        data: cleanBase64
+                      }
+                    }
+                  ]
+                }
+              ]
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            const cleanText = rawText.replace(/```json/gi, "").replace(/```/gi, "").trim();
+            try {
+              const parsed = JSON.parse(cleanText);
+              if (parsed) {
+                return new Response(JSON.stringify(parsed), {
+                  status: 200,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+              }
+            } catch (e) {
+              console.warn("Error parseando respuesta JSON de Gemini Vision:", e, cleanText);
+            }
+          }
+        } catch (e) {
+          console.warn(`Error en scan vision con ${modelName}:`, e);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: false, error: "No se pudo procesar la imagen con Gemini Vision" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });

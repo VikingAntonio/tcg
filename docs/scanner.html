@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <link rel="manifest" href="manifest.json">
-    <title>Vikingdev TCG</title>
+    <title>Vikingdev TCG - Gemini Vision Scanner</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
-    <script async src="https://docs.opencv.org/4.5.2/opencv.js" type="text/javascript"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
@@ -120,6 +118,7 @@
             overflow: hidden;
             border: 2px solid var(--glass-border);
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            cursor: pointer;
         }
 
         #video-preview {
@@ -145,11 +144,11 @@
         }
 
         .scan-frame {
-            width: 100%;
-            height: 100%;
+            width: 85%;
+            height: 85%;
             border: 2px solid var(--accent-color);
             border-radius: 20px;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
             position: relative;
         }
 
@@ -216,25 +215,28 @@
 
         .btn-main {
             flex: 1;
-            min-width: 140px;
+            min-width: 130px;
             padding: 14px;
             border-radius: 14px;
             border: none;
             font-weight: 800;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary { background: var(--accent-color); color: #000; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4); }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-action { background: #2ed573; color: #000; }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(46, 213, 115, 0.4); }
 
         .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
         .btn-secondary:hover { background: rgba(255,255,255,0.15); }
@@ -257,36 +259,6 @@
         }
         .back-btn:hover { background: rgba(255,255,255,0.2); }
 
-        .dev-warning-banner {
-            background: #ff4757;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
-            width: 100%;
-            max-width: 600px;
-            animation: slideDown 0.5s ease-out;
-            z-index: 1001;
-        }
-        @keyframes slideDown {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .close-warning {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0 5px;
-            line-height: 1;
-        }
-
         .result-toast {
             position: fixed;
             top: 20px;
@@ -295,7 +267,7 @@
             background: #2f3136;
             border-left: 4px solid #5865f2;
             padding: 12px 16px;
-            border-radius: 4px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -323,50 +295,15 @@
             .back-btn { top: 15px; left: 15px; width: 35px; height: 35px; }
             .destination-grid { grid-template-columns: 1fr; }
         }
-
-        /* Detection Zones - Hidden as per user request */
-        .code-zone {
-            position: absolute;
-            border: 1px dashed rgba(0, 210, 255, 0.2); /* Much more subtle or hidden */
-            border-radius: 4px;
-            pointer-events: none;
-            transition: 0.3s;
-            display: none; /* Hidden */
-            align-items: center;
-            justify-content: center;
-        }
-        .code-zone::after {
-            content: attr(data-label);
-            position: absolute;
-            top: -18px;
-            left: 0;
-            font-size: 10px;
-            color: var(--accent-color);
-            text-transform: uppercase;
-            font-weight: 700;
-            white-space: nowrap;
-            background: rgba(0,0,0,0.5);
-            padding: 2px 4px;
-            border-radius: 3px;
-            display: none; /* Hidden */
-        }
     </style>
 </head>
 <body class="public-body">
     <button class="back-btn" onclick="location.href='admin.html'"><i class="fas fa-arrow-left"></i></button>
 
     <div class="scanner-layout">
-        <div id="dev-warning" class="dev-warning-banner" style="display:none;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span style="font-weight: 600; font-size: 14px;">Esta función está en desarrollo y aún no está en funcionamiento</span>
-            </div>
-            <button class="close-warning" onclick="this.parentElement.style.display='none'">&times;</button>
-        </div>
-
         <div class="scanner-header">
-            <h1>Scanner de Cartas</h1>
-            <p style="color: #aaa;">Encuentra y añade cartas automáticamente</p>
+            <h1><i class="fas fa-eye"></i> Gemini Vision Scanner</h1>
+            <p style="color: #aaa;">Reconocimiento inteligente de cartas TCG con IA</p>
         </div>
 
         <div class="glass-panel">
@@ -376,6 +313,8 @@
                     <select id="select-game-type">
                         <option value="yugioh">Yu-Gi-Oh!</option>
                         <option value="pokemon">Pokémon</option>
+                        <option value="magic">Magic The Gathering</option>
+                        <option value="onepiece">One Piece</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -395,9 +334,8 @@
             </div>
         </div>
 
-        <div class="viewport-container" id="scanner-viewport">
+        <div class="viewport-container" id="scanner-viewport" title="Toca para escanear">
             <video id="video-preview" autoplay playsinline muted></video>
-            <canvas id="overlay-canvas" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 10;"></canvas>
             <img id="file-preview" src="">
             <div class="scan-overlay">
                 <div class="scan-frame">
@@ -410,17 +348,20 @@
             </div>
         </div>
 
-        <div class="glass-panel status-panel" id="status-container">
+        <div class="glass-panel status-panel status-ready" id="status-container">
             <div style="display: flex; align-items: center;">
                 <span class="status-dot"></span>
-                <span id="status-text">Motor Listo</span>
+                <span id="status-text">Motor Gemini Vision Listo</span>
             </div>
-            <div id="detected-code" style="color: var(--accent-color); font-family: monospace; font-size: 1rem; font-weight: bold;"></div>
+            <div id="detected-code" style="color: var(--accent-color); font-family: monospace; font-size: 0.95rem; font-weight: bold; text-align: right; overflow: hidden; text-overflow: ellipsis; max-width: 200px; white-space: nowrap;"></div>
         </div>
 
         <div class="controls-row">
             <button id="btn-toggle-scan" class="btn-main btn-primary">
                 <i class="fas fa-camera"></i> Cámara
+            </button>
+            <button id="btn-scan-now" class="btn-main btn-action" style="display: none;">
+                <i class="fas fa-bolt"></i> Escanear
             </button>
             <button id="btn-upload" class="btn-main btn-secondary">
                 <i class="fas fa-upload"></i> Subir Imagen
@@ -449,40 +390,11 @@
     <canvas id="hidden-canvas" style="display:none;"></canvas>
 
     <script>
-// CONFIGURACIÓN DE ÁREAS DE ESCANEO (ROI) - HARDCODED PARA MÁXIMA ROBUSTEZ
-const CARD_CONFIGS = {
-    yugioh: {
-        width: 348, height: 508,
-        rois: {
-            name: { x: 10, y: 5, w: 80, h: 12 }, // Porcentajes
-            code: { x: 5, y: 88, w: 90, h: 10 }
-        }
-    },
-    pokemon: {
-        width: 372, height: 520,
-        rois: {
-            name: { x: 10, y: 5, w: 80, h: 12 },
-            code: { x: 5, y: 88, w: 90, h: 10 }
-        }
-    }
-};
-
 let currentCardType = 'yugioh';
 let isScanning = false;
 let stream = null;
-let detectionBuffer = {};
-const DETECTION_THRESHOLD = 3;
-let cvReady = false;
-let lastRect = null;
-let stabilityCount = 0;
-
-// Configurar OpenCV
-window.Module = {
-    onRuntimeInitialized: () => {
-        cvReady = true;
-        $('#status-text').text('Motor CV Listo');
-    }
-};
+let currentUser = null;
+let isProcessingVision = false;
 
 let ygoSetsCache = null;
 async function getYgoSets() {
@@ -497,19 +409,12 @@ async function getYgoSets() {
     return ygoSetsCache;
 }
 
-let currentUser = null;
-let tesseractWorker = null;
-let scanTimer = null;
-
 $(document).ready(async function() {
     await checkSession();
     await loadInitialData();
-    await initTesseract();
-    updateScannerLayout();
 
-    $('#select-game-type').change(async function() {
+    $('#select-game-type').change(function() {
         currentCardType = $(this).val();
-        updateScannerLayout();
     });
 
     $('#select-target-type').change(function() {
@@ -525,6 +430,16 @@ $(document).ready(async function() {
             await startCamera();
         } else {
             stopCamera();
+        }
+    });
+
+    $('#btn-scan-now').click(async function() {
+        await captureAndProcessVision();
+    });
+
+    $('#scanner-viewport').click(async function() {
+        if (isScanning && !isProcessingVision) {
+            await captureAndProcessVision();
         }
     });
 
@@ -547,13 +462,16 @@ $(document).ready(async function() {
         });
 
         if (input) {
-            const { code, name } = identifyFromText(input);
-            await handleFoundCode(code, name || input.trim());
+            await handleFoundCode(null, input.trim(), currentCardType);
         }
     });
 });
 
 async function checkSession() {
+    if (window.location.protocol === 'file:') {
+        currentUser = { id: '00000000-0000-0000-0000-000000000001', username: 'admin', role: 'admin', max_albums: 5, max_pages: 5, max_decks: 5, max_cards_per_deck: 60 };
+        return;
+    }
     const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
         const { data: user } = await _supabase
@@ -564,9 +482,6 @@ async function checkSession() {
 
         if (user) {
             currentUser = user;
-            if (currentUser.role !== 'admin') {
-                $('#dev-warning').show();
-            }
         } else {
             window.location.href = 'admin.html';
         }
@@ -577,11 +492,6 @@ async function checkSession() {
 
 async function loadInitialData() {
     await loadDestinations('album');
-}
-
-function updateScannerLayout() {
-    const config = CARD_CONFIGS[currentCardType];
-    $('#scanner-viewport').css('aspect-ratio', `${config.width}/${config.height}`);
 }
 
 async function loadDestinations(type) {
@@ -639,14 +549,6 @@ async function createNewDestination() {
     }
 }
 
-async function initTesseract() {
-    if (tesseractWorker) return;
-    $('#status-text').text('Iniciando OCR...');
-    tesseractWorker = await Tesseract.createWorker('eng');
-    $('#status-text').text('Motor Listo');
-    $('#status-container').addClass('status-ready');
-}
-
 async function startCamera() {
     try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -666,9 +568,10 @@ async function startCamera() {
         $('#file-preview').hide();
         isScanning = true;
         $('#btn-toggle-scan').html('<i class="fas fa-stop"></i> Detener').removeClass('btn-primary').addClass('btn-secondary');
+        $('#btn-scan-now').show();
         $('#scanner-viewport').addClass('scanner-active');
-        $('#status-text').text('Escaneando...');
-        startScanningLoop();
+        $('#status-text').text('Cámara Lista - Toca para Escanear');
+        $('#status-container').removeClass('status-working').addClass('status-ready');
     } catch (err) {
         console.error("Error accessing camera:", err);
         Swal.fire('Error', 'No se pudo acceder a la cámara.', 'error');
@@ -681,408 +584,159 @@ function stopCamera() {
         document.getElementById('video-preview').srcObject = null;
     }
     isScanning = false;
-    clearTimeout(scanTimer);
-    detectionBuffer = {};
     $('#btn-toggle-scan').html('<i class="fas fa-camera"></i> Cámara').removeClass('btn-secondary').addClass('btn-primary');
+    $('#btn-scan-now').hide();
     $('#scanner-viewport').removeClass('scanner-active');
-    $('#status-text').text('Pausado');
-    $('#status-container').removeClass('status-working');
+    $('#status-text').text('Motor Gemini Vision Listo');
+    $('#status-container').removeClass('status-working').addClass('status-ready');
+}
+
+async function captureAndProcessVision() {
+    if (isProcessingVision) return;
+
+    const video = document.getElementById('video-preview');
+    if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        Swal.fire('Atención', 'Por favor activa la cámara primero o sube una imagen.', 'info');
+        return;
+    }
+
+    const canvas = document.getElementById('hidden-canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+    await processImageWithGeminiVision(base64Data);
 }
 
 async function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
     stopCamera();
+
     const reader = new FileReader();
-    reader.onload = function(event) {
-        const img = new Image();
-        img.onload = async function() {
-            $('#file-preview').attr('src', event.target.result).show();
-            $('#video-preview').hide();
-            $('#status-text').text('Procesando Imagen...');
-            $('#status-container').addClass('status-working');
-            await processImage(img);
-        };
-        img.src = event.target.result;
+    reader.onload = async function(event) {
+        const base64Data = event.target.result;
+        $('#file-preview').attr('src', base64Data).show();
+        $('#video-preview').hide();
+        await processImageWithGeminiVision(base64Data);
     };
     reader.readAsDataURL(file);
 }
 
-function startScanningLoop() {
-    if (!isScanning) return;
-    scanTimer = setTimeout(async () => {
-        if (!isScanning) return;
-        const video = document.getElementById('video-preview');
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            await captureAndProcessFrame(video);
-        }
-        startScanningLoop();
-    }, 900);
-}
+async function processImageWithGeminiVision(base64Data) {
+    if (isProcessingVision) return;
+    isProcessingVision = true;
 
-async function captureAndProcessFrame(video) {
-    if (!cvReady) return;
-
-    const config = CARD_CONFIGS[currentCardType];
-    const canvas = document.getElementById('hidden-canvas');
-    const ctx = canvas.getContext('2d');
-    const overlay = document.getElementById('overlay-canvas');
-    const octx = overlay.getContext('2d');
-
-    // Sincronizar dimensiones del overlay
-    if (overlay.width !== video.videoWidth) {
-        overlay.width = video.videoWidth;
-        overlay.height = video.videoHeight;
-    }
-
-    // Dibujar frame actual en canvas oculto para procesar
-    canvas.width = 640; // Resolución baja para CV rápido
-    canvas.height = 640 * (video.videoHeight / video.videoWidth);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const corners = detectCardRectangle(canvas);
-    octx.clearRect(0, 0, overlay.width, overlay.height);
-
-    if (corners) {
-        // Dibujar máscara dinámica (Snap)
-        drawDynamicMask(octx, corners, video.videoWidth / canvas.width);
-
-        // Estabilidad: Si el rectángulo se mueve poco por 5 frames, disparamos OCR
-        if (checkStability(corners)) {
-            stabilityCount++;
-            if (stabilityCount >= 5) {
-                $('#status-container').addClass('status-working');
-                const warpedCard = extractWarpedCard(video, corners, video.videoWidth / canvas.width);
-                if (warpedCard) {
-                    await processImageMulti(warpedCard, config.rois);
-                }
-                stabilityCount = 0;
-            }
-        } else {
-            stabilityCount = 0;
-        }
-    } else {
-        stabilityCount = 0;
-    }
-}
-
-function detectCardRectangle(canvas) {
-    let src = cv.imread(canvas);
-    let dst = new cv.Mat();
-    cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
-    cv.GaussianBlur(dst, dst, new cv.Size(5, 5), 0);
-    cv.Canny(dst, dst, 75, 200);
-    cv.dilate(dst, dst, cv.Mat.ones(3, 3, cv.CV_8U));
-
-    let contours = new cv.MatVector();
-    let hierarchy = new cv.Mat();
-    cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-    let maxArea = 0;
-    let cardContour = null;
-
-    for (let i = 0; i < contours.size(); ++i) {
-        let cnt = contours.get(i);
-        let area = cv.contourArea(cnt);
-        if (area > 10000) {
-            let peri = cv.arcLength(cnt, true);
-            let approx = new cv.Mat();
-            cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-            if (approx.rows === 4 && area > maxArea) {
-                maxArea = area;
-                cardContour = approx.clone();
-            }
-            approx.delete();
-        }
-    }
-
-    let result = null;
-    if (cardContour) {
-        let pts = [];
-        for (let i = 0; i < 4; i++) pts.push({ x: cardContour.data32S[i * 2], y: cardContour.data32S[i * 2 + 1] });
-        // Ordenar puntos: TL, TR, BR, BL
-        pts.sort((a, b) => a.y - b.y);
-        let top = pts.slice(0, 2).sort((a, b) => a.x - b.x);
-        let bottom = pts.slice(2, 4).sort((a, b) => a.x - b.x);
-        result = [top[0], top[1], bottom[1], bottom[0]];
-        cardContour.delete();
-    }
-
-    src.delete(); dst.delete(); contours.delete(); hierarchy.delete();
-    return result;
-}
-
-function drawDynamicMask(ctx, pts, scale) {
-    ctx.strokeStyle = '#00d2ff';
-    ctx.lineWidth = 5;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x * scale, pts[0].y * scale);
-    for(let i=1; i<4; i++) ctx.lineTo(pts[i].x * scale, pts[i].y * scale);
-    ctx.closePath();
-    ctx.stroke();
-
-    // Efecto de brillo en las esquinas
-    ctx.fillStyle = '#fff';
-    pts.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x * scale, p.y * scale, 8, 0, Math.PI * 2);
-        ctx.fill();
-    });
-}
-
-function checkStability(pts) {
-    if (!lastRect) { lastRect = pts; return false; }
-    let diff = 0;
-    for (let i = 0; i < 4; i++) {
-        diff += Math.abs(pts[i].x - lastRect[i].x) + Math.abs(pts[i].y - lastRect[i].y);
-    }
-    lastRect = pts;
-    return diff < 40; // Umbral de estabilidad (acumulado de 4 puntos)
-}
-
-function extractWarpedCard(video, pts, scale) {
-    const config = CARD_CONFIGS[currentCardType];
-    let src = cv.imread(video);
-    let dst = new cv.Mat();
-    let dsize = new cv.Size(config.width * 2, config.height * 2);
-
-    let srcCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        pts[0].x * scale, pts[0].y * scale,
-        pts[1].x * scale, pts[1].y * scale,
-        pts[2].x * scale, pts[2].y * scale,
-        pts[3].x * scale, pts[3].y * scale
-    ]);
-
-    let dstCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        0, 0,
-        dsize.width, 0,
-        dsize.width, dsize.height,
-        0, dsize.height
-    ]);
-
-    let M = cv.getPerspectiveTransform(srcCoords, dstCoords);
-    cv.warpPerspective(src, dst, M, dsize);
-
-    let canvas = document.createElement('canvas');
-    cv.imshow(canvas, dst);
-
-    src.delete(); dst.delete(); M.delete(); srcCoords.delete(); dstCoords.delete();
-    return canvas;
-}
-
-async function processImageMulti(sourceCanvas, rois, passIdx = 0) {
-    const thresholds = [130, 160, 100]; // Normal, Darker, Lighter
-    const threshold = thresholds[passIdx];
+    $('#status-text').text('Analizando con Gemini Vision...');
+    $('#status-container').removeClass('status-ready').addClass('status-working');
+    $('#detected-code').text('Procesando...');
 
     try {
-        let nameText = "", codeText = "";
-        let maxConf = 0;
+        const { data, error } = await _supabase.functions.invoke('spirit-chat', {
+            body: {
+                is_scan: true,
+                image_base64: base64Data,
+                image_mime: 'image/jpeg',
+                game_type: currentCardType
+            }
+        });
 
-        if (rois.name) {
-            const nameCanvas = extractAndPreprocessROI(sourceCanvas, rois.name, threshold);
-            await tesseractWorker.setParameters({ tessedit_char_whitelist: '' });
-            const { data: { text, confidence } } = await tesseractWorker.recognize(nameCanvas);
-            nameText = text.trim();
-            maxConf = Math.max(maxConf, confidence);
+        if (error) {
+            console.error("Error al invocar Gemini Vision:", error);
+            $('#status-text').text('Error al conectar con Gemini');
+            $('#status-container').removeClass('status-working');
+            showToast('error', 'Error', 'No se pudo conectar con Gemini Vision');
+            isProcessingVision = false;
+            return;
         }
 
-        if (rois.code) {
-            const codeCanvas = extractAndPreprocessROI(sourceCanvas, rois.code, threshold);
-            await tesseractWorker.setParameters({
-                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-',
-                tessjs_create_hocr: '0',
-                tessjs_create_tsv: '0'
-            });
-            const { data: { text, confidence } } = await tesseractWorker.recognize(codeCanvas);
-            codeText = text.trim();
-            maxConf = Math.max(maxConf, confidence);
-        }
+        if (data && data.success && (data.card_name || data.code)) {
+            const cardName = data.card_name || 'Carta Desconocida';
+            const cardCode = data.code || '';
+            const detectedGame = data.game || currentCardType;
 
-        const combinedText = `${nameText}\n${codeText}`;
-        const { code } = identifyFromText(combinedText);
+            $('#status-text').text('¡Carta Encontrada!');
+            $('#status-container').removeClass('status-working').addClass('status-ready');
+            $('#detected-code').text(cardCode ? `${cardName} (${cardCode})` : cardName);
 
-        // Si encontramos un código válido o la confianza es decente, procesamos
-        if (code || (maxConf > 60)) {
-            await processDetectedText(combinedText);
-        } else if (passIdx < thresholds.length - 1 && isScanning && !$('#file-preview').is(':visible')) {
-            // Reintento con el siguiente umbral si no hay resultados claros
-            await processImageMulti(sourceCanvas, rois, passIdx + 1);
+            const success = await handleFoundCode(cardCode, cardName, detectedGame, data);
+            if (!success) {
+                showManualPrompt(cardCode || cardName);
+            }
         } else {
-            await processDetectedText(combinedText);
+            const errMsg = data?.error || 'No se reconoció la carta';
+            $('#status-text').text(errMsg);
+            $('#status-container').removeClass('status-working');
+            $('#detected-code').text('');
+            showToast('error', 'No detectado', errMsg);
         }
     } catch (err) {
-        console.error("OCR Multi-Pass Error:", err);
-    }
-}
-
-function extractAndPreprocessROI(sourceCanvas, roi, threshold) {
-    const upscale = 4;
-    const procCanvas = document.createElement('canvas');
-    const rx = (roi.x / 100) * sourceCanvas.width;
-    const ry = (roi.y / 100) * sourceCanvas.height;
-    const rw = (roi.w / 100) * sourceCanvas.width;
-    const rh = (roi.h / 100) * sourceCanvas.height;
-
-    procCanvas.width = rw * upscale;
-    procCanvas.height = rh * upscale;
-    const pctx = procCanvas.getContext('2d');
-    pctx.imageSmoothingEnabled = true;
-    pctx.imageSmoothingQuality = 'high';
-    pctx.drawImage(sourceCanvas, rx, ry, rw, rh, 0, 0, procCanvas.width, procCanvas.height);
-    preprocessROI(pctx, 0, 0, procCanvas.width, procCanvas.height, threshold);
-    return procCanvas;
-}
-
-function preprocessROI(ctx, x, y, w, h, threshold) {
-    const imageData = ctx.getImageData(x, y, w, h);
-    const data = imageData.data;
-    const contrastFactor = 3.2; // Más agresivo para compensar borrosidad
-    for (let i = 0; i < data.length; i += 4) {
-        let r = data[i], g = data[i+1], b = data[i+2];
-        let v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-        // Simular enfoque (High-pass) aumentando la diferencia con el gris medio
-        v = contrastFactor * (v - 128) + 128;
-
-        // Binarización nítida
-        v = v > threshold ? 255 : 0;
-
-        data[i] = data[i+1] = data[i+2] = v;
-    }
-    ctx.putImageData(imageData, x, y);
-}
-
-async function processImage(imageOrCanvas) {
-    try {
-        await tesseractWorker.setParameters({ tessedit_char_whitelist: '' });
-        const { data: { text } } = await tesseractWorker.recognize(imageOrCanvas);
-        await processDetectedText(text);
-    } catch (e) { console.error(e); }
-}
-
-function smartNormalize(s, forceNumeric = false) {
-    if (!s) return "";
-    const digitCount = (s.match(/[0-9]/g) || []).length;
-    const letterCount = (s.match(/[A-Z]/g) || []).length;
-    if (forceNumeric || digitCount >= letterCount) {
-        return s.replace(/[OQDU]/g, '0').replace(/[ILJT]/g, '1').replace(/Z/g, '2').replace(/E/g, '3').replace(/A/g, '4').replace(/S/g, '5').replace(/G/g, '6').replace(/B/g, '8').replace(/\s/g, '');
-    }
-    return s.replace(/\s/g, '');
-}
-
-function identifyFromText(text) {
-    const lines = text.toUpperCase().split('\n');
-    let results = [];
-    let potentialName = "";
-
-    // El nombre suele estar en la primera línea del bloque superior
-    if (lines[0] && lines[0].length > 3 && !/\d/.test(lines[0])) {
-        potentialName = lines[0].trim();
-    }
-
-    for (let line of lines) {
-        line = line.trim(); if (!line) continue;
-
-        // 1. Yu-Gi-Oh Passcode (8 dígitos)
-        const regexPasscode = /\b([0-9OIZSGEABDUQ]{8})\b/;
-        const matchPass = line.match(regexPasscode);
-        if (matchPass) {
-            const code = smartNormalize(matchPass[1], true);
-            if (code.length === 8) results.push({ code: code, type: 'yugioh', weight: 10 });
-        }
-
-        // 2. Yu-Gi-Oh Set Code (e.g. LOB-EN001)
-        const regexYG = /\b([A-Z0-9]{3,6})[\-\s]([A-Z0-9]{3,8})\b/i;
-        const matchYG = line.match(regexYG);
-        if (matchYG) {
-            let prefix = matchYG[1], suffix = matchYG[2];
-            let normalizedID = smartNormalize(suffix, true);
-            results.push({ code: prefix + '-' + normalizedID, type: 'yugioh', weight: 8 });
-        }
-
-        // 3. Pokémon Fraction (e.g. 123/456)
-        const regexPK_F = /\b([0-9OIZSGEAB]{1,5})\/([0-9OIZSGEAB]{1,5})\b/i;
-        const matchPK_F = line.match(regexPK_F);
-        if (matchPK_F) {
-            let n1 = smartNormalize(matchPK_F[1], true), n2 = smartNormalize(matchPK_F[2], true);
-            results.push({ code: n1 + '/' + n2, type: 'pokemon', weight: 9 });
-        }
-
-        // 4. Pokémon Promo/Set (e.g. SWSH123, BRS045)
-        const regexPK_P = /\b([A-Z]{2,5})[\s]?([0-9OIZSGEAB]{2,6})\b/i;
-        const matchPK_P = line.match(regexPK_P);
-        if (matchPK_P) {
-            let prefix = matchPK_P[1];
-            const blacklist = ['BASIC', 'STAGE', 'HP', 'NO', 'DNA', 'TYPE', 'CARD', 'TEAM', 'ITEM'];
-            if (!blacklist.includes(prefix)) {
-                let num = smartNormalize(matchPK_P[2], true);
-                results.push({ code: prefix + num, type: 'pokemon', weight: 7 });
-            }
-        }
-    }
-
-    if (results.length > 0) {
-        results.sort((a, b) => b.weight - a.weight);
-        return { ...results[0], name: potentialName };
-    }
-    return { code: null, type: currentCardType, name: potentialName };
-}
-
-async function processDetectedText(text) {
-    const { code, type, name } = identifyFromText(text);
-    if (code || (name && name.length > 4)) {
-        const identifier = code || name;
-        if (!$('#file-preview').is(':visible')) {
-            if (!detectionBuffer[identifier]) { detectionBuffer = {}; detectionBuffer[identifier] = 1; }
-            else { detectionBuffer[identifier]++; }
-            const count = detectionBuffer[identifier];
-            $('#detected-code').text(`${identifier.substring(0, 15)}... (${count}/${DETECTION_THRESHOLD})`);
-            if (count < DETECTION_THRESHOLD) { $('#status-text').text(`Verificando... [${count}/${DETECTION_THRESHOLD}]`); return; }
-            detectionBuffer = {}; $('#status-text').text('¡Confirmado!');
-        }
-        $('#detected-code').text(identifier);
-        const success = await handleFoundCode(code, name, type);
-        if (!success && code) { showManualPrompt(code, text); }
-    } else {
-        // No valid card data found, be silent to avoid "garbage" detections
-        $('#detected-code').text('');
-        $('#status-text').text(isScanning ? 'Escaneando...' : 'Listo');
+        console.error("Excepción en Gemini Vision:", err);
+        $('#status-text').text('Error en escaneo');
         $('#status-container').removeClass('status-working');
+    } finally {
+        isProcessingVision = false;
+    }
+}
 
-        // Only show manual prompt if it's an intentional upload that failed
-        if ($('#file-preview').is(':visible') && text.trim().length > 0) {
-            showManualPrompt(null, text);
+async function showManualPrompt(failedIdentifier) {
+    const { isConfirmed } = await Swal.fire({
+        title: 'Carta no encontrada',
+        text: `No encontramos datos para "${failedIdentifier}". ¿Deseas ingresarla o editarla manualmente?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, ingresar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#00d2ff',
+        background: '#1a1a2e',
+        color: '#fff'
+    });
+
+    if (isConfirmed) {
+        const { value: manualInput } = await Swal.fire({
+            title: 'Corregir Carta',
+            input: 'text',
+            inputValue: failedIdentifier || '',
+            inputLabel: 'Introduce el nombre o código correcto:',
+            showCancelButton: true,
+            confirmButtonColor: '#00d2ff',
+            background: '#1a1a2e',
+            color: '#fff'
+        });
+
+        if (manualInput) {
+            await handleFoundCode(null, manualInput.trim(), currentCardType);
         }
     }
 }
 
-async function showManualPrompt(failedCode, rawText) {
-    if (window.isPrompting) return;
-    window.isPrompting = true;
-    const title = failedCode ? `No se encontró ${failedCode}` : 'Código no detectado';
-    const msg = failedCode ? 'El código parece correcto pero no está en la base de datos. ¿Deseas corregirlo?' : 'No pudimos encontrar un código. ¿Deseas ingresarlo manualmente?';
-    const { isConfirmed } = await Swal.fire({ title: title, text: msg, icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, editar', cancelButtonText: 'No' });
-    window.isPrompting = false;
-    if (isConfirmed) { promptCorrection(failedCode || rawText.substring(0, 20)); }
-}
-
-async function promptCorrection(detectedText) {
-    const { value: correctedCode } = await Swal.fire({ title: 'Corregir Código', input: 'text', inputValue: detectedText, inputLabel: 'Introduce el código correcto:', showCancelButton: true, confirmButtonColor: '#00d2ff', background: '#1a1a2e', color: '#fff' });
-    if (correctedCode) { await handleFoundCode(correctedCode.toUpperCase().trim()); }
-}
-
-async function handleFoundCode(code, name, type = null) {
+async function handleFoundCode(code, name, type = null, visionData = null) {
     const identifier = code || name;
-    if (window.lastProcessedCode === identifier) return true;
-    window.lastProcessedCode = identifier;
-    $('#status-text').text('Buscando...');
-    const cardData = await fetchCardData(code, name, type || currentCardType);
+    if (!identifier) return false;
+
+    $('#status-text').text('Buscando detalles...');
+    let cardData = await fetchCardData(code, name, type || currentCardType);
+
+    if (!cardData && visionData && visionData.card_name) {
+        cardData = {
+            name: visionData.card_name,
+            image_url: 'https://images.ygoprodeck.com/images/cards/back_high.jpg',
+            rarity: visionData.rarity || '',
+            expansion: visionData.expansion || '',
+            type: visionData.game || currentCardType
+        };
+    }
+
     if (cardData) {
         const saved = await saveCard(cardData);
-        if (saved) { showToast('success', 'Carta Añadida', cardData.name, cardData.image_url); setTimeout(() => { window.lastProcessedCode = null; }, 4000); return true; }
+        if (saved) {
+            showToast('success', 'Carta Añadida', cardData.name, cardData.image_url);
+            $('#status-text').text('¡Guardado con éxito!');
+            return true;
+        }
     }
-    setTimeout(() => { window.lastProcessedCode = null; }, 2000);
     return false;
 }
 
@@ -1194,10 +848,10 @@ function showToast(type, title, message, imageUrl = null) {
     </script>
     </div>
     <div class="bottom-nav">
-        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home" onclick="location.href='admin.html'">
             <i class="fas fa-home"></i>
         </div>
-        <div class="nav-item" id="btn-nav-return" title="Volver">
+        <div class="nav-item" id="btn-nav-return" title="Volver" onclick="location.href='admin.html'">
             <i class="fas fa-chevron-left"></i>
         </div>
     </div>
