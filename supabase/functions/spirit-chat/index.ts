@@ -286,28 +286,10 @@ Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre d
   "error": "No se pudo identificar una carta válida en la imagen"
 }`;
 
-      const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
-      const listData = await listRes.json();
+      const targetMime = image_mime || "image/jpeg";
+      const candidateModels = ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-1.0-pro"];
 
-      if (!listRes.ok || listData.error) {
-        return new Response(JSON.stringify({ success: false, error: listData?.error?.message || "Error al conectar con Gemini" }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-
-      const availableModels = (listData.models || [])
-        .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
-        .map((m: any) => m.name);
-
-      if (availableModels.length === 0) {
-        return new Response(JSON.stringify({ success: false, error: "No hay modelos de Gemini disponibles" }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-
-      for (const modelName of availableModels) {
+      for (const modelName of candidateModels) {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
 
         try {
@@ -322,7 +304,7 @@ Si la imagen NO es una carta o está tan borrosa que no se distingue el nombre d
                     { text: scanPrompt },
                     {
                       inlineData: {
-                        mimeType: image_mime || "image/jpeg",
+                        mimeType: targetMime,
                         data: cleanBase64
                       }
                     }

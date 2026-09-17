@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <style>
         :root {
             --glass-bg: rgba(255, 255, 255, 0.05);
@@ -27,6 +28,7 @@
             align-items: center;
             color: white;
             padding: 20px;
+            padding-bottom: 140px !important;
         }
 
         .scanner-layout {
@@ -35,6 +37,12 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            margin-bottom: 90px;
+        }
+
+        #companion-wrapper {
+            bottom: 80px !important;
+            left: 15px !important;
         }
 
         .glass-panel {
@@ -601,12 +609,28 @@ async function captureAndProcessVision() {
     }
 
     const canvas = document.getElementById('hidden-canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const origWidth = video.videoWidth || 1280;
+    const origHeight = video.videoHeight || 720;
+    const maxDim = 640;
+    let targetWidth = origWidth;
+    let targetHeight = origHeight;
 
-    const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+    if (targetWidth > maxDim || targetHeight > maxDim) {
+        if (targetWidth > targetHeight) {
+            targetHeight = Math.round((targetHeight * maxDim) / targetWidth);
+            targetWidth = maxDim;
+        } else {
+            targetWidth = Math.round((targetWidth * maxDim) / targetHeight);
+            targetHeight = maxDim;
+        }
+    }
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+    const base64Data = canvas.toDataURL('image/jpeg', 0.6);
     await processImageWithGeminiVision(base64Data);
 }
 
