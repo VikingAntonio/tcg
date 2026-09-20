@@ -118,6 +118,32 @@ window.ProactiveAssistant = {
 window.botInstance = {
     isMuted: localStorage.getItem('michatbot_muted') === 'true',
     isVoiceEnabled: localStorage.getItem('michatbot_voice') === 'true',
+    personajesVoces: {
+        hombreAdulto: {
+            voz: "Charon",
+            estilo: "hombre adulto, voz masculina, tranquila, segura y natural",
+            pitch: 0.9,
+            rate: 1.0
+        },
+        mujerAdulta: {
+            voz: "Kore",
+            estilo: "mujer adulta, voz femenina, cálida, clara y natural",
+            pitch: 1.15,
+            rate: 1.05
+        },
+        niño: {
+            voz: "Puck",
+            estilo: "niño, voz infantil, alegre, curiosa y juguetona",
+            pitch: 1.35,
+            rate: 1.1
+        },
+        niña: {
+            voz: "Leda",
+            estilo: "niña, voz infantil femenina, dulce, alegre y curiosa",
+            pitch: 1.45,
+            rate: 1.1
+        }
+    },
     speak: function(text) {
         if (!this.isVoiceEnabled || !('speechSynthesis' in window) || !text) return;
         try {
@@ -126,11 +152,27 @@ window.botInstance = {
             if (!cleanText) return;
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'es-ES';
+
+            const voiceType = (window.currentSpirit && window.currentSpirit.voice_type) || 'hombreAdulto';
+            const profile = this.personajesVoces[voiceType] || this.personajesVoces.hombreAdulto;
+
+            utterance.pitch = profile.pitch;
+            utterance.rate = profile.rate;
+
             const voices = window.speechSynthesis.getVoices();
-            const esVoice = voices.find(v => v.lang.startsWith('es'));
-            if (esVoice) utterance.voice = esVoice;
-            utterance.rate = 1.05;
-            utterance.pitch = 1.0;
+            const esVoices = voices.filter(v => v.lang.startsWith('es'));
+
+            let selectedVoice = esVoices.find(v => v.name.toLowerCase().includes(profile.voz.toLowerCase()));
+            if (!selectedVoice) {
+                if (voiceType === 'mujerAdulta' || voiceType === 'niña') {
+                    selectedVoice = esVoices.find(v => /female|helena|sabina|monica|paloma|lucia|marta|laura|victoria|sol/i.test(v.name));
+                } else if (voiceType === 'hombreAdulto' || voiceType === 'niño') {
+                    selectedVoice = esVoices.find(v => /male|pablo|jorge|raul|enrique|alvaro|carlos|diego/i.test(v.name));
+                }
+            }
+            if (!selectedVoice && esVoices.length > 0) selectedVoice = esVoices[0];
+            if (selectedVoice) utterance.voice = selectedVoice;
+
             window.speechSynthesis.speak(utterance);
         } catch (e) {
             console.warn("Error en síntesis de voz:", e);

@@ -1615,7 +1615,27 @@ Si la imagen NO es una carta o no se distingue, responde:
       }
     }
 
-    const systemPrompt = `Eres la entidad virtual, asistente inteligente y espíritu guía oficial de Viking TCG. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, inteligente, amable y directa.
+    // Fetch active character spirit details for character voice personality alignment
+    let characterVoiceStyle = "hombre adulto, voz masculina, tranquila, segura y natural";
+    let spiritName = "Viking TCG";
+    if (targetUserId) {
+      const { data: userSpiritRow } = await supabase.from("usuarios").select("selected_spirit_id").eq("id", targetUserId).maybeSingle();
+      if (userSpiritRow?.selected_spirit_id) {
+        const { data: spiritRow } = await supabase.from("spirits").select("name, voice_type").eq("id", userSpiritRow.selected_spirit_id).maybeSingle();
+        if (spiritRow) {
+          spiritName = spiritRow.name || spiritName;
+          const voiceProfiles: Record<string, string> = {
+            hombreAdulto: "hombre adulto, voz masculina, tranquila, segura y natural",
+            mujerAdulta: "mujer adulta, voz femenina, cálida, clara y natural",
+            niño: "niño, voz infantil, alegre, curiosa y juguetona",
+            niña: "niña, voz infantil femenina, dulce, alegre y curiosa"
+          };
+          characterVoiceStyle = voiceProfiles[spiritRow.voice_type] || characterVoiceStyle;
+        }
+      }
+    }
+
+    const systemPrompt = `Eres la entidad virtual (${spiritName}), asistente inteligente y espíritu guía oficial de Viking TCG. Adaptas tu tono y personalidad al estilo del personaje: ${characterVoiceStyle}. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, inteligente, amable y directa.
 
 INSTRUCCIONES CLAVE:
 1. IDIOMA 100% ESPAÑOL NATURAL E INTELIGENTE: Responde siempre en español de forma fluida, precisa e inteligente. NUNCA envíes respuestas genéricas ni saludos prefabricados como "Hola, ¿en qué te puedo ayudar hoy?" si el usuario ya te dio una instrucción previa o te envía mensajes de seguimiento como "ya te dije que hacer", "hazlo", "inténtalo de nuevo", "sí", etc.
