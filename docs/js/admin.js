@@ -1631,6 +1631,7 @@ $(document).ready(async function() {
         const gltfFile = droppedGltfFile;
         const extraFiles = droppedExtraFiles;
         const animation = $('#input-spirit-animation').val();
+        const voiceType = $('#input-spirit-voice').val() || 'hombreAdulto';
         const particleAsset = $('#input-spirit-particle-asset').val() || 'cerezo.png';
         const particleMovement = $('#input-spirit-particle-movement').val();
         const scale = parseFloat($('#input-spirit-scale').val()) || 1.8;
@@ -1689,6 +1690,7 @@ $(document).ready(async function() {
             const spiritData = {
                 name: name,
                 animation_type: animation,
+                voice_type: voiceType,
                 particle_asset: particleAsset,
                 particle_movement_type: particleMovement,
                 scale: scale,
@@ -1916,6 +1918,7 @@ function editSpirit(spirit) {
     $('#edit-spirit-id').val(spirit.id);
     $('#input-spirit-name').val(spirit.name);
     $('#input-spirit-animation').val(spirit.animation_type || 'orbit');
+    $('#input-spirit-voice').val(spirit.voice_type || 'hombreAdulto');
     $('#input-spirit-particle-asset').val(spirit.particle_asset || '');
     $('#input-spirit-particle-movement').val(spirit.particle_movement_type || 'falling');
     $('#input-spirit-scale').val(spirit.scale || 1.8);
