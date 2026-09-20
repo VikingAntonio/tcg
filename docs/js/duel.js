@@ -1953,6 +1953,9 @@ function startGraphicalTargeting(cardObj, actionType) {
                     if (targetActionType === "set") {
                         targetingCard.faceDown = true;
                         targetingCard.tapped = true; // Monster set is rotated/defense
+                    } else if (targetActionType === "defense") {
+                        targetingCard.faceDown = false;
+                        targetingCard.tapped = true; // Monster defense is face-up rotated
                     } else {
                         targetingCard.faceDown = false;
                         targetingCard.tapped = false; // Monster summon is upright

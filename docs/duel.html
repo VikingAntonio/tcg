@@ -2777,11 +2777,10 @@
 
             // 3. Spawning Token Cards with Selective Zone Placing (Yu-Gi-Oh!)
             $(".token-action-btn").click(function() {
-                const spawnerPlayer = currentRole === "player1" ? "p1" : "p2";
-                const activeRoleKey = currentRole === "player1" ? "player1" : "player2";
-                const pSuffix = currentRole === "player1" ? 1 : 2;
+                const turnPlayerKey = state.activeTurn || "player1";
+                const pSuffix = turnPlayerKey === "player1" ? 1 : 2;
 
-                const userTokens = state.deckTokens && state.deckTokens[activeRoleKey] ? state.deckTokens[activeRoleKey] : [];
+                const userTokens = state.deckTokens && state.deckTokens[turnPlayerKey] ? state.deckTokens[turnPlayerKey] : [];
 
                 let availableTokens = [];
                 if (userTokens && userTokens.length > 0) {
@@ -2798,8 +2797,8 @@
                         instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                         name: token.name,
                         imageUrl: token.imageUrl,
-                        owner: activeRoleKey,
-                        controller: activeRoleKey,
+                        owner: turnPlayerKey,
+                        controller: turnPlayerKey,
                         zone: `monster_${pSuffix}_3`, // placeholder
                         faceDown: false,
                         tapped: isDefense,
@@ -2821,54 +2820,24 @@
                     }, 200);
                 }
 
-                function openTokenMenu(token) {
-                    Swal.fire({
-                        title: token.name,
-                        html: `
-                            <div style="text-align: center; margin-bottom: 15px;">
-                                <img src="${token.imageUrl}" style="max-height: 220px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.6);" alt="${token.name}" />
-                            </div>
-                            <div style="display: flex; gap: 10px; justify-content: center;">
-                                <button id="btn-token-summon" class="swal2-confirm swal2-styled" style="background-color: #ffd32d; color: #000; font-weight: bold; margin: 0;">
-                                    <i class="fas fa-bolt"></i> Invocar
-                                </button>
-                                <button id="btn-token-summon-def" class="swal2-confirm swal2-styled" style="background-color: #2ec4b6; color: #fff; font-weight: bold; margin: 0;">
-                                    <i class="fas fa-shield-alt"></i> Invocar en defensa
-                                </button>
-                            </div>
-                        `,
-                        showConfirmButton: false,
-                        showCancelButton: true,
-                        cancelButtonText: 'Cancelar',
-                        cancelButtonColor: '#ff4a4a',
-                        background: '#12181e',
-                        color: '#fff',
-                        didOpen: () => {
-                            document.getElementById('btn-token-summon').addEventListener('click', () => {
-                                Swal.close();
-                                spawnTokenWithAction(token, "summon");
-                            });
-                            document.getElementById('btn-token-summon-def').addEventListener('click', () => {
-                                Swal.close();
-                                spawnTokenWithAction(token, "defense");
-                            });
-                        }
-                    });
-                }
-
-                let tokensHtml = '<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-height: 350px; overflow-y: auto; padding: 10px 5px;">';
+                let tokensHtml = '<div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-height: 380px; overflow-y: auto; padding: 10px 5px;">';
                 availableTokens.forEach((t, idx) => {
                     tokensHtml += `
-                        <div class="token-card-item" data-token-idx="${idx}" style="cursor: pointer; text-align: center; transition: transform 0.2s; width: 110px;">
-                            <img src="${t.imageUrl}" style="width: 100px; height: 145px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 2px solid #ffd32d;" alt="${t.name}" />
-                            <div style="font-size: 0.75rem; color: #fff; margin-top: 5px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.name}</div>
+                        <div class="extra-deck-card-container token-popup-container" data-token-idx="${idx}">
+                            <img src="${t.imageUrl}" alt="${t.name}">
+                            <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 8px;">
+                                <button class="extra-card-action-btn btn-token-spawn-summon" data-token-idx="${idx}" style="background: #ffd32d; color: #000;">Invocar</button>
+                                <button class="extra-card-action-btn btn-token-spawn-def" data-token-idx="${idx}" style="background: #2ec4b6; color: #fff;">Defensa</button>
+                            </div>
                         </div>
                     `;
                 });
                 tokensHtml += '</div>';
 
+                const turnTitle = turnPlayerKey === "player1" ? "Tokens (Jugador 1)" : "Tokens (Jugador 2)";
+
                 Swal.fire({
-                    title: 'Mis Tokens',
+                    title: turnTitle,
                     html: tokensHtml,
                     showConfirmButton: false,
                     showCancelButton: true,
@@ -2877,15 +2846,24 @@
                     background: '#12181e',
                     color: '#fff',
                     didOpen: () => {
-                        $(".token-card-item").hover(
-                            function() { $(this).css("transform", "scale(1.06)"); },
-                            function() { $(this).css("transform", "scale(1.0)"); }
-                        );
-                        $(".token-card-item").click(function() {
+                        $(".btn-token-spawn-summon").click(function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
                             const idx = $(this).data("token-idx");
                             const selectedToken = availableTokens[idx];
                             if (selectedToken) {
-                                openTokenMenu(selectedToken);
+                                Swal.close();
+                                spawnTokenWithAction(selectedToken, "summon");
+                            }
+                        });
+                        $(".btn-token-spawn-def").click(function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const idx = $(this).data("token-idx");
+                            const selectedToken = availableTokens[idx];
+                            if (selectedToken) {
+                                Swal.close();
+                                spawnTokenWithAction(selectedToken, "defense");
                             }
                         });
                     }
