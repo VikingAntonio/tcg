@@ -1660,9 +1660,16 @@ INSTRUCCIONES CLAVE:
       });
     }
 
-    const availableModels = (listData.models || [])
+    let availableModels = (listData.models || [])
       .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
       .map((m: any) => m.name);
+
+    // Sort models so ultra-fast flash models (e.g. gemini-2.0-flash, gemini-1.5-flash) are tried first
+    availableModels.sort((a: string, b: string) => {
+      const aIsFlash2 = a.includes("2.0-flash") ? 0 : a.includes("1.5-flash") ? 1 : 2;
+      const bIsFlash2 = b.includes("2.0-flash") ? 0 : b.includes("1.5-flash") ? 1 : 2;
+      return aIsFlash2 - bIsFlash2;
+    });
 
     if (availableModels.length === 0) {
       return new Response(JSON.stringify({ reply: "No se encontró ningún modelo habilitado en Google Gemini." }), {
@@ -1702,7 +1709,11 @@ INSTRUCCIONES CLAVE:
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents,
-            tools
+            tools,
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 1024
+            }
           })
         });
 
