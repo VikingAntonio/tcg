@@ -4585,71 +4585,35 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             });
 
             // 3. Spawning Token Cards with Selective Zone Placing (Yu-Gi-Oh!)
-            const DEFAULT_TOKENS = [
-                { name: "Ficha de Monstruo (Token)", imageUrl: "docs/img/tokenyg.jpg", description: "Ficha Especial." }
-            ];
-
             $(".token-action-btn").click(function() {
                 // Collapse the mobile sidebar panel to clearly view the popup and the playmat
                 $(".duel-sidebar").removeClass("mobile-sidebar-active");
 
-                const spawnerPlayer = currentRole === "player1" ? "p1" : "p2";
-                const activeRoleKey = currentRole === "player1" ? "player1" : "player2";
-                const pSuffix = currentRole === "player1" ? 1 : 2;
+                const turnPlayerKey = state.activeTurn || "player1";
+                const pSuffix = turnPlayerKey === "player1" ? 1 : 2;
 
-                const userTokens = state.deckTokens && state.deckTokens[activeRoleKey] ? state.deckTokens[activeRoleKey] : [];
+                const userTokens = state.deckTokens && state.deckTokens[turnPlayerKey] ? state.deckTokens[turnPlayerKey] : [];
 
                 let availableTokens = [];
                 if (userTokens && userTokens.length > 0) {
                     availableTokens = userTokens;
                 } else {
-                    availableTokens = DEFAULT_TOKENS;
+                    availableTokens = [
+                        { name: "Ficha de Monstruo (Token)", imageUrl: "img/token.png", description: "Ficha Especial." }
+                    ];
                 }
 
-                let tokensHtml = `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-height: 320px; overflow-y: auto; padding: 10px 5px;">`;
-                availableTokens.forEach((t, idx) => {
-                    const imgUrl = t.imageUrl || t.image_url || "docs/img/tokenyg.jpg";
-                    tokensHtml += `
-                        <div class="token-choice-item" data-token-index="${idx}" style="cursor: pointer; width: 95px; text-align: center; border: 2px solid rgba(255,211,45,0.4); border-radius: 8px; padding: 6px; background: rgba(255,255,255,0.05); transition: transform 0.15s ease, border-color 0.15s ease;">
-                            <img src="${imgUrl}" alt="${t.name || 'Token'}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
-                            <div style="font-size: 0.75rem; color: #ffd32d; font-weight: bold; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.name || 'Token'}</div>
-                        </div>
-                    `;
-                });
-                tokensHtml += `</div>`;
-
-                // Show a SweetAlert2 dialog with tokens grid to choose from
-                Swal.fire({
-                    title: 'Invocar Token',
-                    html: tokensHtml,
-                    showCancelButton: true,
-                    showConfirmButton: false,
-                    cancelButtonText: 'Cancelar',
-                    background: '#12181e',
-                    color: '#fff',
-                    cancelButtonColor: '#ff4a4a',
-                    didOpen: () => {
-                        $(".token-choice-item").off("click").on("click", function() {
-                            const idx = $(this).data("token-index");
-                            const selectedToken = availableTokens[idx];
-                            Swal.close();
-                            if (selectedToken) {
-                                spawnTokenOnField(selectedToken);
-                            }
-                        });
-                    }
-                });
-
-                function spawnTokenOnField(token) {
+                function spawnTokenWithAction(token, actionType) {
+                    const isDefense = actionType === "defense";
                     const newTokenObj = {
                         instanceId: `token_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                         name: token.name || "Token",
-                        imageUrl: token.imageUrl || token.image_url || "docs/img/tokenyg.jpg",
-                        owner: activeRoleKey,
-                        controller: activeRoleKey,
+                        imageUrl: token.imageUrl || token.image_url || "img/token.png",
+                        owner: turnPlayerKey,
+                        controller: turnPlayerKey,
                         zone: `monster_${pSuffix}_3`, // placeholder
                         faceDown: false,
-                        tapped: false, // Default to Attack Position
+                        tapped: isDefense,
                         counters: 0,
                         attachedTo: null,
                         x: 430,
@@ -4663,10 +4627,87 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     state.cards.push(newTokenObj);
 
                     setTimeout(() => {
-                        startGraphicalTargeting(newTokenObj, "summon");
-                        sendGameAction(`Está invocando de forma especial un Token: 🌟 ${token.name}`);
+                        startGraphicalTargeting(newTokenObj, actionType);
+                        sendGameAction(`Está invocando de forma especial un Token (${isDefense ? 'Defensa' : 'Ataque'}): 🌟 ${token.name}`);
                     }, 200);
                 }
+
+                let tokensHtml = '<div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-height: 380px; overflow-y: auto; padding: 10px 5px;">';
+                availableTokens.forEach((t, idx) => {
+                    const imgUrl = t.imageUrl || t.image_url || "img/token.png";
+                    tokensHtml += `
+                        <div class="extra-deck-card-container token-popup-container" data-token-idx="${idx}">
+                            <img src="${imgUrl}" alt="${t.name || 'Token'}">
+                            <div class="extra-deck-card-hover-overlay" style="flex-direction: column; gap: 8px;">
+                                <button class="extra-card-action-btn btn-token-spawn-summon" data-token-idx="${idx}" style="background: #ffd32d; color: #000;">Invocar</button>
+                                <button class="extra-card-action-btn btn-token-spawn-def" data-token-idx="${idx}" style="background: #2ec4b6; color: #fff;">Defensa</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                tokensHtml += '</div>';
+
+                const turnTitle = turnPlayerKey === "player1" ? "Tokens (Jugador 1)" : "Tokens (Jugador 2)";
+
+                Swal.fire({
+                    title: turnTitle,
+                    html: tokensHtml,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cerrar',
+                    cancelButtonColor: '#ff4a4a',
+                    background: '#12181e',
+                    color: '#fff',
+                    didOpen: () => {
+                        $(".token-popup-container").off("click").on("click", function(e) {
+                            if ($(e.target).closest(".btn-token-spawn-summon, .btn-token-spawn-def").length) {
+                                return;
+                            }
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if ($(this).hasClass("active-menu")) {
+                                $(this).removeClass("active-menu");
+                            } else {
+                                $(".token-popup-container").removeClass("active-menu");
+                                $(this).addClass("active-menu");
+                            }
+                        });
+
+                        $(".btn-token-spawn-summon").off("click").on("click", function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const container = $(this).closest(".token-popup-container");
+                            if (!container.hasClass("active-menu")) {
+                                $(".token-popup-container").removeClass("active-menu");
+                                container.addClass("active-menu");
+                                return;
+                            }
+                            const idx = $(this).data("token-idx");
+                            const selectedToken = availableTokens[idx];
+                            if (selectedToken) {
+                                Swal.close();
+                                spawnTokenWithAction(selectedToken, "summon");
+                            }
+                        });
+
+                        $(".btn-token-spawn-def").off("click").on("click", function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const container = $(this).closest(".token-popup-container");
+                            if (!container.hasClass("active-menu")) {
+                                $(".token-popup-container").removeClass("active-menu");
+                                container.addClass("active-menu");
+                                return;
+                            }
+                            const idx = $(this).data("token-idx");
+                            const selectedToken = availableTokens[idx];
+                            if (selectedToken) {
+                                Swal.close();
+                                spawnTokenWithAction(selectedToken, "defense");
+                            }
+                        });
+                    }
+                });
             });
 
             // 4. Custom Drag-and-Drop Counter Handlers
