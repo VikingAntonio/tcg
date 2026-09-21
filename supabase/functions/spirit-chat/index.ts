@@ -94,15 +94,28 @@ serve(async (req) => {
       }
     }
 
-    // Helper to query external multi-TCG databases (Yu-Gi-Oh!, Pokémon TCG, Lorcana, One Piece, Magic, etc.)
+    // Helper to query external multi-TCG databases with fast 1.5s timeout per request
     async function queryExternalTCGCard(cardName: string) {
       const trimmed = cardName.trim();
       const results: any[] = [];
 
+      const fetchWithTimeout = async (url: string, timeoutMs = 1500) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          return res;
+        } catch (e) {
+          clearTimeout(timer);
+          return null;
+        }
+      };
+
       // 1. Try Yu-Gi-Oh! via YGOPRODeck
       try {
-        const res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(trimmed)}`);
-        if (res.ok) {
+        const res = await fetchWithTimeout(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(trimmed)}`);
+        if (res && res.ok) {
           const data = await res.json();
           if (data && data.data && data.data.length > 0) {
             data.data.slice(0, 5).forEach((c: any) => {
@@ -121,10 +134,10 @@ serve(async (req) => {
         console.warn("YGOPRODeck fetch error:", e);
       }
 
-      // 2. Try Pokémon TCG via TCGdex / Pokémon API
+      // 2. Try Pokémon TCG via TCGdex
       try {
-        const pokeRes = await fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(trimmed)}`);
-        if (pokeRes.ok) {
+        const pokeRes = await fetchWithTimeout(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(trimmed)}`);
+        if (pokeRes && pokeRes.ok) {
           const pokeData = await pokeRes.json();
           if (Array.isArray(pokeData) && pokeData.length > 0) {
             for (const pc of pokeData.slice(0, 3)) {
@@ -145,51 +158,7 @@ serve(async (req) => {
         console.warn("TCGdex fetch error:", e);
       }
 
-      // 3. Try Lorcana API
-      try {
-        const lorcanaRes = await fetch(`https://api.lorcana-api.com/cards/search?search=name~${encodeURIComponent(trimmed)}`);
-        if (lorcanaRes.ok) {
-          const lorData = await lorcanaRes.json();
-          if (Array.isArray(lorData) && lorData.length > 0) {
-            for (const lc of lorData.slice(0, 3)) {
-              results.push({
-                card_name: lc.Name || lc.name || trimmed,
-                type: lc.Type || "Glimmer",
-                rarity: lc.Rarity || "Common",
-                image_url: lc.Image || lc.image || lc.card_image || "",
-                desc: lc.Body_Text || lc.Text || "Disney Lorcana Card",
-                tcg: "lorcana"
-              });
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Lorcana API fetch error:", e);
-      }
-
-      // 4. Try TCGAPI.dev for One Piece, Magic, etc.
-      try {
-        const tcgApiRes = await fetch(`https://api.tcgapi.dev/v1/cards?q=${encodeURIComponent(trimmed)}`);
-        if (tcgApiRes.ok) {
-          const tcgApiData = await tcgApiRes.json();
-          if (tcgApiData && Array.isArray(tcgApiData.data) && tcgApiData.data.length > 0) {
-            for (const item of tcgApiData.data.slice(0, 3)) {
-              results.push({
-                card_name: item.name || trimmed,
-                type: item.type || "TCG Card",
-                rarity: item.rarity || "Standard",
-                image_url: item.image || item.image_url || "",
-                desc: item.text || item.description || "TCG Card",
-                tcg: item.game || "tcg"
-              });
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("TCGAPI fetch error:", e);
-      }
-
-      // Fallback placeholder image generator if no external API returned image
+      // Fallback placeholder card if no external API returned an image
       if (results.length === 0) {
         results.push({
           card_name: trimmed,
@@ -2136,23 +2105,22 @@ DIRECTIVAS CRÍTICAS Y REGLAS DE ORO:
     // Strip out emojis from the reply
     cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
-    // If tools were executed and cleanReply is empty or generic fallback, generate explicit confirmation from executed tools
-    if (executedToolResults.length > 0 && (!cleanReply || cleanReply.includes("¿Deseas realizar alguna otra consulta"))) {
-      const messages = executedToolResults
-        .map(tr => tr.result?.message || (tr.result?.success ? "Acción realizada con éxito." : null))
-        .filter(Boolean);
-      if (messages.length > 0) {
-        cleanReply = messages.join(" ");
+    // Post-processing: Generate explicit response if cleanReply is empty or canned
+    if (executedToolResults.length > 0) {
+      const msgs = executedToolResults.map(tr => {
+        if (tr.result?.error) {
+          return `Error al ejecutar '${tr.tool}': ${tr.result.error} ${tr.result.suggestion || ''}`;
+        }
+        return tr.result?.message || `Operación '${tr.tool}' realizada con éxito.`;
+      }).filter(Boolean);
+
+      if (!cleanReply || cleanReply.includes("Entendido. ¿Deseas realizar alguna otra consulta") || cleanReply.includes("Acción ejecutada correctamente")) {
+        cleanReply = msgs.join("\n");
       }
     }
 
-    if (!cleanReply || cleanReply.includes("Entendido. ¿Deseas realizar alguna otra consulta o modificación?")) {
-      if (executedToolResults.length > 0) {
-        const msgs = executedToolResults.map(tr => tr.result?.error ? `No se pudo completar: ${tr.result.error}` : (tr.result?.message || "Acción ejecutada correctamente.")).filter(Boolean);
-        cleanReply = msgs.join(" ");
-      } else {
-        cleanReply = "He procesado tu solicitud. Dime el nombre del álbum, deck, carta o elemento específico que deseas gestionar y lo realizaré de inmediato.";
-      }
+    if (!cleanReply) {
+      cleanReply = "He procesado tu solicitud. Si deseas realizar algún cambio en tus álbumes, decks, productos sellados, wishlist o inversiones, indícamelo con el nombre exacto.";
     }
 
     return new Response(JSON.stringify({
