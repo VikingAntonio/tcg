@@ -939,8 +939,13 @@
                         .replace(/\n/g, '<br>');
                     msgContainer.appendChild(bMsg);
 
-                    this.conversationHistory.push({ role: "user", parts: [{ text }] });
-                    this.conversationHistory.push({ role: "model", parts: [{ text: cleanReply }] });
+                    if (text) {
+                        this.conversationHistory.push({ role: "user", parts: [{ text }] });
+                        this.conversationHistory.push({ role: "model", parts: [{ text: cleanReply }] });
+                    }
+                    if (this.conversationHistory.length > 16) {
+                        this.conversationHistory = this.conversationHistory.slice(-16);
+                    }
                 } else {
                     const bMsg = document.createElement('div');
                     bMsg.className = 'vk-msg-bot';

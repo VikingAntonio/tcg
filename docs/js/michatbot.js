@@ -1476,9 +1476,16 @@ async function handleSendAIChatMessage() {
             addBotMessage(formatMarkdownResponse(cleanText));
             window.botInstance.say(cleanText);
 
-            // Update conversation history for multi-turn chat
-            window.botConversationHistory.push({ role: "user", parts: [{ text }] });
-            window.botConversationHistory.push({ role: "model", parts: [{ text: cleanText }] });
+            // Update conversation history for multi-turn chat (keep only text parts)
+            if (text) {
+                window.botConversationHistory.push({ role: "user", parts: [{ text }] });
+                window.botConversationHistory.push({ role: "model", parts: [{ text: cleanText }] });
+            }
+
+            // Cap conversation history to last 16 turns (8 pairs) to keep context light and relevant
+            if (window.botConversationHistory.length > 16) {
+                window.botConversationHistory = window.botConversationHistory.slice(-16);
+            }
 
             // If an administrative creation/update happened, refresh page UI in real-time across all HTML views
             if (isAdmin) {

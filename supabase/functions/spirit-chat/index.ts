@@ -1075,11 +1075,15 @@ Si la imagen NO es una carta o no se distingue, responde:
           }
 
           const { data: pages } = await supabase.from("pages").select("id, page_index").eq("album_id", albumId).order("page_index", { ascending: true });
-          if (!pages || pages.length === 0) return { albumId, albumTitle, pages: [], slots: [] };
+          if (!pages || pages.length === 0) return { albumId, albumTitle, pages: [], slots: [], message: `El álbum '${albumTitle}' no tiene páginas cargadas aún.` };
 
           const pageIds = pages.map((p: any) => p.id);
           const { data: slots } = await supabase.from("card_slots").select("*").in("page_id", pageIds);
-          return { albumId, albumTitle, pages, slots: slots || [] };
+
+          const slotList = (slots || []).map((s: any) => `• **${s.name}** - Precio: $${s.price || 0} | Rareza: ${s.rarity || 'Standard'} | Edición: ${s.edition || '1st'} | Idioma: ${s.language || 'ES'}`);
+          const albumSummaryMsg = `Detalles del álbum **"${albumTitle}"** (${slotList.length} cartas):\n` + (slotList.length > 0 ? slotList.join("\n") : "Este álbum no contiene cartas todavía.");
+
+          return { albumId, albumTitle, pages, slots: slots || [], message: albumSummaryMsg, summary: albumSummaryMsg };
         }
 
         case "get_user_decks": {
@@ -1107,7 +1111,11 @@ Si la imagen NO es una carta o no se distingue, responde:
 
           const { data: deckMeta } = await supabase.from("decks").select("*").eq("id", deckId).single();
           const { data: cards } = await supabase.from("deck_cards").select("*").eq("deck_id", deckId);
-          return { deck: deckMeta, cards: cards || [] };
+
+          const cardList = (cards || []).map((c: any) => `• **${c.name}** x${c.quantity || 1} (Sección: ${c.section || 'Main'})`);
+          const deckSummaryMsg = `Detalles del deck **"${deckName}"** (Tag: ${deckMeta?.format_tag || 'Sin Tag'}, Total de cartas distintas: ${cardList.length}):\n` + (cardList.length > 0 ? cardList.join("\n") : "Este deck está vacío.");
+
+          return { deck: deckMeta, cards: cards || [], message: deckSummaryMsg, summary: deckSummaryMsg };
         }
 
         case "get_sealed_products": {
@@ -1175,7 +1183,7 @@ Si la imagen NO es una carta o no se distingue, responde:
 
         case "search_cards": {
           const q = args.cardName.trim();
-          if (!q) return { results: [] };
+          if (!q) return { results: [], message: "No se proporcionó nombre de carta para buscar." };
 
           let albumSlots: any[] = [];
           if (targetUserId) {
@@ -1242,8 +1250,63 @@ Si la imagen NO es una carta o no se distingue, responde:
           // Search in external TCG API
           const externalMatch = await queryExternalTCGCard(q);
 
+          const totalLocalMatches = albumSlots.length + deckCardsArr.length + sealedArr.length + claimsArr.length + wishlistArr.length;
+
+          // Format a comprehensive human-readable message with full item details
+          const detailsLines: string[] = [`Resultados de la búsqueda para **"${q}"**:`];
+
+          if (albumSlots.length > 0) {
+            detailsLines.push(`\n**En Álbumes (${albumSlots.length}):**`);
+            albumSlots.forEach(s => {
+              detailsLines.push(`• **${s.name}** - Álbum: "${s.album_title}" | Precio: $${s.price || 0} | Rareza: ${s.rarity || 'Standard'} | Edición: ${s.edition || '1st'} | Idioma: ${s.language || 'ES'}`);
+            });
+          }
+
+          if (deckCardsArr.length > 0) {
+            detailsLines.push(`\n**En Decks (${deckCardsArr.length}):**`);
+            deckCardsArr.forEach(c => {
+              detailsLines.push(`• **${c.name}** - Deck: "${c.deck_name}" | Cantidad: ${c.quantity || 1} | Sección: ${c.section || 'Main'}`);
+            });
+          }
+
+          if (sealedArr.length > 0) {
+            detailsLines.push(`\n**En Productos Sellados (${sealedArr.length}):**`);
+            sealedArr.forEach(p => {
+              detailsLines.push(`• **${p.name}** - Precio: $${p.price || 0} | Stock: ${p.stock || 0} | Descripción: ${p.description || 'Sin descripción'}`);
+            });
+          }
+
+          if (claimsArr.length > 0) {
+            detailsLines.push(`\n**En Claims / Dinámicas (${claimsArr.length}):**`);
+            claimsArr.forEach(cl => {
+              detailsLines.push(`• **${cl.title}** - Precio: $${cl.price || 0} | Estado: ${cl.status}`);
+            });
+          }
+
+          if (wishlistArr.length > 0) {
+            detailsLines.push(`\n**En Lista de Deseos / Wishlist (${wishlistArr.length}):**`);
+            wishlistArr.forEach(w => {
+              detailsLines.push(`• **${w.name}** - Cantidad buscada: ${w.quantity || 1} | Rareza: ${w.rarity || 'Cualquiera'} | Notas: ${w.notes || 'Ninguna'}`);
+            });
+          }
+
+          if (externalMatch && externalMatch.length > 0) {
+            detailsLines.push(`\n**Coincidencias en Base de Datos TCG Externa:**`);
+            externalMatch.slice(0, 3).forEach((ext: any) => {
+              detailsLines.push(`• **${ext.card_name}** (${ext.tcg.toUpperCase()}) - Tipo: ${ext.type || 'Carta'} | Rareza: ${ext.rarity || 'Standard'}`);
+            });
+          }
+
+          if (totalLocalMatches === 0 && (!externalMatch || externalMatch.length === 0)) {
+            detailsLines.push(`No se encontraron cartas ni productos coincidentes con "${q}" en la tienda ni en bases externas.`);
+          }
+
+          const detailedMessage = detailsLines.join('\n');
+
           return {
             query: q,
+            message: detailedMessage,
+            summary: detailedMessage,
             in_albums: albumSlots,
             in_decks: deckCardsArr,
             sealed_products: sealedArr,
@@ -2082,7 +2145,27 @@ DIRECTIVAS CRÍTICAS Y REGLAS DE ORO:
       });
     }
 
-    const contents = [...conversation_history];
+    const sanitizedHistory: any[] = [];
+    if (Array.isArray(conversation_history)) {
+      for (const msg of conversation_history) {
+        if (!msg || typeof msg !== "object") continue;
+        const role = msg.role === "model" || msg.role === "assistant" ? "model" : "user";
+        let parts = msg.parts;
+        if (typeof msg.content === "string") {
+          parts = [{ text: msg.content }];
+        } else if (typeof msg.text === "string") {
+          parts = [{ text: msg.text }];
+        }
+        if (!Array.isArray(parts) || parts.length === 0) continue;
+
+        const cleanParts = parts.filter((p: any) => p && (p.text !== undefined || p.inlineData !== undefined));
+        if (cleanParts.length > 0) {
+          sanitizedHistory.push({ role, parts: cleanParts });
+        }
+      }
+    }
+
+    const contents = [...sanitizedHistory];
     if (userParts.length > 0) {
       contents.push({ role: "user", parts: userParts });
     }
@@ -2160,7 +2243,7 @@ DIRECTIVAS CRÍTICAS Y REGLAS DE ORO:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
+          systemInstruction: { parts: [{ text: systemPrompt + "\n\nINSTRUCCIÓN CRÍTICA DE RESPUESTA: Explica en detalle el resultado de la función o acción al usuario en español con datos concretos (nombres de cartas, ubicación, precio, estado, etc.), en un mensaje completo, profesional y directo. NO respondas solo con frases genéricas como 'Operación realizada'." }] },
           contents,
           tools
         })
@@ -2206,11 +2289,13 @@ DIRECTIVAS CRÍTICAS Y REGLAS DE ORO:
         if (tr.result?.error) {
           return `Error al ejecutar '${tr.tool}': ${tr.result.error} ${tr.result.suggestion || ''}`;
         }
-        return tr.result?.message || `Operación '${tr.tool}' realizada con éxito.`;
+        return tr.result?.message || tr.result?.summary || null;
       }).filter(Boolean);
 
-      if (!cleanReply || cleanReply.includes("Entendido. ¿Deseas realizar alguna otra consulta") || cleanReply.includes("Acción ejecutada correctamente")) {
-        cleanReply = msgs.join("\n");
+      if (!cleanReply || cleanReply.includes("Entendido. ¿Deseas realizar alguna otra consulta") || cleanReply.includes("Acción ejecutada correctamente") || cleanReply.startsWith("Operación '")) {
+        if (msgs.length > 0) {
+          cleanReply = msgs.join("\n\n");
+        }
       }
     }
 
