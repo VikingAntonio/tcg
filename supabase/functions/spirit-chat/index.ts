@@ -94,7 +94,7 @@ serve(async (req) => {
       }
     }
 
-    // Helper to query external multi-TCG databases (Yu-Gi-Oh!, Pokémon TCG, Lorcana, etc.)
+    // Helper to query external multi-TCG databases (Yu-Gi-Oh!, Pokémon TCG, Lorcana, One Piece, Magic, etc.)
     async function queryExternalTCGCard(cardName: string) {
       const trimmed = cardName.trim();
       const results: any[] = [];
@@ -121,7 +121,7 @@ serve(async (req) => {
         console.warn("YGOPRODeck fetch error:", e);
       }
 
-      // 2. Try Pokémon TCG via Pokédex / TCGdex / Pokémon API
+      // 2. Try Pokémon TCG via TCGdex / Pokémon API
       try {
         const pokeRes = await fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(trimmed)}`);
         if (pokeRes.ok) {
@@ -143,6 +143,50 @@ serve(async (req) => {
         }
       } catch (e) {
         console.warn("TCGdex fetch error:", e);
+      }
+
+      // 3. Try Lorcana API
+      try {
+        const lorcanaRes = await fetch(`https://api.lorcana-api.com/cards/search?search=name~${encodeURIComponent(trimmed)}`);
+        if (lorcanaRes.ok) {
+          const lorData = await lorcanaRes.json();
+          if (Array.isArray(lorData) && lorData.length > 0) {
+            for (const lc of lorData.slice(0, 3)) {
+              results.push({
+                card_name: lc.Name || lc.name || trimmed,
+                type: lc.Type || "Glimmer",
+                rarity: lc.Rarity || "Common",
+                image_url: lc.Image || lc.image || lc.card_image || "",
+                desc: lc.Body_Text || lc.Text || "Disney Lorcana Card",
+                tcg: "lorcana"
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Lorcana API fetch error:", e);
+      }
+
+      // 4. Try TCGAPI.dev for One Piece, Magic, etc.
+      try {
+        const tcgApiRes = await fetch(`https://api.tcgapi.dev/v1/cards?q=${encodeURIComponent(trimmed)}`);
+        if (tcgApiRes.ok) {
+          const tcgApiData = await tcgApiRes.json();
+          if (tcgApiData && Array.isArray(tcgApiData.data) && tcgApiData.data.length > 0) {
+            for (const item of tcgApiData.data.slice(0, 3)) {
+              results.push({
+                card_name: item.name || trimmed,
+                type: item.type || "TCG Card",
+                rarity: item.rarity || "Standard",
+                image_url: item.image || item.image_url || "",
+                desc: item.text || item.description || "TCG Card",
+                tcg: item.game || "tcg"
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("TCGAPI fetch error:", e);
       }
 
       // Fallback placeholder image generator if no external API returned image
@@ -861,6 +905,85 @@ Si la imagen NO es una carta o no se distingue, responde:
                 messenger_link: { type: "STRING" }
               }
             }
+          },
+          {
+            name: "manage_subastas",
+            description: "[SOLO ADMIN] Administra las subastas de la tienda (crear, actualizar o eliminar subasta).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "create, update, delete" },
+                subastaId: { type: "STRING" },
+                title: { type: "STRING" },
+                initial_price: { type: "NUMBER" },
+                min_bid_increment: { type: "NUMBER" },
+                end_time: { type: "STRING" },
+                image_url: { type: "STRING" },
+                status: { type: "STRING", description: "active, ended, cancelled" }
+              },
+              required: ["action"]
+            }
+          },
+          {
+            name: "manage_eventos",
+            description: "[SOLO ADMIN] Administra eventos o torneos de la tienda (crear, actualizar o eliminar).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "create, update, delete" },
+                eventId: { type: "STRING" },
+                title: { type: "STRING" },
+                description: { type: "STRING" },
+                event_date: { type: "STRING" },
+                entry_fee: { type: "NUMBER" },
+                image_url: { type: "STRING" }
+              },
+              required: ["action"]
+            }
+          },
+          {
+            name: "manage_preventas",
+            description: "[SOLO ADMIN] Administra preventas de productos o expansiones TCG (crear, actualizar o eliminar).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "create, update, delete" },
+                preventaId: { type: "STRING" },
+                title: { type: "STRING" },
+                price: { type: "NUMBER" },
+                release_date: { type: "STRING" },
+                description: { type: "STRING" },
+                image_url: { type: "STRING" }
+              },
+              required: ["action"]
+            }
+          },
+          {
+            name: "manage_widgets_dominios",
+            description: "[SOLO ADMIN] Administra dominios autorizados y widgets de la tienda (consultar, agregar o eliminar dominio).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "list, add, remove, toggle" },
+                domainId: { type: "STRING" },
+                domain: { type: "STRING" },
+                is_active: { type: "BOOLEAN" }
+              },
+              required: ["action"]
+            }
+          },
+          {
+            name: "manage_clientes",
+            description: "[SOLO ADMIN] Consulta o administra notas y datos de clientes de la tienda.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "list, update_notes, get_details" },
+                clienteId: { type: "STRING" },
+                notes: { type: "STRING" }
+              },
+              required: ["action"]
+            }
           }
         ]
       }
@@ -874,7 +997,8 @@ Si la imagen NO es una carta o no se distingue, responde:
         "add_cards_to_deck", "update_deck_card", "remove_cards_from_deck",
         "add_sealed_product", "update_sealed_product", "remove_sealed_product",
         "add_to_wishlist", "update_wishlist_card", "remove_from_wishlist",
-        "manage_claims", "manage_investments", "manage_learn_items", "update_store_info"
+        "manage_claims", "manage_investments", "manage_learn_items", "update_store_info",
+        "manage_subastas", "manage_eventos", "manage_preventas", "manage_widgets_dominios", "manage_clientes"
       ];
 
       if (writeTools.includes(name) && !is_admin) {
@@ -1610,6 +1734,175 @@ Si la imagen NO es una carta o no se distingue, responde:
           return { success: true, message: "Información de la tienda actualizada con éxito.", updated: updateData };
         }
 
+        case "manage_subastas": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, subastaId, title, initial_price, min_bid_increment, end_time, image_url, status } = args;
+
+          if (action === "create") {
+            let img = image_url || "";
+            if (!img && title) {
+              const ext = await queryExternalTCGCard(title);
+              if (ext && ext.length > 0) img = ext[0].image_url;
+            }
+            const { data: newSub, error } = await supabase.from("subastas").insert([{
+              user_id: targetUserId,
+              title: title || "Nueva Subasta",
+              initial_price: initial_price || 0,
+              min_bid_increment: min_bid_increment || 10,
+              end_time: end_time || new Date(Date.now() + 86400000 * 3).toISOString(),
+              image_url: img,
+              status: status || "active"
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Subasta '${title}' creada con éxito.`, subasta: newSub };
+          } else if (action === "update") {
+            if (!subastaId) return { error: "subastaId requerido para actualizar." };
+            const upData: any = {};
+            if (title) upData.title = title;
+            if (initial_price !== undefined) upData.initial_price = initial_price;
+            if (min_bid_increment !== undefined) upData.min_bid_increment = min_bid_increment;
+            if (end_time) upData.end_time = end_time;
+            if (image_url) upData.image_url = image_url;
+            if (status) upData.status = status;
+            const { error } = await supabase.from("subastas").update(upData).eq("id", subastaId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Subasta actualizada con éxito." };
+          } else if (action === "delete") {
+            if (!subastaId) return { error: "subastaId requerido para eliminar." };
+            const { error } = await supabase.from("subastas").delete().eq("id", subastaId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Subasta eliminada con éxito." };
+          }
+          return { error: "Acción no válida en manage_subastas." };
+        }
+
+        case "manage_eventos": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, eventId, title, description, event_date, entry_fee, image_url } = args;
+
+          if (action === "create") {
+            const { data: newEv, error } = await supabase.from("eventos").insert([{
+              user_id: targetUserId,
+              title: title || "Nuevo Evento TCG",
+              description: description || "",
+              event_date: event_date || new Date().toISOString(),
+              entry_fee: entry_fee || 0,
+              image_url: image_url || ""
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Evento '${title}' registrado con éxito.`, evento: newEv };
+          } else if (action === "update") {
+            if (!eventId) return { error: "eventId requerido para actualizar." };
+            const upData: any = {};
+            if (title) upData.title = title;
+            if (description !== undefined) upData.description = description;
+            if (event_date) upData.event_date = event_date;
+            if (entry_fee !== undefined) upData.entry_fee = entry_fee;
+            if (image_url) upData.image_url = image_url;
+            const { error } = await supabase.from("eventos").update(upData).eq("id", eventId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Evento actualizado con éxito." };
+          } else if (action === "delete") {
+            if (!eventId) return { error: "eventId requerido para eliminar." };
+            const { error } = await supabase.from("eventos").delete().eq("id", eventId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Evento eliminado con éxito." };
+          }
+          return { error: "Acción no válida en manage_eventos." };
+        }
+
+        case "manage_preventas": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, preventaId, title, price, release_date, description, image_url } = args;
+
+          if (action === "create") {
+            let img = image_url || "";
+            if (!img && title) {
+              const ext = await queryExternalTCGCard(title);
+              if (ext && ext.length > 0) img = ext[0].image_url;
+            }
+            const { data: newPrev, error } = await supabase.from("preventas").insert([{
+              user_id: targetUserId,
+              title: title || "Nueva Preventa",
+              price: price || 0,
+              release_date: release_date || new Date().toISOString(),
+              description: description || "",
+              image_url: img
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Preventa '${title}' creada con éxito.`, preventa: newPrev };
+          } else if (action === "update") {
+            if (!preventaId) return { error: "preventaId requerido para actualizar." };
+            const upData: any = {};
+            if (title) upData.title = title;
+            if (price !== undefined) upData.price = price;
+            if (release_date) upData.release_date = release_date;
+            if (description !== undefined) upData.description = description;
+            if (image_url) upData.image_url = image_url;
+            const { error } = await supabase.from("preventas").update(upData).eq("id", preventaId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Preventa actualizada con éxito." };
+          } else if (action === "delete") {
+            if (!preventaId) return { error: "preventaId requerido para eliminar." };
+            const { error } = await supabase.from("preventas").delete().eq("id", preventaId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Preventa eliminada con éxito." };
+          }
+          return { error: "Acción no válida en manage_preventas." };
+        }
+
+        case "manage_widgets_dominios": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, domainId, domain, is_active } = args;
+
+          if (action === "list") {
+            const { data: domains } = await supabase.from("widget_domains").select("*").eq("user_id", targetUserId);
+            return { domains: domains || [] };
+          } else if (action === "add") {
+            if (!domain) return { error: "Dominio requerido para agregar." };
+            const cleanDomain = domain.toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+            const { data: newDom, error } = await supabase.from("widget_domains").insert([{
+              user_id: targetUserId,
+              domain: cleanDomain,
+              is_active: is_active !== undefined ? is_active : true
+            }]).select().single();
+            if (error) return { error: error.message };
+            return { success: true, message: `Dominio '${cleanDomain}' agregado a widgets autorizados.`, domain: newDom };
+          } else if (action === "toggle" || action === "remove") {
+            if (action === "remove") {
+              let query = supabase.from("widget_domains").delete().eq("user_id", targetUserId);
+              if (domainId) query = query.eq("id", domainId);
+              else if (domain) query = query.ilike("domain", `%${domain}%`);
+              else return { error: "Especifica dominio o ID a eliminar." };
+              const { error } = await query;
+              if (error) return { error: error.message };
+              return { success: true, message: "Dominio eliminado de widgets." };
+            } else {
+              if (!domainId) return { error: "domainId requerido para cambiar estado." };
+              const { error } = await supabase.from("widget_domains").update({ is_active: is_active }).eq("id", domainId).eq("user_id", targetUserId);
+              if (error) return { error: error.message };
+              return { success: true, message: "Estado de dominio actualizado." };
+            }
+          }
+          return { error: "Acción no válida en manage_widgets_dominios." };
+        }
+
+        case "manage_clientes": {
+          if (!targetUserId) return { error: "No se especificó usuario." };
+          const { action, clienteId, notes } = args;
+
+          if (action === "list") {
+            const { data: clients } = await supabase.from("clientes").select("*").eq("user_id", targetUserId);
+            return { clientes: clients || [] };
+          } else if (action === "update_notes") {
+            if (!clienteId) return { error: "clienteId requerido." };
+            const { error } = await supabase.from("clientes").update({ notes: notes || "" }).eq("id", clienteId).eq("user_id", targetUserId);
+            if (error) return { error: error.message };
+            return { success: true, message: "Notas de cliente actualizadas." };
+          }
+          return { error: "Acción no válida en manage_clientes." };
+        }
+
         default:
           return { error: `Herramienta no reconocida: ${name}` };
       }
@@ -1637,16 +1930,18 @@ Si la imagen NO es una carta o no se distingue, responde:
 
     const systemPrompt = `Eres la entidad virtual (${spiritName}), asistente inteligente y espíritu guía oficial de Viking TCG. Adaptas tu tono y personalidad al estilo del personaje: ${characterVoiceStyle}. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, inteligente, amable y directa.
 
-INSTRUCCIONES CLAVE:
-1. IDIOMA 100% ESPAÑOL NATURAL E INTELIGENTE: Responde siempre en español de forma fluida, precisa e inteligente. NUNCA envíes respuestas genéricas ni saludos prefabricados como "Hola, ¿en qué te puedo ayudar hoy?" si el usuario ya te dio una instrucción previa o te envía mensajes de seguimiento como "ya te dije que hacer", "hazlo", "inténtalo de nuevo", "sí", etc.
-2. ATENCIÓN AL HISTORIAL (CONVERSATION HISTORY): Cuando el usuario te dé un mensaje de seguimiento o un recordatorio (por ejemplo: "ya te dije que hacer"), DEBES revisar el historial de conversación, identificar la instrucción o búsqueda previa dada por el usuario (por ejemplo: agregar una carta como Elemental HERO Prisma a la wishlist) y EJECUTARLA O REINTENTARLA de inmediato usando tus herramientas disponibles.
-3. BÚSQUEDA Y CORRECCIÓN INTELIGENTE DE CARTAS: Si el usuario te pide buscar o agregar una carta (ej. "Elemental hero prisma" u otros nombres con posibles errores de ortografía o provenientes de Yu-Gi-Oh!, Pokémon, Lorcana, etc.), usa tus herramientas de búsqueda/consulta externa, identifica la carta correcta con su nombre exacto e imagen correspondiente, y ejecuta la acción solicitada.
-4. SIN EMOJIS NI PENSAMIENTO VISIBLE: No incluyas etiquetas de pensamiento (<think>), "Thought:", "Plan:", ni emojis en tus respuestas. Devuelve DIRECTAMENTE la respuesta al usuario.
-5. MODOS DE SESIÓN Y PERMISOS:
+REGLAS OBLIGATORIAS Y DIRECTIVAS DE EJECUCIÓN:
+1. EJECUCIÓN INMEDIATA DE HERRAMIENTAS CRUD: Cuando el usuario te pida realizar cualquier acción CRUD (crear un álbum, agregar cartas a un deck o álbum, crear/editar un producto sellado, agregar/quitar cartas de la wishlist, administrar subastas, claims, inversiones, eventos, preventas, widgets o learn items), DEBES INVOCAR LA HERRAMIENTA CORRESPONDIENTE DE INMEDIATO en tu primer turno de respuesta.
+2. PROHIBIDO LAS RESPUESTAS EVASIVAS O PLANTILLAS GENÉRICAS: NUNCA respondas con frases vacías como "Entendido. ¿Deseas realizar alguna otra consulta o modificación?" o "Entendido, ¿qué deseas hacer?" sin haber ejecutado primero la herramienta solicitada. Si se te pide hacer algo, ¡HAZLO USANDO LAS HERRAMIENTAS!
+3. CONFIRMACIÓN CLARA Y DETALLADA TRAS LA ACCIÓN: Una vez que ejecutes la herramienta (function call), en tu respuesta final DEBES confirmar explícitamente y con detalles amigables lo que acabas de realizar (ej. "¡Listo! He creado el álbum 'X' para tu tienda.", "He agregado 3 copias de 'Dark Magician' a tu deck 'Y' con sus imágenes y datos actualizados.").
+4. ATENCIÓN AL HISTORIAL (CONVERSATION HISTORY): Si el usuario envía mensajes de seguimiento como "hazlo", "ya te dije que hacer", "no lo has hecho", o "inténtalo de nuevo", DEBES revisar el historial previo, identificar la petición original y EJECUTAR la herramienta correspondiente de inmediato.
+5. BÚSQUEDA Y CORRECCIÓN INTELIGENTE DE CARTAS: Si el usuario te pide buscar o agregar una carta de Yu-Gi-Oh!, Pokémon, Lorcana, One Piece, Magic, etc., consulta las bases internas y externas, identifica el nombre exacto e imagen de la carta, y ejecuta la adición o modificación solicitada.
+6. SIN EMOJIS NI PENSAMIENTO VISIBLE: No incluyas etiquetas de pensamiento (<think>), "Thought:", "Plan:", ni emojis en tus respuestas. Devuelve DIRECTAMENTE la respuesta confirmatoria al usuario.
+7. MODOS DE SESIÓN Y PERMISOS:
    - Modo actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso completo para modificar y gestionar datos)" : "CLIENTE PÚBLICO (Modo consulta e información)"}.
-   - Si eres PROPIETARIO ADMINISTRADOR (is_admin = true): Puedes realizar todas las operaciones CRUD (crear, consultar, actualizar/editar y eliminar cartas, álbumes, decks, wishlist, productos sellados, claims e inversiones) que te pida el usuario.
-   - Si es CLIENTE PÚBLICO (is_admin = false): Puedes ofrecer información sobre disponibilidad, precios, productos, carrito, etc. Si el usuario pide hacer modificaciones en modo público, aclárale que debe hacerlo desde su panel de administración tras iniciar sesión.
-6. LÍMITES DE SEGURIDAD ESTRICTOS: Tienes strictly prohibido eliminar tablas completas o borrar datos masivos sin filtro. Todas las acciones de edición o eliminación deben dirigirse a elementos específicos (por ID, título o nombre de carta/producto).
+   - Si eres PROPIETARIO ADMINISTRADOR (is_admin = true): Tienes acceso TOTAL para crear, leer, actualizar/editar y eliminar cualquier elemento de la tienda que el usuario te solicite.
+   - Si es CLIENTE PÚBLICO (is_admin = false): Puedes ofrecer información sobre disponibilidad, precios, productos, etc. Si el usuario te pide editar en modo público, explícale amablemente que debe iniciar sesión como administrador para aplicar los cambios.
+8. LÍMITES DE SEGURIDAD ESTRICTOS: Tienes estrictamente prohibido eliminar tablas completas o borrar datos masivos sin filtro. Todas las acciones deben dirigirse a elementos específicos (por ID, título o nombre de carta/producto).
 `;
 
     // Fetch available Gemini models
@@ -1741,6 +2036,7 @@ INSTRUCCIONES CLAVE:
     // Handle tool execution loop
     let candidate = aiData.candidates?.[0];
     let loopCount = 0;
+    const executedToolResults: any[] = [];
 
     while (candidate?.content?.parts?.some((p: any) => p.functionCall) && loopCount < 4) {
       loopCount++;
@@ -1751,6 +2047,7 @@ INSTRUCCIONES CLAVE:
         const callName = fc.functionCall.name;
         const callArgs = fc.functionCall.args || {};
         const result = await executeToolCall(callName, callArgs);
+        executedToolResults.push({ tool: callName, result });
         functionResponses.push({
           functionResponse: {
             name: callName,
@@ -1809,6 +2106,16 @@ INSTRUCCIONES CLAVE:
 
     // Strip out emojis from the reply
     cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+
+    // If tools were executed and cleanReply is empty or generic fallback, generate explicit confirmation from executed tools
+    if (executedToolResults.length > 0 && (!cleanReply || cleanReply.includes("¿Deseas realizar alguna otra consulta"))) {
+      const messages = executedToolResults
+        .map(tr => tr.result?.message || (tr.result?.success ? "Acción realizada con éxito." : null))
+        .filter(Boolean);
+      if (messages.length > 0) {
+        cleanReply = messages.join(" ");
+      }
+    }
 
     if (!cleanReply) {
       cleanReply = rawTextReply.trim() || "Entendido. ¿Deseas realizar alguna otra consulta o modificación?";
