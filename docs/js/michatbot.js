@@ -120,65 +120,89 @@ window.botInstance = {
     isVoiceEnabled: localStorage.getItem('michatbot_voice') === 'true',
     personajesVoces: {
         hombreAdulto: {
-            voz: "Charon",
-            estilo: "hombre adulto, voz masculina, tranquila, segura y natural",
-            pitch: 0.9,
-            rate: 1.0
+            vozKeywords: ["jorge", "pablo", "raul", "enrique", "alvaro", "carlos", "diego", "manuel", "miguel", "male", "charon"],
+            gender: "male",
+            pitch: 0.92,
+            rate: 1.02
         },
         mujerAdulta: {
-            voz: "Kore",
-            estilo: "mujer adulta, voz femenina, cálida, clara y natural",
-            pitch: 1.15,
+            vozKeywords: ["helena", "sabina", "monica", "paloma", "lucia", "marta", "laura", "victoria", "sol", "female", "kore", "zira", "rosa"],
+            gender: "female",
+            pitch: 1.12,
             rate: 1.05
         },
         niño: {
-            voz: "Puck",
-            estilo: "niño, voz infantil, alegre, curiosa y juguetona",
-            pitch: 1.75,
-            rate: 1.2
+            vozKeywords: ["child", "boy", "kid", "infantil", "young", "chiquit", "puck"],
+            gender: "boy",
+            pitch: 1.30,
+            rate: 1.10
         },
         niña: {
-            voz: "Leda",
-            estilo: "niña, voz infantil femenina, dulce, alegre y curiosa",
-            pitch: 1.85,
-            rate: 1.2
+            vozKeywords: ["child", "girl", "kid", "infantil", "young", "leda", "sweet"],
+            gender: "girl",
+            pitch: 1.35,
+            rate: 1.12
         }
     },
     speak: function(text) {
         if (!this.isVoiceEnabled || !('speechSynthesis' in window) || !text) return;
         try {
             window.speechSynthesis.cancel();
-            const cleanText = text.replace(/[*_#`~]/g, '').replace(/https?:\/\/\S+/g, '').trim();
+            const cleanText = text
+                .replace(/[*_#`~]/g, '')
+                .replace(/https?:\/\/\S+/g, '')
+                .replace(/([.?!])\s+/g, '$1|')
+                .trim();
+
             if (!cleanText) return;
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.lang = 'es-ES';
 
             const voiceType = (window.currentSpirit && window.currentSpirit.voice_type) || 'hombreAdulto';
             const profile = this.personajesVoces[voiceType] || this.personajesVoces.hombreAdulto;
 
-            utterance.pitch = profile.pitch;
-            utterance.rate = profile.rate;
-
             const voices = window.speechSynthesis.getVoices();
-            const esVoices = voices.filter(v => v.lang.startsWith('es'));
+            const esVoices = voices.filter(v => v.lang.toLowerCase().startsWith('es'));
 
-            let selectedVoice = esVoices.find(v => v.name.toLowerCase().includes(profile.voz.toLowerCase()));
-            if (!selectedVoice) {
-                if (voiceType === 'niña' || voiceType === 'niño') {
-                    selectedVoice = esVoices.find(v => /child|boy|girl|kid|infantil|young|chiquit|leda|puck/i.test(v.name.toLowerCase()));
-                }
-                if (!selectedVoice) {
-                    if (voiceType === 'mujerAdulta' || voiceType === 'niña') {
-                        selectedVoice = esVoices.find(v => /female|helena|sabina|monica|paloma|lucia|marta|laura|victoria|sol/i.test(v.name));
-                    } else if (voiceType === 'hombreAdulto' || voiceType === 'niño') {
-                        selectedVoice = esVoices.find(v => /male|pablo|jorge|raul|enrique|alvaro|carlos|diego/i.test(v.name));
+            let selectedVoice = null;
+
+            // 1. Try keyword match from profile voiceKeywords
+            if (esVoices.length > 0) {
+                for (const kw of profile.vozKeywords) {
+                    const match = esVoices.find(v => v.name.toLowerCase().includes(kw));
+                    if (match) {
+                        selectedVoice = match;
+                        break;
                     }
                 }
-            }
-            if (!selectedVoice && esVoices.length > 0) selectedVoice = esVoices[0];
-            if (selectedVoice) utterance.voice = selectedVoice;
 
-            window.speechSynthesis.speak(utterance);
+                // 2. Gender specific fallback
+                if (!selectedVoice) {
+                    if (voiceType === 'mujerAdulta' || voiceType === 'niña') {
+                        selectedVoice = esVoices.find(v => /female|mujer|femenin|monica|helena|lucia|marta/i.test(v.name));
+                    } else if (voiceType === 'hombreAdulto' || voiceType === 'niño') {
+                        selectedVoice = esVoices.find(v => /male|hombre|masculin|jorge|pablo|carlos/i.test(v.name));
+                    }
+                }
+
+                // 3. Natural/Google/Microsoft high quality Spanish voice fallback
+                if (!selectedVoice) {
+                    selectedVoice = esVoices.find(v => /google|natural|online|multilingual/i.test(v.name.toLowerCase()));
+                }
+
+                if (!selectedVoice && esVoices.length > 0) {
+                    selectedVoice = esVoices[0];
+                }
+            }
+
+            // Speak sentence-by-sentence or as a whole utterance
+            const sentences = cleanText.split('|').map(s => s.trim()).filter(Boolean);
+            sentences.forEach((sentence, idx) => {
+                const utterance = new SpeechSynthesisUtterance(sentence);
+                utterance.lang = 'es-ES';
+                utterance.pitch = profile.pitch;
+                utterance.rate = profile.rate;
+                if (selectedVoice) utterance.voice = selectedVoice;
+                window.speechSynthesis.speak(utterance);
+            });
         } catch (e) {
             console.warn("Error en síntesis de voz:", e);
         }
