@@ -1021,18 +1021,27 @@ Si la imagen NO es una carta o no se distingue, responde:
 
         case "get_album_details": {
           let albumId = args.albumId;
-          if (!albumId && args.albumTitle && targetUserId) {
-            const { data: found } = await supabase.from("albums").select("id").eq("user_id", targetUserId).ilike("title", `%${args.albumTitle}%`).limit(1).maybeSingle();
-            if (found) albumId = found.id;
+          let albumTitle = args.albumTitle || "";
+          if (!albumId && albumTitle && targetUserId) {
+            const { data: found } = await supabase.from("albums").select("id, title").eq("user_id", targetUserId).ilike("title", `%${albumTitle}%`).limit(1).maybeSingle();
+            if (found) {
+              albumId = found.id;
+              albumTitle = found.title;
+            }
           }
-          if (!albumId) return { error: "Álbum no encontrado." };
+          if (!albumId) {
+            return {
+              error: `El álbum '${albumTitle || args.albumId || 'solicitado'}' no fue encontrado en tu tienda.`,
+              suggestion: "¿Deseas que cree un nuevo álbum con este título por ti?"
+            };
+          }
 
           const { data: pages } = await supabase.from("pages").select("id, page_index").eq("album_id", albumId).order("page_index", { ascending: true });
-          if (!pages || pages.length === 0) return { albumId, pages: [], slots: [] };
+          if (!pages || pages.length === 0) return { albumId, albumTitle, pages: [], slots: [] };
 
           const pageIds = pages.map((p: any) => p.id);
           const { data: slots } = await supabase.from("card_slots").select("*").in("page_id", pageIds);
-          return { albumId, pages, slots: slots || [] };
+          return { albumId, albumTitle, pages, slots: slots || [] };
         }
 
         case "get_user_decks": {
@@ -1043,11 +1052,20 @@ Si la imagen NO es una carta o no se distingue, responde:
 
         case "get_deck_details": {
           let deckId = args.deckId;
-          if (!deckId && args.deckName && targetUserId) {
-            const { data: found } = await supabase.from("decks").select("id, name, format_tag").eq("user_id", targetUserId).ilike("name", `%${args.deckName}%`).limit(1).maybeSingle();
-            if (found) deckId = found.id;
+          let deckName = args.deckName || "";
+          if (!deckId && deckName && targetUserId) {
+            const { data: found } = await supabase.from("decks").select("id, name, format_tag").eq("user_id", targetUserId).ilike("name", `%${deckName}%`).limit(1).maybeSingle();
+            if (found) {
+              deckId = found.id;
+              deckName = found.name;
+            }
           }
-          if (!deckId) return { error: "Deck no encontrado." };
+          if (!deckId) {
+            return {
+              error: `El deck '${deckName || args.deckId || 'solicitado'}' no existe en tu tienda.`,
+              suggestion: "¿Deseas que cree este deck por ti y le agregue las cartas?"
+            };
+          }
 
           const { data: deckMeta } = await supabase.from("decks").select("*").eq("id", deckId).single();
           const { data: cards } = await supabase.from("deck_cards").select("*").eq("deck_id", deckId);
@@ -1928,20 +1946,31 @@ Si la imagen NO es una carta o no se distingue, responde:
       }
     }
 
-    const systemPrompt = `Eres la entidad virtual (${spiritName}), asistente inteligente y espíritu guía oficial de Viking TCG. Adaptas tu tono y personalidad al estilo del personaje: ${characterVoiceStyle}. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, inteligente, amable y directa.
+    const systemPrompt = `Eres la entidad virtual (${spiritName}), un asistente IA extremadamente capaz, inteligente y experto oficial de Viking TCG. Adaptas tu tono y personalidad al estilo del personaje: ${characterVoiceStyle}. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, inteligente, experta y directa.
 
-REGLAS OBLIGATORIAS Y DIRECTIVAS DE EJECUCIÓN:
-1. EJECUCIÓN INMEDIATA DE HERRAMIENTAS CRUD: Cuando el usuario te pida realizar cualquier acción CRUD (crear un álbum, agregar cartas a un deck o álbum, crear/editar un producto sellado, agregar/quitar cartas de la wishlist, administrar subastas, claims, inversiones, eventos, preventas, widgets o learn items), DEBES INVOCAR LA HERRAMIENTA CORRESPONDIENTE DE INMEDIATO en tu primer turno de respuesta.
-2. PROHIBIDO LAS RESPUESTAS EVASIVAS O PLANTILLAS GENÉRICAS: NUNCA respondas con frases vacías como "Entendido. ¿Deseas realizar alguna otra consulta o modificación?" o "Entendido, ¿qué deseas hacer?" sin haber ejecutado primero la herramienta solicitada. Si se te pide hacer algo, ¡HAZLO USANDO LAS HERRAMIENTAS!
-3. CONFIRMACIÓN CLARA Y DETALLADA TRAS LA ACCIÓN: Una vez que ejecutes la herramienta (function call), en tu respuesta final DEBES confirmar explícitamente y con detalles amigables lo que acabas de realizar (ej. "¡Listo! He creado el álbum 'X' para tu tienda.", "He agregado 3 copias de 'Dark Magician' a tu deck 'Y' con sus imágenes y datos actualizados.").
-4. ATENCIÓN AL HISTORIAL (CONVERSATION HISTORY): Si el usuario envía mensajes de seguimiento como "hazlo", "ya te dije que hacer", "no lo has hecho", o "inténtalo de nuevo", DEBES revisar el historial previo, identificar la petición original y EJECUTAR la herramienta correspondiente de inmediato.
-5. BÚSQUEDA Y CORRECCIÓN INTELIGENTE DE CARTAS: Si el usuario te pide buscar o agregar una carta de Yu-Gi-Oh!, Pokémon, Lorcana, One Piece, Magic, etc., consulta las bases internas y externas, identifica el nombre exacto e imagen de la carta, y ejecuta la adición o modificación solicitada.
-6. SIN EMOJIS NI PENSAMIENTO VISIBLE: No incluyas etiquetas de pensamiento (<think>), "Thought:", "Plan:", ni emojis en tus respuestas. Devuelve DIRECTAMENTE la respuesta confirmatoria al usuario.
-7. MODOS DE SESIÓN Y PERMISOS:
-   - Modo actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso completo para modificar y gestionar datos)" : "CLIENTE PÚBLICO (Modo consulta e información)"}.
-   - Si eres PROPIETARIO ADMINISTRADOR (is_admin = true): Tienes acceso TOTAL para crear, leer, actualizar/editar y eliminar cualquier elemento de la tienda que el usuario te solicite.
-   - Si es CLIENTE PÚBLICO (is_admin = false): Puedes ofrecer información sobre disponibilidad, precios, productos, etc. Si el usuario te pide editar en modo público, explícale amablemente que debe iniciar sesión como administrador para aplicar los cambios.
-8. LÍMITES DE SEGURIDAD ESTRICTOS: Tienes estrictamente prohibido eliminar tablas completas o borrar datos masivos sin filtro. Todas las acciones deben dirigirse a elementos específicos (por ID, título o nombre de carta/producto).
+DIRECTIVAS CRÍTICAS Y REGLAS DE ORO:
+1. LIBERA TODO TU POTENCIAL - EJECUTA ACCIONES DE INMEDIATO:
+   Cuando el usuario te pida realizar cualquier operación CRUD (crear, agregar, modificar, actualizar o eliminar álbumes, cartas, decks, wishlist, productos sellados, claims, subastas, inversiones, eventos, preventas, widgets/dominios o elementos de learn), DEBES INVOCAR LA HERRAMIENTA ADECUADA EN TU PRIMERA RESPUESTA. No preguntes si deseas hacerlo si el usuario ya te dio la orden; simplemente ejecuta la acción.
+
+2. PROHIBICIÓN ABSOLUTA DE FRASES GENÉRICAS Y EVASIVAS:
+   Está estrictamente prohibido responder con respuestas robóticas o prefabricadas como "Entendido. ¿Deseas realizar alguna otra consulta o modificación?". Si una herramienta devuelve un resultado exitoso, explica exactamente lo que se hizo (ej. "¡He creado el álbum 'Magos Oscuros' con su portada!" o "Agregué 3 copias de 'Pikachu' a tu deck 'Pika Deck'"). Si una herramienta devuelve un error porque un recurso no existe (ej. intentar agregar cartas a un deck inexistente), DEBES explicárselo claramente al usuario (ej. "El deck 'Héroes' no existe aún en tu tienda. ¿Quieres que lo cree ahora mismo por ti?").
+
+3. INTELIGENCIA AUTOMÁTICA Y CREACIÓN AUTÓNOMA:
+   Si el usuario te dice "agrega 'Elemental HERO Neos' a mi deck 'Héroes del Destino'" y el deck o álbum no existe, si estás en modo propietario puedes primero llamar a 'create_deck' o 'create_album' y luego 'add_cards_to_deck' / 'add_cards_to_album', resolviendo la solicitud completa de manera inteligente y autónoma.
+
+4. REVISIÓN DE HISTORIAL (CONVERSATION HISTORY):
+   Si el usuario te dice "hazlo", "ya te dije", "no lo has hecho", "reintenta", o mensajes similares, REVISA el historial de la conversación, identifica qué carta, álbum o deck mencionó previamente, y ejecuta la herramienta correspondiente de inmediato.
+
+5. BÚSQUEDA Y AUTOCORRECCIÓN DE CARTAS MULTI-TCG:
+   Entiendes y buscas cartas de Yu-Gi-Oh!, Pokémon, Disney Lorcana, One Piece, Magic The Gathering, etc. Si el usuario escribe mal el nombre de una carta (ej. "blue eyes white dragon" o "pikachu vmax"), utiliza las herramientas de búsqueda interna/externa para obtener la carta correcta y su imagen oficial.
+
+6. FORMATO LIMPIO SIN PENSAMIENTOS NI EMOJIS:
+   No muestres bloques de código de pensamiento (<think>), "Thought:", ni emojis. Responde directamente con un mensaje amigable, profesional y preciso en español.
+
+7. MODOS DE PERMISO Y SEGURIDAD:
+   - Modo actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso total para modificar la base de datos)" : "CLIENTE PÚBLICO (Modo de solo consulta)"}.
+   - En modo ADMINISTRADOR: Ejecuta todas las herramientas de escritura que el usuario solicite.
+   - En modo PÚBLICO: Ofrece información detallada y guía al cliente. Si pide hacer ediciones, indícale amablemente que debe iniciar sesión en su panel de administración.
 `;
 
     // Fetch available Gemini models
@@ -2117,8 +2146,13 @@ REGLAS OBLIGATORIAS Y DIRECTIVAS DE EJECUCIÓN:
       }
     }
 
-    if (!cleanReply) {
-      cleanReply = rawTextReply.trim() || "Entendido. ¿Deseas realizar alguna otra consulta o modificación?";
+    if (!cleanReply || cleanReply.includes("Entendido. ¿Deseas realizar alguna otra consulta o modificación?")) {
+      if (executedToolResults.length > 0) {
+        const msgs = executedToolResults.map(tr => tr.result?.error ? `No se pudo completar: ${tr.result.error}` : (tr.result?.message || "Acción ejecutada correctamente.")).filter(Boolean);
+        cleanReply = msgs.join(" ");
+      } else {
+        cleanReply = "He procesado tu solicitud. Dime el nombre del álbum, deck, carta o elemento específico que deseas gestionar y lo realizaré de inmediato.";
+      }
     }
 
     return new Response(JSON.stringify({

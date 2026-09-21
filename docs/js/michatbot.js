@@ -1456,12 +1456,23 @@ async function handleSendAIChatMessage() {
             window.botConversationHistory.push({ role: "user", parts: [{ text }] });
             window.botConversationHistory.push({ role: "model", parts: [{ text: cleanText }] });
 
-            // If an administrative creation/update happened, refresh page UI if functions exist
+            // If an administrative creation/update happened, refresh page UI in real-time across all HTML views
             if (isAdmin) {
                 if (typeof loadAlbums === 'function') loadAlbums();
                 if (typeof loadDecks === 'function') loadDecks();
                 if (typeof loadProducts === 'function') loadProducts();
                 if (typeof loadWishlist === 'function') loadWishlist();
+                if (typeof loadInvestments === 'function') loadInvestments();
+                if (typeof loadAuctions === 'function') loadAuctions();
+                if (typeof loadClaims === 'function') loadClaims();
+                if (typeof loadLearnItems === 'function') loadLearnItems();
+                if (typeof loadSealedProducts === 'function') loadSealedProducts();
+                if (typeof loadEvents === 'function') loadEvents();
+
+                // Dispatch global real-time event for UI sync
+                window.dispatchEvent(new CustomEvent('viking_data_changed', {
+                    detail: { timestamp: Date.now() }
+                }));
             }
         } else if (data && data.error) {
             const errText = removeEmojis(data.error);
