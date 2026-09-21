@@ -299,6 +299,7 @@
             const svgSearch = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`;
             const svgRobot = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg>`;
             const svgSend = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+            const svgCloudUpload = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 3 16.3"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>`;
 
             this.innerHTML = `
                 <style>
@@ -459,6 +460,48 @@
                         overflow: hidden;
                     }
 
+                    /* Drag & Drop Overlay Animation Widget */
+                    #vk-drop-overlay {
+                        display: none;
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        right: 10px;
+                        bottom: 10px;
+                        background: linear-gradient(135deg, rgba(14, 165, 233, 0.94), rgba(2, 132, 199, 0.94));
+                        backdrop-filter: blur(8px);
+                        -webkit-backdrop-filter: blur(8px);
+                        border: 3px dashed rgba(255, 255, 255, 0.9);
+                        border-radius: 20px;
+                        z-index: 1000;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        color: #ffffff;
+                        pointer-events: none;
+                        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+                        animation: vkDropPulse 1.4s infinite alternate ease-in-out;
+                    }
+
+                    @keyframes vkDropPulse {
+                        from { border-color: rgba(255, 255, 255, 0.75); transform: scale(0.985); }
+                        to { border-color: #ffffff; transform: scale(1); }
+                    }
+
+                    #vk-drop-overlay svg {
+                        width: 60px;
+                        height: 60px;
+                        margin-bottom: 12px;
+                        filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+                    }
+
+                    #vk-drop-overlay span {
+                        font-size: 1.2rem;
+                        font-weight: 700;
+                        letter-spacing: 0.5px;
+                        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+                    }
+
                     @media (max-width: 640px) {
                         #vk-chat-container {
                             bottom: 0 !important; right: 0 !important; left: 0 !important; top: 0 !important;
@@ -530,8 +573,12 @@
                     }
 
                     .vk-send-btn {
-                        width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9, #0284c7);
-                        color: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none;
+                        width: 36px; height: 36px; border-radius: 50%; background: transparent;
+                        color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none;
+                        font-size: 1.1rem; transition: color 0.2s ease, transform 0.2s ease;
+                    }
+                    .vk-send-btn:hover, .vk-send-btn:active {
+                        color: #38bdf8; transform: scale(1.1); background: transparent;
                     }
                 </style>
 
@@ -578,6 +625,10 @@
 
                     <!-- Chat Overlay Modal -->
                     <div id="vk-chat-container">
+                        <div id="vk-drop-overlay">
+                            ${svgCloudUpload}
+                            <span>Suelta tu imagen aquí</span>
+                        </div>
                         <div class="vk-chat-header">
                             <div class="vk-chat-title">
                                 ${svgRobot}
@@ -609,9 +660,7 @@
                             </model-viewer>
                         </div>
 
-                        <div class="vk-chat-messages" id="vk-chat-messages">
-                            <div class="vk-msg-bot">¡Hola! Soy <strong class="vk-spirit-name-label">${spiritName}</strong>, el asistente virtual de <strong id="vk-store-name-msg-label">${this.storeName}</strong>. ¿En qué te puedo ayudar hoy?</div>
-                        </div>
+                        <div class="vk-chat-messages" id="vk-chat-messages"></div>
 
                         <div class="vk-chat-footer">
                             <div class="vk-input-box">
@@ -687,6 +736,51 @@
                 });
             }
 
+            if (chatContainer) {
+                let vkDragCounter = 0;
+                const dropOverlay = this.querySelector('#vk-drop-overlay');
+
+                chatContainer.addEventListener('dragenter', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    vkDragCounter++;
+                    if (dropOverlay) dropOverlay.style.display = 'flex';
+                });
+
+                chatContainer.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+
+                chatContainer.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    vkDragCounter--;
+                    if (vkDragCounter <= 0) {
+                        vkDragCounter = 0;
+                        if (dropOverlay) dropOverlay.style.display = 'none';
+                    }
+                });
+
+                chatContainer.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    vkDragCounter = 0;
+                    if (dropOverlay) dropOverlay.style.display = 'none';
+
+                    const files = e.dataTransfer?.files;
+                    if (files && files.length > 0 && files[0].type.startsWith('image/')) {
+                        const file = files[0];
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            this.pendingImageBase64 = ev.target.result;
+                            this.showPendingImagePreview(this.pendingImageBase64);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
             if (slider) {
                 slider.addEventListener('input', (e) => {
                     const scaleVal = parseFloat(e.target.value);
@@ -756,19 +850,57 @@
             });
         }
 
+        showPendingImagePreview(base64) {
+            let prev = this.querySelector('#vk-image-preview-container');
+            if (!prev) {
+                const footer = this.querySelector('.vk-chat-footer');
+                prev = document.createElement('div');
+                prev.id = 'vk-image-preview-container';
+                prev.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(15, 23, 42, 0.8); border-top: 1px solid rgba(255,255,255,0.08);';
+                prev.innerHTML = `
+                    <img id="vk-image-preview" src="${base64}" style="width: 42px; height: 42px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.4);">
+                    <span style="font-size: 0.75rem; color: #cbd5e1; flex: 1;">Imagen adjunta lista para enviar</span>
+                    <span id="vk-remove-image-btn" style="color: #ef4444; cursor: pointer; font-size: 1.1rem; padding: 2px 6px;">&times;</span>
+                `;
+                footer.parentNode.insertBefore(prev, footer);
+                prev.querySelector('#vk-remove-image-btn').addEventListener('click', () => {
+                    this.pendingImageBase64 = null;
+                    prev.remove();
+                });
+            } else {
+                const img = prev.querySelector('#vk-image-preview');
+                if (img) img.src = base64;
+                prev.style.display = 'flex';
+            }
+        }
+
         async handleSendMessage() {
             const input = this.querySelector('#vk-chat-input');
             const text = input.value.trim();
-            if (!text) return;
+            const imageBase64 = this.pendingImageBase64 || null;
+
+            if (!text && !imageBase64) return;
 
             input.value = '';
+            this.pendingImageBase64 = null;
+            const prev = this.querySelector('#vk-image-preview-container');
+            if (prev) prev.remove();
 
             const msgContainer = this.querySelector('#vk-chat-messages');
 
             // Append user message
             const uMsg = document.createElement('div');
             uMsg.className = 'vk-msg-user';
-            uMsg.textContent = text;
+            if (imageBase64) {
+                const imgEl = document.createElement('img');
+                imgEl.src = imageBase64;
+                imgEl.style.cssText = 'max-width: 100%; border-radius: 10px; margin-bottom: 6px; display: block;';
+                uMsg.appendChild(imgEl);
+            }
+            if (text) {
+                const txtEl = document.createTextNode(text);
+                uMsg.appendChild(txtEl);
+            }
             msgContainer.appendChild(uMsg);
 
             // Append loading indicator
@@ -785,6 +917,7 @@
                 const { data, error } = await this._supabase.functions.invoke('spirit-chat', {
                     body: {
                         message: text,
+                        image_base64: imageBase64,
                         is_admin: false,
                         store_id: this.activeStoreId,
                         conversation_history: this.conversationHistory

@@ -134,14 +134,14 @@ window.botInstance = {
         niño: {
             voz: "Puck",
             estilo: "niño, voz infantil, alegre, curiosa y juguetona",
-            pitch: 1.35,
-            rate: 1.1
+            pitch: 1.75,
+            rate: 1.2
         },
         niña: {
             voz: "Leda",
             estilo: "niña, voz infantil femenina, dulce, alegre y curiosa",
-            pitch: 1.45,
-            rate: 1.1
+            pitch: 1.85,
+            rate: 1.2
         }
     },
     speak: function(text) {
@@ -164,10 +164,15 @@ window.botInstance = {
 
             let selectedVoice = esVoices.find(v => v.name.toLowerCase().includes(profile.voz.toLowerCase()));
             if (!selectedVoice) {
-                if (voiceType === 'mujerAdulta' || voiceType === 'niña') {
-                    selectedVoice = esVoices.find(v => /female|helena|sabina|monica|paloma|lucia|marta|laura|victoria|sol/i.test(v.name));
-                } else if (voiceType === 'hombreAdulto' || voiceType === 'niño') {
-                    selectedVoice = esVoices.find(v => /male|pablo|jorge|raul|enrique|alvaro|carlos|diego/i.test(v.name));
+                if (voiceType === 'niña' || voiceType === 'niño') {
+                    selectedVoice = esVoices.find(v => /child|boy|girl|kid|infantil|young|chiquit|leda|puck/i.test(v.name.toLowerCase()));
+                }
+                if (!selectedVoice) {
+                    if (voiceType === 'mujerAdulta' || voiceType === 'niña') {
+                        selectedVoice = esVoices.find(v => /female|helena|sabina|monica|paloma|lucia|marta|laura|victoria|sol/i.test(v.name));
+                    } else if (voiceType === 'hombreAdulto' || voiceType === 'niño') {
+                        selectedVoice = esVoices.find(v => /male|pablo|jorge|raul|enrique|alvaro|carlos|diego/i.test(v.name));
+                    }
                 }
             }
             if (!selectedVoice && esVoices.length > 0) selectedVoice = esVoices[0];
@@ -694,29 +699,72 @@ async function initMichatbot(forceRefresh = false) {
                     width: 38px;
                     height: 38px;
                     border-radius: 50%;
-                    background: linear-gradient(135deg, #0ea5e9, #0284c7);
-                    color: #ffffff;
+                    background: transparent;
+                    color: #94a3b8;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+                    border: none;
+                    box-shadow: none;
+                    font-size: 1.1rem;
+                    transition: color 0.2s ease, transform 0.2s ease;
                 }
 
                 .chat-send-btn:hover, .chat-send-btn:active {
-                    transform: scale(1.08);
-                    background: linear-gradient(135deg, #38bdf8, #0369a1);
-                    box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+                    color: #38bdf8;
+                    transform: scale(1.1);
+                    background: transparent;
+                    box-shadow: none;
                 }
 
                 .chat-send-btn i {
-                    font-size: 0.95rem;
+                    font-size: 1.1rem;
                     transform: translateX(1px);
                 }
 
                 .michatbot-dragging-active { user-select: none !important; -webkit-user-select: none !important; }
+
+                /* Drag & Drop Overlay Animation */
+                #michatbot-drop-overlay {
+                    display: none;
+                    position: absolute;
+                    top: 12px;
+                    left: 12px;
+                    right: 12px;
+                    bottom: 12px;
+                    background: linear-gradient(135deg, rgba(14, 165, 233, 0.94), rgba(2, 132, 199, 0.94));
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    border: 3px dashed rgba(255, 255, 255, 0.9);
+                    border-radius: 22px;
+                    z-index: 1000;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    color: #ffffff;
+                    pointer-events: none;
+                    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), inset 0 0 25px rgba(255, 255, 255, 0.2);
+                    animation: michatbotDropPulse 1.4s infinite alternate ease-in-out;
+                }
+
+                @keyframes michatbotDropPulse {
+                    from { border-color: rgba(255, 255, 255, 0.75); transform: scale(0.985); }
+                    to { border-color: #ffffff; transform: scale(1); }
+                }
+
+                #michatbot-drop-overlay i {
+                    font-size: 3.8rem;
+                    margin-bottom: 14px;
+                    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+                }
+
+                #michatbot-drop-overlay span {
+                    font-size: 1.3rem;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+                }
 
                 /* Ver Detalle Popup Responsive Styles */
                 #michatbot-detail-overlay {
@@ -833,6 +881,10 @@ async function initMichatbot(forceRefresh = false) {
     if (!$('#michatbot-chat-container').length) {
         $('body').append(`
             <div id="michatbot-chat-container">
+                <div id="michatbot-drop-overlay">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Suelta tu imagen aquí</span>
+                </div>
                 <div class="chat-header">
                     <div class="chat-header-title">
                         <i class="fas fa-robot" style="color: #38bdf8; font-size: 1.1rem;"></i>
@@ -1227,14 +1279,35 @@ function setupImageUploadAndVoiceHandlers() {
     });
 
     const $chatContainer = $('#michatbot-chat-container');
-    $chatContainer.off('dragover dragenter').on('dragover dragenter', function(e) {
+    let dragCounter = 0;
+
+    $chatContainer.off('dragenter').on('dragenter', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        dragCounter++;
+        $('#michatbot-drop-overlay').css('display', 'flex');
+    });
+
+    $chatContainer.off('dragover').on('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    $chatContainer.off('dragleave dragend').on('dragleave dragend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter--;
+        if (dragCounter <= 0) {
+            dragCounter = 0;
+            $('#michatbot-drop-overlay').hide();
+        }
     });
 
     $chatContainer.off('drop').on('drop', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        dragCounter = 0;
+        $('#michatbot-drop-overlay').hide();
         const files = e.originalEvent?.dataTransfer?.files;
         if (files && files.length > 0 && files[0].type.startsWith('image/')) {
             handleSelectedImageFile(files[0]);
@@ -1457,12 +1530,6 @@ function openMichatbotChat() {
         }
     }
 
-    if ($('#michatbot-chat-messages').is(':empty')) {
-        const spiritName = window.currentSpirit ? window.currentSpirit.name : "VikingTCG";
-        const welcomeText = `¡Hola! Soy ${spiritName}, ¿En qué te puedo ayudar hoy?`;
-        addBotMessage(`¡Hola! Soy **${spiritName}**, ¿En qué te puedo ayudar hoy?`);
-        window.botInstance.say(welcomeText);
-    }
 
     setupMobileViewportKeyboardHandling();
 }
