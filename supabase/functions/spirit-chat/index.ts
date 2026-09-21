@@ -676,8 +676,7 @@ Si la imagen NO es una carta o no se distingue, responde:
                     properties: {
                       card_name: { type: "STRING" },
                       quantity: { type: "NUMBER" },
-                      section: { type: "STRING" },
-                      card_type: { type: "STRING" },
+                      section: { type: "STRING", description: "Main, Extra, Side, Tokens" },
                       image_url: { type: "STRING" }
                     },
                     required: ["card_name"]
@@ -689,7 +688,7 @@ Si la imagen NO es una carta o no se distingue, responde:
           },
           {
             name: "update_deck_card",
-            description: "[SOLO ADMIN] Edita los datos de una carta dentro de un deck (cantidad, sección, tipo de carta, imagen).",
+            description: "[SOLO ADMIN] Edita los datos de una carta dentro de un deck (cantidad, sección, imagen).",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -698,7 +697,6 @@ Si la imagen NO es una carta o no se distingue, responde:
                 cardName: { type: "STRING" },
                 quantity: { type: "NUMBER" },
                 section: { type: "STRING" },
-                card_type: { type: "STRING" },
                 image_url: { type: "STRING" }
               },
               required: ["cardName"]
@@ -1385,13 +1383,21 @@ Si la imagen NO es una carta o no se distingue, responde:
         case "add_cards_to_deck": {
           if (!targetUserId) return { error: "No se especificó usuario." };
           let deckId = args.deckId;
-          if (!deckId && args.deckName) {
-            const { data: found } = await supabase.from("decks").select("id").eq("user_id", targetUserId).ilike("name", `%${args.deckName}%`).limit(1).maybeSingle();
-            if (found) deckId = found.id;
+          let deckName = args.deckName || "";
+          if (!deckId && deckName) {
+            const { data: found } = await supabase.from("decks").select("id, name").eq("user_id", targetUserId).ilike("name", `%${deckName}%`).limit(1).maybeSingle();
+            if (found) {
+              deckId = found.id;
+              deckName = found.name;
+            }
           }
           if (!deckId) {
-            const { data: newD } = await supabase.from("decks").insert([{ name: args.deckName || "Nuevo Deck", user_id: targetUserId, is_public: true }]).select().single();
-            if (newD) deckId = newD.id;
+            const { data: newD, error: createErr } = await supabase.from("decks").insert([{ name: deckName || "Nuevo Deck", user_id: targetUserId, is_public: true }]).select().single();
+            if (createErr) return { error: `Error al crear deck: ${createErr.message}` };
+            if (newD) {
+              deckId = newD.id;
+              deckName = newD.name;
+            }
           }
           if (!deckId) return { error: "No se pudo obtener ni crear el deck." };
 
@@ -1409,16 +1415,15 @@ Si la imagen NO es una carta o no se distingue, responde:
               deck_id: deckId,
               name: cName,
               quantity: c.quantity || 1,
-              section: c.section || "main",
-              card_type: c.card_type || "monster",
+              section: c.section || "Main",
               image_url: cardImg
             });
           }
 
           const { error: insErr } = await supabase.from("deck_cards").insert(cardsToInsert);
-          if (insErr) return { error: insErr.message };
+          if (insErr) return { error: `Error en la base de datos al insertar cartas: ${insErr.message}` };
 
-          return { success: true, message: `Se agregaron ${cardsToInsert.length} carta(s) al deck.`, cards: cardsToInsert };
+          return { success: true, message: `Se agregaron ${cardsToInsert.length} carta(s) al deck '${deckName}'.`, cards: cardsToInsert };
         }
 
         case "update_deck_card": {
@@ -1427,16 +1432,15 @@ Si la imagen NO es una carta o no se distingue, responde:
             const { data: found } = await supabase.from("decks").select("id").eq("user_id", targetUserId).ilike("name", `%${args.deckName}%`).limit(1).maybeSingle();
             if (found) deckId = found.id;
           }
-          if (!deckId) return { error: "Deck no encontrado." };
+          if (!deckId) return { error: "Deck no encontrado en tu tienda." };
 
           const upData: any = {};
           if (args.quantity !== undefined) upData.quantity = args.quantity;
           if (args.section) upData.section = args.section;
-          if (args.card_type) upData.card_type = args.card_type;
           if (args.image_url) upData.image_url = args.image_url;
 
           const { error } = await supabase.from("deck_cards").update(upData).eq("deck_id", deckId).ilike("name", `%${args.cardName}%`);
-          if (error) return { error: error.message };
+          if (error) return { error: `Error al actualizar carta en el deck: ${error.message}` };
 
           return { success: true, message: `Carta '${args.cardName}' actualizada en el deck.` };
         }
