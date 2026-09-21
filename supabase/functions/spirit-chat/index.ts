@@ -76,8 +76,46 @@ serve(async (req) => {
       is_admin = true;
     }
 
-    // Fetch user details for proactive analysis if available
+    // Helper to fetch public Google Sheet CSV content
+    async function fetchGoogleSheetContent(sheetUrl: string, maxRows = 100): Promise<string> {
+      if (!sheetUrl) return "";
+      try {
+        const docIdMatch = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (!docIdMatch) return "";
+        const docId = docIdMatch[1];
+        let gid = "0";
+        const gidMatch = sheetUrl.match(/[#&?]gid=([0-9]+)/);
+        if (gidMatch) {
+          gid = gidMatch[1];
+        }
+
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2500);
+
+        const res = await fetch(csvUrl, { signal: controller.signal });
+        clearTimeout(timer);
+
+        if (!res.ok) {
+          return `[Google Sheet (Privado/No accesible público): ${sheetUrl}]`;
+        }
+
+        const csvText = await res.text();
+        if (!csvText || csvText.includes("<!DOCTYPE html>")) {
+          return `[Google Sheet (Requiere acceso público para exportar CSV): ${sheetUrl}]`;
+        }
+
+        const lines = csvText.split("\n").slice(0, maxRows);
+        return lines.join("\n");
+      } catch (e: any) {
+        return `[Error leyendo Google Sheet: ${e?.message || 'Timeout'}]`;
+      }
+    }
+
+    // Fetch user details and learn items knowledge base for targetUserId
     let userProfile = null;
+    let userLearnItemsText = "";
+
     if (targetUserId) {
       const { data: profile } = await supabase.from("usuarios").select("*").eq("id", targetUserId).maybeSingle();
       if (profile) {
@@ -91,6 +129,39 @@ serve(async (req) => {
           subscription_expires_at: profile.subscription_expires_at || profile.expiration_date || profile.expires_at || null,
           created_at: profile.created_at
         };
+      }
+
+      // Fetch user's learn items (FAQs, Google Sheets, text notes, files)
+      const { data: learnRows } = await supabase
+        .from("learn_items")
+        .select("*")
+        .eq("user_id", targetUserId)
+        .order("created_at", { ascending: false });
+
+      if (learnRows && learnRows.length > 0) {
+        const itemTexts: string[] = [];
+        for (const item of learnRows) {
+          let itemDesc = `[Categoría: ${item.category || 'General'} | Tipo: ${item.type || 'nota'}] `;
+          if (item.title) itemDesc += `Título: ${item.title}\n`;
+          if (item.question) itemDesc += `Pregunta: ${item.question}\n`;
+          if (item.answer) itemDesc += `Respuesta: ${item.answer}\n`;
+          if (item.content) itemDesc += `Contenido: ${item.content}\n`;
+
+          if (item.sheet_url) {
+            itemDesc += `Enlace Google Sheet: ${item.sheet_url}\n`;
+            const sheetData = await fetchGoogleSheetContent(item.sheet_url, 150);
+            if (sheetData) {
+              itemDesc += `--- DATOS DEL GOOGLE SHEET EXTRÁIDOS ---\n${sheetData}\n--- FIN DATOS GOOGLE SHEET ---\n`;
+            }
+          }
+
+          if (item.file_url || item.file_name) {
+            itemDesc += `Archivo adjunto: ${item.file_name || ''} (${item.file_url || ''})\n`;
+          }
+
+          itemTexts.push(itemDesc.trim());
+        }
+        userLearnItemsText = itemTexts.join("\n\n");
       }
     }
 
@@ -1073,7 +1144,21 @@ Si la imagen NO es una carta o no se distingue, responde:
         case "get_user_learn_items": {
           if (!targetUserId) return { error: "ID de usuario no disponible." };
           const { data: learnItems } = await supabase.from("learn_items").select("*").eq("user_id", targetUserId).order("created_at", { ascending: false });
-          return { learn_items: learnItems || [] };
+
+          const enrichedItems: any[] = [];
+          if (learnItems && learnItems.length > 0) {
+            for (const item of learnItems) {
+              const obj = { ...item };
+              if (item.sheet_url) {
+                const sheetContent = await fetchGoogleSheetContent(item.sheet_url, 150);
+                if (sheetContent) {
+                  obj.extracted_sheet_csv = sheetContent;
+                }
+              }
+              enrichedItems.push(obj);
+            }
+          }
+          return { learn_items: enrichedItems };
         }
 
         case "get_cart_and_payment_info": {
@@ -1921,21 +2006,27 @@ Si la imagen NO es una carta o no se distingue, responde:
 
     const systemPrompt = `Eres la entidad virtual (${spiritName}), un asistente IA extremadamente capaz, inteligente y experto oficial de Viking TCG. Adaptas tu tono y personalidad al estilo del personaje: ${characterVoiceStyle}. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, inteligente, experta y directa.
 
+BASE DE CONOCIMIENTO INDIVIDUAL Y DATOS DE APRENDIZAJES (LEARN.HTML) DE ESTE USUARIO:
+${userLearnItemsText || "No hay notas ni preguntas frecuentes registradas aún en learn.html para este usuario."}
+
 DIRECTIVAS CRÍTICAS Y REGLAS DE ORO:
-1. LIBERA TODO TU POTENCIAL - EJECUTA ACCIONES DE INMEDIATO:
+1. USO OBLIGATORIO Y PRIORITARIO DE LA BASE DE CONOCIMIENTO Y BÚSQUEDA:
+   - TIENES ACCESO DIRECTO a la información de la tienda, FAQs, notas y datos de Google Sheets de este usuario (mostrados arriba).
+   - NUNCA respondas diciendo "no tengo esa información", "no puedo ver el contenido de Google Sheets", o "no puedo entrar a enlaces" si la pregunta trata sobre la ubicación, precios, horarios, FAQs o datos del catálogo de este usuario.
+   - Si la respuesta está en los datos de arriba (FAQs, Google Sheets, notas), RESPÓNSELA DE INMEDIATO con precisión.
+   - Si la consulta requiere datos en tiempo real de álbumes, decks, productos sellados, wishlist o subastas, USA LAS HERRAMIENTAS CORRESPONDIENTES ('get_user_albums', 'get_album_details', 'get_user_decks', 'get_deck_details', 'get_sealed_products', 'search_cards', 'get_user_learn_items') ANTES de responder.
+
+2. LIBERA TODO TU POTENCIAL - EJECUTA ACCIONES DE INMEDIATO:
    Cuando el usuario te pida realizar cualquier operación CRUD (crear, agregar, modificar, actualizar o eliminar álbumes, cartas, decks, wishlist, productos sellados, claims, subastas, inversiones, eventos, preventas, widgets/dominios o elementos de learn), DEBES INVOCAR LA HERRAMIENTA ADECUADA EN TU PRIMERA RESPUESTA. No preguntes si deseas hacerlo si el usuario ya te dio la orden; simplemente ejecuta la acción.
 
-2. PROHIBICIÓN ABSOLUTA DE FRASES GENÉRICAS Y EVASIVAS:
-   Está estrictamente prohibido responder con respuestas robóticas o prefabricadas como "Entendido. ¿Deseas realizar alguna otra consulta o modificación?". Si una herramienta devuelve un resultado exitoso, explica exactamente lo que se hizo (ej. "¡He creado el álbum 'Magos Oscuros' con su portada!" o "Agregué 3 copias de 'Pikachu' a tu deck 'Pika Deck'"). Si una herramienta devuelve un error porque un recurso no existe (ej. intentar agregar cartas a un deck inexistente), DEBES explicárselo claramente al usuario (ej. "El deck 'Héroes' no existe aún en tu tienda. ¿Quieres que lo cree ahora mismo por ti?").
+3. PROHIBICIÓN ABSOLUTA DE FRASES GENÉRICAS Y EVASIVAS:
+   Está estrictamente prohibido responder con respuestas robóticas o prefabricadas como "Entendido. ¿Deseas realizar alguna otra consulta o modificación?". Si una herramienta devuelve un resultado exitoso, explica exactamente lo que se hizo. Si la consulta pide información existente, responde con la información concreta.
 
-3. INTELIGENCIA AUTOMÁTICA Y CREACIÓN AUTÓNOMA:
-   Si el usuario te dice "agrega 'Elemental HERO Neos' a mi deck 'Héroes del Destino'" y el deck o álbum no existe, si estás en modo propietario puedes primero llamar a 'create_deck' o 'create_album' y luego 'add_cards_to_deck' / 'add_cards_to_album', resolviendo la solicitud completa de manera inteligente y autónoma.
-
-4. REVISIÓN DE HISTORIAL (CONVERSATION HISTORY):
-   Si el usuario te dice "hazlo", "ya te dije", "no lo has hecho", "reintenta", o mensajes similares, REVISA el historial de la conversación, identifica qué carta, álbum o deck mencionó previamente, y ejecuta la herramienta correspondiente de inmediato.
+4. AISLAMIENTO ESTRICTO DE TIENDA / USUARIO (TENANT ISOLATION):
+   Estás atendiendo EXCLUSIVAMENTE a la tienda del usuario con ID ${targetUserId || 'desconocido'}. Solo debes consultar y modificar información perteneciente a este usuario específico.
 
 5. BÚSQUEDA Y AUTOCORRECCIÓN DE CARTAS MULTI-TCG:
-   Entiendes y buscas cartas de Yu-Gi-Oh!, Pokémon, Disney Lorcana, One Piece, Magic The Gathering, etc. Si el usuario escribe mal el nombre de una carta (ej. "blue eyes white dragon" o "pikachu vmax"), utiliza las herramientas de búsqueda interna/externa para obtener la carta correcta y su imagen oficial.
+   Entiendes y buscas cartas de Yu-Gi-Oh!, Pokémon, Disney Lorcana, One Piece, Magic The Gathering, etc. Si el usuario escribe mal el nombre de una carta, utiliza las herramientas de búsqueda interna/externa para obtener la carta correcta y su imagen oficial.
 
 6. FORMATO LIMPIO SIN PENSAMIENTOS NI EMOJIS:
    No muestres bloques de código de pensamiento (<think>), "Thought:", ni emojis. Responde directamente con un mensaje amigable, profesional y preciso en español.
