@@ -1875,7 +1875,6 @@
                                         <div class="vk-quick-grid" id="vk-quick-bid-container"></div>
                                         <div class="vk-free-bid-input-container">
                                             <input type="number" id="vk-input-bid-amount" class="vk-free-bid-input" placeholder="Puja Libre ($)" step="1">
-                                            <button class="vk-btn-place-bid" id="vk-btn-submit-free-bid">Pujar Libre</button>
                                         </div>
                                     </div>
 
@@ -1896,7 +1895,6 @@
             const btnFinished = this.querySelector('#vk-tab-finished');
             const modalOverlay = this.querySelector('#vk-modal-overlay');
             const modalClose = this.querySelector('#vk-modal-close');
-            const submitFreeBidBtn = this.querySelector('#vk-btn-submit-free-bid');
             const freeBidInput = this.querySelector('#vk-input-bid-amount');
 
             if (btnActive) {
@@ -1930,13 +1928,6 @@
                         modalOverlay.classList.remove('active');
                         this.activeModalAuctionId = null;
                     }
-                });
-            }
-
-            if (submitFreeBidBtn) {
-                submitFreeBidBtn.addEventListener('click', () => {
-                    const inputVal = parseFloat(freeBidInput?.value);
-                    this.handlePlaceBid(inputVal);
                 });
             }
 
