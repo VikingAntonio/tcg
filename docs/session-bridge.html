@@ -28,24 +28,42 @@
                 return null;
             }
 
-            window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'REQUEST_VIKING_SESSION') {
-                    var session = getVikingSession();
-                    event.source.postMessage({
+            var session = getVikingSession();
+
+            // 1. Respond to window.opener if opened as popup
+            if (window.opener && window.opener !== window) {
+                try {
+                    window.opener.postMessage({
                         type: 'VIKING_SESSION_RESPONSE',
                         session: session
                     }, '*');
+                } catch(e) {}
+                setTimeout(function() {
+                    try { window.close(); } catch(e) {}
+                }, 300);
+            }
+
+            // 2. Respond to parent window if embedded in iframe
+            if (window.parent && window.parent !== window) {
+                try {
+                    window.parent.postMessage({
+                        type: 'VIKING_SESSION_RESPONSE',
+                        session: session
+                    }, '*');
+                } catch(e) {}
+            }
+
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'REQUEST_VIKING_SESSION') {
+                    var s = getVikingSession();
+                    if (event.source) {
+                        event.source.postMessage({
+                            type: 'VIKING_SESSION_RESPONSE',
+                            session: s
+                        }, '*');
+                    }
                 }
             });
-
-            // Proactively post session on load if embedded
-            if (window.parent && window.parent !== window) {
-                var session = getVikingSession();
-                window.parent.postMessage({
-                    type: 'VIKING_SESSION_RESPONSE',
-                    session: session
-                }, '*');
-            }
         })();
     </script>
 </body>

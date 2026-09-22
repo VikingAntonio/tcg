@@ -1306,6 +1306,42 @@
             }
         }
 
+        async checkCrossDomainSessionViaPopup() {
+            return new Promise((resolve) => {
+                const popup = window.open('https://vikingtcg.xyz/session-bridge.html', 'VikingSessionAuth', 'width=500,height=650,scrollbars=yes');
+                if (!popup) {
+                    window.open('https://vikingtcg.xyz/index.html', '_blank');
+                    resolve(null);
+                    return;
+                }
+
+                const handleMsg = (event) => {
+                    if (event.data && event.data.type === 'VIKING_SESSION_RESPONSE' && event.data.session) {
+                        window.removeEventListener('message', handleMsg);
+                        try { popup.close(); } catch(e){}
+                        const session = event.data.session;
+                        if (session && session.id) {
+                            this.currentUser = session;
+                            try { localStorage.setItem('tcg_session', JSON.stringify(session)); } catch(e){}
+                            resolve(session);
+                        } else {
+                            resolve(null);
+                        }
+                    }
+                };
+
+                window.addEventListener('message', handleMsg);
+
+                const timer = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(timer);
+                        window.removeEventListener('message', handleMsg);
+                        resolve(this.currentUser || null);
+                    }
+                }, 500);
+            });
+        }
+
         async detectCurrentUserSession() {
             try {
                 let detectedUserId = null;
@@ -2166,13 +2202,19 @@
                         cancelButtonText: 'Tal vez luego',
                         confirmButtonColor: '#00d2ff',
                         cancelButtonColor: '#333'
-                    }).then((result) => {
+                    }).then(async (result) => {
                         if (result.isConfirmed) {
-                            window.open('https://vikingtcg.xyz/index.html', '_blank');
+                            const session = await this.checkCrossDomainSessionViaPopup();
+                            if (session) {
+                                await this.handlePlaceBid();
+                            }
                         }
                     });
                 } else {
-                    alert('Para participar en las subastas, inicia sesión en VikingTCG.xyz');
+                    const session = await this.checkCrossDomainSessionViaPopup();
+                    if (session) {
+                        await this.handlePlaceBid();
+                    }
                 }
                 return;
             }
