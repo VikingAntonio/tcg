@@ -201,11 +201,6 @@ window.handleDeepLinking = function(retries = 10) {
 };
 
 $(document).ready(async function() {
-    const embedCheckParams = new URLSearchParams(window.location.search);
-    if (embedCheckParams.get('embed') === 'true' || window.self !== window.top) {
-        $('body').addClass('is-embedded');
-    }
-
     // --- Share Modal Close & Actions ---
     $(document).on('click', '#btn-share-card-modal', function() {
         if (!window.currentCardData || !window.currentCardData.id) return;

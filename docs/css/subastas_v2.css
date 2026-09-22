@@ -1536,16 +1536,3 @@ body.admin-body {
     transform: scale(1.1);
     box-shadow: 0 0 10px rgba(255, 71, 87, 0.4);
 }
-
-/* Embedded Mode Styles for Custom Label Widgets (<vikingdev-subastas>) */
-body.is-embedded .integrated-header {
-    display: none !important;
-}
-
-body.is-embedded .public-main-container {
-    padding-top: 10px !important;
-}
-
-body.is-embedded .bottom-nav {
-    display: none !important;
-}
