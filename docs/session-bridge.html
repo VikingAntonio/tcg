@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>VikingTCG Session Bridge</title>
+</head>
+<body>
+    <script>
+        (function() {
+            function getVikingSession() {
+                try {
+                    var sessionStr = localStorage.getItem('tcg_session');
+                    if (sessionStr) {
+                        var parsed = JSON.parse(sessionStr);
+                        if (parsed && parsed.id) return parsed;
+                    }
+                    for (var i = 0; i < localStorage.length; i++) {
+                        var key = localStorage.key(i);
+                        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+                            try {
+                                var val = JSON.parse(localStorage.getItem(key));
+                                var u = val?.user || val?.currentSession?.user;
+                                if (u && u.id) return u;
+                            } catch(e) {}
+                        }
+                    }
+                } catch(err) {}
+                return null;
+            }
+
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'REQUEST_VIKING_SESSION') {
+                    var session = getVikingSession();
+                    event.source.postMessage({
+                        type: 'VIKING_SESSION_RESPONSE',
+                        session: session
+                    }, '*');
+                }
+            });
+
+            // Proactively post session on load if embedded
+            if (window.parent && window.parent !== window) {
+                var session = getVikingSession();
+                window.parent.postMessage({
+                    type: 'VIKING_SESSION_RESPONSE',
+                    session: session
+                }, '*');
+            }
+        })();
+    </script>
+</body>
+</html>
