@@ -1,9 +1,8 @@
 LO QUE SE HIZO:
-1. Se agregó la etiqueta <vikingdev-subastas> nativa en docs/js/viking-widget.js.
-2. Se eliminó por completo el botón "Pujar Libre" del modal, dejando únicamente el textbox con Enter para pujar.
-3. Se integraron botones rápidos (+5, +10, +20) que pujan al dar click.
-4. Se creó docs/session-bridge.html para verificar e iniciar sesión de VikingTCG.
+1. Se actualizó docs/session-bridge.html para que detecte la sesión activa de Supabase Auth en vikingtcg.xyz automáticamente (`supabase.auth.getSession()`), además de `localStorage.getItem('tcg_session')`. Si el usuario ya tiene sesión iniciada en vikingtcg.xyz, no le vuelve a pedir login y se cierra la ventana enviando los datos inmediatamente.
+2. En el widget (<vikingdev-subastas>), si el usuario no tiene sesión guardada en el dominio externo y da click en pujar, abre la ventana de session-bridge.html. Si ya estaba logueado en vikingtcg.xyz, la ventana se cierra sola de inmediato al sincronizar la sesión.
+3. Se eliminó el botón "Pujar Libre", dejando únicamente el campo de texto que puja al presionar Enter.
 
-LO QUE HACE FALTA PARA QUE RECONOZCA LA SESIÓN EN DOMINIOS EXTERNOS / LOCALHOST:
-- Los navegadores modernos (Chrome/Edge) bloquean el almacenamiento entre sitios (Third-Party Storage Partitioning) dentro de siportes/iframes cuando la web está hospedada en otro dominio (ej. 127.0.0.1 o tudominio.com) y la sesión pertenece a vikingtcg.xyz.
-- Para sincronizar la sesión por primera vez en un dominio externo, el usuario debe dar un click en "Iniciar sesión en VikingTCG", lo cual abre la ventana flotante de autenticación (docs/session-bridge.html) en el origen oficial (vikingtcg.xyz), guarda la sesión y transmite el token/usuario al dominio destino.
+LO QUE HACE FALTA PARA QUE RECONOZCA LA SESIÓN AUTOMÁTICAMENTE:
+- Al estar en un dominio externo (ej. 127.0.0.1 o tudominio.com), los navegadores (Chrome/Edge) bloquean la lectura silenciosa de localStorage entre dominios diferentes (iframe).
+- Por este motivo, el primer click en pujar abre una popup de 1 segundo a https://vikingtcg.xyz/session-bridge.html. Si el usuario YA TIENE sesión en vikingtcg.xyz, la ventana se cierra en menos de 1 segundo sin pedir contraseña y activa la puja en el sitio externo.
