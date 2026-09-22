@@ -1,0 +1,3 @@
+127.0.0.1 - - [22/Sep/2026 22:24:38] "GET /widgets.html HTTP/1.1" 200 -
+127.0.0.1 - - [22/Sep/2026 22:24:38] "GET /js/supabase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [22/Sep/2026 22:24:38] "GET /css/style.css HTTP/1.1" 200 -
