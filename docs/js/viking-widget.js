@@ -39,6 +39,11 @@
             mv.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js';
             document.head.appendChild(mv);
         }
+        if (!document.querySelector('script[src*="sweetalert2"]')) {
+            const swal = document.createElement('script');
+            swal.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+            document.head.appendChild(swal);
+        }
     }
 
     function loadScript(src) {
@@ -1305,7 +1310,7 @@
             try {
                 let detectedUserId = null;
 
-                // 1. Check localStorage for tcg_session or Supabase auth tokens
+                // 1. Check local domain localStorage for tcg_session or Supabase auth tokens
                 const stored = localStorage.getItem('tcg_session');
                 if (stored) {
                     try {
@@ -1333,12 +1338,48 @@
                     }
                 }
 
-                // 2. Check Supabase client auth session
-                if (this._supabase) {
+                // 2. Check local Supabase client auth session
+                if (!detectedUserId && this._supabase) {
                     const { data: { session } } = await this._supabase.auth.getSession();
                     if (session?.user?.id) {
                         detectedUserId = session.user.id;
                     }
+                }
+
+                // 3. Cross-origin session bridge via iframe to vikingtcg.xyz
+                if (!detectedUserId && window.location.hostname !== 'vikingtcg.xyz') {
+                    await new Promise((resolve) => {
+                        let iframe = document.getElementById('viking-session-bridge-iframe');
+                        const handleMsg = (event) => {
+                            if (event.data && event.data.type === 'VIKING_SESSION_RESPONSE' && event.data.session) {
+                                window.removeEventListener('message', handleMsg);
+                                const session = event.data.session;
+                                if (session && session.id) {
+                                    detectedUserId = session.id;
+                                    this.currentUser = session;
+                                }
+                                resolve();
+                            }
+                        };
+                        window.addEventListener('message', handleMsg);
+
+                        if (!iframe) {
+                            iframe = document.createElement('iframe');
+                            iframe.id = 'viking-session-bridge-iframe';
+                            iframe.src = 'https://vikingtcg.xyz/session-bridge.html';
+                            iframe.style.display = 'none';
+                            document.body.appendChild(iframe);
+                        } else {
+                            try {
+                                iframe.contentWindow.postMessage({ type: 'REQUEST_VIKING_SESSION' }, '*');
+                            } catch(e) {}
+                        }
+
+                        setTimeout(() => {
+                            window.removeEventListener('message', handleMsg);
+                            resolve();
+                        }, 1200);
+                    });
                 }
 
                 if (detectedUserId && this._supabase) {
@@ -1350,7 +1391,7 @@
 
                     if (user) {
                         this.currentUser = user;
-                        localStorage.setItem('tcg_session', JSON.stringify(user));
+                        try { localStorage.setItem('tcg_session', JSON.stringify(user)); } catch(e) {}
                     }
                 }
             } catch (err) {
@@ -1361,7 +1402,7 @@
         renderNativeLayout() {
             this.innerHTML = `
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+                    @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 
                     vikingdev-subastas {
                         display: block !important;
@@ -1369,7 +1410,7 @@
                         max-width: 1200px;
                         margin: 20px auto;
                         box-sizing: border-box;
-                        font-family: 'Montserrat', sans-serif;
+                        font-family: 'Segoe UI', Montserrat, Roboto, sans-serif;
                         color: #ffffff;
                     }
 
@@ -1382,38 +1423,38 @@
 
                     .vk-tabs-container {
                         display: flex;
-                        gap: 12px;
-                        background: rgba(15, 23, 42, 0.8);
-                        padding: 8px 12px;
+                        gap: 10px;
+                        background: rgba(255, 255, 255, 0.05);
+                        padding: 10px;
                         border-radius: 50px;
-                        border: 1px solid rgba(255, 255, 255, 0.12);
-                        margin-bottom: 25px;
-                        backdrop-filter: blur(12px);
+                        margin-bottom: 30px;
+                        backdrop-filter: blur(10px);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        justify-content: center;
                     }
 
                     .vk-tab-pill {
                         background: transparent;
                         border: none;
-                        color: #94a3b8;
-                        padding: 10px 24px;
+                        color: #888;
+                        padding: 10px 25px;
                         border-radius: 50px;
                         font-weight: 800;
-                        font-size: 0.88rem;
+                        font-size: 0.9rem;
                         cursor: pointer;
-                        transition: all 0.25s ease;
+                        transition: all 0.3s ease;
                         text-transform: uppercase;
-                        letter-spacing: 0.5px;
                     }
 
                     .vk-tab-pill:hover {
-                        color: #ffffff;
-                        background: rgba(255, 255, 255, 0.06);
+                        color: #fff;
+                        background: rgba(255, 255, 255, 0.05);
                     }
 
                     .vk-tab-pill.active {
                         background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
                         color: #ffffff;
-                        box-shadow: 0 4px 15px rgba(0, 210, 255, 0.35);
+                        box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
                     }
 
                     .vk-auction-grid {
@@ -1425,24 +1466,24 @@
 
                     .vk-auction-card {
                         background: rgba(15, 23, 42, 0.85);
-                        border: 1px solid rgba(255, 255, 255, 0.1);
-                        border-radius: 18px;
+                        border: 1px solid rgba(255, 255, 255, 0.12);
+                        border-radius: 12px;
                         overflow: hidden;
                         position: relative;
-                        aspect-ratio: 1 / 1.25;
+                        aspect-ratio: 1 / 1.2;
                         transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease;
                         cursor: pointer;
                         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
                     }
 
                     .vk-auction-card:hover {
-                        transform: translateY(-6px) scale(1.02);
+                        transform: scale(1.05);
                         border-color: #00d2ff;
-                        box-shadow: 0 15px 35px rgba(0, 210, 255, 0.25);
+                        z-index: 10;
                     }
 
                     .vk-auction-card.status-ended img {
-                        filter: grayscale(1) opacity(0.65);
+                        filter: grayscale(1) opacity(0.7) !important;
                     }
 
                     .vk-auction-img-wrapper {
@@ -1460,16 +1501,16 @@
 
                     .vk-auction-bid-badge {
                         position: absolute;
-                        bottom: 12px;
-                        right: 12px;
-                        background: rgba(255, 107, 107, 0.95);
+                        bottom: 10px;
+                        right: 10px;
+                        background: #FFB7B2;
                         color: #ffffff;
-                        padding: 6px 14px;
-                        border-radius: 14px;
-                        font-size: 1.05rem;
+                        padding: 4px 12px;
+                        border-radius: 12px;
+                        font-size: 1rem;
                         font-weight: 900;
-                        backdrop-filter: blur(8px);
-                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+                        backdrop-filter: blur(5px);
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
                         z-index: 5;
                     }
 
@@ -1478,7 +1519,7 @@
                         bottom: 0;
                         left: 0;
                         width: 100%;
-                        padding: 45px 14px 14px 14px;
+                        padding: 45px 12px 12px 12px;
                         background: linear-gradient(transparent, rgba(15, 23, 42, 0.95) 60%);
                         pointer-events: none;
                         display: flex;
@@ -1489,13 +1530,14 @@
                     .vk-auction-footer-info {
                         display: flex;
                         justify-content: space-between;
-                        align-items: flex-end;
+                        align-items: center;
                         width: 100%;
+                        gap: 10px;
                     }
 
                     .vk-auction-timer {
                         color: #ffffff;
-                        font-size: 0.92rem;
+                        font-size: 1.1rem;
                         font-weight: 800;
                     }
 
@@ -1503,13 +1545,14 @@
                         display: flex;
                         flex-direction: column;
                         align-items: flex-end;
-                        font-size: 0.85rem;
+                        font-size: 0.95rem;
                         color: #f1f5f9;
-                        font-weight: 800;
+                        font-weight: 900;
+                        line-height: 1.1;
                     }
 
                     .vk-auction-bidder-info .bidder-name {
-                        font-size: 0.68rem;
+                        font-size: 0.7rem;
                         color: #94a3b8;
                         text-transform: uppercase;
                         font-weight: 700;
@@ -1519,26 +1562,27 @@
                         position: absolute;
                         top: 50%;
                         left: 50%;
-                        transform: translate(-50%, -50%) rotate(-20deg);
-                        border: 4px solid #ef4444;
-                        color: #ef4444;
-                        padding: 8px 18px;
-                        font-size: 1.8rem;
+                        transform: translate(-50%, -50%) rotate(-25deg);
+                        border: 6px solid #ff4757;
+                        color: #ff4757;
+                        padding: 10px 20px;
+                        font-size: 2.2rem;
                         font-weight: 900;
                         text-transform: uppercase;
-                        border-radius: 14px;
-                        background: rgba(15, 23, 42, 0.92);
-                        z-index: 10;
+                        border-radius: 15px;
+                        background: rgba(255, 255, 255, 0.9);
+                        z-index: 30;
                         pointer-events: none;
-                        box-shadow: 0 0 20px rgba(0,0,0,0.6);
+                        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+                        letter-spacing: 2px;
                     }
 
-                    /* Auction Detail Modal */
+                    /* Auction Detail Modal Overlay */
                     .vk-modal-overlay {
                         display: none;
                         position: fixed;
                         top: 0; left: 0; width: 100vw; height: 100vh;
-                        background: rgba(11, 15, 25, 0.85);
+                        background: rgba(11, 15, 25, 0.88);
                         backdrop-filter: blur(16px);
                         z-index: 99999999;
                         align-items: center;
@@ -1552,24 +1596,25 @@
                     }
 
                     .vk-modal-card {
-                        background: #ffffff;
-                        color: #1e293b;
+                        background: #0f172a;
+                        color: #ffffff;
                         max-width: 900px;
-                        width: 100%;
+                        width: 95%;
                         border-radius: 28px;
                         padding: 28px;
                         position: relative;
                         max-height: 90vh;
                         overflow-y: auto;
-                        box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        box-shadow: 0 25px 80px rgba(0,0,0,0.8);
                     }
 
                     .vk-modal-close {
                         position: absolute;
                         top: 18px;
                         right: 22px;
-                        font-size: 2rem;
-                        color: #64748b;
+                        font-size: 2.2rem;
+                        color: #94a3b8;
                         cursor: pointer;
                         line-height: 1;
                         transition: color 0.2s;
@@ -1582,88 +1627,125 @@
                     .vk-bidding-layout {
                         display: grid;
                         grid-template-columns: 1fr 1.2fr;
-                        gap: 25px;
-                        margin-top: 10px;
+                        gap: 30px;
+                        width: 100%;
                     }
 
                     @media (max-width: 768px) {
-                        .vk-bidding-layout { grid-template-columns: 1fr; }
+                        .vk-bidding-layout { grid-template-columns: 1fr; gap: 20px; }
+                        .vk-modal-media img { height: 250px !important; }
+                    }
+
+                    .vk-modal-media {
+                        display: flex;
+                        flex-direction: column;
                     }
 
                     .vk-modal-media img {
                         width: 100%;
-                        height: 320px;
+                        height: 350px;
                         object-fit: contain;
-                        background: #0f172a;
+                        background: #000000;
                         border-radius: 18px;
                     }
 
                     .vk-modal-timer {
-                        text-align: center;
-                        margin-top: 14px;
-                        font-size: 1.3rem;
                         font-weight: 800;
-                        color: #38bdf8;
+                        letter-spacing: 0.5px;
+                        color: #8e44ad;
+                        background: #ffffff;
+                        padding: 12px 24px;
+                        border-radius: 50px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        text-align: center;
+                        border: 3px solid #f8f9fa;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+                        font-size: 1.3rem;
+                        margin-top: 15px;
                     }
 
                     .vk-bid-info-box {
-                        background: #f8fafc;
-                        border-radius: 18px;
-                        padding: 16px 20px;
+                        background: rgba(255, 255, 255, 0.05);
+                        border-radius: 20px;
+                        padding: 20px;
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
-                        border: 1px solid #e2e8f0;
-                        margin-bottom: 16px;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        margin-bottom: 20px;
                     }
 
                     .vk-current-bid-val {
-                        color: #ef4444;
-                        font-size: 2.5rem;
+                        color: #FF6961;
                         font-weight: 900;
+                        font-size: 3.5rem;
+                        line-height: 1;
+                    }
+
+                    @media (max-width: 480px) {
+                        .vk-current-bid-val { font-size: 2.5rem; }
                     }
 
                     .vk-quick-grid {
                         display: grid;
                         grid-template-columns: repeat(3, 1fr);
-                        gap: 10px;
-                        margin-bottom: 14px;
+                        gap: 15px;
+                        margin-top: 15px;
                     }
 
                     .vk-btn-bid-pill {
-                        background: #bae6fd;
-                        color: #0369a1;
-                        border: 2px solid #38bdf8;
-                        padding: 12px;
-                        border-radius: 16px;
+                        background: #B2E2F2;
+                        color: #333333;
+                        border: 4px solid #ffffff;
+                        padding: 14px 8px;
+                        border-radius: 30px 50px 30px 50px;
                         font-weight: 900;
-                        font-size: 1.05rem;
+                        font-size: 1.2rem;
                         cursor: pointer;
-                        transition: all 0.2s;
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+
+                        /* Standard vendor fallback for custom cloud shapes */
+                        border-radius: 30px 50px 30px 50px;
                     }
 
+                    .vk-btn-bid-pill:nth-child(2) { background: #FDFD96; color: #333333; }
+                    .vk-btn-bid-pill:nth-child(3) { background: #FFB7B2; color: #333333; }
+
                     .vk-btn-bid-pill:hover {
-                        background: #38bdf8;
-                        color: #ffffff;
-                        transform: translateY(-2px);
+                        transform: translateY(-4px) scale(1.04);
+                        box-shadow: 0 12px 20px rgba(0,0,0,0.2);
+                    }
+
+                    .vk-free-bid-input-container {
+                        margin-top: 25px;
+                        position: relative;
                     }
 
                     .vk-free-bid-input {
                         width: 100%;
-                        background: #f1f5f9;
-                        border: 2px solid #cbd5e1;
-                        padding: 14px;
-                        border-radius: 16px;
-                        font-weight: 800;
-                        font-size: 1.1rem;
+                        background: #D8BFD8;
+                        border: 4px solid #ffffff;
+                        color: #333333;
+                        padding: 16px;
+                        border-radius: 40px 60px 40px 60px;
+                        font-weight: 900;
+                        font-size: 1.5rem;
                         text-align: center;
                         outline: none;
                         box-sizing: border-box;
+                        box-shadow: 0 10px 25px rgba(216, 191, 216, 0.4);
+                    }
+
+                    .vk-free-bid-input::placeholder {
+                        color: rgba(0,0,0,0.4);
                     }
 
                     .vk-free-bid-input:focus {
-                        border-color: #38bdf8;
-                        background: #ffffff;
+                        background: #E6E6FA;
                     }
 
                     .vk-btn-place-bid {
@@ -1676,35 +1758,38 @@
                         font-size: 1.2rem;
                         font-weight: 900;
                         cursor: pointer;
-                        margin-top: 14px;
+                        margin-top: 18px;
                         transition: transform 0.2s, box-shadow 0.2s;
-                        box-shadow: 0 10px 25px rgba(2, 132, 199, 0.3);
+                        box-shadow: 0 10px 25px rgba(2, 132, 199, 0.35);
                     }
 
                     .vk-btn-place-bid:hover {
                         transform: translateY(-2px);
-                        box-shadow: 0 15px 35px rgba(2, 132, 199, 0.45);
+                        box-shadow: 0 15px 35px rgba(2, 132, 199, 0.5);
                     }
 
                     .vk-bidders-list {
-                        margin-top: 20px;
+                        margin-top: 25px;
                     }
 
                     .vk-bidder-item {
                         display: flex;
                         justify-content: space-between;
                         padding: 10px 14px;
-                        border-radius: 10px;
+                        border-radius: 8px;
                         margin-bottom: 6px;
-                        background: #f1f5f9;
+                        background: #fdfdfd;
+                        border: 2px solid #f0f0f0;
+                        color: #333333;
                         font-size: 0.88rem;
                         font-weight: 700;
                     }
 
                     .vk-bidder-item.winner {
-                        background: #dcfce7;
-                        border: 2px solid #22c55e;
-                        color: #15803d;
+                        background: #E0F7E0;
+                        border: 3px solid #77DD77;
+                        color: #2D5A2D;
+                        font-weight: 900;
                     }
                 </style>
 
@@ -1727,31 +1812,33 @@
                             <div class="vk-bidding-layout">
                                 <div class="vk-modal-media">
                                     <img id="vk-modal-img" src="" alt="Auction Image">
-                                    <div class="vk-modal-timer" id="vk-modal-timer">--:--:--</div>
+                                    <div class="vk-modal-timer" id="vk-modal-timer">00:00:00</div>
                                 </div>
                                 <div>
-                                    <h2 id="vk-modal-title" style="margin: 0 0 8px 0; font-size: 1.5rem; font-weight: 900; color: #0f172a;">-</h2>
-                                    <p id="vk-modal-desc" style="font-size: 0.88rem; color: #64748b; margin-bottom: 18px; white-space: pre-wrap;"></p>
+                                    <h2 id="vk-modal-title" style="margin: 0 0 10px 0; font-size: 1.6rem; font-weight: 900; color: #ffffff;">-</h2>
+                                    <p id="vk-modal-desc" style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px; white-space: pre-wrap;"></p>
 
                                     <div class="vk-bid-info-box">
                                         <div>
-                                            <div style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Puja Actual</div>
+                                            <div style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Puja Actual</div>
                                             <div class="vk-current-bid-val" id="vk-modal-current-bid">$0.00</div>
                                         </div>
                                         <div style="text-align: right;">
-                                            <div style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Base</div>
-                                            <div style="font-weight: 800; font-size: 1.1rem; color: #0f172a;" id="vk-modal-start-bid">$0.00</div>
+                                            <div style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Base</div>
+                                            <div style="font-weight: 800; font-size: 1.2rem; color: #ffffff;" id="vk-modal-start-bid">$0.00</div>
                                         </div>
                                     </div>
 
                                     <div id="vk-modal-bid-controls">
                                         <div class="vk-quick-grid" id="vk-quick-bid-container"></div>
-                                        <input type="number" id="vk-input-bid-amount" class="vk-free-bid-input" placeholder="Ingresa tu puja ($)" step="1">
+                                        <div class="vk-free-bid-input-container">
+                                            <input type="number" id="vk-input-bid-amount" class="vk-free-bid-input" placeholder="Puja Libre ($)" step="1">
+                                        </div>
                                         <button class="vk-btn-place-bid" id="vk-btn-submit-bid">Realizar Puja</button>
                                     </div>
 
                                     <div class="vk-bidders-list">
-                                        <h4 style="margin: 0 0 10px 0; font-size: 0.8rem; text-transform: uppercase; color: #64748b;">Historial de Pujas</h4>
+                                        <h4 style="margin: 0 0 10px 0; font-size: 0.8rem; text-transform: uppercase; color: #94a3b8;">Historial de Pujas</h4>
                                         <div id="vk-modal-bidders-list"></div>
                                     </div>
                                 </div>
@@ -2071,19 +2158,39 @@
             if (!this.currentUser || !this.currentUser.id) {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
-                        title: '¿Quieres participar?',
-                        text: 'Para colocar pujas en esta subasta, inicia sesión o crea tu cuenta en VikingTCG.',
+                        title: '¿Quieres pujar?',
+                        text: 'Para participar en las subastas y llevarte las mejores cartas, primero debes formar parte de VikingTCG.',
                         icon: 'info',
                         showCancelButton: true,
-                        confirmButtonText: 'Ir a VikingTCG',
-                        cancelButtonText: 'Cancelar'
-                    }).then((res) => {
-                        if (res.isConfirmed) {
-                            window.open('https://vikingtcg.xyz', '_blank');
+                        confirmButtonText: '¡Crear cuenta / Iniciar sesión!',
+                        cancelButtonText: 'Tal vez luego',
+                        confirmButtonColor: '#00d2ff',
+                        cancelButtonColor: '#333'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.open('https://vikingtcg.xyz/index.html', '_blank');
                         }
                     });
                 } else {
-                    alert('Para participar en subastas, inicia sesión en VikingTCG.xyz');
+                    alert('Para participar en las subastas, inicia sesión en VikingTCG.xyz');
+                }
+                return;
+            }
+
+            // Check if user has WhatsApp and Messenger configured
+            if (!this.currentUser.whatsapp_link || !this.currentUser.messenger_link) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Perfil Incompleto',
+                        text: 'Para participar en subastas, primero debes registrar tu WhatsApp y Messenger en tu perfil.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ir a mi Perfil',
+                        cancelButtonText: 'Después',
+                        confirmButtonColor: '#00d2ff'
+                    }).then((result) => {
+                        if (result.isConfirmed) window.open('https://vikingtcg.xyz/perfil.html', '_blank');
+                    });
                 }
                 return;
             }
@@ -2092,7 +2199,7 @@
             const amount = parseFloat(input?.value);
 
             if (isNaN(amount) || amount <= 0) {
-                if (typeof Swal !== 'undefined') Swal.fire('Monto inválido', 'Por favor ingresa un monto mayor a 0.', 'warning');
+                if (typeof Swal !== 'undefined') Swal.fire('Error', 'Por favor ingresa un monto válido.', 'error');
                 return;
             }
 
@@ -2101,7 +2208,7 @@
             const currentTop = bids.length > 0 ? bids[0].amount : a.starting_bid;
 
             if (amount <= currentTop) {
-                if (typeof Swal !== 'undefined') Swal.fire('Puja superada', `Tu puja debe ser mayor que el monto actual ($${parseFloat(currentTop).toFixed(2)}).`, 'warning');
+                if (typeof Swal !== 'undefined') Swal.fire('Puja Superada', `Alguien más acaba de pujar $${parseFloat(currentTop).toFixed(2)}. Tu puja debe ser mayor.`, 'warning');
                 return;
             }
 
@@ -2109,7 +2216,7 @@
 
             try {
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ title: 'Registrando puja...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    Swal.fire({ title: 'Procesando puja...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 }
 
                 const { error } = await this._supabase.from('subastas_pujas').insert([{
@@ -2128,12 +2235,11 @@
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         icon: 'success',
-                        title: '¡Puja registrada!',
-                        text: `Tu puja de $${amount.toFixed(2)} se registró con éxito.`,
+                        title: 'Puja registrada',
                         toast: true,
                         position: 'top-end',
                         showConfirmButton: false,
-                        timer: 2000
+                        timer: 1500
                     });
                 }
 
