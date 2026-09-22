@@ -1155,4 +1155,191 @@
     if (!customElements.get('vikingdev-binder')) {
         customElements.define('vikingdev-binder', VikingdevBinderElement);
     }
+
+    class VikingdevSubastasElement extends HTMLElement {
+        constructor() {
+            super();
+            this.activeStoreId = null;
+            this.userIdentifier = null;
+            this._supabase = null;
+        }
+
+        static get observedAttributes() {
+            return ['domain', 'user', 'auction-id', 'auctionid'];
+        }
+
+        attributeChangedCallback(name, oldValue, newValue) {
+            if (oldValue !== newValue && this.isConnected) {
+                this.initSubastas();
+            }
+        }
+
+        async connectedCallback() {
+            await this.initSubastas();
+        }
+
+        async initSubastas() {
+            const attrDomain = this.getAttribute('domain') || window.location.hostname || '';
+            const targetDomain = cleanDomain(attrDomain);
+            const userAttr = this.getAttribute('user');
+            const auctionId = this.getAttribute('auction-id') || this.getAttribute('auctionid') || '';
+
+            console.log('[VikingdevSubastas] Inicializando subastas custom label para dominio:', targetDomain, '| user:', userAttr, '| auction:', auctionId);
+
+            if (typeof window.supabase === 'undefined') {
+                await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+            }
+
+            if (window.supabase && !this._supabase) {
+                this._supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+
+            let matchedUserId = null;
+            let userIdentifier = userAttr || null;
+            let isDomainExplicitlyDisabled = false;
+
+            let sessionUser = null;
+            try {
+                const stored = localStorage.getItem('tcg_session');
+                if (stored) sessionUser = JSON.parse(stored);
+            } catch(e) {}
+
+            // Step A: Check explicit user attribute
+            if (userAttr && this._supabase) {
+                try {
+                    const { data: userRow } = await this._supabase
+                        .from('usuarios')
+                        .select('id, username, store_name')
+                        .or(`username.eq."${userAttr}",store_name.eq."${userAttr}",id.eq."${userAttr}"`)
+                        .maybeSingle();
+
+                    if (userRow) {
+                        matchedUserId = userRow.id;
+                        userIdentifier = userRow.store_name || userRow.username || userRow.id;
+                    }
+                } catch(e) {}
+            }
+
+            // Step B: Check domain authorization in widget_domains
+            if (!matchedUserId && targetDomain && this._supabase) {
+                try {
+                    const { data: allDomains } = await this._supabase
+                        .from('widget_domains')
+                        .select('user_id, is_active, domain');
+
+                    if (allDomains && allDomains.length > 0) {
+                        const found = allDomains.find(d => cleanDomain(d.domain) === targetDomain);
+                        if (found) {
+                            if (!found.is_active) {
+                                isDomainExplicitlyDisabled = true;
+                            } else {
+                                matchedUserId = found.user_id;
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            if (isDomainExplicitlyDisabled) {
+                console.warn('[VikingdevSubastas] Subastas DESACTIVADAS por el administrador para:', targetDomain);
+                this.style.display = 'none';
+                return;
+            }
+
+            // Step C: Fallback check against usuarios domain/store
+            if (!matchedUserId && targetDomain && this._supabase) {
+                try {
+                    const { data: users } = await this._supabase
+                        .from('usuarios')
+                        .select('id, custom_domain, store_name, username');
+
+                    if (users && users.length > 0) {
+                        const foundUser = users.find(u => {
+                            return (u.custom_domain && cleanDomain(u.custom_domain) === targetDomain) ||
+                                   (u.store_name && cleanDomain(u.store_name) === targetDomain) ||
+                                   (u.username && cleanDomain(u.username) === targetDomain);
+                        });
+                        if (foundUser) {
+                            matchedUserId = foundUser.id;
+                            userIdentifier = foundUser.store_name || foundUser.username;
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            // Step D: Fallback to active logged-in user
+            if (!matchedUserId && sessionUser?.id) {
+                matchedUserId = sessionUser.id;
+                userIdentifier = sessionUser.store_name || sessionUser.username || sessionUser.id;
+            }
+
+            if (matchedUserId && !userIdentifier && this._supabase) {
+                const { data: u } = await this._supabase.from('usuarios').select('username, store_name').eq('id', matchedUserId).maybeSingle();
+                if (u) userIdentifier = u.store_name || u.username;
+            }
+
+            if (!userIdentifier) {
+                userIdentifier = 'vikingtcg';
+            }
+
+            this.renderSubastas(userIdentifier, auctionId);
+        }
+
+        renderSubastas(userIdentifier, auctionId) {
+            const baseUrl = 'https://vikingtcg.xyz/public.html';
+            let embedUrl = `${baseUrl}?id=${encodeURIComponent(userIdentifier)}&view=auctions&embed=true`;
+            if (auctionId) {
+                embedUrl += `&auctionId=${encodeURIComponent(auctionId)}`;
+            }
+
+            this.innerHTML = `
+                <style>
+                    vikingdev-subastas {
+                        display: block !important;
+                        width: 100%;
+                        max-width: 1100px;
+                        margin: 20px auto;
+                        box-sizing: border-box;
+                    }
+                    .vk-subastas-container {
+                        position: relative;
+                        width: 100%;
+                        padding-bottom: 75%;
+                        height: 0;
+                        background: rgba(15, 23, 42, 0.85);
+                        border-radius: 18px;
+                        overflow: hidden;
+                        border: 1px solid rgba(255, 255, 255, 0.12);
+                        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+                    }
+                    @media (max-width: 640px) {
+                        .vk-subastas-container {
+                            padding-bottom: 125%;
+                        }
+                    }
+                    .vk-subastas-iframe {
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        border: none; background: transparent;
+                    }
+                    .vk-subastas-badge {
+                        display: flex; align-items: center; justify-content: center; gap: 6px;
+                        text-align: center; margin-top: 10px; font-family: 'Montserrat', sans-serif;
+                        font-size: 0.72rem; color: #94a3b8; text-decoration: none;
+                        font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+                        transition: color 0.2s ease;
+                    }
+                    .vk-subastas-badge:hover { color: #38bdf8; }
+                </style>
+                <div class="vk-subastas-container">
+                    <iframe class="vk-subastas-iframe" src="${embedUrl}" allow="gyroscope; accelerometer" allowtransparency="true"></iframe>
+                </div>
+                <a href="https://vikingtcg.xyz" target="_blank" class="vk-subastas-badge">Powered by VikingTCG Auctions</a>
+            `;
+        }
+    }
+
+    if (!customElements.get('vikingdev-subastas')) {
+        customElements.define('vikingdev-subastas', VikingdevSubastasElement);
+    }
 })();
