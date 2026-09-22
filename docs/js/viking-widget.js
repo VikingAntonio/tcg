@@ -44,6 +44,12 @@
             swal.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
             document.head.appendChild(swal);
         }
+        if (!document.querySelector('#viking-swal-zindex-override')) {
+            const style = document.createElement('style');
+            style.id = 'viking-swal-zindex-override';
+            style.textContent = `.swal2-container { z-index: 999999999 !important; }`;
+            document.head.appendChild(style);
+        }
     }
 
     function loadScript(src) {
@@ -1869,8 +1875,8 @@
                                         <div class="vk-quick-grid" id="vk-quick-bid-container"></div>
                                         <div class="vk-free-bid-input-container">
                                             <input type="number" id="vk-input-bid-amount" class="vk-free-bid-input" placeholder="Puja Libre ($)" step="1">
+                                            <button class="vk-btn-place-bid" id="vk-btn-submit-free-bid">Pujar Libre</button>
                                         </div>
-                                        <button class="vk-btn-place-bid" id="vk-btn-submit-bid">Realizar Puja</button>
                                     </div>
 
                                     <div class="vk-bidders-list">
@@ -1890,7 +1896,7 @@
             const btnFinished = this.querySelector('#vk-tab-finished');
             const modalOverlay = this.querySelector('#vk-modal-overlay');
             const modalClose = this.querySelector('#vk-modal-close');
-            const submitBidBtn = this.querySelector('#vk-btn-submit-bid');
+            const submitFreeBidBtn = this.querySelector('#vk-btn-submit-free-bid');
             const freeBidInput = this.querySelector('#vk-input-bid-amount');
 
             if (btnActive) {
@@ -1927,9 +1933,10 @@
                 });
             }
 
-            if (submitBidBtn) {
-                submitBidBtn.addEventListener('click', () => {
-                    this.handlePlaceBid();
+            if (submitFreeBidBtn) {
+                submitFreeBidBtn.addEventListener('click', () => {
+                    const inputVal = parseFloat(freeBidInput?.value);
+                    this.handlePlaceBid(inputVal);
                 });
             }
 
@@ -1937,7 +1944,8 @@
                 freeBidInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        this.handlePlaceBid();
+                        const inputVal = parseFloat(freeBidInput.value);
+                        this.handlePlaceBid(inputVal);
                     }
                 });
             }
@@ -2123,9 +2131,13 @@
                     btn.className = 'vk-btn-bid-pill';
                     btn.textContent = `+$${val}`;
                     btn.addEventListener('click', () => {
-                        const cur = parseFloat(this.querySelector('#vk-modal-current-bid')?.textContent.replace('$', '')) || 0;
+                        const bids = a.subastas_pujas || [];
+                        bids.sort((x, y) => y.amount - x.amount);
+                        const cur = bids.length > 0 ? bids[0].amount : a.starting_bid;
+                        const targetAmount = cur + val;
                         const input = this.querySelector('#vk-input-bid-amount');
-                        if (input) input.value = (cur + val).toFixed(2);
+                        if (input) input.value = targetAmount;
+                        this.handlePlaceBid(targetAmount);
                     });
                     quickContainer.appendChild(btn);
                 });
@@ -2181,7 +2193,7 @@
             }
         }
 
-        async handlePlaceBid() {
+        async handlePlaceBid(specificAmount) {
             if (!this.activeModalAuctionId) return;
             const a = this.auctionsMap[this.activeModalAuctionId];
             if (!a) return;
@@ -2206,14 +2218,14 @@
                         if (result.isConfirmed) {
                             const session = await this.checkCrossDomainSessionViaPopup();
                             if (session) {
-                                await this.handlePlaceBid();
+                                await this.handlePlaceBid(specificAmount);
                             }
                         }
                     });
                 } else {
                     const session = await this.checkCrossDomainSessionViaPopup();
                     if (session) {
-                        await this.handlePlaceBid();
+                        await this.handlePlaceBid(specificAmount);
                     }
                 }
                 return;
@@ -2238,7 +2250,7 @@
             }
 
             const input = this.querySelector('#vk-input-bid-amount');
-            const amount = parseFloat(input?.value);
+            const amount = specificAmount !== undefined ? parseFloat(specificAmount) : parseFloat(input?.value);
 
             if (isNaN(amount) || amount <= 0) {
                 if (typeof Swal !== 'undefined') Swal.fire('Error', 'Por favor ingresa un monto válido.', 'error');

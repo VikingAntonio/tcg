@@ -2,11 +2,71 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>VikingTCG Session Bridge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - VikingTCG Auth</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap">
+    <style>
+        * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        body {
+            margin: 0; padding: 20px; background: #0a0f1d; color: #ffffff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+        }
+        .auth-card {
+            background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 20px; padding: 25px; width: 100%; max-width: 380px; text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        }
+        h2 { color: #38bdf8; margin-top: 0; font-weight: 800; }
+        p { color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; }
+        input {
+            width: 100%; padding: 12px 15px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+        }
+        input:focus { border-color: #38bdf8; }
+        .btn-auth {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+            color: #ffffff; border: none; border-radius: 12px; font-weight: 800; font-size: 0.95rem; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s; margin-top: 10px;
+        }
+        .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4); }
+        .error-msg { color: #ef4444; font-size: 0.8rem; margin-top: 12px; display: none; }
+        .success-msg { color: #22c55e; font-size: 0.8rem; margin-top: 12px; display: none; }
+    </style>
 </head>
 <body>
+    <div class="auth-card" id="auth-box">
+        <img src="https://vikingtcg.xyz/favi.png" width="50" style="margin-bottom: 10px;" alt="VikingTCG">
+        <h2>VikingTCG Auth</h2>
+        <p>Inicia sesión con tu cuenta de VikingTCG para participar en las subastas.</p>
+
+        <form id="login-form">
+            <div class="input-group">
+                <label>Correo Electrónico / Usuario</label>
+                <input type="text" id="email-input" placeholder="tu@correo.com o usuario" required autocomplete="username">
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="password-input" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-auth" id="btn-submit">Iniciar Sesión</button>
+            <div class="error-msg" id="error-msg"></div>
+            <div class="success-msg" id="success-msg">¡Sesión iniciada correctamente!</div>
+        </form>
+    </div>
+
     <script>
         (function() {
+            const SUPABASE_URL = 'https://ehszvqwftqgxjggnbcmt.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoc3p2cXdmdHFneGpnZ25iY210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NDI5MjAsImV4cCI6MjA4NTMxODkyMH0.wh8_Xy4_w9roFxMgbJ-J9A3r5V7duUjnStl4ZsZ0804';
+
+            let supabaseClient = null;
+            if (window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+
             function getVikingSession() {
                 try {
                     var sessionStr = localStorage.getItem('tcg_session');
@@ -28,30 +88,97 @@
                 return null;
             }
 
+            function notifyAndClose(sessionData) {
+                if (window.opener && window.opener !== window) {
+                    try {
+                        window.opener.postMessage({
+                            type: 'VIKING_SESSION_RESPONSE',
+                            session: sessionData
+                        }, '*');
+                    } catch(e) {}
+                    setTimeout(function() {
+                        try { window.close(); } catch(e) {}
+                    }, 400);
+                }
+
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({
+                            type: 'VIKING_SESSION_RESPONSE',
+                            session: sessionData
+                        }, '*');
+                    } catch(e) {}
+                }
+            }
+
             var session = getVikingSession();
 
-            // 1. Respond to window.opener if opened as popup
-            if (window.opener && window.opener !== window) {
-                try {
-                    window.opener.postMessage({
-                        type: 'VIKING_SESSION_RESPONSE',
-                        session: session
-                    }, '*');
-                } catch(e) {}
-                setTimeout(function() {
-                    try { window.close(); } catch(e) {}
-                }, 300);
+            // If session already exists, notify immediately
+            if (session) {
+                notifyAndClose(session);
             }
 
-            // 2. Respond to parent window if embedded in iframe
-            if (window.parent && window.parent !== window) {
+            // Handle login submission
+            document.getElementById('login-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const emailOrUser = document.getElementById('email-input').value.trim();
+                const password = document.getElementById('password-input').value;
+                const errorEl = document.getElementById('error-msg');
+                const successEl = document.getElementById('success-msg');
+                const btn = document.getElementById('btn-submit');
+
+                errorEl.style.display = 'none';
+                btn.disabled = true;
+                btn.textContent = 'Verificando...';
+
                 try {
-                    window.parent.postMessage({
-                        type: 'VIKING_SESSION_RESPONSE',
-                        session: session
-                    }, '*');
-                } catch(e) {}
-            }
+                    let email = emailOrUser;
+
+                    // If input is not email, lookup email from usuarios table
+                    if (!emailOrUser.includes('@') && supabaseClient) {
+                        const { data: userRow } = await supabaseClient
+                            .from('usuarios')
+                            .select('id, username')
+                            .or(`username.eq."${emailOrUser}",store_name.eq."${emailOrUser}"`)
+                            .maybeSingle();
+
+                        if (userRow) {
+                            email = emailOrUser + '@vikingtcg.com'; // Fallback
+                        }
+                    }
+
+                    if (supabaseClient) {
+                        const { data: authData, error: authErr } = await supabaseClient.auth.signInWithPassword({
+                            email: email,
+                            password: password
+                        });
+
+                        if (authErr) throw authErr;
+
+                        if (authData?.user) {
+                            const { data: userProfile } = await supabaseClient
+                                .from('usuarios')
+                                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
+                                .eq('id', authData.user.id)
+                                .maybeSingle();
+
+                            const sessionObj = userProfile || { id: authData.user.id, username: authData.user.email };
+                            localStorage.setItem('tcg_session', JSON.stringify(sessionObj));
+
+                            successEl.style.display = 'block';
+                            btn.textContent = '¡Iniciado!';
+                            notifyAndClose(sessionObj);
+                            return;
+                        }
+                    }
+                    throw new Error('No se pudo verificar la cuenta');
+                } catch(err) {
+                    errorEl.textContent = err.message || 'Credenciales incorrectas.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Iniciar Sesión';
+                }
+            });
 
             window.addEventListener('message', function(event) {
                 if (event.data && event.data.type === 'REQUEST_VIKING_SESSION') {

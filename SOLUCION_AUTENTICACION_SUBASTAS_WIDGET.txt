@@ -1,0 +1,54 @@
+================================================================================
+SOLUCIÓN TÉCNICA: AUTENTICACIÓN CENTRAL Y CROSS-DOMAIN EN <vikingdev-subastas>
+================================================================================
+
+1. PROBLEMA Y DIAGNÓSTICO:
+--------------------------
+El custom label Web Component `<vikingdev-subastas>` se incrusta en dominios externos
+(ej. mitienda.com, latienda.com, localhost) donde el navegador no comparte por defecto
+el `localStorage` ni la sesión iniciada en `vikingtcg.xyz`.
+
+Anteriormente, los usuarios no podían realizar pujas en dominios de clientes si no
+tenían una sesión iniciada localmente en ese dominio específico, lo que causaba
+bloqueos y mensajes de error.
+
+2. ARQUITECTURA DE LA SOLUCIÓN (OAUTH / CENTRAL AUTH BRIDGE):
+------------------------------------------------------------
+Para resolver esto de forma segura y transparente:
+
+A) Servidor Central de Autenticación (`https://vikingtcg.xyz/session-bridge.html`):
+   - Actúa como puente de sesión y proveedor central de identidad.
+   - Si el usuario YA inició sesión en VikingTCG en algún momento, lee el objeto `tcg_session`
+     o los tokens de Supabase Auth en `localStorage` de `vikingtcg.xyz` y transmite la
+     sesión vía `postMessage` (`VIKING_SESSION_RESPONSE`).
+   - Si el usuario NO ha iniciado sesión, el puente despliega una interfaz limpia de login
+     directo en `vikingtcg.xyz`. Al ingresar sus credenciales (correo/usuario y contraseña),
+     autentica contra Supabase, guarda la sesión central en `vikingtcg.xyz` y notifica
+     al dominio del cliente inmediatamente.
+
+B) Detección de Sesión Cross-Domain en el Widget (`viking-widget.js`):
+   - Al cargar el widget o al intentar pujar, abre de forma transparente un puente invisible
+     (iframe/popup) hacia `https://vikingtcg.xyz/session-bridge.html`.
+   - Escucha el mensaje de respuesta `VIKING_SESSION_RESPONSE` en el contenedor principal.
+   - Al recibir la sesión autenticada, almacena la información del usuario (`currentUser`) y
+     procede automáticamente a registrar la puja de manera fluida.
+
+3. FLUJO DE TRABAJO AL PUJAR:
+-----------------------------
+1) El cliente visita el dominio del usuario (ej. `mitienda.com`).
+2) Ve el componente nativo `<vikingdev-subastas>`.
+3) Al hacer clic en un botón de puja rápida (`+$5`, `+$10`, `+$20`) o en el botón de puja libre:
+   a. El widget verifica si existe `currentUser`.
+   b. Si no existe, abre el popup modal de autenticación central contra `vikingtcg.xyz/session-bridge.html`.
+   c. Si el usuario ya tenía sesión en `vikingtcg.xyz`, el popup se cierra en milisegundos y la puja se procesa inmediatamente.
+   d. Si no tenía sesión, el usuario ingresa sus datos una sola vez en el popup de `vikingtcg.xyz`.
+   e. Tras validar las credenciales, el popup transmite la sesión al widget y ejecuta la puja automáticamente en la subasta deseada.
+
+4. VENTAJAS Y SEGURIDAD:
+------------------------
+- Cumple con las políticas CORS y Same-Origin del navegador.
+- Centraliza la autenticación en `vikingtcg.xyz` sin requerir que los dominios de clientes
+  gestionen contraseñas o tokens sensibles.
+- Las notificaciones y alertas de SweetAlert2 se renderizan por encima de cualquier elemento
+  del sitio cliente mediante `z-index: 999999999 !important`.
+================================================================================
