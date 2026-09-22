@@ -974,13 +974,7 @@
             super();
             this.activeStoreId = null;
             this.userIdentifier = null;
-            this.currentUser = null;
             this._supabase = null;
-            this._realtimeChannel = null;
-            this.auctionsMap = {};
-            this.auctionTimers = {};
-            this.currentFilter = 'active';
-            this.activeModalAuctionId = null;
         }
 
         static get observedAttributes() {
@@ -1167,7 +1161,13 @@
             super();
             this.activeStoreId = null;
             this.userIdentifier = null;
+            this.currentUser = null;
             this._supabase = null;
+            this._realtimeChannel = null;
+            this.auctionsMap = {};
+            this.auctionTimers = {};
+            this.currentFilter = 'active';
+            this.activeModalAuctionId = null;
         }
 
         static get observedAttributes() {
@@ -1303,25 +1303,54 @@
 
         async detectCurrentUserSession() {
             try {
-                // Check localStorage first for instant session recovery
+                let detectedUserId = null;
+
+                // 1. Check localStorage for tcg_session or Supabase auth tokens
                 const stored = localStorage.getItem('tcg_session');
                 if (stored) {
-                    try { this.currentUser = JSON.parse(stored); } catch(e) {}
+                    try {
+                        const parsed = JSON.parse(stored);
+                        if (parsed?.id) {
+                            detectedUserId = parsed.id;
+                            this.currentUser = parsed;
+                        }
+                    } catch(e) {}
                 }
 
+                if (!detectedUserId) {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+                            try {
+                                const val = JSON.parse(localStorage.getItem(key));
+                                const uid = val?.user?.id || val?.currentSession?.user?.id;
+                                if (uid) {
+                                    detectedUserId = uid;
+                                    break;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                }
+
+                // 2. Check Supabase client auth session
                 if (this._supabase) {
                     const { data: { session } } = await this._supabase.auth.getSession();
                     if (session?.user?.id) {
-                        const { data: user } = await this._supabase
-                            .from('usuarios')
-                            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
-                            .eq('id', session.user.id)
-                            .maybeSingle();
+                        detectedUserId = session.user.id;
+                    }
+                }
 
-                        if (user) {
-                            this.currentUser = user;
-                            localStorage.setItem('tcg_session', JSON.stringify(user));
-                        }
+                if (detectedUserId && this._supabase) {
+                    const { data: user } = await this._supabase
+                        .from('usuarios')
+                        .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
+                        .eq('id', detectedUserId)
+                        .maybeSingle();
+
+                    if (user) {
+                        this.currentUser = user;
+                        localStorage.setItem('tcg_session', JSON.stringify(user));
                     }
                 }
             } catch (err) {
@@ -1677,13 +1706,6 @@
                         border: 2px solid #22c55e;
                         color: #15803d;
                     }
-
-                    .vk-badge-link {
-                        display: flex; align-items: center; justify-content: center; gap: 6px;
-                        text-align: center; margin-top: 18px; font-size: 0.72rem; color: #94a3b8;
-                        text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-                    }
-                    .vk-badge-link:hover { color: #38bdf8; }
                 </style>
 
                 <div class="vk-subastas-root">
@@ -1697,8 +1719,6 @@
                             <i class="fas fa-spinner fa-spin"></i> Cargando subastas...
                         </div>
                     </div>
-
-                    <a href="https://vikingtcg.xyz" target="_blank" class="vk-badge-link">Powered by VikingTCG Auctions</a>
 
                     <!-- Detail Modal -->
                     <div class="vk-modal-overlay" id="vk-modal-overlay">
@@ -1803,17 +1823,17 @@
         async loadAuctions(targetAuctionId) {
             if (!this._supabase) return;
 
+            this.auctionsMap = this.auctionsMap || {};
+
             try {
                 let query = this._supabase
                     .from('subastas')
                     .select(`
                         *,
                         subastas_pujas (
-                            id,
-                            subasta_id,
                             amount,
-                            bidder_id,
                             bidder_name,
+                            bidder_id,
                             created_at
                         )
                     `)
@@ -1833,9 +1853,11 @@
                 if (error) throw error;
 
                 this.auctionsMap = {};
-                if (data && data.length > 0) {
+                if (data && Array.isArray(data)) {
                     data.forEach(item => {
-                        this.auctionsMap[item.id] = item;
+                        if (item && item.id) {
+                            this.auctionsMap[item.id] = item;
+                        }
                     });
                 }
 
@@ -1852,13 +1874,15 @@
             if (!grid) return;
 
             grid.innerHTML = '';
-            Object.values(this.auctionTimers).forEach(t => clearInterval(t));
+            const existingTimers = this.auctionTimers || {};
+            Object.values(existingTimers).forEach(t => clearInterval(t));
             this.auctionTimers = {};
 
             const now = new Date();
-            const auctions = Object.values(this.auctionsMap);
+            const auctions = Object.values(this.auctionsMap || {});
 
             const filtered = auctions.filter(a => {
+                if (!a) return false;
                 const endDate = a.end_date ? new Date(typeof a.end_date === 'string' ? a.end_date.replace(' ', 'T') : a.end_date) : null;
                 const isEnded = endDate && now > endDate;
                 return this.currentFilter === 'active' ? !isEnded : isEnded;
