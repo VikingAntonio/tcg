@@ -67,7 +67,7 @@
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             }
 
-            function getVikingSession() {
+            async function getVikingSession() {
                 try {
                     var sessionStr = localStorage.getItem('tcg_session');
                     if (sessionStr) {
@@ -80,8 +80,36 @@
                             try {
                                 var val = JSON.parse(localStorage.getItem(key));
                                 var u = val?.user || val?.currentSession?.user;
-                                if (u && u.id) return u;
+                                if (u && u.id) {
+                                    if (supabaseClient) {
+                                        var { data: prof } = await supabaseClient
+                                            .from('usuarios')
+                                            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
+                                            .eq('id', u.id)
+                                            .maybeSingle();
+                                        if (prof) {
+                                            localStorage.setItem('tcg_session', JSON.stringify(prof));
+                                            return prof;
+                                        }
+                                    }
+                                    return u;
+                                }
                             } catch(e) {}
+                        }
+                    }
+
+                    if (supabaseClient) {
+                        var { data: { session: sbSession } } = await supabaseClient.auth.getSession();
+                        if (sbSession && sbSession.user && sbSession.user.id) {
+                            var { data: userProfile } = await supabaseClient
+                                .from('usuarios')
+                                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
+                                .eq('id', sbSession.user.id)
+                                .maybeSingle();
+                            if (userProfile) {
+                                localStorage.setItem('tcg_session', JSON.stringify(userProfile));
+                                return userProfile;
+                            }
                         }
                     }
                 } catch(err) {}
@@ -111,12 +139,13 @@
                 }
             }
 
-            var session = getVikingSession();
-
-            // If session already exists, notify immediately
-            if (session) {
-                notifyAndClose(session);
+            async function checkAndNotify() {
+                var session = await getVikingSession();
+                if (session) {
+                    notifyAndClose(session);
+                }
             }
+            checkAndNotify();
 
             // Handle login submission
             document.getElementById('login-form').addEventListener('submit', async function(e) {
@@ -180,9 +209,9 @@
                 }
             });
 
-            window.addEventListener('message', function(event) {
+            window.addEventListener('message', async function(event) {
                 if (event.data && event.data.type === 'REQUEST_VIKING_SESSION') {
-                    var s = getVikingSession();
+                    var s = await getVikingSession();
                     if (event.source) {
                         event.source.postMessage({
                             type: 'VIKING_SESSION_RESPONSE',
