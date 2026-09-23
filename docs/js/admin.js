@@ -271,9 +271,7 @@ $(document).ready(async function() {
 
     $(document).on('click', '#btn-subastas, #menu-btn-subastas', function(e) {
         e.preventDefault();
-        showView('manage-auctions');
-        if (typeof loadLiveAuctions === 'function') loadLiveAuctions();
-        if (window.botInstance) window.botInstance.setContext('auctions');
+        window.location.href = 'subastas.html';
     });
 
     $('#menu-btn-subastas-ganadas, #btn-subastas-ganadas-tile').click(function(e) {

@@ -52,19 +52,51 @@
         }
     }
 
+    const _scriptPromises = {};
+
     function loadScript(src) {
-        return new Promise((resolve, reject) => {
-            if (document.querySelector(`script[src="${src}"]`)) {
-                resolve();
+        if (_scriptPromises[src]) {
+            return _scriptPromises[src];
+        }
+
+        const existingScript = document.querySelector(`script[src="${src}"]`);
+
+        _scriptPromises[src] = new Promise((resolve, reject) => {
+            if (existingScript) {
+                if (existingScript.dataset.loaded === 'true' || (src.includes('supabase') && typeof window.supabase !== 'undefined')) {
+                    resolve();
+                    return;
+                }
+                existingScript.addEventListener('load', () => {
+                    existingScript.dataset.loaded = 'true';
+                    resolve();
+                });
+                existingScript.addEventListener('error', (err) => reject(err));
+
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    attempts++;
+                    if ((src.includes('supabase') && typeof window.supabase !== 'undefined') || existingScript.dataset.loaded === 'true' || attempts > 50) {
+                        clearInterval(interval);
+                        existingScript.dataset.loaded = 'true';
+                        resolve();
+                    }
+                }, 100);
                 return;
             }
+
             const script = document.createElement('script');
             script.src = src;
             script.crossOrigin = 'anonymous';
-            script.onload = resolve;
-            script.onerror = reject;
+            script.onload = () => {
+                script.dataset.loaded = 'true';
+                resolve();
+            };
+            script.onerror = (err) => reject(err);
             document.head.appendChild(script);
         });
+
+        return _scriptPromises[src];
     }
 
     ensureHeadAssets();
@@ -1192,6 +1224,8 @@
         }
 
         async connectedCallback() {
+            this.renderNativeLayout();
+            this.bindNativeEvents();
             await this.initSubastas();
         }
 
@@ -1299,9 +1333,11 @@
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
 
-            // Render native layout directly in this element
-            this.renderNativeLayout();
-            this.bindNativeEvents();
+            // Render native layout directly in this element if not already rendered
+            if (!this.querySelector('.vk-subastas-root')) {
+                this.renderNativeLayout();
+                this.bindNativeEvents();
+            }
 
             // Load auctions from database
             await this.loadAuctions(targetAuctionId);

@@ -1,0 +1,23 @@
+====================================================================
+DIAGNÓSTICO Y SOLUCIÓN: MÚLTIPLES WIDGETS VIKINGTCG
+====================================================================
+
+¿POR QUÉ PASABA ESTO?
+---------------------
+Al pegar múltiples etiquetas de widgets en el mismo proyecto o HTML (por ejemplo, <vikingdev-chatbot> y <vikingdev-subastas>):
+
+1. El primer widget (<vikingdev-chatbot>) al montarse iniciaba la carga asíncrona de la librería externa de Supabase JS inyectando una etiqueta <script src="..."> en el <head>.
+2. El segundo widget (<vikingdev-subastas>) al montarse casi al mismo tiempo ejecutaba su función `loadScript`.
+3. `loadScript` comprobaba si ya existía una etiqueta <script src="..."> con esa URL en el DOM. Al encontrarla (creada por el chatbot milisegundos antes), la función anterior asumía incorrectamente que el script YA HABÍA TERMINADO de descargarse y resolver la promesa inmediatamente.
+4. Como el archivo de Supabase todavía se estaba descargando por red, `window.supabase` era `undefined`. Al verificar la instancia del cliente, el widget de subastas no podía conectarse a la base de datos y abortaba su renderizado (`if (!this._supabase) return;`), quedando invisible o sin mostrarse.
+
+¿CÓMO SE SOLUCIONÓ?
+-------------------
+1. Carga de Scripts Compartida (`loadScript` con caché de promesas):
+   Se refactorizó la función `loadScript` en `docs/js/viking-widget.js` para que comparta y reutilice la misma promesa de carga en todos los widgets. Si una librería externa ya se está descargando, los siguientes widgets se enganchan al evento 'load' o esperan activamente a que la variable global (`window.supabase`) esté disponible antes de continuar la ejecución.
+
+2. Renderizado Inmediato de Estructura Nativa:
+   Se aseguró que `<vikingdev-subastas>` ejecute `renderNativeLayout()` inmediatamente al conectarse al DOM (`connectedCallback`), mostrando su contenedor base y estado de carga mientras se completa la autenticación y obtención de datos de las subastas en segundo plano.
+
+3. Compatibilidad Multi-Widget:
+   Ahora puedes pegar cualquier combinación de widgets (<vikingdev-chatbot>, <vikingdev-subastas>, <vikingdev-binder>) de forma individual o conjunta en cualquier web, local o dominio autorizado sin interferencias entre ellos.
