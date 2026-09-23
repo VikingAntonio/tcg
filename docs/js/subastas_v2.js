@@ -25,34 +25,17 @@ $(document).ready(async function() {
 
     // Flatpickr initialization
     flatpickr("#auction-start-date, #auction-end-date", {
-        enableTime: true,
+        enableTime: false,
         noCalendar: false,
-        dateFormat: "Y-m-d h:i A",
-        time_24hr: false,
+        dateFormat: "Y-m-d",
         allowInput: true,
         clickOpens: true,
         disableMobile: true,
-        minuteIncrement: 1,
         onOpen: function(selectedDates, dateStr, instance) {
             if (window.innerWidth <= 768) {
                 instance.element.blur();
             }
-        },
-        onClose: function(selectedDates, dateStr, instance) {
-            instance.input.value = dateStr.replace('AM', 'A').replace('PM', 'P');
-        },
-        onReady: function(selectedDates, dateStr, instance) {
-            const $timeInputs = $(instance.calendarContainer).find('.flatpickr-time input');
-            $timeInputs.on('click', function() {
-                $(this).focus();
-            });
-        },
-        plugins: [confirmDatePlugin({
-            confirmIcon: "<i class='fas fa-check'></i>",
-            confirmText: "ACEPTAR",
-            showAlways: true,
-            theme: "light"
-        })]
+        }
     });
 
     flatpickr("#auction-delivery-date", {
@@ -284,12 +267,10 @@ window.editAuctionFromCard = async (id, isLive) => {
     if (startFp && auctionData.start_date) {
         const d = parseDateSafe(auctionData.start_date);
         startFp.setDate(d);
-        startFp.input.value = startFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
     if (endFp && auctionData.end_date) {
         const d = parseDateSafe(auctionData.end_date);
         endFp.setDate(d);
-        endFp.input.value = endFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
 
     // Delivery fields
@@ -299,15 +280,43 @@ window.editAuctionFromCard = async (id, isLive) => {
 
     const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
     const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
-    if (startTimeFp && auctionData.delivery_time_start) {
-        let val = auctionData.delivery_time_start.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
-        startTimeFp.setDate(val, false, "h:i A");
-        startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    if (startTimeFp) {
+        let startTimeVal = auctionData.delivery_time_start;
+        if (!startTimeVal && auctionData.start_date) {
+            const d = parseDateSafe(auctionData.start_date);
+            if (d) {
+                let hours = d.getHours();
+                const minutes = d.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                startTimeVal = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+            }
+        }
+        if (startTimeVal) {
+            let val = startTimeVal.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+            startTimeFp.setDate(val, false, "h:i A");
+            startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
+        }
     }
-    if (endTimeFp && auctionData.delivery_time_end) {
-        let val = auctionData.delivery_time_end.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
-        endTimeFp.setDate(val, false, "h:i A");
-        endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    if (endTimeFp) {
+        let endTimeVal = auctionData.delivery_time_end;
+        if (!endTimeVal && auctionData.end_date) {
+            const d = parseDateSafe(auctionData.end_date);
+            if (d) {
+                let hours = d.getHours();
+                const minutes = d.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                endTimeVal = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+            }
+        }
+        if (endTimeVal) {
+            let val = endTimeVal.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+            endTimeFp.setDate(val, false, "h:i A");
+            endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
+        }
     }
 
     $('#auction-description').val(auctionData.description || '');
@@ -433,11 +442,18 @@ function resetModalFields() {
     const endFp = document.querySelector("#auction-end-date")._flatpickr;
     if (startFp) {
         startFp.setDate(now);
-        startFp.input.value = startFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
     if (endFp) {
         endFp.setDate(end);
-        endFp.input.value = endFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
+
+    if (startTimeFp) {
+        startTimeFp.setDate(now, false, "h:i A");
+        startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
+    }
+    if (endTimeFp) {
+        endTimeFp.setDate(end, false, "h:i A");
+        endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
 
     renderModalPreviews([]); // This will restore the drop zone UI
@@ -455,10 +471,6 @@ async function handleSaveAuction() {
     const startFp = document.querySelector("#auction-start-date")._flatpickr;
     const endFp = document.querySelector("#auction-end-date")._flatpickr;
 
-    // Ensure we save as ISO strings for UTC consistency
-    const start = startFp.selectedDates[0] ? startFp.selectedDates[0].toISOString() : null;
-    const end = endFp.selectedDates[0] ? endFp.selectedDates[0].toISOString() : null;
-
     const desc = $('#auction-description').val();
 
     const increments = [];
@@ -472,6 +484,24 @@ async function handleSaveAuction() {
     const deliveryDate = document.querySelector("#auction-delivery-date")._flatpickr.selectedDates[0];
     const deliveryTimeStart = $('#auction-delivery-time-start').val();
     const deliveryTimeEnd = $('#auction-delivery-time-end').val();
+
+    let startDateObj = startFp.selectedDates[0] || null;
+    let endDateObj = endFp.selectedDates[0] || null;
+
+    if (startDateObj && deliveryTimeStart) {
+        const dateStr = startFp.formatDate(startDateObj, "Y-m-d");
+        const combined = parseDateSafe(`${dateStr} ${deliveryTimeStart}`);
+        if (combined) startDateObj = combined;
+    }
+    if (endDateObj && deliveryTimeEnd) {
+        const dateStr = endFp.formatDate(endDateObj, "Y-m-d");
+        const combined = parseDateSafe(`${dateStr} ${deliveryTimeEnd}`);
+        if (combined) endDateObj = combined;
+    }
+
+    // Ensure we save as ISO strings for UTC consistency
+    const start = startDateObj ? startDateObj.toISOString() : null;
+    const end = endDateObj ? endDateObj.toISOString() : null;
 
     const editingId = $('#auction-modal').data('editing-id');
     const isLive = $('#auction-modal').data('is-live');
