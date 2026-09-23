@@ -130,6 +130,18 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="input-group" style="margin-top: 15px;">
+                    <label><i class="fas fa-bolt text-sky"></i> Claims / Dinámicas en Tiempo Real (&lt;vikingdev-claims&gt;)</label>
+                    <p style="font-size: 0.82rem; color: #94a3b8; margin: 0 0 6px 0;">
+                        Muestra tus claims creados en claim.html para que el primero en reclamar en tiempo real se lleve el producto directamente desde tu sitio web o local.
+                    </p>
+                    <div id="claims-snippets-container">
+                        <div style="text-align: center; padding: 20px; color: #94a3b8;">
+                            <i class="fas fa-spinner fa-spin"></i> Obteniendo tu código custom label...
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -163,9 +175,11 @@
             const $containerChat = $('#snippets-list-container');
             const $containerBinder = $('#binder-snippets-container');
             const $containerSubastas = $('#subastas-snippets-container');
+            const $containerClaims = $('#claims-snippets-container');
             $containerChat.empty();
             $containerBinder.empty();
             $containerSubastas.empty();
+            $containerClaims.empty();
 
             let domains = [];
 
@@ -189,6 +203,7 @@
                 const defaultSnippetChat = `<!-- VikingTCG Chatbot Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-chatbot domain="tudominio.com"></vikingdev-chatbot>`;
                 const defaultSnippetBinder = `<!-- VikingTCG Binder Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-binder domain="tudominio.com"></vikingdev-binder>`;
                 const defaultSnippetSubastas = `<!-- VikingTCG Auctions Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-subastas domain="tudominio.com"></vikingdev-subastas>`;
+                const defaultSnippetClaims = `<!-- VikingTCG Claims Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-claims domain="tudominio.com"></vikingdev-claims>`;
 
                 $containerChat.append(`
                     <div class="no-domains-warning" style="margin-bottom: 12px;">
@@ -216,6 +231,13 @@
                         <span class="snippet-text-content">${escapeHtml(defaultSnippetSubastas)}</span>
                     </div>
                 `);
+
+                $containerClaims.append(`
+                    <div class="code-snippet-box">
+                        <button class="btn-copy-code" onclick="copySnippetText(this)"><i class="fas fa-copy"></i> Copiar Código Claims</button>
+                        <span class="snippet-text-content">${escapeHtml(defaultSnippetClaims)}</span>
+                    </div>
+                `);
                 return;
             }
 
@@ -224,6 +246,7 @@
                 const snippetChat = `<!-- VikingTCG Chatbot Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-chatbot domain="${cleanD}"></vikingdev-chatbot>`;
                 const snippetBinder = `<!-- VikingTCG Binder Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-binder domain="${cleanD}"></vikingdev-binder>`;
                 const snippetSubastas = `<!-- VikingTCG Auctions Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-subastas domain="${cleanD}"></vikingdev-subastas>`;
+                const snippetClaims = `<!-- VikingTCG Claims Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-claims domain="${cleanD}"></vikingdev-claims>`;
 
                 const $boxChat = $(`
                     <div class="code-snippet-box">
@@ -248,6 +271,14 @@
                     </div>
                 `);
                 $containerSubastas.append($boxSubastas);
+
+                const $boxClaims = $(`
+                    <div class="code-snippet-box">
+                        <button class="btn-copy-code" onclick="copySnippetText(this)"><i class="fas fa-copy"></i> Copiar Código (${escapeHtml(cleanD)})</button>
+                        <span class="snippet-text-content">${escapeHtml(snippetClaims)}</span>
+                    </div>
+                `);
+                $containerClaims.append($boxClaims);
             });
         }
 
