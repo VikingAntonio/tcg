@@ -1321,11 +1321,22 @@
                     return;
                 }
 
-                const handleMsg = (event) => {
+                const handleMsg = async (event) => {
                     if (event.data && event.data.type === 'VIKING_SESSION_RESPONSE' && event.data.session) {
                         window.removeEventListener('message', handleMsg);
                         try { popup.close(); } catch(e){}
                         const session = event.data.session;
+                        const tokens = event.data.tokens;
+
+                        if (tokens && tokens.access_token && this._supabase) {
+                            try {
+                                await this._supabase.auth.setSession({
+                                    access_token: tokens.access_token,
+                                    refresh_token: tokens.refresh_token
+                                });
+                            } catch(e) {}
+                        }
+
                         if (session && session.id) {
                             this.currentUser = session;
                             try { localStorage.setItem('tcg_session', JSON.stringify(session)); } catch(e){}
@@ -1392,10 +1403,21 @@
                 if (!detectedUserId && window.location.hostname !== 'vikingtcg.xyz') {
                     await new Promise((resolve) => {
                         let iframe = document.getElementById('viking-session-bridge-iframe');
-                        const handleMsg = (event) => {
+                        const handleMsg = async (event) => {
                             if (event.data && event.data.type === 'VIKING_SESSION_RESPONSE' && event.data.session) {
                                 window.removeEventListener('message', handleMsg);
                                 const session = event.data.session;
+                                const tokens = event.data.tokens;
+
+                                if (tokens && tokens.access_token && this._supabase) {
+                                    try {
+                                        await this._supabase.auth.setSession({
+                                            access_token: tokens.access_token,
+                                            refresh_token: tokens.refresh_token
+                                        });
+                                    } catch(e) {}
+                                }
+
                                 if (session && session.id) {
                                     detectedUserId = session.id;
                                     this.currentUser = session;
