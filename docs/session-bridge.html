@@ -89,30 +89,48 @@
             async function getVikingSessionBundle() {
                 let userProfile = null;
                 let tokens = null;
+                let userId = null;
 
                 try {
-                    // 1. Check Supabase Auth Client
+                    // 1. Check viking_auth_tokens in localStorage
+                    const savedTokensStr = localStorage.getItem('viking_auth_tokens');
+                    if (savedTokensStr) {
+                        try {
+                            const parsedT = JSON.parse(savedTokensStr);
+                            if (parsedT?.access_token) {
+                                tokens = {
+                                    access_token: parsedT.access_token,
+                                    refresh_token: parsedT.refresh_token || ''
+                                };
+                            }
+                        } catch(e) {}
+                    }
+
+                    // 2. Check Supabase Auth Client
                     if (supabaseClient) {
-                        const { data: { session: sbSession } } = await supabaseClient.auth.getSession();
-                        if (sbSession && sbSession.user) {
-                            tokens = {
-                                access_token: sbSession.access_token,
-                                refresh_token: sbSession.refresh_token
-                            };
-                            const { data: prof } = await supabaseClient
-                                .from('usuarios')
-                                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
-                                .eq('id', sbSession.user.id)
-                                .maybeSingle();
-                            if (prof) {
-                                userProfile = prof;
-                            } else {
-                                userProfile = { id: sbSession.user.id, username: sbSession.user.email };
+                        if (tokens?.access_token) {
+                            try {
+                                const { data: setData } = await supabaseClient.auth.setSession({
+                                    access_token: tokens.access_token,
+                                    refresh_token: tokens.refresh_token || ''
+                                });
+                                if (setData?.user?.id) userId = setData.user.id;
+                            } catch(e) {}
+                        }
+
+                        if (!userId) {
+                            const { data: { session: sbSession } } = await supabaseClient.auth.getSession();
+                            if (sbSession && sbSession.user) {
+                                userId = sbSession.user.id;
+                                tokens = {
+                                    access_token: sbSession.access_token,
+                                    refresh_token: sbSession.refresh_token
+                                };
                             }
                         }
                     }
 
-                    // 2. Check localStorage for Supabase Auth Tokens
+                    // 3. Scan localStorage for Supabase Auth Tokens if still missing
                     if (!tokens) {
                         for (let i = 0; i < localStorage.length; i++) {
                             const key = localStorage.key(i);
@@ -122,16 +140,16 @@
                                     if (val?.access_token) {
                                         tokens = {
                                             access_token: val.access_token,
-                                            refresh_token: val.refresh_token
+                                            refresh_token: val.refresh_token || ''
                                         };
-                                        const userId = val.user?.id || val.currentSession?.user?.id;
-                                        if (userId && !userProfile && supabaseClient) {
-                                            const { data: prof } = await supabaseClient
-                                                .from('usuarios')
-                                                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
-                                                .eq('id', userId)
-                                                .maybeSingle();
-                                            if (prof) userProfile = prof;
+                                        userId = val.user?.id || val.currentSession?.user?.id || userId;
+                                        if (supabaseClient && tokens.access_token) {
+                                            try {
+                                                await supabaseClient.auth.setSession({
+                                                    access_token: tokens.access_token,
+                                                    refresh_token: tokens.refresh_token || ''
+                                                });
+                                            } catch(e) {}
                                         }
                                         break;
                                     }
@@ -140,19 +158,46 @@
                         }
                     }
 
-                    // 3. Check tcg_session in localStorage
-                    if (!userProfile) {
+                    // 4. Fallback to tcg_session to extract userId if not found
+                    if (!userId) {
                         const sessionStr = localStorage.getItem('tcg_session');
                         if (sessionStr) {
                             try {
                                 const parsed = JSON.parse(sessionStr);
-                                if (parsed && parsed.id) userProfile = parsed;
+                                if (parsed && parsed.id) {
+                                    userId = parsed.id;
+                                    userProfile = parsed;
+                                }
                             } catch(e) {}
                         }
                     }
 
+                    // 5. Query user profile from database if userId is known
+                    if (userId && supabaseClient) {
+                        try {
+                            const { data: prof } = await supabaseClient
+                                .from('usuarios')
+                                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
+                                .eq('id', userId)
+                                .maybeSingle();
+
+                            if (prof) {
+                                userProfile = prof;
+                            }
+                        } catch(e) {}
+                    }
+
+                    // Fallback profile if profile query failed or table row missing
+                    if (!userProfile && userId) {
+                        userProfile = { id: userId, username: 'Usuario VikingTCG' };
+                    }
+
+                    // Save session and tokens to localStorage for consistency
                     if (userProfile) {
                         try { localStorage.setItem('tcg_session', JSON.stringify(userProfile)); } catch(e) {}
+                    }
+                    if (tokens) {
+                        try { localStorage.setItem('viking_auth_tokens', JSON.stringify(tokens)); } catch(e) {}
                     }
                 } catch(err) {
                     console.error('[SessionBridge] Error obteniendo sesión:', err);
@@ -216,25 +261,45 @@
                 btn.textContent = 'Verificando...';
 
                 try {
-                    let email = emailOrUser;
+                    let emailToUse = emailOrUser;
 
                     if (!emailOrUser.includes('@') && supabaseClient) {
+                        // Check usuarios table by username, store_name, or email
                         const { data: userRow } = await supabaseClient
                             .from('usuarios')
-                            .select('id, username')
+                            .select('email, username, store_name')
                             .or(`username.eq."${emailOrUser}",store_name.eq."${emailOrUser}"`)
                             .maybeSingle();
 
-                        if (userRow) {
-                            email = emailOrUser + '@vikingtcg.com';
+                        if (userRow && userRow.email) {
+                            emailToUse = userRow.email;
+                        } else {
+                            emailToUse = `${emailOrUser}@tcgdual.com`;
                         }
                     }
 
                     if (supabaseClient) {
-                        const { data: authData, error: authErr } = await supabaseClient.auth.signInWithPassword({
-                            email: email,
+                        let authData = null;
+                        let authErr = null;
+
+                        const result1 = await supabaseClient.auth.signInWithPassword({
+                            email: emailToUse,
                             password: password
                         });
+
+                        authData = result1.data;
+                        authErr = result1.error;
+
+                        if (authErr && !emailOrUser.includes('@') && emailToUse.endsWith('@tcgdual.com')) {
+                            const result2 = await supabaseClient.auth.signInWithPassword({
+                                email: `${emailOrUser}@vikingtcg.com`,
+                                password: password
+                            });
+                            if (!result2.error) {
+                                authData = result2.data;
+                                authErr = null;
+                            }
+                        }
 
                         if (authErr) throw authErr;
 
@@ -246,17 +311,20 @@
                                 .maybeSingle();
 
                             const sessionObj = userProfile || { id: authData.user.id, username: authData.user.email };
+                            const tokensObj = {
+                                access_token: authData.session.access_token,
+                                refresh_token: authData.session.refresh_token
+                            };
+
                             localStorage.setItem('tcg_session', JSON.stringify(sessionObj));
+                            localStorage.setItem('viking_auth_tokens', JSON.stringify(tokensObj));
 
                             successEl.style.display = 'block';
                             btn.textContent = '¡Iniciado!';
 
                             notifyAndClose({
                                 session: sessionObj,
-                                tokens: {
-                                    access_token: authData.session.access_token,
-                                    refresh_token: authData.session.refresh_token
-                                }
+                                tokens: tokensObj
                             });
                             return;
                         }
