@@ -280,43 +280,15 @@ window.editAuctionFromCard = async (id, isLive) => {
 
     const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
     const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
-    if (startTimeFp) {
-        let startTimeVal = auctionData.delivery_time_start;
-        if (!startTimeVal && auctionData.start_date) {
-            const d = parseDateSafe(auctionData.start_date);
-            if (d) {
-                let hours = d.getHours();
-                const minutes = d.getMinutes();
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                hours = hours % 12;
-                hours = hours ? hours : 12;
-                startTimeVal = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-            }
-        }
-        if (startTimeVal) {
-            let val = startTimeVal.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
-            startTimeFp.setDate(val, false, "h:i A");
-            startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
-        }
+    if (startTimeFp && auctionData.delivery_time_start) {
+        let val = auctionData.delivery_time_start.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+        startTimeFp.setDate(val, false, "h:i A");
+        startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
-    if (endTimeFp) {
-        let endTimeVal = auctionData.delivery_time_end;
-        if (!endTimeVal && auctionData.end_date) {
-            const d = parseDateSafe(auctionData.end_date);
-            if (d) {
-                let hours = d.getHours();
-                const minutes = d.getMinutes();
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                hours = hours % 12;
-                hours = hours ? hours : 12;
-                endTimeVal = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-            }
-        }
-        if (endTimeVal) {
-            let val = endTimeVal.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
-            endTimeFp.setDate(val, false, "h:i A");
-            endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
-        }
+    if (endTimeFp && auctionData.delivery_time_end) {
+        let val = auctionData.delivery_time_end.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+        endTimeFp.setDate(val, false, "h:i A");
+        endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
 
     $('#auction-description').val(auctionData.description || '');
@@ -447,15 +419,6 @@ function resetModalFields() {
         endFp.setDate(end);
     }
 
-    if (startTimeFp) {
-        startTimeFp.setDate(now, false, "h:i A");
-        startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
-    }
-    if (endTimeFp) {
-        endTimeFp.setDate(end, false, "h:i A");
-        endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
-    }
-
     renderModalPreviews([]); // This will restore the drop zone UI
     $('.inc-check').prop('checked', true);
     $('#auction-free-bid').prop('checked', true);
@@ -485,23 +448,9 @@ async function handleSaveAuction() {
     const deliveryTimeStart = $('#auction-delivery-time-start').val();
     const deliveryTimeEnd = $('#auction-delivery-time-end').val();
 
-    let startDateObj = startFp.selectedDates[0] || null;
-    let endDateObj = endFp.selectedDates[0] || null;
-
-    if (startDateObj && deliveryTimeStart) {
-        const dateStr = startFp.formatDate(startDateObj, "Y-m-d");
-        const combined = parseDateSafe(`${dateStr} ${deliveryTimeStart}`);
-        if (combined) startDateObj = combined;
-    }
-    if (endDateObj && deliveryTimeEnd) {
-        const dateStr = endFp.formatDate(endDateObj, "Y-m-d");
-        const combined = parseDateSafe(`${dateStr} ${deliveryTimeEnd}`);
-        if (combined) endDateObj = combined;
-    }
-
     // Ensure we save as ISO strings for UTC consistency
-    const start = startDateObj ? startDateObj.toISOString() : null;
-    const end = endDateObj ? endDateObj.toISOString() : null;
+    const start = startFp.selectedDates[0] ? startFp.selectedDates[0].toISOString() : null;
+    const end = endFp.selectedDates[0] ? endFp.selectedDates[0].toISOString() : null;
 
     const editingId = $('#auction-modal').data('editing-id');
     const isLive = $('#auction-modal').data('is-live');
