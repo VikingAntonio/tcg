@@ -2466,4 +2466,1068 @@
     if (!customElements.get('vikingdev-subastas')) {
         customElements.define('vikingdev-subastas', VikingdevSubastasElement);
     }
+
+    class VikingdevClaimsElement extends HTMLElement {
+        constructor() {
+            super();
+            this.activeStoreId = null;
+            this.userIdentifier = null;
+            this.currentUser = null;
+            this._supabase = null;
+            this._realtimeChannel = null;
+            this.claimsMap = {};
+            this.claimTimers = {};
+            this.activeModalClaimId = null;
+        }
+
+        static get observedAttributes() {
+            return ['domain', 'user', 'claim-id', 'claimid'];
+        }
+
+        attributeChangedCallback(name, oldValue, newValue) {
+            if (oldValue !== newValue && this.isConnected) {
+                this.initClaims();
+            }
+        }
+
+        async connectedCallback() {
+            this.renderNativeLayout();
+            this.bindNativeEvents();
+            await this.initClaims();
+        }
+
+        disconnectedCallback() {
+            if (this._realtimeChannel && this._supabase) {
+                this._supabase.removeChannel(this._realtimeChannel);
+            }
+            Object.values(this.claimTimers).forEach(t => clearInterval(t));
+        }
+
+        async initClaims() {
+            const attrDomain = this.getAttribute('domain') || window.location.hostname || '';
+            const targetDomain = cleanDomain(attrDomain);
+            const userAttr = this.getAttribute('user');
+            const targetClaimId = this.getAttribute('claim-id') || this.getAttribute('claimid') || '';
+
+            console.log('[VikingdevClaims] Inicializando componente nativo claims para dominio:', targetDomain, '| user:', userAttr);
+
+            if (typeof window.supabase === 'undefined') {
+                await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+            }
+
+            if (window.supabase && !this._supabase) {
+                this._supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+
+            if (!this._supabase) return;
+
+            // Detect logged-in VikingTCG session user automatically
+            await this.detectCurrentUserSession();
+
+            let matchedUserId = null;
+            let userIdentifier = userAttr || null;
+            let isDomainExplicitlyDisabled = false;
+
+            // Step A: Check explicit user attribute
+            if (userAttr && this._supabase) {
+                try {
+                    const { data: userRow } = await this._supabase
+                        .from('usuarios')
+                        .select('id, username, store_name')
+                        .or(`username.eq."${userAttr}",store_name.eq."${userAttr}",id.eq."${userAttr}"`)
+                        .maybeSingle();
+
+                    if (userRow) {
+                        matchedUserId = userRow.id;
+                        userIdentifier = userRow.store_name || userRow.username || userRow.id;
+                    }
+                } catch(e) {}
+            }
+
+            // Step B: Check domain authorization in widget_domains
+            if (!matchedUserId && targetDomain && this._supabase) {
+                try {
+                    const { data: allDomains } = await this._supabase
+                        .from('widget_domains')
+                        .select('user_id, is_active, domain');
+
+                    if (allDomains && allDomains.length > 0) {
+                        const found = allDomains.find(d => cleanDomain(d.domain) === targetDomain);
+                        if (found) {
+                            if (!found.is_active) {
+                                isDomainExplicitlyDisabled = true;
+                            } else {
+                                matchedUserId = found.user_id;
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            if (isDomainExplicitlyDisabled) {
+                console.warn('[VikingdevClaims] Claims DESACTIVADOS por el administrador para:', targetDomain);
+                this.style.display = 'none';
+                return;
+            }
+
+            // Step C: Fallback check against usuarios custom_domain/store
+            if (!matchedUserId && targetDomain && this._supabase) {
+                try {
+                    const { data: users } = await this._supabase
+                        .from('usuarios')
+                        .select('id, custom_domain, store_name, username');
+
+                    if (users && users.length > 0) {
+                        const foundUser = users.find(u => {
+                            return (u.custom_domain && cleanDomain(u.custom_domain) === targetDomain) ||
+                                   (u.store_name && cleanDomain(u.store_name) === targetDomain) ||
+                                   (u.username && cleanDomain(u.username) === targetDomain);
+                        });
+                        if (foundUser) {
+                            matchedUserId = foundUser.id;
+                            userIdentifier = foundUser.store_name || foundUser.username;
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            // Step D: Fallback to active logged-in user
+            if (!matchedUserId && this.currentUser?.id) {
+                matchedUserId = this.currentUser.id;
+                userIdentifier = this.currentUser.store_name || this.currentUser.username || this.currentUser.id;
+            }
+
+            this.activeStoreId = matchedUserId;
+            this.userIdentifier = userIdentifier || 'vikingtcg';
+
+            // Render native layout directly in this element if not already rendered
+            if (!this.querySelector('.vk-claims-root')) {
+                this.renderNativeLayout();
+                this.bindNativeEvents();
+            }
+
+            // Load claims from database
+            await this.loadClaims(targetClaimId);
+
+            // Subscribe to real-time updates
+            if (this.activeStoreId) {
+                this.subscribeToRealtime(this.activeStoreId);
+            }
+        }
+
+        async checkCrossDomainSessionViaPopup() {
+            return new Promise((resolve) => {
+                const popup = window.open('https://vikingtcg.xyz/session-bridge.html', 'VikingSessionAuth', 'width=500,height=650,scrollbars=yes');
+                if (!popup) {
+                    window.open('https://vikingtcg.xyz/index.html', '_blank');
+                    resolve(null);
+                    return;
+                }
+
+                const handleMsg = async (event) => {
+                    if (event.data && event.data.type === 'VIKING_SESSION_RESPONSE' && event.data.session) {
+                        window.removeEventListener('message', handleMsg);
+                        try { popup.close(); } catch(e){}
+                        const session = event.data.session;
+                        const tokens = event.data.tokens;
+
+                        if (tokens && tokens.access_token && this._supabase) {
+                            try {
+                                await this._supabase.auth.setSession({
+                                    access_token: tokens.access_token,
+                                    refresh_token: tokens.refresh_token || ''
+                                });
+                                localStorage.setItem('viking_auth_tokens', JSON.stringify(tokens));
+                            } catch(e) {}
+                        }
+
+                        if (session && session.id) {
+                            this.currentUser = session;
+                            try { localStorage.setItem('tcg_session', JSON.stringify(session)); } catch(e){}
+                            resolve(session);
+                        } else {
+                            resolve(null);
+                        }
+                    }
+                };
+
+                window.addEventListener('message', handleMsg);
+
+                const timer = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(timer);
+                        window.removeEventListener('message', handleMsg);
+                        resolve(this.currentUser || null);
+                    }
+                }, 500);
+            });
+        }
+
+        async detectCurrentUserSession() {
+            try {
+                let detectedUserId = null;
+
+                // 1. Check local viking_auth_tokens and set session in Supabase client
+                const savedTokensStr = localStorage.getItem('viking_auth_tokens');
+                if (savedTokensStr && this._supabase) {
+                    try {
+                        const parsedT = JSON.parse(savedTokensStr);
+                        if (parsedT?.access_token) {
+                            const { data: setData } = await this._supabase.auth.setSession({
+                                access_token: parsedT.access_token,
+                                refresh_token: parsedT.refresh_token || ''
+                            });
+                            if (setData?.user?.id) {
+                                detectedUserId = setData.user.id;
+                            }
+                        }
+                    } catch(e) {}
+                }
+
+                // 2. Check local domain localStorage for tcg_session
+                if (!detectedUserId) {
+                    const stored = localStorage.getItem('tcg_session');
+                    if (stored) {
+                        try {
+                            const parsed = JSON.parse(stored);
+                            if (parsed?.id) {
+                                detectedUserId = parsed.id;
+                                this.currentUser = parsed;
+                            }
+                        } catch(e) {}
+                    }
+                }
+
+                if (!detectedUserId) {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+                            try {
+                                const val = JSON.parse(localStorage.getItem(key));
+                                const uid = val?.user?.id || val?.currentSession?.user?.id;
+                                if (uid) {
+                                    detectedUserId = uid;
+                                    if (val?.access_token && this._supabase) {
+                                        try {
+                                            await this._supabase.auth.setSession({
+                                                access_token: val.access_token,
+                                                refresh_token: val.refresh_token || ''
+                                            });
+                                            localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                                                access_token: val.access_token,
+                                                refresh_token: val.refresh_token || ''
+                                            }));
+                                        } catch(e) {}
+                                    }
+                                    break;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                }
+
+                // 3. Check active Supabase client auth session
+                if (!detectedUserId && this._supabase) {
+                    const { data: { session } } = await this._supabase.auth.getSession();
+                    if (session?.user?.id) {
+                        detectedUserId = session.user.id;
+                        try {
+                            localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                                access_token: session.access_token,
+                                refresh_token: session.refresh_token || ''
+                            }));
+                        } catch(e) {}
+                    }
+                }
+
+                // 4. Cross-origin session bridge via iframe to vikingtcg.xyz
+                if (!detectedUserId && window.location.hostname !== 'vikingtcg.xyz') {
+                    await new Promise((resolve) => {
+                        let iframe = document.getElementById('viking-session-bridge-iframe');
+                        const handleMsg = async (event) => {
+                            if (event.data && event.data.type === 'VIKING_SESSION_RESPONSE' && event.data.session) {
+                                window.removeEventListener('message', handleMsg);
+                                const session = event.data.session;
+                                const tokens = event.data.tokens;
+
+                                if (tokens && tokens.access_token && this._supabase) {
+                                    try {
+                                        await this._supabase.auth.setSession({
+                                            access_token: tokens.access_token,
+                                            refresh_token: tokens.refresh_token || ''
+                                        });
+                                        localStorage.setItem('viking_auth_tokens', JSON.stringify(tokens));
+                                    } catch(e) {}
+                                }
+
+                                if (session && session.id) {
+                                    detectedUserId = session.id;
+                                    this.currentUser = session;
+                                    try { localStorage.setItem('tcg_session', JSON.stringify(session)); } catch(e) {}
+                                }
+                                resolve();
+                            }
+                        };
+                        window.addEventListener('message', handleMsg);
+
+                        if (!iframe) {
+                            iframe = document.createElement('iframe');
+                            iframe.id = 'viking-session-bridge-iframe';
+                            iframe.src = 'https://vikingtcg.xyz/session-bridge.html';
+                            iframe.style.display = 'none';
+                            document.body.appendChild(iframe);
+                        } else {
+                            try {
+                                iframe.contentWindow.postMessage({ type: 'REQUEST_VIKING_SESSION' }, '*');
+                            } catch(e) {}
+                        }
+
+                        setTimeout(() => {
+                            window.removeEventListener('message', handleMsg);
+                            resolve();
+                        }, 1200);
+                    });
+                }
+
+                if (detectedUserId && this._supabase) {
+                    const { data: user } = await this._supabase
+                        .from('usuarios')
+                        .select('id, username, store_name, store_logo, is_store, role')
+                        .eq('id', detectedUserId)
+                        .maybeSingle();
+
+                    if (user) {
+                        this.currentUser = user;
+                        try { localStorage.setItem('tcg_session', JSON.stringify(user)); } catch(e) {}
+                    }
+                }
+            } catch (err) {
+                console.info('[VikingdevClaims] Error detectando sesión de usuario:', err);
+            }
+        }
+
+        renderNativeLayout() {
+            this.innerHTML = `
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+
+                    vikingdev-claims {
+                        display: block !important;
+                        width: 100%;
+                        max-width: 1200px;
+                        margin: 20px auto;
+                        box-sizing: border-box;
+                        font-family: 'Segoe UI', Montserrat, Roboto, sans-serif;
+                        color: #ffffff;
+                    }
+
+                    .vk-claims-root {
+                        width: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    .vk-claims-grid {
+                        width: 100%;
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                        gap: 20px;
+                    }
+
+                    .vk-claim-card {
+                        background: rgba(15, 23, 42, 0.85);
+                        border-radius: 24px;
+                        overflow: hidden;
+                        border: 1px solid rgba(255, 255, 255, 0.12);
+                        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        cursor: pointer;
+                        display: flex;
+                        flex-direction: column;
+                        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+                        position: relative;
+                    }
+
+                    .vk-claim-card:hover {
+                        transform: translateY(-10px);
+                        border-color: #00d2ff;
+                    }
+
+                    .vk-claim-img-wrapper {
+                        position: relative;
+                        width: 100%;
+                        height: 220px;
+                        background: #000000;
+                    }
+
+                    .vk-claim-img-wrapper img {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: contain;
+                    }
+
+                    .vk-claim-price-badge {
+                        position: absolute;
+                        bottom: 15px;
+                        right: 15px;
+                        background: #00d2ff;
+                        color: #000000;
+                        padding: 6px 15px;
+                        border-radius: 50px;
+                        font-weight: 900;
+                        font-size: 1.1rem;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                        z-index: 5;
+                    }
+
+                    .vk-claimed-stamp {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%) rotate(-15deg);
+                        border: 4px solid #ff4757;
+                        color: #ff4757;
+                        padding: 10px 20px;
+                        font-size: 1.5rem;
+                        font-weight: 900;
+                        text-transform: uppercase;
+                        border-radius: 12px;
+                        background: rgba(255, 255, 255, 0.9);
+                        z-index: 10;
+                        pointer-events: none;
+                        box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);
+                        letter-spacing: 1px;
+                    }
+
+                    .vk-claim-info-overlay {
+                        padding: 20px;
+                    }
+
+                    .vk-claim-title {
+                        margin: 0 0 10px 0;
+                        font-weight: 800;
+                        font-size: 1.1rem;
+                        color: #ffffff;
+                    }
+
+                    .vk-claim-timer-mini {
+                        font-size: 0.85rem;
+                        color: #ff4757;
+                        font-weight: 700;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                    }
+
+                    .vk-claim-winner-info {
+                        margin-top: 10px;
+                        font-size: 0.8rem;
+                        color: #94a3b8;
+                        border-top: 1px solid rgba(255,255,255,0.08);
+                        padding-top: 10px;
+                        font-weight: 700;
+                    }
+
+                    /* Claim Detail Modal Overlay */
+                    .vk-claim-modal-overlay {
+                        display: none;
+                        position: fixed;
+                        top: 0; left: 0; width: 100vw; height: 100vh;
+                        background: rgba(11, 15, 25, 0.88);
+                        backdrop-filter: blur(16px);
+                        z-index: 99999999;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 20px;
+                        box-sizing: border-box;
+                    }
+
+                    .vk-claim-modal-overlay.active {
+                        display: flex;
+                    }
+
+                    .vk-claim-modal-card {
+                        background: #0f172a;
+                        color: #ffffff;
+                        max-width: 850px;
+                        width: 95%;
+                        border-radius: 28px;
+                        padding: 28px;
+                        position: relative;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+                    }
+
+                    .vk-claim-modal-close {
+                        position: absolute;
+                        top: 18px;
+                        right: 22px;
+                        font-size: 2.2rem;
+                        color: #94a3b8;
+                        cursor: pointer;
+                        line-height: 1;
+                        transition: color 0.2s;
+                    }
+
+                    .vk-claim-modal-close:hover {
+                        color: #ef4444;
+                    }
+
+                    .vk-claim-layout {
+                        display: grid;
+                        grid-template-columns: 1fr 1.2fr;
+                        gap: 30px;
+                        width: 100%;
+                    }
+
+                    @media (max-width: 768px) {
+                        .vk-claim-layout { grid-template-columns: 1fr; gap: 20px; }
+                        .vk-claim-modal-media img { height: 240px !important; }
+                    }
+
+                    .vk-claim-modal-media {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    .vk-claim-modal-media img {
+                        width: 100%;
+                        height: 320px;
+                        object-fit: contain;
+                        background: #000000;
+                        border-radius: 18px;
+                    }
+
+                    .vk-claim-modal-timer {
+                        font-weight: 800;
+                        font-size: 1.1rem;
+                        color: #ff4757;
+                        background: rgba(255, 255, 255, 0.05);
+                        padding: 8px 18px;
+                        border-radius: 50px;
+                        margin-top: 12px;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                    }
+
+                    .vk-claim-price-box {
+                        background: rgba(255, 255, 255, 0.05);
+                        border-radius: 20px;
+                        padding: 16px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        margin-bottom: 20px;
+                    }
+
+                    .vk-claim-price-val {
+                        color: #00ff88;
+                        font-weight: 900;
+                        font-size: 2.8rem;
+                        line-height: 1;
+                    }
+
+                    .vk-btn-claim-now {
+                        width: 100%;
+                        background: linear-gradient(135deg, #00d2ff 0%, #00ff88 100%);
+                        color: #000000;
+                        border: none;
+                        padding: 16px;
+                        border-radius: 18px;
+                        font-size: 1.25rem;
+                        font-weight: 900;
+                        cursor: pointer;
+                        transition: transform 0.2s, box-shadow 0.2s;
+                        box-shadow: 0 10px 25px rgba(0, 255, 136, 0.35);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                    }
+
+                    .vk-btn-claim-now:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 15px 35px rgba(0, 255, 136, 0.5);
+                    }
+
+                    .vk-claim-winner-box {
+                        display: none;
+                        text-align: center;
+                        padding: 20px;
+                        background: #ff4757;
+                        border-radius: 20px;
+                        border: 3px solid #ffffff;
+                        box-shadow: 0 10px 20px rgba(255, 71, 87, 0.3);
+                        position: relative;
+                        overflow: hidden;
+                    }
+
+                    .vk-claim-winner-box .winner-name {
+                        font-size: 1.8rem;
+                        font-weight: 900;
+                        margin: 8px 0;
+                        color: #ffffff;
+                    }
+
+                    .vk-claim-winner-box .winner-date {
+                        font-weight: 700;
+                        color: rgba(255,255,255,0.85);
+                        font-size: 0.85rem;
+                    }
+                </style>
+
+                <div class="vk-claims-root">
+                    <div class="vk-claims-grid" id="vk-claims-grid">
+                        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando claims...
+                        </div>
+                    </div>
+
+                    <!-- Detail Modal -->
+                    <div class="vk-claim-modal-overlay" id="vk-claim-modal-overlay">
+                        <div class="vk-claim-modal-card">
+                            <span class="vk-claim-modal-close" id="vk-claim-modal-close">&times;</span>
+                            <div class="vk-claim-layout">
+                                <div class="vk-claim-modal-media">
+                                    <img id="vk-claim-modal-img" src="" alt="Claim Image">
+                                    <div class="vk-claim-modal-timer" id="vk-claim-modal-timer">--:--:--</div>
+                                </div>
+                                <div>
+                                    <h2 id="vk-claim-modal-title" style="margin: 0 0 10px 0; font-size: 1.6rem; font-weight: 900; color: #ffffff;">-</h2>
+                                    <p id="vk-claim-modal-desc" style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px; white-space: pre-wrap; line-height: 1.4;"></p>
+
+                                    <div class="vk-claim-price-box">
+                                        <div>
+                                            <div style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Precio Claim</div>
+                                            <div class="vk-claim-price-val" id="vk-claim-modal-price">$0.00</div>
+                                        </div>
+                                    </div>
+
+                                    <div id="vk-claim-action-container">
+                                        <button class="vk-btn-claim-now" id="vk-btn-claim-now"><i class="fas fa-bolt"></i> ¡RECLAMAR AHORA!</button>
+                                    </div>
+
+                                    <div class="vk-claim-winner-box" id="vk-claim-winner-display">
+                                        <div style="font-size: 0.8rem; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 1px;">¡RECLAMADO POR!</div>
+                                        <div class="winner-name" id="vk-claim-winner-name">-</div>
+                                        <div class="winner-date" id="vk-claim-claimed-at">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        bindNativeEvents() {
+            const modalOverlay = this.querySelector('#vk-claim-modal-overlay');
+            const modalClose = this.querySelector('#vk-claim-modal-close');
+            const btnClaimNow = this.querySelector('#vk-btn-claim-now');
+
+            if (modalClose) {
+                modalClose.addEventListener('click', () => {
+                    modalOverlay?.classList.remove('active');
+                    this.activeModalClaimId = null;
+                });
+            }
+
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) {
+                        modalOverlay.classList.remove('active');
+                        this.activeModalClaimId = null;
+                    }
+                });
+            }
+
+            if (btnClaimNow) {
+                btnClaimNow.addEventListener('click', () => {
+                    if (this.activeModalClaimId) {
+                        this.handleClaimAction(this.activeModalClaimId);
+                    }
+                });
+            }
+        }
+
+        async loadClaims(targetClaimId) {
+            if (!this._supabase) return;
+
+            this.claimsMap = this.claimsMap || {};
+
+            try {
+                let query = this._supabase
+                    .from('claims')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (this.activeStoreId) {
+                    query = query.eq('user_id', this.activeStoreId);
+                }
+
+                if (targetClaimId) {
+                    query = query.eq('id', targetClaimId);
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                this.claimsMap = {};
+                if (data && Array.isArray(data)) {
+                    data.forEach(item => {
+                        if (item && item.id) {
+                            this.claimsMap[item.id] = item;
+                        }
+                    });
+                }
+
+                this.renderGrid();
+            } catch (err) {
+                console.error('[VikingdevClaims] Error cargando claims:', err);
+                const grid = this.querySelector('#vk-claims-grid');
+                if (grid) grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px;">Error al cargar claims.</div>`;
+            }
+        }
+
+        renderGrid() {
+            const grid = this.querySelector('#vk-claims-grid');
+            if (!grid) return;
+
+            grid.innerHTML = '';
+            const existingTimers = this.claimTimers || {};
+            Object.values(existingTimers).forEach(t => clearInterval(t));
+            this.claimTimers = {};
+
+            const claims = Object.values(this.claimsMap || {});
+            const filtered = claims.filter(c => c && c.status === 'Activa' || c.status === 'Reclamada');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 40px;">No hay claims disponibles en este momento.</div>`;
+                return;
+            }
+
+            filtered.forEach(c => {
+                const card = this.createCardElement(c);
+                grid.appendChild(card);
+                this.startTimer(c);
+            });
+        }
+
+        createCardElement(c) {
+            const isClaimed = c.status === 'Reclamada';
+            const firstImg = c.image_urls && c.image_urls.length > 0 ? c.image_urls[0] : 'https://via.placeholder.com/300x200?text=Sin+Imagen';
+
+            const card = document.createElement('div');
+            card.className = 'vk-claim-card';
+            card.id = `vk-claim-card-${c.id}`;
+
+            card.innerHTML = `
+                <div class="vk-claim-img-wrapper">
+                    <img src="${firstImg}" alt="${c.title || 'Claim'}">
+                    ${isClaimed ? '<div class="vk-claimed-stamp">RECLAMADO</div>' : ''}
+                    <div class="vk-claim-price-badge">$${c.price || '0.00'}</div>
+                </div>
+                <div class="vk-claim-info-overlay">
+                    <h3 class="vk-claim-title">${c.title || 'Producto Claim'}</h3>
+                    <div class="vk-claim-timer-mini" id="vk-claim-timer-${c.id}">
+                        <i class="fas fa-clock"></i> <span class="timer-countdown">--:--:--</span>
+                    </div>
+                    ${isClaimed ? `<div class="vk-claim-winner-info"><i class="fas fa-handshake"></i> Por: ${c.winner_name || 'Usuario'}</div>` : ''}
+                </div>
+            `;
+
+            card.addEventListener('click', () => this.openClaimModal(c.id));
+            return card;
+        }
+
+        startTimer(c) {
+            if (this.claimTimers[c.id]) clearInterval(this.claimTimers[c.id]);
+
+            const endDate = c.end_date ? new Date(c.end_date) : null;
+            const startDate = c.start_date ? new Date(c.start_date) : null;
+
+            if (!endDate && !startDate) {
+                const miniTimer = this.querySelector(`#vk-claim-timer-${c.id}`);
+                if (miniTimer) miniTimer.style.display = 'none';
+                return;
+            }
+
+            const update = () => {
+                const now = new Date().getTime();
+                const cardTimer = this.querySelector(`#vk-claim-timer-${c.id} .timer-countdown`);
+                const modalTimer = (this.activeModalClaimId === c.id) ? this.querySelector('#vk-claim-modal-timer') : null;
+
+                if (startDate && now < startDate.getTime()) {
+                    const dist = startDate.getTime() - now;
+                    const hours = Math.floor(dist / (1000 * 60 * 60));
+                    const minutes = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((dist % (1000 * 60)) / 1000);
+                    const str = `Inicia en ${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+                    if (cardTimer) { cardTimer.textContent = str; cardTimer.style.color = '#00d2ff'; }
+                    if (modalTimer) { modalTimer.textContent = str; modalTimer.style.color = '#00d2ff'; }
+                    return;
+                }
+
+                if (endDate) {
+                    const distance = endDate.getTime() - now;
+                    if (distance < 0) {
+                        if (cardTimer) { cardTimer.textContent = "FINALIZADO"; cardTimer.style.color = '#666'; }
+                        if (modalTimer) { modalTimer.textContent = "FINALIZADO"; modalTimer.style.color = '#666'; }
+                        clearInterval(this.claimTimers[c.id]);
+                        return;
+                    }
+
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                    if (cardTimer) { cardTimer.textContent = timeStr; cardTimer.style.color = '#ff4757'; }
+                    if (modalTimer) { modalTimer.textContent = timeStr; modalTimer.style.color = '#ff4757'; }
+                } else {
+                    if (cardTimer) { cardTimer.textContent = "ACTIVO"; cardTimer.style.color = '#00ff88'; }
+                    if (modalTimer) { modalTimer.textContent = "ACTIVO"; modalTimer.style.color = '#00ff88'; }
+                }
+            };
+
+            update();
+            this.claimTimers[c.id] = setInterval(update, 1000);
+        }
+
+        openClaimModal(claimId) {
+            const c = this.claimsMap[claimId];
+            if (!c) return;
+
+            this.activeModalClaimId = claimId;
+
+            const modalOverlay = this.querySelector('#vk-claim-modal-overlay');
+            const modalImg = this.querySelector('#vk-claim-modal-img');
+            const modalTitle = this.querySelector('#vk-claim-modal-title');
+            const modalDesc = this.querySelector('#vk-claim-modal-desc');
+
+            const firstImg = c.image_urls && c.image_urls.length > 0 ? c.image_urls[0] : 'https://via.placeholder.com/300x200?text=Sin+Imagen';
+
+            if (modalImg) modalImg.src = firstImg;
+            if (modalTitle) modalTitle.textContent = c.title || 'Producto Claim';
+            if (modalDesc) modalDesc.textContent = c.description || 'Sin descripción.';
+
+            this.updateModalClaimUI(claimId);
+            if (modalOverlay) modalOverlay.classList.add('active');
+        }
+
+        updateModalClaimUI(claimId) {
+            const c = this.claimsMap[claimId];
+            if (!c) return;
+
+            const isClaimed = c.status === 'Reclamada';
+
+            const priceEl = this.querySelector('#vk-claim-modal-price');
+            const actionContainer = this.querySelector('#vk-claim-action-container');
+            const winnerDisplay = this.querySelector('#vk-claim-winner-display');
+            const winnerNameEl = this.querySelector('#vk-claim-winner-name');
+            const claimedAtEl = this.querySelector('#vk-claim-claimed-at');
+
+            if (priceEl) priceEl.textContent = `$${c.price || '0.00'}`;
+
+            if (isClaimed) {
+                if (actionContainer) actionContainer.style.display = 'none';
+                if (winnerDisplay) winnerDisplay.style.display = 'block';
+                if (winnerNameEl) winnerNameEl.textContent = c.winner_name || 'Usuario';
+                if (claimedAtEl) claimedAtEl.textContent = c.claimed_at ? 'Reclamado el ' + new Date(c.claimed_at).toLocaleString() : 'Reclamado';
+            } else {
+                if (actionContainer) actionContainer.style.display = 'block';
+                if (winnerDisplay) winnerDisplay.style.display = 'none';
+            }
+
+            // Also update card element in real-time
+            const cardEl = this.querySelector(`#vk-claim-card-${claimId}`);
+            if (cardEl) {
+                const imgWrapper = cardEl.querySelector('.vk-claim-img-wrapper');
+                const infoOverlay = cardEl.querySelector('.vk-claim-info-overlay');
+
+                if (isClaimed) {
+                    if (imgWrapper && !imgWrapper.querySelector('.vk-claimed-stamp')) {
+                        const stamp = document.createElement('div');
+                        stamp.className = 'vk-claimed-stamp';
+                        stamp.textContent = 'RECLAMADO';
+                        imgWrapper.appendChild(stamp);
+                    }
+                    if (infoOverlay) {
+                        let winInfo = infoOverlay.querySelector('.vk-claim-winner-info');
+                        if (!winInfo) {
+                            winInfo = document.createElement('div');
+                            winInfo.className = 'vk-claim-winner-info';
+                            infoOverlay.appendChild(winInfo);
+                        }
+                        winInfo.innerHTML = `<i class="fas fa-handshake"></i> Por: ${c.winner_name || 'Usuario'}`;
+                    }
+                }
+            }
+        }
+
+        async handleClaimAction(claimId) {
+            const c = this.claimsMap[claimId];
+            if (!c) return;
+
+            // Detect active VikingTCG session user if not detected earlier
+            if (!this.currentUser) {
+                await this.detectCurrentUserSession();
+            }
+
+            if (!this.currentUser || !this.currentUser.id) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: '¿Quieres reclamar este producto?',
+                        text: 'Para participar y llevarte este producto, primero debes formar parte de VikingTCG.',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: '¡Entrar / Iniciar Sesión!',
+                        cancelButtonText: 'Tal vez luego',
+                        confirmButtonColor: '#00d2ff',
+                        cancelButtonColor: '#333'
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            const session = await this.checkCrossDomainSessionViaPopup();
+                            if (session) {
+                                await this.handleClaimAction(claimId);
+                            }
+                        }
+                    });
+                } else {
+                    const session = await this.checkCrossDomainSessionViaPopup();
+                    if (session) {
+                        await this.handleClaimAction(claimId);
+                    }
+                }
+                return;
+            }
+
+            let confirmClaim = true;
+            if (typeof Swal !== 'undefined') {
+                const result = await Swal.fire({
+                    title: '¿RECLAMAR AHORA?',
+                    text: 'Si eres el primero, el producto será tuyo.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '¡SÍ, LO QUIERO!',
+                    confirmButtonColor: '#00ff88',
+                    cancelButtonColor: '#333'
+                });
+                confirmClaim = result.isConfirmed;
+            }
+
+            if (!confirmClaim) return;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ title: 'Procesando reclamo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            }
+
+            try {
+                // Ensure Supabase client is authenticated before executing RPC
+                if (this._supabase) {
+                    const { data: { session: checkSession } } = await this._supabase.auth.getSession();
+                    if (!checkSession && this.currentUser) {
+                        const savedTokensStr = localStorage.getItem('viking_auth_tokens');
+                        if (savedTokensStr) {
+                            try {
+                                const parsedT = JSON.parse(savedTokensStr);
+                                if (parsedT?.access_token) {
+                                    await this._supabase.auth.setSession({
+                                        access_token: parsedT.access_token,
+                                        refresh_token: parsedT.refresh_token || ''
+                                    });
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                }
+
+                const claimantName = this.currentUser.store_name || this.currentUser.username || 'Usuario';
+                let { data, error } = await this._supabase.rpc('claim_product', {
+                    p_claim_id: claimId,
+                    p_claimant_id: this.currentUser.id,
+                    p_claimant_name: claimantName
+                });
+
+                // If error is RLS violation, attempt cross-domain auth refresh via popup and retry once
+                if (error && (error.message?.includes('row-level security') || error.code === '42501')) {
+                    console.warn('[VikingdevClaims] RLS violation detected. Prompting session refresh popup...');
+                    if (typeof Swal !== 'undefined') Swal.close();
+
+                    const refreshedSession = await this.checkCrossDomainSessionViaPopup();
+                    if (refreshedSession) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ title: 'Procesando reclamo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        }
+                        const retryRes = await this._supabase.rpc('claim_product', {
+                            p_claim_id: claimId,
+                            p_claimant_id: refreshedSession.id,
+                            p_claimant_name: refreshedSession.store_name || refreshedSession.username || claimantName
+                        });
+                        data = retryRes.data;
+                        error = retryRes.error;
+                    }
+                }
+
+                if (typeof Swal !== 'undefined') Swal.close();
+
+                if (error) throw error;
+
+                if (data === true) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: '¡FELICIDADES!',
+                            text: 'Has reclamado el producto con éxito. El vendedor te contactará pronto.',
+                            icon: 'success',
+                            confirmButtonColor: '#00ff88'
+                        });
+                    }
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('¡Muy lento!', 'Alguien más reclamó este producto justo antes que tú.', 'error');
+                    }
+                }
+
+                // Reload claims data immediately
+                await this.loadClaims(claimId);
+                if (this.activeModalClaimId) {
+                    this.updateModalClaimUI(this.activeModalClaimId);
+                }
+
+            } catch (err) {
+                console.error('[VikingdevClaims] Error al reclamar:', err);
+                if (typeof Swal !== 'undefined') Swal.fire('Error', 'No se pudo procesar el reclamo: ' + err.message, 'error');
+            }
+        }
+
+        subscribeToRealtime(userId) {
+            if (!this._supabase || !userId) return;
+
+            if (this._realtimeChannel) {
+                this._supabase.removeChannel(this._realtimeChannel);
+            }
+
+            this._realtimeChannel = this._supabase
+                .channel(`realtime-vk-claims-${userId}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'claims' }, async (payload) => {
+                    console.log('[VikingdevClaims] Cambio detectado en claims realtime:', payload);
+                    await this.loadClaims();
+                    if (this.activeModalClaimId) {
+                        this.updateModalClaimUI(this.activeModalClaimId);
+                    }
+                })
+                .subscribe();
+        }
+    }
+
+    if (!customElements.get('vikingdev-claims')) {
+        customElements.define('vikingdev-claims', VikingdevClaimsElement);
+    }
 })();
