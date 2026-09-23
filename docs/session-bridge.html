@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - VikingTCG Auth</title>
+    <title>Sincronización de Sesión - VikingTCG</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap">
     <style>
         * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
@@ -34,27 +35,45 @@
         .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4); }
         .error-msg { color: #ef4444; font-size: 0.8rem; margin-top: 12px; display: none; }
         .success-msg { color: #22c55e; font-size: 0.8rem; margin-top: 12px; display: none; }
+        .session-badge {
+            background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4);
+            padding: 14px; border-radius: 12px; color: #4ade80; font-size: 0.88rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px;
+        }
     </style>
 </head>
 <body>
     <div class="auth-card" id="auth-box">
         <img src="https://vikingtcg.xyz/favi.png" width="50" style="margin-bottom: 10px;" alt="VikingTCG">
-        <h2>VikingTCG Auth</h2>
-        <p>Inicia sesión con tu cuenta de VikingTCG para participar en las subastas.</p>
 
-        <form id="login-form">
-            <div class="input-group">
-                <label>Correo Electrónico / Usuario</label>
-                <input type="text" id="email-input" placeholder="tu@correo.com o usuario" required autocomplete="username">
+        <!-- Active Session Detected View -->
+        <div id="session-active-box" style="display: none;">
+            <h2 style="color: #22c55e; margin-bottom: 8px;"><i class="fas fa-check-circle"></i> ¡Sesión Activa!</h2>
+            <p style="margin-bottom: 12px;">Conectado como <strong id="logged-user-name" style="color: #38bdf8;">--</strong> en VikingTCG.</p>
+            <div class="session-badge">
+                <i class="fas fa-shield-alt"></i> Tu cuenta está autenticada para pujar.
             </div>
-            <div class="input-group">
-                <label>Contraseña</label>
-                <input type="password" id="password-input" placeholder="••••••••" required autocomplete="current-password">
-            </div>
-            <button type="submit" class="btn-auth" id="btn-submit">Iniciar Sesión</button>
-            <div class="error-msg" id="error-msg"></div>
-            <div class="success-msg" id="success-msg">¡Sesión iniciada correctamente!</div>
-        </form>
+        </div>
+
+        <!-- Login Form View (Only shown if no active session) -->
+        <div id="login-form-box">
+            <h2>VikingTCG Auth</h2>
+            <p>Inicia sesión con tu cuenta de VikingTCG para participar en las subastas.</p>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Correo Electrónico / Usuario</label>
+                    <input type="text" id="email-input" placeholder="tu@correo.com o usuario" required autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password-input" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn-auth" id="btn-submit">Iniciar Sesión</button>
+                <div class="error-msg" id="error-msg"></div>
+                <div class="success-msg" id="success-msg">¡Sesión iniciada correctamente!</div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -67,87 +86,123 @@
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             }
 
-            async function getVikingSession() {
-                try {
-                    var sessionStr = localStorage.getItem('tcg_session');
-                    if (sessionStr) {
-                        var parsed = JSON.parse(sessionStr);
-                        if (parsed && parsed.id) return parsed;
-                    }
-                    for (var i = 0; i < localStorage.length; i++) {
-                        var key = localStorage.key(i);
-                        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
-                            try {
-                                var val = JSON.parse(localStorage.getItem(key));
-                                var u = val?.user || val?.currentSession?.user;
-                                if (u && u.id) {
-                                    if (supabaseClient) {
-                                        var { data: prof } = await supabaseClient
-                                            .from('usuarios')
-                                            .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
-                                            .eq('id', u.id)
-                                            .maybeSingle();
-                                        if (prof) {
-                                            localStorage.setItem('tcg_session', JSON.stringify(prof));
-                                            return prof;
-                                        }
-                                    }
-                                    return u;
-                                }
-                            } catch(e) {}
-                        }
-                    }
+            async function getVikingSessionBundle() {
+                let userProfile = null;
+                let tokens = null;
 
+                try {
+                    // 1. Check Supabase Auth Client
                     if (supabaseClient) {
-                        var { data: { session: sbSession } } = await supabaseClient.auth.getSession();
-                        if (sbSession && sbSession.user && sbSession.user.id) {
-                            var { data: userProfile } = await supabaseClient
+                        const { data: { session: sbSession } } = await supabaseClient.auth.getSession();
+                        if (sbSession && sbSession.user) {
+                            tokens = {
+                                access_token: sbSession.access_token,
+                                refresh_token: sbSession.refresh_token
+                            };
+                            const { data: prof } = await supabaseClient
                                 .from('usuarios')
                                 .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
                                 .eq('id', sbSession.user.id)
                                 .maybeSingle();
-                            if (userProfile) {
-                                localStorage.setItem('tcg_session', JSON.stringify(userProfile));
-                                return userProfile;
+                            if (prof) {
+                                userProfile = prof;
+                            } else {
+                                userProfile = { id: sbSession.user.id, username: sbSession.user.email };
                             }
                         }
                     }
-                } catch(err) {}
+
+                    // 2. Check localStorage for Supabase Auth Tokens
+                    if (!tokens) {
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+                                try {
+                                    const val = JSON.parse(localStorage.getItem(key));
+                                    if (val?.access_token) {
+                                        tokens = {
+                                            access_token: val.access_token,
+                                            refresh_token: val.refresh_token
+                                        };
+                                        const userId = val.user?.id || val.currentSession?.user?.id;
+                                        if (userId && !userProfile && supabaseClient) {
+                                            const { data: prof } = await supabaseClient
+                                                .from('usuarios')
+                                                .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
+                                                .eq('id', userId)
+                                                .maybeSingle();
+                                            if (prof) userProfile = prof;
+                                        }
+                                        break;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
+
+                    // 3. Check tcg_session in localStorage
+                    if (!userProfile) {
+                        const sessionStr = localStorage.getItem('tcg_session');
+                        if (sessionStr) {
+                            try {
+                                const parsed = JSON.parse(sessionStr);
+                                if (parsed && parsed.id) userProfile = parsed;
+                            } catch(e) {}
+                        }
+                    }
+
+                    if (userProfile) {
+                        try { localStorage.setItem('tcg_session', JSON.stringify(userProfile)); } catch(e) {}
+                    }
+                } catch(err) {
+                    console.error('[SessionBridge] Error obteniendo sesión:', err);
+                }
+
+                if (userProfile) {
+                    return { session: userProfile, tokens: tokens };
+                }
                 return null;
             }
 
-            function notifyAndClose(sessionData) {
+            function notifyAndClose(bundle) {
+                if (!bundle || !bundle.session) return;
+
+                const name = bundle.session.store_name || bundle.session.username || 'Usuario';
+                document.getElementById('logged-user-name').textContent = name;
+                document.getElementById('session-active-box').style.display = 'block';
+                document.getElementById('login-form-box').style.display = 'none';
+
+                const responseMsg = {
+                    type: 'VIKING_SESSION_RESPONSE',
+                    session: bundle.session,
+                    tokens: bundle.tokens
+                };
+
                 if (window.opener && window.opener !== window) {
-                    try {
-                        window.opener.postMessage({
-                            type: 'VIKING_SESSION_RESPONSE',
-                            session: sessionData
-                        }, '*');
-                    } catch(e) {}
-                    setTimeout(function() {
+                    try { window.opener.postMessage(responseMsg, '*'); } catch(e) {}
+                    setTimeout(() => {
                         try { window.close(); } catch(e) {}
-                    }, 400);
+                    }, 600);
                 }
 
                 if (window.parent && window.parent !== window) {
-                    try {
-                        window.parent.postMessage({
-                            type: 'VIKING_SESSION_RESPONSE',
-                            session: sessionData
-                        }, '*');
-                    } catch(e) {}
+                    try { window.parent.postMessage(responseMsg, '*'); } catch(e) {}
                 }
             }
 
             async function checkAndNotify() {
-                var session = await getVikingSession();
-                if (session) {
-                    notifyAndClose(session);
+                const bundle = await getVikingSessionBundle();
+                if (bundle && bundle.session) {
+                    notifyAndClose(bundle);
+                } else {
+                    document.getElementById('session-active-box').style.display = 'none';
+                    document.getElementById('login-form-box').style.display = 'block';
                 }
             }
+
             checkAndNotify();
 
-            // Handle login submission
+            // Handle manual login submission
             document.getElementById('login-form').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const emailOrUser = document.getElementById('email-input').value.trim();
@@ -163,7 +218,6 @@
                 try {
                     let email = emailOrUser;
 
-                    // If input is not email, lookup email from usuarios table
                     if (!emailOrUser.includes('@') && supabaseClient) {
                         const { data: userRow } = await supabaseClient
                             .from('usuarios')
@@ -172,7 +226,7 @@
                             .maybeSingle();
 
                         if (userRow) {
-                            email = emailOrUser + '@vikingtcg.com'; // Fallback
+                            email = emailOrUser + '@vikingtcg.com';
                         }
                     }
 
@@ -184,7 +238,7 @@
 
                         if (authErr) throw authErr;
 
-                        if (authData?.user) {
+                        if (authData?.user && authData?.session) {
                             const { data: userProfile } = await supabaseClient
                                 .from('usuarios')
                                 .select('id, username, store_name, store_logo, is_store, role, whatsapp_link, messenger_link, auction_reset_date, monthly_created_count, monthly_bid_count')
@@ -196,7 +250,14 @@
 
                             successEl.style.display = 'block';
                             btn.textContent = '¡Iniciado!';
-                            notifyAndClose(sessionObj);
+
+                            notifyAndClose({
+                                session: sessionObj,
+                                tokens: {
+                                    access_token: authData.session.access_token,
+                                    refresh_token: authData.session.refresh_token
+                                }
+                            });
                             return;
                         }
                     }
@@ -211,11 +272,12 @@
 
             window.addEventListener('message', async function(event) {
                 if (event.data && event.data.type === 'REQUEST_VIKING_SESSION') {
-                    var s = await getVikingSession();
-                    if (event.source) {
+                    const bundle = await getVikingSessionBundle();
+                    if (event.source && bundle) {
                         event.source.postMessage({
                             type: 'VIKING_SESSION_RESPONSE',
-                            session: s
+                            session: bundle.session,
+                            tokens: bundle.tokens
                         }, '*');
                     }
                 }

@@ -1,8 +1,8 @@
-LO QUE SE HIZO:
-1. Se actualizó docs/session-bridge.html para que detecte la sesión activa de Supabase Auth en vikingtcg.xyz automáticamente (`supabase.auth.getSession()`), además de `localStorage.getItem('tcg_session')`. Si el usuario ya tiene sesión iniciada en vikingtcg.xyz, no le vuelve a pedir login y se cierra la ventana enviando los datos inmediatamente.
-2. En el widget (<vikingdev-subastas>), si el usuario no tiene sesión guardada en el dominio externo y da click en pujar, abre la ventana de session-bridge.html. Si ya estaba logueado en vikingtcg.xyz, la ventana se cierra sola de inmediato al sincronizar la sesión.
-3. Se eliminó el botón "Pujar Libre", dejando únicamente el campo de texto que puja al presionar Enter.
+LO QUE SE HIZO PARA SOLUCIONAR EL ERROR DE RLS:
+1. Se actualizó docs/session-bridge.html y docs/js/viking-widget.js para transferir no solo el perfil de usuario, sino también los tokens JWT de sesión de Supabase Auth (`access_token` y `refresh_token`).
+2. Al recibir la sesión en el widget externo, se ejecuta inmediatamente `_supabase.auth.setSession({ access_token, refresh_token })`, autenticando al cliente de Supabase local con el token oficial del usuario logueado en vikingtcg.xyz.
+3. Con esto, las peticiones de inserción a la tabla `subastas_pujas` viajan con las credenciales de usuario autenticado (`auth.role() = 'authenticated'`), eliminando el error de violacion de política RLS ("new row violates row-level security policy for table 'subastas_pujas'").
 
-LO QUE HACE FALTA PARA QUE RECONOZCA LA SESIÓN AUTOMÁTICAMENTE:
-- Al estar en un dominio externo (ej. 127.0.0.1 o tudominio.com), los navegadores (Chrome/Edge) bloquean la lectura silenciosa de localStorage entre dominios diferentes (iframe).
-- Por este motivo, el primer click en pujar abre una popup de 1 segundo a https://vikingtcg.xyz/session-bridge.html. Si el usuario YA TIENE sesión en vikingtcg.xyz, la ventana se cierra en menos de 1 segundo sin pedir contraseña y activa la puja en el sitio externo.
+LO QUE HACE FALTA/EXPLICACIÓN DE FUNCIONAMIENTO EN CUALQUIER DOMINIO:
+- Por restricciones de privacidad de los navegadores (Chrome/Edge Storage Partitioning), un iframe embebido en un dominio de terceros (ej. localhost o cliente.com) no puede leer directamente el localStorage de vikingtcg.xyz sin interacción previa.
+- Por ello, la primera vez que un usuario da click en pujar desde un dominio externo, se abre la ventana emergente corta (session-bridge.html). Si el usuario YA ESTÁ logueado en vikingtcg.xyz en ese navegador, la ventana SE CIERRA AUTOMÁTICAMENTE EN MENOS DE 1 SEGUNDO (mostrando "¡Sesión Activa!"), sincroniza el token y permite realizar la puja sin pedir contraseña.
