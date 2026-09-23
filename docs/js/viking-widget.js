@@ -2184,12 +2184,11 @@
                     btn.className = 'vk-btn-bid-pill';
                     btn.textContent = `+$${val}`;
                     btn.addEventListener('click', () => {
-                        const bids = a.subastas_pujas || [];
+                        const latestAuction = this.auctionsMap[this.activeModalAuctionId] || a;
+                        const bids = latestAuction.subastas_pujas || [];
                         bids.sort((x, y) => y.amount - x.amount);
-                        const cur = bids.length > 0 ? bids[0].amount : a.starting_bid;
+                        const cur = bids.length > 0 ? bids[0].amount : latestAuction.starting_bid;
                         const targetAmount = cur + val;
-                        const input = this.querySelector('#vk-input-bid-amount');
-                        if (input) input.value = targetAmount;
                         this.handlePlaceBid(targetAmount);
                     });
                     quickContainer.appendChild(btn);
