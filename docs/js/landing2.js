@@ -118,6 +118,12 @@ $(document).ready(async function() {
                 .single();
 
             localStorage.setItem('tcg_session', JSON.stringify(profile));
+            if (data?.session?.access_token) {
+                localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                    access_token: data.session.access_token,
+                    refresh_token: data.session.refresh_token || ''
+                }));
+            }
             Swal.fire({
                 title: '¡Bienvenido!',
                 text: 'Has iniciado sesión correctamente',
@@ -254,6 +260,12 @@ $(document).ready(async function() {
 
             if (!user) return;
             localStorage.setItem('tcg_session', JSON.stringify(user));
+            if (session.access_token) {
+                localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                    access_token: session.access_token,
+                    refresh_token: session.refresh_token || ''
+                }));
+            }
 
             if (user.is_store) {
                 $('#dropdown-user-logo').show().attr('src', user.store_logo || 'https://midominio.com/placeholder-logo.png');
@@ -278,6 +290,7 @@ $(document).ready(async function() {
         e.preventDefault();
         await _supabase.auth.signOut();
         localStorage.removeItem('tcg_session');
+        localStorage.removeItem('viking_auth_tokens');
         location.reload();
     });
 

@@ -1332,8 +1332,9 @@
                             try {
                                 await this._supabase.auth.setSession({
                                     access_token: tokens.access_token,
-                                    refresh_token: tokens.refresh_token
+                                    refresh_token: tokens.refresh_token || ''
                                 });
+                                localStorage.setItem('viking_auth_tokens', JSON.stringify(tokens));
                             } catch(e) {}
                         }
 
@@ -1363,16 +1364,35 @@
             try {
                 let detectedUserId = null;
 
-                // 1. Check local domain localStorage for tcg_session or Supabase auth tokens
-                const stored = localStorage.getItem('tcg_session');
-                if (stored) {
+                // 1. Check local viking_auth_tokens and set session in Supabase client
+                const savedTokensStr = localStorage.getItem('viking_auth_tokens');
+                if (savedTokensStr && this._supabase) {
                     try {
-                        const parsed = JSON.parse(stored);
-                        if (parsed?.id) {
-                            detectedUserId = parsed.id;
-                            this.currentUser = parsed;
+                        const parsedT = JSON.parse(savedTokensStr);
+                        if (parsedT?.access_token) {
+                            const { data: setData } = await this._supabase.auth.setSession({
+                                access_token: parsedT.access_token,
+                                refresh_token: parsedT.refresh_token || ''
+                            });
+                            if (setData?.user?.id) {
+                                detectedUserId = setData.user.id;
+                            }
                         }
                     } catch(e) {}
+                }
+
+                // 2. Check local domain localStorage for tcg_session
+                if (!detectedUserId) {
+                    const stored = localStorage.getItem('tcg_session');
+                    if (stored) {
+                        try {
+                            const parsed = JSON.parse(stored);
+                            if (parsed?.id) {
+                                detectedUserId = parsed.id;
+                                this.currentUser = parsed;
+                            }
+                        } catch(e) {}
+                    }
                 }
 
                 if (!detectedUserId) {
@@ -1384,6 +1404,18 @@
                                 const uid = val?.user?.id || val?.currentSession?.user?.id;
                                 if (uid) {
                                     detectedUserId = uid;
+                                    if (val?.access_token && this._supabase) {
+                                        try {
+                                            await this._supabase.auth.setSession({
+                                                access_token: val.access_token,
+                                                refresh_token: val.refresh_token || ''
+                                            });
+                                            localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                                                access_token: val.access_token,
+                                                refresh_token: val.refresh_token || ''
+                                            }));
+                                        } catch(e) {}
+                                    }
                                     break;
                                 }
                             } catch(e) {}
@@ -1391,15 +1423,21 @@
                     }
                 }
 
-                // 2. Check local Supabase client auth session
+                // 3. Check active Supabase client auth session
                 if (!detectedUserId && this._supabase) {
                     const { data: { session } } = await this._supabase.auth.getSession();
                     if (session?.user?.id) {
                         detectedUserId = session.user.id;
+                        try {
+                            localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                                access_token: session.access_token,
+                                refresh_token: session.refresh_token || ''
+                            }));
+                        } catch(e) {}
                     }
                 }
 
-                // 3. Cross-origin session bridge via iframe to vikingtcg.xyz
+                // 4. Cross-origin session bridge via iframe to vikingtcg.xyz
                 if (!detectedUserId && window.location.hostname !== 'vikingtcg.xyz') {
                     await new Promise((resolve) => {
                         let iframe = document.getElementById('viking-session-bridge-iframe');
@@ -1413,14 +1451,16 @@
                                     try {
                                         await this._supabase.auth.setSession({
                                             access_token: tokens.access_token,
-                                            refresh_token: tokens.refresh_token
+                                            refresh_token: tokens.refresh_token || ''
                                         });
+                                        localStorage.setItem('viking_auth_tokens', JSON.stringify(tokens));
                                     } catch(e) {}
                                 }
 
                                 if (session && session.id) {
                                     detectedUserId = session.id;
                                     this.currentUser = session;
+                                    try { localStorage.setItem('tcg_session', JSON.stringify(session)); } catch(e) {}
                                 }
                                 resolve();
                             }
@@ -2286,12 +2326,51 @@
                     Swal.fire({ title: 'Procesando puja...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 }
 
-                const { error } = await this._supabase.from('subastas_pujas').insert([{
+                // Ensure Supabase client is authenticated before inserting
+                if (this._supabase) {
+                    const { data: { session: checkSession } } = await this._supabase.auth.getSession();
+                    if (!checkSession && this.currentUser) {
+                        const savedTokensStr = localStorage.getItem('viking_auth_tokens');
+                        if (savedTokensStr) {
+                            try {
+                                const parsedT = JSON.parse(savedTokensStr);
+                                if (parsedT?.access_token) {
+                                    await this._supabase.auth.setSession({
+                                        access_token: parsedT.access_token,
+                                        refresh_token: parsedT.refresh_token || ''
+                                    });
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                }
+
+                let { error } = await this._supabase.from('subastas_pujas').insert([{
                     subasta_id: a.id,
                     bidder_id: this.currentUser.id,
                     bidder_name: bidderName,
                     amount: amount
                 }]);
+
+                // If error is RLS violation, attempt cross-domain auth refresh via popup and retry once
+                if (error && (error.message?.includes('row-level security') || error.code === '42501')) {
+                    console.warn('[VikingdevSubastas] RLS violation detected. Prompting session refresh popup...');
+                    if (typeof Swal !== 'undefined') Swal.close();
+
+                    const refreshedSession = await this.checkCrossDomainSessionViaPopup();
+                    if (refreshedSession) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ title: 'Procesando puja...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        }
+                        const retryRes = await this._supabase.from('subastas_pujas').insert([{
+                            subasta_id: a.id,
+                            bidder_id: refreshedSession.id,
+                            bidder_name: refreshedSession.store_name || refreshedSession.username || bidderName,
+                            amount: amount
+                        }]);
+                        error = retryRes.error;
+                    }
+                }
 
                 if (typeof Swal !== 'undefined') Swal.close();
 

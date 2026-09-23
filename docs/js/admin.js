@@ -1953,6 +1953,12 @@ async function checkSession() {
             if (user) {
                 currentUser = user;
                 localStorage.setItem('tcg_session', JSON.stringify(user));
+                if (session.access_token) {
+                    localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                        access_token: session.access_token,
+                        refresh_token: session.refresh_token || ''
+                    }));
+                }
                 showAuthenticatedContent();
                 return;
             } else if (error) {
@@ -2017,6 +2023,12 @@ async function handleLogin() {
 
         currentUser = profile;
         localStorage.setItem('tcg_session', JSON.stringify(profile));
+        if (data?.session?.access_token) {
+            localStorage.setItem('viking_auth_tokens', JSON.stringify({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token || ''
+            }));
+        }
         // Use relative path for better offline/local support
         window.location.href = './admin.html';
     }
@@ -2026,6 +2038,7 @@ async function handleLogout() {
     await _supabase.auth.signOut();
     currentUser = null;
     localStorage.removeItem('tcg_session');
+    localStorage.removeItem('viking_auth_tokens');
     location.reload();
 }
 
