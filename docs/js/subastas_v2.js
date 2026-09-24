@@ -49,16 +49,9 @@ $(document).ready(async function() {
         }
     });
 
-    flatpickr(".time-picker-simple", {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "h:i A",
-        time_24hr: false,
-        allowInput: false,
-        disableMobile: true,
-        onOpen: function(selectedDates, dateStr, instance) {
-            if (window.innerWidth <= 768) instance.element.blur();
-        }
+    $(document).on('click', '.time-picker-simple', function(e) {
+        e.preventDefault();
+        window.openCustomTimePickerModal(this);
     });
 
     // Drop zones (using delegation for better mobile click support)
@@ -272,19 +265,17 @@ window.editAuctionFromCard = async (id, isLive) => {
     const deliveryDateFp = document.querySelector("#auction-delivery-date")._flatpickr;
     if (deliveryDateFp && auctionData.delivery_date) deliveryDateFp.setDate(parseDateSafe(auctionData.delivery_date));
 
-    const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
-    const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
-    if (startTimeFp && auctionData.delivery_time_start) {
+    if (auctionData.delivery_time_start) {
         let val = auctionData.delivery_time_start;
         if (val.endsWith(' A')) val = val.replace(/ A$/, ' AM');
         if (val.endsWith(' P')) val = val.replace(/ P$/, ' PM');
-        startTimeFp.setDate(val, false, "h:i A");
+        $('#auction-delivery-time-start').val(val);
     }
-    if (endTimeFp && auctionData.delivery_time_end) {
+    if (auctionData.delivery_time_end) {
         let val = auctionData.delivery_time_end;
         if (val.endsWith(' A')) val = val.replace(/ A$/, ' AM');
         if (val.endsWith(' P')) val = val.replace(/ P$/, ' PM');
-        endTimeFp.setDate(val, false, "h:i A");
+        $('#auction-delivery-time-end').val(val);
     }
 
     $('#auction-description').val(auctionData.description || '');
@@ -398,10 +389,8 @@ function resetModalFields() {
     $('#auction-delivery-place').val('');
     const deliveryDateFp = document.querySelector("#auction-delivery-date")._flatpickr;
     if (deliveryDateFp) deliveryDateFp.clear();
-    const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
-    const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
-    if (startTimeFp) startTimeFp.clear();
-    if (endTimeFp) endTimeFp.clear();
+    $('#auction-delivery-time-start').val('');
+    $('#auction-delivery-time-end').val('');
 
     const now = new Date();
     const end = new Date(now.getTime() + (24 * 60 * 60 * 1000));
@@ -517,3 +506,145 @@ async function deleteLiveAuction(id) {
         }
     }
 }
+
+window.openCustomTimePickerModal = function(inputElement) {
+    const $input = $(inputElement);
+    let currentVal = $input.val().trim();
+
+    let selectedHour = "10";
+    let selectedMin = "00";
+    let selectedMeridiem = "AM";
+
+    if ($input.attr('id') === 'auction-delivery-time-end') {
+        selectedHour = "06";
+        selectedMin = "00";
+        selectedMeridiem = "PM";
+    }
+
+    if (currentVal) {
+        const match = currentVal.match(/^(\d{1,2}):(\d{2})\s*(AM|PM|A|P)?/i);
+        if (match) {
+            let h = parseInt(match[1], 10);
+            if (h >= 1 && h <= 12) selectedHour = String(h).padStart(2, '0');
+            selectedMin = match[2];
+            if (match[3]) {
+                selectedMeridiem = match[3].toUpperCase().startsWith('P') ? 'PM' : 'AM';
+            }
+        }
+    }
+
+    const hours = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    const mins = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+
+    function buildPills(items, selectedVal, type) {
+        return items.map(item => {
+            const activeClass = (item === selectedVal) ? 'active' : '';
+            return `<button type="button" class="swal-time-pill ${type}-pill ${activeClass}" data-val="${item}">${item}</button>`;
+        }).join('');
+    }
+
+    const html = `
+        <div class="swal-time-picker-container">
+            <div id="swal-time-preview" style="font-size: 2.2rem; font-weight: 900; color: #e67e22; margin-bottom: 20px; background: #fdfdfd; padding: 12px; border-radius: 16px; border: 2px solid #f0f0f0;">
+                <span id="swal-preview-hour">${selectedHour}</span>:<span id="swal-preview-min">${selectedMin}</span> <span id="swal-preview-meridiem">${selectedMeridiem}</span>
+            </div>
+
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="font-size: 0.75rem; font-weight: 800; color: #888; text-transform: uppercase; display: block; margin-bottom: 8px;">HORA</label>
+                <div class="swal-time-grid" id="swal-hour-grid">
+                    ${buildPills(hours, selectedHour, 'hour')}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="font-size: 0.75rem; font-weight: 800; color: #888; text-transform: uppercase; display: block; margin-bottom: 8px;">MINUTOS</label>
+                <div class="swal-time-grid" id="swal-min-grid">
+                    ${buildPills(mins, selectedMin, 'min')}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px; text-align: left;">
+                <label style="font-size: 0.75rem; font-weight: 800; color: #888; text-transform: uppercase; display: block; margin-bottom: 8px;">PERIODO</label>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="swal-time-pill meridiem-pill ${selectedMeridiem === 'AM' ? 'active' : ''}" data-val="AM" style="flex: 1; padding: 12px; font-size: 1.1rem;">AM</button>
+                    <button type="button" class="swal-time-pill meridiem-pill ${selectedMeridiem === 'PM' ? 'active' : ''}" data-val="PM" style="flex: 1; padding: 12px; font-size: 1.1rem;">PM</button>
+                </div>
+            </div>
+        </div>
+        <style>
+            .swal-time-grid {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 8px;
+            }
+            @media (max-width: 480px) {
+                .swal-time-grid {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+            }
+            .swal-time-pill {
+                background: #f8f9fa;
+                border: 2px solid #e9ecef;
+                color: #333;
+                border-radius: 12px;
+                padding: 10px 4px;
+                font-size: 0.95rem;
+                font-weight: 800;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .swal-time-pill:hover {
+                background: #f1f3f5;
+                border-color: #ced4da;
+            }
+            .swal-time-pill.active {
+                background: #e67e22 !important;
+                border-color: #e67e22 !important;
+                color: #ffffff !important;
+                box-shadow: 0 4px 10px rgba(230, 126, 34, 0.3);
+            }
+        </style>
+    `;
+
+    Swal.fire({
+        title: 'AJUSTAR HORA',
+        html: html,
+        showCancelButton: true,
+        confirmButtonText: 'ACEPTAR',
+        cancelButtonText: 'CANCELAR',
+        confirmButtonColor: '#e67e22',
+        cancelButtonColor: '#adb5bd',
+        customClass: {
+            popup: 'swal-time-picker-popup'
+        },
+        didOpen: (el) => {
+            const $popup = $(el);
+
+            $popup.on('click', '.hour-pill', function() {
+                $popup.find('.hour-pill').removeClass('active');
+                $(this).addClass('active');
+                selectedHour = $(this).data('val');
+                $popup.find('#swal-preview-hour').text(selectedHour);
+            });
+
+            $popup.on('click', '.min-pill', function() {
+                $popup.find('.min-pill').removeClass('active');
+                $(this).addClass('active');
+                selectedMin = $(this).data('val');
+                $popup.find('#swal-preview-min').text(selectedMin);
+            });
+
+            $popup.on('click', '.meridiem-pill', function() {
+                $popup.find('.meridiem-pill').removeClass('active');
+                $(this).addClass('active');
+                selectedMeridiem = $(this).data('val');
+                $popup.find('#swal-preview-meridiem').text(selectedMeridiem);
+            });
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const finalVal = `${selectedHour}:${selectedMin} ${selectedMeridiem}`;
+            $input.val(finalVal).trigger('change');
+        }
+    });
+};
