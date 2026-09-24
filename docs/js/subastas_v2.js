@@ -46,9 +46,6 @@ $(document).ready(async function() {
         disableMobile: true,
         onOpen: function(selectedDates, dateStr, instance) {
             if (window.innerWidth <= 768) instance.element.blur();
-        },
-        onClose: function(selectedDates, dateStr, instance) {
-            instance.input.value = dateStr.replace('AM', 'A').replace('PM', 'P');
         }
     });
 
