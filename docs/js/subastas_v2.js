@@ -57,13 +57,10 @@ $(document).ready(async function() {
         noCalendar: true,
         dateFormat: "h:i A",
         time_24hr: false,
-        allowInput: true,
+        allowInput: false,
         disableMobile: true,
         onOpen: function(selectedDates, dateStr, instance) {
             if (window.innerWidth <= 768) instance.element.blur();
-        },
-        onClose: function(selectedDates, dateStr, instance) {
-            instance.input.value = dateStr.replace('AM', 'A').replace('PM', 'P');
         }
     });
 
@@ -281,14 +278,16 @@ window.editAuctionFromCard = async (id, isLive) => {
     const startTimeFp = document.querySelector("#auction-delivery-time-start")._flatpickr;
     const endTimeFp = document.querySelector("#auction-delivery-time-end")._flatpickr;
     if (startTimeFp && auctionData.delivery_time_start) {
-        let val = auctionData.delivery_time_start.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+        let val = auctionData.delivery_time_start;
+        if (val.endsWith(' A')) val = val.replace(/ A$/, ' AM');
+        if (val.endsWith(' P')) val = val.replace(/ P$/, ' PM');
         startTimeFp.setDate(val, false, "h:i A");
-        startTimeFp.input.value = startTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
     if (endTimeFp && auctionData.delivery_time_end) {
-        let val = auctionData.delivery_time_end.replace(/ A$/, ' AM').replace(/ P$/, ' PM');
+        let val = auctionData.delivery_time_end;
+        if (val.endsWith(' A')) val = val.replace(/ A$/, ' AM');
+        if (val.endsWith(' P')) val = val.replace(/ P$/, ' PM');
         endTimeFp.setDate(val, false, "h:i A");
-        endTimeFp.input.value = endTimeFp.input.value.replace('AM', 'A').replace('PM', 'P');
     }
 
     $('#auction-description').val(auctionData.description || '');
