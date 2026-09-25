@@ -1,0 +1,78 @@
+==============================================================================
+GUÍA DE CONFIGURACIÓN Y DESPLIEGUE - PAGOS ONLINE Y SUSCRIPCIONES STRIPE
+==============================================================================
+
+1. NOMBRES EXACTOS DE LAS EDGE FUNCTIONS
+------------------------------------------------------------------------------
+En la carpeta `supabase/functions/` se han creado dos Edge Functions:
+  - create-checkout-session  (Genera la sesión de Stripe Checkout)
+  - stripe-webhook           (Recibe las notificaciones automáticas de pago)
+
+
+2. NOMBRES EXACTOS DE LOS SECRETS / VARIABLES DE ENTORNO EN SUPABASE
+------------------------------------------------------------------------------
+Debes agregar los siguientes Secrets en tu proyecto de Supabase:
+
+  • STRIPE_SECRET_KEY
+    Tu clave secreta de Stripe Dashboard -> Developers -> API Keys.
+    Ejemplo: sk_live_51M... o sk_test_51M...
+
+  • STRIPE_PRICE_ID
+    El ID del precio correspondiente al Plan o Producto mensual de tus Widgets
+    creado en Stripe Dashboard -> Products -> Tu Producto -> Price ID.
+    Ejemplo: price_1Q...
+
+  • STRIPE_WEBHOOK_SECRET
+    La clave secreta para validar la firma de los eventos del Webhook.
+    Se obtiene al agregar el Webhook en Stripe Dashboard -> Developers -> Webhooks.
+    Ejemplo: whsec_...
+
+
+3. COMANDOS PARA GUARDAR SECRETS Y DESPLEGAR LAS EDGE FUNCTIONS
+------------------------------------------------------------------------------
+Abre la terminal en la raíz de tu proyecto e ingresa:
+
+  # 1. Configurar los secrets en Supabase:
+  supabase secrets set STRIPE_SECRET_KEY=sk_live_TU_CLAVE_AQUI
+  supabase secrets set STRIPE_PRICE_ID=price_TU_PRICE_ID_AQUI
+  supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_TU_WEBHOOK_SECRET_AQUI
+
+  # 2. Desplegar la función que crea la sesión de pago:
+  supabase functions deploy create-checkout-session
+
+  # 3. Desplegar la función que procesa los webhooks de Stripe:
+  supabase functions deploy stripe-webhook
+
+
+4. CONFIGURACIÓN DEL WEBHOOK EN EL DASHBOARD DE STRIPE
+------------------------------------------------------------------------------
+1. Ve a Stripe Dashboard -> Developers -> Webhooks -> Add endpoint.
+2. En "Endpoint URL", ingresa la URL de tu Edge Function de Supabase:
+   https://<TU-REF-PROYECTO-SUPABASE>.supabase.co/functions/v1/stripe-webhook
+3. En "Select events to listen to", selecciona los siguientes eventos:
+     - checkout.session.completed
+     - customer.subscription.updated
+     - customer.subscription.deleted
+     - invoice.payment_succeeded
+     - invoice.payment_failed
+4. Guarda el endpoint y copia la "Signing secret" (empieza con whsec_...) para colocarla en el secret STRIPE_WEBHOOK_SECRET de Supabase.
+
+
+5. MIGRACIÓN DE BASE DE DATOS (SQL)
+------------------------------------------------------------------------------
+Ejecuta el script SQL ubicado en `docs/add_stripe_subscriptions.sql` en el SQL Editor de tu proyecto de Supabase. Este script agregará las columnas necesarias a la tabla `usuarios`:
+  - subscription_status (active, past_due, canceled, unpaid, inactive)
+  - stripe_customer_id
+  - stripe_subscription_id
+  - subscription_end
+
+
+6. FLUJO AUTOMÁTICO DE VALIDACIÓN
+------------------------------------------------------------------------------
+1. El usuario entra a widgets.html o perfil.html, ingresa su dominio y da clic en "Pagar Mensualidad con Stripe".
+2. La Edge Function `create-checkout-session` redirige al usuario a la pasarela oficial de Stripe Checkout.
+3. Al completar el pago, Stripe notifica inmediatamente al Webhook `stripe-webhook`.
+4. El Webhook actualiza `subscription_status = 'active'` en la tabla `usuarios` y activa el dominio del usuario en `widget_domains`.
+5. Todos los widgets (`vikingdev-chatbot`, `vikingdev-binder`, `vikingdev-subastas`, `vikingdev-claims`) insertados en su dominio funcionarán inmediatamente.
+6. Si el usuario deja de pagar o cancela la suscripción mensual, el Webhook cambiará el estado a `canceled` o `past_due`, y los widgets se bloquearán automáticamente mostrando un aviso de renovación de suscripción requerida.
+==============================================================================

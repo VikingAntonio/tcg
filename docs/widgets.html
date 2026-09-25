@@ -162,6 +162,47 @@
                 <a href="admin.html" class="btn-back-clean">Volver al Panel</a>
             </div>
 
+            <!-- Subscription & Payment Card -->
+            <div class="subscription-card" style="width: 100%; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 24px; padding: 24px; backdrop-filter: blur(16px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-credit-card" style="font-size: 1.5rem; color: #38bdf8;"></i>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #f8fafc;">Estado de Suscripción Mensual</h3>
+                            <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">Para que tus widgets funcionen en tu dominio, mantén activa tu mensualidad.</div>
+                        </div>
+                    </div>
+                    <div id="sub-status-badge" style="padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 0.85rem; text-transform: uppercase; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">
+                        <i class="fas fa-circle-xmark"></i> Inactiva
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
+                    <button type="button" id="btn-pay-stripe" onclick="payStripeSubscription()" style="background: linear-gradient(135deg, #6366f1, #0ea5e9); color: #fff; border: none; padding: 12px 24px; border-radius: 14px; font-weight: 800; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);">
+                        <i class="fab fa-stripe-s" style="font-size: 1.1rem;"></i> Pagar Mensualidad con Stripe
+                    </button>
+                    <span style="font-size: 0.78rem; color: #64748b;">Pago seguro en línea con tarjeta vía Stripe Checkout.</span>
+                </div>
+            </div>
+
+            <!-- Domain Configuration Card -->
+            <div class="domain-config-card" style="width: 100%; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 24px; padding: 24px; backdrop-filter: blur(16px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-globe" style="font-size: 1.5rem; color: #38bdf8;"></i>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #f8fafc;">Dominio Autorizado</h3>
+                        <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">Ingresa el dominio exacto donde vas a pegar el código de tus widgets.</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="input-widgets-domain" placeholder="Ej: misitio.com" style="flex: 1; min-width: 220px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px 16px; color: #f8fafc; font-family: 'Montserrat', sans-serif; font-size: 0.9rem; outline: none;">
+                    <button type="button" id="btn-save-widgets-domain" onclick="saveWidgetDomain()" style="background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; padding: 12px 20px; border-radius: 12px; font-weight: 800; font-size: 0.88rem; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-save"></i> Guardar Dominio
+                    </button>
+                </div>
+            </div>
+
             <div class="widgets-buttons-wrapper">
                 <button class="btn-widget-copy" onclick="copyWidgetSnippet('chatbot')">Chatbot</button>
                 <button class="btn-widget-copy" onclick="copyWidgetSnippet('binders')">Binders</button>
@@ -181,9 +222,12 @@
             claims: ''
         };
 
+        let currentUserId = null;
+
         $(document).ready(async function() {
             initTheme();
             await checkSession();
+            checkUrlPaymentStatus();
 
             // Theme click listeners
             $(document).on('click', '.theme-btn-small[data-theme]', function() {
@@ -212,6 +256,28 @@
             });
         });
 
+        function checkUrlPaymentStatus() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const payment = urlParams.get('payment');
+            if (payment === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Pago Completado!',
+                    text: 'Tu suscripción mensual ha sido procesada con éxito y tus widgets han sido activados.',
+                    confirmButtonColor: '#38bdf8'
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (payment === 'canceled') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Pago Cancelado',
+                    text: 'No se completó el pago de la mensualidad.',
+                    confirmButtonColor: '#38bdf8'
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
         async function checkSession() {
             if (typeof _supabase === 'undefined') return;
             const { data: { session } } = await _supabase.auth.getSession();
@@ -221,9 +287,11 @@
             }
 
             const uid = session.user.id;
+            currentUserId = uid;
+
             const { data: user } = await _supabase
                 .from('usuarios')
-                .select('id, username, store_name, store_logo, custom_domain, role')
+                .select('id, username, store_name, store_logo, custom_domain, role, subscription_status')
                 .eq('id', uid)
                 .single();
 
@@ -234,12 +302,107 @@
                 } else {
                     $('#dropdown-user-logo').hide();
                 }
+
+                if (user.custom_domain) {
+                    $('#input-widgets-domain').val(user.custom_domain);
+                }
+
+                // Update subscription badge
+                updateSubscriptionBadge(user.subscription_status);
+
                 $('#top-panel, #authenticated-content').show();
 
                 await buildUserSnippets(uid, user.custom_domain);
             } else {
                 window.location.href = 'admin.html';
             }
+        }
+
+        function updateSubscriptionBadge(status) {
+            const $badge = $('#sub-status-badge');
+            const sub = status || 'inactive';
+            if (sub === 'active' || sub === 'trialing') {
+                $badge.html('<i class="fas fa-check-circle"></i> Activa')
+                      .css({
+                          'background': 'rgba(34, 197, 94, 0.2)',
+                          'color': '#4ade80',
+                          'border-color': 'rgba(34, 197, 94, 0.4)'
+                      });
+            } else {
+                $badge.html('<i class="fas fa-circle-xmark"></i> Inactiva')
+                      .css({
+                          'background': 'rgba(239, 68, 68, 0.2)',
+                          'color': '#f87171',
+                          'border-color': 'rgba(239, 68, 68, 0.4)'
+                      });
+            }
+        }
+
+        async function payStripeSubscription() {
+            if (!_supabase) return;
+            Swal.fire({
+                title: 'Conectando con Stripe Checkout...',
+                text: 'Por favor espera un momento.',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const { data, error } = await _supabase.functions.invoke('create-checkout-session', {
+                    body: { return_url: window.location.origin + window.location.pathname }
+                });
+
+                if (error) throw error;
+
+                if (data && data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error(data?.error || 'No se pudo generar la sesión de Stripe Checkout.');
+                }
+            } catch (err) {
+                Swal.fire('Error de Pago', err.message || 'Error iniciando sesión de Stripe Checkout.', 'error');
+            }
+        }
+
+        async function saveWidgetDomain() {
+            const rawDomain = $('#input-widgets-domain').val().trim();
+            if (!rawDomain) {
+                Swal.fire('Dominio requerido', 'Por favor ingresa un dominio.', 'warning');
+                return;
+            }
+
+            const cleanDomainStr = rawDomain.toLowerCase()
+                .replace(/^https?:\/\//i, '')
+                .replace(/^www\./i, '')
+                .split('/')[0]
+                .split(':')[0]
+                .trim();
+
+            if (!currentUserId || !_supabase) return;
+
+            Swal.fire({ title: 'Guardando dominio...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            // 1. Update usuarios custom_domain
+            await _supabase.from('usuarios').update({ custom_domain: cleanDomainStr }).eq('id', currentUserId);
+
+            // 2. Insert or update widget_domains
+            await _supabase.from('widget_domains').upsert([
+                { user_id: currentUserId, domain: cleanDomainStr, widget_type: 'chatbot', is_active: true }
+            ], { onConflict: 'user_id,domain,widget_type' });
+
+            Swal.close();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Dominio Guardado',
+                text: `Tus widgets han sido vinculados al dominio: ${cleanDomainStr}`,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+
+            await buildUserSnippets(currentUserId, cleanDomainStr);
         }
 
         async function buildUserSnippets(uid, customDomain) {
