@@ -280,45 +280,77 @@
 
         async function checkSession() {
             if (typeof _supabase === 'undefined') return;
-            const { data: { session } } = await _supabase.auth.getSession();
-            if (!session) {
+            let uid = null;
+
+            try {
+                const { data: { session } } = await _supabase.auth.getSession();
+                if (session?.user?.id) {
+                    uid = session.user.id;
+                }
+            } catch(e) {}
+
+            if (!uid) {
+                const cachedUserStr = localStorage.getItem('tcg_session');
+                if (cachedUserStr) {
+                    try {
+                        const parsed = JSON.parse(cachedUserStr);
+                        if (parsed?.id) uid = parsed.id;
+                    } catch(e) {}
+                }
+            }
+
+            if (!uid) {
                 window.location.href = 'admin.html';
                 return;
             }
 
-            const uid = session.user.id;
             currentUserId = uid;
 
             const { data: user } = await _supabase
                 .from('usuarios')
                 .select('id, username, store_name, store_logo, custom_domain, role, subscription_status')
                 .eq('id', uid)
-                .single();
+                .maybeSingle();
 
-            if (user) {
-                $('#dropdown-user-name').text(user.username);
-                if (user.store_logo && user.role !== 'starter') {
-                    $('#dropdown-user-logo').attr('src', user.store_logo).show();
+            // Also check if domain is manually activated in widget_domains
+            let hasManualDomainActive = false;
+            try {
+                const { data: doms } = await _supabase
+                    .from('widget_domains')
+                    .select('is_active')
+                    .eq('user_id', uid)
+                    .eq('is_active', true);
+                if (doms && doms.length > 0) {
+                    hasManualDomainActive = true;
+                }
+            } catch(e) {}
+
+            const activeUser = user || (localStorage.getItem('tcg_session') ? JSON.parse(localStorage.getItem('tcg_session')) : null);
+
+            if (activeUser) {
+                $('#dropdown-user-name').text(activeUser.username || 'Usuario');
+                if (activeUser.store_logo && activeUser.role !== 'starter') {
+                    $('#dropdown-user-logo').attr('src', activeUser.store_logo).show();
                 } else {
                     $('#dropdown-user-logo').hide();
                 }
 
-                if (user.custom_domain) {
-                    $('#input-widgets-domain').val(user.custom_domain);
+                if (activeUser.custom_domain) {
+                    $('#input-widgets-domain').val(activeUser.custom_domain);
                 }
 
-                // Update subscription badge
-                updateSubscriptionBadge(user.subscription_status, user.role);
+                // Update subscription badge (considers active sub, admin role, or manual dominios.html activation)
+                updateSubscriptionBadge(activeUser.subscription_status, activeUser.role, hasManualDomainActive);
 
                 $('#top-panel, #authenticated-content').show();
 
-                await buildUserSnippets(uid, user.custom_domain);
+                await buildUserSnippets(uid, activeUser.custom_domain);
             } else {
                 window.location.href = 'admin.html';
             }
         }
 
-        function updateSubscriptionBadge(status, role) {
+        function updateSubscriptionBadge(status, role, isManualActive) {
             const $badge = $('#sub-status-badge');
             const sub = status || 'inactive';
             const isAdmin = role === 'admin';
@@ -331,11 +363,18 @@
                           'border-color': 'rgba(34, 197, 94, 0.5)'
                       });
             } else if (sub === 'active' || sub === 'trialing') {
-                $badge.html('<i class="fas fa-check-circle"></i> Activa')
+                $badge.html('<i class="fas fa-check-circle"></i> Activa (Suscripción)')
                       .css({
                           'background': 'rgba(34, 197, 94, 0.2)',
                           'color': '#4ade80',
                           'border-color': 'rgba(34, 197, 94, 0.4)'
+                      });
+            } else if (isManualActive) {
+                $badge.html('<i class="fas fa-check-circle"></i> Activa (Prueba / Manual)')
+                      .css({
+                          'background': 'rgba(56, 189, 248, 0.25)',
+                          'color': '#38bdf8',
+                          'border-color': 'rgba(56, 189, 248, 0.4)'
                       });
             } else {
                 $badge.html('<i class="fas fa-circle-xmark"></i> Inactiva')
