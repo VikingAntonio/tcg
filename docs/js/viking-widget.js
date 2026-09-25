@@ -220,11 +220,13 @@
                         .maybeSingle();
 
                     if (userRow) {
-                        // Validate active subscription (Admin users bypass subscription restrictions)
+                        // Validate active access: Allowed if admin, active Stripe subscription, OR domain manually enabled in dominios.html
                         const subStatus = userRow.subscription_status || 'inactive';
                         const isAdmin = userRow.role === 'admin';
-                        if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
-                            console.warn('[VikingChatbot] Suscripción no activa para usuario:', this.activeStoreId, 'Estado:', subStatus);
+                        const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
+
+                        if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
+                            console.warn('[VikingChatbot] Suscripción/Acceso no activo para usuario:', this.activeStoreId, 'Estado:', subStatus);
                             this.renderSubscriptionRequiredBlock();
                             return;
                         }
@@ -1162,7 +1164,9 @@
                     userIdentifier = u.store_name || u.username;
                     const subStatus = u.subscription_status || 'inactive';
                     const isAdmin = u.role === 'admin';
-                    if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
+                    const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
+
+                    if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
                         this.renderLockedBlock('Suscripción Requerida', 'Este widget de Álbumes requiere una suscripción activa para funcionar.');
                         return;
                     }
@@ -1377,12 +1381,14 @@
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
 
-            // Check subscription status (Admin users bypass restriction)
+            // Check subscription status (Allowed if admin, active Stripe subscription, OR domain manually enabled in dominios.html)
             if (this.activeStoreId && this._supabase) {
                 const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
                 const subStatus = u?.subscription_status || 'inactive';
                 const isAdmin = u?.role === 'admin';
-                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
+                const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
+
+                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
@@ -2660,12 +2666,14 @@
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
 
-            // Check subscription status (Admin users bypass restriction)
+            // Check subscription status (Allowed if admin, active Stripe subscription, OR domain manually enabled in dominios.html)
             if (this.activeStoreId && this._supabase) {
                 const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
                 const subStatus = u?.subscription_status || 'inactive';
                 const isAdmin = u?.role === 'admin';
-                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
+                const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
+
+                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
