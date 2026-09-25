@@ -15,7 +15,7 @@ $(document).ready(async function() {
         // Refresh data from Supabase to get latest
         const { data, error } = await _supabase
             .from('usuarios')
-            .select('id, username, email, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo')
+            .select('id, username, email, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo, custom_domain, subscription_status')
             .eq('id', session.user.id)
             .single();
 
@@ -36,9 +36,10 @@ $(document).ready(async function() {
         $('#profile-username').val(currentUser.username);
         $('#profile-email').val(currentUser.email || '');
 
-        // Always show and load WhatsApp/Messenger for all users
+        // Always show and load WhatsApp/Messenger/Domain for all users
         $('#profile-whatsapp').val(currentUser.whatsapp_link || '');
         $('#profile-messenger').val(currentUser.messenger_link || '');
+        $('#profile-domain').val(currentUser.custom_domain || '');
 
         if (currentUser.is_store) {
             $('.store-only-field').show();
@@ -152,12 +153,22 @@ $(document).ready(async function() {
                 logoUrl = publicData.publicUrl;
             }
 
+            const domainVal = $('#profile-domain').val().trim();
+            const cleanDomainStr = domainVal ? domainVal.toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].split(':')[0].trim() : null;
+
             // 2. Update DB
             // Start with fields common to all users
             const updateData = {
                 whatsapp_link: whatsapp || null,
-                messenger_link: messenger || null
+                messenger_link: messenger || null,
+                custom_domain: cleanDomainStr
             };
+
+            if (cleanDomainStr) {
+                await _supabase.from('widget_domains').upsert([
+                    { user_id: currentUser.id, domain: cleanDomainStr, widget_type: 'chatbot', is_active: true }
+                ], { onConflict: 'user_id,domain,widget_type' });
+            }
 
             // Only add store-specific fields if the user is a store
             if (currentUser.is_store) {

@@ -212,14 +212,22 @@
                 if (matchedUserId) {
                     this.activeStoreId = matchedUserId;
 
-                    // Fetch user details & active spirit selected by the user in admin.html
+                    // Fetch user details, active spirit, and subscription status
                     const { data: userRow } = await this._supabase
                         .from('usuarios')
-                        .select('id, username, store_name, selected_spirit_id')
+                        .select('id, username, store_name, selected_spirit_id, subscription_status')
                         .eq('id', this.activeStoreId)
                         .maybeSingle();
 
                     if (userRow) {
+                        // Validate active subscription
+                        const subStatus = userRow.subscription_status || 'inactive';
+                        if (subStatus !== 'active' && subStatus !== 'trialing') {
+                            console.warn('[VikingChatbot] Suscripción no activa para usuario:', this.activeStoreId, 'Estado:', subStatus);
+                            this.renderSubscriptionRequiredBlock();
+                            return;
+                        }
+
                         this.storeName = userRow.store_name || userRow.username || 'VikingTCG';
                         this.selectedSpiritId = userRow.selected_spirit_id;
 
@@ -307,6 +315,24 @@
                     }
                 )
                 .subscribe();
+        }
+
+        renderSubscriptionRequiredBlock() {
+            const chatContainer = this.querySelector('#vk-chat-container');
+            if (chatContainer) {
+                chatContainer.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 30px; text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 12px; color: #ef4444;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; font-weight: 800; color: #f8fafc;">Suscripción Requerida</h3>
+                        <p style="margin: 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">El widget requiere una suscripción activa para funcionar en este dominio.<br><br>Por favor renueva tu suscripción mensual en tu panel de VikingTCG.</p>
+                    </div>
+                `;
+            }
+            const bubble = this.querySelector('#vk-bubble');
+            if (bubble) {
+                bubble.style.display = 'block';
+                bubble.innerHTML = `<span style="color: #f87171;">Suscripción Requerida</span>`;
+            }
         }
 
         updateWidgetData() {
@@ -1129,9 +1155,16 @@
                 userIdentifier = sessionUser.store_name || sessionUser.username || sessionUser.id;
             }
 
-            if (matchedUserId && !userIdentifier && this._supabase) {
-                const { data: u } = await this._supabase.from('usuarios').select('username, store_name').eq('id', matchedUserId).maybeSingle();
-                if (u) userIdentifier = u.store_name || u.username;
+            if (matchedUserId && this._supabase) {
+                const { data: u } = await this._supabase.from('usuarios').select('username, store_name, subscription_status').eq('id', matchedUserId).maybeSingle();
+                if (u) {
+                    userIdentifier = u.store_name || u.username;
+                    const subStatus = u.subscription_status || 'inactive';
+                    if (subStatus !== 'active' && subStatus !== 'trialing') {
+                        this.renderLockedBlock('Suscripción Requerida', 'Este widget de Álbumes requiere una suscripción activa para funcionar.');
+                        return;
+                    }
+                }
             }
 
             if (!userIdentifier) {
@@ -1139,6 +1172,15 @@
             }
 
             this.renderBinder(userIdentifier, albumId);
+        }
+
+        renderLockedBlock(title, msg) {
+            this.innerHTML = `
+                <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                    <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 ${title}</div>
+                    <div style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">${msg}<br>Renueva tu suscripción mensual en tu panel de VikingTCG para reactivarlo.</div>
+                </div>
+            `;
         }
 
         renderBinder(userIdentifier, albumId) {
@@ -1332,6 +1374,21 @@
 
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
+
+            // Check subscription status
+            if (this.activeStoreId && this._supabase) {
+                const { data: u } = await this._supabase.from('usuarios').select('subscription_status').eq('id', this.activeStoreId).maybeSingle();
+                const subStatus = u?.subscription_status || 'inactive';
+                if (subStatus !== 'active' && subStatus !== 'trialing') {
+                    this.innerHTML = `
+                        <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                            <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
+                            <div style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">Este widget de Subastas requiere una suscripción activa para funcionar.<br>Renueva tu suscripción mensual en tu panel de VikingTCG para reactivarlo.</div>
+                        </div>
+                    `;
+                    return;
+                }
+            }
 
             // Render native layout directly in this element if not already rendered
             if (!this.querySelector('.vk-subastas-root')) {
@@ -2599,6 +2656,21 @@
 
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
+
+            // Check subscription status
+            if (this.activeStoreId && this._supabase) {
+                const { data: u } = await this._supabase.from('usuarios').select('subscription_status').eq('id', this.activeStoreId).maybeSingle();
+                const subStatus = u?.subscription_status || 'inactive';
+                if (subStatus !== 'active' && subStatus !== 'trialing') {
+                    this.innerHTML = `
+                        <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                            <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
+                            <div style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">Este widget de Claims requiere una suscripción activa para funcionar.<br>Renueva tu suscripción mensual en tu panel de VikingTCG para reactivarlo.</div>
+                        </div>
+                    `;
+                    return;
+                }
+            }
 
             // Render native layout directly in this element if not already rendered
             if (!this.querySelector('.vk-claims-root')) {
