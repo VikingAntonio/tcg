@@ -145,6 +145,7 @@
 
                 let matchedUserId = null;
                 let isDomainExplicitlyDisabled = false;
+                let isDomainAuthorizedInTable = false;
 
                 // Check active session user first (for widgets.html / admin preview)
                 let sessionUser = null;
@@ -167,6 +168,7 @@
                                     isDomainExplicitlyDisabled = true;
                                 } else {
                                     matchedUserId = found.user_id;
+                                    isDomainAuthorizedInTable = true;
                                 }
                             }
                         }
@@ -175,10 +177,10 @@
                     }
                 }
 
-                // If explicitly turned off by admin in dominios.html, hide the widget
+                // If explicitly turned off by admin in dominios.html, render block
                 if (isDomainExplicitlyDisabled) {
                     console.warn('[VikingChatbot] Widget DESACTIVADO por el administrador para:', targetDomain);
-                    this.style.display = 'none';
+                    this.renderSubscriptionRequiredBlock();
                     return;
                 }
 
@@ -220,12 +222,11 @@
                         .maybeSingle();
 
                     if (userRow) {
-                        // Validate active access: Allowed if admin, active Stripe subscription, OR domain manually enabled in dominios.html
+                        // Validate active access: Allowed if admin, active Stripe subscription, OR domain explicitly authorized in dominios.html
                         const subStatus = userRow.subscription_status || 'inactive';
                         const isAdmin = userRow.role === 'admin';
-                        const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
 
-                        if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
+                        if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                             console.warn('[VikingChatbot] Suscripción/Acceso no activo para usuario:', this.activeStoreId, 'Estado:', subStatus);
                             this.renderSubscriptionRequiredBlock();
                             return;
@@ -243,9 +244,13 @@
 
                         // Subscribe to real-time updates for user changes (e.g. changing spirit in admin.html)
                         this.subscribeToRealtimeUserChanges(matchedUserId);
+                    } else {
+                        this.renderSubscriptionRequiredBlock();
+                        return;
                     }
                 } else {
-                    await this.fetchDefaultSpirit();
+                    this.renderSubscriptionRequiredBlock();
+                    return;
                 }
 
                 this.updateWidgetData();
@@ -1082,6 +1087,7 @@
             let matchedUserId = null;
             let userIdentifier = userAttr || null;
             let isDomainExplicitlyDisabled = false;
+            let isDomainAuthorizedInTable = false;
 
             let sessionUser = null;
             try {
@@ -1106,7 +1112,7 @@
             }
 
             // Step B: Check domain authorization in widget_domains
-            if (!matchedUserId && targetDomain && this._supabase) {
+            if (targetDomain && this._supabase) {
                 try {
                     const { data: allDomains } = await this._supabase
                         .from('widget_domains')
@@ -1118,7 +1124,8 @@
                             if (!found.is_active) {
                                 isDomainExplicitlyDisabled = true;
                             } else {
-                                matchedUserId = found.user_id;
+                                if (!matchedUserId) matchedUserId = found.user_id;
+                                isDomainAuthorizedInTable = true;
                             }
                         }
                     }
@@ -1127,7 +1134,7 @@
 
             if (isDomainExplicitlyDisabled) {
                 console.warn('[VikingdevBinder] Binder DESACTIVADO por el administrador para:', targetDomain);
-                this.style.display = 'none';
+                this.renderLockedBlock('Acceso Denegado', 'El widget de Álbumes ha sido desactivado para este dominio.');
                 return;
             }
 
@@ -1164,13 +1171,18 @@
                     userIdentifier = u.store_name || u.username;
                     const subStatus = u.subscription_status || 'inactive';
                     const isAdmin = u.role === 'admin';
-                    const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
 
-                    if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
+                    if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                         this.renderLockedBlock('Suscripción Requerida', 'Este widget de Álbumes requiere una suscripción activa para funcionar.');
                         return;
                     }
+                } else {
+                    this.renderLockedBlock('Suscripción Requerida', 'Este widget de Álbumes requiere una suscripción activa para funcionar.');
+                    return;
                 }
+            } else {
+                this.renderLockedBlock('Suscripción Requerida', 'Este widget de Álbumes requiere una suscripción activa para funcionar.');
+                return;
             }
 
             if (!userIdentifier) {
@@ -1308,6 +1320,7 @@
             let matchedUserId = null;
             let userIdentifier = userAttr || null;
             let isDomainExplicitlyDisabled = false;
+            let isDomainAuthorizedInTable = false;
 
             // Step A: Check explicit user attribute
             if (userAttr && this._supabase) {
@@ -1326,7 +1339,7 @@
             }
 
             // Step B: Check domain authorization in widget_domains
-            if (!matchedUserId && targetDomain && this._supabase) {
+            if (targetDomain && this._supabase) {
                 try {
                     const { data: allDomains } = await this._supabase
                         .from('widget_domains')
@@ -1338,7 +1351,8 @@
                             if (!found.is_active) {
                                 isDomainExplicitlyDisabled = true;
                             } else {
-                                matchedUserId = found.user_id;
+                                if (!matchedUserId) matchedUserId = found.user_id;
+                                isDomainAuthorizedInTable = true;
                             }
                         }
                     }
@@ -1347,7 +1361,12 @@
 
             if (isDomainExplicitlyDisabled) {
                 console.warn('[VikingdevSubastas] Subastas DESACTIVADAS por el administrador para:', targetDomain);
-                this.style.display = 'none';
+                this.innerHTML = `
+                    <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                        <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Acceso Denegado</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">El widget de Subastas ha sido desactivado para este dominio.</div>
+                    </div>
+                `;
                 return;
             }
 
@@ -1381,14 +1400,13 @@
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
 
-            // Check subscription status (Allowed if admin, active Stripe subscription, OR domain manually enabled in dominios.html)
+            // Check subscription status (Allowed if admin, active Stripe subscription, OR domain explicitly authorized in dominios.html)
             if (this.activeStoreId && this._supabase) {
                 const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
                 const subStatus = u?.subscription_status || 'inactive';
                 const isAdmin = u?.role === 'admin';
-                const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
 
-                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
+                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
@@ -1397,6 +1415,14 @@
                     `;
                     return;
                 }
+            } else {
+                this.innerHTML = `
+                    <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                        <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">Este widget de Subastas requiere una suscripción activa para funcionar.<br>Renueva tu suscripción mensual en tu panel de VikingTCG para reactivarlo.</div>
+                    </div>
+                `;
+                return;
             }
 
             // Render native layout directly in this element if not already rendered
@@ -2593,6 +2619,7 @@
             let matchedUserId = null;
             let userIdentifier = userAttr || null;
             let isDomainExplicitlyDisabled = false;
+            let isDomainAuthorizedInTable = false;
 
             // Step A: Check explicit user attribute
             if (userAttr && this._supabase) {
@@ -2611,7 +2638,7 @@
             }
 
             // Step B: Check domain authorization in widget_domains
-            if (!matchedUserId && targetDomain && this._supabase) {
+            if (targetDomain && this._supabase) {
                 try {
                     const { data: allDomains } = await this._supabase
                         .from('widget_domains')
@@ -2623,7 +2650,8 @@
                             if (!found.is_active) {
                                 isDomainExplicitlyDisabled = true;
                             } else {
-                                matchedUserId = found.user_id;
+                                if (!matchedUserId) matchedUserId = found.user_id;
+                                isDomainAuthorizedInTable = true;
                             }
                         }
                     }
@@ -2632,7 +2660,12 @@
 
             if (isDomainExplicitlyDisabled) {
                 console.warn('[VikingdevClaims] Claims DESACTIVADOS por el administrador para:', targetDomain);
-                this.style.display = 'none';
+                this.innerHTML = `
+                    <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                        <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Acceso Denegado</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">El widget de Claims ha sido desactivado para este dominio.</div>
+                    </div>
+                `;
                 return;
             }
 
@@ -2666,14 +2699,13 @@
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
 
-            // Check subscription status (Allowed if admin, active Stripe subscription, OR domain manually enabled in dominios.html)
+            // Check subscription status (Allowed if admin, active Stripe subscription, OR domain explicitly authorized in dominios.html)
             if (this.activeStoreId && this._supabase) {
                 const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
                 const subStatus = u?.subscription_status || 'inactive';
                 const isAdmin = u?.role === 'admin';
-                const isDomainActive = targetDomain ? !isDomainExplicitlyDisabled : false;
 
-                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainActive) {
+                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing' && !isDomainAuthorizedInTable) {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
@@ -2682,6 +2714,14 @@
                     `;
                     return;
                 }
+            } else {
+                this.innerHTML = `
+                    <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
+                        <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5;">Este widget de Claims requiere una suscripción activa para funcionar.<br>Renueva tu suscripción mensual en tu panel de VikingTCG para reactivarlo.</div>
+                    </div>
+                `;
+                return;
             }
 
             // Render native layout directly in this element if not already rendered
