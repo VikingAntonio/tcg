@@ -215,14 +215,15 @@
                     // Fetch user details, active spirit, and subscription status
                     const { data: userRow } = await this._supabase
                         .from('usuarios')
-                        .select('id, username, store_name, selected_spirit_id, subscription_status')
+                        .select('id, username, store_name, selected_spirit_id, subscription_status, role')
                         .eq('id', this.activeStoreId)
                         .maybeSingle();
 
                     if (userRow) {
-                        // Validate active subscription
+                        // Validate active subscription (Admin users bypass subscription restrictions)
                         const subStatus = userRow.subscription_status || 'inactive';
-                        if (subStatus !== 'active' && subStatus !== 'trialing') {
+                        const isAdmin = userRow.role === 'admin';
+                        if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
                             console.warn('[VikingChatbot] Suscripción no activa para usuario:', this.activeStoreId, 'Estado:', subStatus);
                             this.renderSubscriptionRequiredBlock();
                             return;
@@ -1156,11 +1157,12 @@
             }
 
             if (matchedUserId && this._supabase) {
-                const { data: u } = await this._supabase.from('usuarios').select('username, store_name, subscription_status').eq('id', matchedUserId).maybeSingle();
+                const { data: u } = await this._supabase.from('usuarios').select('username, store_name, subscription_status, role').eq('id', matchedUserId).maybeSingle();
                 if (u) {
                     userIdentifier = u.store_name || u.username;
                     const subStatus = u.subscription_status || 'inactive';
-                    if (subStatus !== 'active' && subStatus !== 'trialing') {
+                    const isAdmin = u.role === 'admin';
+                    if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
                         this.renderLockedBlock('Suscripción Requerida', 'Este widget de Álbumes requiere una suscripción activa para funcionar.');
                         return;
                     }
@@ -1375,11 +1377,12 @@
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
 
-            // Check subscription status
+            // Check subscription status (Admin users bypass restriction)
             if (this.activeStoreId && this._supabase) {
-                const { data: u } = await this._supabase.from('usuarios').select('subscription_status').eq('id', this.activeStoreId).maybeSingle();
+                const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
                 const subStatus = u?.subscription_status || 'inactive';
-                if (subStatus !== 'active' && subStatus !== 'trialing') {
+                const isAdmin = u?.role === 'admin';
+                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>
@@ -2657,11 +2660,12 @@
             this.activeStoreId = matchedUserId;
             this.userIdentifier = userIdentifier || 'vikingtcg';
 
-            // Check subscription status
+            // Check subscription status (Admin users bypass restriction)
             if (this.activeStoreId && this._supabase) {
-                const { data: u } = await this._supabase.from('usuarios').select('subscription_status').eq('id', this.activeStoreId).maybeSingle();
+                const { data: u } = await this._supabase.from('usuarios').select('subscription_status, role').eq('id', this.activeStoreId).maybeSingle();
                 const subStatus = u?.subscription_status || 'inactive';
-                if (subStatus !== 'active' && subStatus !== 'trialing') {
+                const isAdmin = u?.role === 'admin';
+                if (!isAdmin && subStatus !== 'active' && subStatus !== 'trialing') {
                     this.innerHTML = `
                         <div style="width: 100%; max-width: 800px; margin: 20px auto; padding: 30px 20px; background: rgba(15, 23, 42, 0.9); border-radius: 18px; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; color: #f87171; font-family: 'Montserrat', sans-serif;">
                             <div style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">🔒 Suscripción Requerida</div>

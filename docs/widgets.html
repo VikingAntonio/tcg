@@ -308,7 +308,7 @@
                 }
 
                 // Update subscription badge
-                updateSubscriptionBadge(user.subscription_status);
+                updateSubscriptionBadge(user.subscription_status, user.role);
 
                 $('#top-panel, #authenticated-content').show();
 
@@ -318,10 +318,19 @@
             }
         }
 
-        function updateSubscriptionBadge(status) {
+        function updateSubscriptionBadge(status, role) {
             const $badge = $('#sub-status-badge');
             const sub = status || 'inactive';
-            if (sub === 'active' || sub === 'trialing') {
+            const isAdmin = role === 'admin';
+
+            if (isAdmin) {
+                $badge.html('<i class="fas fa-shield-alt"></i> Activa (Admin Libre)')
+                      .css({
+                          'background': 'rgba(34, 197, 94, 0.25)',
+                          'color': '#4ade80',
+                          'border-color': 'rgba(34, 197, 94, 0.5)'
+                      });
+            } else if (sub === 'active' || sub === 'trialing') {
                 $badge.html('<i class="fas fa-check-circle"></i> Activa')
                       .css({
                           'background': 'rgba(34, 197, 94, 0.2)',
