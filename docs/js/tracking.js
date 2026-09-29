@@ -27,6 +27,10 @@ $(document).ready(async function() {
         updateFormDirectionLabels($(this).val());
     });
 
+    $('#btn-check-tracking').click(function() {
+        checkTrackingNow();
+    });
+
     // --- Save Logic ---
     $('#btn-save').click(function() {
         saveTracking();
@@ -50,14 +54,31 @@ $(document).ready(async function() {
 
 function updateFormDirectionLabels(dir) {
     if (dir === 'received') {
-        $('#label-cliente').text('Nombre del Vendedor / Remitente');
-        $('#label-guia').text('No. de Guía / Tracking Number');
-        $('#label-paqueteria').text('Paquetería / Carrier');
+        $('#label-cliente').text('Vendedor');
+        $('#group-telefono, #group-ubicacion').hide();
     } else {
-        $('#label-cliente').text('Nombre del Cliente / Destinatario');
-        $('#label-guia').text('No. de Guía');
-        $('#label-paqueteria').text('Paquetería');
+        $('#label-cliente').text('Cliente');
+        $('#group-telefono, #group-ubicacion').show();
     }
+}
+
+function getCarrierTrackingUrl(carrier, guia, customUrl) {
+    if (customUrl) return customUrl;
+    if (!guia) return '#';
+    const c = (carrier || '').toLowerCase().trim();
+    if (c.includes('correos') || c.includes('sepomex') || c.includes('mexpost')) {
+        return `https://www.correosdemexico.gob.mx/sslservicios/seguimientoenvio/seguimiento.aspx?guia=${encodeURIComponent(guia)}`;
+    }
+    if (c.includes('estafeta')) {
+        return `https://www.estafeta.com/Herramientas/Rastreo?trackingNumber=${encodeURIComponent(guia)}`;
+    }
+    if (c.includes('fedex')) {
+        return `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(guia)}`;
+    }
+    if (c.includes('dhl')) {
+        return `https://www.dhl.com/mx-es/home/rastreo.html?tracking-id=${encodeURIComponent(guia)}`;
+    }
+    return `https://www.google.com/search?q=rastreo+${encodeURIComponent(carrier || '')}+${encodeURIComponent(guia)}`;
 }
 
 async function checkSession() {
@@ -117,23 +138,28 @@ async function loadTracking() {
         const clienteDisplay = item.nombre_cliente || item.seller_name || '';
 
         const typeBadge = isReceived
-            ? `<span class="type-badge" style="background:#8e44ad; color:white;">📥 Por Recibir</span>`
-            : `<span class="type-badge" style="background:#2980b9; color:white;">📤 Enviado</span>`;
+            ? `<span class="type-badge" style="background:#8e44ad; color:white;">Recibir</span>`
+            : `<span class="type-badge" style="background:#2980b9; color:white;">Enviar</span>`;
 
         let statusText = item.status || 'Pendiente';
         let statusCss = `status-${(item.status || 'pendiente').toLowerCase().replace(/\s+/g, '_')}`;
 
         if (item.status === 'ready_for_pickup') {
-            statusText = '📦 Listo para recoger';
+            statusText = 'Listo para recoger';
         } else if (item.status === 'in_transit') {
-            statusText = '🚚 En tránsito';
+            statusText = 'En tránsito';
         } else if (item.status === 'completed') {
-            statusText = '✅ Completado';
+            statusText = 'Entregado';
         } else if (item.status === 'returned') {
-            statusText = '↩️ Devuelto';
+            statusText = 'Devuelto';
         } else if (item.status === 'pending') {
-            statusText = '⏳ Pendiente';
+            statusText = 'Pendiente';
         }
+
+        const carrierUrl = getCarrierTrackingUrl(paqueteriaDisplay, guiaDisplay, item.tracking_url);
+        const paqueteriaLink = `<a href="${carrierUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color); font-weight:600; text-decoration:underline;" title="Rastrear paquete">
+            ${paqueteriaDisplay || 'Ver Rastreo'} <i class="fas fa-external-link-alt" style="font-size:10px; margin-left:3px;"></i>
+        </a>`;
 
         const $row = $(`
             <tr>
@@ -141,10 +167,10 @@ async function loadTracking() {
                     <div>${typeBadge} <strong>${guiaDisplay}</strong>
                     <button class="copy-btn" data-guia="${guiaDisplay}" title="Copiar Guía"><i class="fas fa-copy"></i></button></div>
                 </td>
-                <td>${paqueteriaDisplay}</td>
+                <td>${paqueteriaLink}</td>
                 <td>
                     <div style="font-weight:bold;">${clienteDisplay}</div>
-                    <div style="font-size:11px; color:#aaa;">${item.telefono || ''}</div>
+                    ${item.telefono ? `<div style="font-size:11px; color:#aaa;">${item.telefono}</div>` : ''}
                 </td>
                 <td>
                     <div style="font-size:12px;">🛫 ${item.fecha_envio || '-'}</div>
@@ -171,8 +197,8 @@ async function saveTracking() {
     const guia = $('#input-guia').val().trim();
     const paqueteria = $('#input-paqueteria').val().trim();
     const cliente = $('#input-cliente').val().trim();
-    const telefono = $('#input-telefono').val().trim();
-    const ubicacion = $('#input-ubicacion').val().trim();
+    const telefono = direction === 'sent' ? $('#input-telefono').val().trim() : '';
+    const ubicacion = direction === 'sent' ? $('#input-ubicacion').val().trim() : '';
     const detalles = $('#input-detalles').val().trim();
     const trackingUrl = $('#input-tracking-url').val().trim();
     const fechaEnvio = $('#input-fecha-envio').val();
@@ -180,7 +206,7 @@ async function saveTracking() {
     const status = $('#input-status').val();
 
     if (!guia || !cliente) {
-        Swal.fire('Atención', 'El número de guía y el nombre del contacto/cliente son obligatorios', 'warning');
+        Swal.fire('Atención', 'El número de guía y el nombre del contacto son obligatorios', 'warning');
         return;
     }
 
@@ -190,8 +216,8 @@ async function saveTracking() {
         guia: guia,
         paqueteria: paqueteria,
         nombre_cliente: cliente,
-        telefono: telefono,
-        ubicacion: ubicacion,
+        telefono: telefono || null,
+        ubicacion: ubicacion || null,
         detalles_pedido: detalles,
         fecha_envio: fechaEnvio || null,
         fecha_llegada: fechaLlegada || null,
@@ -204,8 +230,8 @@ async function saveTracking() {
         data.carrier = paqueteria;
         data.seller_name = cliente;
     } else {
-        data.tracking_number = null;
-        data.carrier = null;
+        data.tracking_number = guia;
+        data.carrier = paqueteria;
         data.seller_name = null;
     }
 
@@ -298,4 +324,47 @@ function copyToClipboard(text) {
             position: 'top-end'
         });
     });
+}
+
+async function checkTrackingNow() {
+    Swal.fire({
+        title: 'Verificando guías...',
+        text: 'Consultando estado de los paquetes con la paquetería',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const { data, error } = await _supabase.functions.invoke('tracking', {
+            body: { user_id: currentUser.id }
+        });
+
+        if (error) {
+            Swal.fire('Atención', 'No se pudo conectar con el servicio de rastreo en este momento.', 'warning');
+            return;
+        }
+
+        await loadTracking();
+
+        const readyCount = data?.results?.filter(r => r.newStatus === 'ready_for_pickup')?.length || 0;
+        if (readyCount > 0) {
+            Swal.fire({
+                title: '¡Paquete listo!',
+                text: `Tienes ${readyCount} paquete(s) listos para recoger.`,
+                icon: 'success',
+                confirmButtonText: 'Entendido'
+            });
+        } else {
+            Swal.fire({
+                title: 'Verificación completada',
+                text: 'Los estados de las guías están actualizados.',
+                icon: 'info',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    } catch (e) {
+        console.error("Error en verificación manual de tracking:", e);
+        Swal.fire('Error', 'Ocurrió un error al verificar los estados.', 'error');
+    }
 }
