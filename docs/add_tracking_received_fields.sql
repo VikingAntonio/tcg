@@ -1,5 +1,5 @@
 -- SQL Migration: Extend tracking table to handle sent & received packages
--- and configure Supabase Cron for automated background checks every 2 days.
+-- and configure Supabase Cron for automated background tracking checks.
 
 ALTER TABLE public.tracking
 ADD COLUMN IF NOT EXISTS direction TEXT DEFAULT 'sent',
@@ -25,15 +25,15 @@ WHERE direction IS NULL OR carrier IS NULL OR tracking_number IS NULL OR seller_
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
--- Schedule Supabase Cron job to execute Edge Function 'auto-tracking-check' every 2 days at midnight
--- Replace YOUR_PROJECT_REF and YOUR_SERVICE_ROLE_KEY with actual Supabase project settings in production dashboard
+-- Schedule Supabase Cron job to execute Edge Function 'tracking' daily at midnight
+-- Replace YOUR_PROJECT_REF and YOUR_SERVICE_ROLE_KEY with actual Supabase project settings in your dashboard.
 /*
 SELECT cron.schedule(
-    'auto-check-received-trackings-every-2-days',
-    '0 0 */2 * *',
+    'auto-check-received-trackings-daily',
+    '0 0 * * *',
     $$
     SELECT net.http_post(
-        url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/auto-tracking-check',
+        url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/tracking',
         headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
     );
     $$
