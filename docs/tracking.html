@@ -41,10 +41,20 @@
             font-size: 0.75rem;
             font-weight: 700;
         }
-        .status-enviado { background: #3a7bd5; color: white; }
-        .status-entregado { background: #00ff88; color: #000; }
-        .status-pendiente { background: #f1c40f; color: #000; }
-        .status-cancelado { background: #ff4757; color: white; }
+        .status-enviado, .status-in_transit { background: #3a7bd5; color: white; }
+        .status-entregado, .status-completed { background: #00ff88; color: #000; }
+        .status-pendiente, .status-pending { background: #f1c40f; color: #000; }
+        .status-ready_for_pickup { background: #ff9f43; color: #000; animation: pulse 1.5s infinite; }
+        .status-cancelado, .status-returned { background: #ff4757; color: white; }
+
+        .type-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(255,255,255,0.1);
+            margin-right: 5px;
+        }
 
         .copy-btn {
             background: none;
@@ -84,7 +94,7 @@
                 <i class="fas fa-arrow-left"></i> Volver al Panel
             </a>
             <h1>Gestión de Tracking</h1>
-            <p>Administra los números de guía y estados de envío para tus clientes.</p>
+            <p>Administra los números de guía y estados de envío (enviados y por recibir) para tu tienda.</p>
             <button id="btn-open-add-modal" class="btn" style="margin-top: 20px;">
                 <i class="fas fa-plus"></i> Añadir Guía
             </button>
@@ -93,9 +103,9 @@
         <table class="tracking-table">
             <thead>
                 <tr>
-                    <th>Guía</th>
+                    <th>Guía / Tipo</th>
                     <th>Paquetería</th>
-                    <th>Cliente</th>
+                    <th>Cliente / Vendedor</th>
                     <th>Envío / Llegada</th>
                     <th>Status</th>
                     <th>Acciones</th>
@@ -114,18 +124,26 @@
             <h2 id="modal-title">Añadir Guía</h2>
             <input type="hidden" id="edit-id">
 
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Tipo de Paquete</label>
+                <select id="input-direction" style="width:100%; padding:10px; background:var(--slot-bg); color:white; border:1px solid var(--slot-border); border-radius:8px;">
+                    <option value="sent">📤 Yo envié este paquete (Envío a cliente)</option>
+                    <option value="received">📥 Yo recibiré este paquete (Paquete entrante)</option>
+                </select>
+            </div>
+
             <div class="info-grid">
                 <div class="form-group">
-                    <label>No. de Guía</label>
+                    <label id="label-guia">No. de Guía</label>
                     <input type="text" id="input-guia" placeholder="1234567890">
                 </div>
                 <div class="form-group">
-                    <label>Paquetería</label>
-                    <input type="text" id="input-paqueteria" placeholder="FedEx, DHL, etc.">
+                    <label id="label-paqueteria">Paquetería</label>
+                    <input type="text" id="input-paqueteria" placeholder="Correos de México, Estafeta, FedEx, DHL, etc.">
                 </div>
                 <div class="form-group">
-                    <label>Nombre del Cliente</label>
-                    <input type="text" id="input-cliente" placeholder="Juan Pérez">
+                    <label id="label-cliente">Nombre del Cliente / Contacto</label>
+                    <input type="text" id="input-cliente" placeholder="Juan Pérez / Vendedor">
                 </div>
                 <div class="form-group">
                     <label>Teléfono</label>
@@ -136,6 +154,11 @@
             <div class="form-group">
                 <label>Ubicación / Dirección</label>
                 <input type="text" id="input-ubicacion" placeholder="Ciudad, Estado, CP">
+            </div>
+
+            <div class="form-group" id="group-tracking-url">
+                <label>URL Directa de Rastreo (Opcional)</label>
+                <input type="text" id="input-tracking-url" placeholder="https://www.correosdemexico.gob.mx/...">
             </div>
 
             <div class="form-group">
@@ -159,7 +182,10 @@
                 <select id="input-status">
                     <option value="Pendiente">Pendiente</option>
                     <option value="Enviado">Enviado</option>
-                    <option value="Entregado">Entregado</option>
+                    <option value="in_transit">En Tránsito (in_transit)</option>
+                    <option value="ready_for_pickup">Listo para Recoger / Ventanilla (ready_for_pickup)</option>
+                    <option value="Entregado">Entregado / Completado (completed)</option>
+                    <option value="returned">Devuelto (returned)</option>
                     <option value="Cancelado">Cancelado</option>
                 </select>
             </div>

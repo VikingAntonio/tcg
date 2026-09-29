@@ -23,6 +23,10 @@ $(document).ready(async function() {
         handleLogout();
     });
 
+    $('#input-direction').change(function() {
+        updateFormDirectionLabels($(this).val());
+    });
+
     // --- Save Logic ---
     $('#btn-save').click(function() {
         saveTracking();
@@ -43,6 +47,18 @@ $(document).ready(async function() {
         copyToClipboard(text);
     });
 });
+
+function updateFormDirectionLabels(dir) {
+    if (dir === 'received') {
+        $('#label-cliente').text('Nombre del Vendedor / Remitente');
+        $('#label-guia').text('No. de Guía / Tracking Number');
+        $('#label-paqueteria').text('Paquetería / Carrier');
+    } else {
+        $('#label-cliente').text('Nombre del Cliente / Destinatario');
+        $('#label-guia').text('No. de Guía');
+        $('#label-paqueteria').text('Paquetería');
+    }
+}
 
 async function checkSession() {
     const { data: { session } } = await _supabase.auth.getSession();
@@ -95,23 +111,46 @@ async function loadTracking() {
     $container.empty();
 
     items.forEach(item => {
-        const statusClass = `status-${item.status.toLowerCase()}`;
+        const isReceived = item.direction === 'received';
+        const guiaDisplay = item.guia || item.tracking_number || '';
+        const paqueteriaDisplay = item.paqueteria || item.carrier || '';
+        const clienteDisplay = item.nombre_cliente || item.seller_name || '';
+
+        const typeBadge = isReceived
+            ? `<span class="type-badge" style="background:#8e44ad; color:white;">📥 Por Recibir</span>`
+            : `<span class="type-badge" style="background:#2980b9; color:white;">📤 Enviado</span>`;
+
+        let statusText = item.status || 'Pendiente';
+        let statusCss = `status-${(item.status || 'pendiente').toLowerCase().replace(/\s+/g, '_')}`;
+
+        if (item.status === 'ready_for_pickup') {
+            statusText = '📦 Listo para recoger';
+        } else if (item.status === 'in_transit') {
+            statusText = '🚚 En tránsito';
+        } else if (item.status === 'completed') {
+            statusText = '✅ Completado';
+        } else if (item.status === 'returned') {
+            statusText = '↩️ Devuelto';
+        } else if (item.status === 'pending') {
+            statusText = '⏳ Pendiente';
+        }
+
         const $row = $(`
             <tr>
                 <td>
-                    <strong>${item.guia}</strong>
-                    <button class="copy-btn" data-guia="${item.guia}" title="Copiar Guía"><i class="fas fa-copy"></i></button>
+                    <div>${typeBadge} <strong>${guiaDisplay}</strong>
+                    <button class="copy-btn" data-guia="${guiaDisplay}" title="Copiar Guía"><i class="fas fa-copy"></i></button></div>
                 </td>
-                <td>${item.paqueteria}</td>
+                <td>${paqueteriaDisplay}</td>
                 <td>
-                    <div style="font-weight:bold;">${item.nombre_cliente}</div>
+                    <div style="font-weight:bold;">${clienteDisplay}</div>
                     <div style="font-size:11px; color:#aaa;">${item.telefono || ''}</div>
                 </td>
                 <td>
                     <div style="font-size:12px;">🛫 ${item.fecha_envio || '-'}</div>
                     <div style="font-size:12px;">🛬 ${item.fecha_llegada || '-'}</div>
                 </td>
-                <td><span class="status-badge ${statusClass}">${item.status}</span></td>
+                <td><span class="status-badge ${statusCss}">${statusText}</span></td>
                 <td>
                     <div style="display:flex; gap:10px;">
                         <button class="btn btn-secondary btn-sm btn-edit" title="Editar"><i class="fas fa-edit"></i></button>
@@ -128,33 +167,47 @@ async function loadTracking() {
 
 async function saveTracking() {
     const id = $('#edit-id').val();
+    const direction = $('#input-direction').val() || 'sent';
     const guia = $('#input-guia').val().trim();
     const paqueteria = $('#input-paqueteria').val().trim();
     const cliente = $('#input-cliente').val().trim();
     const telefono = $('#input-telefono').val().trim();
     const ubicacion = $('#input-ubicacion').val().trim();
     const detalles = $('#input-detalles').val().trim();
+    const trackingUrl = $('#input-tracking-url').val().trim();
     const fechaEnvio = $('#input-fecha-envio').val();
     const fechaLlegada = $('#input-fecha-llegada').val();
     const status = $('#input-status').val();
 
     if (!guia || !cliente) {
-        Swal.fire('Atención', 'El número de guía y el nombre del cliente son obligatorios', 'warning');
+        Swal.fire('Atención', 'El número de guía y el nombre del contacto/cliente son obligatorios', 'warning');
         return;
     }
 
     const data = {
         user_id: currentUser.id,
-        guia,
-        paqueteria,
+        direction: direction,
+        guia: guia,
+        paqueteria: paqueteria,
         nombre_cliente: cliente,
-        telefono,
-        ubicacion,
+        telefono: telefono,
+        ubicacion: ubicacion,
         detalles_pedido: detalles,
         fecha_envio: fechaEnvio || null,
         fecha_llegada: fechaLlegada || null,
-        status
+        status: status,
+        tracking_url: trackingUrl || null
     };
+
+    if (direction === 'received') {
+        data.tracking_number = guia;
+        data.carrier = paqueteria;
+        data.seller_name = cliente;
+    } else {
+        data.tracking_number = null;
+        data.carrier = null;
+        data.seller_name = null;
+    }
 
     let error;
     if (id) {
@@ -178,15 +231,20 @@ function editTracking(item) {
     resetModal();
     $('#modal-title').text('Editar Guía');
     $('#edit-id').val(item.id);
-    $('#input-guia').val(item.guia);
-    $('#input-paqueteria').val(item.paqueteria);
-    $('#input-cliente').val(item.nombre_cliente);
-    $('#input-telefono').val(item.telefono);
-    $('#input-ubicacion').val(item.ubicacion);
-    $('#input-detalles').val(item.detalles_pedido);
-    $('#input-fecha-envio').val(item.fecha_envio);
-    $('#input-fecha-llegada').val(item.fecha_llegada);
-    $('#input-status').val(item.status);
+    const dir = item.direction || 'sent';
+    $('#input-direction').val(dir);
+    updateFormDirectionLabels(dir);
+
+    $('#input-guia').val(item.guia || item.tracking_number || '');
+    $('#input-paqueteria').val(item.paqueteria || item.carrier || '');
+    $('#input-cliente').val(item.nombre_cliente || item.seller_name || '');
+    $('#input-telefono').val(item.telefono || '');
+    $('#input-ubicacion').val(item.ubicacion || '');
+    $('#input-detalles').val(item.detalles_pedido || '');
+    $('#input-tracking-url').val(item.tracking_url || '');
+    $('#input-fecha-envio').val(item.fecha_envio || '');
+    $('#input-fecha-llegada').val(item.fecha_llegada || '');
+    $('#input-status').val(item.status || 'Pendiente');
 
     $('#tracking-modal').addClass('active');
 }
@@ -214,12 +272,15 @@ async function deleteTracking(id) {
 function resetModal() {
     $('#modal-title').text('Añadir Guía');
     $('#edit-id').val('');
+    $('#input-direction').val('sent');
+    updateFormDirectionLabels('sent');
     $('#input-guia').val('');
     $('#input-paqueteria').val('');
     $('#input-cliente').val('');
     $('#input-telefono').val('');
     $('#input-ubicacion').val('');
     $('#input-detalles').val('');
+    $('#input-tracking-url').val('');
     $('#input-fecha-envio').val('');
     $('#input-fecha-llegada').val('');
     $('#input-status').val('Pendiente');
