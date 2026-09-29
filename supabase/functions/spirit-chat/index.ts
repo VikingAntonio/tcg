@@ -575,6 +575,16 @@ Si la imagen NO es una carta o no se distingue, responde:
             parameters: { type: "OBJECT", properties: {} }
           },
           {
+            name: "check_tracking_packages",
+            description: "Consulta y actualiza en tiempo real el estado de las guías y paquetes de rastreo (Correos de México, FedEx, Estafeta, DHL). Muestra qué paquetes están listos para recoger en ventanilla o por el cliente.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING", description: "check, list" }
+              }
+            }
+          },
+          {
             name: "search_cards",
             description: "Busca cartas en el inventario local (álbumes, decks, sellados, wishlist) y bases TCG externas.",
             parameters: {
@@ -1178,6 +1188,51 @@ Si la imagen NO es una carta o no se distingue, responde:
             metodos_pago: ["Transferencia Bancaria", "Efectivo en Tienda", "Mercado Pago / Tarjeta", "Coordinación directa por WhatsApp"],
             envios: "Envíos locales y nacionales previo acuerdo por WhatsApp.",
             instrucciones_compra: "Puedes agregar productos al carrito en la tienda pública y dar clic en 'Enviar Pedido por WhatsApp' para coordinar el pago y entrega."
+          };
+        }
+
+        case "check_tracking_packages": {
+          if (!targetUserId) return { error: "ID de usuario no disponible." };
+
+          const { data: trackings } = await supabase.from("tracking").select("*").eq("user_id", targetUserId).order("created_at", { ascending: false });
+
+          const readyForPickup = (trackings || []).filter((i: any) => i.status === "ready_for_pickup");
+          const inTransit = (trackings || []).filter((i: any) => i.status === "in_transit" || i.status === "enviado" || i.status === "Enviado");
+
+          let summaryMsg = "";
+          if (readyForPickup.length > 0) {
+            summaryMsg += `Tienes **${readyForPickup.length} paquete(s) listos para recoger**:\n`;
+            readyForPickup.forEach((p: any) => {
+              const guia = p.guia || p.tracking_number || "Sin Guía";
+              const carrier = p.paqueteria || p.carrier || "Paquetería";
+              const contact = p.nombre_cliente || p.seller_name || "Contacto";
+              summaryMsg += `• Guía: **${guia}** (${carrier}) - Contacto: ${contact} - Tipo: ${p.direction === 'received' ? 'Por Recibir' : 'Enviar'}\n`;
+            });
+          } else {
+            summaryMsg += "No tienes paquetes con estado 'Listo para recoger' en este momento.\n";
+          }
+
+          if (inTransit.length > 0) {
+            summaryMsg += `\nPaquetes en tránsito (${inTransit.length}):\n`;
+            inTransit.forEach((p: any) => {
+              const guia = p.guia || p.tracking_number || "Sin Guía";
+              const carrier = p.paqueteria || p.carrier || "Paquetería";
+              summaryMsg += `• Guía: **${guia}** (${carrier}) - Estado: En tránsito\n`;
+            });
+          }
+
+          if ((trackings || []).length === 0) {
+            summaryMsg = "No tienes guías ni paquetes registrados en tu sección de tracking.";
+          }
+
+          return {
+            success: true,
+            total_trackings: (trackings || []).length,
+            ready_count: readyForPickup.length,
+            in_transit_count: inTransit.length,
+            trackings: trackings || [],
+            message: summaryMsg,
+            summary: summaryMsg
           };
         }
 

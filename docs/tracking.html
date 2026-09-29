@@ -95,9 +95,14 @@
             </a>
             <h1>Gestión de Tracking</h1>
             <p>Administra los números de guía y estados de envío (enviados y por recibir) para tu tienda.</p>
-            <button id="btn-open-add-modal" class="btn" style="margin-top: 20px;">
-                <i class="fas fa-plus"></i> Añadir Guía
-            </button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="btn-open-add-modal" class="btn" style="margin-top: 20px;">
+                    <i class="fas fa-plus"></i> Añadir Guía
+                </button>
+                <button id="btn-check-tracking" class="btn btn-secondary" style="margin-top: 20px;">
+                    <i class="fas fa-sync-alt"></i> Actualizar Estados
+                </button>
+            </div>
         </div>
 
         <table class="tracking-table">
@@ -105,9 +110,9 @@
                 <tr>
                     <th>Guía / Tipo</th>
                     <th>Paquetería</th>
-                    <th>Cliente / Vendedor</th>
-                    <th>Envío / Llegada</th>
-                    <th>Status</th>
+                    <th>Contacto</th>
+                    <th>Fechas</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -125,67 +130,67 @@
             <input type="hidden" id="edit-id">
 
             <div class="form-group" style="margin-bottom: 15px;">
-                <label>Tipo de Paquete</label>
+                <label>Tipo</label>
                 <select id="input-direction" style="width:100%; padding:10px; background:var(--slot-bg); color:white; border:1px solid var(--slot-border); border-radius:8px;">
-                    <option value="sent">📤 Yo envié este paquete (Envío a cliente)</option>
-                    <option value="received">📥 Yo recibiré este paquete (Paquete entrante)</option>
+                    <option value="sent">Enviar</option>
+                    <option value="received">Recibir</option>
                 </select>
             </div>
 
             <div class="info-grid">
                 <div class="form-group">
-                    <label id="label-guia">No. de Guía</label>
-                    <input type="text" id="input-guia" placeholder="1234567890">
+                    <label id="label-guia">Guía</label>
+                    <input type="text" id="input-guia">
                 </div>
                 <div class="form-group">
                     <label id="label-paqueteria">Paquetería</label>
-                    <input type="text" id="input-paqueteria" placeholder="Correos de México, Estafeta, FedEx, DHL, etc.">
+                    <input type="text" id="input-paqueteria">
                 </div>
                 <div class="form-group">
-                    <label id="label-cliente">Nombre del Cliente / Contacto</label>
-                    <input type="text" id="input-cliente" placeholder="Juan Pérez / Vendedor">
+                    <label id="label-cliente">Cliente</label>
+                    <input type="text" id="input-cliente">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="group-telefono">
                     <label>Teléfono</label>
-                    <input type="text" id="input-telefono" placeholder="5512345678">
+                    <input type="text" id="input-telefono">
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Ubicación / Dirección</label>
-                <input type="text" id="input-ubicacion" placeholder="Ciudad, Estado, CP">
+            <div class="form-group" id="group-ubicacion">
+                <label>Ubicación</label>
+                <input type="text" id="input-ubicacion">
             </div>
 
             <div class="form-group" id="group-tracking-url">
-                <label>URL Directa de Rastreo (Opcional)</label>
-                <input type="text" id="input-tracking-url" placeholder="https://www.correosdemexico.gob.mx/...">
+                <label>URL</label>
+                <input type="text" id="input-tracking-url">
             </div>
 
             <div class="form-group">
-                <label>Detalles del Pedido</label>
-                <textarea id="input-detalles" style="width: 100%; background: var(--slot-bg); border: 1px solid var(--slot-border); padding: 12px; color: white; border-radius: 8px;" rows="3" placeholder="Contenido del paquete..."></textarea>
+                <label>Detalles</label>
+                <textarea id="input-detalles" style="width: 100%; background: var(--slot-bg); border: 1px solid var(--slot-border); padding: 12px; color: white; border-radius: 8px;" rows="3"></textarea>
             </div>
 
             <div class="info-grid">
                 <div class="form-group">
-                    <label>Fecha de Envío</label>
+                    <label>Envío</label>
                     <input type="date" id="input-fecha-envio">
                 </div>
                 <div class="form-group">
-                    <label>Fecha de Llegada (Estimada)</label>
+                    <label>Llegada</label>
                     <input type="date" id="input-fecha-llegada">
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Status</label>
+                <label>Estado</label>
                 <select id="input-status">
                     <option value="Pendiente">Pendiente</option>
                     <option value="Enviado">Enviado</option>
-                    <option value="in_transit">En Tránsito (in_transit)</option>
-                    <option value="ready_for_pickup">Listo para Recoger / Ventanilla (ready_for_pickup)</option>
-                    <option value="Entregado">Entregado / Completado (completed)</option>
-                    <option value="returned">Devuelto (returned)</option>
+                    <option value="in_transit">En Tránsito</option>
+                    <option value="ready_for_pickup">Listo para Recoger</option>
+                    <option value="completed">Entregado</option>
+                    <option value="returned">Devuelto</option>
                     <option value="Cancelado">Cancelado</option>
                 </select>
             </div>

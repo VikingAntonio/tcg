@@ -266,19 +266,32 @@ serve(async (req) => {
   }
 
   try {
+    let requestUserId: string | null = null;
+    try {
+      const body = await req.json();
+      if (body && body.user_id) requestUserId = body.user_id;
+    } catch (e) {
+      // Body may be empty if triggered by standard cron
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const geminiApiKey = (Deno.env.get("Spirit") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("OPENAI_API_KEY") || "").trim();
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Fetch pending received trackings
-    const { data: rawPending, error: fetchErr } = await supabase
+    // 1. Fetch pending trackings (both sent and received)
+    let query = supabase
       .from("tracking")
       .select("*")
-      .eq("direction", "received")
       .not("status", "ilike", "completed")
       .not("status", "ilike", "entregado");
+
+    if (requestUserId) {
+      query = query.eq("user_id", requestUserId);
+    }
+
+    const { data: rawPending, error: fetchErr } = await query;
 
     if (fetchErr) {
       return new Response(JSON.stringify({ success: false, error: fetchErr.message }), {
