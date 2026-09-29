@@ -1,164 +1,333 @@
+// ====================================================================
+// SUPABASE EDGE FUNCTION PARA GEMINI AI (spirit-chat/index.ts)
+// ====================================================================
+// Asistente virtual en español basado en Google Gemini AI (estilo ChatGPT).
+// Características principales:
+// 1. Detección dinámica de modelos de Google Gemini vía ListModels API.
+// 2. Respuesta abierta a cualquier consulta general (conocimiento universal).
+// 3. Conversación fluida de varios turnos (multi-turn history).
+// 4. Análisis de imágenes multimodal (visión por computadora).
+// 5. Sanitización y filtrado de respuestas para eliminar pensamientos internos (<think>).
+// ====================================================================
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const corsHeaders: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+interface GeminiPart {
+  text?: string;
+  inlineData?: {
+    mimeType: string;
+    data: string;
+  };
+}
+
+interface GeminiContent {
+  role: 'user' | 'model';
+  parts: GeminiPart[];
+}
+
+interface RequestBody {
+  prompt?: string;
+  message?: string;
+  history?: Array<{ role: string; content?: string; text?: string; parts?: any[] }>;
+  conversation_history?: Array<{ role: string; content?: string; text?: string; parts?: any[] }>;
+  image?: string;
+  image_url?: string;
+  image_base64?: string;
+  image_mime?: string;
+  is_proactive?: boolean;
+}
+
+// Limpieza y sanitización estricta de las respuestas devueltas por el modelo
+function sanitizeAIResponse(text: string): string {
+  if (!text) return '';
+  let clean = text;
+
+  // 1. Eliminar bloques de pensamiento o borradores <thought> o <think>
+  clean = clean.replace(/<(thought|think)[\s\S]*?<\/\1>/gi, '');
+
+  // 2. Eliminar secciones de desglose de preguntas, borradores en inglés o razonamientos internos
+  clean = clean.replace(/(question \d+:|knowledge areas:|steps \(|self-correction|drafting:|persona:|constraint:|\"como se hace|\"how to make)[\s\S]*?(?=\n\n[A-Z¡¿"']|Para |El |Hola |¡Hola |$)/gi, '');
+
+  // 3. Eliminar prefijos de razonamiento o etiquetas internas
+  clean = clean.replace(/(pensamiento|thought|reasoning|proceso de pensamiento):[\s\S]*?(?=\n\n|\n[A-Z¡¿"']|$)/gi, '');
+
+  // 4. Filtrar líneas de metadatos o viñetas internas
+  const lines = clean.split('\n');
+  const filtered = lines.filter(line => {
+    const trimmed = line.trim();
+    const lower = trimmed.toLowerCase();
+    if (trimmed.startsWith('*') && (
+      lower.includes('user input') ||
+      lower.includes('persona') ||
+      lower.includes('constraint') ||
+      lower.includes('thought') ||
+      lower.includes('direct answer') ||
+      lower.includes('reasoning') ||
+      lower.includes('pensamiento') ||
+      lower.includes('spanish')
+    )) {
+      return false;
+    }
+    return true;
+  });
+
+  clean = filtered.join('\n').trim();
+
+  // 5. Eliminar bloques json envolventes si existieran
+  clean = clean.replace(/```json[\s\S]*?```/gi, '').replace(/```[\s\S]*?```/gi, '').trim();
+
+  return clean;
+}
+
+// Descubrimiento dinámico de modelos disponibles vía ListModels API
+async function discoverAvailableGeminiModels(apiKey: string): Promise<string[]> {
+  const versions = ['v1beta', 'v1'];
+  const foundModels: string[] = [];
+
+  for (const ver of versions) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/${ver}/models?key=${apiKey}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.models)) {
+          for (const m of data.models) {
+            if (m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent') && !m.name.includes("2.5") && !m.name.includes("deprecated")) {
+              const nameOnly = m.name.replace(/^models\//, '');
+              if (!foundModels.includes(nameOnly)) {
+                foundModels.push(nameOnly);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`Error descubriendo modelos en versión ${ver}:`, e);
+    }
+  }
+
+  if (foundModels.length === 0) {
+    return [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro'
+    ];
+  }
+
+  // Ordenar priorizando modelos flash rápidos
+  foundModels.sort((a, b) => {
+    const aRank = a.includes("2.0-flash") ? 0 : a.includes("1.5-flash") ? 1 : 2;
+    const bRank = b.includes("2.0-flash") ? 0 : b.includes("1.5-flash") ? 1 : 2;
+    return aRank - bRank;
+  });
+
+  return foundModels;
+}
+
+serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const body: RequestBody = await req.json().catch(() => ({}));
     const {
-      message = "",
-      image_base64 = null,
-      image_mime = "image/jpeg",
-      conversation_history = [],
+      prompt,
+      message,
+      history,
+      conversation_history,
+      image,
+      image_url,
+      image_base64,
+      image_mime = 'image/jpeg',
       is_proactive = false
-    } = await req.json().catch(() => ({}));
+    } = body;
 
-    // Return empty proactive response if proactive notification requested
     if (is_proactive) {
       return new Response(JSON.stringify({ should_notify: false }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const requestMsg = (message || "").trim();
-    if (!requestMsg && !image_base64 && conversation_history.length === 0) {
+    const userPrompt = (prompt || message || '').trim();
+    const historyInput = history || conversation_history || [];
+
+    const apiKey = (
+      Deno.env.get('Spirit') ||
+      Deno.env.get('GEMINI_API_KEY') ||
+      Deno.env.get('OPENAI_API_KEY') ||
+      ''
+    ).trim();
+
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({ reply: "¡Hola! ¿En qué te puedo ayudar o de qué te gustaría platicar hoy?" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          reply: 'Error: No se encontró la API Key de Gemini en las variables del servidor (Spirit / GEMINI_API_KEY).'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const geminiApiKey = (Deno.env.get("Spirit") || Deno.env.get("OPENAI_API_KEY") || "").trim();
-    if (!geminiApiKey) {
+    if (!userPrompt && !image && !image_url && !image_base64 && historyInput.length === 0) {
       return new Response(
-        JSON.stringify({ reply: "Lo siento, la API Key no está configurada correctamente en el servidor." }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ reply: '¡Hola! ¿En qué te puedo ayudar o de qué te gustaría platicar hoy?' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const systemPrompt = `Eres una inteligencia artificial conversacional avanzada, completa, versátil, empática, amable e infinitamente inteligente (al estilo de ChatGPT / Gemini). Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, cercana, clara y directa.
+    const candidateModels = await discoverAvailableGeminiModels(apiKey);
+    const contents: GeminiContent[] = [];
 
-ASISTENTE GENERAL MULTI-PROPÓSITO DE CONOCIMIENTO UNIVERSAL:
-- Eres una IA de conocimiento general sin limitaciones de temas. Sabes de cocina (recetas y consejos), ciencia, tecnología, programación, matemáticas, historia, cultura popular, cine, música, videojuegos, filosofía, pasatiempos, consejos de vida diaria y plática casual amigable.
-- Si el usuario te hace cualquier pregunta (sobre ciencia, recetas, código, consejos, reflexiones o simplemente platicar), RESPÓNDELE DE INMEDIATO con la máxima calidad, calidez, detalle y claridad en español.
-- TODAS tus respuestas deben ser formuladas 100% por ti de forma dinámica, original, amigable y natural.
-- No muestres bloques de código de pensamiento (<think>), "Thought:", ni etiquetas internas. Responde directamente con un texto bien estructurado y fácil de leer.`;
+    // Sanitizar historial de conversación asegurando alternancia de roles (user / model)
+    if (Array.isArray(historyInput) && historyInput.length > 0) {
+      for (const turn of historyInput) {
+        if (!turn || typeof turn !== 'object') continue;
+        const role = turn.role === 'model' || turn.role === 'assistant' ? 'model' : 'user';
+        let parts: GeminiPart[] = [];
 
-    // Sanitize conversation history enforcing strict role alternation (user / model)
-    function sanitizeHistory(history: any[]): any[] {
-      if (!Array.isArray(history)) return [];
-      const cleanList: any[] = [];
-      for (const msg of history) {
-        if (!msg || typeof msg !== "object") continue;
-        const role = msg.role === "model" || msg.role === "assistant" ? "model" : "user";
-        let parts: any[] = [];
-        if (Array.isArray(msg.parts)) {
-          parts = msg.parts;
-        } else if (typeof msg.content === "string") {
-          parts = [{ text: msg.content }];
-        } else if (typeof msg.text === "string") {
-          parts = [{ text: msg.text }];
+        if (Array.isArray(turn.parts)) {
+          parts = turn.parts;
+        } else if (typeof turn.content === 'string') {
+          parts = [{ text: turn.content }];
+        } else if (typeof turn.text === 'string') {
+          parts = [{ text: turn.text }];
         }
-        const validParts = parts.filter(
-          (p: any) => p && (p.text !== undefined || p.inlineData !== undefined)
-        );
+
+        const validParts = parts.filter(p => p && (p.text !== undefined || p.inlineData !== undefined));
         if (validParts.length === 0) continue;
 
-        if (cleanList.length > 0 && cleanList[cleanList.length - 1].role === role) {
-          cleanList[cleanList.length - 1].parts.push(...validParts);
+        if (contents.length > 0 && contents[contents.length - 1].role === role) {
+          contents[contents.length - 1].parts.push(...validParts);
         } else {
-          cleanList.push({ role, parts: [...validParts] });
+          contents.push({ role, parts: [...validParts] });
         }
       }
-      return cleanList;
     }
 
-    const contents = sanitizeHistory(conversation_history);
+    // Preparar el turno actual
+    const currentParts: GeminiPart[] = [];
+    const rawImageData = image_base64 || image || image_url;
 
-    // Prepare current turn input parts
-    const userParts: any[] = [];
-    if (requestMsg) {
-      userParts.push({ text: requestMsg });
-    }
-    if (image_base64) {
-      const cleanBase64 = image_base64.replace(/^data:image\/\w+;base64,/, "");
-      userParts.push({
+    if (rawImageData && typeof rawImageData === 'string') {
+      let mimeType = image_mime || 'image/jpeg';
+      let cleanBase64 = rawImageData;
+
+      if (rawImageData.includes('base64,')) {
+        mimeType = rawImageData.substring(rawImageData.indexOf(':') + 1, rawImageData.indexOf(';')) || mimeType;
+        cleanBase64 = rawImageData.split(',')[1];
+      }
+
+      currentParts.push({
         inlineData: {
-          mimeType: image_mime || "image/jpeg",
+          mimeType: mimeType,
           data: cleanBase64
         }
       });
     }
 
-    if (userParts.length > 0) {
-      if (contents.length > 0 && contents[contents.length - 1].role === "user") {
-        contents[contents.length - 1].parts.push(...userParts);
+    if (userPrompt) {
+      currentParts.push({ text: userPrompt });
+    }
+
+    if (currentParts.length > 0) {
+      if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+        contents[contents.length - 1].parts.push(...currentParts);
       } else {
-        contents.push({ role: "user", parts: userParts });
+        contents.push({ role: 'user', parts: currentParts });
       }
     }
 
-    const candidateModels = [
-      "models/gemini-2.0-flash",
-      "models/gemini-1.5-flash",
-      "models/gemini-1.5-pro"
-    ];
+    const systemInstruction = {
+      parts: [
+        {
+          text: `Eres una Inteligencia Artificial extraordinariamente inteligente, capaz, brillante, empática, alegre y atenta (al estilo de ChatGPT / Gemini).
+Tienes conocimientos amplios y profundos sobre programación, matemáticas, física, tecnología, cocina, ciencias, historia, filosofía, arte, cine, música, desarrollo web, pasatiempos y conversación general.
 
-    let cleanReply = "";
+REGLAS ABSOLUTAS E IMPERATIVAS:
+1. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, cercana, clara y directa.
+2. Queda STRICTAMENTE PROHIBIDO incluir pensamientos internos, notas de razonamiento, traducciones al inglés, borradores de pasos, desgloses de preguntas o metacomentarios.
+3. Si te hacen preguntas matemáticas o de cálculo (por ejemplo "1 más 1"), responde el resultado directo ("El resultado de 1 + 1 es 2").
+4. Si te piden explicaciones, guías o recetas, entrega la información completa paso a paso con todos sus detalles directamente en español sin prefijos ni borradores.
+5. NUNCA respondas con plantillas ni mensajes evasivos como "Con mucho gusto te ayudo, ¿qué aspecto quieres profundizar?". RESPONDE DE UNA VEZ LA CONSULTA COMPLETA.
+6. Si te adjuntan una imagen, analízala con alta precisión y describe o responde detalladamente la consulta relacionada.`
+        }
+      ]
+    };
+
+    let geminiRes: Response | null = null;
+    let aiData: any = null;
+    let lastApiError: string = '';
 
     for (const modelName of candidateModels) {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
+      const apiVersion = 'v1beta';
+      const geminiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
+
+      const generationConfig: Record<string, any> = {
+        temperature: 0.7,
+        maxOutputTokens: 2048
+      };
 
       try {
         const res = await fetch(geminiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
+            systemInstruction,
             contents,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2048
-            }
+            generationConfig
           })
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          if (rawText) {
-            cleanReply = rawText
-              .replace(/<think>[\s\S]*?<\/think>/gi, "")
-              .replace(/```json[\s\S]*?```/gi, "")
-              .trim();
-            if (cleanReply) break;
-          }
+        const data = await res.json();
+        if (res.ok && data.candidates && data.candidates.length > 0) {
+          geminiRes = res;
+          aiData = data;
+          break;
+        } else if (data.error && data.error.message) {
+          lastApiError = `[${modelName}] ${data.error.message}`;
+          console.warn(`Intento fallido con modelo ${modelName}:`, data.error.message);
         }
-      } catch (e) {
-        console.warn(`Error llamando a Gemini con modelo ${modelName}:`, e);
+      } catch (e: any) {
+        lastApiError = `[${modelName}] ${e.message}`;
+        console.warn(`Excepción llamando a ${modelName}:`, e);
       }
     }
 
-    if (!cleanReply) {
-      cleanReply = "Lo siento, no pude procesar tu mensaje en este momento. Intenta de nuevo más tarde.";
+    if (!geminiRes || !aiData) {
+      return new Response(
+        JSON.stringify({
+          reply: `Lo siento, ocurrió un inconveniente de comunicación con el servicio de IA. Detalle: ${lastApiError || 'Sin respuesta de modelos.'}`
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    return new Response(JSON.stringify({ reply: cleanReply }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    const candidate = aiData.candidates?.[0];
+    const resParts = candidate?.content?.parts || [];
+    let rawReply = '';
 
-  } catch (err: any) {
+    for (const part of resParts) {
+      if (part.text) rawReply += part.text;
+    }
+
+    const cleanReply = sanitizeAIResponse(rawReply);
+
     return new Response(
-      JSON.stringify({ reply: "Ocurrió un error al procesar la solicitud: " + err.message }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ reply: cleanReply || 'No pude generar una respuesta clara en este momento.' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({ reply: 'Error interno en la Edge Function: ' + error.message }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
