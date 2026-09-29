@@ -278,22 +278,12 @@ REGLAS DE EVALUACIÓN:
       const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
       const listData = await listRes.json();
 
-      if (!listRes.ok || listData.error) {
-        return new Response(JSON.stringify({ should_notify: false, error: listData?.error?.message }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-
-      const availableModels = (listData.models || [])
+      let availableModels = (listData?.models || [])
         .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
         .map((m: any) => m.name);
 
       if (availableModels.length === 0) {
-        return new Response(JSON.stringify({ should_notify: false }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        availableModels = ["models/gemini-2.0-flash", "models/gemini-1.5-flash", "models/gemini-1.5-pro"];
       }
 
       for (const modelName of availableModels) {
@@ -374,7 +364,6 @@ Si la imagen NO es una carta o no se distingue, responde:
 }`;
 
       const targetMime = image_mime || "image/jpeg";
-      // Prioritize gemini-2.0-flash for high speed and accuracy
       const candidateModels = ["models/gemini-2.0-flash", "models/gemini-1.5-flash", "models/gemini-1.5-pro"];
 
       for (const modelName of candidateModels) {
@@ -2122,71 +2111,53 @@ Si la imagen NO es una carta o no se distingue, responde:
       }
     }
 
-    const systemPrompt = `Eres la entidad virtual (${spiritName}), una inteligencia artificial conversacional completa, versátil, amable e inteligente, además de ser la asistente virtual experta de Viking TCG. Adaptas tu tono y personalidad al estilo del personaje: ${characterVoiceStyle}. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, empática, inteligente y directa.
+    const systemPrompt = `Eres la entidad virtual (${spiritName}), una inteligencia artificial conversacional completa, versátil, empática, amable e infinitamente inteligente (al estilo de ChatGPT / Gemini), además de ser la compañera y asistente experta de Viking TCG. Adaptas tu tono y personalidad al estilo del personaje: ${characterVoiceStyle}. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, empática, inteligente, cercana y directa.
 
-ASISTENTE GENERAL MULTI-PROPÓSITO (ESTILO CHATGPT / AMIGA INTELIGENTE):
-- Funcionas como una IA de propósito general (similar a ChatGPT) y una amiga/compañera conversacional.
-- Puedes hablar, filosofar, resolver dudas académicos, dar consejos, explicar conceptos de ciencia, historia, tecnología, cultura pop, vida diaria, videojuegos o cualquier tema libre que el usuario desee platicar o consultar.
-- NUNCA restrinja la conversación únicamente a Viking TCG o a la tienda. Está ESTRICTAMENTE PROHIBIDO responder frases como "Solo puedo ayudarte con dudas de Viking TCG", "Solo puedo responder cosas de la tienda", o negarte a responder preguntas sobre otros temas. Si el usuario hace una pregunta general o simplemente quiere charlar, respóndele con calidez, riqueza de conocimientos y fluidez.
+ASISTENTE GENERAL MULTI-PROPÓSITO DE CONOCIMIENTO UNIVERSAL (ESTILO CHATGPT):
+- Eres una IA de conocimiento general sin limitaciones de temas. Sabes de cocina (recetas, trucos, platillos), ciencia, tecnología, programación, matemáticas, historia, cultura popular, cine, música, videojuegos, filosofía, consejos de vida diaria y plática casual amigable.
+- Si el usuario te hace una pregunta general (como "cómo hacer un pay de queso", "explícame la teoría de la relatividad", "dame una receta", "escribe un código", "recomiéndame una película" o simplemente quiere charlar), RESPÓNDELE DE INMEDIATO con la máxima calidad, calidez, detalle y riqueza de conocimientos en español.
+- ESTÁ ESTRICTAMENTE PROHIBIDO limitar la conversación a Viking TCG o a la tienda. NUNCA respondas diciendo que solo puedes ayudar con la tienda, ni pidas nombres exactos de álbumes o decks cuando el usuario te haga preguntas generales o de otros temas.
+- NUNCA uses respuestas de plantilla, frases robóticas ni mensajes prefabricados. TODAS tus respuestas deben ser formuladas 100% por ti de forma dinámica, original y natural.
 
 BASE DE CONOCIMIENTO DE LA TIENDA Y APRENDIZAJES (LEARN.HTML) DE ESTE USUARIO:
 ${userLearnItemsText || "No hay notas ni preguntas frecuentes registradas aún en learn.html para este usuario."}
 
-DIRECTIVAS DE TIENDA Y REGLAS DE ORO:
-1. USO OBLIGATORIO Y PRIORITARIO DE LA BASE DE CONOCIMIENTO Y BÚSQUEDA PARA LA TIENDA:
-   - TIENES ACCESO DIRECTO a la información de la tienda, FAQs, notas y datos de Google Sheets de este usuario (mostrados arriba) para responder dudas sobre su negocio.
-   - NUNCA respondas diciendo "no tengo esa información", "no puedo ver el contenido de Google Sheets", o "no puedo entrar a enlaces" si la pregunta trata sobre la ubicación, precios, horarios, FAQs o datos del catálogo de este usuario.
-   - Si la respuesta está en los datos de arriba (FAQs, Google Sheets, notas de learn.html), RESPÓNSELA DE INMEDIATO con precisión.
-   - Si la consulta requiere datos en tiempo real de álbumes, decks, productos sellados, wishlist o subastas, USA LAS HERRAMIENTAS CORRESPONDIENTES ('get_user_albums', 'get_album_details', 'get_user_decks', 'get_deck_details', 'get_sealed_products', 'search_cards', 'get_user_learn_items') ANTES de responder.
+DIRECTIVAS DE LA TIENDA Y GESTIÓN DE INVENTARIO:
+1. CONSULTA Y ACCIONES EN LA TIENDA:
+   - Tienes acceso directo a la información de la tienda, FAQs, notas y datos de Google Sheets de este usuario (mostrados arriba) para responder dudas sobre su negocio.
+   - Si la consulta del usuario trata sobre álbumes, decks, productos sellados, wishlist, subastas, inversiones o rastreo, utiliza las herramientas correspondientes para obtener los datos precisos.
+   - Si el usuario te pide realizar una acción CRUD (crear, agregar, modificar, actualizar o eliminar), invoca la herramienta adecuada y luego explica con tus propias palabras en español natural lo que se realizó.
 
-2. LIBERA TODO TU POTENCIAL - EJECUTA ACCIONES DE INMEDIATO:
-   Cuando el usuario te pida realizar cualquier operación CRUD (crear, agregar, modificar, actualizar o eliminar álbumes, cartas, decks, wishlist, productos sellados, claims, subastas, inversiones, eventos, preventas, widgets/dominios o elementos de learn), DEBES INVOCAR LA HERRAMIENTA ADECUADA EN TU PRIMERA RESPUESTA. No preguntes si deseas hacerlo si el usuario ya te dio la orden; simplemente ejecuta la acción.
+2. FORMATO Y ESTILO:
+   - No muestres bloques de código de pensamiento (<think>), "Thought:", ni etiquetas internas.
+   - Responde directamente con un texto bien estructurado, amigable, claro e inteligente.
 
-3. PROHIBICIÓN ABSOLUTA DE FRASES GENÉRICAS Y EVASIVAS:
-   Está estrictamente prohibido responder con respuestas robóticas o prefabricadas como "Entendido. ¿Deseas realizar alguna otra consulta o modificación?". Si una herramienta devuelve un resultado exitoso, explica exactamente lo que se hizo. Si la consulta pide información existente, responde con la información concreta.
-
-4. AISLAMIENTO ESTRICTO DE TIENDA / USUARIO (TENANT ISOLATION):
-   Estás atendiendo EXCLUSIVAMENTE a la tienda del usuario con ID ${targetUserId || 'desconocido'}. Solo debes consultar y modificar información perteneciente a este usuario específico.
-
-5. BÚSQUEDA Y AUTOCORRECCIÓN DE CARTAS MULTI-TCG:
-   Entiendes y buscas cartas de Yu-Gi-Oh!, Pokémon, Disney Lorcana, One Piece, Magic The Gathering, etc. Si el usuario escribe mal el nombre de una carta, utiliza las herramientas de búsqueda interna/externa para obtener la carta correcta y su imagen oficial.
-
-6. FORMATO LIMPIO SIN PENSAMIENTOS NI EMOJIS:
-   No muestres bloques de código de pensamiento (<think>), "Thought:", ni emojis. Responde directamente con un mensaje amigable, libre, inteligente y preciso en español.
-
-7. MODOS DE PERMISO Y SEGURIDAD:
-   - Modo actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso total para modificar la base de datos)" : "CLIENTE PÚBLICO (Modo de solo consulta)"}.
-   - En modo ADMINISTRADOR: Ejecuta todas las herramientas de escritura que el usuario solicite.
-   - En modo PÚBLICO: Ofrece información detallada y guía al cliente. Si pide hacer ediciones, indícale amablemente que debe iniciar sesión en su panel de administración.
+3. MODO DE PERMISO Y SEGURIDAD:
+   - Modo actual: ${is_admin ? "PROPIETARIO ADMINISTRADOR (Acceso total para consultar y modificar la base de datos)" : "CLIENTE PÚBLICO (Modo de solo consulta)"}.
 `;
 
-    // Fetch available Gemini models
-    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
-    const listData = await listRes.json();
+    // Fetch available Gemini models with fallback defaults
+    let availableModels: string[] = [];
+    try {
+      const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`);
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        availableModels = (listData.models || [])
+          .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
+          .map((m: any) => m.name);
 
-    if (!listRes.ok || listData.error) {
-      return new Response(JSON.stringify({ reply: `Error de Google Gemini: ${listData?.error?.message || 'Error de API Key'}` }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+        availableModels.sort((a: string, b: string) => {
+          const aRank = a.includes("2.0-flash") ? 0 : a.includes("1.5-flash") ? 1 : 2;
+          const bRank = b.includes("2.0-flash") ? 0 : b.includes("1.5-flash") ? 1 : 2;
+          return aRank - bRank;
+        });
+      }
+    } catch (e) {
+      console.warn("Error al listar modelos de Gemini, usando modelos por defecto:", e);
     }
 
-    let availableModels = (listData.models || [])
-      .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent") && !m.name.includes("2.5") && !m.name.includes("deprecated"))
-      .map((m: any) => m.name);
-
-    // Sort models so ultra-fast flash models (e.g. gemini-2.0-flash, gemini-1.5-flash) are tried first
-    availableModels.sort((a: string, b: string) => {
-      const aIsFlash2 = a.includes("2.0-flash") ? 0 : a.includes("1.5-flash") ? 1 : 2;
-      const bIsFlash2 = b.includes("2.0-flash") ? 0 : b.includes("1.5-flash") ? 1 : 2;
-      return aIsFlash2 - bIsFlash2;
-    });
-
-    if (availableModels.length === 0) {
-      return new Response(JSON.stringify({ reply: "No se encontró ningún modelo habilitado en Google Gemini." }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+    if (!availableModels || availableModels.length === 0) {
+      availableModels = ["models/gemini-2.0-flash", "models/gemini-1.5-flash", "models/gemini-1.5-pro"];
     }
 
     let geminiRes: Response | null = null;
@@ -2205,29 +2176,42 @@ DIRECTIVAS DE TIENDA Y REGLAS DE ORO:
       });
     }
 
-    const sanitizedHistory: any[] = [];
-    if (Array.isArray(conversation_history)) {
-      for (const msg of conversation_history) {
+    // Helper to sanitize history enforcing strict role alternation (user / model)
+    function sanitizeHistory(history: any[]): any[] {
+      if (!Array.isArray(history)) return [];
+      const cleanList: any[] = [];
+      for (const msg of history) {
         if (!msg || typeof msg !== "object") continue;
         const role = msg.role === "model" || msg.role === "assistant" ? "model" : "user";
-        let parts = msg.parts;
-        if (typeof msg.content === "string") {
+        let parts: any[] = [];
+        if (Array.isArray(msg.parts)) {
+          parts = msg.parts;
+        } else if (typeof msg.content === "string") {
           parts = [{ text: msg.content }];
         } else if (typeof msg.text === "string") {
           parts = [{ text: msg.text }];
         }
-        if (!Array.isArray(parts) || parts.length === 0) continue;
+        const validParts = parts.filter((p: any) => p && (p.text !== undefined || p.inlineData !== undefined || p.functionCall !== undefined || p.functionResponse !== undefined));
+        if (validParts.length === 0) continue;
 
-        const cleanParts = parts.filter((p: any) => p && (p.text !== undefined || p.inlineData !== undefined));
-        if (cleanParts.length > 0) {
-          sanitizedHistory.push({ role, parts: cleanParts });
+        if (cleanList.length > 0 && cleanList[cleanList.length - 1].role === role) {
+          cleanList[cleanList.length - 1].parts.push(...validParts);
+        } else {
+          cleanList.push({ role, parts: [...validParts] });
         }
       }
+      return cleanList;
     }
 
+    const sanitizedHistory = sanitizeHistory(conversation_history);
     const contents = [...sanitizedHistory];
+
     if (userParts.length > 0) {
-      contents.push({ role: "user", parts: userParts });
+      if (contents.length > 0 && contents[contents.length - 1].role === "user") {
+        contents[contents.length - 1].parts.push(...userParts);
+      } else {
+        contents.push({ role: "user", parts: userParts });
+      }
     }
 
     for (const modelName of availableModels) {
@@ -2242,8 +2226,8 @@ DIRECTIVAS DE TIENDA Y REGLAS DE ORO:
             contents,
             tools,
             generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 1024
+              temperature: 0.7,
+              maxOutputTokens: 4096
             }
           })
         });
@@ -2303,9 +2287,13 @@ DIRECTIVAS DE TIENDA Y REGLAS DE ORO:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt + "\n\nINSTRUCCIÓN CRÍTICA DE RESPUESTA: Explica en detalle el resultado de la función o acción al usuario en español con datos concretos (nombres de cartas, ubicación, precio, estado, etc.), en un mensaje completo, profesional y directo. NO respondas solo con frases genéricas como 'Operación realizada'." }] },
+          systemInstruction: { parts: [{ text: systemPrompt + "\n\nINSTRUCCIÓN DE RESPUESTA: Explica detallada y naturalmente en español el resultado de la acción realizada o los datos consultados, de manera completa, amable y directa." }] },
           contents,
-          tools
+          tools,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4096
+          }
         })
       });
 
@@ -2322,45 +2310,67 @@ DIRECTIVAS DE TIENDA Y REGLAS DE ORO:
       if (part.text) rawTextReply += part.text;
     }
 
-    // Post-processing: Strip code blocks and thoughts without destroying natural Spanish text
+    // Post-processing text cleanup: remove code blocks and internal thoughts
     let cleanReply = rawTextReply
       .replace(/```json[\s\S]*?```/gi, "")
       .replace(/```[\s\S]*?```/gi, "")
       .replace(/<think>[\s\S]*?<\/think>/gi, "")
       .trim();
 
-    // Remove specific thought/log header lines if present
+    // Clean internal thought headers if present at top
     const lines = cleanReply.split("\n");
     const filteredLines = lines.filter(l => {
       const trimmed = l.trim();
-      if (/^(\*|\-)?\s*(Role|Tone|Current Session Mode|User ID|Plan|Thought|Thinking|Action|Observation|Check against rules|Acknowledge|Confirm|Maintain|Avoid|Instruction|Step|Guidelines|Notes):/i.test(trimmed)) return false;
+      if (/^(\*|\-)?\s*(Role|Tone|Current Session Mode|User ID|Thought|Thinking|Action|Observation|Check against rules|Acknowledge|Confirm|Maintain|Avoid):/i.test(trimmed)) return false;
       if (/^(Response plan|Here is the response|System:)/i.test(trimmed)) return false;
       return true;
     });
 
     cleanReply = filteredLines.join("\n").trim();
 
-    // Strip out emojis from the reply
-    cleanReply = cleanReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
-
-    // Post-processing: Generate explicit response if cleanReply is empty or canned
-    if (executedToolResults.length > 0) {
+    // If tool results were executed and Gemini produced minimal or empty text, synthesize from tool results
+    if (executedToolResults.length > 0 && !cleanReply) {
       const msgs = executedToolResults.map(tr => {
         if (tr.result?.error) {
-          return `Error al ejecutar '${tr.tool}': ${tr.result.error} ${tr.result.suggestion || ''}`;
+          return `Error al ejecutar '${tr.tool}': ${tr.result.error}`;
         }
         return tr.result?.message || tr.result?.summary || null;
       }).filter(Boolean);
 
-      if (!cleanReply || cleanReply.includes("Entendido. ¿Deseas realizar alguna otra consulta") || cleanReply.includes("Acción ejecutada correctamente") || cleanReply.startsWith("Operación '")) {
-        if (msgs.length > 0) {
-          cleanReply = msgs.join("\n\n");
-        }
+      if (msgs.length > 0) {
+        cleanReply = msgs.join("\n\n");
       }
     }
 
+    // Fallback: If cleanReply is still empty, call Gemini in pure text mode without tools to generate a natural response
     if (!cleanReply) {
-      cleanReply = "He procesado tu solicitud. Si deseas realizar algún cambio en tus álbumes, decks, productos sellados, wishlist o inversiones, indícamelo con el nombre exacto.";
+      for (const modelName of availableModels) {
+        try {
+          const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${geminiApiKey}`;
+          const res = await fetch(fallbackUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents,
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2048
+              }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            if (text) {
+              cleanReply = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+              if (cleanReply) break;
+            }
+          }
+        } catch (e) {
+          console.warn("Error en fallback conversacional con Gemini:", e);
+        }
+      }
     }
 
     return new Response(JSON.stringify({
