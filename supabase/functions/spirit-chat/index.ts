@@ -52,14 +52,42 @@ function sanitizeAIResponse(text: string): string {
   if (!text) return '';
   let clean = text;
 
-  clean = clean.replace(/<(thought|think)[\s\S]*?<\/\1>/gi, '');
-  clean = clean.replace(/(question \d+:|knowledge areas:|steps \(|self-correction|drafting:|persona:|constraint:|\"como se hace|\"how to make)[\s\S]*?(?=\n\n[A-Z¡¿"']|Para |El |Hola |¡Hola |$)/gi, '');
+  // Eliminar bloques HTML/XML de pensamiento y razonamiento
+  clean = clean.replace(/<(thought|think|reasoning|scratchpad|planning|draft)[\s\S]*?<\/\1>/gi, '');
+
+  // Eliminar secciones de pensamiento / borrador antes de la respuesta real
+  clean = clean.replace(/(question \d+:|knowledge areas:|steps \([^)]*\)|self-correction|drafting:|persona:|constraint:|"como se hace|"how to make)[\s\S]*?(?=\n\n[A-Z¡¿"']|Para |El |Hola |¡Hola |$)/gi, '');
   clean = clean.replace(/(pensamiento|thought|reasoning|proceso de pensamiento):[\s\S]*?(?=\n\n|\n[A-Z¡¿"']|$)/gi, '');
 
+  // Filtrar viñetas internas de planificación de Gemini (User asks, Step 1, Direct and helpful, etc.)
   const lines = clean.split('\n');
   const filtered = lines.filter(line => {
     const trimmed = line.trim();
     const lower = trimmed.toLowerCase();
+
+    if (
+      lower.startsWith('* user asks:') ||
+      lower.startsWith('user asks:') ||
+      lower.startsWith('* tracking number') ||
+      lower.startsWith('* acknowledge') ||
+      lower.startsWith('* explain') ||
+      lower.startsWith('* provide') ||
+      lower.startsWith('* offer') ||
+      lower.startsWith('* direct and helpful') ||
+      lower.startsWith('* identify the carrier') ||
+      lower.startsWith('* direct the user') ||
+      lower.startsWith('* alternative') ||
+      lower.startsWith('step 1:') ||
+      lower.startsWith('step 2:') ||
+      lower.startsWith('step 3:') ||
+      lower.startsWith('step 4:') ||
+      lower.startsWith('* "no tengo acceso') ||
+      lower.startsWith('* "sin embargo') ||
+      lower.startsWith('* "para consultar')
+    ) {
+      return false;
+    }
+
     if (trimmed.startsWith('*') && (
       lower.includes('user input') ||
       lower.includes('persona') ||
@@ -68,10 +96,14 @@ function sanitizeAIResponse(text: string): string {
       lower.includes('direct answer') ||
       lower.includes('reasoning') ||
       lower.includes('pensamiento') ||
-      lower.includes('spanish')
+      lower.includes('spanish') ||
+      lower.includes('carrier') ||
+      lower.includes('logistics') ||
+      lower.includes('direct and helpful')
     )) {
       return false;
     }
+
     return true;
   });
 
@@ -258,19 +290,53 @@ serve(async (req: Request) => {
       }
     }
 
+    // Extraer número de guía o código de seguimiento mencionado en el prompt
+    const trackingCodeMatches = userPrompt.match(/\b[A-Za-z0-9]{6,30}\b/g) || [];
+    const potentialGuiaCodes = trackingCodeMatches.filter(code => /\d/.test(code) && /[A-Za-z]/.test(code));
+
     // Consultar información actual de la tabla 'public.tracking'
     let trackingContextText = '';
     if (supabase) {
       try {
-        let q = supabase.from('tracking').select('*').order('created_at', { ascending: false });
-        if (store_id) {
-          q = q.eq('user_id', store_id);
-        }
-        const { data: trackings } = await q.limit(50);
+        let trackings: any[] = [];
 
-        if (trackings && trackings.length > 0) {
+        // 1. Si el usuario menciona una guía o código de rastreo específico
+        if (potentialGuiaCodes.length > 0) {
+          for (const code of potentialGuiaCodes) {
+            const { data: matched } = await supabase
+              .from('tracking')
+              .select('*')
+              .or(`guia.ilike.%${code}%,tracking_number.ilike.%${code}%`);
+
+            if (matched && matched.length > 0) {
+              trackings.push(...matched);
+            }
+          }
+        }
+
+        // 2. Si no se especificó o no se encontró por código exacto, traer los registros recientes
+        if (trackings.length === 0) {
+          let q = supabase.from('tracking').select('*').order('created_at', { ascending: false });
+          if (store_id) {
+            const { data: userTrackings } = await q.eq('user_id', store_id).limit(50);
+            if (userTrackings && userTrackings.length > 0) {
+              trackings = userTrackings;
+            }
+          }
+          if (trackings.length === 0) {
+            const { data: globalTrackings } = await supabase.from('tracking').select('*').order('created_at', { ascending: false }).limit(50);
+            if (globalTrackings && globalTrackings.length > 0) {
+              trackings = globalTrackings;
+            }
+          }
+        }
+
+        // Eliminar duplicados si los hubiera
+        const uniqueTrackings = Array.from(new Map(trackings.map(item => [item.id, item])).values());
+
+        if (uniqueTrackings.length > 0) {
           trackingContextText = `INFORMACIÓN ACTUAL DE TRACKINGS / PAQUETES (Base de Datos):
-${trackings.map((t, idx) => {
+${uniqueTrackings.map((t, idx) => {
   const dir = t.direction === 'received' ? 'Recibir (Compra)' : 'Enviar (Venta)';
   const guia = t.guia || t.tracking_number || 'N/A';
   const paq = t.paqueteria || t.carrier || 'N/A';
@@ -283,7 +349,7 @@ ${trackings.map((t, idx) => {
   return `${idx + 1}. Tipo: ${dir} | Guía: ${guia} | Paquetería: ${paq} | Contacto: ${contacto} | Estado actual: ${st} | Fecha Envío: ${fEnvio} | Fecha Llegada Estimada: ${fLlegada} | Última verificación: ${ultCheck} | Enlace: ${url}`;
 }).join('\n')}`;
         } else {
-          trackingContextText = `INFORMACIÓN ACTUAL DE TRACKINGS: No hay registros almacenados en este momento.`;
+          trackingContextText = `INFORMACIÓN ACTUAL DE TRACKINGS EN BASE DE DATOS: No se encontraron registros almacenados para la consulta ${potentialGuiaCodes.length > 0 ? `(${potentialGuiaCodes.join(', ')})` : ''}.`;
         }
       } catch (e) {
         console.warn("Error consultando tabla tracking para contexto:", e);
@@ -355,17 +421,20 @@ ${trackings.map((t, idx) => {
     const systemInstruction = {
       parts: [
         {
-          text: `Eres una Inteligencia Artificial extraordinariamente inteligente, capaz, brillante, empática, alegre y atenta (al estilo de ChatGPT / Gemini).
-Tienes acceso directo en tiempo real a la información de los envíos/paquetes en la tabla de tracking.
+          text: `Eres un Asistente Virtual de Inteligencia Artificial profesional, empático, brillante, directo y conversacional (al estilo ChatGPT Pro / Gemini Pro) para la plataforma VikingTCG.
 
+REGLAS OBLIGATORIAS DE RESPUESTA:
+1. PROHIBIDO MOSTRAR PROCESO DE PENSAMIENTO: NUNCA incluyas borradores, notas de planificación, pasos internos ("User asks:", "Step 1:", "Direct and helpful?", "Acknowledge the request", "Identify the carrier"), ni viñetas de razonamiento. Responde de forma limpia, directa y final al usuario.
+2. ACCESO REAL A BASE DE DATOS DE TRACKINGS: TÚ SÍ TIENES ACCESO DIRECTO A LA BASE DE DATOS DE TRACKINGS DE VIKINGTCG. NUNCA digas que "no tienes acceso a bases de datos de mensajería" ni que "eres una IA y no puedes ver los rastreos".
+3. CONSULTA Y RASTREO DE PAQUETES:
+   - Utiliza ÚNICAMENTE los datos provistos a continuación para responder sobre el estado de guías, paquetes, paqueterías, clientes o fechas.
+   - Si la guía solicitada aparece en los datos, proporciona su estado actual, paquetería, fechas de envío/llegada y cualquier detalle relevante.
+   - Si la guía NO se encuentra en la información de la base de datos, informa con amabilidad que el número de guía ingresado no está registrado en el sistema de VikingTCG.
+4. IDIOMA Y ESTILO: Habla SIEMPRE en español fluido, natural, cercano y claro.
+
+DATOS DE SISTEMA Y BASE DE DATOS:
 ${scanSummaryText}
-${trackingContextText}
-
-INSTRUCCIONES CLAVE SOBRE RASTREO Y TRACKING:
-1. Si el usuario te pregunta por el estado de sus paquetes, guías, fechas de llegada, clientes o vendedores, consulta los datos proporcionados arriba y responde con total precisión.
-2. Si el usuario te pide realizar un recorrido de rastreo ("haz un recorrido", "actualiza mis trackings"), confirma que se ha ejecutado el recorrido e informa los estados actualizados de los envíos.
-3. Si un paquete tiene estado "ready_for_pickup", resalta amablemente que ya se encuentra listo para ir a recoger en ventanilla / sucursal del correo.
-4. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, cercana, clara y directa sin incluir notas de razonamiento o código interno.`
+${trackingContextText}`
         }
       ]
     };
@@ -379,7 +448,7 @@ INSTRUCCIONES CLAVE SOBRE RASTREO Y TRACKING:
       const geminiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
 
       const generationConfig: Record<string, any> = {
-        temperature: 0.7,
+        temperature: 0.2,
         maxOutputTokens: 2048
       };
 
