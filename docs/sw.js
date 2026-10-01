@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'viking-static-v97';
+const STATIC_CACHE = 'viking-static-v98';
 const IMAGE_CACHE = 'viking-images-v1';
 const DATA_CACHE = 'viking-data-v1';
 
