@@ -5,12 +5,14 @@
 // Características principales:
 // 1. Detección dinámica de modelos de Google Gemini vía ListModels API.
 // 2. Respuesta abierta a cualquier consulta general (conocimiento universal).
-// 3. Conversación fluida de varios turnos (multi-turn history).
-// 4. Análisis de imágenes multimodal (visión por computadora).
-// 5. Sanitización y filtrado de respuestas para eliminar pensamientos internos (<think>).
+// 3. Consulta y respuesta inteligente sobre la tabla 'public.tracking'.
+// 4. Ejecución de recorrido manual de rastreo a petición del usuario.
+// 5. Notificación de proactividad cuando hay paquetes listos para recoger en ventanilla/correo.
+// 6. Conversación fluida de varios turnos y análisis de imágenes multimodal.
 // ====================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +43,8 @@ interface RequestBody {
   image_base64?: string;
   image_mime?: string;
   is_proactive?: boolean;
+  is_admin?: boolean;
+  store_id?: string;
 }
 
 // Limpieza y sanitización estricta de las respuestas devueltas por el modelo
@@ -48,16 +52,10 @@ function sanitizeAIResponse(text: string): string {
   if (!text) return '';
   let clean = text;
 
-  // 1. Eliminar bloques de pensamiento o borradores <thought> o <think>
   clean = clean.replace(/<(thought|think)[\s\S]*?<\/\1>/gi, '');
-
-  // 2. Eliminar secciones de desglose de preguntas, borradores en inglés o razonamientos internos
   clean = clean.replace(/(question \d+:|knowledge areas:|steps \(|self-correction|drafting:|persona:|constraint:|\"como se hace|\"how to make)[\s\S]*?(?=\n\n[A-Z¡¿"']|Para |El |Hola |¡Hola |$)/gi, '');
-
-  // 3. Eliminar prefijos de razonamiento o etiquetas internas
   clean = clean.replace(/(pensamiento|thought|reasoning|proceso de pensamiento):[\s\S]*?(?=\n\n|\n[A-Z¡¿"']|$)/gi, '');
 
-  // 4. Filtrar líneas de metadatos o viñetas internas
   const lines = clean.split('\n');
   const filtered = lines.filter(line => {
     const trimmed = line.trim();
@@ -78,8 +76,6 @@ function sanitizeAIResponse(text: string): string {
   });
 
   clean = filtered.join('\n').trim();
-
-  // 5. Eliminar bloques json envolventes si existieran
   clean = clean.replace(/```json[\s\S]*?```/gi, '').replace(/```[\s\S]*?```/gi, '').trim();
 
   return clean;
@@ -120,7 +116,6 @@ async function discoverAvailableGeminiModels(apiKey: string): Promise<string[]> 
     ];
   }
 
-  // Ordenar priorizando modelos flash rápidos
   foundModels.sort((a, b) => {
     const aRank = a.includes("2.0-flash") ? 0 : a.includes("1.5-flash") ? 1 : 2;
     const bRank = b.includes("2.0-flash") ? 0 : b.includes("1.5-flash") ? 1 : 2;
@@ -128,6 +123,27 @@ async function discoverAvailableGeminiModels(apiKey: string): Promise<string[]> 
   });
 
   return foundModels;
+}
+
+// Ejecución de recorrido manual invocando la Edge Function 'tracking'
+async function triggerTrackingScan(supabaseUrl: string, supabaseKey: string, storeId?: string): Promise<any> {
+  try {
+    const trackingFunctionUrl = `${supabaseUrl}/functions/v1/tracking`;
+    const res = await fetch(trackingFunctionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify(storeId ? { user_id: storeId, force_all: true } : { force_all: true })
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    console.warn("Error ejecutando scan manual de tracking:", e);
+  }
+  return null;
 }
 
 serve(async (req: Request) => {
@@ -146,10 +162,49 @@ serve(async (req: Request) => {
       image_url,
       image_base64,
       image_mime = 'image/jpeg',
-      is_proactive = false
+      is_proactive = false,
+      store_id
     } = body;
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
+    // --- MANEJO DE PROACTIVIDAD (PENSAMIENTO / NOTIFICACIÓN AUTOMÁTICA) ---
     if (is_proactive) {
+      if (supabase) {
+        let query = supabase.from('tracking').select('*').eq('status', 'ready_for_pickup').eq('is_notified', false);
+        if (store_id) {
+          query = query.eq('user_id', store_id);
+        }
+        const { data: readyItems } = await query;
+
+        if (readyItems && readyItems.length > 0) {
+          const item = readyItems[0];
+          const guia = item.guia || item.tracking_number || 'sin guía';
+          const paqueteria = item.paqueteria || item.carrier || 'paquetería';
+          const persona = item.nombre_cliente || item.seller_name || '';
+
+          // Marcar como notificado
+          await supabase.from('tracking').update({
+            is_notified: true,
+            notified_at: new Date().toISOString()
+          }).eq('id', item.id);
+
+          const notifyMsg = `¡Atención! Tienes un paquete listo para ir a recoger en ventanilla/correo (Guía: ${guia}, ${paqueteria}${persona ? ', Contacto: ' + persona : ''}).`;
+
+          return new Response(JSON.stringify({
+            should_notify: true,
+            is_persistent: true,
+            notification_id: `ready_pickup_${item.id}`,
+            message: notifyMsg
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       return new Response(JSON.stringify({ should_notify: false }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -182,10 +237,63 @@ serve(async (req: Request) => {
       );
     }
 
+    // Detección de petición manual de recorrido de tracking por parte del usuario
+    const lowerPrompt = userPrompt.toLowerCase();
+    const isManualScanRequested = (
+      lowerPrompt.includes('haz un recorrido') ||
+      lowerPrompt.includes('recorrido de tracking') ||
+      lowerPrompt.includes('recorrido de rastreo') ||
+      lowerPrompt.includes('actualiza mis trackings') ||
+      lowerPrompt.includes('actualizar trackings') ||
+      lowerPrompt.includes('revisar paquetes') ||
+      lowerPrompt.includes('checa mis paquetes') ||
+      lowerPrompt.includes('checar paquetes')
+    );
+
+    let scanSummaryText = '';
+    if (isManualScanRequested && supabase) {
+      const scanResult = await triggerTrackingScan(supabaseUrl, supabaseKey, store_id);
+      if (scanResult && scanResult.success) {
+        scanSummaryText = `[SISTEMA: Se acaba de realizar un recorrido en tiempo real de los envíos. Resultados verificados: ${scanResult.count || 0} paquetes.]\n`;
+      }
+    }
+
+    // Consultar información actual de la tabla 'public.tracking'
+    let trackingContextText = '';
+    if (supabase) {
+      try {
+        let q = supabase.from('tracking').select('*').order('created_at', { ascending: false });
+        if (store_id) {
+          q = q.eq('user_id', store_id);
+        }
+        const { data: trackings } = await q.limit(50);
+
+        if (trackings && trackings.length > 0) {
+          trackingContextText = `INFORMACIÓN ACTUAL DE TRACKINGS / PAQUETES (Base de Datos):
+${trackings.map((t, idx) => {
+  const dir = t.direction === 'received' ? 'Recibir (Compra)' : 'Enviar (Venta)';
+  const guia = t.guia || t.tracking_number || 'N/A';
+  const paq = t.paqueteria || t.carrier || 'N/A';
+  const contacto = t.nombre_cliente || t.seller_name || 'N/A';
+  const st = t.status || 'pendiente';
+  const fEnvio = t.fecha_envio || 'No especificada';
+  const fLlegada = t.fecha_llegada || 'No especificada';
+  const url = t.tracking_url || 'N/A';
+  const ultCheck = t.last_checked_at || 'Nunca';
+  return `${idx + 1}. Tipo: ${dir} | Guía: ${guia} | Paquetería: ${paq} | Contacto: ${contacto} | Estado actual: ${st} | Fecha Envío: ${fEnvio} | Fecha Llegada Estimada: ${fLlegada} | Última verificación: ${ultCheck} | Enlace: ${url}`;
+}).join('\n')}`;
+        } else {
+          trackingContextText = `INFORMACIÓN ACTUAL DE TRACKINGS: No hay registros almacenados en este momento.`;
+        }
+      } catch (e) {
+        console.warn("Error consultando tabla tracking para contexto:", e);
+      }
+    }
+
     const candidateModels = await discoverAvailableGeminiModels(apiKey);
     const contents: GeminiContent[] = [];
 
-    // Sanitizar historial de conversación asegurando alternancia de roles (user / model)
+    // Sanitizar historial de conversación
     if (Array.isArray(historyInput) && historyInput.length > 0) {
       for (const turn of historyInput) {
         if (!turn || typeof turn !== 'object') continue;
@@ -248,15 +356,16 @@ serve(async (req: Request) => {
       parts: [
         {
           text: `Eres una Inteligencia Artificial extraordinariamente inteligente, capaz, brillante, empática, alegre y atenta (al estilo de ChatGPT / Gemini).
-Tienes conocimientos amplios y profundos sobre programación, matemáticas, física, tecnología, cocina, ciencias, historia, filosofía, arte, cine, música, desarrollo web, pasatiempos y conversación general.
+Tienes acceso directo en tiempo real a la información de los envíos/paquetes en la tabla de tracking.
 
-REGLAS ABSOLUTAS E IMPERATIVAS:
-1. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, cercana, clara y directa.
-2. Queda STRICTAMENTE PROHIBIDO incluir pensamientos internos, notas de razonamiento, traducciones al inglés, borradores de pasos, desgloses de preguntas o metacomentarios.
-3. Si te hacen preguntas matemáticas o de cálculo (por ejemplo "1 más 1"), responde el resultado directo ("El resultado de 1 + 1 es 2").
-4. Si te piden explicaciones, guías o recetas, entrega la información completa paso a paso con todos sus detalles directamente en español sin prefijos ni borradores.
-5. NUNCA respondas con plantillas ni mensajes evasivos como "Con mucho gusto te ayudo, ¿qué aspecto quieres profundizar?". RESPONDE DE UNA VEZ LA CONSULTA COMPLETA.
-6. Si te adjuntan una imagen, analízala con alta precisión y describe o responde detalladamente la consulta relacionada.`
+${scanSummaryText}
+${trackingContextText}
+
+INSTRUCCIONES CLAVE SOBRE RASTREO Y TRACKING:
+1. Si el usuario te pregunta por el estado de sus paquetes, guías, fechas de llegada, clientes o vendedores, consulta los datos proporcionados arriba y responde con total precisión.
+2. Si el usuario te pide realizar un recorrido de rastreo ("haz un recorrido", "actualiza mis trackings"), confirma que se ha ejecutado el recorrido e informa los estados actualizados de los envíos.
+3. Si un paquete tiene estado "ready_for_pickup", resalta amablemente que ya se encuentra listo para ir a recoger en ventanilla / sucursal del correo.
+4. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, fluida, cercana, clara y directa sin incluir notas de razonamiento o código interno.`
         }
       ]
     };

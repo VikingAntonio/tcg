@@ -1,0 +1,32 @@
+-- ====================================================================
+-- INSTRUCCIONES Y COMANDO SQL PARA EL CRON DIARIO DE TRACKING EN SUPABASE
+-- ====================================================================
+-- Este script activa las extensiones pg_cron y pg_net en Supabase SQL Editor
+-- y programa la ejecución diaria de la Edge Function 'tracking' a las 00:00 UTC.
+--
+-- NOTA IMPORTANTE: Reemplaza las siguientes variables antes de ejecutar:
+--   1. YOUR_PROJECT_REF -> Tu referencia de proyecto en Supabase (ej: xyzabc123)
+--   2. YOUR_SERVICE_ROLE_KEY -> Tu Service Role Key de Supabase Dashboard (API Settings)
+-- ====================================================================
+
+-- 1. Habilitar extensiones necesarias
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
+-- 2. Eliminar cron previo si ya existía para evitar duplicados
+SELECT cron.unschedule('auto-check-received-trackings-daily') WHERE EXISTS (
+  SELECT 1 FROM cron.job WHERE jobname = 'auto-check-received-trackings-daily'
+);
+
+-- 3. Programar el trabajo Cron diario
+SELECT cron.schedule(
+    'auto-check-received-trackings-daily',
+    '0 0 * * *',
+    $$
+    SELECT net.http_post(
+        url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/tracking',
+        headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb,
+        body := '{"force_all": false}'::jsonb
+    );
+    $$
+);

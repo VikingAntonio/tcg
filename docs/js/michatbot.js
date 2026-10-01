@@ -105,7 +105,7 @@ window.ProactiveAssistant = {
                 if (!historyIds.includes(notifId)) {
                     this.saveHistoryId(notifId);
                     const cleanMsg = removeEmojis(data.message);
-                    window.botInstance.say(cleanMsg, 7000);
+                    window.botInstance.say(cleanMsg, 7000, !!data.is_persistent);
                 }
             }
         } catch (e) {
@@ -207,7 +207,7 @@ window.botInstance = {
             console.warn("Error en síntesis de voz:", e);
         }
     },
-    say: function(text, duration = 5000) {
+    say: function(text, duration = 5000, isPersistent = false) {
         if (!text) return;
         if (!this.isMuted) {
             const $bubble = $('#michatbot-bubble');
@@ -224,10 +224,18 @@ window.botInstance = {
             }
 
             if (window.bubbleTimeout) clearTimeout(window.bubbleTimeout);
-            window.bubbleTimeout = setTimeout(() => {
-                if ($bubble.length) $bubble.fadeOut(300);
-                if ($chatGltfBubble.length) $chatGltfBubble.fadeOut(300);
-            }, duration);
+
+            if (isPersistent) {
+                window.isBotBubblePersistent = true;
+            } else {
+                window.isBotBubblePersistent = false;
+                window.bubbleTimeout = setTimeout(() => {
+                    if (!window.isBotBubblePersistent) {
+                        if ($bubble.length) $bubble.fadeOut(300);
+                        if ($chatGltfBubble.length) $chatGltfBubble.fadeOut(300);
+                    }
+                }, duration);
+            }
         }
         if (this.isVoiceEnabled) {
             this.speak(text);
@@ -1547,6 +1555,10 @@ function formatMarkdownResponse(text) {
 let cleanupMobileViewportEvents = null;
 
 function openMichatbotChat() {
+    window.isBotBubblePersistent = false;
+    $('#michatbot-bubble').fadeOut(300);
+    $('#chat-gltf-bubble').fadeOut(300);
+
     const $container = $('#michatbot-chat-container');
     $container.css('display', 'flex').hide().fadeIn(300);
     $('#michatbot-menu').fadeOut(250);
