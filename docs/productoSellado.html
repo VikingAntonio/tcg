@@ -473,10 +473,11 @@
             width: 95% !important;
             overflow: hidden;
             box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+            position: relative;
         }
 
         .modal-ecom-header {
-            padding: 20px 28px;
+            padding: 22px 28px;
             background: rgba(255, 255, 255, 0.02);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
@@ -493,38 +494,31 @@
             margin: 0;
         }
 
-        .modal-nav-tabs {
+        .modal-close-circle-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #ff4757;
+            color: #fff;
             display: flex;
-            background: rgba(0, 0, 0, 0.4);
-            margin: 18px 28px 10px 28px;
-            padding: 4px;
-            border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .modal-nav-tab {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            font-weight: 800;
-            font-size: 0.78rem;
-            letter-spacing: 1px;
-            color: #94a3b8;
-            border-radius: 40px;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
+            font-size: 1rem;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            transition: all 0.25s ease;
         }
 
-        .modal-nav-tab.active {
-            background: #fff;
-            color: #0b1120;
-            box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+        .modal-close-circle-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            background: #ff6b81;
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.6);
         }
 
         .modal-body-scroll {
             padding: 22px 28px;
-            max-height: 62vh;
+            max-height: 65vh;
             overflow-y: auto;
             scrollbar-width: none !important;
         }
@@ -763,89 +757,97 @@
                 <div class="modal-ecom-title">
                     <span id="modal-title">NUEVO PRODUCTO</span>
                 </div>
-                <span id="close-product-modal" class="close-btn" style="position: static; font-size: 28px; color: #64748b;">&times;</span>
-            </div>
-
-            <!-- Modal Navigation Tabs (Pure Text) -->
-            <div class="modal-nav-tabs">
-                <div class="modal-nav-tab active" data-tab="tab-search">BÚSQUEDA GLOBAL</div>
-                <div class="modal-nav-tab" data-tab="tab-data">DATOS DEL PRODUCTO</div>
+                <button id="close-product-modal" class="modal-close-circle-btn" title="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <div class="modal-body-scroll">
                 <input type="hidden" id="edit-product-id">
 
-                <!-- Tab 1: Search Across Internal & External DBs (Pure Text) -->
-                <div id="tab-search" class="tab-content active">
-                    <div class="form-group">
-                        <label style="color: #00d2ff; font-weight: 800; font-size: 0.75rem; letter-spacing: 1px;">BUSCAR EN BASES DE DATOS MUNDIALES E INTERNAS</label>
-                        <div style="display: flex; gap: 10px; margin-top: 12px;">
-                            <input type="text" id="external-search-input" placeholder="Nombre de producto, set o carta..." style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 14px; font-size: 0.95rem;">
-                            <button id="btn-external-search" class="btn" style="padding: 0 22px; border-radius: 12px; font-weight: 800;">BUSCAR</button>
-                        </div>
-                        <div id="external-search-results" class="search-results-grid">
-                            <div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 50px;">
-                                <p style="font-weight: 600; font-size: 0.9rem; margin: 0;">Busca un producto para auto-completar título, imagen y detalles automáticamente.</p>
-                            </div>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Nombre del Producto *</label>
+                    <input type="text" id="product-name" placeholder="Ej: Yu-Gi-Oh! Rarity Collection II Booster Box" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                 </div>
 
-                <!-- Tab 2: Product Data (Pure Text Labels) -->
-                <div id="tab-data" class="tab-content" style="display: none;">
+                <div class="form-group">
+                    <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Descripción o Detalle</label>
+                    <textarea id="product-description" placeholder="Añade detalles, número de sobres, condición, etc..." rows="3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; resize: vertical; font-family: inherit;"></textarea>
+                </div>
+
+                <div class="form-grid-2">
                     <div class="form-group">
-                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Nombre del Producto</label>
-                        <input type="text" id="product-name" placeholder="Ej: Yu-Gi-Oh! Rarity Collection II Booster Box" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                    </div>
-
-                    <div class="form-group">
-                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Descripción o Detalle</label>
-                        <textarea id="product-description" placeholder="Añade detalles, número de sobres, condición, etc..." rows="3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; resize: vertical; font-family: inherit;"></textarea>
-                    </div>
-
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Precio Sugerido / Venta</label>
-                            <input type="text" id="product-price" placeholder="Ej: $1,250.00" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                        </div>
-
-                        <div class="form-group">
-                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Stock / Existencias</label>
-                            <input type="number" id="product-stock" min="0" value="1" placeholder="Ej: 5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Franquicia (TCG)</label>
-                        <select id="product-tcg" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                            <option value="yugioh">Yu-Gi-Oh!</option>
-                            <option value="pokemon">Pokémon</option>
-                            <option value="onepiece">One Piece</option>
-                            <option value="lorcana">Lorcana</option>
-                            <option value="other">Otro</option>
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Estado del Producto</label>
+                        <select id="product-status" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                            <option value="Disponible">Disponible</option>
+                            <option value="Agotado">Agotado</option>
+                            <option value="Preventa">Preventa</option>
+                            <option value="Poco Stock">Poco Stock</option>
+                            <option value="En Camino">En Camino</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Imagen del Producto</label>
-                        <label class="file-drop-zone" id="drop-zone-product" for="input-product-file" style="display: block; background: rgba(0,0,0,0.3); border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
-                            <p style="font-weight: 700; margin: 0 0 4px 0; color: #fff;">Arrastra una imagen aquí</p>
-                            <p style="font-size: 0.75rem; color: #64748b; margin: 0;">O haz clic para seleccionar un archivo</p>
-                            <input type="file" id="input-product-file" accept="image/*" style="display: none;">
-                            <div class="file-name" style="font-size: 12px; color: #00ff88; margin-top: 8px; font-weight: 700;"></div>
-                        </label>
-                        <input type="text" id="product-image-url" placeholder="O pega un link directo de la imagen..." style="margin-top: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Stock / Existencias</label>
+                        <input type="number" id="product-stock" min="0" value="1" placeholder="Ej: 5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label style="color: #00d2ff; font-weight: 700; font-size: 0.85rem;">Precio de Venta (Público)</label>
+                        <input type="text" id="product-price" placeholder="Ej: $1,250.00" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                     </div>
 
-                    <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); margin-top: 15px;">
-                        <label class="switch">
-                            <input type="checkbox" id="product-public" checked>
-                            <span class="slider"></span>
-                        </label>
-                        <div style="display: flex; flex-direction: column;">
-                            <label style="margin-bottom: 0; cursor: pointer; font-weight: 800; color: #fff; font-size: 0.9rem;" for="product-public">Producto Público</label>
-                            <span style="font-size: 0.72rem; color: #64748b;">Visible en tu tienda y link público</span>
-                        </div>
+                    <div class="form-group">
+                        <label style="color: #f5af19; font-weight: 700; font-size: 0.85rem;">Descuento (Opcional)</label>
+                        <input type="text" id="product-discount" placeholder="Ej: 10% o $100.00" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label style="color: #94a3b8; font-weight: 700; font-size: 0.85rem;">Precio de Compra / Costo (Privado)</label>
+                        <input type="text" id="product-cost-price" placeholder="Ej: $800.00" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="color: #00ff88; font-weight: 700; font-size: 0.85rem;">Ganancia Est. Unitaria (Privada)</label>
+                        <input type="text" id="product-estimated-profit" readonly placeholder="$0.00" style="background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; color: #00ff88; font-weight: 800; padding: 12px; width: 100%; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Franquicia (TCG)</label>
+                    <select id="product-tcg" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                        <option value="yugioh">Yu-Gi-Oh!</option>
+                        <option value="pokemon">Pokémon</option>
+                        <option value="onepiece">One Piece</option>
+                        <option value="lorcana">Lorcana</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Imagen del Producto (Drag & Drop)</label>
+                    <label class="file-drop-zone" id="drop-zone-product" for="input-product-file" style="display: block; background: rgba(0,0,0,0.3); border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #00d2ff; margin-bottom: 8px;"></i>
+                        <p style="font-weight: 700; margin: 0 0 4px 0; color: #fff;">Arrastra una imagen aquí</p>
+                        <p style="font-size: 0.75rem; color: #64748b; margin: 0;">O haz clic para seleccionar un archivo desde tu dispositivo</p>
+                        <input type="file" id="input-product-file" accept="image/*" style="display: none;">
+                        <div class="file-name" style="font-size: 12px; color: #00ff88; margin-top: 8px; font-weight: 700;"></div>
+                    </label>
+                    <input type="hidden" id="product-image-url">
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); margin-top: 15px;">
+                    <label class="switch">
+                        <input type="checkbox" id="product-public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <div style="display: flex; flex-direction: column;">
+                        <label style="margin-bottom: 0; cursor: pointer; font-weight: 800; color: #fff; font-size: 0.9rem;" for="product-public">Producto Público</label>
+                        <span style="font-size: 0.72rem; color: #64748b;">Visible en tu tienda y link público</span>
                     </div>
                 </div>
             </div>

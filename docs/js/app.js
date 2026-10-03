@@ -2652,8 +2652,10 @@ function bindPublicSealedToolbarEvents() {
 
 function openPublicSealedModal(product) {
     const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
-    const isOutOfStock = stockCount <= 0;
+    const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
+    const statusLabel = product.status || (isOutOfStock ? 'Agotado' : 'Disponible');
     const tcgLabel = (product.tcg || 'Otro').toUpperCase();
+    const discountVal = product.discount || '';
 
     Swal.fire({
         title: `<div style="font-size: 1.2rem; font-weight: 800; color: #fff;">${product.name}</div>`,
@@ -2664,9 +2666,10 @@ function openPublicSealedModal(product) {
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px;">
                     <span style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; background: rgba(0,210,255,0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(0,210,255,0.3);">${tcgLabel}</span>
-                    <span style="font-size: 0.85rem; font-weight: 800; color: ${isOutOfStock ? '#ff4757' : '#00ff88'};">${isOutOfStock ? 'Agotado' : `Disponible: ${stockCount} en stock`}</span>
+                    <span style="font-size: 0.85rem; font-weight: 800; color: ${isOutOfStock ? '#ff4757' : '#00ff88'};">${statusLabel} (Stock: ${stockCount})</span>
                 </div>
-                <div style="font-size: 1.5rem; font-weight: 900; color: #00d2ff; margin-bottom: 12px; text-align: center;">${product.price || 'Consultar'}</div>
+                <div style="font-size: 1.5rem; font-weight: 900; color: #00d2ff; margin-bottom: 6px; text-align: center;">${product.price || 'Consultar'}</div>
+                ${discountVal ? `<div style="font-size: 0.9rem; color: #f5af19; font-weight: 800; margin-bottom: 12px;">¡Descuento: ${discountVal}!</div>` : ''}
                 ${product.description ? `<p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px; text-align: left; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">${product.description}</p>` : ''}
             </div>
         `,
@@ -2765,15 +2768,39 @@ function renderPublicSealedGrid() {
 
     products.forEach(product => {
         const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
-        const isOutOfStock = stockCount <= 0;
+        const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
+        const statusLabel = product.status || (isOutOfStock ? 'AGOTADO' : 'DISPONIBLE');
         const tcgLabel = (product.tcg || 'Otro').toUpperCase();
+        const discountVal = product.discount || '';
+
+        let badgeBg = 'rgba(0, 255, 136, 0.18)';
+        let badgeBorder = '#00ff88';
+        let badgeColor = '#00ff88';
+
+        if (statusLabel === 'Agotado' || isOutOfStock) {
+            badgeBg = 'rgba(255, 71, 87, 0.25)';
+            badgeBorder = '#ff4757';
+            badgeColor = '#ff4757';
+        } else if (statusLabel === 'Preventa') {
+            badgeBg = 'rgba(0, 210, 255, 0.25)';
+            badgeBorder = '#00d2ff';
+            badgeColor = '#00d2ff';
+        } else if (statusLabel === 'Poco Stock') {
+            badgeBg = 'rgba(245, 175, 25, 0.25)';
+            badgeBorder = '#f5af19';
+            badgeColor = '#f5af19';
+        } else if (statusLabel === 'En Camino') {
+            badgeBg = 'rgba(155, 89, 182, 0.25)';
+            badgeBorder = '#9b59b6';
+            badgeColor = '#9b59b6';
+        }
 
         const $item = $(`
             <div class="deck-public-item sealed-product-item sealed-product-card-modern" id="product-item-${product.id}">
                 <div>
                     <div class="product-image-container">
                         <span style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; color: #00d2ff; backdrop-filter: blur(8px); z-index: 2;">${tcgLabel}</span>
-                        ${isOutOfStock ? '<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(255, 71, 87, 0.25); border: 1px solid #ff4757; color: #ff4757; padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; backdrop-filter: blur(8px); z-index: 2;">AGOTADO</span>' : `<span style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 255, 136, 0.18); border: 1px solid #00ff88; color: #00ff88; padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; backdrop-filter: blur(8px); z-index: 2;">DISPONIBLE: ${stockCount}</span>`}
+                        <span style="position: absolute; bottom: 10px; right: 10px; background: ${badgeBg}; border: 1px solid ${badgeBorder}; color: ${badgeColor}; padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; backdrop-filter: blur(8px); z-index: 2;">${statusLabel.toUpperCase()} (${stockCount})</span>
                         <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img" style="max-width: 88%; max-height: 88%; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)); pointer-events: none;">
                     </div>
                     <h3 style="margin: 12px 0 6px 0; font-size: 1.05rem; font-weight: 800; color: #ffffff; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.7em;">${product.name}</h3>
@@ -2781,8 +2808,11 @@ function renderPublicSealedGrid() {
                 </div>
 
                 <div style="margin-top: 10px;">
-                    <div style="color: #00ff88; font-weight: 900; font-size: 1.3rem; margin-bottom: 12px; text-align: left; text-shadow: 0 2px 10px rgba(0, 255, 136, 0.2);">${product.price || 'Consultar'}</div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="display: flex; align-items: baseline; gap: 8px;">
+                        <span style="color: #00ff88; font-weight: 900; font-size: 1.3rem; text-shadow: 0 2px 10px rgba(0, 255, 136, 0.2);">${product.price || 'Consultar'}</span>
+                        ${discountVal ? `<span style="color: #f5af19; font-size: 0.75rem; font-weight: 800;">Desc: ${discountVal}</span>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
                         <button class="btn btn-add-sealed-modern btn-add-sealed-cart" title="Añadir al Carrito">
                             <i class="fas fa-shopping-cart"></i> <span>Añadir</span>
                         </button>
