@@ -300,10 +300,6 @@ function renderAdminProductGrid(products) {
             statusBg = 'rgba(255, 71, 87, 0.15)';
             statusBorder = 'rgba(255, 71, 87, 0.3)';
             statusColor = '#ff4757';
-        } else if (statusLabel === 'Preventa') {
-            statusBg = 'rgba(0, 210, 255, 0.15)';
-            statusBorder = 'rgba(0, 210, 255, 0.3)';
-            statusColor = '#00d2ff';
         } else if (statusLabel === 'Poco Stock') {
             statusBg = 'rgba(245, 175, 25, 0.15)';
             statusBorder = 'rgba(245, 175, 25, 0.3)';

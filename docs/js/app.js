@@ -2781,10 +2781,6 @@ function renderPublicSealedGrid() {
             badgeBg = 'rgba(255, 71, 87, 0.25)';
             badgeBorder = '#ff4757';
             badgeColor = '#ff4757';
-        } else if (statusLabel === 'Preventa') {
-            badgeBg = 'rgba(0, 210, 255, 0.25)';
-            badgeBorder = '#00d2ff';
-            badgeColor = '#00d2ff';
         } else if (statusLabel === 'Poco Stock') {
             badgeBg = 'rgba(245, 175, 25, 0.25)';
             badgeBorder = '#f5af19';

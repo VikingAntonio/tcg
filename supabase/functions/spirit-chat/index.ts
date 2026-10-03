@@ -8,10 +8,10 @@
 // 3. Conversación fluida de varios turnos (multi-turn history).
 // 4. Análisis de imágenes multimodal (visión por computadora).
 // 5. Sanitización y filtrado de respuestas para eliminar pensamientos internos (<think>).
+// 6. Integración de reglas de Producto Sellado según rol de sesión (is_admin).
 // ====================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { isSealedProductIntent, buildSealedProductSystemPrompt } from "../ProductoSellado.ts";
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -44,6 +44,37 @@ interface RequestBody {
   is_proactive?: boolean;
   is_admin?: boolean;
   db_context?: string;
+}
+
+function buildSealedProductSystemPrompt(dbContext: string, isAdmin: boolean): string {
+  if (isAdmin) {
+    return `
+--- CONTEXTO DE PRODUCTOS SELLADOS EN TIENDA (ADMINISTRADOR) ---
+Tienes acceso completo como Administrador de la tienda. Puedes consultar y administrar todos los datos privados y públicos de productos sellados.
+
+DATOS DISPONIBLES EN SISTEMA:
+${dbContext}
+
+REGLAS DE PRODUCTO SELLADO PARA ADMINISTRADOR:
+1. Si el usuario te indica que desea agregar o modificar un producto sellado ("agrega un nuevo producto", "tengo este producto sellado", etc.), actúa como un asistente eficiente y amable.
+2. Ve recopilando los datos del producto (Nombre, Precio de venta, Descuento, Precio de costo/compra, Stock, Estado "Disponible/Agotado/Poco Stock/En Camino", Franquicia TCG, Imagen).
+3. Si faltan datos clave (como el nombre o el precio), pregúntale amablemente por ellos uno a uno o en grupo, manteniendo el borrador del producto dentro del mismo objeto sin duplicar registros.
+4. Si el administrador te pregunta por los datos o ganancias de un producto, dale la información completa incluyendo costo de compra y ganancia unitaria estimada.
+`;
+  } else {
+    return `
+--- CONTEXTO DE PRODUCTOS SELLADOS EN TIENDA (CLIENTE PÚBLICO) ---
+Eres un asistente de ventas de la tienda. Muestras ÚNICAMENTE la información pública permitida para clientes.
+
+DATOS PÚBLICOS DISPONIBLES EN SISTEMA:
+${dbContext}
+
+REGLAS STRICTAS DE PRIVACIDAD PARA CLIENTES:
+1. Muestra ÚNICAMENTE: Nombre del producto, Precio de venta, Descuento (si aplica), Estado ("Disponible", "Agotado", "Poco Stock", "En Camino"), Franquicia (TCG) y Descripción.
+2. Queda ESTRICTAMENTE PROHIBIDO mostrar o revelar el precio de costo/compra y la ganancia del vendedor.
+3. Si el cliente pregunta si un producto está disponible o cuál es su precio, responde amablemente con los datos públicos del catálogo.
+`;
+  }
 }
 
 // Limpieza y sanitización estricta de las respuestas devueltas por el modelo
