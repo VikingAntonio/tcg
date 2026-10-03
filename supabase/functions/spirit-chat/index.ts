@@ -11,6 +11,7 @@
 // ====================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isSealedProductIntent, buildSealedProductSystemPrompt } from "../ProductoSellado.ts";
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +42,8 @@ interface RequestBody {
   image_base64?: string;
   image_mime?: string;
   is_proactive?: boolean;
+  is_admin?: boolean;
+  db_context?: string;
 }
 
 // Limpieza y sanitización estricta de las respuestas devueltas por el modelo
@@ -244,11 +247,16 @@ serve(async (req: Request) => {
       }
     }
 
+    const { is_admin = false, db_context = '' } = body;
+    const sealedPromptExtension = buildSealedProductSystemPrompt(db_context, is_admin);
+
     const systemInstruction = {
       parts: [
         {
           text: `Eres una Inteligencia Artificial extraordinariamente inteligente, capaz, brillante, alegre, empática y atenta (al estilo ChatGPT Pro / un amigo cercano). No tienes nombre a menos que el usuario prefiera darte uno.
 Tienes conocimientos amplios y profundos sobre programación, matemáticas, física, tecnología, cocina, ciencias, historia, filosofía, arte, cine, música, desarrollo web, pasatiempos, cartas/TCGs y conversación general.
+
+${sealedPromptExtension}
 
 REGLAS ABSOLUTAS E IMPERATIVAS:
 1. Hablas SIEMPRE Y ÚNICAMENTE en español de forma natural, cálida, cercana, fluida y conversacional.

@@ -18,7 +18,6 @@ $(document).ready(async function() {
     $('#btn-open-add-modal').click(function() {
         resetModal();
         $('#product-modal').addClass('active');
-        switchTab('tab-search');
     });
 
     $('#close-product-modal').click(function() {
@@ -41,26 +40,9 @@ $(document).ready(async function() {
         handleLogout();
     });
 
-    // --- Tab Logic ---
-    $('.modal-nav-tab').click(function() {
-        const tabId = $(this).data('tab');
-        switchTab(tabId);
-    });
-
-    function switchTab(tabId) {
-        $('.modal-nav-tab').removeClass('active');
-        $(`.modal-nav-tab[data-tab="${tabId}"]`).addClass('active');
-        $('.tab-content').hide();
-        $(`#${tabId}`).fadeIn(200);
-    }
-
-    // --- Search Logic ---
-    $('#btn-external-search').click(function() {
-        searchInternalAndExternalProducts();
-    });
-
-    $('#external-search-input').keypress(function(e) {
-        if (e.which === 13) searchInternalAndExternalProducts();
+    // --- Profit Calculation ---
+    $('#product-price, #product-discount, #product-cost-price').on('input change', function() {
+        calculateEstimatedProfit();
     });
 
     // --- Filter & Toolbar Logic ---
@@ -191,6 +173,37 @@ async function loadProducts() {
     }
 }
 
+function calculateEstimatedProfit() {
+    const parseVal = (val) => {
+        if (!val) return 0;
+        const clean = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+        return parseFloat(clean) || 0;
+    };
+
+    const price = parseVal($('#product-price').val());
+    let discountStr = ($('#product-discount').val() || '').toString().trim();
+    let discountAmount = 0;
+
+    if (discountStr.includes('%')) {
+        const percent = parseVal(discountStr);
+        discountAmount = (price * percent) / 100;
+    } else {
+        discountAmount = parseVal(discountStr);
+    }
+
+    const effectivePrice = Math.max(0, price - discountAmount);
+    const cost = parseVal($('#product-cost-price').val());
+
+    if (price > 0 && cost > 0) {
+        const profit = effectivePrice - cost;
+        $('#product-estimated-profit').val(`$${profit.toFixed(2)}`);
+    } else if (price > 0 && cost === 0) {
+        $('#product-estimated-profit').val(`$${effectivePrice.toFixed(2)}`);
+    } else {
+        $('#product-estimated-profit').val('$0.00');
+    }
+}
+
 function updateMetricsSummary(products) {
     const total = products.length;
     const publicCount = products.filter(p => p.is_public !== false).length;
@@ -276,13 +289,42 @@ function renderAdminProductGrid(products) {
     products.forEach(product => {
         const isPublic = product.is_public !== false;
         const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
-        const isOutOfStock = stockCount <= 0;
+        const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
+        const statusLabel = product.status || (isOutOfStock ? 'Agotado' : 'Disponible');
+
+        let statusBg = 'rgba(0, 255, 136, 0.15)';
+        let statusBorder = 'rgba(0, 255, 136, 0.3)';
+        let statusColor = '#00ff88';
+
+        if (statusLabel === 'Agotado') {
+            statusBg = 'rgba(255, 71, 87, 0.15)';
+            statusBorder = 'rgba(255, 71, 87, 0.3)';
+            statusColor = '#ff4757';
+        } else if (statusLabel === 'Preventa') {
+            statusBg = 'rgba(0, 210, 255, 0.15)';
+            statusBorder = 'rgba(0, 210, 255, 0.3)';
+            statusColor = '#00d2ff';
+        } else if (statusLabel === 'Poco Stock') {
+            statusBg = 'rgba(245, 175, 25, 0.15)';
+            statusBorder = 'rgba(245, 175, 25, 0.3)';
+            statusColor = '#f5af19';
+        } else if (statusLabel === 'En Camino') {
+            statusBg = 'rgba(155, 89, 182, 0.15)';
+            statusBorder = 'rgba(155, 89, 182, 0.3)';
+            statusColor = '#9b59b6';
+        }
+
+        const costPrice = product.cost_price || product.cost || '';
+        const discountVal = product.discount || '';
+        const profitVal = product.estimated_profit || product.profit || '';
 
         const $card = $(`
             <div class="product-ecom-card">
                 <div class="card-img-box">
                     <span class="badge-tcg-pill">${(product.tcg || 'Otro').toUpperCase()}</span>
-                    <span class="badge-stock-pill ${isOutOfStock ? 'out-of-stock' : ''}">${isOutOfStock ? 'Agotado' : 'Stock: ' + stockCount}</span>
+                    <span class="badge-stock-pill" style="background: ${statusBg}; border-color: ${statusBorder}; color: ${statusColor};">
+                        ${statusLabel} (Stock: ${stockCount})
+                    </span>
                     <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${product.name}">
                 </div>
 
@@ -292,8 +334,24 @@ function renderAdminProductGrid(products) {
                         ${product.description ? `<p class="card-desc">${product.description}</p>` : ''}
                     </div>
 
-                    <div class="card-price-row">
-                        <span class="card-price-val">${product.price || 'Consultar'}</span>
+                    <div class="card-price-row" style="flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <span style="font-size: 0.72rem; color: #94a3b8; display: block; font-weight: 700;">PRECIO VENTA</span>
+                            <span class="card-price-val">${product.price || 'Consultar'}</span>
+                            ${discountVal ? `<span style="font-size: 0.75rem; color: #f5af19; font-weight: 800; margin-left: 6px;">Desc: ${discountVal}</span>` : ''}
+                        </div>
+                        ${costPrice ? `
+                            <div style="text-align: right;">
+                                <span style="font-size: 0.68rem; color: #64748b; display: block;">COSTO: $${costPrice}</span>
+                                ${profitVal ? `<span style="font-size: 0.75rem; color: #00ff88; font-weight: 800; display: block;">GANANCIA: ${profitVal}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <button class="btn-sell-one" data-id="${product.id}" style="background: rgba(255, 71, 87, 0.15); border: 1px solid rgba(255, 71, 87, 0.3); color: #ff4757; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
+                            <i class="fas fa-minus-circle"></i> -1 Vender
+                        </button>
                     </div>
 
                     <div class="card-actions-bar">
@@ -316,12 +374,60 @@ function renderAdminProductGrid(products) {
 
         $card.find('.btn-edit').click(() => editProduct(product));
         $card.find('.btn-delete').click(() => deleteProduct(product.id));
+        $card.find('.btn-sell-one').click(() => sellOneUnit(product));
         $card.find('.toggle-public').change(function() {
             updateVisibility(product.id, $(this).is(':checked'));
         });
 
         $container.append($card);
     });
+}
+
+async function sellOneUnit(product) {
+    const currentStock = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
+    if (currentStock <= 0) {
+        Swal.fire({
+            title: 'Sin Stock',
+            text: 'Este producto ya está agotado.',
+            icon: 'warning',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        return;
+    }
+
+    const newStock = currentStock - 1;
+    const newStatus = newStock === 0 ? 'Agotado' : (product.status || 'Disponible');
+
+    try {
+        let res = await _supabase.from('sealed_products').update({ stock: newStock, quantity: newStock, status: newStatus }).eq('id', product.id);
+        if (res.error) {
+            res = await _supabase.from('sealed_products').update({ stock: newStock, quantity: newStock }).eq('id', product.id);
+        }
+
+        if (res.error) throw res.error;
+
+        product.stock = newStock;
+        product.quantity = newStock;
+        product.status = newStatus;
+
+        Swal.fire({
+            title: '¡Venta Registrada!',
+            text: `Quedan ${newStock} unidad(es) de ${product.name}`,
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        updateMetricsSummary(allAdminProducts);
+        applyAdminFiltersAndSort();
+    } catch (e) {
+        Swal.fire('Error', 'No se pudo actualizar el stock: ' + e.message, 'error');
+    }
 }
 
 async function searchInternalAndExternalProducts() {
@@ -546,6 +652,10 @@ async function saveProduct() {
     const name = $('#product-name').val().trim();
     const imageUrl = $('#product-image-url').val().trim();
     const price = $('#product-price').val().trim();
+    const discount = $('#product-discount').val().trim();
+    const costPrice = $('#product-cost-price').val().trim();
+    const estimatedProfit = $('#product-estimated-profit').val().trim();
+    const status = $('#product-status').val();
     const tcg = $('#product-tcg').val();
     const description = $('#product-description').val().trim();
     const stockVal = parseInt($('#product-stock').val()) || 0;
@@ -561,6 +671,12 @@ async function saveProduct() {
         name,
         image_url: imageUrl,
         price,
+        discount,
+        cost_price: costPrice,
+        cost: costPrice,
+        estimated_profit: estimatedProfit,
+        profit: estimatedProfit,
+        status,
         tcg,
         description,
         stock: stockVal,
@@ -575,6 +691,15 @@ async function saveProduct() {
         if (id) {
             let res = await _supabase.from('sealed_products').update(fullProductData).eq('id', id);
             if (res.error) {
+                // Fallback to primary custom fields
+                const midData = {
+                    user_id: currentUser.id, name, image_url: imageUrl, price, discount,
+                    cost_price: costPrice, estimated_profit: estimatedProfit, status, tcg, description,
+                    stock: stockVal, quantity: stockVal, is_public: isPublic
+                };
+                res = await _supabase.from('sealed_products').update(midData).eq('id', id);
+            }
+            if (res.error) {
                 // Fallback to core fields if custom columns fail
                 const coreData = { user_id: currentUser.id, name, image_url: imageUrl, price, tcg, is_public: isPublic };
                 res = await _supabase.from('sealed_products').update(coreData).eq('id', id);
@@ -582,6 +707,14 @@ async function saveProduct() {
             error = res.error;
         } else {
             let res = await _supabase.from('sealed_products').insert([fullProductData]);
+            if (res.error) {
+                const midData = {
+                    user_id: currentUser.id, name, image_url: imageUrl, price, discount,
+                    cost_price: costPrice, estimated_profit: estimatedProfit, status, tcg, description,
+                    stock: stockVal, quantity: stockVal, is_public: isPublic
+                };
+                res = await _supabase.from('sealed_products').insert([midData]);
+            }
             if (res.error) {
                 // Fallback to core fields
                 const coreData = { user_id: currentUser.id, name, image_url: imageUrl, price, tcg, is_public: isPublic };
@@ -615,16 +748,21 @@ function editProduct(product) {
     $('#edit-product-id').val(product.id);
     $('#product-name').val(product.name || '');
     $('#product-image-url').val(product.image_url || '');
+    if (product.image_url) {
+        $('#drop-zone-product .file-name').text('Imagen existente cargada').css('color', '#00ff88');
+    }
     $('#product-price').val(product.price || '');
+    $('#product-discount').val(product.discount || '');
+    $('#product-cost-price').val(product.cost_price || product.cost || '');
+    $('#product-status').val(product.status || 'Disponible');
     $('#product-description').val(product.description || '');
     $('#product-stock').val(product.stock !== undefined ? product.stock : (product.quantity || 1));
     $('#product-tcg').val(product.tcg || 'yugioh');
     $('#product-public').prop('checked', product.is_public !== false);
 
-    $('#product-modal').addClass('active');
+    calculateEstimatedProfit();
 
-    // Switch to DATOS tab for editing
-    $('.modal-nav-tab[data-tab="tab-data"]').click();
+    $('#product-modal').addClass('active');
 }
 
 async function deleteProduct(id) {
@@ -726,19 +864,11 @@ function resetModal() {
     $('#product-image-url').val('');
     $('#drop-zone-product .file-name').text('');
     $('#product-price').val('');
+    $('#product-discount').val('');
+    $('#product-cost-price').val('');
+    $('#product-estimated-profit').val('$0.00');
+    $('#product-status').val('Disponible');
     $('#product-stock').val(1);
     $('#product-tcg').val('yugioh');
     $('#product-public').prop('checked', true);
-    $('#external-search-input').val('');
-    $('#external-search-results').html(`
-        <div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 50px;">
-            <i class="fas fa-search" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4;"></i>
-            <p style="font-weight: 600; font-size: 0.9rem;">Busca un producto para auto-completar título, imagen y detalles automáticamente.</p>
-        </div>
-    `);
-
-    $('.modal-nav-tab').removeClass('active');
-    $('.modal-nav-tab[data-tab="tab-search"]').addClass('active');
-    $('#tab-search').show();
-    $('#tab-data').hide();
 }
