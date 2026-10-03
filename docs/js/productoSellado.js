@@ -740,7 +740,6 @@ async function saveProduct() {
 
 function editProduct(product) {
     resetModal();
-    $('#modal-title').text('EDITAR PRODUCTO');
     $('#edit-product-id').val(product.id);
     $('#product-name').val(product.name || '');
     $('#product-image-url').val(product.image_url || '');
@@ -853,7 +852,6 @@ $('#btn-copy-share-link').click(function() {
 });
 
 function resetModal() {
-    $('#modal-title').text('NUEVO PRODUCTO');
     $('#edit-product-id').val('');
     $('#product-name').val('');
     $('#product-description').val('');
