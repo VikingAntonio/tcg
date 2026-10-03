@@ -1,0 +1,28 @@
+====================================================================
+EXPLICACIÓN: POR QUÉ FUE NECESARIO MODIFICAR SPIRIT-CHAT
+====================================================================
+
+Hola, te explico de manera muy clara, directa y resumida por qué se vinculó
+la lógica del módulo de Producto Sellado en `spirit-chat/index.ts`:
+
+1. ¿CÓMO FUNCIONA EL CHATBOT EN TU PROYECTO?
+En tu proyecto, el widget flotante del chatbot (`michatbot.js` y `viking-widget.js`)
+llama directamente a la Edge Function llamada `spirit-chat` de Supabase para procesar
+todos los mensajes del usuario mediante Gemini AI.
+
+2. ¿DE QUÉ SIRVIÓ CREAR ProductoSellado.ts / ProductoSellado/index.ts?
+Se creó la Edge Function `ProductoSellado` como un módulo independiente especializado
+para organizar las reglas de captura de productos sellados (borrador progresivo,
+diferenciación de costo privado vs. precio público).
+
+3. ¿POR QUÉ SE TUVO QUE INTEGRAR EN spirit-chat?
+Si no se agregaban esas reglas en `spirit-chat`, cuando los usuarios o clientes
+platicaran directamente con el chatbot flotante de la web, Gemini no sabría cómo
+gestionar los productos sellados ni sabría proteger los costos/ganancias privadas.
+Al integrarlo en `spirit-chat`, el chatbot ya comprende cuándo el usuario quiere
+agregar un producto sellado y adapta sus respuestas protegiendo la privacidad.
+
+En resumen: No se modificó nada de la lógica interna de la tienda, únicamente se le
+dio el conocimiento de los productos sellados al asistente Gemini para que funcione
+correctamente en el chat de tu página web.
+====================================================================
