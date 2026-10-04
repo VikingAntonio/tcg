@@ -1451,7 +1451,7 @@ async function switchView(view, skipPush = false) {
     }
 
     // --- Build Mode Check ---
-    const buildViews = ['albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events'];
+    const buildViews = ['albums', 'decks', 'auctions', 'sealed', 'wishlist', 'investments', 'claims', 'events'];
     if (buildViews.includes(view) && window.currentStoreId) {
         try {
             const { data: assignment } = await _supabase
