@@ -1,4 +1,6 @@
 let currentUser = null;
+let allPreorders = [];
+let currentClientsList = [];
 
 $(document).ready(async function() {
     console.log("Initializing Preorders Module...");
@@ -8,15 +10,23 @@ $(document).ready(async function() {
         console.error("Critical initialization error:", err);
     }
 
-    // --- Navigation & UI ---
+    // --- Navigation & Filter Drawer ---
     $('#btn-open-add-modal').click(function() {
         resetModal();
         $('#preorder-modal').addClass('active');
-        switchTab('tab-search');
     });
 
     $('#close-preorder-modal').click(function() {
         $('#preorder-modal').removeClass('active');
+    });
+
+    $('#btn-toggle-admin-filters').click(function() {
+        $(this).toggleClass('active');
+        $('#admin-filter-drawer').slideToggle(200).css('display', $(this).hasClass('active') ? 'flex' : 'none');
+    });
+
+    $('#admin-search-input, #admin-filter-tcg, #admin-filter-visibility').on('input change', function() {
+        filterAndRenderPreorders();
     });
 
     $(document).on('click', '#avatar-btn', function(e) {
@@ -29,31 +39,18 @@ $(document).ready(async function() {
         handleLogout();
     });
 
-    // --- Tab Logic ---
-    $('.modal-tab-btn').click(function() {
-        const tabId = $(this).data('tab');
-        switchTab(tabId);
-    });
-
-    function switchTab(tabId) {
-        $('.modal-tab-btn').removeClass('active');
-        $(`.modal-tab-btn[data-tab="${tabId}"]`).addClass('active');
-        $('.tab-content').hide();
-        $(`#${tabId}`).show();
-    }
-
-    // --- Search Logic ---
-    $('#btn-external-search').click(function() {
-        searchExternalSets();
-    });
-
-    $('#external-search-input').keypress(function(e) {
-        if (e.which == 13) searchExternalSets();
-    });
-
     // --- Save Logic ---
     $('#btn-save-preorder').click(function() {
         savePreorder();
+    });
+
+    // --- Client Entry Management ---
+    $('#btn-add-client-entry').click(function() {
+        addClientEntry();
+    });
+
+    $('#preorder-max-stock, #preorder-price').on('input change', function() {
+        renderClientsTable();
     });
 
     // Cloudinary Drag & Drop for Preorder
@@ -77,7 +74,6 @@ $(document).ready(async function() {
         e.stopPropagation();
         $(this).removeClass('dragover');
     });
-
 
     $(document).on('change', '#input-preorder-file', function() {
         if (this.files.length > 0) {
@@ -118,7 +114,6 @@ async function checkSession() {
             return;
         }
 
-        console.log("Session found for user:", session.user.id);
         const { data: user, error: userError } = await _supabase
             .from('usuarios')
             .select('id, username, max_preorders')
@@ -133,7 +128,6 @@ async function checkSession() {
 
         currentUser = user;
         $('#dropdown-user-name').text(user.username);
-        console.log("Auth success. Showing content for", user.username);
         $('#top-panel, #authenticated-content').fadeIn();
         loadPreorders();
     } catch (err) {
@@ -148,7 +142,7 @@ async function handleLogout() {
 }
 
 async function loadPreorders() {
-    $('#preorder-list').html('<div class="loading" style="grid-column: 1/-1; padding: 100px; text-align: center;"><i class="fas fa-circle-notch fa-spin"></i> Cargando preventas...</div>');
+    $('#preorder-list').html('<div class="loading" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #94a3b8; font-size: 1.1rem;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color: #00d2ff;"></i><br><br>Cargando preventas...</div>');
 
     try {
         const { data: preorders, error } = await _supabase
@@ -159,249 +153,219 @@ async function loadPreorders() {
 
         if (error) throw error;
 
-        if (!preorders || preorders.length === 0) {
-            $('#preorder-list').html('<div class="empty" style="grid-column: 1/-1; padding: 100px; text-align: center; color: #666;">No tienes preventas registradas.</div>');
-            return;
+        allPreorders = preorders || [];
+        updateDashboardMetrics();
+        filterAndRenderPreorders();
+    } catch (err) {
+        console.error("Load preorders error:", err);
+        $('#preorder-list').html('<div class="error" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #ff4757;">Error al cargar preventas. Por favor, refresca la página.</div>');
+    }
+}
+
+function updateDashboardMetrics() {
+    let totalCount = allPreorders.length;
+    let publicCount = 0;
+    let totalReservations = 0;
+    let totalAvailable = 0;
+
+    allPreorders.forEach(p => {
+        if (p.is_public !== false) publicCount++;
+
+        let clients = p.clients_list;
+        if (typeof clients === 'string') {
+            try { clients = JSON.parse(clients); } catch (e) { clients = []; }
         }
+        if (!Array.isArray(clients)) clients = [];
 
-        const $container = $('#preorder-list');
-        $container.empty();
+        let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
+        let maxStock = parseInt(p.max_stock) || 0;
+        let available = Math.max(0, maxStock - reserved);
 
-        preorders.forEach(preorder => {
-            const isPublic = preorder.is_public !== false;
-            const $card = $(`
-                <div class="premium-card">
-                    <div class="premium-card-image">
-                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}">
-                    </div>
-                    <div style="flex: 1;">
-                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${preorder.name}</h3>
-                        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                            <div style="color: #00d2ff; font-weight: 900; font-size: 1.2rem;">${preorder.price || 'Consultar'}</div>
-                            <div style="font-size: 0.7rem; color: #aaa; text-transform: uppercase; font-weight: 800; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">${preorder.tcg}</div>
+        totalReservations += reserved;
+        totalAvailable += available;
+    });
+
+    $('#stat-total-preorders').text(totalCount);
+    $('#stat-public-preorders').text(publicCount);
+    $('#stat-total-reservations').text(totalReservations);
+    $('#stat-available-stock').text(totalAvailable);
+}
+
+function filterAndRenderPreorders() {
+    const searchVal = ($('#admin-search-input').val() || '').toLowerCase().trim();
+    const tcgVal = $('#admin-filter-tcg').val();
+    const visVal = $('#admin-filter-visibility').val();
+
+    let filtered = allPreorders.filter(p => {
+        if (searchVal && !(p.name || '').toLowerCase().includes(searchVal)) return false;
+        if (tcgVal !== 'all' && (p.tcg || '').toLowerCase() !== tcgVal) return false;
+        if (visVal === 'public' && p.is_public === false) return false;
+        if (visVal === 'private' && p.is_public !== false) return false;
+        return true;
+    });
+
+    renderPreordersList(filtered);
+}
+
+function renderPreordersList(preorders) {
+    const $container = $('#preorder-list');
+    $container.empty();
+
+    if (!preorders || preorders.length === 0) {
+        $container.html('<div class="empty" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #64748b; font-size: 1rem;">No hay preventas registradas.</div>');
+        return;
+    }
+
+    preorders.forEach(preorder => {
+        const isPublic = preorder.is_public !== false;
+
+        let clients = preorder.clients_list;
+        if (typeof clients === 'string') {
+            try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+        }
+        if (!Array.isArray(clients)) clients = [];
+
+        let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
+        let maxStock = parseInt(preorder.max_stock) || 0;
+        let available = Math.max(0, maxStock - reserved);
+
+        const $card = $(`
+            <div class="product-ecom-card">
+                <div class="card-img-box">
+                    <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}">
+                    <span class="badge-tcg-pill">${preorder.tcg || 'Otro'}</span>
+                    <span class="badge-stock-pill ${available <= 0 ? 'out-of-stock' : ''}">
+                        ${maxStock > 0 ? `${available} Disp.` : 'Consultar'}
+                    </span>
+                </div>
+
+                <div style="padding: 12px 2px 2px 2px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h3 style="margin: 0 0 6px 0; font-size: 1.05rem; font-weight: 800; color: #fff; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.6em;">
+                            ${preorder.name}
+                        </h3>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                            <div style="font-size: 1.2rem; font-weight: 900; color: #00d2ff;">
+                                ${preorder.price || 'Consultar'}
+                            </div>
+                            <div style="font-size: 0.72rem; color: #ff4757; font-weight: 800; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-clock"></i> ${preorder.payment_deadline || preorder.deadline || 'Fin N/A'}
+                            </div>
                         </div>
-                        <div style="font-size: 0.8rem; color: #ff4757; font-weight: 800; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-clock"></i> Límite: ${preorder.payment_deadline || 'No definido'}
-                        </div>
+
+                        ${preorder.arrival_date ? `
+                            <div style="font-size: 0.72rem; color: #00ff88; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}
+                            </div>
+                        ` : ''}
                     </div>
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 5px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <label class="switch" style="transform: scale(0.75);">
                                 <input type="checkbox" class="toggle-public" data-id="${preorder.id}" ${isPublic ? 'checked' : ''}>
                                 <span class="slider"></span>
                             </label>
-                            <span style="font-size: 9px; color: #666; font-weight: 800; letter-spacing: 0.5px;">${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
+                            <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 800;">${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
                         </div>
-                        <div style="display: flex; gap: 8px;">
-                             <button class="btn btn-secondary btn-share" style="padding: 8px 12px; border-radius: 10px;"><i class="fas fa-share-alt"></i></button>
-                             <button class="btn btn-edit" style="padding: 8px 12px; border-radius: 10px; background: rgba(0,210,255,0.1); color: #00d2ff; border: 1px solid rgba(0,210,255,0.2);"><i class="fas fa-pen"></i></button>
-                             <button class="btn btn-danger btn-delete" style="padding: 8px 12px; border-radius: 10px;"><i class="fas fa-trash"></i></button>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn-icon-square btn-share" title="Compartir"><i class="fas fa-share-alt"></i></button>
+                            <button class="btn-icon-square btn-edit" title="Editar"><i class="fas fa-pen"></i></button>
+                            <button class="btn-icon-square danger btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                 </div>
-            `);
-
-            $card.find('.btn-edit').click(() => editPreorder(preorder));
-            $card.find('.btn-share').click(() => openShareModal(preorder.name, 'preorders', preorder.id));
-            $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
-            $card.find('.toggle-public').change(function() {
-                updateVisibility(preorder.id, $(this).is(':checked'));
-            });
-
-            $container.append($card);
-        });
-    } catch (err) {
-        console.error("Load preorders error:", err);
-        $('#preorder-list').html('<div class="error" style="grid-column: 1/-1; padding: 100px; text-align: center; color: #ff4757;">Error al cargar preventas. Por favor, refresca la página.</div>');
-    }
-}
-
-async function searchExternalSets() {
-    const query = $('#external-search-input').val().trim().toLowerCase();
-
-    if (query.length < 3) {
-        Swal.fire('Atención', 'Por favor, escribe al menos 3 caracteres para buscar.', 'info');
-        return;
-    }
-
-    $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #888;"><i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>Buscando en bases de datos mundiales...</div>');
-
-    try {
-        const searchPromises = [
-            // Yu-Gi-Oh Sets
-            (typeof getYgoSets === 'function' ? getYgoSets() : Promise.resolve([])),
-            // Yu-Gi-Oh Cards
-            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : {data:[]}).catch(() => ({data:[]})),
-            // Pokémon Sets
-            fetch('https://api.tcgdex.net/v2/en/sets').then(r => r.json()).catch(() => []),
-            // Pokémon Cards
-            fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(query)}`).then(r => r.ok ? r.json() : []).catch(() => []),
-            // Lorcana Sets
-            fetch(`https://api.lorcana-api.com/sets/fetch?search=name~${encodeURIComponent(query)}`).then(r => r.json()).catch(() => []),
-            // Lorcana Cards
-            fetch(`https://api.lorcana-api.com/cards/fetch?search=name~${encodeURIComponent(query)}&displayonly=name;image`).then(r => r.json()).catch(() => []),
-            // Viking Search (internal)
-            (typeof VikingData !== 'undefined' ? VikingData.search(query) : Promise.resolve([]))
-        ];
-
-        const [ygoSets, ygoCards, pkSets, pkCards, lorSets, lorCards, vikResults] = await Promise.all(searchPromises);
-
-        let combinedResults = [];
-
-        // Process Viking
-        if (Array.isArray(vikResults)) {
-            combinedResults.push(...vikResults.map(i => ({
-                name: i.name,
-                image: i.image,
-                tcg: i.tcg || 'custom',
-                source: 'VikingData'
-            })));
-        }
-
-        // Process YGO Sets
-        if (Array.isArray(ygoSets)) {
-            ygoSets.filter(s => s.set_name.toLowerCase().includes(query)).forEach(s => {
-                combinedResults.push({
-                    name: s.set_name,
-                    image: `https://images.ygoprodeck.com/images/sets/${s.set_code}.jpg`,
-                    tcg: 'yugioh',
-                    source: 'YGOSet'
-                });
-            });
-        }
-
-        // Process YGO Cards
-        if (ygoCards && ygoCards.data) {
-            ygoCards.data.forEach(c => {
-                combinedResults.push({
-                    name: c.name,
-                    image: c.card_images[0].image_url_small,
-                    tcg: 'yugioh',
-                    source: 'YGOCard'
-                });
-            });
-        }
-
-        // Process PKM Sets
-        if (Array.isArray(pkSets)) {
-            pkSets.filter(s => s.name.toLowerCase().includes(query)).forEach(s => {
-                combinedResults.push({
-                    name: s.name,
-                    image: `${s.logo}.png`,
-                    tcg: 'pokemon',
-                    source: 'PKMSet'
-                });
-            });
-        }
-
-        // Process PKM Cards
-        if (Array.isArray(pkCards)) {
-            pkCards.forEach(c => {
-                combinedResults.push({
-                    name: c.name,
-                    image: `${c.image}/low.webp`,
-                    tcg: 'pokemon',
-                    source: 'PKMCard'
-                });
-            });
-        }
-
-        // Process Lorcana Sets
-        if (Array.isArray(lorSets)) {
-            lorSets.forEach(s => {
-                combinedResults.push({
-                    name: s.Name,
-                    image: 'https://lorcana-api.com/img/logo.svg',
-                    tcg: 'lorcana',
-                    source: 'LorSet'
-                });
-            });
-        }
-
-        // Process Lorcana Cards
-        if (Array.isArray(lorCards)) {
-            lorCards.forEach(c => {
-                combinedResults.push({
-                    name: c.Name,
-                    image: c.Image,
-                    tcg: 'lorcana',
-                    source: 'LorCard'
-                });
-            });
-        }
-
-        // Static One Piece
-        const opSets = [
-            { name: 'Romance Dawn (OP-01)', image: 'https://m.media-amazon.com/images/I/71b2S7A7VWL._AC_SL1500_.jpg', tcg: 'onepiece' },
-            { name: 'Paramount War (OP-02)', image: 'https://m.media-amazon.com/images/I/71-0fV5oIIL._AC_SL1500_.jpg', tcg: 'onepiece' },
-            { name: 'Pillars of Strength (OP-03)', image: 'https://m.media-amazon.com/images/I/71K6Ew5L9VL._AC_SL1500_.jpg', tcg: 'onepiece' },
-            { name: 'Kingdoms of Intrigue (OP-04)', image: 'https://m.media-amazon.com/images/I/71Y8e6lE-KL._AC_SL1500_.jpg', tcg: 'onepiece' },
-            { name: 'Awakening of the New Era (OP-05)', image: 'https://m.media-amazon.com/images/I/71f-W-q7GOL._AC_SL1500_.jpg', tcg: 'onepiece' },
-            { name: 'Wings of the Captain (OP-06)', image: 'https://m.media-amazon.com/images/I/71Z8I6qG5OL._AC_SL1500_.jpg', tcg: 'onepiece' },
-            { name: '500 Years in the Future (OP-07)', image: 'https://m.media-amazon.com/images/I/71H-Z-W-GOL._AC_SL1500_.jpg', tcg: 'onepiece' }
-        ];
-        opSets.filter(s => s.name.toLowerCase().includes(query)).forEach(s => combinedResults.push({...s, source: 'OPStatic'}));
-
-        // Deduplicate
-        const unique = [];
-        const seen = new Set();
-        combinedResults.forEach(i => {
-            const key = (i.image + i.name).toLowerCase();
-            if (!seen.has(key)) {
-                seen.add(key);
-                unique.push(i);
-            }
-        });
-
-        displayExternalResults(unique);
-    } catch (e) {
-        console.error("Search error:", e);
-        $('#external-search-results').html('<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ff4757;">Error al buscar. Inténtalo de nuevo o revisa tu conexión.</div>');
-    }
-}
-
-function displayExternalResults(results) {
-    const $container = $('#external-search-results');
-    $container.empty();
-
-    if (results.length === 0) {
-        $container.html('<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #666;">No se encontraron resultados oficiales.</div>');
-        return;
-    }
-
-    results.forEach(item => {
-        const $item = $(`
-            <div class="external-card-result" title="${item.name}">
-                <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                    <img src="${item.image}" style="max-width: 90%; max-height: 90%; object-fit: contain;" onerror="this.src='https://via.placeholder.com/100x80?text=Set'">
-                </div>
-                <div style="font-size: 10px; font-weight: 800; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</div>
-                <div style="font-size: 8px; color: #00d2ff; text-transform: uppercase; font-weight: 700; margin-top: 5px;">${item.tcg}</div>
             </div>
         `);
 
-        $item.click(() => {
-            $('#preorder-name').val(item.name);
-            $('#preorder-image-url').val(item.image);
-            $('#preorder-tcg').val(item.tcg);
-
-            // Switch to DATOS tab
-            $('.modal-tab-btn[data-tab="tab-data"]').click();
-
-            Swal.fire({
-                title: 'Seleccionado',
-                text: item.name,
-                icon: 'success',
-                timer: 1000,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-            });
+        $card.find('.btn-edit').click(() => editPreorder(preorder));
+        $card.find('.btn-share').click(() => openShareModal(preorder.name, 'preorders', preorder.id));
+        $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
+        $card.find('.toggle-public').change(function() {
+            updateVisibility(preorder.id, $(this).is(':checked'));
         });
 
-        $container.append($item);
+        $container.append($card);
     });
+}
+
+function addClientEntry() {
+    const name = $('#client-input-name').val().trim();
+    const qty = parseInt($('#client-input-qty').val()) || 1;
+    const rawDeposit = $('#client-input-deposit').val().trim();
+    const status = $('#client-input-status').val();
+
+    if (!name) {
+        Swal.fire('Atención', 'Escribe el nombre del cliente', 'warning');
+        return;
+    }
+
+    const deposit = parseFloat(rawDeposit.replace(/[^0-9.]/g, '')) || 0;
+
+    currentClientsList.push({
+        id: Date.now(),
+        name,
+        qty,
+        deposit,
+        status
+    });
+
+    $('#client-input-name').val('');
+    $('#client-input-qty').val('1');
+    $('#client-input-deposit').val('');
+
+    renderClientsTable();
+}
+
+function removeClientEntry(clientId) {
+    currentClientsList = currentClientsList.filter(c => c.id !== clientId);
+    renderClientsTable();
+}
+
+function renderClientsTable() {
+    const $tbody = $('#client-table-body');
+    $tbody.empty();
+
+    const maxStock = parseInt($('#preorder-max-stock').val()) || 0;
+    const rawPrice = $('#preorder-price').val() || '0';
+    const unitPrice = parseFloat(rawPrice.replace(/[^0-9.]/g, '')) || 0;
+
+    let totalReserved = 0;
+
+    if (currentClientsList.length === 0) {
+        $tbody.html('<tr><td colspan="6" style="padding: 12px; text-align: center; color: #64748b;">Sin clientes registrados</td></tr>');
+    } else {
+        currentClientsList.forEach(client => {
+            totalReserved += client.qty;
+
+            const totalCost = unitPrice * client.qty;
+            const remaining = Math.max(0, totalCost - client.deposit);
+
+            let statusColor = '#f5af19';
+            if (client.status === 'Liquidado') statusColor = '#00ff88';
+            if (client.status === 'Entregado') statusColor = '#00d2ff';
+
+            const $row = $(`
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                    <td style="padding: 8px 6px; font-weight: 700; color: #fff;">${client.name}</td>
+                    <td style="padding: 8px 6px; text-align: center;">${client.qty}</td>
+                    <td style="padding: 8px 6px;">$${client.deposit.toFixed(2)}</td>
+                    <td style="padding: 8px 6px; color: ${remaining > 0 ? '#ff4757' : '#00ff88'};">$${remaining.toFixed(2)}</td>
+                    <td style="padding: 8px 6px;"><span style="color: ${statusColor}; font-weight: 800; font-size: 0.72rem;">${client.status}</span></td>
+                    <td style="padding: 8px 6px; text-align: center;">
+                        <button type="button" class="btn-del-client" style="background: none; border: none; color: #ff4757; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-times"></i></button>
+                    </td>
+                </tr>
+            `);
+
+            $row.find('.btn-del-client').click(() => removeClientEntry(client.id));
+            $tbody.append($row);
+        });
+    }
+
+    $('#lbl-total-reserved').text(totalReserved);
+    $('#lbl-total-max').text(maxStock);
 }
 
 async function savePreorder() {
@@ -432,9 +396,14 @@ async function savePreorder() {
 
     const name = $('#preorder-name').val().trim();
     const imageUrl = $('#preorder-image-url').val().trim();
-    const price = $('#preorder-price').val().trim();
-    const deadline = $('#preorder-deadline').val().trim();
     const tcg = $('#preorder-tcg').val();
+    const maxStock = parseInt($('#preorder-max-stock').val()) || 0;
+    const costPrice = $('#preorder-cost-price').val().trim();
+    const price = $('#preorder-price').val().trim();
+    const personLimit = parseInt($('#preorder-person-limit').val()) || 1;
+    const startDate = $('#preorder-start-date').val();
+    const deadline = $('#preorder-deadline').val();
+    const arrivalDate = $('#preorder-arrival-date').val();
     const isPublic = $('#preorder-public').is(':checked');
 
     if (!name) {
@@ -446,9 +415,15 @@ async function savePreorder() {
         user_id: currentUser.id,
         name,
         image_url: imageUrl,
-        price,
-        payment_deadline: deadline,
         tcg,
+        max_stock: maxStock,
+        cost_price: costPrice,
+        price,
+        per_person_limit: personLimit,
+        start_date: startDate,
+        payment_deadline: deadline,
+        arrival_date: arrivalDate,
+        clients_list: currentClientsList,
         is_public: isPublic
     };
 
@@ -470,12 +445,34 @@ async function savePreorder() {
         }
     } catch (e) { error = e; }
 
+    // Fallback attempt if Supabase PostgREST complains about unknown columns
+    if (error && error.message && error.message.includes('column')) {
+        console.warn("Retrying save with standard core fields due to schema cache limit:", error.message);
+        const fallbackData = {
+            user_id: currentUser.id,
+            name,
+            image_url: imageUrl,
+            price,
+            payment_deadline: deadline,
+            tcg,
+            is_public: isPublic
+        };
+        try {
+            if (id) {
+                const res = await _supabase.from('preorders').update(fallbackData).eq('id', id);
+                error = res.error;
+            } else {
+                const res = await _supabase.from('preorders').insert([fallbackData]);
+                error = res.error;
+            }
+        } catch (e) { error = e; }
+    }
+
     Swal.close();
 
     if (error) {
         Swal.fire('Error', 'No se pudo guardar la preventa: ' + (error.message || error), 'error');
     } else {
-        // Save to VikingData (internal sync)
         if (typeof VikingData !== 'undefined') {
             try {
                 VikingData.save({
@@ -485,7 +482,14 @@ async function savePreorder() {
             } catch (e) { console.warn("VikingData sync fail:", e); }
         }
 
-        Swal.fire('¡Éxito!', 'Preventa guardada correctamente', 'success');
+        Swal.fire({
+            title: '¡Éxito!',
+            text: 'Preventa guardada correctamente',
+            icon: 'success',
+            timer: 1200,
+            showConfirmButton: false
+        });
+
         $('#preorder-modal').removeClass('active');
         loadPreorders();
     }
@@ -493,19 +497,30 @@ async function savePreorder() {
 
 function editPreorder(preorder) {
     resetModal();
-    $('#modal-title').text('EDITAR PREVENTA');
     $('#edit-preorder-id').val(preorder.id);
-    $('#preorder-name').val(preorder.name);
-    $('#preorder-image-url').val(preorder.image_url);
-    $('#preorder-price').val(preorder.price);
-    $('#preorder-deadline').val(preorder.payment_deadline);
-    $('#preorder-tcg').val(preorder.tcg);
+    $('#preorder-name').val(preorder.name || '');
+    $('#preorder-image-url').val(preorder.image_url || '');
+    if (preorder.image_url) $('#drop-zone-preorder .file-name').text('Imagen cargada').css('color', '#00ff88');
+    $('#preorder-tcg').val(preorder.tcg || 'yugioh');
+    $('#preorder-max-stock').val(preorder.max_stock || 10);
+    $('#preorder-cost-price').val(preorder.cost_price || '');
+    $('#preorder-price').val(preorder.price || '');
+    $('#preorder-person-limit').val(preorder.per_person_limit || 1);
+    $('#preorder-start-date').val(preorder.start_date || '');
+    $('#preorder-deadline').val(preorder.payment_deadline || preorder.deadline || '');
+    $('#preorder-arrival-date').val(preorder.arrival_date || '');
     $('#preorder-public').prop('checked', preorder.is_public !== false);
 
-    $('#preorder-modal').addClass('active');
+    let clients = preorder.clients_list;
+    if (typeof clients === 'string') {
+        try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+    }
+    if (!Array.isArray(clients)) clients = [];
 
-    // Switch to DATOS tab for editing
-    $('.modal-tab-btn[data-tab="tab-data"]').click();
+    currentClientsList = clients;
+    renderClientsTable();
+
+    $('#preorder-modal').addClass('active');
 }
 
 async function deletePreorder(id) {
@@ -547,6 +562,8 @@ async function updateVisibility(id, isPublic) {
             toast: true,
             position: 'top-end'
         });
+
+        loadPreorders();
     } catch (err) {
         Swal.fire('Error', 'No se pudo actualizar la visibilidad', 'error');
     }
@@ -563,8 +580,8 @@ window.openShareModal = function(title, type, id) {
     $('#share-qr-code').empty();
     new QRCode(document.getElementById("share-qr-code"), {
         text: shareUrl,
-        width: 180,
-        height: 180,
+        width: 160,
+        height: 160,
         colorDark : "#000000",
         colorLight : "#ffffff",
         correctLevel : QRCode.CorrectLevel.H
@@ -595,26 +612,24 @@ $('#btn-copy-share-link').click(function() {
 });
 
 function resetModal() {
-    $('#modal-title').text('NUEVA PREVENTA');
     $('#edit-preorder-id').val('');
     $('#preorder-name').val('');
     $('#preorder-image-url').val('');
     $('#drop-zone-preorder .file-name').text('');
-    $('#preorder-price').val('');
-    $('#preorder-deadline').val('');
     $('#preorder-tcg').val('yugioh');
+    $('#preorder-max-stock').val('10');
+    $('#preorder-cost-price').val('');
+    $('#preorder-price').val('');
+    $('#preorder-person-limit').val('1');
+    $('#preorder-start-date').val('');
+    $('#preorder-deadline').val('');
+    $('#preorder-arrival-date').val('');
     $('#preorder-public').prop('checked', true);
-    $('#external-search-input').val('');
-    $('#external-search-results').html(`
-        <div style="grid-column: 1/-1; text-align: center; color: #444; padding: 60px;">
-            <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-            <p style="font-weight: 600; opacity: 0.5;">Busca expansiones oficiales para auto-completar</p>
-        </div>
-    `);
 
-    // Switch to Search tab by default
-    $('.modal-tab-btn').removeClass('active');
-    $('.modal-tab-btn[data-tab="tab-search"]').addClass('active');
-    $('#tab-search').show();
-    $('#tab-data').hide();
+    $('#client-input-name').val('');
+    $('#client-input-qty').val('1');
+    $('#client-input-deposit').val('');
+
+    currentClientsList = [];
+    renderClientsTable();
 }
