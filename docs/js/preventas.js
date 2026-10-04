@@ -1,5 +1,6 @@
 let currentUser = null;
 let allPreorders = [];
+let activeClientsPreorder = null;
 let currentClientsList = [];
 
 $(document).ready(async function() {
@@ -18,6 +19,10 @@ $(document).ready(async function() {
 
     $('#close-preorder-modal').click(function() {
         $('#preorder-modal').removeClass('active');
+    });
+
+    $('#close-clients-modal').click(function() {
+        $('#preorder-clients-modal').removeClass('active');
     });
 
     $('#btn-toggle-admin-filters').click(function() {
@@ -39,7 +44,7 @@ $(document).ready(async function() {
         handleLogout();
     });
 
-    // --- Save Logic ---
+    // --- Save Preorder Logic ---
     $('#btn-save-preorder').click(function() {
         savePreorder();
     });
@@ -49,8 +54,8 @@ $(document).ready(async function() {
         addClientEntry();
     });
 
-    $('#preorder-max-stock, #preorder-price').on('input change', function() {
-        renderClientsTable();
+    $('#btn-save-clients-list').click(function() {
+        saveClientsListForActivePreorder();
     });
 
     // Cloudinary Drag & Drop for Preorder
@@ -270,6 +275,7 @@ function renderPreordersList(preorders) {
                             <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 800;">${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
                         </div>
                         <div style="display: flex; gap: 6px;">
+                            <button class="btn-icon-square btn-clients" title="Ver Clientes (${reserved})"><i class="fas fa-users"></i></button>
                             <button class="btn-icon-square btn-share" title="Compartir"><i class="fas fa-share-alt"></i></button>
                             <button class="btn-icon-square btn-edit" title="Editar"><i class="fas fa-pen"></i></button>
                             <button class="btn-icon-square danger btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
@@ -279,6 +285,7 @@ function renderPreordersList(preorders) {
             </div>
         `);
 
+        $card.find('.btn-clients').click(() => openClientsModal(preorder));
         $card.find('.btn-edit').click(() => editPreorder(preorder));
         $card.find('.btn-share').click(() => openShareModal(preorder.name, 'preorders', preorder.id));
         $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
@@ -288,6 +295,27 @@ function renderPreordersList(preorders) {
 
         $container.append($card);
     });
+}
+
+function openClientsModal(preorder) {
+    activeClientsPreorder = preorder;
+    $('#active-clients-preorder-id').val(preorder.id);
+    $('#clients-modal-preorder-title').text('Clientes: ' + preorder.name);
+
+    let clients = preorder.clients_list;
+    if (typeof clients === 'string') {
+        try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+    }
+    if (!Array.isArray(clients)) clients = [];
+
+    currentClientsList = [...clients];
+
+    $('#client-input-name').val('');
+    $('#client-input-qty').val('1');
+    $('#client-input-deposit').val('');
+
+    renderClientsTable();
+    $('#preorder-clients-modal').addClass('active');
 }
 
 function addClientEntry() {
@@ -327,14 +355,14 @@ function renderClientsTable() {
     const $tbody = $('#client-table-body');
     $tbody.empty();
 
-    const maxStock = parseInt($('#preorder-max-stock').val()) || 0;
-    const rawPrice = $('#preorder-price').val() || '0';
+    const maxStock = activeClientsPreorder ? (parseInt(activeClientsPreorder.max_stock) || 0) : 0;
+    const rawPrice = activeClientsPreorder ? (activeClientsPreorder.price || '0') : '0';
     const unitPrice = parseFloat(rawPrice.replace(/[^0-9.]/g, '')) || 0;
 
     let totalReserved = 0;
 
     if (currentClientsList.length === 0) {
-        $tbody.html('<tr><td colspan="6" style="padding: 12px; text-align: center; color: #64748b;">Sin clientes registrados</td></tr>');
+        $tbody.html('<tr><td colspan="6" style="padding: 16px; text-align: center; color: #64748b;">Sin clientes registrados</td></tr>');
     } else {
         currentClientsList.forEach(client => {
             totalReserved += client.qty;
@@ -368,10 +396,37 @@ function renderClientsTable() {
     $('#lbl-total-max').text(maxStock);
 }
 
+async function saveClientsListForActivePreorder() {
+    if (!activeClientsPreorder) return;
+
+    Swal.fire({ title: 'Guardando clientes...', didOpen: () => Swal.showLoading() });
+
+    try {
+        const { error } = await _supabase
+            .from('preorders')
+            .update({ clients_list: currentClientsList })
+            .eq('id', activeClientsPreorder.id);
+
+        if (error) throw error;
+
+        Swal.fire({
+            title: '¡Guardado!',
+            text: 'Lista de clientes actualizada',
+            icon: 'success',
+            timer: 1200,
+            showConfirmButton: false
+        });
+
+        $('#preorder-clients-modal').removeClass('active');
+        loadPreorders();
+    } catch (e) {
+        Swal.fire('Error', 'No se pudieron guardar los clientes: ' + (e.message || e), 'error');
+    }
+}
+
 async function savePreorder() {
     const id = $('#edit-preorder-id').val();
 
-    // Limit check for new preorders
     if (!id) {
         try {
             const { count, error: countError } = await _supabase
@@ -400,7 +455,7 @@ async function savePreorder() {
     const maxStock = parseInt($('#preorder-max-stock').val()) || 0;
     const costPrice = $('#preorder-cost-price').val().trim();
     const price = $('#preorder-price').val().trim();
-    const personLimit = parseInt($('#preorder-person-limit').val()) || 1;
+    const personLimit = $('#preorder-person-limit').val().trim();
     const startDate = $('#preorder-start-date').val();
     const deadline = $('#preorder-deadline').val();
     const arrivalDate = $('#preorder-arrival-date').val();
@@ -419,11 +474,10 @@ async function savePreorder() {
         max_stock: maxStock,
         cost_price: costPrice,
         price,
-        per_person_limit: personLimit,
+        per_person_limit: personLimit ? (parseInt(personLimit) || null) : null,
         start_date: startDate,
         payment_deadline: deadline,
         arrival_date: arrivalDate,
-        clients_list: currentClientsList,
         is_public: isPublic
     };
 
@@ -505,20 +559,11 @@ function editPreorder(preorder) {
     $('#preorder-max-stock').val(preorder.max_stock || 10);
     $('#preorder-cost-price').val(preorder.cost_price || '');
     $('#preorder-price').val(preorder.price || '');
-    $('#preorder-person-limit').val(preorder.per_person_limit || 1);
+    $('#preorder-person-limit').val(preorder.per_person_limit !== null && preorder.per_person_limit !== undefined ? preorder.per_person_limit : '');
     $('#preorder-start-date').val(preorder.start_date || '');
     $('#preorder-deadline').val(preorder.payment_deadline || preorder.deadline || '');
     $('#preorder-arrival-date').val(preorder.arrival_date || '');
     $('#preorder-public').prop('checked', preorder.is_public !== false);
-
-    let clients = preorder.clients_list;
-    if (typeof clients === 'string') {
-        try { clients = JSON.parse(clients); } catch (e) { clients = []; }
-    }
-    if (!Array.isArray(clients)) clients = [];
-
-    currentClientsList = clients;
-    renderClientsTable();
 
     $('#preorder-modal').addClass('active');
 }
@@ -620,16 +665,12 @@ function resetModal() {
     $('#preorder-max-stock').val('10');
     $('#preorder-cost-price').val('');
     $('#preorder-price').val('');
-    $('#preorder-person-limit').val('1');
+    $('#preorder-person-limit').val('');
     $('#preorder-start-date').val('');
     $('#preorder-deadline').val('');
     $('#preorder-arrival-date').val('');
     $('#preorder-public').prop('checked', true);
 
-    $('#client-input-name').val('');
-    $('#client-input-qty').val('1');
-    $('#client-input-deposit').val('');
-
+    activeClientsPreorder = null;
     currentClientsList = [];
-    renderClientsTable();
 }

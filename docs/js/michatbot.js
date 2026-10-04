@@ -1457,11 +1457,48 @@ async function handleSendAIChatMessage() {
             throw new Error("Conexión con la base de datos no disponible.");
         }
 
+        let dbContext = '';
+        if (targetStoreId && typeof _supabase !== 'undefined') {
+            try {
+                const { data: preorders } = await _supabase
+                    .from('preorders')
+                    .select('*')
+                    .eq('user_id', targetStoreId);
+
+                if (preorders && preorders.length > 0) {
+                    dbContext += 'PREVENTAS EN LA TIENDA:\n';
+                    preorders.forEach(p => {
+                        let clients = p.clients_list;
+                        if (typeof clients === 'string') {
+                            try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+                        }
+                        if (!Array.isArray(clients)) clients = [];
+
+                        let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
+                        let maxStock = parseInt(p.max_stock) || 0;
+                        let available = Math.max(0, maxStock - reserved);
+
+                        dbContext += `- ${p.name} | Precio Venta: ${p.price || 'N/A'} | Stock Total: ${maxStock} | Reservados: ${reserved} | Disponibles: ${available} | Límite Pago: ${p.payment_deadline || 'N/A'} | Llegada: ${p.arrival_date || 'N/A'}\n`;
+
+                        if (isAdmin && clients.length > 0) {
+                            dbContext += `  [Lista Privada de Clientes para ${p.name}]:\n`;
+                            clients.forEach(c => {
+                                dbContext += `   * Cliente: ${c.name} | Cantidad: ${c.qty} | Anticipo: $${parseFloat(c.deposit||0).toFixed(2)} | Estado: ${c.status}\n`;
+                            });
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn("Failed to build preorders context:", e);
+            }
+        }
+
         const payload = {
             message: text,
             image_base64: imageBase64,
             is_admin: isAdmin,
             store_id: targetStoreId,
+            db_context: dbContext,
             conversation_history: window.botConversationHistory
         };
 
