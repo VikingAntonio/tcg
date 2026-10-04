@@ -1726,6 +1726,16 @@ function loadPublicPreorders() {
             $('<div class="focus-mode-exception" style="grid-column: 1/-1; margin-bottom: 20px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todas las Preventas</button></div>').appendTo('#preorders-container');
         }
         preorders.forEach(preorder => {
+            let clients = preorder.clients_list;
+            if (typeof clients === 'string') {
+                try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+            }
+            if (!Array.isArray(clients)) clients = [];
+
+            let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
+            let maxStock = parseInt(preorder.max_stock) || 0;
+            let available = Math.max(0, maxStock - reserved);
+
             const $item = $(`
                 <div class="deck-public-item sealed-product-item" id="preorder-item-${preorder.id}" style="position: relative;">
                     <button class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
@@ -1735,12 +1745,21 @@ function loadPublicPreorders() {
                         <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
                              alt="${preorder.name}" class="sealed-product-img">
                     </div>
-                    <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center;">${preorder.name}</h3>
-                    <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem;">${preorder.price || 'Consultar'}</div>
-                    <div style="color: #ff4757; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px;">Límite: ${preorder.payment_deadline || '-'}</div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-add-preorder-cart" style="flex: 1;">
-                            <i class="fas fa-cart-plus"></i>
+                    <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center; text-align: center;">${preorder.name}</h3>
+                    <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem; text-align: center;">${preorder.price || 'Consultar'}</div>
+
+                    <div style="margin: 8px 0; font-size: 0.8rem; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="color: #ff4757; font-weight: 700;">
+                            <i class="fas fa-clock"></i> Límite Pago: ${preorder.payment_deadline || preorder.deadline || '-'}
+                        </div>
+                        ${preorder.arrival_date ? `<div style="color: #00ff88; font-weight: 700;"><i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}</div>` : ''}
+                        ${maxStock > 0 ? `<div style="color: #cbd5e1; font-weight: 700;"><i class="fas fa-boxes"></i> Disponibles: ${available}</div>` : ''}
+                        ${preorder.per_person_limit ? `<div style="color: #94a3b8; font-size: 0.75rem;">Máx ${preorder.per_person_limit} por persona</div>` : ''}
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn btn-add-preorder-cart" style="flex: 1;" ${available <= 0 && maxStock > 0 ? 'disabled style="opacity: 0.5;"' : ''}>
+                            <i class="fas fa-cart-plus"></i> ${available <= 0 && maxStock > 0 ? 'Agotado' : 'Reservar'}
                         </button>
                         <button class="btn btn-secondary" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir">
                             <i class="fas fa-share-alt"></i>

@@ -14,201 +14,529 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
     <style>
-        /* Premium UI Components Styles */
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-blur: blur(12px);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-blur: blur(16px);
+            --accent-cyan: #00d2ff;
+            --accent-blue: #3a7bd5;
+            --accent-green: #00ff88;
             --viking-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            --card-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
 
         body {
-            background: radial-gradient(circle at center, #1a2a3a 0%, #000000 100%) !important;
+            background: radial-gradient(circle at 50% 20%, #1c2d3d 0%, #0a0d14 100%) !important;
+            min-height: 100vh;
+            color: #fff;
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: none !important;
         }
 
-        .admin-header {
-            background: var(--glass-bg);
+        body::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+        }
+
+        .preorder-wrapper {
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 90px 20px 120px 20px;
+            box-sizing: border-box;
+        }
+
+        /* Dashboard Header */
+        .store-dashboard-header {
+            background: rgba(15, 23, 36, 0.7);
             backdrop-filter: var(--glass-blur);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 40px;
-            margin-bottom: 40px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border-radius: 28px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
         }
 
-        .admin-header h1 {
-            font-size: 2.5rem;
+        .header-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-title-box h1 {
+            font-size: 2.2rem;
             font-weight: 900;
-            margin: 10px 0;
+            margin: 0;
             text-transform: uppercase;
-            letter-spacing: -1px;
+            letter-spacing: -0.5px;
             background: var(--viking-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .modal-tabs {
+        .header-action-group {
             display: flex;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 5px;
-            margin: 0 30px;
-            border-radius: 50px;
-            border: 1px solid var(--glass-border);
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .modal-tab-btn {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 800;
-            font-size: 0.75rem;
-            letter-spacing: 1.5px;
-            color: #777;
-            border-radius: 40px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-transform: uppercase;
-        }
-
-        .modal-tab-btn:hover {
+        .btn-add-primary {
+            background: var(--viking-gradient);
             color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.35);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .modal-tab-btn.active {
-            color: #000;
-            background: #fff;
-            box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+        .btn-add-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 210, 255, 0.5);
         }
 
-        .tab-content {
-            display: none;
-            animation: slideUpFade 0.4s ease-out both;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .product-grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-            width: 100%;
-        }
-
-        .premium-card {
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        .btn-filter-toggle {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            position: relative;
+        }
+
+        .btn-filter-toggle:hover, .btn-filter-toggle.active {
+            background: rgba(0, 210, 255, 0.2);
+            border-color: #00d2ff;
+            color: #00d2ff;
+        }
+
+        /* Metric Summary Cards */
+        .stats-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(0, 210, 255, 0.12);
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .stat-card:nth-child(2) .stat-icon {
+            background: rgba(0, 255, 136, 0.12);
+            color: var(--accent-green);
+        }
+
+        .stat-card:nth-child(3) .stat-icon {
+            background: rgba(245, 175, 25, 0.12);
+            color: #f5af19;
+        }
+
+        .stat-card:nth-child(4) .stat-icon {
+            background: rgba(155, 89, 182, 0.12);
+            color: #9b59b6;
+        }
+
+        .stat-info {
+            min-width: 0;
             overflow: hidden;
         }
 
-        .premium-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(0, 210, 255, 0.4);
-            box-shadow: 0 15px 40px rgba(0, 210, 255, 0.15);
+        .stat-info .stat-val {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .premium-card-image {
+        .stat-info .stat-lbl {
+            font-size: 0.7rem;
+            color: #8a9ba8;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        /* Collapsible Filter Toolbar */
+        .toolbar-control-panel {
+            display: none;
+            background: rgba(15, 23, 36, 0.7);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 16px 20px;
+            margin-bottom: 25px;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideDownFade 0.3s ease-out;
+        }
+
+        @keyframes slideDownFade {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .search-field-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-field-wrapper i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .search-field-input {
             width: 100%;
-            height: 180px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 15px;
+            padding: 10px 16px 10px 42px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            color: #fff;
+            font-size: 0.88rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .search-field-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+        }
+
+        .filter-group-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .select-custom-filter {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            color: #cbd5e1;
+            padding: 9px 16px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .select-custom-filter option {
+            background: #0f172a;
+            color: #fff;
+        }
+
+        /* Preorders Grid */
+        .products-ecom-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 22px;
+            width: 100%;
+        }
+
+        /* Preorder Card */
+        .product-ecom-card {
+            background: rgba(15, 23, 36, 0.6);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 22px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .product-ecom-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(0, 210, 255, 0.4);
+            box-shadow: 0 18px 35px rgba(0, 210, 255, 0.15);
+        }
+
+        .card-img-box {
+            width: 100%;
+            height: 190px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 16px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--glass-border);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .premium-card-image img {
-            max-width: 90%;
-            max-height: 90%;
+        .card-img-box img {
+            max-width: 85%;
+            max-height: 85%;
             object-fit: contain;
-            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
-            transition: transform 0.5s ease;
+            filter: drop-shadow(0 8px 18px rgba(0,0,0,0.6));
+            transition: transform 0.4s ease;
         }
 
-        .premium-card:hover .premium-card-image img {
-            transform: scale(1.08);
+        .product-ecom-card:hover .card-img-box img {
+            transform: scale(1.06);
         }
 
-        .external-card-result {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 10px;
+        .badge-tcg-pill {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 3px 9px;
+            border-radius: 30px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: #00d2ff;
+            text-transform: uppercase;
+        }
+
+        .badge-stock-pill {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 3px 9px;
+            border-radius: 30px;
+            font-size: 0.68rem;
+            font-weight: 800;
+        }
+
+        .badge-stock-pill.out-of-stock {
+            background: rgba(255, 71, 87, 0.15);
+            border-color: rgba(255, 71, 87, 0.3);
+            color: #ff4757;
+        }
+
+        .btn-icon-square {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
+            transition: all 0.2s ease;
         }
 
-        .external-card-result:hover {
-            background: rgba(255,255,255,0.08);
+        .btn-icon-square:hover {
+            background: rgba(0, 210, 255, 0.2);
+            color: #00d2ff;
             border-color: #00d2ff;
-            transform: scale(1.05);
         }
 
-        /* Share Modal Overlay Refined */
-        .share-modal-content {
-            background: rgba(15, 15, 15, 0.95) !important;
+        .btn-icon-square.danger:hover {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+            border-color: #ff4757;
+        }
+
+        /* Modal Redesign - Invisible Scrollbar & Clean Spacious Layout */
+        .modal-product-ecom {
+            background: #0b1120 !important;
             border: 1px solid rgba(0, 210, 255, 0.2) !important;
-            backdrop-filter: blur(20px) !important;
-            padding: 40px !important;
-            border-radius: 30px !important;
+            border-radius: 28px !important;
+            max-width: 680px !important;
+            width: 95% !important;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+            position: relative;
+            padding-top: 15px;
         }
 
-        .file-drop-zone {
-            background: rgba(0, 0, 0, 0.2) !important;
-            border: 2px dashed rgba(255, 255, 255, 0.1) !important;
-            border-radius: 15px !important;
-            padding: 30px !important;
-            transition: all 0.3s ease !important;
+        .modal-close-circle-btn {
+            position: absolute;
+            top: 16px;
+            right: 18px;
+            z-index: 100;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #ff4757;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            transition: all 0.25s ease;
         }
 
-        .file-drop-zone:hover, .file-drop-zone.dragover {
-            border-color: #00d2ff !important;
-            background: rgba(0, 210, 255, 0.05) !important;
+        .modal-close-circle-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            background: #ff6b81;
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.6);
         }
 
-        .info-grid {
+        .modal-body-scroll {
+            padding: 28px;
+            max-height: 75vh;
+            overflow-y: auto;
+            scrollbar-width: none !important;
+        }
+
+        .modal-body-scroll::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        .form-grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
 
+        .file-drop-zone {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 2px dashed rgba(255, 255, 255, 0.15) !important;
+            border-radius: 16px !important;
+            padding: 22px !important;
+            text-align: center !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .file-drop-zone:hover, .file-drop-zone.dragover {
+            border-color: #00d2ff !important;
+            background: rgba(0, 210, 255, 0.08) !important;
+        }
+
+        .share-modal-content {
+            background: rgba(15, 23, 36, 0.95) !important;
+            border: 1px solid rgba(0, 210, 255, 0.2) !important;
+            backdrop-filter: blur(20px) !important;
+            padding: 35px !important;
+            border-radius: 28px !important;
+        }
+
         @media (max-width: 640px) {
-            .info-grid {
+            .preorder-wrapper {
+                padding-top: 70px;
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+            .store-dashboard-header {
+                padding: 18px;
+                border-radius: 22px;
+            }
+            .header-title-box h1 {
+                font-size: 1.5rem;
+            }
+            .header-action-group {
+                width: 100%;
+            }
+            .btn-add-primary, .btn-filter-toggle {
+                flex: 1;
+                justify-content: center;
+            }
+            .stats-summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 10px 12px;
+                gap: 10px;
+            }
+            .stat-icon {
+                width: 34px;
+                height: 34px;
+                font-size: 0.95rem;
+            }
+            .stat-info .stat-val {
+                font-size: 1.05rem;
+            }
+            .stat-info .stat-lbl {
+                font-size: 0.62rem;
+            }
+            .toolbar-control-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-group-wrapper {
+                width: 100%;
+            }
+            .select-custom-filter {
+                flex: 1;
+            }
+            .form-grid-2 {
                 grid-template-columns: 1fr;
-            }
-            .admin-header {
-                padding: 30px 20px;
-            }
-            .admin-header h1 {
-                font-size: 1.8rem;
             }
         }
     </style>
 </head>
 <body>
+
     <!-- Floating User Panel -->
     <div class="top-left-panel" id="top-panel" style="display: none;">
         <div class="user-menu-container">
-            <button class="user-avatar-btn" id="avatar-btn">
+            <button class="user-avatar-btn" id="avatar-btn" title="Perfil de Usuario">
                 <i class="fas fa-user"></i>
             </button>
             <div class="user-dropdown-menu" id="user-dropdown">
@@ -222,149 +550,278 @@
         </div>
     </div>
 
-    <div id="authenticated-content" style="display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding-top: 80px; padding-bottom: 100px; padding-left: 20px; padding-right: 20px;">
-        <div class="admin-header">
-            <a href="admin.html" class="btn btn-secondary" style="margin-bottom: 20px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border-radius: 50px; padding: 10px 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-                <i class="fas fa-arrow-left"></i> Volver al Panel
-            </a>
-            <h1>Gestión de Preventas</h1>
-            <p style="color: #888; font-size: 1.1rem; max-width: 600px; margin: 0 auto 20px;">Administra las próximas expansiones y productos con preventa activa de forma profesional.</p>
-            <button id="btn-open-add-modal" class="btn" style="padding: 15px 40px; border-radius: 50px; font-weight: 800; letter-spacing: 1px; font-size: 1rem; box-shadow: 0 10px 25px rgba(0, 210, 255, 0.3);">
-                <i class="fas fa-plus-circle"></i> AÑADIR PREVENTA
-            </button>
+    <!-- Main Content Area -->
+    <div id="authenticated-content" class="preorder-wrapper" style="display: none;">
+
+        <!-- Dashboard Header -->
+        <div class="store-dashboard-header">
+            <div class="header-top-row">
+                <div class="header-title-box">
+                    <h1>Preventas</h1>
+                </div>
+                <div class="header-action-group">
+                    <button id="btn-toggle-admin-filters" class="btn-filter-toggle">
+                        <i class="fas fa-filter"></i> Filtros
+                    </button>
+                    <button id="btn-open-add-modal" class="btn-add-primary">
+                        <i class="fas fa-plus-circle"></i> AÑADIR PREVENTA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Metric Cards -->
+            <div class="stats-summary-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-fire"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-val" id="stat-total-preorders">0</div>
+                        <div class="stat-lbl">Preventas</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-val" id="stat-public-preorders">0</div>
+                        <div class="stat-lbl">Públicas</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-val" id="stat-total-reservations">0</div>
+                        <div class="stat-lbl">Reservas</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-boxes"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-val" id="stat-available-stock">0</div>
+                        <div class="stat-lbl">Disponibles</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="preorder-list" class="product-grid-container">
-            <!-- Preorders will be loaded here -->
-            <div class="loading" style="grid-column: 1/-1; padding: 100px; font-size: 1.2rem; color: #555;">
-                <i class="fas fa-circle-notch fa-spin"></i> Cargando preventas...
+        <!-- Filter & Search Collapsible Toolbar -->
+        <div id="admin-filter-drawer" class="toolbar-control-panel">
+            <div class="search-field-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="admin-search-input" class="search-field-input">
+            </div>
+
+            <div class="filter-group-wrapper">
+                <select id="admin-filter-tcg" class="select-custom-filter">
+                    <option value="all">Todas las Franquicias</option>
+                    <option value="yugioh">Yu-Gi-Oh!</option>
+                    <option value="pokemon">Pokémon</option>
+                    <option value="onepiece">One Piece</option>
+                    <option value="lorcana">Lorcana</option>
+                    <option value="other">Otros</option>
+                </select>
+
+                <select id="admin-filter-visibility" class="select-custom-filter">
+                    <option value="all">Todos los Estados</option>
+                    <option value="public">Públicos</option>
+                    <option value="private">Privados</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Preorders Grid -->
+        <div id="preorder-list" class="products-ecom-grid">
+            <div class="loading" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #94a3b8; font-size: 1.1rem;">
+                <i class="fas fa-circle-notch fa-spin fa-2x" style="color: #00d2ff;"></i><br><br>Cargando preventas...
             </div>
         </div>
     </div>
 
     <!-- Share Modal -->
     <div id="share-overlay" class="overlay">
-        <div class="overlay-content share-modal-content">
-            <span id="close-share-modal" class="close-btn" onclick="$('#share-overlay').removeClass('active')">&times;</span>
-            <h2 id="share-modal-title" style="margin-bottom: 30px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">Compartir</h2>
+        <div class="overlay-content share-modal-content" style="max-width: 480px; text-align: center;">
+            <button id="close-share-modal" class="modal-close-circle-btn" onclick="$('#share-overlay').removeClass('active')">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 id="share-modal-title" style="margin-bottom: 20px; font-weight: 900; font-size: 1.2rem; color: #fff;">Compartir</h2>
 
-            <div id="share-qr-container" style="background: white; padding: 20px; border-radius: 20px; margin-bottom: 30px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div id="share-qr-container" style="background: white; padding: 15px; border-radius: 16px; margin-bottom: 20px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <div id="share-qr-code"></div>
             </div>
 
             <div class="form-group" style="text-align: left;">
-                <label style="color: #00d2ff; font-weight: 700; margin-bottom: 10px;">Enlace Directo</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="share-link-input" readonly style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px;">
-                    <button id="btn-copy-share-link" class="btn btn-secondary" style="white-space: nowrap; border-radius: 12px;"><i class="fas fa-copy"></i></button>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="share-link-input" readonly style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 10px; font-size: 0.85rem;">
+                    <button id="btn-copy-share-link" class="btn" style="border-radius: 12px; background: rgba(0,210,255,0.2); color: #00d2ff; border: 1px solid #00d2ff; padding: 0 16px;"><i class="fas fa-copy"></i></button>
                 </div>
             </div>
 
-            <div class="social-share-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 30px;">
-                <button class="social-share-btn wa" id="share-wa" title="WhatsApp" style="background: #25D366; color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer;"><i class="fab fa-whatsapp"></i></button>
-                <button class="social-share-btn tg" id="share-tg" title="Telegram" style="background: #0088cc; color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer;"><i class="fab fa-telegram-plane"></i></button>
-                <button class="social-share-btn fb" id="share-fb" title="Facebook" style="background: #3b5998; color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer;"><i class="fab fa-facebook-f"></i></button>
-                <button class="social-share-btn ms" id="share-ms" title="Messenger" style="background: #0084ff; color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer;"><i class="fab fa-facebook-messenger"></i></button>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                <button class="social-share-btn wa" id="share-wa" style="background: #25D366; color: white; width: 48px; height: 48px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer;"><i class="fab fa-whatsapp"></i></button>
+                <button class="social-share-btn tg" id="share-tg" style="background: #0088cc; color: white; width: 48px; height: 48px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer;"><i class="fab fa-telegram-plane"></i></button>
+                <button class="social-share-btn fb" id="share-fb" style="background: #3b5998; color: white; width: 48px; height: 48px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer;"><i class="fab fa-facebook-f"></i></button>
+                <button class="social-share-btn ms" id="share-ms" style="background: #0084ff; color: white; width: 48px; height: 48px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer;"><i class="fab fa-facebook-messenger"></i></button>
             </div>
         </div>
     </div>
 
-    <!-- Preorder Modal -->
+    <!-- Preorder Add/Edit Modal (Redesigned Form) -->
     <div id="preorder-modal" class="overlay">
-        <div class="overlay-content" style="padding: 0; overflow: hidden; border-radius: 30px; max-width: 650px; background: #0f0f0f; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);">
-                <h2 id="modal-title" style="margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: 0.5px;">NUEVA PREVENTA</h2>
-                <span id="close-preorder-modal" class="close-btn" style="position: static; font-size: 32px; color: #555;">&times;</span>
-            </div>
+        <div class="overlay-content modal-product-ecom">
+            <button id="close-preorder-modal" class="modal-close-circle-btn" title="Cerrar">
+                <i class="fas fa-times"></i>
+            </button>
 
-            <!-- Modal Tabs -->
-            <div class="modal-tabs" style="margin-top: 25px;">
-                <div class="modal-tab-btn active" data-tab="tab-search">BÚSQUEDA</div>
-                <div class="modal-tab-btn" data-tab="tab-data">DATOS</div>
-            </div>
-
-            <div style="padding: 35px; max-height: 65vh; overflow-y: auto;">
+            <div class="modal-body-scroll">
                 <input type="hidden" id="edit-preorder-id">
 
-                <!-- Tab: Search -->
-                <div id="tab-search" class="tab-content active">
+                <div class="form-group">
+                    <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Nombre</label>
+                    <input type="text" id="preorder-name" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group">
+                    <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Imagen</label>
+                    <label class="file-drop-zone" id="drop-zone-preorder" for="input-preorder-file" style="display: block;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #00d2ff; margin-bottom: 6px;"></i>
+                        <p style="font-weight: 700; margin: 0; color: #fff; font-size: 0.85rem;">Cargar imagen</p>
+                        <input type="file" id="input-preorder-file" accept="image/*" style="display: none;">
+                        <div class="file-name" style="font-size: 12px; color: #00ff88; margin-top: 6px; font-weight: 700;"></div>
+                    </label>
+                    <input type="hidden" id="preorder-image-url">
+                </div>
+
+                <div class="form-grid-2">
                     <div class="form-group">
-                        <label style="color: #00d2ff; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;"><i class="fas fa-globe"></i> BASE DE DATOS GLOBAL</label>
-                        <div style="display: flex; gap: 12px; margin-top: 15px;">
-                            <input type="text" id="external-search-input" placeholder="Nombre de la expansión o preventa..." style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 15px; font-size: 1rem;">
-                            <button id="btn-external-search" class="btn" style="padding: 0 25px; border-radius: 12px;"><i class="fas fa-search"></i></button>
-                        </div>
-                        <div id="external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-top: 25px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); min-height: 200px;">
-                            <div style="grid-column: 1/-1; text-align: center; color: #444; padding: 60px;">
-                                <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                                <p style="font-weight: 600; opacity: 0.5;">Busca expansiones oficiales para auto-completar</p>
-                            </div>
-                        </div>
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Franquicia</label>
+                        <select id="preorder-tcg" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                            <option value="yugioh">Yu-Gi-Oh!</option>
+                            <option value="pokemon">Pokémon</option>
+                            <option value="onepiece">One Piece</option>
+                            <option value="lorcana">Lorcana</option>
+                            <option value="other">Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Stock Total</label>
+                        <input type="number" id="preorder-max-stock" min="0" value="10" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                     </div>
                 </div>
 
-                <!-- Tab: Data -->
-                <div id="tab-data" class="tab-content">
+                <div class="form-grid-2">
                     <div class="form-group">
-                        <label>Nombre de la Preventa</label>
-                        <input type="text" id="preorder-name" placeholder="Ej: Phantom Nightmare Booster Box">
+                        <label style="color: #94a3b8; font-weight: 700; font-size: 0.85rem;">Precio Compra</label>
+                        <input type="text" id="preorder-cost-price" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                     </div>
 
                     <div class="form-group">
-                        <label>Imagen de la Preventa</label>
-                        <label class="file-drop-zone" id="drop-zone-preorder" for="input-preorder-file" style="display: block;">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; margin-bottom: 10px; color: #00d2ff;"></i>
-                            <p style="font-weight: 700; margin-bottom: 5px;">Arrastra una imagen aquí</p>
-                            <p style="font-size: 0.75rem; color: #555;">O haz clic para seleccionar archivo</p>
-                            <input type="file" id="input-preorder-file" accept="image/*" style="display: none;">
-                            <div class="file-name" style="font-size: 12px; color: #00ff88; margin-top: 10px; font-weight: 700;"></div>
-                        </label>
-                        <input type="text" id="preorder-image-url" placeholder="O pega el link directo de la imagen..." style="margin-top: 15px;">
+                        <label style="color: #00d2ff; font-weight: 700; font-size: 0.85rem;">Precio Venta</label>
+                        <input type="text" id="preorder-price" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Límite Persona</label>
+                        <input type="number" id="preorder-person-limit" min="1" value="1" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                     </div>
 
-                    <div class="info-grid">
-                        <div class="form-group">
-                            <label>Precio Preventa</label>
-                            <input type="text" id="preorder-price" placeholder="Ej: $1,200.00">
+                    <div class="form-group">
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Fecha Inicio</label>
+                        <input type="date" id="preorder-start-date" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; color-scheme: dark;">
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label style="color: #ff4757; font-weight: 700; font-size: 0.85rem;">Fecha Fin</label>
+                        <input type="date" id="preorder-deadline" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; color-scheme: dark;">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="color: #00ff88; font-weight: 700; font-size: 0.85rem;">Fecha Llegada</label>
+                        <input type="date" id="preorder-arrival-date" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; color-scheme: dark;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); margin-top: 10px;">
+                    <label class="switch">
+                        <input type="checkbox" id="preorder-public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <label style="margin-bottom: 0; cursor: pointer; font-weight: 800; color: #fff; font-size: 0.9rem;" for="preorder-public">Publicar</label>
+                </div>
+
+                <!-- Clientes Section (Private Internal Tracking) -->
+                <div style="margin-top: 22px; background: rgba(0,0,0,0.3); padding: 18px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <label style="color: #00d2ff; font-weight: 800; font-size: 0.95rem; margin: 0;">Clientes</label>
+                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;" id="client-summary-badge">
+                            Reservados: <span id="lbl-total-reserved" style="color: #00ff88; font-weight: 900;">0</span> / <span id="lbl-total-max">0</span>
                         </div>
-                        <div class="form-group">
-                            <label>Franquicia (TCG)</label>
-                            <select id="preorder-tcg">
-                                <option value="yugioh">Yu-Gi-Oh!</option>
-                                <option value="pokemon">Pokémon</option>
-                                <option value="onepiece">One Piece</option>
-                                <option value="lorcana">Lorcana</option>
-                                <option value="other">Otro</option>
+                    </div>
+
+                    <!-- Client Sub-Form -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 14px; align-items: end;">
+                        <div>
+                            <label style="font-size: 0.7rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 4px;">Cliente</label>
+                            <input type="text" id="client-input-name" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 8px; width: 100%; box-sizing: border-box; font-size: 0.8rem;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.7rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 4px;">Cantidad</label>
+                            <input type="number" id="client-input-qty" min="1" value="1" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 8px; width: 100%; box-sizing: border-box; font-size: 0.8rem;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.7rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 4px;">Anticipo</label>
+                            <input type="text" id="client-input-deposit" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 8px; width: 100%; box-sizing: border-box; font-size: 0.8rem;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.7rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 4px;">Estado</label>
+                            <select id="client-input-status" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 8px; width: 100%; box-sizing: border-box; font-size: 0.8rem;">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Liquidado">Liquidado</option>
+                                <option value="Entregado">Entregado</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Fecha Límite de Pago</label>
-                        <input type="text" id="preorder-deadline" placeholder="Ej: 15 de Octubre, 2024">
-                    </div>
-
-                    <div class="form-group" style="display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 18px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); margin-top: 10px;">
-                        <label class="switch">
-                            <input type="checkbox" id="preorder-public" checked>
-                            <span class="slider"></span>
-                        </label>
-                        <div style="display: flex; flex-direction: column;">
-                            <label style="margin-bottom: 0; cursor: pointer; font-weight: 800; color: #fff; font-size: 0.9rem;" for="preorder-public">Preventa Pública</label>
-                            <span style="font-size: 0.7rem; color: #666;">Visible para todos tus visitantes en la tienda</span>
+                        <div>
+                            <button type="button" id="btn-add-client-entry" style="background: #00d2ff; color: #000; border: none; padding: 9px 14px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 0.8rem;">
+                                Agregar
+                            </button>
                         </div>
                     </div>
+
+                    <!-- Client Table -->
+                    <div style="max-height: 160px; overflow-y: auto; scrollbar-width: none;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; color: #cbd5e1;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: #64748b;">
+                                    <th style="padding: 6px;">Cliente</th>
+                                    <th style="padding: 6px;">Cantidad</th>
+                                    <th style="padding: 6px;">Anticipo</th>
+                                    <th style="padding: 6px;">Falta</th>
+                                    <th style="padding: 6px;">Estado</th>
+                                    <th style="padding: 6px; text-align: center;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-table-body">
+                                <tr>
+                                    <td colspan="6" style="padding: 12px; text-align: center; color: #64748b;">Sin clientes registrados</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
             </div>
 
-            <div style="padding: 30px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
-                <button id="btn-save-preorder" class="btn" style="width: 100%; height: 55px; font-weight: 900; letter-spacing: 2px; font-size: 1rem; border-radius: 15px;">
-                    <i class="fas fa-check-circle"></i> GUARDAR PREVENTA
+            <div style="padding: 20px 30px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);">
+                <button id="btn-save-preorder" class="btn" style="width: 100%; height: 50px; font-weight: 900; letter-spacing: 1.5px; font-size: 0.95rem; border-radius: 14px; background: var(--viking-gradient); color: #fff; border: none; cursor: pointer;">
+                    GUARDAR PREVENTA
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/cloudinary-upload.js"></script>
     <script src="js/viking-data.js"></script>
@@ -379,6 +836,7 @@
         }
     </script>
 
+    <!-- Bottom Floating Navigation -->
     <div class="bottom-nav">
         <div class="nav-item" id="btn-nav-home" title="Ir al Home">
             <i class="fas fa-home"></i>
@@ -387,6 +845,8 @@
             <i class="fas fa-chevron-left"></i>
         </div>
     </div>
+
+    <!-- 3D Companion Chatbot Integration -->
     <script src="js/michatbot.js"></script>
 </body>
 </html>
