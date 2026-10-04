@@ -1745,60 +1745,72 @@ function loadPublicPreorders() {
 
             const $item = $(`
                 <div class="deck-public-item preorder-card-modern" id="preorder-item-${preorder.id}">
-                    <h3 style="margin: 0 0 10px 0; font-size: 1.2rem; font-weight: 800; color: #fff; text-align: center; line-height: 1.3;">${preorder.name}</h3>
+                    <h3 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.35; letter-spacing: -0.3px;">${preorder.name}</h3>
 
-                    <div class="product-image-container" style="position: relative; border-radius: 14px; overflow: hidden; height: 200px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);">
-                        <button class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
+                    <div class="product-image-container" style="position: relative; border-radius: 16px; overflow: hidden; height: 210px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                        <button type="button" class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
                             <i class="fas fa-share-alt"></i>
                         </button>
                         <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
-                             alt="${preorder.name}" class="sealed-product-img" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                             alt="${preorder.name}" class="sealed-product-img" style="max-height: 92%; max-width: 92%; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.7)); pointer-events: none;">
                     </div>
 
                     <div class="preorder-price-tag">${formattedPrice}</div>
 
-                    <div style="margin: 10px 0; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center;">
+                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center;">
                         ${preorder.start_date ? `<div class="preorder-date-badge-start"><i class="fas fa-calendar-alt"></i> Inicio: ${preorder.start_date}</div>` : ''}
                         <div class="preorder-date-badge-deadline">
                             <i class="fas fa-clock"></i> Límite Pago: ${preorder.payment_deadline || preorder.deadline || '-'}
                         </div>
-                        ${preorder.arrival_date ? `<div style="color: #00ff88; font-weight: 700; font-size: 0.85rem;"><i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}</div>` : ''}
-                        ${maxStock > 0 ? `<div style="color: #cbd5e1; font-weight: 600; font-size: 0.85rem;"><i class="fas fa-boxes"></i> Disponibles: ${available} ${preorder.per_person_limit ? `| Máx ${preorder.per_person_limit} x pers.` : ''}</div>` : ''}
+                        ${preorder.arrival_date ? `<div style="color: #00ff88; font-weight: 700; font-size: 0.88rem; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); padding: 6px 14px; border-radius: 12px; width: 100%; text-align: center; box-sizing: border-box;"><i class="fas fa-truck"></i> Llegada Estimada: ${preorder.arrival_date}</div>` : ''}
+                        ${maxStock > 0 ? `<div style="color: #cbd5e1; font-weight: 600; font-size: 0.85rem; text-align: center;"><i class="fas fa-boxes"></i> Disponibles: <strong style="color: #fff;">${available}</strong> ${preorder.per_person_limit ? `<span style="color: #94a3b8;">| Máx ${preorder.per_person_limit} x pers.</span>` : ''}</div>` : ''}
                     </div>
 
-                    <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                            <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 700;">Cantidad:</span>
-                            <button type="button" class="preorder-qty-btn preorder-qty-minus" ${isOutOfStock ? 'disabled' : ''}>-</button>
-                            <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" ${isOutOfStock ? 'disabled' : ''} style="width: 50px; text-align: center; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 4px 6px; font-weight: bold;">
-                            <button type="button" class="preorder-qty-btn preorder-qty-plus" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                    <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 6px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.8); padding: 8px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);">
+                            <span style="font-size: 0.9rem; color: #cbd5e1; font-weight: 800;">Cantidad:</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <button type="button" class="preorder-qty-btn preorder-qty-minus" ${isOutOfStock ? 'disabled' : ''}>-</button>
+                                <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" ${isOutOfStock ? 'disabled' : ''} style="width: 55px; height: 38px; text-align: center; background: rgba(0,0,0,0.6); color: #00ff88; border: 1px solid rgba(0,255,136,0.4); border-radius: 10px; font-size: 1.1rem; font-weight: 900; pointer-events: auto !important; -moz-appearance: textfield;">
+                                <button type="button" class="preorder-qty-btn preorder-qty-plus" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                            </div>
                         </div>
 
-                        <button class="btn btn-add-preorder-cart" style="width: 100%; padding: 14px 20px; font-size: 1.05rem; font-weight: 800; border-radius: 12px; background: ${isOutOfStock ? '#475569' : 'linear-gradient(135deg, #00d2ff 0%, #0072ff 100%)'}; border: none; box-shadow: ${isOutOfStock ? 'none' : '0 4px 15px rgba(0, 210, 255, 0.4)'}; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'}; color: #fff;" ${isOutOfStock ? 'disabled' : ''}>
-                            <i class="fas fa-cart-plus" style="font-size: 1.2rem;"></i> ${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}
+                        <button type="button" class="btn btn-add-preorder-cart" style="width: 100%; padding: 15px 20px; font-size: 1.1rem; font-weight: 900; border-radius: 14px; background: ${isOutOfStock ? '#475569' : 'linear-gradient(135deg, #00d2ff 0%, #0052d4 100%)'}; border: ${isOutOfStock ? 'none' : '1px solid rgba(255,255,255,0.3)'}; box-shadow: ${isOutOfStock ? 'none' : '0 8px 25px rgba(0, 210, 255, 0.45)'}; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer !important'}; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.25s ease;" ${isOutOfStock ? 'disabled' : ''}>
+                            <i class="fas fa-shopping-cart" style="font-size: 1.25rem;"></i> ${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}
                         </button>
                     </div>
                 </div>
             `);
 
-            // Quantity button controls
-            $item.find('.preorder-qty-minus').click(function(e) {
-                e.stopPropagation();
+            // Quantity button controls with explicit click/touch handling
+            const handleMinus = function(e) {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
                 const $input = $item.find('.preorder-qty-input');
                 let currVal = parseInt($input.val()) || 1;
                 if (currVal > 1) $input.val(currVal - 1);
-            });
+            };
 
-            $item.find('.preorder-qty-plus').click(function(e) {
-                e.stopPropagation();
+            const handlePlus = function(e) {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
                 const $input = $item.find('.preorder-qty-input');
                 let currVal = parseInt($input.val()) || 1;
                 if (currVal < maxAllowed) $input.val(currVal + 1);
+            };
+
+            $item.find('.preorder-qty-minus').on('click touchstart', handleMinus);
+            $item.find('.preorder-qty-plus').on('click touchstart', handlePlus);
+
+            $item.find('.preorder-qty-input').on('click touchstart change keyup', function(e) {
+                e.stopPropagation();
+                let val = parseInt($(this).val()) || 1;
+                if (val < 1) $(this).val(1);
+                if (val > maxAllowed) $(this).val(maxAllowed);
             });
 
             // Add to Cart click handler
-            $item.find('.btn-add-preorder-cart').click(function(e) {
-                e.stopPropagation();
+            const handleAddToCart = function(e) {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
 
                 if (isOutOfStock) {
                     Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para esta preventa.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
@@ -1823,7 +1835,7 @@ function loadPublicPreorders() {
 
                 Swal.fire({
                     title: '¡Añadido al Carrito!',
-                    text: `Se agregaron ${qty} unidad(es) de ${preorder.name} a tu carrito.`,
+                    text: `Se agregaron ${qty} unidad(es) de "${preorder.name}" a tu carrito.`,
                     icon: 'success',
                     showCancelButton: true,
                     confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
@@ -1834,7 +1846,9 @@ function loadPublicPreorders() {
                         window.location.href = cartUrl;
                     }
                 });
-            });
+            };
+
+            $item.find('.btn-add-preorder-cart').on('click touchstart', handleAddToCart);
 
             $('#preorders-container').append($item);
         });
