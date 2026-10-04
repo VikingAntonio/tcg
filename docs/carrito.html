@@ -317,6 +317,7 @@
                 const subtotal = unitPrice * qty;
 
                 const detailParts = [];
+                if (item.deadline) detailParts.push(`Límite Pago: ${item.deadline}`);
                 if (item.rarity && item.rarity !== '-') detailParts.push(item.rarity);
                 if (item.expansion && item.expansion !== '-') detailParts.push(item.expansion);
                 if (item.condition && item.condition !== '-') detailParts.push(item.condition);
@@ -416,6 +417,7 @@
                 const unitPrice = parseFloat(priceUnitStr) || 0;
                 const subtotal = unitPrice * qty;
                 const detailParts = [];
+                if (item.deadline) detailParts.push(`Límite Pago: ${item.deadline}`);
                 if (item.rarity && item.rarity !== '-') detailParts.push(item.rarity);
                 if (item.language && item.language !== '-') detailParts.push(item.language);
                 if (item.edition && item.edition !== '-') detailParts.push(item.edition);
