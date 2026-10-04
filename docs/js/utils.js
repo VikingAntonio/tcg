@@ -1166,7 +1166,8 @@ window.searchExternalCard = async function(inputSelector, resultsSelector, onSel
                     combinedResults.push({
                         name: c.name,
                         image: img.image_url_small,
-                        high_res: img.image_url
+                        high_res: img.image_url,
+                        desc: c.desc || ''
                     });
                 } );
             }

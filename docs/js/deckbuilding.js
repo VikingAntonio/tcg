@@ -568,7 +568,7 @@ function displaySearchResults(results) {
             previewCard({
                 name: card.name,
                 image_url: imageSrc,
-                desc: card.set || card.rarity || 'Detalles no disponibles'
+                desc: card.desc || card.set || card.rarity || 'Detalles no disponibles'
             });
             // Single tap automatically adds
             addCardToDeck(card);
