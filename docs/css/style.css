@@ -1560,6 +1560,102 @@ input:checked + .slider:before {
     height: 100%;
 }
 
+/* --- Preorder Card & Date Animations --- */
+@keyframes datePulse {
+    0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 71, 87, 0.4)); }
+    50% { transform: scale(1.03); filter: drop-shadow(0 0 8px rgba(255, 71, 87, 0.8)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 71, 87, 0.4)); }
+}
+
+@keyframes startDateGlow {
+    0% { filter: drop-shadow(0 0 2px rgba(0, 210, 255, 0.4)); }
+    50% { filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.8)); }
+    100% { filter: drop-shadow(0 0 2px rgba(0, 210, 255, 0.4)); }
+}
+
+.preorder-card-modern {
+    position: relative;
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 210, 255, 0.25) !important;
+    border-radius: 20px !important;
+    padding: 18px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.preorder-card-modern:hover {
+    transform: translateY(-6px) scale(1.01);
+    border-color: rgba(0, 210, 255, 0.6) !important;
+    box-shadow: 0 20px 40px rgba(0, 210, 255, 0.25), 0 15px 35px rgba(0, 0, 0, 0.6);
+}
+
+.preorder-date-badge-deadline {
+    animation: datePulse 2s infinite ease-in-out;
+    background: rgba(255, 71, 87, 0.15);
+    border: 1px solid rgba(255, 71, 87, 0.5);
+    color: #ff4757;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.preorder-date-badge-start {
+    animation: startDateGlow 2.5s infinite ease-in-out;
+    background: rgba(0, 210, 255, 0.12);
+    border: 1px solid rgba(0, 210, 255, 0.4);
+    color: #00d2ff;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.preorder-price-tag {
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00d2ff 0%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    text-align: center;
+    margin: 8px 0;
+}
+
+.preorder-qty-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.preorder-qty-btn:hover {
+    background: var(--primary-color, #00d2ff);
+    color: black;
+    border-color: transparent;
+}
+
 /* --- Ultra Modern Glassmorphic Sealed Product Cards & Action Buttons --- */
 .sealed-product-card-modern {
     position: relative;

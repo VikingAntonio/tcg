@@ -1735,150 +1735,105 @@ function loadPublicPreorders() {
             let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
             let maxStock = parseInt(preorder.max_stock) || 0;
             let available = Math.max(0, maxStock - reserved);
+            let isOutOfStock = available <= 0 && maxStock > 0;
+
+            let maxAllowed = preorder.per_person_limit ? Math.min(available, preorder.per_person_limit) : available;
+            if (maxAllowed <= 0 && !isOutOfStock) maxAllowed = 999;
+            if (maxAllowed <= 0) maxAllowed = 1;
+
+            const formattedPrice = preorder.price ? (preorder.price.toString().includes('$') ? preorder.price : `$${preorder.price}`) : 'Consultar';
 
             const $item = $(`
-                <div class="deck-public-item sealed-product-item" id="preorder-item-${preorder.id}" style="position: relative;">
-                    <button class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <div class="product-image-container">
-                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
-                             alt="${preorder.name}" class="sealed-product-img">
-                    </div>
-                    <h3 style="margin: 10px 0; font-size: 1.1rem; min-height: 2.4em; display: flex; align-items: center; justify-content: center; text-align: center;">${preorder.name}</h3>
-                    <div style="color: #00d2ff; font-weight: bold; font-size: 1.2rem; text-align: center;">${preorder.price || 'Consultar'}</div>
+                <div class="deck-public-item preorder-card-modern" id="preorder-item-${preorder.id}">
+                    <h3 style="margin: 0 0 10px 0; font-size: 1.2rem; font-weight: 800; color: #fff; text-align: center; line-height: 1.3;">${preorder.name}</h3>
 
-                    <div style="margin: 8px 0; font-size: 0.8rem; text-align: center; display: flex; flex-direction: column; gap: 4px;">
-                        <div style="color: #ff4757; font-weight: 700;">
+                    <div class="product-image-container" style="position: relative; border-radius: 14px; overflow: hidden; height: 200px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);">
+                        <button class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
+                             alt="${preorder.name}" class="sealed-product-img" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                    </div>
+
+                    <div class="preorder-price-tag">${formattedPrice}</div>
+
+                    <div style="margin: 10px 0; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center;">
+                        ${preorder.start_date ? `<div class="preorder-date-badge-start"><i class="fas fa-calendar-alt"></i> Inicio: ${preorder.start_date}</div>` : ''}
+                        <div class="preorder-date-badge-deadline">
                             <i class="fas fa-clock"></i> Límite Pago: ${preorder.payment_deadline || preorder.deadline || '-'}
                         </div>
-                        ${preorder.arrival_date ? `<div style="color: #00ff88; font-weight: 700;"><i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}</div>` : ''}
-                        ${maxStock > 0 ? `<div style="color: #cbd5e1; font-weight: 700;"><i class="fas fa-boxes"></i> Disponibles: ${available}</div>` : ''}
-                        ${preorder.per_person_limit ? `<div style="color: #94a3b8; font-size: 0.75rem;">Máx ${preorder.per_person_limit} por persona</div>` : ''}
+                        ${preorder.arrival_date ? `<div style="color: #00ff88; font-weight: 700; font-size: 0.85rem;"><i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}</div>` : ''}
+                        ${maxStock > 0 ? `<div style="color: #cbd5e1; font-weight: 600; font-size: 0.85rem;"><i class="fas fa-boxes"></i> Disponibles: ${available} ${preorder.per_person_limit ? `| Máx ${preorder.per_person_limit} x pers.` : ''}</div>` : ''}
                     </div>
 
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button class="btn btn-add-preorder-cart" style="flex: 1;" ${available <= 0 && maxStock > 0 ? 'disabled style="opacity: 0.5;"' : ''}>
-                            <i class="fas fa-cart-plus"></i> ${available <= 0 && maxStock > 0 ? 'Agotado' : 'Reservar'}
-                        </button>
-                        <button class="btn btn-secondary" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir">
-                            <i class="fas fa-share-alt"></i>
+                    <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                            <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 700;">Cantidad:</span>
+                            <button type="button" class="preorder-qty-btn preorder-qty-minus" ${isOutOfStock ? 'disabled' : ''}>-</button>
+                            <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" ${isOutOfStock ? 'disabled' : ''} style="width: 50px; text-align: center; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 4px 6px; font-weight: bold;">
+                            <button type="button" class="preorder-qty-btn preorder-qty-plus" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                        </div>
+
+                        <button class="btn btn-add-preorder-cart" style="width: 100%; padding: 14px 20px; font-size: 1.05rem; font-weight: 800; border-radius: 12px; background: ${isOutOfStock ? '#475569' : 'linear-gradient(135deg, #00d2ff 0%, #0072ff 100%)'}; border: none; box-shadow: ${isOutOfStock ? 'none' : '0 4px 15px rgba(0, 210, 255, 0.4)'}; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'}; color: #fff;" ${isOutOfStock ? 'disabled' : ''}>
+                            <i class="fas fa-cart-plus" style="font-size: 1.2rem;"></i> ${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}
                         </button>
                     </div>
                 </div>
             `);
 
-            $item.find('.btn-add-preorder-cart').click(async function(e) {
+            // Quantity button controls
+            $item.find('.preorder-qty-minus').click(function(e) {
+                e.stopPropagation();
+                const $input = $item.find('.preorder-qty-input');
+                let currVal = parseInt($input.val()) || 1;
+                if (currVal > 1) $input.val(currVal - 1);
+            });
+
+            $item.find('.preorder-qty-plus').click(function(e) {
+                e.stopPropagation();
+                const $input = $item.find('.preorder-qty-input');
+                let currVal = parseInt($input.val()) || 1;
+                if (currVal < maxAllowed) $input.val(currVal + 1);
+            });
+
+            // Add to Cart click handler
+            $item.find('.btn-add-preorder-cart').click(function(e) {
                 e.stopPropagation();
 
-                // Check if customer is logged in
-                let loggedUser = null;
-                try {
-                    const { data: { session } } = await _supabase.auth.getSession();
-                    if (session && session.user) {
-                        const { data: userData } = await _supabase
-                            .from('usuarios')
-                            .select('id, username, email')
-                            .eq('id', session.user.id)
-                            .single();
-                        loggedUser = userData || { username: session.user.email };
-                    }
-                } catch (err) { console.warn("Session check error:", err); }
-
-                if (!loggedUser) {
-                    Swal.fire({
-                        title: 'Inicio de sesión requerido',
-                        text: 'Debes iniciar sesión en tu cuenta de VikingTCG para realizar una reserva en preventa.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Iniciar Sesión',
-                        cancelButtonText: 'Cancelar'
-                    }).then(res => {
-                        if (res.isConfirmed) {
-                            window.location.href = 'admin.html';
-                        }
-                    });
+                if (isOutOfStock) {
+                    Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para esta preventa.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
                     return;
                 }
 
-                let maxAllowed = preorder.per_person_limit ? Math.min(available, preorder.per_person_limit) : available;
-                if (maxAllowed <= 0 && maxStock > 0) {
-                    Swal.fire('Agotado', 'No hay unidades disponibles para reservar.', 'info');
-                    return;
-                }
-                if (maxAllowed <= 0) maxAllowed = 999;
+                const qty = parseInt($item.find('.preorder-qty-input').val()) || 1;
 
-                const { value: formValues } = await Swal.fire({
-                    title: `Reservar ${preorder.name}`,
-                    html: `
-                        <div style="text-align: left; font-size: 0.9rem; color: #cbd5e1;">
-                            <p style="margin-bottom: 10px;"><b>Precio Venta:</b> ${preorder.price || 'Consultar'}</p>
-                            <label style="display: block; margin-bottom: 5px; font-weight: 700;">Cantidad:</label>
-                            <input id="swal-input-qty" type="number" class="swal2-input" min="1" max="${maxAllowed}" value="1" style="width: 100%; margin: 0 0 15px 0; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.1);">
-
-                            <label style="display: block; margin-bottom: 5px; font-weight: 700;">Monto de Anticipo ($):</label>
-                            <input id="swal-input-deposit" type="text" class="swal2-input" placeholder="Ej: 500" style="width: 100%; margin: 0; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.1);">
-                        </div>
-                    `,
-                    focusConfirm: false,
-                    showCancelButton: true,
-                    confirmButtonText: 'Confirmar Reserva',
-                    cancelButtonText: 'Cancelar',
-                    preConfirm: () => {
-                        const q = parseInt(document.getElementById('swal-input-qty').value) || 1;
-                        const depRaw = document.getElementById('swal-input-deposit').value || '0';
-                        const dep = parseFloat(depRaw.replace(/[^0-9.]/g, '')) || 0;
-                        if (q < 1 || (maxStock > 0 && q > maxAllowed)) {
-                            Swal.showValidationMessage(`Cantidad no válida (Máx: ${maxAllowed})`);
-                            return false;
-                        }
-                        return { qty: q, deposit: dep };
-                    }
+                Cart.add({
+                    name: preorder.name,
+                    image_url: preorder.image_url,
+                    price: preorder.price,
+                    tcg: preorder.tcg,
+                    deadline: preorder.payment_deadline || preorder.deadline,
+                    cart_quantity: qty,
+                    max_quantity: maxAllowed,
+                    whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
+                    messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
                 });
 
-                if (!formValues) return;
+                const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
 
-                const { qty, deposit } = formValues;
-
-                try {
-                    let updatedClients = [...clients];
-                    updatedClients.push({
-                        id: Date.now(),
-                        name: loggedUser.username || 'Cliente VikingTCG',
-                        qty: qty,
-                        deposit: deposit,
-                        status: 'Pendiente'
-                    });
-
-                    const { error: updateErr } = await _supabase
-                        .from('preorders')
-                        .update({ clients_list: updatedClients })
-                        .eq('id', preorder.id);
-
-                    if (updateErr) throw updateErr;
-
-                    Cart.add({
-                        name: preorder.name,
-                        image_url: preorder.image_url,
-                        price: preorder.price,
-                        tcg: preorder.tcg,
-                        deadline: preorder.payment_deadline,
-                        cart_quantity: qty
-                    });
-
-                    Swal.fire({
-                        title: '¡Reserva Registrada!',
-                        text: `Has reservado ${qty} unidad(es) de ${preorder.name}.`,
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-
-                    loadPublicPreorders();
-                } catch (err) {
-                    console.error("Error saving preorder reservation:", err);
-                    Swal.fire('Error', 'No se pudo registrar la reserva. Inténtalo de nuevo.', 'error');
-                }
+                Swal.fire({
+                    title: '¡Añadido al Carrito!',
+                    text: `Se agregaron ${qty} unidad(es) de ${preorder.name} a tu carrito.`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
+                    cancelButtonText: 'Seguir Comprando',
+                    confirmButtonColor: '#00d2ff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = cartUrl;
+                    }
+                });
             });
 
             $('#preorders-container').append($item);
