@@ -1768,24 +1768,117 @@ function loadPublicPreorders() {
                 </div>
             `);
 
-            $item.find('.btn-add-preorder-cart').click(function(e) {
+            $item.find('.btn-add-preorder-cart').click(async function(e) {
                 e.stopPropagation();
-                Cart.add({
-                    name: preorder.name,
-                    image_url: preorder.image_url,
-                    price: preorder.price,
-                    tcg: preorder.tcg,
-                    deadline: preorder.payment_deadline
+
+                // Check if customer is logged in
+                let loggedUser = null;
+                try {
+                    const { data: { session } } = await _supabase.auth.getSession();
+                    if (session && session.user) {
+                        const { data: userData } = await _supabase
+                            .from('usuarios')
+                            .select('id, username, email')
+                            .eq('id', session.user.id)
+                            .single();
+                        loggedUser = userData || { username: session.user.email };
+                    }
+                } catch (err) { console.warn("Session check error:", err); }
+
+                if (!loggedUser) {
+                    Swal.fire({
+                        title: 'Inicio de sesión requerido',
+                        text: 'Debes iniciar sesión en tu cuenta de VikingTCG para realizar una reserva en preventa.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Iniciar Sesión',
+                        cancelButtonText: 'Cancelar'
+                    }).then(res => {
+                        if (res.isConfirmed) {
+                            window.location.href = 'admin.html';
+                        }
+                    });
+                    return;
+                }
+
+                let maxAllowed = preorder.per_person_limit ? Math.min(available, preorder.per_person_limit) : available;
+                if (maxAllowed <= 0 && maxStock > 0) {
+                    Swal.fire('Agotado', 'No hay unidades disponibles para reservar.', 'info');
+                    return;
+                }
+                if (maxAllowed <= 0) maxAllowed = 999;
+
+                const { value: formValues } = await Swal.fire({
+                    title: `Reservar ${preorder.name}`,
+                    html: `
+                        <div style="text-align: left; font-size: 0.9rem; color: #cbd5e1;">
+                            <p style="margin-bottom: 10px;"><b>Precio Venta:</b> ${preorder.price || 'Consultar'}</p>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 700;">Cantidad:</label>
+                            <input id="swal-input-qty" type="number" class="swal2-input" min="1" max="${maxAllowed}" value="1" style="width: 100%; margin: 0 0 15px 0; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.1);">
+
+                            <label style="display: block; margin-bottom: 5px; font-weight: 700;">Monto de Anticipo ($):</label>
+                            <input id="swal-input-deposit" type="text" class="swal2-input" placeholder="Ej: 500" style="width: 100%; margin: 0; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.1);">
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'Confirmar Reserva',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: () => {
+                        const q = parseInt(document.getElementById('swal-input-qty').value) || 1;
+                        const depRaw = document.getElementById('swal-input-deposit').value || '0';
+                        const dep = parseFloat(depRaw.replace(/[^0-9.]/g, '')) || 0;
+                        if (q < 1 || (maxStock > 0 && q > maxAllowed)) {
+                            Swal.showValidationMessage(`Cantidad no válida (Máx: ${maxAllowed})`);
+                            return false;
+                        }
+                        return { qty: q, deposit: dep };
+                    }
                 });
-                Swal.fire({
-                    title: '¡Añadido!',
-                    text: `${preorder.name} se ha agregado al carrito.`,
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end'
-                });
+
+                if (!formValues) return;
+
+                const { qty, deposit } = formValues;
+
+                try {
+                    let updatedClients = [...clients];
+                    updatedClients.push({
+                        id: Date.now(),
+                        name: loggedUser.username || 'Cliente VikingTCG',
+                        qty: qty,
+                        deposit: deposit,
+                        status: 'Pendiente'
+                    });
+
+                    const { error: updateErr } = await _supabase
+                        .from('preorders')
+                        .update({ clients_list: updatedClients })
+                        .eq('id', preorder.id);
+
+                    if (updateErr) throw updateErr;
+
+                    Cart.add({
+                        name: preorder.name,
+                        image_url: preorder.image_url,
+                        price: preorder.price,
+                        tcg: preorder.tcg,
+                        deadline: preorder.payment_deadline,
+                        cart_quantity: qty
+                    });
+
+                    Swal.fire({
+                        title: '¡Reserva Registrada!',
+                        text: `Has reservado ${qty} unidad(es) de ${preorder.name}.`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
+                    loadPublicPreorders();
+                } catch (err) {
+                    console.error("Error saving preorder reservation:", err);
+                    Swal.fire('Error', 'No se pudo registrar la reserva. Inténtalo de nuevo.', 'error');
+                }
             });
 
             $('#preorders-container').append($item);

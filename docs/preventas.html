@@ -780,7 +780,7 @@
                 </div>
 
                 <!-- Client Sub-Form -->
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 18px; align-items: end; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.3fr auto; gap: 8px; margin-bottom: 18px; align-items: end; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06);">
                     <div>
                         <label style="font-size: 0.72rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 4px;">Cliente</label>
                         <input type="text" id="client-input-name" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 9px; width: 100%; box-sizing: border-box; font-size: 0.82rem;">
@@ -795,14 +795,14 @@
                     </div>
                     <div>
                         <label style="font-size: 0.72rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 4px;">Estado</label>
-                        <select id="client-input-status" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 9px; width: 100%; box-sizing: border-box; font-size: 0.82rem;">
+                        <select id="client-input-status" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 9px 6px; width: 100%; min-width: 100px; box-sizing: border-box; font-size: 0.82rem; text-overflow: ellipsis;">
                             <option value="Pendiente">Pendiente</option>
                             <option value="Liquidado">Liquidado</option>
                             <option value="Entregado">Entregado</option>
                         </select>
                     </div>
                     <div>
-                        <button type="button" id="btn-add-client-entry" style="background: #00d2ff; color: #000; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 0.85rem;">
+                        <button type="button" id="btn-add-client-entry" style="background: #00d2ff; color: #000; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 0.82rem; white-space: nowrap;">
                             Agregar
                         </button>
                     </div>
