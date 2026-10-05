@@ -4537,7 +4537,7 @@ function displayNexusSearchResults(results) {
 function nexusUpdatePreview(card) {
     $('#nexus-preview-img').attr('src', card.high_res || card.image);
     $('#nexus-preview-name').text(card.name);
-    $('#nexus-preview-desc').text(card.set || card.rarity || 'Detalles no disponibles');
+    $('#nexus-preview-desc').text(card.desc || card.set || card.rarity || 'Detalles no disponibles');
 }
 
 function addCardToNexusDeck(card, section = null) {
