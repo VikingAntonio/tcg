@@ -1810,7 +1810,7 @@ function loadPublicPreorders() {
             });
 
             // Add to Cart click handler
-            const handleAddToCart = function(e) {
+            const handleAddToCart = async function(e) {
                 if (e) { e.preventDefault(); e.stopPropagation(); }
 
                 if (isOutOfStock) {
@@ -1820,10 +1820,80 @@ function loadPublicPreorders() {
 
                 const qty = parseInt($item.find('.preorder-qty-input').val()) || 1;
 
+                const parsePriceVal = (val) => {
+                    if (!val) return 0;
+                    const str = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+                    return parseFloat(str) || 0;
+                };
+
+                const totalUnitPrice = parsePriceVal(preorder.price);
+                const reserveUnitPrice = parsePriceVal(preorder.reserve_amount);
+
+                let chosenTotalPayment = null;
+
+                if (reserveUnitPrice > 0 && reserveUnitPrice < totalUnitPrice) {
+                    const minTotal = reserveUnitPrice * qty;
+                    const maxTotal = totalUnitPrice * qty;
+
+                    const swalRes = await Swal.fire({
+                        title: 'Monto a pagar en preventa',
+                        html: `
+                            <div style="text-align: left; font-size: 0.95rem; color: #cbd5e1; font-family: sans-serif;">
+                                <p style="margin-bottom: 12px;">Estás apartado <strong>${qty}</strong> unidad(es) de <strong>${preorder.name}</strong>.</p>
+                                <div style="background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); padding: 12px; border-radius: 12px; margin-bottom: 15px;">
+                                    <div style="margin-bottom: 4px;"><i class="fas fa-coins" style="color: #f5af19;"></i> <strong>Apartado mín. unitario:</strong> $${reserveUnitPrice.toFixed(2)}</div>
+                                    <div><i class="fas fa-tag" style="color: #00ffaa;"></i> <strong>Precio total unitario:</strong> $${totalUnitPrice.toFixed(2)}</div>
+                                </div>
+                                <div style="margin-bottom: 15px; background: rgba(15, 23, 42, 0.8); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);">
+                                    <label style="display: block; font-weight: 800; color: #00d2ff; margin-bottom: 8px;">
+                                        ¿Cuánto deseas pagar/abonar ahora?<br>
+                                        <span style="font-size: 0.82rem; color: #f5af19;">Rango permitido (${qty} unidad/es): $${minTotal.toFixed(2)} - $${maxTotal.toFixed(2)}</span>
+                                    </label>
+                                    <input type="number" id="swal-preorder-amount-input" class="swal2-input" value="${minTotal}" min="${minTotal}" max="${maxTotal}" step="1" style="width: 100%; box-sizing: border-box; font-size: 1.25rem; font-weight: 900; text-align: center; color: #00ffaa; background: #000; border: 1px solid #00d2ff; border-radius: 10px; margin: 0;">
+                                </div>
+                                <div style="display: flex; gap: 8px; justify-content: center;">
+                                    <button type="button" class="btn btn-sm" id="swal-btn-preset-min" style="background: rgba(245, 175, 25, 0.2); color: #f5af19; border: 1px solid #f5af19; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Apartar Mínimo ($${minTotal.toFixed(2)})</button>
+                                    <button type="button" class="btn btn-sm" id="swal-btn-preset-max" style="background: rgba(0, 255, 170, 0.2); color: #00ffaa; border: 1px solid #00ffaa; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Pagar Total ($${maxTotal.toFixed(2)})</button>
+                                </div>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-shopping-cart"></i> Agregar al Carrito',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#00d2ff',
+                        cancelButtonColor: '#475569',
+                        background: '#0f172a',
+                        color: '#fff',
+                        didOpen: () => {
+                            const $input = $('#swal-preorder-amount-input');
+                            $('#swal-btn-preset-min').on('click', () => $input.val(minTotal));
+                            $('#swal-btn-preset-max').on('click', () => $input.val(maxTotal));
+                        },
+                        preConfirm: () => {
+                            const entered = parseFloat($('#swal-preorder-amount-input').val());
+                            if (isNaN(entered) || entered < minTotal - 0.01 || entered > maxTotal + 0.01) {
+                                Swal.showValidationMessage(`El monto debe estar entre $${minTotal.toFixed(2)} y $${maxTotal.toFixed(2)}.`);
+                                return false;
+                            }
+                            return entered;
+                        }
+                    });
+
+                    if (!swalRes.isConfirmed) return;
+                    chosenTotalPayment = swalRes.value;
+                }
+
+                const unitDeposit = chosenTotalPayment !== null ? (chosenTotalPayment / qty) : (totalUnitPrice || 0);
+
                 Cart.add({
                     name: preorder.name,
                     image_url: preorder.image_url,
                     price: preorder.price,
+                    total_unit_price: totalUnitPrice,
+                    reserve_amount: preorder.reserve_amount,
+                    unit_deposit: unitDeposit,
+                    custom_payment_amount: chosenTotalPayment !== null ? chosenTotalPayment : (totalUnitPrice * qty),
+                    is_preorder: true,
                     tcg: preorder.tcg,
                     deadline: preorder.payment_deadline || preorder.deadline,
                     cart_quantity: qty,
