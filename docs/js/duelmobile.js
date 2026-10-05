@@ -406,6 +406,11 @@ let targetActionType = null; // "summon", "set", "defense"
 
 // Page initialization
 $(document).ready(async function() {
+    $(document).on('click', '#btn-toggle-accessories', function(e) {
+        e.preventDefault();
+        $('#accessories-collapsible-panel').slideToggle(200);
+    });
+
     initLayout();
     await checkUserSessionAndPreload();
     setupEventListeners();
@@ -1446,8 +1451,32 @@ function updatePreview(card) {
     } else {
         $("#detail-card-img").attr("src", card.imageUrl);
         $("#detail-card-name").text(card.name);
-        let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Revelada para ti)" : "Boca Arriba"}\nContadores: ${card.counters}`;
-        $("#detail-card-desc").text(descText);
+        let descText = card.desc || card.description || card.effect || card.text || "";
+        if (!descText && card.name) {
+            $("#detail-card-desc").text("Cargando efecto...");
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data && data.data && data.data.length > 0) {
+                        const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
+                        if (matched && matched.desc) {
+                            card.desc = matched.desc;
+                            if ($("#detail-card-name").text() === card.name) {
+                                $("#detail-card-desc").text(matched.desc);
+                            }
+                        } else {
+                            $("#detail-card-desc").text("Efecto no disponible.");
+                        }
+                    } else {
+                        $("#detail-card-desc").text("Efecto no disponible.");
+                    }
+                })
+                .catch(() => {
+                    $("#detail-card-desc").text("Efecto no disponible.");
+                });
+        } else {
+            $("#detail-card-desc").text(descText || "Sin efecto/descripción.");
+        }
     }
 }
 
