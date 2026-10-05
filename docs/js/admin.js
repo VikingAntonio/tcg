@@ -4537,7 +4537,29 @@ function displayNexusSearchResults(results) {
 function nexusUpdatePreview(card) {
     $('#nexus-preview-img').attr('src', card.high_res || card.image);
     $('#nexus-preview-name').text(card.name);
-    $('#nexus-preview-desc').text(card.desc || card.set || card.rarity || 'Detalles no disponibles');
+    const initialDesc = card.desc || card.description;
+    if (initialDesc) {
+        $('#nexus-preview-desc').text(initialDesc);
+    } else {
+        $('#nexus-preview-desc').text(card.set || card.rarity || 'Detalles no disponibles');
+        if (card.name) {
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data && data.data && data.data.length > 0) {
+                        const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
+                        if (matched && matched.desc) {
+                            card.desc = matched.desc;
+                            card.description = matched.desc;
+                            if ($('#nexus-preview-name').text() === card.name) {
+                                $('#nexus-preview-desc').text(matched.desc);
+                            }
+                        }
+                    }
+                })
+                .catch(() => {});
+        }
+    }
 }
 
 function addCardToNexusDeck(card, section = null) {
@@ -4556,6 +4578,7 @@ function addCardToNexusDeck(card, section = null) {
         name: card.name,
         quantity: 1,
         section: targetSection,
+        description: card.desc || card.description || '',
         obtained: true,
         position: maxPos + 1
     };
@@ -4700,6 +4723,7 @@ function renderNexusDeck() {
                     name: card.name,
                     high_res: card.image_url,
                     image: card.image_url,
+                    desc: card.description || card.desc,
                     set: card.expansion,
                     rarity: card.rarity
                 }));
