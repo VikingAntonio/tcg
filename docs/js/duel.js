@@ -634,7 +634,12 @@ function renderAllCards() {
 
             // Check if this card is indeed the top card in pile
             const cardsInThisZone = state.cards.filter(c => c.zone === card.zone);
-            cardsInThisZone.sort((a, b) => (a.movedToPileAt || 0) - (b.movedToPileAt || 0));
+            cardsInThisZone.sort((a, b) => {
+                if (card.zone.startsWith("deck_")) {
+                    return a.z - b.z;
+                }
+                return (a.movedToPileAt || 0) - (b.movedToPileAt || 0);
+            });
             const topCard = cardsInThisZone[cardsInThisZone.length - 1];
 
             if (topCard && topCard.instanceId === card.instanceId) {
@@ -860,6 +865,7 @@ function bindCardDragEvents() {
             renderAllCards();
         } else if ($(this).hasClass("btn-deck")) {
             cardObj.zone = `deck_${playerSuffix}`;
+            delete cardObj.movedToPileAt;
             cardObj.faceDown = true;
             cardObj.tapped = false;
             renderAllCards();
@@ -1021,7 +1027,7 @@ function bindCardDragEvents() {
         }
         if (cardObj.zone.startsWith("deck_")) {
             const cardsInDeck = state.cards.filter(c => c.zone === cardObj.zone);
-            cardsInDeck.sort((a, b) => (a.movedToPileAt || 0) - (b.movedToPileAt || 0));
+            cardsInDeck.sort((a, b) => a.z - b.z);
             const topCard = cardsInDeck[cardsInDeck.length - 1];
             if (!topCard || topCard.instanceId !== cardObj.instanceId) {
                 return;
@@ -1415,6 +1421,7 @@ $(window).on('mouseup touchend', function(e) {
             } else if (hoverZone.id.startsWith("deck_")) {
                 const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
                 cardObj.zone = `deck_${originalSuffix}`;
+                delete cardObj.movedToPileAt;
                 cardObj.controller = cardObj.owner; // Reset controller
                 cardObj.faceDown = true;
                 cardObj.tapped = false;
@@ -1719,13 +1726,18 @@ function shuffleDeckSilent(playerKey) {
         return;
     }
 
-    // Fisher-Yates shuffle cards array
+    // Fisher-Yates shuffle cards array and reset z indices & movedToPileAt timestamps
     for (let i = deckCards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        const tempZ = deckCards[i].z;
-        deckCards[i].z = deckCards[j].z;
-        deckCards[j].z = tempZ;
+        const temp = deckCards[i];
+        deckCards[i] = deckCards[j];
+        deckCards[j] = temp;
     }
+
+    deckCards.forEach((card, index) => {
+        delete card.movedToPileAt;
+        card.z = index + 1;
+    });
 }
 
 // Shuffle deck piles
@@ -2248,6 +2260,7 @@ function moveAllAttachedTo(parentId, targetType) {
             cardObj.tapped = false;
         } else if (targetType === "deck") {
             cardObj.zone = `deck_${playerSuffix}`;
+            delete cardObj.movedToPileAt;
             cardObj.faceDown = true;
             cardObj.tapped = false;
         }
@@ -2353,6 +2366,7 @@ function openAttachedCardsModal(parentId) {
             cardObj.movedToPileAt = Date.now() + Math.random();
         } else if ($(this).hasClass("btn-attached-deck")) {
             cardObj.zone = `deck_${playerSuffix}`;
+            delete cardObj.movedToPileAt;
             cardObj.faceDown = true;
             cardObj.tapped = false;
         }
@@ -2897,6 +2911,7 @@ function openPileModal(playerKey, pileType) {
             });
         } else if ($(this).hasClass("btn-pile-deck")) {
             cardObj.zone = `deck_${pSuffix}`;
+            delete cardObj.movedToPileAt;
             cardObj.faceDown = true;
             cardObj.tapped = false;
             renderAllCards();
@@ -3350,6 +3365,7 @@ function openCardContextMenu(cardObj, clientX, clientY) {
     $("#menu-to-deck-top").click(function() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
+        delete activeMenuCard.movedToPileAt;
         const oldZone = activeMenuCard.zone;
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
@@ -3403,6 +3419,7 @@ function openCardContextMenu(cardObj, clientX, clientY) {
     $("#menu-to-deck-bottom").click(function() {
         if (!activeMenuCard) return;
         detachAllChildren(activeMenuCard.instanceId);
+        delete activeMenuCard.movedToPileAt;
         const oldZone = activeMenuCard.zone;
         const targetZone = activeMenuCard.owner === "player1" ? "deck_1" : "deck_2";
         activeMenuCard.zone = targetZone;
@@ -3727,6 +3744,7 @@ function openCardContextMenu(cardObj, clientX, clientY) {
                     if (!cardObj) return;
 
                     cardObj.zone = `deck_${playerSuffix}`;
+                    delete cardObj.movedToPileAt;
                     cardObj.faceDown = true;
                     cardObj.tapped = false;
                     renderAllCards();
@@ -3764,6 +3782,7 @@ function openCardContextMenu(cardObj, clientX, clientY) {
                         const cardObj = state.cards.find(card => card.instanceId === c.instanceId);
                         if (cardObj) {
                             cardObj.zone = `deck_${playerSuffix}`;
+                            delete cardObj.movedToPileAt;
                             cardObj.faceDown = true;
                             cardObj.tapped = false;
                         }
@@ -3960,6 +3979,7 @@ function openCardContextMenu(cardObj, clientX, clientY) {
             const cardObj = state.cards.find(c => c.instanceId === id);
             if (cardObj) {
                 cardObj.zone = targetZone;
+                delete cardObj.movedToPileAt;
                 cardObj.faceDown = true;
                 cardObj.tapped = false;
                 cardsToMove.push(cardObj);
@@ -4107,6 +4127,7 @@ function openCardContextMenu(cardObj, clientX, clientY) {
             const cardObj = state.cards.find(c => c.instanceId === id);
             if (cardObj) {
                 cardObj.zone = targetZone;
+                delete cardObj.movedToPileAt;
                 cardObj.faceDown = true;
                 cardObj.tapped = false;
                 cardsToMove.push(cardObj);
