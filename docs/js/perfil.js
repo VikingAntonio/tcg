@@ -6,30 +6,45 @@ $(document).ready(async function() {
     initTheme();
 
     async function checkSession() {
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (!session) {
-            window.location.href = 'admin.html';
-            return;
+        try {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                const { data, error } = await _supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
+
+                if (data) {
+                    currentUser = data;
+                    localStorage.setItem('tcg_session', JSON.stringify(data));
+                    loadProfileData();
+                    updateHeader();
+                    $('.admin-container').show();
+                    return;
+                } else if (error) {
+                    console.warn("Error loading user profile:", error);
+                }
+            }
+        } catch (e) {
+            console.error("Session check exception:", e);
         }
 
-        // Refresh data from Supabase to get latest
-        const { data, error } = await _supabase
-            .from('usuarios')
-            .select('id, username, email, is_store, store_name, whatsapp_link, messenger_link, horario, ubicacion, store_logo, custom_domain, subscription_status')
-            .eq('id', session.user.id)
-            .single();
-
-        if (!error && data) {
-            currentUser = data;
-            localStorage.setItem('tcg_session', JSON.stringify(data));
-        } else {
-            window.location.href = 'admin.html';
-            return;
+        // Fallback to cached session in localStorage if auth session check fails or offline
+        const cachedUser = localStorage.getItem('tcg_session');
+        if (cachedUser) {
+            try {
+                currentUser = JSON.parse(cachedUser);
+                loadProfileData();
+                updateHeader();
+                $('.admin-container').show();
+                return;
+            } catch (err) {
+                console.error("Error parsing cached tcg_session:", err);
+            }
         }
 
-        loadProfileData();
-        updateHeader();
-        $('.admin-container').show();
+        window.location.href = 'admin.html';
     }
 
     function loadProfileData() {
