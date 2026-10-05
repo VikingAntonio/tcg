@@ -1557,6 +1557,38 @@ function checkHandTrayHover(e, traySelector) {
             coords.y >= offset.top && coords.y <= offset.top + h);
 }
 
+// Helper to render card image and description in preview
+function renderCardEffectInPreview(card) {
+    $("#detail-card-img").attr("src", card.imageUrl);
+    $("#detail-card-name").text(card.name);
+    let descText = card.desc || card.description || card.effect || card.text || "";
+    if (!descText && card.name) {
+        $("#detail-card-desc").text("Cargando efecto...");
+        fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && data.data && data.data.length > 0) {
+                    const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
+                    if (matched && matched.desc) {
+                        card.desc = matched.desc;
+                        if ($("#detail-card-name").text() === card.name) {
+                            $("#detail-card-desc").text(matched.desc);
+                        }
+                    } else {
+                        $("#detail-card-desc").text("Efecto no disponible.");
+                    }
+                } else {
+                    $("#detail-card-desc").text("Efecto no disponible.");
+                }
+            })
+            .catch(() => {
+                $("#detail-card-desc").text("Efecto no disponible.");
+            });
+    } else {
+        $("#detail-card-desc").text(descText || "Sin efecto/descripción.");
+    }
+}
+
 // Side info detailed previewer
 // SECURE ANTI-CHEAT preview system: masks details of face-down cards and deck piles
 function updatePreview(card) {
@@ -1565,7 +1597,7 @@ function updatePreview(card) {
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
+        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
         return;
     }
 
@@ -1578,16 +1610,12 @@ function updatePreview(card) {
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
+        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
         return;
     }
 
     if (state.mode === "practice") {
-        // In practice mode, show face-up card details and images openly
-        $("#detail-card-img").attr("src", card.imageUrl);
-        $("#detail-card-name").text(card.name);
-        let descText = `Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: ${card.faceDown ? "Boca Abajo (Práctica)" : "Boca Arriba"}\nContadores: ${card.counters}`;
-        $("#detail-card-desc").text(descText);
+        renderCardEffectInPreview(card);
         return;
     }
 
@@ -1616,36 +1644,9 @@ function updatePreview(card) {
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text(`Propietario: ${card.owner === "player1" ? "Jugador 1" : "Jugador 2"}\nZona: ${card.zone.toUpperCase()}\nEstado: Boca Abajo\nContadores: ${card.counters}\n\n[Detalles ocultos para evitar trampas]`);
+        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
     } else {
-        $("#detail-card-img").attr("src", card.imageUrl);
-        $("#detail-card-name").text(card.name);
-        let descText = card.desc || card.description || card.effect || card.text || "";
-        if (!descText && card.name) {
-            $("#detail-card-desc").text("Cargando efecto...");
-            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
-                .then(r => r.ok ? r.json() : null)
-                .then(data => {
-                    if (data && data.data && data.data.length > 0) {
-                        const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
-                        if (matched && matched.desc) {
-                            card.desc = matched.desc;
-                            if ($("#detail-card-name").text() === card.name) {
-                                $("#detail-card-desc").text(matched.desc);
-                            }
-                        } else {
-                            $("#detail-card-desc").text("Efecto no disponible.");
-                        }
-                    } else {
-                        $("#detail-card-desc").text("Efecto no disponible.");
-                    }
-                })
-                .catch(() => {
-                    $("#detail-card-desc").text("Efecto no disponible.");
-                });
-        } else {
-            $("#detail-card-desc").text(descText || "Sin efecto/descripción.");
-        }
+        renderCardEffectInPreview(card);
     }
 }
 
