@@ -1109,7 +1109,7 @@
             </div>
 
             <!-- Detailed Card Preview Panel -->
-            <div class="sidebar-section preview-panel">
+            <div class="sidebar-section preview-panel" style="position: relative;">
                 <h3 style="display: none;"><i class="fas fa-search-plus"></i> Vista Detallada</h3>
                 <div class="card-detailed-preview" id="card-detail-view">
                     <div class="preview-img-container" style="position: relative;">
@@ -1122,8 +1122,12 @@
 
                 <button id="btn-toggle-accessories" class="btn btn-secondary" style="width: 100%; margin-top: 8px; padding: 8px; font-size: 0.8rem; background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; font-weight: bold; border-radius: 8px; cursor: pointer;"><i class="fas fa-tools"></i> Accesorios</button>
 
-                <!-- Collapsible Accessories Panel -->
-                <div id="accessories-collapsible-panel" style="display: none; margin-top: 8px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <!-- Floating Overlay Accessories Panel -->
+                <div id="accessories-collapsible-panel" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1.5px solid #00d2ff; border-radius: 12px; padding: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8); overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
+                        <span style="font-weight: bold; color: #00d2ff; font-size: 0.85rem;"><i class="fas fa-tools"></i> Accesorios</span>
+                        <button type="button" onclick="$('#accessories-collapsible-panel').fadeOut(150);" style="background: transparent; border: none; color: #ff4d4d; font-size: 1rem; cursor: pointer; padding: 2px 6px;"><i class="fas fa-times"></i></button>
+                    </div>
                     <div class="sidebar-accessories" id="sidebar-accessories-container" style="display: flex; flex-direction: column; gap: 10px;">
                         <!-- Luck/Suerte tools -->
                         <div class="accessories-section">
