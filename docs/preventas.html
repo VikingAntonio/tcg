@@ -413,29 +413,25 @@
             display: flex;
             background: rgba(0, 0, 0, 0.4);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px 20px 0 20px;
+            padding: 12px 18px 0 18px;
             gap: 10px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-        .modal-tabs-header::-webkit-scrollbar {
-            display: none;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .modal-tab-btn {
+            flex: 1;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-bottom: none;
             border-radius: 12px 12px 0 0;
             color: #94a3b8;
-            padding: 10px 18px;
-            font-size: 0.82rem;
+            padding: 12px 16px;
+            font-size: 0.88rem;
             font-weight: 800;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            text-align: center;
+            justify-content: center;
             white-space: nowrap;
             transition: all 0.25s ease;
         }
@@ -725,29 +721,29 @@
             <!-- Tabs Navigation Header -->
             <div class="modal-tabs-header" id="preorder-modal-tabs">
                 <button class="modal-tab-btn active" data-tab="preorder-tab-info">
-                    <i class="fas fa-info-circle"></i> Info
+                    Info
                 </button>
                 <button class="modal-tab-btn" data-tab="preorder-tab-prices">
-                    <i class="fas fa-coins"></i> Precios y Reserva
+                    Precio
                 </button>
                 <button class="modal-tab-btn" data-tab="preorder-tab-dates">
-                    <i class="fas fa-calendar-alt"></i> Fechas e Imagen
+                    Fecha
                 </button>
             </div>
 
             <div class="modal-body-scroll">
                 <input type="hidden" id="edit-preorder-id">
 
-                <!-- Tab 1: Info General -->
+                <!-- Tab 1: Info -->
                 <div class="tab-pane active" id="preorder-tab-info">
-                    <div class="form-group">
-                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Nombre</label>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Nombre</label>
                         <input type="text" id="preorder-name" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                     </div>
 
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Franquicia</label>
+                    <div class="form-grid-2" style="margin-bottom: 14px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Franquicia</label>
                             <select id="preorder-tcg" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                                 <option value="yugioh">Yu-Gi-Oh!</option>
                                 <option value="pokemon">Pokémon</option>
@@ -757,9 +753,47 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Límite por Persona</label>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Límite por Persona</label>
                             <input type="number" id="preorder-person-limit" min="1" value="" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Imagen</label>
+                        <label class="file-drop-zone" id="drop-zone-preorder" for="input-preorder-file" style="display: block; background: rgba(0,0,0,0.3); border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 1.8rem; color: #00d2ff; margin-bottom: 6px;"></i>
+                            <p style="font-weight: 700; margin: 0 0 2px 0; color: #fff; font-size: 0.85rem;">Cargar imagen</p>
+                            <input type="file" id="input-preorder-file" accept="image/*" style="display: none;">
+                            <div class="file-name" style="font-size: 12px; color: #00ff88; margin-top: 6px; font-weight: 700;"></div>
+                        </label>
+                        <input type="hidden" id="preorder-image-url">
+                    </div>
+                </div>
+
+                <!-- Tab 2: Precio -->
+                <div class="tab-pane" id="preorder-tab-prices">
+                    <div class="form-grid-2" style="margin-bottom: 14px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Stock Total</label>
+                            <input type="number" id="preorder-max-stock" min="0" value="" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #94a3b8; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Precio Compra</label>
+                            <input type="text" id="preorder-cost-price" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2" style="margin-bottom: 14px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #00d2ff; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Precio Venta</label>
+                            <input type="text" id="preorder-price" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #f5af19; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Aparta desde</label>
+                            <input type="text" id="preorder-reserve-amount" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
                         </div>
                     </div>
 
@@ -772,67 +806,29 @@
                     </div>
                 </div>
 
-                <!-- Tab 2: Precios y Reserva -->
-                <div class="tab-pane" id="preorder-tab-prices">
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Stock Total</label>
-                            <input type="number" id="preorder-max-stock" min="0" value="" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                        </div>
-
-                        <div class="form-group">
-                            <label style="color: #94a3b8; font-weight: 700; font-size: 0.85rem;">Precio Compra</label>
-                            <input type="text" id="preorder-cost-price" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                        </div>
-                    </div>
-
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label style="color: #00d2ff; font-weight: 700; font-size: 0.85rem;">Precio Venta</label>
-                            <input type="text" id="preorder-price" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                        </div>
-
-                        <div class="form-group">
-                            <label style="color: #f5af19; font-weight: 700; font-size: 0.85rem;">Aparta desde</label>
-                            <input type="text" id="preorder-reserve-amount" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box;">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 3: Fechas e Imagen -->
+                <!-- Tab 3: Fecha -->
                 <div class="tab-pane" id="preorder-tab-dates">
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Fecha Inicio</label>
+                    <div class="form-grid-2" style="margin-bottom: 14px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Fecha Inicio</label>
                             <input type="date" id="preorder-start-date" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; color-scheme: dark;">
                         </div>
 
-                        <div class="form-group">
-                            <label style="color: #ff4757; font-weight: 700; font-size: 0.85rem;">Fecha Fin</label>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="color: #ff4757; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Fecha Fin</label>
                             <input type="date" id="preorder-deadline" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; color-scheme: dark;">
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label style="color: #00ff88; font-weight: 700; font-size: 0.85rem;">Fecha Llegada</label>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="color: #00ff88; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 6px;">Fecha Llegada</label>
                         <input type="date" id="preorder-arrival-date" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; color-scheme: dark;">
-                    </div>
-
-                    <div class="form-group">
-                        <label style="color: #cbd5e1; font-weight: 700; font-size: 0.85rem;">Imagen</label>
-                        <label class="file-drop-zone" id="drop-zone-preorder" for="input-preorder-file" style="display: block;">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #00d2ff; margin-bottom: 6px;"></i>
-                            <p style="font-weight: 700; margin: 0; color: #fff; font-size: 0.85rem;">Cargar imagen</p>
-                            <input type="file" id="input-preorder-file" accept="image/*" style="display: none;">
-                            <div class="file-name" style="font-size: 12px; color: #00ff88; margin-top: 6px; font-weight: 700;"></div>
-                        </label>
-                        <input type="hidden" id="preorder-image-url">
                     </div>
                 </div>
             </div>
 
-            <div style="padding: 20px 30px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);">
-                <button id="btn-save-preorder" class="btn" style="width: 100%; height: 50px; font-weight: 900; letter-spacing: 1.5px; font-size: 0.95rem; border-radius: 14px; background: var(--viking-gradient); color: #fff; border: none; cursor: pointer;">
+            <div style="padding: 18px 24px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);">
+                <button id="btn-save-preorder" class="btn" style="width: 100%; height: 48px; font-weight: 900; letter-spacing: 1.5px; font-size: 0.95rem; border-radius: 14px; background: var(--viking-gradient); color: #fff; border: none; cursor: pointer;">
                     GUARDAR PREVENTA
                 </button>
             </div>
