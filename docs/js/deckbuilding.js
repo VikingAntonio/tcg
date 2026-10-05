@@ -582,7 +582,29 @@ function previewCard(card) {
     if (!card) return;
     $('#card-preview-img').attr('src', card.image_url);
     $('#card-preview-name').text(card.name);
-    $('#card-preview-desc').text(card.desc || '');
+    const initialDesc = card.desc || card.description;
+    if (initialDesc && initialDesc !== 'Carta de tu Deck') {
+        $('#card-preview-desc').text(initialDesc);
+    } else {
+        $('#card-preview-desc').text(initialDesc || '');
+        if (card.name) {
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data && data.data && data.data.length > 0) {
+                        const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
+                        if (matched && matched.desc) {
+                            card.desc = matched.desc;
+                            card.description = matched.desc;
+                            if ($('#card-preview-name').text() === card.name) {
+                                $('#card-preview-desc').text(matched.desc);
+                            }
+                        }
+                    }
+                })
+                .catch(() => {});
+        }
+    }
 }
 
 function addCardToDeck(card, targetSection = null) {
@@ -599,6 +621,7 @@ function addCardToDeck(card, targetSection = null) {
         name: card.name,
         quantity: 1,
         section: sec,
+        description: card.desc || card.description || '',
         position: maxPos + 1,
         obtained: true
     };
@@ -659,7 +682,7 @@ function renderDeckGrids() {
                     previewCard({
                         name: card.name,
                         image_url: card.image_url,
-                        desc: card.expansion || card.rarity || 'Carta de tu Deck'
+                        desc: card.description || card.desc || card.expansion || card.rarity || 'Carta de tu Deck'
                     });
                 });
 
