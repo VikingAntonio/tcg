@@ -1762,6 +1762,7 @@ function loadPublicPreorders() {
                         <div class="preorder-date-badge-deadline">
                             <i class="fas fa-clock"></i> Límite Pago: ${preorder.payment_deadline || preorder.deadline || '-'}
                         </div>
+                        ${preorder.reserve_amount ? `<div style="color: #f5af19; font-weight: 800; font-size: 0.88rem; background: rgba(245, 175, 25, 0.1); border: 1px solid rgba(245, 175, 25, 0.3); padding: 6px 14px; border-radius: 12px; width: 100%; text-align: center; box-sizing: border-box;"><i class="fas fa-coins"></i> Aparta desde: ${preorder.reserve_amount.toString().includes('$') ? preorder.reserve_amount : `$${preorder.reserve_amount}`}</div>` : ''}
                         ${preorder.arrival_date ? `<div style="color: #00ff88; font-weight: 700; font-size: 0.88rem; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); padding: 6px 14px; border-radius: 12px; width: 100%; text-align: center; box-sizing: border-box;"><i class="fas fa-truck"></i> Llegada Estimada: ${preorder.arrival_date}</div>` : ''}
                         ${maxStock > 0 ? `<div style="color: #cbd5e1; font-weight: 600; font-size: 0.85rem; text-align: center;"><i class="fas fa-boxes"></i> Disponibles: <strong style="color: #fff;">${available}</strong> ${preorder.per_person_limit ? `<span style="color: #94a3b8;">| Máx ${preorder.per_person_limit} x pers.</span>` : ''}</div>` : ''}
                     </div>
