@@ -44,6 +44,15 @@ $(document).ready(async function() {
         handleLogout();
     });
 
+    // --- Tabs Switch Logic ---
+    $('#preorder-modal-tabs .modal-tab-btn').click(function() {
+        const targetTab = $(this).data('tab');
+        $('#preorder-modal-tabs .modal-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('#preorder-modal .tab-pane').removeClass('active');
+        $('#' + targetTab).addClass('active');
+    });
+
     // --- Save Preorder Logic ---
     $('#btn-save-preorder').click(function() {
         savePreorder();
@@ -259,6 +268,12 @@ function renderPreordersList(preorders) {
                             </div>
                         </div>
 
+                        ${preorder.reserve_amount ? `
+                            <div style="font-size: 0.72rem; color: #f5af19; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-coins"></i> Aparta desde: ${preorder.reserve_amount.toString().includes('$') ? preorder.reserve_amount : `$${preorder.reserve_amount}`}
+                            </div>
+                        ` : ''}
+
                         ${preorder.arrival_date ? `
                             <div style="font-size: 0.72rem; color: #00ff88; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
                                 <i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}
@@ -455,6 +470,7 @@ async function savePreorder() {
     const maxStock = parseInt($('#preorder-max-stock').val()) || 0;
     const costPrice = $('#preorder-cost-price').val().trim();
     const price = $('#preorder-price').val().trim();
+    const reserveAmount = $('#preorder-reserve-amount').val().trim();
     const personLimit = $('#preorder-person-limit').val().trim();
     const startDate = $('#preorder-start-date').val();
     const deadline = $('#preorder-deadline').val();
@@ -474,6 +490,7 @@ async function savePreorder() {
         max_stock: maxStock,
         cost_price: costPrice,
         price,
+        reserve_amount: reserveAmount,
         per_person_limit: personLimit ? (parseInt(personLimit) || null) : null,
         start_date: startDate,
         payment_deadline: deadline,
@@ -556,9 +573,10 @@ function editPreorder(preorder) {
     $('#preorder-image-url').val(preorder.image_url || '');
     if (preorder.image_url) $('#drop-zone-preorder .file-name').text('Imagen cargada').css('color', '#00ff88');
     $('#preorder-tcg').val(preorder.tcg || 'yugioh');
-    $('#preorder-max-stock').val(preorder.max_stock || 10);
+    $('#preorder-max-stock').val(preorder.max_stock !== undefined && preorder.max_stock !== null ? preorder.max_stock : '');
     $('#preorder-cost-price').val(preorder.cost_price || '');
     $('#preorder-price').val(preorder.price || '');
+    $('#preorder-reserve-amount').val(preorder.reserve_amount || '');
     $('#preorder-person-limit').val(preorder.per_person_limit !== null && preorder.per_person_limit !== undefined ? preorder.per_person_limit : '');
     $('#preorder-start-date').val(preorder.start_date || '');
     $('#preorder-deadline').val(preorder.payment_deadline || preorder.deadline || '');
@@ -662,14 +680,21 @@ function resetModal() {
     $('#preorder-image-url').val('');
     $('#drop-zone-preorder .file-name').text('');
     $('#preorder-tcg').val('yugioh');
-    $('#preorder-max-stock').val('10');
+    $('#preorder-max-stock').val('');
     $('#preorder-cost-price').val('');
     $('#preorder-price').val('');
+    $('#preorder-reserve-amount').val('');
     $('#preorder-person-limit').val('');
     $('#preorder-start-date').val('');
     $('#preorder-deadline').val('');
     $('#preorder-arrival-date').val('');
     $('#preorder-public').prop('checked', true);
+
+    // Reset active tab to first tab
+    $('#preorder-modal-tabs .modal-tab-btn').removeClass('active');
+    $('#preorder-modal-tabs .modal-tab-btn[data-tab="preorder-tab-info"]').addClass('active');
+    $('#preorder-modal .tab-pane').removeClass('active');
+    $('#preorder-tab-info').addClass('active');
 
     activeClientsPreorder = null;
     currentClientsList = [];

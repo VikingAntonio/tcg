@@ -54,6 +54,15 @@ $(document).ready(async function() {
         applyAdminFiltersAndSort();
     });
 
+    // --- Tabs Switch Logic ---
+    $('#product-modal-tabs .modal-tab-btn').click(function() {
+        const targetTab = $(this).data('tab');
+        $('#product-modal-tabs .modal-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('#product-modal .tab-pane').removeClass('active');
+        $('#' + targetTab).addClass('active');
+    });
+
     // --- Save Logic ---
     $('#btn-save-product').click(function() {
         saveProduct();
@@ -751,7 +760,7 @@ function editProduct(product) {
     $('#product-cost-price').val(product.cost_price || product.cost || '');
     $('#product-status').val(product.status || 'Disponible');
     $('#product-description').val(product.description || '');
-    $('#product-stock').val(product.stock !== undefined ? product.stock : (product.quantity || 1));
+    $('#product-stock').val(product.stock !== undefined && product.stock !== null ? product.stock : (product.quantity !== undefined ? product.quantity : ''));
     $('#product-tcg').val(product.tcg || 'yugioh');
     $('#product-public').prop('checked', product.is_public !== false);
 
@@ -860,9 +869,15 @@ function resetModal() {
     $('#product-price').val('');
     $('#product-discount').val('');
     $('#product-cost-price').val('');
-    $('#product-estimated-profit').val('$0.00');
+    $('#product-estimated-profit').val('');
     $('#product-status').val('Disponible');
-    $('#product-stock').val(1);
+    $('#product-stock').val('');
     $('#product-tcg').val('yugioh');
     $('#product-public').prop('checked', true);
+
+    // Reset active tab to first tab
+    $('#product-modal-tabs .modal-tab-btn').removeClass('active');
+    $('#product-modal-tabs .modal-tab-btn[data-tab="product-tab-info"]').addClass('active');
+    $('#product-modal .tab-pane').removeClass('active');
+    $('#product-tab-info').addClass('active');
 }
