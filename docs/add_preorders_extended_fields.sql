@@ -20,4 +20,4 @@ COMMENT ON COLUMN public.preorders.max_stock IS 'Cantidad máxima de productos d
 COMMENT ON COLUMN public.preorders.per_person_limit IS 'Límite máximo de productos por cliente';
 COMMENT ON COLUMN public.preorders.start_date IS 'Fecha de inicio de la preventa';
 COMMENT ON COLUMN public.preorders.arrival_date IS 'Fecha estimada de llegada del producto';
-COMMENT ON COLUMN public.preorders.clients_list IS 'Lista interna de clientes que hicieron preventa (privado)';
+COMMENT ON COLUMN public.preorders.clients_list IS 'Lista interna de clientes en JSONB. Estructura recomendada por cliente: { id, name, qty, deposit, status_payment ("Pendiente"|"Pago Parcial"|"Liquidado"), status_delivery ("Por Entregar"|"En Camino"|"Entregado"|"Retrasado"), date }';

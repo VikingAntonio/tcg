@@ -1836,12 +1836,13 @@ function setupProactiveEventObservers() {
         }
     });
 
-    // 4. Observe catalog editing / wishlist / sealed products interactions
-    $(document).on('click', '#btn-add-wishlist, #btn-add-product, .btn-add-sealed-modern, #btn-create-inv-card', function() {
+    // 4. Observe catalog editing / wishlist / sealed products / preorder acquisition interactions
+    $(document).on('click', '#btn-add-wishlist, #btn-add-product, .btn-add-sealed-modern, #btn-create-inv-card, .btn-add-preorder-cart', function() {
         if (window.ProactiveAssistant) {
-            window.ProactiveAssistant.trigger('catalog_editing', {
+            const isPreorder = $(this).hasClass('btn-add-preorder-cart');
+            window.ProactiveAssistant.trigger(isPreorder ? 'new_preorder_acquired' : 'catalog_editing', {
                 target_element: this.id || this.className,
-                action: 'catalog_or_investment_action'
+                action: isPreorder ? 'preorder_purchased_or_reserved' : 'catalog_or_investment_action'
             }, 1000);
         }
     });
