@@ -1747,45 +1747,58 @@ function loadPublicPreorders() {
             const deadlineVal = preorder.payment_deadline || preorder.deadline || '-';
 
             const $item = $(`
-                <div class="deck-public-item preorder-card-modern ${isOutOfStock ? 'is-out-of-stock' : ''}" id="preorder-item-${preorder.id}">
-                    <div class="preorder-card-header">
-                        <h3 class="preorder-title">${preorder.name}</h3>
+                <article class="deck-public-item preorder-card-modern ${isOutOfStock ? 'is-out-of-stock' : ''}" id="preorder-item-${preorder.id}">
+                    <div class="preorder-card-top-bar">
+                        <span class="preorder-brand-tag">${preorder.tcg ? preorder.tcg.toUpperCase() : 'PREVENTA TCG'}</span>
                         <button type="button" class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
                             <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
 
-                    <div class="preorder-card-body">
-                        <div class="preorder-img-container">
-                            <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}" class="preorder-img">
+                    <div class="preorder-media-frame">
+                        <img src="${preorder.image_url || 'https://via.placeholder.com/400x300?text=Preventa'}" alt="${preorder.name}" class="preorder-hero-img">
+                        ${isOutOfStock ? '<div class="preorder-soldout-overlay">AGOTADO</div>' : ''}
+                    </div>
+
+                    <div class="preorder-content-body">
+                        <h3 class="preorder-title">${preorder.name}</h3>
+
+                        <div class="preorder-price-hero">
+                            <span class="preorder-price-val">${formattedPrice}</span>
+                            ${reserveFormatted ? `<span class="preorder-deposit-badge">Aparta desde ${reserveFormatted}</span>` : ''}
                         </div>
 
-                        <div class="preorder-details">
-                            <div class="preorder-price-tag">${formattedPrice}</div>
-
-                            <div class="preorder-badges-grid">
-                                ${reserveFormatted ? `<div class="preorder-chip deposit">Aparta desde: ${reserveFormatted}</div>` : ''}
-                                <div class="preorder-chip deadline">Límite: ${deadlineVal}</div>
-                                ${preorder.arrival_date ? `<div class="preorder-chip arrival">Llegada: ${preorder.arrival_date}</div>` : ''}
-                                ${preorder.start_date ? `<div class="preorder-chip start">Inicio: ${preorder.start_date}</div>` : ''}
-                                ${maxStock > 0 ? `<div class="preorder-chip stock">Disponibles: ${available}${preorder.per_person_limit ? ` (Máx ${preorder.per_person_limit}/pers)` : ''}</div>` : ''}
+                        <div class="preorder-info-rows">
+                            <div class="preorder-info-chip">
+                                <span class="chip-label">Límite de Pago:</span>
+                                <span class="chip-val">${deadlineVal}</span>
                             </div>
+                            ${preorder.arrival_date ? `
+                            <div class="preorder-info-chip">
+                                <span class="chip-label">Llegada Estimada:</span>
+                                <span class="chip-val">${preorder.arrival_date}</span>
+                            </div>` : ''}
+                            ${maxStock > 0 ? `
+                            <div class="preorder-info-chip">
+                                <span class="chip-label">Disponibles:</span>
+                                <span class="chip-val">${available} de ${maxStock} ${preorder.per_person_limit ? `(Máx. ${preorder.per_person_limit}/pers.)` : ''}</span>
+                            </div>` : ''}
                         </div>
                     </div>
 
-                    <div class="preorder-action-bar">
+                    <div class="preorder-action-row">
                         ${!isOutOfStock ? `
-                            <div class="preorder-qty-widget">
-                                <button type="button" class="preorder-qty-btn preorder-qty-minus">-</button>
-                                <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" readonly>
-                                <button type="button" class="preorder-qty-btn preorder-qty-plus">+</button>
-                            </div>
+                        <div class="preorder-qty-control">
+                            <button type="button" class="preorder-qty-btn preorder-qty-minus" aria-label="Restar">-</button>
+                            <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" readonly>
+                            <button type="button" class="preorder-qty-btn preorder-qty-plus" aria-label="Sumar">+</button>
+                        </div>
                         ` : ''}
                         <button type="button" class="btn-add-preorder-cart ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''}>
-                            <span>${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}</span>
+                            ${isOutOfStock ? 'AGOTADO' : 'Añadir al Carrito'}
                         </button>
                     </div>
-                </div>
+                </article>
             `);
 
             // Quantity button controls with explicit click/touch handling
