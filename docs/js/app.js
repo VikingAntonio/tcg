@@ -3020,49 +3020,50 @@ function renderPublicSealedGrid() {
 
         const maxStockAvailable = isNaN(parseInt(product.stock)) ? 99 : Math.max(0, parseInt(product.stock));
 
+        let formattedPriceVal = product.price ? product.price.toString().trim() : 'Consultar';
+        if (formattedPriceVal !== 'Consultar' && !formattedPriceVal.startsWith('$')) {
+            formattedPriceVal = `$${formattedPriceVal}`;
+        }
+
         const $item = $(`
             <div class="deck-public-item sealed-product-item sealed-product-card-modern" id="product-item-${product.id}">
                 <div>
                     <!-- 1. TITLE TOP -->
-                    <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; font-weight: 800; color: #ffffff; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.7em; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">${product.name}</h3>
+                    <h3 class="sealed-card-title">${product.name}</h3>
 
                     <!-- 2. IMAGE CONTAINER WITH BADGES & SINGLE SHARE BUTTON TOP-RIGHT -->
                     <div class="product-image-container" style="position: relative;">
-                        <span style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); border: 1px solid rgba(0, 210, 255, 0.4); padding: 5px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; color: #00d2ff; backdrop-filter: blur(8px); z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">${tcgLabel}</span>
+                        <span class="sealed-tcg-badge">${tcgLabel}</span>
                         <button class="btn btn-share-sealed-modern btn-share-sealed-single" title="Compartir" style="position: absolute; top: 10px; right: 10px; z-index: 5; margin: 0; padding: 0;">
                             <i class="fas fa-share-alt"></i>
                         </button>
-                        <span style="position: absolute; bottom: 10px; right: 10px; background: ${badgeBg}; border: 1px solid ${badgeBorder}; color: ${badgeColor}; padding: 4px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 800; backdrop-filter: blur(8px); z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">${statusLabel.toUpperCase()} (${stockCount})</span>
-                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img" style="max-width: 90%; max-height: 90%; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)); pointer-events: none;">
+                        <span class="sealed-status-badge ${isOutOfStock ? 'status-out' : ''}">${statusLabel.toUpperCase()} (${stockCount})</span>
+                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img">
                     </div>
 
-                    ${product.description ? `<p style="font-size: 0.8rem; color: #94a3b8; margin: 0 0 12px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${product.description}</p>` : ''}
+                    ${product.description ? `<p class="sealed-card-description">${product.description}</p>` : ''}
                 </div>
 
-                <div style="margin-top: 8px;">
-                    <!-- PRICE CONTAINER -->
-                    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; background: rgba(0, 255, 170, 0.06); padding: 8px 14px; border-radius: 12px; border: 1px solid rgba(0, 255, 170, 0.2);">
-                        <span style="color: #94a3b8; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Precio</span>
-                        <div style="display: flex; align-items: baseline; gap: 8px;">
-                            <span style="color: #00ffaa; font-weight: 900; font-size: 1.35rem; text-shadow: 0 2px 10px rgba(0, 255, 170, 0.3);">${product.price || 'Consultar'}</span>
-                            ${discountVal ? `<span style="color: #f5af19; font-size: 0.75rem; font-weight: 800; background: rgba(245, 175, 25, 0.15); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(245, 175, 25, 0.3);">Desc: ${discountVal}</span>` : ''}
-                        </div>
+                <div class="sealed-card-bottom">
+                    <!-- PRICE CONTAINER (PROMINENT & ANIMATED, NO "PRECIO" LABEL) -->
+                    <div class="sealed-price-container">
+                        <span class="sealed-price-val">${formattedPriceVal}</span>
+                        ${discountVal ? `<span class="sealed-discount-badge">Desc: ${discountVal}</span>` : ''}
                     </div>
 
-                    <!-- QUANTITY SELECTOR -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 6px 12px; margin-bottom: 12px;">
-                        <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Cantidad:</span>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <button type="button" class="btn-qty-minus" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #fff; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.2s;">-</button>
-                            <input type="number" class="sealed-qty-input" value="1" min="1" max="${maxStockAvailable}" style="width: 44px; height: 32px; text-align: center; background: rgba(0,0,0,0.6); border: 1px solid rgba(0, 210, 255, 0.4); border-radius: 8px; color: #00ffaa; font-weight: 800; font-size: 0.95rem; -moz-appearance: textfield;" readonly>
-                            <button type="button" class="btn-qty-plus" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #fff; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.2s;">+</button>
+                    <!-- COMBINED QUANTITY & CART ACTION ROW (NO "CANTIDAD" LABEL, NO EMOJI) -->
+                    <div class="sealed-action-row">
+                        ${!isOutOfStock ? `
+                        <div class="sealed-qty-control">
+                            <button type="button" class="btn-qty-minus" aria-label="Restar">-</button>
+                            <input type="number" class="sealed-qty-input" value="1" min="1" max="${maxStockAvailable}" readonly>
+                            <button type="button" class="btn-qty-plus" aria-label="Sumar">+</button>
                         </div>
+                        ` : ''}
+                        <button class="btn btn-add-sealed-modern btn-add-sealed-cart ${isOutOfStock ? 'disabled' : ''}" title="Añadir al Carrito" ${isOutOfStock ? 'disabled' : ''}>
+                            <span>${isOutOfStock ? 'AGOTADO' : 'AÑADIR AL CARRITO'}</span>
+                        </button>
                     </div>
-
-                    <!-- FULL WIDTH ADD TO CART BUTTON -->
-                    <button class="btn btn-add-sealed-modern btn-add-sealed-cart" title="Añadir al Carrito">
-                        <i class="fas fa-shopping-cart" style="font-size: 1.1rem;"></i> <span>AÑADIR AL CARRITO</span>
-                    </button>
                 </div>
             </div>
         `);
