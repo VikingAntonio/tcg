@@ -1743,42 +1743,47 @@ function loadPublicPreorders() {
 
             const formattedPrice = preorder.price ? (preorder.price.toString().includes('$') ? preorder.price : `$${preorder.price}`) : 'Consultar';
 
-            const $item = $(`
-                <div class="deck-public-item preorder-card-modern" id="preorder-item-${preorder.id}">
-                    <h3 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.35; letter-spacing: -0.3px;">${preorder.name}</h3>
+            const reserveFormatted = preorder.reserve_amount ? (preorder.reserve_amount.toString().includes('$') ? preorder.reserve_amount : `$${preorder.reserve_amount}`) : null;
+            const deadlineVal = preorder.payment_deadline || preorder.deadline || '-';
 
-                    <div class="product-image-container" style="position: relative; border-radius: 16px; overflow: hidden; height: 210px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+            const $item = $(`
+                <div class="deck-public-item preorder-card-modern ${isOutOfStock ? 'is-out-of-stock' : ''}" id="preorder-item-${preorder.id}">
+                    <div class="preorder-card-header">
+                        <h3 class="preorder-title">${preorder.name}</h3>
                         <button type="button" class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
                             <i class="fas fa-share-alt"></i>
                         </button>
-                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}"
-                             alt="${preorder.name}" class="sealed-product-img" style="max-height: 92%; max-width: 92%; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.7)); pointer-events: none;">
                     </div>
 
-                    <div class="preorder-price-tag">${formattedPrice}</div>
-
-                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center;">
-                        ${preorder.start_date ? `<div class="preorder-date-badge-start"><i class="fas fa-calendar-alt"></i> Inicio: ${preorder.start_date}</div>` : ''}
-                        <div class="preorder-date-badge-deadline">
-                            <i class="fas fa-clock"></i> Límite Pago: ${preorder.payment_deadline || preorder.deadline || '-'}
+                    <div class="preorder-card-body">
+                        <div class="preorder-img-container">
+                            <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}" class="preorder-img">
                         </div>
-                        ${preorder.reserve_amount ? `<div style="color: #f5af19; font-weight: 800; font-size: 0.88rem; background: rgba(245, 175, 25, 0.1); border: 1px solid rgba(245, 175, 25, 0.3); padding: 6px 14px; border-radius: 12px; width: 100%; text-align: center; box-sizing: border-box;"><i class="fas fa-coins"></i> Aparta desde: ${preorder.reserve_amount.toString().includes('$') ? preorder.reserve_amount : `$${preorder.reserve_amount}`}</div>` : ''}
-                        ${preorder.arrival_date ? `<div style="color: #00ff88; font-weight: 700; font-size: 0.88rem; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); padding: 6px 14px; border-radius: 12px; width: 100%; text-align: center; box-sizing: border-box;"><i class="fas fa-truck"></i> Llegada Estimada: ${preorder.arrival_date}</div>` : ''}
-                        ${maxStock > 0 ? `<div style="color: #cbd5e1; font-weight: 600; font-size: 0.85rem; text-align: center;"><i class="fas fa-boxes"></i> Disponibles: <strong style="color: #fff;">${available}</strong> ${preorder.per_person_limit ? `<span style="color: #94a3b8;">| Máx ${preorder.per_person_limit} x pers.</span>` : ''}</div>` : ''}
-                    </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 6px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.8); padding: 8px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);">
-                            <span style="font-size: 0.9rem; color: #cbd5e1; font-weight: 800;">Cantidad:</span>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <button type="button" class="preorder-qty-btn preorder-qty-minus" ${isOutOfStock ? 'disabled' : ''}>-</button>
-                                <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" ${isOutOfStock ? 'disabled' : ''} style="width: 55px; height: 38px; text-align: center; background: rgba(0,0,0,0.6); color: #00ff88; border: 1px solid rgba(0,255,136,0.4); border-radius: 10px; font-size: 1.1rem; font-weight: 900; pointer-events: auto !important; -moz-appearance: textfield;">
-                                <button type="button" class="preorder-qty-btn preorder-qty-plus" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                        <div class="preorder-details">
+                            <div class="preorder-price-tag">${formattedPrice}</div>
+
+                            <div class="preorder-badges-grid">
+                                ${reserveFormatted ? `<div class="preorder-chip deposit"><i class="fas fa-coins"></i> Aparta desde: ${reserveFormatted}</div>` : ''}
+                                <div class="preorder-chip deadline"><i class="fas fa-clock"></i> Límite: ${deadlineVal}</div>
+                                ${preorder.arrival_date ? `<div class="preorder-chip arrival"><i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}</div>` : ''}
+                                ${preorder.start_date ? `<div class="preorder-chip start"><i class="fas fa-calendar-alt"></i> Inicio: ${preorder.start_date}</div>` : ''}
+                                ${maxStock > 0 ? `<div class="preorder-chip stock"><i class="fas fa-boxes"></i> Disponibles: <strong>${available}</strong>${preorder.per_person_limit ? ` (Máx ${preorder.per_person_limit}/pers)` : ''}</div>` : ''}
                             </div>
                         </div>
+                    </div>
 
-                        <button type="button" class="btn btn-add-preorder-cart" style="width: 100%; padding: 15px 20px; font-size: 1.1rem; font-weight: 900; border-radius: 14px; background: ${isOutOfStock ? '#475569' : 'linear-gradient(135deg, #00d2ff 0%, #0052d4 100%)'}; border: ${isOutOfStock ? 'none' : '1px solid rgba(255,255,255,0.3)'}; box-shadow: ${isOutOfStock ? 'none' : '0 8px 25px rgba(0, 210, 255, 0.45)'}; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer !important'}; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.25s ease;" ${isOutOfStock ? 'disabled' : ''}>
-                            <i class="fas fa-shopping-cart" style="font-size: 1.25rem;"></i> ${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}
+                    <div class="preorder-action-bar">
+                        ${!isOutOfStock ? `
+                            <div class="preorder-qty-widget">
+                                <button type="button" class="preorder-qty-btn preorder-qty-minus">-</button>
+                                <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" readonly>
+                                <button type="button" class="preorder-qty-btn preorder-qty-plus">+</button>
+                            </div>
+                        ` : ''}
+                        <button type="button" class="btn-add-preorder-cart ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''}>
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}</span>
                         </button>
                     </div>
                 </div>
