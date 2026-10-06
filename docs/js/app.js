@@ -1764,11 +1764,11 @@ function loadPublicPreorders() {
                             <div class="preorder-price-tag">${formattedPrice}</div>
 
                             <div class="preorder-badges-grid">
-                                ${reserveFormatted ? `<div class="preorder-chip deposit"><i class="fas fa-coins"></i> Aparta desde: ${reserveFormatted}</div>` : ''}
-                                <div class="preorder-chip deadline"><i class="fas fa-clock"></i> Límite: ${deadlineVal}</div>
-                                ${preorder.arrival_date ? `<div class="preorder-chip arrival"><i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}</div>` : ''}
-                                ${preorder.start_date ? `<div class="preorder-chip start"><i class="fas fa-calendar-alt"></i> Inicio: ${preorder.start_date}</div>` : ''}
-                                ${maxStock > 0 ? `<div class="preorder-chip stock"><i class="fas fa-boxes"></i> Disponibles: <strong>${available}</strong>${preorder.per_person_limit ? ` (Máx ${preorder.per_person_limit}/pers)` : ''}</div>` : ''}
+                                ${reserveFormatted ? `<div class="preorder-chip deposit">Aparta desde: ${reserveFormatted}</div>` : ''}
+                                <div class="preorder-chip deadline">Límite: ${deadlineVal}</div>
+                                ${preorder.arrival_date ? `<div class="preorder-chip arrival">Llegada: ${preorder.arrival_date}</div>` : ''}
+                                ${preorder.start_date ? `<div class="preorder-chip start">Inicio: ${preorder.start_date}</div>` : ''}
+                                ${maxStock > 0 ? `<div class="preorder-chip stock">Disponibles: ${available}${preorder.per_person_limit ? ` (Máx ${preorder.per_person_limit}/pers)` : ''}</div>` : ''}
                             </div>
                         </div>
                     </div>
@@ -1782,7 +1782,6 @@ function loadPublicPreorders() {
                             </div>
                         ` : ''}
                         <button type="button" class="btn-add-preorder-cart ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''}>
-                            <i class="fas fa-shopping-cart"></i>
                             <span>${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}</span>
                         </button>
                     </div>
