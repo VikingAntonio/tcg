@@ -291,7 +291,6 @@ function renderPreordersList(preorders) {
                         </div>
                         <div style="display: flex; gap: 6px;">
                             <button class="btn-icon-square btn-clients" title="Ver Clientes (${reserved})"><i class="fas fa-users"></i></button>
-                            <button class="btn-icon-square btn-share" title="Compartir"><i class="fas fa-share-alt"></i></button>
                             <button class="btn-icon-square btn-edit" title="Editar"><i class="fas fa-pen"></i></button>
                             <button class="btn-icon-square danger btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
                         </div>
@@ -302,7 +301,6 @@ function renderPreordersList(preorders) {
 
         $card.find('.btn-clients').click(() => openClientsModal(preorder));
         $card.find('.btn-edit').click(() => editPreorder(preorder));
-        $card.find('.btn-share').click(() => openShareModal(preorder.name, 'preorders', preorder.id));
         $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
         $card.find('.toggle-public').change(function() {
             updateVisibility(preorder.id, $(this).is(':checked'));
@@ -326,8 +324,10 @@ function openClientsModal(preorder) {
     currentClientsList = [...clients];
 
     $('#client-input-name').val('');
-    $('#client-input-qty').val('1');
+    $('#client-input-qty').val('');
     $('#client-input-deposit').val('');
+    $('#client-input-status-payment').val('Pendiente');
+    $('#client-input-status-delivery').val('Por Entregar');
 
     renderClientsTable();
     $('#preorder-clients-modal').addClass('active');
@@ -337,7 +337,8 @@ function addClientEntry() {
     const name = $('#client-input-name').val().trim();
     const qty = parseInt($('#client-input-qty').val()) || 1;
     const rawDeposit = $('#client-input-deposit').val().trim();
-    const status = $('#client-input-status').val();
+    const statusPayment = $('#client-input-status-payment').val() || 'Pendiente';
+    const statusDelivery = $('#client-input-status-delivery').val() || 'Por Entregar';
 
     if (!name) {
         Swal.fire('Atención', 'Escribe el nombre del cliente', 'warning');
@@ -351,11 +352,13 @@ function addClientEntry() {
         name,
         qty,
         deposit,
-        status
+        status_payment: statusPayment,
+        status_delivery: statusDelivery,
+        status: statusPayment // fallback
     });
 
     $('#client-input-name').val('');
-    $('#client-input-qty').val('1');
+    $('#client-input-qty').val('');
     $('#client-input-deposit').val('');
 
     renderClientsTable();
@@ -377,30 +380,63 @@ function renderClientsTable() {
     let totalReserved = 0;
 
     if (currentClientsList.length === 0) {
-        $tbody.html('<tr><td colspan="6" style="padding: 16px; text-align: center; color: #64748b;">Sin clientes registrados</td></tr>');
+        $tbody.html('<tr><td colspan="7" style="padding: 20px; text-align: center; color: #64748b;">Sin clientes registrados</td></tr>');
     } else {
         currentClientsList.forEach(client => {
-            totalReserved += client.qty;
+            totalReserved += (parseInt(client.qty) || 0);
 
-            const totalCost = unitPrice * client.qty;
-            const remaining = Math.max(0, totalCost - client.deposit);
+            const totalCost = unitPrice * (parseInt(client.qty) || 0);
+            const remaining = Math.max(0, totalCost - (parseFloat(client.deposit) || 0));
 
-            let statusColor = '#f5af19';
-            if (client.status === 'Liquidado') statusColor = '#00ff88';
-            if (client.status === 'Entregado') statusColor = '#00d2ff';
+            const paymentStatus = client.status_payment || client.status || (client.deposit >= totalCost && totalCost > 0 ? 'Liquidado' : (client.deposit > 0 ? 'Pago Parcial' : 'Pendiente'));
+            const deliveryStatus = client.status_delivery || 'Por Entregar';
+
+            let paymentColor = '#f5af19';
+            if (paymentStatus === 'Liquidado') paymentColor = '#00ff88';
+            if (paymentStatus === 'Pago Parcial') paymentColor = '#00d2ff';
+
+            let deliveryColor = '#cbd5e1';
+            if (deliveryStatus === 'Entregado') deliveryColor = '#00ff88';
+            if (deliveryStatus === 'En Camino') deliveryColor = '#00d2ff';
+            if (deliveryStatus === 'Retrasado') deliveryColor = '#ff4757';
 
             const $row = $(`
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                    <td style="padding: 8px 6px; font-weight: 700; color: #fff;">${client.name}</td>
-                    <td style="padding: 8px 6px; text-align: center;">${client.qty}</td>
-                    <td style="padding: 8px 6px;">$${client.deposit.toFixed(2)}</td>
-                    <td style="padding: 8px 6px; color: ${remaining > 0 ? '#ff4757' : '#00ff88'};">$${remaining.toFixed(2)}</td>
-                    <td style="padding: 8px 6px;"><span style="color: ${statusColor}; font-weight: 800; font-size: 0.72rem;">${client.status}</span></td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <button type="button" class="btn-del-client" style="background: none; border: none; color: #ff4757; cursor: pointer; font-size: 0.85rem;"><i class="fas fa-times"></i></button>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #fff;">${client.name}</td>
+                    <td style="padding: 10px 8px; text-align: center; font-weight: 800; color: #00d2ff;">${client.qty}</td>
+                    <td style="padding: 10px 8px;">$${(parseFloat(client.deposit) || 0).toFixed(2)}</td>
+                    <td style="padding: 10px 8px; color: ${remaining > 0 ? '#ff4757' : '#00ff88'}; font-weight: 700;">$${remaining.toFixed(2)}</td>
+                    <td style="padding: 10px 8px;">
+                        <select class="select-client-payment" style="background: rgba(15,23,42,0.8); border: 1px solid ${paymentColor}; color: ${paymentColor}; border-radius: 6px; padding: 4px 6px; font-size: 0.75rem; font-weight: 800; outline: none; cursor: pointer;">
+                            <option value="Pendiente" ${paymentStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="Pago Parcial" ${paymentStatus === 'Pago Parcial' ? 'selected' : ''}>Pago Parcial</option>
+                            <option value="Liquidado" ${paymentStatus === 'Liquidado' ? 'selected' : ''}>Liquidado</option>
+                        </select>
+                    </td>
+                    <td style="padding: 10px 8px;">
+                        <select class="select-client-delivery" style="background: rgba(15,23,42,0.8); border: 1px solid ${deliveryColor}; color: ${deliveryColor}; border-radius: 6px; padding: 4px 6px; font-size: 0.75rem; font-weight: 800; outline: none; cursor: pointer;">
+                            <option value="Por Entregar" ${deliveryStatus === 'Por Entregar' ? 'selected' : ''}>Por Entregar</option>
+                            <option value="En Camino" ${deliveryStatus === 'En Camino' ? 'selected' : ''}>En Camino</option>
+                            <option value="Entregado" ${deliveryStatus === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                            <option value="Retrasado" ${deliveryStatus === 'Retrasado' ? 'selected' : ''}>Retrasado</option>
+                        </select>
+                    </td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <button type="button" class="btn-del-client" style="background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.3); color: #ff4757; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;"><i class="fas fa-times"></i></button>
                     </td>
                 </tr>
             `);
+
+            $row.find('.select-client-payment').on('change', function() {
+                client.status_payment = $(this).val();
+                client.status = $(this).val();
+                renderClientsTable();
+            });
+
+            $row.find('.select-client-delivery').on('change', function() {
+                client.status_delivery = $(this).val();
+                renderClientsTable();
+            });
 
             $row.find('.btn-del-client').click(() => removeClientEntry(client.id));
             $tbody.append($row);

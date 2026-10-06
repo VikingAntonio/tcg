@@ -1903,6 +1903,7 @@ function loadPublicPreorders() {
                 const unitDeposit = chosenTotalPayment !== null ? (chosenTotalPayment / qty) : (totalUnitPrice || 0);
 
                 Cart.add({
+                    preorder_id: preorder.id,
                     name: preorder.name,
                     image_url: preorder.image_url,
                     price: preorder.price,
@@ -1918,6 +1919,62 @@ function loadPublicPreorders() {
                     whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
                     messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
                 });
+
+                // Auto-register customer reservation entry in Supabase preorders.clients_list
+                (async () => {
+                    try {
+                        const { data: latestPreorder } = await _supabase
+                            .from('preorders')
+                            .select('id, clients_list, max_stock')
+                            .eq('id', preorder.id)
+                            .single();
+
+                        if (latestPreorder) {
+                            let clients = latestPreorder.clients_list;
+                            if (typeof clients === 'string') {
+                                try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+                            }
+                            if (!Array.isArray(clients)) clients = [];
+
+                            let clientName = 'Cliente';
+                            if (window.currentUser && (window.currentUser.username || window.currentUser.store_name)) {
+                                clientName = window.currentUser.username || window.currentUser.store_name;
+                            } else {
+                                const localUser = localStorage.getItem('tcg_session');
+                                if (localUser) {
+                                    try {
+                                        const parsed = JSON.parse(localUser);
+                                        if (parsed.username) clientName = parsed.username;
+                                    } catch (e) {}
+                                }
+                            }
+
+                            const totalCost = totalUnitPrice * qty;
+                            const deposit = chosenTotalPayment !== null ? chosenTotalPayment : totalCost;
+
+                            let statusPayment = 'Pendiente';
+                            if (deposit >= totalCost && totalCost > 0) statusPayment = 'Liquidado';
+                            else if (deposit > 0) statusPayment = 'Pago Parcial';
+
+                            clients.push({
+                                id: Date.now(),
+                                name: clientName,
+                                qty: qty,
+                                deposit: deposit,
+                                status_payment: statusPayment,
+                                status_delivery: 'Por Entregar',
+                                created_at: new Date().toISOString()
+                            });
+
+                            await _supabase
+                                .from('preorders')
+                                .update({ clients_list: clients })
+                                .eq('id', preorder.id);
+                        }
+                    } catch (err) {
+                        console.warn("Auto-fill preorder reservation warning:", err);
+                    }
+                })();
 
                 const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
 

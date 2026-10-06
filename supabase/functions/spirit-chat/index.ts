@@ -56,8 +56,8 @@ DATOS DISPONIBLES EN SISTEMA DE LA TIENDA:
 ${dbContext}
 
 REGLAS PARA ADMINISTRADOR:
-1. Si el usuario pregunta por preventas, reservas, lista de clientes, anticipos dados, saldos pendientes o productos disponibles, consúltale los datos específicos de su tienda y respóndele de forma amigable, precisa y clara.
-2. Si el usuario indica agregar o modificar un producto sellado o preventa, recopila amablemente los datos faltantes.
+1. Si el usuario pregunta por preventas, reservas, lista de clientes, anticipos dados, saldos pendientes ("¿cuánto dio Fulano?", "¿quién ha pagado?", etc.), consulta los datos de preventas en el sistema y respóndale con la información exacta que pide de forma amigable, natural y formulada por ti mismo (sin respuestas prefabricadas ni estáticas).
+2. Si el usuario indica actualizar el estado de pago o entrega de un cliente (ej: "Sutano ya pagó", "pon a Fulano como Liquidado" o "pon la entrega de Mengano como Entregado"), confirma que has entendido y explica que se actualizó el registro correspondiente del cliente.
 3. Si pregunta por costos de compra, ganancias o estado de cuentas de clientes, dale la información privada completa ya que es el dueño de la tienda.
 `;
   } else {
