@@ -1647,7 +1647,8 @@ input:checked + .slider:before {
     pointer-events: none;
 }
 
-.preorder-soldout-overlay {
+.preorder-soldout-overlay,
+.sealed-soldout-overlay {
     position: absolute;
     inset: 0;
     background: rgba(15, 23, 42, 0.85);
@@ -1658,6 +1659,8 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     letter-spacing: 2px;
+    z-index: 10;
+    border-radius: inherit;
 }
 
 /* Content Body */

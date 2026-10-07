@@ -2877,18 +2877,22 @@ function bindPublicSealedToolbarEvents() {
 }
 
 function openPublicSealedModal(product) {
-    const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
+    const rawStock = product.stock !== undefined && product.stock !== null ? product.stock : product.quantity;
+    const parsedStock = parseInt(rawStock);
+    const stockCount = isNaN(parsedStock) ? 0 : Math.max(0, parsedStock);
     const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
-    const statusLabel = product.status || (isOutOfStock ? 'Agotado' : 'Disponible');
+    const statusLabel = isOutOfStock ? 'Agotado' : (product.status || 'Disponible');
     const tcgLabel = (product.tcg || 'Otro').toUpperCase();
     const discountVal = product.discount || '';
+    const maxStockAvailable = isOutOfStock ? 0 : stockCount;
 
     Swal.fire({
         title: `<div style="font-size: 1.2rem; font-weight: 800; color: #fff;">${product.name}</div>`,
         html: `
             <div style="text-align: center; color: #e2e8f0; font-family: sans-serif;">
-                <div style="margin-bottom: 15px; position: relative; background: rgba(0,0,0,0.3); border-radius: 16px; padding: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="margin-bottom: 15px; position: relative; background: rgba(0,0,0,0.3); border-radius: 16px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
                     <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); border-radius: 8px;">
+                    ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px;">
                     <span style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; background: rgba(0,210,255,0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(0,210,255,0.3);">${tcgLabel}</span>
@@ -2897,34 +2901,103 @@ function openPublicSealedModal(product) {
                 <div style="font-size: 1.5rem; font-weight: 900; color: #00d2ff; margin-bottom: 6px; text-align: center;">${product.price || 'Consultar'}</div>
                 ${discountVal ? `<div style="font-size: 0.9rem; color: #f5af19; font-weight: 800; margin-bottom: 12px;">¡Descuento: ${discountVal}!</div>` : ''}
                 ${product.description ? `<p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px; text-align: left; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">${product.description}</p>` : ''}
+                ${!isOutOfStock ? `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px;">
+                    <label style="font-size: 0.88rem; font-weight: 800; color: #00d2ff; margin: 0;">Cantidad:</label>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <button type="button" class="btn-qty-minus modal-qty-minus" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff; font-weight: 900; cursor: pointer;">-</button>
+                        <input type="number" id="modal-sealed-qty-input" value="1" min="1" max="${maxStockAvailable}" readonly style="width: 50px; text-align: center; background: #000; border: 1px solid #00d2ff; border-radius: 8px; color: #fff; font-weight: 900; padding: 5px;">
+                        <button type="button" class="btn-qty-plus modal-qty-plus" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff; font-weight: 900; cursor: pointer;">+</button>
+                    </div>
+                </div>
+                ` : ''}
             </div>
         `,
+        didOpen: () => {
+            const $qtyInput = $('#modal-sealed-qty-input');
+            $('.modal-qty-minus').on('click touchstart', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur > 1) $qtyInput.val(cur - 1);
+            });
+            $('.modal-qty-plus').on('click touchstart', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur < maxStockAvailable) $qtyInput.val(cur + 1);
+            });
+        },
         showCancelButton: true,
-        confirmButtonText: '<i class="fas fa-cart-plus"></i> Añadir al Carrito',
+        confirmButtonText: isOutOfStock ? 'Agotado' : '<i class="fas fa-cart-plus"></i> Añadir al Carrito',
         cancelButtonText: 'Cerrar',
         confirmButtonColor: '#00d2ff',
         cancelButtonColor: '#475569',
         background: '#0f172a',
         color: '#fff'
-    }).then((result) => {
+    }).then(async (result) => {
         if (result.isConfirmed) {
             if (isOutOfStock) {
                 Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para este producto.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
                 return;
             }
+            const qtyVal = parseInt($('#modal-sealed-qty-input').val()) || 1;
             Cart.add({
+                product_id: product.id,
                 name: product.name,
                 image_url: product.image_url,
                 price: product.price,
                 tcg: product.tcg,
                 description: product.description,
+                cart_quantity: qtyVal,
+                max_quantity: maxStockAvailable,
                 whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
                 messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
             });
+
+            // Update stock in Supabase table
+            try {
+                if (product.id) {
+                    const { data: latest } = await _supabase
+                        .from('sealed_products')
+                        .select('stock, quantity, status')
+                        .eq('id', product.id)
+                        .maybeSingle();
+                    if (latest) {
+                        const curStock = latest.stock !== undefined && latest.stock !== null ? parseInt(latest.stock) : (parseInt(latest.quantity) || 0);
+                        const updatedStock = Math.max(0, curStock - qtyVal);
+                        const updatedStatus = updatedStock === 0 ? 'Agotado' : (latest.status || 'Disponible');
+                        let res = await _supabase
+                            .from('sealed_products')
+                            .update({ stock: updatedStock, quantity: updatedStock, status: updatedStatus })
+                            .eq('id', product.id);
+                        if (res.error) {
+                            await _supabase
+                                .from('sealed_products')
+                                .update({ stock: updatedStock, quantity: updatedStock })
+                                .eq('id', product.id);
+                        }
+                        product.stock = updatedStock;
+                        product.quantity = updatedStock;
+                        product.status = updatedStatus;
+                        if (window.allPublicSealedProducts) {
+                            const localItem = window.allPublicSealedProducts.find(p => p.id === product.id);
+                            if (localItem) {
+                                localItem.stock = updatedStock;
+                                localItem.quantity = updatedStock;
+                                localItem.status = updatedStatus;
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("Error updating sealed product stock on acquisition:", err);
+            }
+
+            renderPublicSealedGrid();
+
             const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
             Swal.fire({
                 title: '¡Añadido al Carrito!',
-                text: `${product.name} se agregó a tu carrito.`,
+                text: `Se agregaron ${qtyVal} unidad(es) de "${product.name}" a tu carrito.`,
                 icon: 'success',
                 showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
@@ -2971,9 +3044,15 @@ function renderPublicSealedGrid() {
     // Stock Filter
     const stockVal = $('#public-sealed-filter-stock').val() || 'all';
     if (stockVal === 'in_stock') {
-        products = products.filter(p => (p.stock !== undefined ? parseInt(p.stock) : (parseInt(p.quantity) || 1)) > 0);
+        products = products.filter(p => {
+            const raw = p.stock !== undefined && p.stock !== null ? p.stock : p.quantity;
+            return (parseInt(raw) || 0) > 0 && p.status !== 'Agotado';
+        });
     } else if (stockVal === 'out_of_stock') {
-        products = products.filter(p => (p.stock !== undefined ? parseInt(p.stock) : (parseInt(p.quantity) || 1)) <= 0);
+        products = products.filter(p => {
+            const raw = p.stock !== undefined && p.stock !== null ? p.stock : p.quantity;
+            return (parseInt(raw) || 0) <= 0 || p.status === 'Agotado';
+        });
     }
 
     // Sort
@@ -2994,31 +3073,15 @@ function renderPublicSealedGrid() {
     }
 
     products.forEach(product => {
-        const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
+        const rawStock = product.stock !== undefined && product.stock !== null ? product.stock : product.quantity;
+        const parsedStock = parseInt(rawStock);
+        const stockCount = isNaN(parsedStock) ? 0 : Math.max(0, parsedStock);
         const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
-        const statusLabel = product.status || (isOutOfStock ? 'AGOTADO' : 'DISPONIBLE');
+        const statusLabel = isOutOfStock ? 'AGOTADO' : (product.status || 'DISPONIBLE').toUpperCase();
         const tcgLabel = (product.tcg || 'Otro').toUpperCase();
         const discountVal = product.discount || '';
 
-        let badgeBg = 'rgba(0, 255, 136, 0.18)';
-        let badgeBorder = '#00ff88';
-        let badgeColor = '#00ff88';
-
-        if (statusLabel === 'Agotado' || isOutOfStock) {
-            badgeBg = 'rgba(255, 71, 87, 0.25)';
-            badgeBorder = '#ff4757';
-            badgeColor = '#ff4757';
-        } else if (statusLabel === 'Poco Stock') {
-            badgeBg = 'rgba(245, 175, 25, 0.25)';
-            badgeBorder = '#f5af19';
-            badgeColor = '#f5af19';
-        } else if (statusLabel === 'En Camino') {
-            badgeBg = 'rgba(155, 89, 182, 0.25)';
-            badgeBorder = '#9b59b6';
-            badgeColor = '#9b59b6';
-        }
-
-        const maxStockAvailable = isNaN(parseInt(product.stock)) ? 99 : Math.max(0, parseInt(product.stock));
+        const maxStockAvailable = isOutOfStock ? 0 : stockCount;
 
         let formattedPriceVal = product.price ? product.price.toString().trim() : 'Consultar';
         if (formattedPriceVal !== 'Consultar' && !formattedPriceVal.startsWith('$')) {
@@ -3026,19 +3089,20 @@ function renderPublicSealedGrid() {
         }
 
         const $item = $(`
-            <div class="deck-public-item sealed-product-item sealed-product-card-modern" id="product-item-${product.id}">
+            <div class="deck-public-item sealed-product-item sealed-product-card-modern ${isOutOfStock ? 'is-out-of-stock' : ''}" id="product-item-${product.id}">
                 <div>
                     <!-- 1. TITLE TOP -->
                     <h3 class="sealed-card-title">${product.name}</h3>
 
                     <!-- 2. IMAGE CONTAINER WITH BADGES & SINGLE SHARE BUTTON TOP-RIGHT -->
-                    <div class="product-image-container" style="position: relative;">
+                    <div class="product-image-container" style="position: relative; overflow: hidden;">
                         <span class="sealed-tcg-badge">${tcgLabel}</span>
                         <button class="btn btn-share-sealed-modern btn-share-sealed-single" title="Compartir" style="position: absolute; top: 10px; right: 10px; z-index: 5; margin: 0; padding: 0;">
                             <i class="fas fa-share-alt"></i>
                         </button>
-                        <span class="sealed-status-badge ${isOutOfStock ? 'status-out' : ''}">${statusLabel.toUpperCase()} (${stockCount})</span>
+                        <span class="sealed-status-badge ${isOutOfStock ? 'status-out' : ''}">${statusLabel} (${stockCount})</span>
                         <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img">
+                        ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
                     </div>
 
                     ${product.description ? `<p class="sealed-card-description">${product.description}</p>` : ''}
@@ -3081,8 +3145,15 @@ function renderPublicSealedGrid() {
             if (cur < maxStockAvailable) $qtyInput.val(cur + 1);
         };
 
-        $item.find('.btn-qty-minus').on('click', handleMinus);
-        $item.find('.btn-qty-plus').on('click', handlePlus);
+        $item.find('.btn-qty-minus').on('click touchstart', handleMinus);
+        $item.find('.btn-qty-plus').on('click touchstart', handlePlus);
+
+        $qtyInput.on('click touchstart change keyup input', function(e) {
+            e.stopPropagation();
+            let val = parseInt($(this).val()) || 1;
+            if (val < 1) $(this).val(1);
+            if (val > maxStockAvailable) $(this).val(maxStockAvailable);
+        });
 
         // Clicking image or card area opens detail modal
         $item.on('click', function(e) {
@@ -3099,7 +3170,7 @@ function renderPublicSealedGrid() {
         $item.find('.btn-share-sealed-single').on('click', handleShare);
 
         // Add to cart button click
-        const handleAddToCart = (e) => {
+        const handleAddToCart = async (e) => {
             e.preventDefault();
             e.stopPropagation();
             if (isOutOfStock) {
@@ -3107,15 +3178,60 @@ function renderPublicSealedGrid() {
                 return;
             }
             const qtyVal = parseInt($qtyInput.val()) || 1;
+
             Cart.add({
+                product_id: product.id,
                 name: product.name,
                 image_url: product.image_url,
                 price: product.price,
                 tcg: product.tcg,
                 description: product.description,
+                cart_quantity: qtyVal,
+                max_quantity: maxStockAvailable,
                 whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
                 messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
-            }, qtyVal);
+            });
+
+            // Update stock in Supabase table
+            try {
+                if (product.id) {
+                    const { data: latest } = await _supabase
+                        .from('sealed_products')
+                        .select('stock, quantity, status')
+                        .eq('id', product.id)
+                        .maybeSingle();
+                    if (latest) {
+                        const curStock = latest.stock !== undefined && latest.stock !== null ? parseInt(latest.stock) : (parseInt(latest.quantity) || 0);
+                        const updatedStock = Math.max(0, curStock - qtyVal);
+                        const updatedStatus = updatedStock === 0 ? 'Agotado' : (latest.status || 'Disponible');
+                        let res = await _supabase
+                            .from('sealed_products')
+                            .update({ stock: updatedStock, quantity: updatedStock, status: updatedStatus })
+                            .eq('id', product.id);
+                        if (res.error) {
+                            await _supabase
+                                .from('sealed_products')
+                                .update({ stock: updatedStock, quantity: updatedStock })
+                                .eq('id', product.id);
+                        }
+                        product.stock = updatedStock;
+                        product.quantity = updatedStock;
+                        product.status = updatedStatus;
+                        if (window.allPublicSealedProducts) {
+                            const localItem = window.allPublicSealedProducts.find(p => p.id === product.id);
+                            if (localItem) {
+                                localItem.stock = updatedStock;
+                                localItem.quantity = updatedStock;
+                                localItem.status = updatedStatus;
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("Error updating sealed product stock on acquisition:", err);
+            }
+
+            renderPublicSealedGrid();
 
             const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
             Swal.fire({
