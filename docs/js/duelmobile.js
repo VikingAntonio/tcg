@@ -1400,8 +1400,8 @@ function checkHandTrayHover(e, traySelector) {
     if (!tray.length) return false;
 
     const coords = getEventCoords(e);
-    const bufferY = 80;
-    const bufferX = 60;
+    const bufferY = 20;
+    const bufferX = 20;
 
     // Check main tray rect
     const trayEl = tray[0];
@@ -2865,7 +2865,7 @@ function setupEventListeners() {
             e.stopPropagation();
             activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
             $("#card-menu").removeClass("active");
-            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 140, y: e.clientY };
+            const clamped = (window.clampMenuCoords) ? window.clampMenuCoords(e.clientX, e.clientY, "#deck-menu") : { x: e.clientX - 185, y: e.clientY };
             $("#deck-menu").css({
                 left: `${clamped.x}px`,
                 top: `${clamped.y}px`
@@ -5983,8 +5983,8 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             // Helper to clamp coordinate bounds of menus so they never bleed off-screen
             window.clampMenuCoords = function(x, y, menuSelector) {
-                const menuWidth = 140; // Styled fixed width (both context menus are 140px on mobile landscape)
-                const menuHeight = Math.min($(window).height() * 0.6, 250); // Capped scroll height estimate
+                const menuWidth = 185; // Styled fixed width for enlarged mobile touch menus
+                const menuHeight = Math.min($(window).height() * 0.65, 300); // Capped scroll height estimate
 
                 const winWidth = $(window).width();
                 const winHeight = $(window).height();
@@ -6307,17 +6307,6 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     const hoverZone = findOverlappingZone(centerCoords);
                     let isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
                     let isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
-
-                    // Fallback region check: if no board slot is hovered and event is near top/bottom screen regions
-                    if (!hoverZone && !isOverP1Hand && !isOverP2Hand) {
-                        const evtPos = getEventCoords(e);
-                        const winH = $(window).height();
-                        if (evtPos.y > winH * 0.70 || cardObj.y > 480) {
-                            isOverP1Hand = true;
-                        } else if (evtPos.y < winH * 0.30 || cardObj.y < 100) {
-                            isOverP2Hand = true;
-                        }
-                    }
 
                     if (cardObj.isToken) {
                         if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
