@@ -209,6 +209,18 @@ $(document).ready(async function() {
         loadAlbumPages(currentAlbumId, false);
     });
 
+    // Live update image thumbnail preview box
+    $(document).on('input change', '#slot-image-url', function() {
+        const url = $(this).val().trim();
+        if (url) {
+            $('#slot-preview-img').attr('src', url).show();
+            $('#slot-preview-placeholder').hide();
+        } else {
+            $('#slot-preview-img').attr('src', '').hide();
+            $('#slot-preview-placeholder').show();
+        }
+    });
+
     $(document).on('click', '#btn-save-slot', async function(e) {
         e.preventDefault();
         const imageUrl = $('#slot-image-url').val();
@@ -221,6 +233,7 @@ $(document).ready(async function() {
             expansion: $('#slot-expansion').val() || '',
             condition: $('#slot-condition').val() || 'M',
             price: $('#slot-price').val() || '',
+            cost_price: $('#slot-cost-price').val() || '',
             extra_images: currentSlotExtraImages || [],
             obtained: true
         };
@@ -475,19 +488,22 @@ async function deletePage(id) {
 
 async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
-    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price').val('');
+    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price').val('');
     currentSlotExtraImages = [];
 
     if (data) {
-        $('#slot-image-url').val(data.image_url || '');
+        $('#slot-image-url').val(data.image_url || '').trigger('change');
         $('#slot-name').val(data.name || '');
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');
         $('#slot-condition').val(data.condition || '');
         $('#slot-price').val(data.price || '');
+        $('#slot-cost-price').val(data.cost_price || '');
         if (data.extra_images && Array.isArray(data.extra_images)) {
             currentSlotExtraImages = [...data.extra_images];
         }
+    } else {
+        $('#slot-image-url').trigger('change');
     }
     $('.slot-tab-btn[data-tab="slot-tab-info"]').click();
     renderExtraImagesPreview();

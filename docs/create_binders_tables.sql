@@ -35,11 +35,23 @@ CREATE TABLE IF NOT EXISTS public.binder_card_slots (
     expansion TEXT,
     condition TEXT DEFAULT 'M',
     price TEXT DEFAULT '',
+    cost_price TEXT DEFAULT '',
     extra_images TEXT[],
     obtained BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT unique_binder_slot_per_page UNIQUE(page_id, slot_index)
 );
+
+-- Migration check in case table already exists
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'binder_card_slots' AND column_name = 'cost_price'
+    ) THEN
+        ALTER TABLE public.binder_card_slots ADD COLUMN cost_price TEXT DEFAULT '';
+    END IF;
+END $$;
 
 -- Enable RLS and permissions if applicable
 ALTER TABLE public.binders ENABLE ROW LEVEL SECURITY;
