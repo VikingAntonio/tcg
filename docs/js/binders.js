@@ -170,26 +170,12 @@ $(document).ready(async function() {
             let { error: albumErr } = await _supabase.from('binders').update(updateData).eq('id', currentAlbumId);
             if (albumErr) throw albumErr;
 
-            // Clear all existing slots of these pages to prevent duplicate leftover slots from layout shifts
-            const { data: albumPages } = await _supabase
-                .from('binder_pages')
-                .select('id')
-                .eq('binder_id', currentAlbumId);
-            const pageIds = albumPages ? albumPages.map(p => p.id) : [];
-            if (pageIds.length > 0) {
-                const { error: clearErr } = await _supabase
-                    .from('binder_card_slots')
-                    .delete()
-                    .in('page_id', pageIds);
-                if (clearErr) throw clearErr;
-            }
-
             if (localAlbumSlots.length > 0) {
-                const slotsToUpsert = localAlbumSlots.map(s => { const { id, obtained, ...rest } = s; return rest; });
+                const slotsToUpsert = localAlbumSlots.map(s => { const { id, obtained, created_at, ...rest } = s; return rest; });
                 await _supabase.from('binder_card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
             }
 
-            Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 2000, showConfirmButton: false });
+            Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
             localAlbumSlots = []; albumSlotsToDelete = [];
             loadAlbums();
             showView('dashboard');
@@ -226,7 +212,11 @@ $(document).ready(async function() {
         const imageUrl = $('#slot-image-url').val();
         if (!imageUrl) { Swal.fire('Error', 'URL de la imagen requerida', 'warning'); return; }
 
+        Swal.fire({ title: 'Guardando carta...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
         const cardData = {
+            page_id: currentPageId,
+            slot_index: currentSlotIndex,
             image_url: imageUrl,
             name: $('#slot-name').val() || '',
             rarity: $('#slot-rarity').val() || '',
@@ -238,13 +228,59 @@ $(document).ready(async function() {
             obtained: true
         };
 
-        const slotData = { ...cardData, page_id: currentPageId, slot_index: currentSlotIndex };
-        const existingIdx = localAlbumSlots.findIndex(s => s.page_id === currentPageId && s.slot_index === currentSlotIndex);
-        if (existingIdx !== -1) localAlbumSlots[existingIdx] = { ...localAlbumSlots[existingIdx], ...slotData };
-        else localAlbumSlots.push(slotData);
+        try {
+            const { data, error } = await _supabase
+                .from('binder_card_slots')
+                .upsert([cardData], { onConflict: 'page_id,slot_index' })
+                .select();
 
-        $('#slot-modal').removeClass('active');
-        loadAlbumPages(currentAlbumId, false);
+            if (error) throw error;
+
+            const savedSlot = (data && data.length > 0) ? data[0] : cardData;
+            const existingIdx = localAlbumSlots.findIndex(s => s.page_id === currentPageId && s.slot_index === currentSlotIndex);
+            if (existingIdx !== -1) localAlbumSlots[existingIdx] = { ...localAlbumSlots[existingIdx], ...savedSlot };
+            else localAlbumSlots.push(savedSlot);
+
+            Swal.fire({ title: '¡Carta Guardada!', icon: 'success', timer: 1200, showConfirmButton: false });
+            $('#slot-modal').removeClass('active');
+            loadAlbumPages(currentAlbumId, false);
+        } catch (err) {
+            Swal.fire('Error', 'No se pudo guardar la carta: ' + (err.message || ''), 'error');
+        }
+    });
+
+    $(document).on('click', '#btn-delete-slot', async function(e) {
+        e.preventDefault();
+        const res = await Swal.fire({
+            title: '¿Vaciar Slot?',
+            text: 'Esta carta será eliminada del álbum.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, vaciar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ff4757'
+        });
+
+        if (res.isConfirmed) {
+            Swal.fire({ title: 'Eliminando carta...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const { error } = await _supabase
+                    .from('binder_card_slots')
+                    .delete()
+                    .eq('page_id', currentPageId)
+                    .eq('slot_index', currentSlotIndex);
+
+                if (error) throw error;
+
+                localAlbumSlots = localAlbumSlots.filter(s => !(s.page_id === currentPageId && s.slot_index === currentSlotIndex));
+
+                Swal.fire({ title: 'Slot Vaciado', icon: 'success', timer: 1200, showConfirmButton: false });
+                $('#slot-modal').removeClass('active');
+                loadAlbumPages(currentAlbumId, false);
+            } catch (err) {
+                Swal.fire('Error', 'No se pudo vaciar el slot: ' + (err.message || ''), 'error');
+            }
+        }
     });
 
     $(document).on('click', '.card-slot', function() {
@@ -502,8 +538,19 @@ function renderAlbumPagesLocal(pages) {
 }
 
 async function deletePage(id) {
-    const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
-    if (res.isConfirmed) { await _supabase.from('binder_pages').delete().eq('id', id); loadAlbumPages(currentAlbumId, false); }
+    const res = await Swal.fire({ title: '¿Eliminar página?', text: 'Se eliminarán todas las cartas en esta página.', icon: 'warning', showCancelButton: true });
+    if (res.isConfirmed) {
+        Swal.fire({ title: 'Eliminando página...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        try {
+            const { error } = await _supabase.from('binder_pages').delete().eq('id', id);
+            if (error) throw error;
+            localAlbumSlots = localAlbumSlots.filter(s => s.page_id !== id);
+            Swal.close();
+            loadAlbumPages(currentAlbumId, false);
+        } catch (err) {
+            Swal.fire('Error', 'No se pudo eliminar la página: ' + (err.message || ''), 'error');
+        }
+    }
 }
 
 async function loadSlotData(pageId, slotIndex) {
@@ -511,7 +558,7 @@ async function loadSlotData(pageId, slotIndex) {
     $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price').val('');
     currentSlotExtraImages = [];
 
-    if (data) {
+    if (data && data.image_url) {
         $('#slot-image-url').val(data.image_url || '').trigger('change');
         $('#slot-name').val(data.name || '');
         $('#slot-rarity').val(data.rarity || '');
@@ -522,8 +569,10 @@ async function loadSlotData(pageId, slotIndex) {
         if (data.extra_images && Array.isArray(data.extra_images)) {
             currentSlotExtraImages = [...data.extra_images];
         }
+        $('#btn-delete-slot').show();
     } else {
         $('#slot-image-url').trigger('change');
+        $('#btn-delete-slot').hide();
     }
     $('.slot-tab-btn[data-tab="slot-tab-info"]').click();
     renderExtraImagesPreview();

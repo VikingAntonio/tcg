@@ -2803,7 +2803,7 @@ function renderBinder(binder) {
 
                 if (slotData.image_url) {
                     const cardAlt = slotData.name || 'Carta';
-                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
+                    $slot.append(`<img src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" loading="lazy" decoding="async">`);
 
                     if (slotData.price) {
                         $slot.append(`<div style="position: absolute; bottom: 3px; right: 3px; background: rgba(0, 255, 136, 0.9); color: #000; font-weight: 900; font-size: 10px; padding: 2px 5px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5;">$${slotData.price}</div>`);
@@ -2822,7 +2822,7 @@ function renderBinder(binder) {
 
         const $pageHeader = $(`
             <div class="binder-page-header-info" style="position: absolute; top: 4px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 800; color: #888; z-index: 10; pointer-events: none;">
-                <span>Hoja ${page.page_index + 1}</span>
+                <span>Hoja ${page.page_index + 1} de ${pages.length}</span>
                 <span style="background: rgba(0,0,0,0.6); color: #00ff88; padding: 1px 6px; border-radius: 10px; border: 1px solid rgba(0,255,136,0.3);">Hoja: $${pageTotal.toFixed(2)}</span>
             </div>
         `);
@@ -2871,12 +2871,6 @@ function renderBinder(binder) {
             duration: 800,
             cornerSize: isMobile ? 50 : 100,
             when: {
-                start: function(event, pageObject, corner) {
-                    if (!corner && !isManualPageTurn) {
-                        event.preventDefault();
-                        return;
-                    }
-                },
                 turning: function(e, page) {
                     $(this).addClass('is-turning');
                     loadPageImages($(this), page);
