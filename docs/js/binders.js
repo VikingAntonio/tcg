@@ -320,9 +320,29 @@ $(document).ready(async function() {
         loadAlbumPages(currentAlbumId, false);
     });
 
+    // Live typing external card search with debounce
+    let externalSearchTimeout = null;
+    $(document).on('input', '#external-search-input', function() {
+        clearTimeout(externalSearchTimeout);
+        const query = $(this).val().trim();
+        if (query.length < 2) {
+            $('#external-search-results').empty();
+            return;
+        }
+        externalSearchTimeout = setTimeout(() => {
+            window.searchExternalCard('#external-search-input', '#external-search-results', (card) => {
+                $('#slot-image-url').val(card.high_res || card.image).trigger('change');
+                $('#slot-name').val(card.name);
+                $('#slot-rarity').val(card.rarity || '');
+                $('#slot-expansion').val(card.set || '');
+                $('#slot-price').val(card.price || '');
+            });
+        }, 350);
+    });
+
     $(document).on('click', '#btn-external-search', async function() {
         window.searchExternalCard('#external-search-input', '#external-search-results', (card) => {
-            $('#slot-image-url').val(card.high_res || card.image);
+            $('#slot-image-url').val(card.high_res || card.image).trigger('change');
             $('#slot-name').val(card.name);
             $('#slot-rarity').val(card.rarity || '');
             $('#slot-expansion').val(card.set || '');
