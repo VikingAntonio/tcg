@@ -214,6 +214,7 @@ body {
 }
 
 .album-wrapper {
+    box-sizing: border-box !important;
     flex: 0 0 auto;
     perspective: 2000px;
     position: relative;
@@ -226,10 +227,12 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    background: #1a1a1a;
 }
 
 /* ===== Tamaños responsivos del álbum (Configuración del Test) ===== */
 .album {
+    box-sizing: border-box !important;
     width: 600px;
     height: 420px;
     box-shadow: 0 30px 60px rgba(0,0,0,0.8);
@@ -241,17 +244,22 @@ body {
     backface-visibility: hidden;
     transform: translate3d(0,0,0);
     transform-style: preserve-3d;
+    background: #1a1a1a;
 }
 
 
 
 /* Ensure internal turn.js pages are properly positioned */
-.album .turn-page {
+.album .turn-page,
+.album .page-wrapper {
+    box-sizing: border-box !important;
     position: absolute !important;
     z-index: 10;
+    background: #1a1a1a;
 }
 
 .page {
+    box-sizing: border-box !important;
     background: var(--card-bg);
     padding: 12px;
     border: 1px solid var(--card-border);

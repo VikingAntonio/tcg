@@ -149,7 +149,7 @@ $(document).ready(async function() {
             return;
         }
 
-        const { data, error } = await _supabase.from('binders').insert([{ title: 'Nuevo Álbum', user_id: currentUser.id }]).select();
+        const { data, error } = await _supabase.from('binders').insert([{ title: 'Nuevo Álbum', user_id: currentUser.id, is_public: true }]).select();
         if (error) Swal.fire('Error', 'No se pudo crear el álbum', 'error');
         else loadAlbums();
     });
