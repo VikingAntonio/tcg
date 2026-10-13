@@ -2022,6 +2022,19 @@ function loadPublicPreorders() {
 
 function loadPublicBinders(userId) {
     return new Promise(async (resolve) => {
+    if (!userId) {
+        userId = window.currentStoreId;
+    }
+    if (!userId) {
+        const identifier = window.currentStoreIdentifier || new URLSearchParams(window.location.search).get('id') || new URLSearchParams(window.location.search).get('store') || new URLSearchParams(window.location.search).get('user');
+        if (identifier) {
+            const user = await resolveUser(identifier);
+            if (user) {
+                userId = user.id;
+                window.currentStoreId = userId;
+            }
+        }
+    }
     if (!userId) { resolve(); return; }
 
     const params = new URLSearchParams(window.location.search);
@@ -2761,17 +2774,27 @@ function renderBinder(binder) {
 
     let grandTotalBinder = 0;
 
+    const pageIds = pages.map(p => p.id);
+    let allSlots = [];
+    if (pageIds.length > 0) {
+        const { data: slotsData, error: slotsErr } = await _supabase
+            .from('binder_card_slots')
+            .select('*')
+            .in('page_id', pageIds)
+            .order('slot_index', { ascending: true });
+        if (slotsErr) {
+            console.warn("Error al cargar binder_card_slots:", slotsErr);
+        }
+        allSlots = slotsData || [];
+    }
+
     for (const page of pages) {
         pageCount++;
         const $pageDiv = $(`<div class="page album-page" data-page-num="${pageCount}"></div>`);
         const gridLayout = binder.grid_layout || '3x3';
         const $grid = $(`<div class="grid-container grid-layout-${gridLayout}"></div>`);
 
-        const { data: slots } = await _supabase
-            .from('binder_card_slots')
-            .select('*')
-            .eq('page_id', page.id)
-            .order('slot_index', { ascending: true });
+        const slots = allSlots.filter(s => s.page_id === page.id);
 
         let numSlots = 9;
         if (gridLayout === '4x3') numSlots = 12;
@@ -2791,9 +2814,13 @@ function renderBinder(binder) {
                 grandTotalBinder += cardPriceVal;
 
                 $slot.attr({
+                    'data-id': slotData.id || '',
+                    'data-full-img': slotData.image_url || '',
                     'data-name': slotData.name || '',
                     'data-page': pageCount,
                     'data-rarity': slotData.rarity || '',
+                    'data-holo': slotData.holo_effect || '',
+                    'data-mask': slotData.custom_mask_url || '',
                     'data-expansion': slotData.expansion || '',
                     'data-condition': slotData.condition || '',
                     'data-quantity': '1',
@@ -2815,6 +2842,10 @@ function renderBinder(binder) {
                         openCardModal($(this).closest('.card-slot'));
                     });
                     $slot.append($zoomBtn);
+
+                    if (slotData.holo_effect && typeof window.applyFoilToElement === 'function') {
+                        window.applyFoilToElement($slot, slotData.holo_effect, slotData.custom_mask_url);
+                    }
                 }
             }
             $grid.append($slot);
