@@ -1657,15 +1657,19 @@ function updatePreview(card) {
     }
 }
 
-// Reusable card zoom viewer popup that respects anti-cheat masking rules
+// Reusable card zoom viewer popup that respects anti-cheat masking rules and displays effect description
 function viewCardZoom(card) {
     if (!card) return;
 
     let imgToZoom = card.imageUrl;
+    let descText = "";
+    let isMasked = false;
 
     if (card.zone && card.zone.startsWith("prize_") && card.faceDown) {
         const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
         imgToZoom = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+        descText = "Detalles ocultos para evitar trampas.";
+        isMasked = true;
     } else if (state.mode !== "practice") {
         const currentRole = window.currentRole || "player1";
         const isMyCard = (card.owner === currentRole);
@@ -1684,27 +1688,62 @@ function viewCardZoom(card) {
         if (!canSee) {
             const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
             imgToZoom = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+            descText = "Detalles ocultos para evitar trampas.";
+            isMasked = true;
         }
     }
 
     if (!imgToZoom) return;
 
+    if (!isMasked) {
+        descText = card.desc || card.description || card.effect || card.text || "";
+    }
+
     if (document.activeElement && typeof document.activeElement.blur === "function") {
         document.activeElement.blur();
     }
 
+    const needsFetch = !isMasked && !descText && card.name;
+    const initialDescHTML = needsFetch ? "Cargando efecto..." : (descText || "Sin efecto/descripción.");
+
     Swal.fire({
         html: `
-            <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
-                <img src="${imgToZoom}" style="max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 420px; margin: 0 auto; padding: 5px;">
+                <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <img src="${imgToZoom}" style="max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
+                </div>
+                <div id="zoom-card-desc" style="background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; color: #eee; margin-top: 12px; text-align: left; border: 1px solid rgba(255,255,255,0.12); font-family: sans-serif; white-space: pre-wrap; word-break: break-word; max-height: 25vh; overflow-y: auto; width: 100%; box-sizing: border-box;">${initialDescHTML}</div>
             </div>
         `,
         showCloseButton: true,
         showConfirmButton: false,
         returnFocus: false,
-        background: "transparent",
+        background: "#12181e",
+        color: "#fff",
         backdrop: "rgba(0, 0, 0, 0.85)",
         width: "auto",
+        didOpen: () => {
+            if (needsFetch) {
+                fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (data && data.data && data.data.length > 0) {
+                            const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
+                            if (matched && matched.desc) {
+                                card.desc = matched.desc;
+                                $("#zoom-card-desc").text(matched.desc);
+                            } else {
+                                $("#zoom-card-desc").text("Efecto no disponible.");
+                            }
+                        } else {
+                            $("#zoom-card-desc").text("Efecto no disponible.");
+                        }
+                    })
+                    .catch(() => {
+                        $("#zoom-card-desc").text("Efecto no disponible.");
+                    });
+            }
+        },
         willClose: () => {
             if (document.activeElement && typeof document.activeElement.blur === "function") {
                 document.activeElement.blur();
@@ -3021,15 +3060,20 @@ function setupEventListeners() {
         if (!src || src.includes("placeholder") || src.includes("via.placeholder.com")) {
             return;
         }
+        const descText = $("#detail-card-desc").text() || "";
         Swal.fire({
             html: `
-                <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
-                    <img src="${src}" style="max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 420px; margin: 0 auto; padding: 5px;">
+                    <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                        <img src="${src}" style="max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
+                    </div>
+                    ${descText ? `<div style="background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; color: #eee; margin-top: 12px; text-align: left; border: 1px solid rgba(255,255,255,0.12); font-family: sans-serif; white-space: pre-wrap; word-break: break-word; max-height: 25vh; overflow-y: auto; width: 100%; box-sizing: border-box;">${descText}</div>` : ''}
                 </div>
             `,
             showCloseButton: true,
             showConfirmButton: false,
-            background: "transparent",
+            background: "#12181e",
+            color: "#fff",
             backdrop: "rgba(0, 0, 0, 0.85)",
             width: "auto"
         });
