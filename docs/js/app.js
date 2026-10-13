@@ -365,7 +365,8 @@ $(document).ready(async function() {
 
     // Auto-detect view from deep-links if 'view' is missing
     if (!urlParams.has('view')) {
-        if (urlParams.has('albumId')) initialView = 'albums';
+        if (urlParams.has('binderId')) initialView = 'binders';
+        else if (urlParams.has('albumId')) initialView = 'albums';
         else if (urlParams.has('deckId')) initialView = 'decks';
         else if (urlParams.has('productId')) initialView = 'sealed';
         else if (urlParams.has('preorderId')) initialView = 'preorders';
@@ -377,9 +378,10 @@ $(document).ready(async function() {
     // --- Initial Entry Logic ---
     try {
         // Validation for the initial view (fixes common truncations like "albu")
-        const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
+        const validViews = ['home', 'binders', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
         if (!validViews.includes(initialView)) {
-            if (initialView.startsWith('albu')) initialView = 'albums';
+            if (initialView.startsWith('bind')) initialView = 'binders';
+            else if (initialView.startsWith('albu')) initialView = 'albums';
             else if (initialView.startsWith('deck')) initialView = 'decks';
             else if (initialView.startsWith('preord')) initialView = 'preorders';
             else if (initialView.startsWith('seal')) initialView = 'sealed';
@@ -392,9 +394,9 @@ $(document).ready(async function() {
             else initialView = 'home';
         }
 
-        // Only show 3D loading screen if the entry point is 'albums' (public/share links)
-        if (initialView === 'albums') {
-            showLoading('Cargando Álbumes...');
+        // Only show 3D loading screen if the entry point is 'binders' or 'albums' (public/share links)
+        if (initialView === 'binders' || initialView === 'albums') {
+            showLoading('Cargando...');
         }
 
         // Load store data first as it's required for view initialization
@@ -1381,18 +1383,19 @@ function applyVisualsToModal(holo, mask, use3d, options = {}) {
 async function switchView(view, skipPush = false) {
     if (!view) return;
 
-    // Show loader early for albums to mask data loading and build mode checks
-    if (view === 'albums') {
-        showLoading('Cargando Álbumes...');
+    // Show loader early for binders/albums to mask data loading and build mode checks
+    if (view === 'binders' || view === 'albums') {
+        showLoading(view === 'binders' ? 'Cargando Binders...' : 'Cargando Álbumes...');
     }
 
     // Robust View Validation (fixes common truncations like "albu")
-    const validViews = ['home', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
+    const validViews = ['home', 'binders', 'albums', 'decks', 'auctions', 'sealed', 'preorders', 'wishlist', 'investments', 'claims', 'events', 'learn'];
     const originalView = view;
     let wasCorrected = false;
 
     if (!validViews.includes(view)) {
-        if (view.startsWith('albu')) view = 'albums';
+        if (view.startsWith('bind')) view = 'binders';
+        else if (view.startsWith('albu')) view = 'albums';
         else if (view.startsWith('deck')) view = 'decks';
         else if (view.startsWith('preord')) view = 'preorders';
         else if (view.startsWith('seal')) view = 'sealed';
@@ -1451,7 +1454,7 @@ async function switchView(view, skipPush = false) {
     }
 
     // --- Build Mode Check ---
-    const buildViews = ['albums', 'decks', 'auctions', 'sealed', 'wishlist', 'investments', 'claims', 'events'];
+    const buildViews = ['binders', 'albums', 'decks', 'auctions', 'sealed', 'wishlist', 'investments', 'claims', 'events'];
     if (buildViews.includes(view) && window.currentStoreId) {
         try {
             const { data: assignment } = await _supabase
@@ -1513,7 +1516,15 @@ async function switchView(view, skipPush = false) {
     }
 
     // View-specific data loading
-    if (view === 'albums') {
+    if (view === 'binders') {
+        try {
+            if (window.currentStoreId) {
+                await loadPublicBinders(window.currentStoreId);
+            }
+        } finally {
+            hideLoading();
+        }
+    } else if (view === 'albums') {
         try {
             if (window.currentStoreId) {
                 await loadPublicAlbums(window.currentStoreId);
@@ -2008,6 +2019,67 @@ function loadPublicPreorders() {
 }
 
 
+
+function loadPublicBinders(userId) {
+    return new Promise(async (resolve) => {
+    if (!userId) { resolve(); return; }
+
+    const params = new URLSearchParams(window.location.search);
+    const filterId = params.get('binderId');
+
+    try {
+        let query = _supabase
+            .from('binders')
+            .select('*')
+            .eq('user_id', userId)
+            .order('position', { ascending: true })
+            .order('id', { ascending: true });
+
+        if (filterId) {
+            query = query.eq('id', filterId);
+        }
+
+        let { data: binders, error } = await query;
+
+        if (error) {
+            console.warn("Error al cargar binders, reintentando.");
+            const retry = await _supabase
+                .from('binders')
+                .select('*')
+                .eq('user_id', userId)
+                .order('position', { ascending: true });
+            binders = retry.data;
+            error = retry.error;
+        }
+
+        if (binders) {
+            binders = binders.filter(b => b.is_public !== false);
+            window.currentBinders = binders;
+        }
+
+        if (error) {
+            $('#binders-container').html('<div class="error">Error al cargar Binders.</div>');
+            return;
+        }
+
+        if (binders.length === 0) {
+            $('#binders-container').html('<div class="empty">No hay Binders disponibles.</div>');
+            return;
+        }
+
+        $('#binders-container').empty();
+        if (filterId && binders && binders.length > 0) {
+            $('<div class="focus-mode-exception" style="margin-bottom: 30px; text-align: center;"><button class="btn btn-primary" onclick="clearShareFilters()"><i class="fas fa-th-list"></i> Ver Todos los Binders</button></div>').appendTo('#binders-container');
+        }
+        await Promise.all(binders.map(binder => renderBinder(binder)));
+    } catch (e) {
+        console.error("Error in loadPublicBinders:", e);
+        $('#binders-container').html('<div class="error">Error al cargar los Binders.</div>');
+    } finally {
+        resolve();
+    }
+    });
+}
 
 function loadPublicAlbums(userId) {
     return new Promise(async (resolve) => {
@@ -2605,6 +2677,235 @@ function loadPageImages($album, page) {
             $img.attr('src', src);
             $img.removeAttr('data-src');
         }
+    });
+}
+
+function renderBinder(binder) {
+    return new Promise(async (resolve) => {
+    let extraImagesGalleryHtml = '';
+    if (binder.extra_images && Array.isArray(binder.extra_images) && binder.extra_images.length > 0) {
+        extraImagesGalleryHtml = `
+            <div class="album-extra-gallery" style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); width: 100%; box-sizing: border-box;">
+                <div style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-images"></i> Imágenes Adicionales
+                </div>
+                <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+                    ${binder.extra_images.map(imgUrl => `
+                        <div class="album-extra-thumb" style="flex: 0 0 90px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; background: #000;">
+                            <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'" onclick="openAlbumExtraImageModal('${imgUrl.replace(/'/g, "\\'")}')">
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    const $binderContainer = $(`
+        <div class="public-album-item" id="binder-container-${binder.id}">
+            <div class="public-album-header">
+                <div class="public-album-header-content" style="flex-wrap: wrap; gap: 10px; justify-content: space-between;">
+                    <span class="public-album-title-top">
+                        <i class="fas fa-book"></i> ${binder.title}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="binder-grand-total-badge" style="background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4); padding: 4px 12px; border-radius: 50px; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.5px;">
+                            Total Binder: <span class="binder-total-val">$0.00</span>
+                        </span>
+                        <button class="btn-share-item btn-share-top" onclick="openShareModal('${binder.title.replace(/'/g, "\\'")}', 'binders', '${binder.id}')" title="Compartir Binder">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="album-wrapper">
+                <div id="binder-${binder.id}" class="album"></div>
+            </div>
+            ${extraImagesGalleryHtml}
+            <div class="public-album-footer-title" style="text-align: center; margin-top: 15px; font-size: 1.5rem; font-weight: 800; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <span>${binder.title}</span>
+                <span class="binder-grand-total-badge-footer" style="background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4); padding: 4px 14px; border-radius: 50px; font-weight: 900; font-size: 1rem;">
+                    Total: <span class="binder-total-val">$0.00</span>
+                </span>
+                <button class="btn-share-item btn-share-bottom" onclick="openShareModal('${binder.title.replace(/'/g, "\\'")}', 'binders', '${binder.id}')" title="Compartir Binder">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+        </div>
+    `);
+
+    const $binderDiv = $binderContainer.find('.album');
+    $('#binders-container').append($binderContainer);
+
+    let { data: pages } = await _supabase
+        .from('binder_pages')
+        .select('*')
+        .eq('binder_id', binder.id)
+        .order('page_index', { ascending: true });
+
+    if (!pages) pages = [];
+
+    const coverImg = binder.cover_image_url;
+    const coverColor = binder.cover_color || '#1a1a1a';
+    const coverStyle = 'style-cosmic';
+    let pageCount = 1;
+
+    if (coverImg) {
+        $binderDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${coverImg}"></div>`);
+    } else {
+        $binderDiv.append(`
+            <div class="page album-page cover-page" data-page-num="${pageCount}">
+                ${getCoverHtml(coverStyle, binder.title, coverColor)}
+            </div>
+        `);
+    }
+
+    let grandTotalBinder = 0;
+
+    for (const page of pages) {
+        pageCount++;
+        const $pageDiv = $(`<div class="page album-page" data-page-num="${pageCount}"></div>`);
+        const gridLayout = binder.grid_layout || '3x3';
+        const $grid = $(`<div class="grid-container grid-layout-${gridLayout}"></div>`);
+
+        const { data: slots } = await _supabase
+            .from('binder_card_slots')
+            .select('*')
+            .eq('page_id', page.id)
+            .order('slot_index', { ascending: true });
+
+        let numSlots = 9;
+        if (gridLayout === '4x3') numSlots = 12;
+        else if (gridLayout === '4x4') numSlots = 16;
+        else if (gridLayout === '2x2') numSlots = 4;
+        else if (gridLayout === '1x1') numSlots = 1;
+
+        let pageTotal = 0;
+
+        for (let i = 0; i < numSlots; i++) {
+            const slotData = slots ? slots.find(s => s.slot_index === i) : null;
+            const $slot = $('<div class="card-slot"></div>');
+
+            if (slotData) {
+                const cardPriceVal = parseFloat(slotData.price) || 0;
+                pageTotal += cardPriceVal;
+                grandTotalBinder += cardPriceVal;
+
+                $slot.attr({
+                    'data-name': slotData.name || '',
+                    'data-page': pageCount,
+                    'data-rarity': slotData.rarity || '',
+                    'data-expansion': slotData.expansion || '',
+                    'data-condition': slotData.condition || '',
+                    'data-quantity': '1',
+                    'data-price': slotData.price || '',
+                    'data-extra-images': JSON.stringify(slotData.extra_images || [])
+                });
+
+                if (slotData.image_url) {
+                    const cardAlt = slotData.name || 'Carta';
+                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
+
+                    if (slotData.price) {
+                        $slot.append(`<div style="position: absolute; bottom: 3px; right: 3px; background: rgba(0, 255, 136, 0.9); color: #000; font-weight: 900; font-size: 10px; padding: 2px 5px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5;">$${slotData.price}</div>`);
+                    }
+
+                    const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
+                    $zoomBtn.on('click', function(e) {
+                        e.stopPropagation();
+                        openCardModal($(this).closest('.card-slot'));
+                    });
+                    $slot.append($zoomBtn);
+                }
+            }
+            $grid.append($slot);
+        }
+
+        const $pageHeader = $(`
+            <div class="binder-page-header-info" style="position: absolute; top: 4px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 800; color: #888; z-index: 10; pointer-events: none;">
+                <span>Hoja ${page.page_index + 1}</span>
+                <span style="background: rgba(0,0,0,0.6); color: #00ff88; padding: 1px 6px; border-radius: 10px; border: 1px solid rgba(0,255,136,0.3);">Hoja: $${pageTotal.toFixed(2)}</span>
+            </div>
+        `);
+
+        $pageDiv.append($pageHeader).append($grid).appendTo($binderDiv);
+    }
+
+    $binderContainer.find('.binder-total-val').text(`$${grandTotalBinder.toFixed(2)}`);
+
+    if (pages.length % 2 !== 0) {
+        pageCount++;
+        $binderDiv.append(`<div class="page album-page" data-page-num="${pageCount}"></div>`);
+    }
+
+    pageCount++;
+    const backImg = binder.back_image_url;
+    const backColor = binder.back_color || '#1a1a1a';
+
+    if (backImg) {
+        $binderDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
+    } else {
+        $binderDiv.append(`
+            <div class="page album-page cover-page" data-page-num="${pageCount}">
+                <div class="textured-cover ${coverStyle}" style="background-color: ${backColor}"></div>
+            </div>
+        `);
+    }
+
+    let turnInitialized = false;
+
+    const initTurn = () => {
+        if (turnInitialized) return;
+        turnInitialized = true;
+
+        const isMobile = window.innerWidth <= 640;
+        const { width, height } = getAlbumSize($binderContainer);
+
+        $binderDiv.turn({
+            width: width,
+            height: height,
+            autoCenter: true,
+            gradients: true,
+            acceleration: true,
+            display: 'double',
+            elevation: 50,
+            duration: 800,
+            cornerSize: isMobile ? 50 : 100,
+            when: {
+                start: function(event, pageObject, corner) {
+                    if (!corner && !isManualPageTurn) {
+                        event.preventDefault();
+                        return;
+                    }
+                },
+                turning: function(e, page) {
+                    $(this).addClass('is-turning');
+                    loadPageImages($(this), page);
+                    loadPageImages($(this), page + 1);
+                    loadPageImages($(this), page + 2);
+                    loadPageImages($(this), page + 3);
+                },
+                turned: function() {
+                    $(this).removeClass('is-turning');
+                    const $el = $(this);
+                    const $container = $el.closest('.public-album-item');
+                    const { width, height } = getAlbumSize($container);
+                    setTimeout(() => {
+                        $el.turn('stop').turn('size', width, height).turn('center');
+                    }, 50);
+                }
+            }
+        });
+        resolve();
+    };
+
+    loadPageImages($binderDiv, 1);
+    loadPageImages($binderDiv, 2);
+    loadPageImages($binderDiv, 3);
+    loadPageImages($binderDiv, 4);
+
+    setTimeout(() => {
+        initTurn();
+    }, 100);
     });
 }
 

@@ -93,14 +93,32 @@
     </div>
 
     <div id="slot-modal" class="overlay">
-        <div class="overlay-content">
+        <div class="overlay-content" style="max-width: 600px; width: 95%;">
             <span id="close-slot-modal" class="close-btn">&times;</span>
             <h2>Editar Espacio</h2>
-            <div class="slot-modal-tabs"><button class="slot-tab-btn active" data-tab="slot-tab-info">Información</button></div>
+            <div class="slot-modal-tabs">
+                <button class="slot-tab-btn active" data-tab="slot-tab-info">Información</button>
+                <button class="slot-tab-btn" data-tab="slot-tab-images">Imágenes Adicionales</button>
+            </div>
             <div id="slot-tab-info" class="slot-tab-content active">
                 <div class="form-group"><label>Buscar Carta</label><div style="display: flex; gap: 10px;"><input type="text" id="external-search-input" style="flex: 1;"><button id="btn-external-search" class="btn">Buscar</button></div><div id="external-search-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; margin-top: 15px; max-height: 160px; overflow-y: auto;"></div></div>
                 <div class="form-group"><label>URL Imagen</label><input type="text" id="slot-image-url"></div>
                 <div class="form-group"><label>Nombre</label><input type="text" id="slot-name"></div>
+                <div class="form-group"><label>Precio ($)</label><input type="number" step="0.01" id="slot-price" placeholder="0.00"></div>
+                <div class="form-group"><label>Rareza</label><input type="text" id="slot-rarity"></div>
+                <div class="form-group"><label>Expansión</label><input type="text" id="slot-expansion"></div>
+                <div class="form-group"><label>Estado</label><input type="text" id="slot-condition" placeholder="M, NM, LP..."></div>
+            </div>
+            <div id="slot-tab-images" class="slot-tab-content" style="display:none;">
+                <div class="form-group">
+                    <label>Imágenes Adicionales (Drag & Drop o Seleccionar)</label>
+                    <div id="slot-dropzone" style="border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; padding: 25px; text-align: center; cursor: pointer; background: rgba(0,0,0,0.3); margin-bottom: 15px; transition: all 0.3s ease;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #00d2ff; margin-bottom: 10px;"></i>
+                        <p style="margin: 0; font-size: 0.9rem; color: #ccc;">Arrastra aquí tus fotos o haz clic para subir</p>
+                        <input type="file" id="slot-file-input" multiple accept="image/*" style="display: none;">
+                    </div>
+                    <div id="slot-extra-images-preview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
+                </div>
             </div>
             <button id="btn-save-slot" class="btn" style="width: 100%; margin-top: 15px;">Guardar Carta</button>
         </div>
