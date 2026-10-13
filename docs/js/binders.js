@@ -6,6 +6,7 @@ let localAlbumSlots = [];
 let albumSlotsToDelete = [];
 let localVikingData = [];
 let editingType = 'slot';
+let currentSlotExtraImages = [];
 
 function getActiveScrollContainer() {
     const activeView = $('.admin-section.active')[0];
@@ -35,7 +36,7 @@ window.openShareModal = function(title, type, id, extraId) {
 
     let shareUrl = `${baseUrl}?id=${encodeURIComponent(identifier)}&view=${type}`;
     if (id !== null && id !== undefined) {
-        const paramName = type === 'albums' ? 'albumId' : 'deckId';
+        const paramName = type === 'binders' || type === 'albums' ? 'binderId' : 'deckId';
         shareUrl += `&${paramName}=${id}`;
     }
 
@@ -67,31 +68,88 @@ window.openShareModal = function(title, type, id, extraId) {
     $('#share-ms').off('click').on('click', () => window.open(`fb-messenger://share/?link=${encodedUrl}`, '_blank'));
 };
 
+function renderExtraImagesPreview() {
+    const $preview = $('#slot-extra-images-preview').empty();
+    if (!currentSlotExtraImages || currentSlotExtraImages.length === 0) return;
+
+    currentSlotExtraImages.forEach((imgUrl, idx) => {
+        const $thumb = $(`
+            <div style="position: relative; width: 70px; height: 95px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); background: #000;">
+                <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                <button type="button" class="btn-delete-extra-img" data-index="${idx}" style="position: absolute; top: 3px; right: 3px; background: rgba(255,71,87,0.9); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `);
+        $thumb.find('.btn-delete-extra-img').click(function(e) {
+            e.stopPropagation();
+            const removeIdx = $(this).data('index');
+            currentSlotExtraImages.splice(removeIdx, 1);
+            renderExtraImagesPreview();
+        });
+        $preview.append($thumb);
+    });
+}
+
+async function handleFilesUpload(files) {
+    if (!files || files.length === 0) return;
+    Swal.fire({ title: 'Subiendo imágenes...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (!file.type.startsWith('image/')) continue;
+            const uploadedUrl = await CloudinaryUpload.uploadImage(file);
+            if (uploadedUrl) {
+                currentSlotExtraImages.push(uploadedUrl);
+            }
+        }
+        renderExtraImagesPreview();
+        Swal.close();
+    } catch (err) {
+        Swal.fire('Error', 'No se pudieron subir las imágenes: ' + (err.message || ''), 'error');
+    }
+}
+
 $(document).ready(async function() {
     await checkSession();
     initTheme();
 
     $("#btn-login").click(function(e) { e.preventDefault(); handleLogin(); });
     $(document).on("click", "#btn-back-to-web", function(e) { e.preventDefault(); window.location.href = "index.html"; });
-    $("#send-chat").click(function() {
-        const text = $("#chat-input").val().trim();
-        if (!text) return;
-        $("#chat-messages").append(`<div class="chat-msg msg-user">${text}</div>`);
-        $("#chat-input").val("");
-        setTimeout(() => { $("#chat-messages").append(`<div class="chat-msg msg-bot">Aún estoy aprendiendo...</div>`); }, 800);
+
+    // Drag and Drop & File Upload handlers for Extra Images
+    $(document).on('click', '#slot-dropzone', function() { $('#slot-file-input').click(); });
+    $(document).on('change', '#slot-file-input', function() {
+        handleFilesUpload(this.files);
+        $(this).val('');
+    });
+    $(document).on('dragover dragenter', '#slot-dropzone', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).css('border-color', '#00ff88');
+    });
+    $(document).on('dragleave drop', '#slot-dropzone', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        $(this).css('border-color', 'rgba(0, 210, 255, 0.4)');
+    });
+    $(document).on('drop', '#slot-dropzone', function(e) {
+        const files = e.originalEvent.dataTransfer ? e.originalEvent.dataTransfer.files : null;
+        if (files && files.length > 0) {
+            handleFilesUpload(files);
+        }
     });
 
     $(document).on('click', '#btn-create-album', async function(e) {
         e.preventDefault();
         if (!currentUser) return;
 
-        const { count } = await _supabase.from('albums').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id);
-        if (count >= (currentUser.max_albums || 3)) {
-            Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_albums || 3} álbumes.`, 'warning');
+        const { count } = await _supabase.from('binders').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id);
+        if (count >= (currentUser.max_albums || 10)) {
+            Swal.fire('Límite alcanzado', `Tu plan actual permite un máximo de ${currentUser.max_albums || 10} álbumes.`, 'warning');
             return;
         }
 
-        const { data, error } = await _supabase.from('albums').insert([{ title: 'Nuevo Álbum', user_id: currentUser.id }]).select();
+        const { data, error } = await _supabase.from('binders').insert([{ title: 'Nuevo Álbum', user_id: currentUser.id }]).select();
         if (error) Swal.fire('Error', 'No se pudo crear el álbum', 'error');
         else loadAlbums();
     });
@@ -103,33 +161,24 @@ $(document).ready(async function() {
         const title = $('#input-album-title').val();
         const cover = $('#input-album-cover').val();
         const back = $('#input-album-back').val();
-        const coverColor = $('#input-album-cover-color').val();
-        const backColor = $('#input-album-back-color').val();
         const is_public = $('#input-album-public').is(':checked');
         const grid_layout = $('#input-album-grid-layout').val() || '3x3';
 
-        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: '#1a1a1a', back_color: backColor, is_public, grid_layout, cover_style: 'style-cosmic' };
+        let updateData = { title, cover_image_url: cover, back_image_url: back, cover_color: '#1a1a1a', back_color: '#1a1a1a', is_public, grid_layout };
 
         try {
-            let { error: albumErr } = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
-
-            if (albumErr && (albumErr.code === '42703' || (albumErr.message && (albumErr.message.includes('is_public') || albumErr.message.includes('grid_layout'))))) {
-                delete updateData.is_public;
-                delete updateData.grid_layout;
-                let retry = await _supabase.from('albums').update(updateData).eq('id', currentAlbumId);
-                albumErr = retry.error;
-            }
+            let { error: albumErr } = await _supabase.from('binders').update(updateData).eq('id', currentAlbumId);
             if (albumErr) throw albumErr;
 
             // Clear all existing slots of these pages to prevent duplicate leftover slots from layout shifts
             const { data: albumPages } = await _supabase
-                .from('pages')
+                .from('binder_pages')
                 .select('id')
-                .eq('album_id', currentAlbumId);
+                .eq('binder_id', currentAlbumId);
             const pageIds = albumPages ? albumPages.map(p => p.id) : [];
             if (pageIds.length > 0) {
                 const { error: clearErr } = await _supabase
-                    .from('card_slots')
+                    .from('binder_card_slots')
                     .delete()
                     .in('page_id', pageIds);
                 if (clearErr) throw clearErr;
@@ -137,7 +186,7 @@ $(document).ready(async function() {
 
             if (localAlbumSlots.length > 0) {
                 const slotsToUpsert = localAlbumSlots.map(s => { const { id, obtained, ...rest } = s; return rest; });
-                await _supabase.from('card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
+                await _supabase.from('binder_card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
             }
 
             Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 2000, showConfirmButton: false });
@@ -151,30 +200,29 @@ $(document).ready(async function() {
 
     $(document).on('click', '#btn-add-page, #btn-add-page-bottom', async function(e) {
         e.preventDefault();
-        const { count } = await _supabase.from('pages').select('*', { count: 'exact', head: true }).eq('album_id', currentAlbumId);
-        if (count >= (currentUser.max_pages || 10)) {
-            Swal.fire('Límite alcanzado', `Máximo ${currentUser.max_pages || 10} páginas.`, 'warning');
+        const { count } = await _supabase.from('binder_pages').select('*', { count: 'exact', head: true }).eq('binder_id', currentAlbumId);
+        if (count >= (currentUser.max_pages || 30)) {
+            Swal.fire('Límite alcanzado', `Máximo ${currentUser.max_pages || 30} páginas.`, 'warning');
             return;
         }
-        await _supabase.from('pages').insert([{ album_id: currentAlbumId, page_index: count }]);
+        await _supabase.from('binder_pages').insert([{ binder_id: currentAlbumId, page_index: count }]);
         loadAlbumPages(currentAlbumId, false);
     });
 
     $(document).on('click', '#btn-save-slot', async function(e) {
         e.preventDefault();
         const imageUrl = $('#slot-image-url').val();
-        if (!imageUrl) { Swal.fire('Error', 'URL requerida', 'warning'); return; }
-
-        let holoEffect = $('#slot-holo-effect').val() || '';
-        if (holoEffect === 'custom-foil') holoEffect = `custom-foil|${$('#slot-custom-foil-type').val() || 'foil'}`;
+        if (!imageUrl) { Swal.fire('Error', 'URL de la imagen requerida', 'warning'); return; }
 
         const cardData = {
-            image_url: imageUrl, name: $('#slot-name').val() || '', holo_effect: holoEffect,
-            custom_mask_url: $('#slot-custom-mask').val() || '', rarity: $('#slot-rarity').val() || '',
-            expansion: $('#slot-expansion').val() || '', condition: $('#slot-condition').val() || 'M',
-            quantity: parseInt($('#slot-quantity').val()) || 1, price: $('#slot-price').val() || '',
-            obtained: $('#slot-modal').data('current-obtained') !== false,
-            show_foil_in_list: $('#slot-show-foil-list').is(':checked')
+            image_url: imageUrl,
+            name: $('#slot-name').val() || '',
+            rarity: $('#slot-rarity').val() || '',
+            expansion: $('#slot-expansion').val() || '',
+            condition: $('#slot-condition').val() || 'M',
+            price: $('#slot-price').val() || '',
+            extra_images: currentSlotExtraImages || [],
+            obtained: true
         };
 
         const slotData = { ...cardData, page_id: currentPageId, slot_index: currentSlotIndex };
@@ -197,9 +245,9 @@ $(document).ready(async function() {
 
     async function redistributeLocalSlots(newLayout) {
         const { data: pages, error } = await _supabase
-            .from('pages')
+            .from('binder_pages')
             .select('*')
-            .eq('album_id', currentAlbumId)
+            .eq('binder_id', currentAlbumId)
             .order('page_index', { ascending: true });
 
         if (error || !pages || pages.length === 0) return;
@@ -272,22 +320,13 @@ $(document).ready(async function() {
     $(document).on('click', '.slot-tab-btn', function() {
         const tabId = $(this).data('tab');
         $('.slot-tab-btn').removeClass('active'); $(this).addClass('active');
-        $('.slot-tab-content').removeClass('active'); $(`#${tabId}`).addClass('active');
-    });
-
-    $(document).on('click', '#btn-open-mask-editor', function(e) {
-        e.preventDefault();
-        const cardImgUrl = $('#slot-image-url').val();
-        if (!cardImgUrl) return;
-        window.maskTargetInput = '#slot-custom-mask';
-        $('#mask-canvas-wrapper').css('background-image', `url(${cardImgUrl})`);
-        window.initMaskCanvas();
-        $('#mask-editor-overlay').addClass('active');
+        $('.slot-tab-content').removeClass('active').hide();
+        $(`#${tabId}`).addClass('active').show();
     });
 
     $(document).on('click', '#close-slot-modal', function() { $('#slot-modal').removeClass('active'); });
 
-    $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('albums'); });
+    $(document).on('click', '#btn-organize-albums', function(e) { e.preventDefault(); openOrganizeModal('binders'); });
     $(document).on('click', '#btn-finish-organize', function() { $('#organize-modal').removeClass('active'); });
 
     $(document).on('click', '#avatar-btn', function(e) { e.stopPropagation(); $('#user-dropdown').toggleClass('active'); });
@@ -341,7 +380,7 @@ function showLoginView() { $('#login-modal').addClass('active'); $('#authenticat
 function showView(view) { $('.admin-section').hide().removeClass('active'); $(`#view-${view}`).show().addClass('active'); if (window.botInstance) window.botInstance.setContext(view); }
 
 async function loadAlbums() {
-    const { data: albums } = await _supabase.from('albums').select('*').eq('user_id', currentUser.id).order('position', { ascending: true });
+    const { data: albums } = await _supabase.from('binders').select('*').eq('user_id', currentUser.id).order('position', { ascending: true });
     const $list = $('#album-list').empty();
     if (!albums || albums.length === 0) { $list.html('<div class="empty">No tienes álbumes.</div>'); return; }
     albums.forEach(album => {
@@ -358,14 +397,14 @@ async function loadAlbums() {
         `);
         $card.find('.btn-edit-album').click(() => editAlbum(album));
         $card.find('.btn-delete-album').click(() => deleteAlbum(album.id));
-        $card.find('.btn-share-album').click(() => openShareModal(album.title, 'albums', album.id));
+        $card.find('.btn-share-album').click(() => openShareModal(album.title, 'binders', album.id));
         $list.append($card);
     });
 }
 
 async function deleteAlbum(id) {
     const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
-    if (res.isConfirmed) { await _supabase.from('albums').delete().eq('id', id); loadAlbums(); }
+    if (res.isConfirmed) { await _supabase.from('binders').delete().eq('id', id); loadAlbums(); }
 }
 
 async function editAlbum(album) {
@@ -374,8 +413,6 @@ async function editAlbum(album) {
     $('#input-album-title').val(album.title);
     $('#input-album-cover').val(album.cover_image_url || '');
     $('#input-album-back').val(album.back_image_url || '');
-    $('#input-album-cover-color').val(album.cover_color || '#1a1a1a');
-    $('#input-album-back-color').val(album.back_color || '#1a1a1a');
 
     const gridLayout = album.grid_layout || '3x3';
     $('#input-album-grid-layout').val(gridLayout);
@@ -387,9 +424,9 @@ async function editAlbum(album) {
 }
 
 async function loadAlbumPages(albumId, fetchSlots = true) {
-    const { data: pages } = await _supabase.from('pages').select('*').eq('album_id', albumId).order('page_index', { ascending: true });
+    const { data: pages } = await _supabase.from('binder_pages').select('*').eq('binder_id', albumId).order('page_index', { ascending: true });
     if (fetchSlots && pages) {
-        const { data: slots } = await _supabase.from('card_slots').select('*').in('page_id', pages.map(p => p.id));
+        const { data: slots } = await _supabase.from('binder_card_slots').select('*').in('page_id', pages.map(p => p.id));
         localAlbumSlots = slots || [];
     }
     renderAlbumPagesLocal(pages || []);
@@ -418,8 +455,13 @@ function renderAlbumPagesLocal(pages) {
         for (let i = 0; i < numSlots; i++) {
             const slot = localAlbumSlots.find(s => s.page_id === page.id && s.slot_index === i);
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
-            if (slot) $slot.append(`<img src="${slot.image_url}" class="tcg-card">`);
-            else $slot.html('<div style="color:#444; font-size:10px; text-align:center; padding-top:10px;">Vacío</div>');
+            if (slot && slot.image_url) {
+                let slotHtml = `<img src="${slot.image_url}" class="tcg-card">`;
+                if (slot.price) slotHtml += `<div style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,255,136,0.9); color: #000; font-weight: 900; font-size: 10px; padding: 1px 4px; border-radius: 4px;">$${slot.price}</div>`;
+                $slot.html(slotHtml);
+            } else {
+                $slot.html('<div style="color:#444; font-size:10px; text-align:center; padding-top:10px;">Vacío</div>');
+            }
             $grid.append($slot);
         }
         $list.append($page);
@@ -428,31 +470,34 @@ function renderAlbumPagesLocal(pages) {
 
 async function deletePage(id) {
     const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
-    if (res.isConfirmed) { await _supabase.from('pages').delete().eq('id', id); loadAlbumPages(currentAlbumId, false); }
+    if (res.isConfirmed) { await _supabase.from('binder_pages').delete().eq('id', id); loadAlbumPages(currentAlbumId, false); }
 }
-
-
 
 async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
-    $('#slot-image-url, #slot-name, #slot-custom-mask, #slot-rarity, #slot-expansion, #slot-condition, #slot-quantity, #slot-price').val('');
-    $('#slot-holo-effect').val('');
+    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price').val('');
+    currentSlotExtraImages = [];
+
     if (data) {
         $('#slot-image-url').val(data.image_url || '');
         $('#slot-name').val(data.name || '');
         $('#slot-rarity').val(data.rarity || '');
         $('#slot-expansion').val(data.expansion || '');
         $('#slot-condition').val(data.condition || '');
-        $('#slot-quantity').val(data.quantity || '');
         $('#slot-price').val(data.price || '');
+        if (data.extra_images && Array.isArray(data.extra_images)) {
+            currentSlotExtraImages = [...data.extra_images];
+        }
     }
+    $('.slot-tab-btn[data-tab="slot-tab-info"]').click();
+    renderExtraImagesPreview();
     $('#slot-modal').addClass('active');
 }
 
 async function openOrganizeModal(type) {
     const $grid = $('#organize-grid').empty();
     $('#organize-modal').addClass('active');
-    const { data: items } = await _supabase.from('albums').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true });
+    const { data: items } = await _supabase.from('binders').select('id, title, cover_image_url').eq('user_id', currentUser.id).order('position', { ascending: true });
     if (!items) return;
     items.forEach(item => {
         $grid.append(`<div class="organize-item" data-id="${item.id}"><img src="${item.cover_image_url || ''}"><span>${item.title}</span></div>`);
@@ -460,7 +505,7 @@ async function openOrganizeModal(type) {
     if (window.Sortable) {
         Sortable.create($grid[0], { animation: 150, onEnd: async () => {
             const ids = []; $grid.find('.organize-item').each(function() { ids.push($(this).data('id')); });
-            const promises = ids.map((id, index) => _supabase.from('albums').update({ position: index }).eq('id', id));
+            const promises = ids.map((id, index) => _supabase.from('binders').update({ position: index }).eq('id', id));
             await Promise.all(promises);
             loadAlbums();
         }});
