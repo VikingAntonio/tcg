@@ -171,8 +171,12 @@ $(document).ready(async function() {
             if (albumErr) throw albumErr;
 
             if (localAlbumSlots.length > 0) {
-                const slotsToUpsert = localAlbumSlots.map(s => { const { id, obtained, created_at, ...rest } = s; return rest; });
-                await _supabase.from('binder_card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
+                let slotsToUpsert = localAlbumSlots.map(s => { const { id, obtained, created_at, ...rest } = s; return rest; });
+                let { error: slotErr } = await _supabase.from('binder_card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
+                if (slotErr && slotErr.message && (slotErr.message.includes('cost_price') || slotErr.message.includes('column'))) {
+                    slotsToUpsert = slotsToUpsert.map(s => { const { cost_price, ...rest } = s; return rest; });
+                    await _supabase.from('binder_card_slots').upsert(slotsToUpsert, { onConflict: 'page_id,slot_index' });
+                }
             }
 
             Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
@@ -229,10 +233,21 @@ $(document).ready(async function() {
         };
 
         try {
-            const { data, error } = await _supabase
+            let { data, error } = await _supabase
                 .from('binder_card_slots')
                 .upsert([cardData], { onConflict: 'page_id,slot_index' })
                 .select();
+
+            if (error && error.message && (error.message.includes('cost_price') || error.message.includes('column'))) {
+                const fallbackData = { ...cardData };
+                delete fallbackData.cost_price;
+                const retry = await _supabase
+                    .from('binder_card_slots')
+                    .upsert([fallbackData], { onConflict: 'page_id,slot_index' })
+                    .select();
+                error = retry.error;
+                data = retry.data;
+            }
 
             if (error) throw error;
 
