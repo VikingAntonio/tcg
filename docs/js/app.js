@@ -2830,7 +2830,7 @@ function renderBinder(binder) {
 
                 if (slotData.image_url) {
                     const cardAlt = slotData.name || 'Carta';
-                    $slot.append(`<img src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" loading="lazy" decoding="async">`);
+                    $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
 
                     if (slotData.price) {
                         $slot.append(`<div style="position: absolute; bottom: 3px; right: 3px; background: rgba(0, 255, 136, 0.9); color: #000; font-weight: 900; font-size: 10px; padding: 2px 5px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5;">$${slotData.price}</div>`);
@@ -2902,6 +2902,12 @@ function renderBinder(binder) {
             duration: 800,
             cornerSize: isMobile ? 50 : 100,
             when: {
+                start: function(event, pageObject, corner) {
+                    if (!corner && !isManualPageTurn) {
+                        event.preventDefault();
+                        return;
+                    }
+                },
                 turning: function(e, page) {
                     $(this).addClass('is-turning');
                     loadPageImages($(this), page);
@@ -2923,14 +2929,32 @@ function renderBinder(binder) {
         resolve();
     };
 
+    // Pre-load first 4 pages
     loadPageImages($binderDiv, 1);
     loadPageImages($binderDiv, 2);
     loadPageImages($binderDiv, 3);
     loadPageImages($binderDiv, 4);
 
-    setTimeout(() => {
-        initTurn();
-    }, 100);
+    const $initialImages = $binderDiv.find('img').filter(function() {
+        return $(this).attr('src') && !$(this).attr('src').startsWith('data:image');
+    });
+
+    let loadedCount = 0;
+    if ($initialImages.length === 0) setTimeout(initTurn, 150);
+    else {
+        $initialImages.on('load error', function() {
+            loadedCount++;
+            if (loadedCount >= $initialImages.length) setTimeout(initTurn, 200);
+        });
+        // Safety timeout
+        setTimeout(initTurn, 3000);
+    }
+
+    // Si ya hay una búsqueda activa al terminar de cargar el binder, aplicarla
+    const currentQuery = $('#search-input').val().trim();
+    if (currentQuery) {
+        setTimeout(() => { filterContent(currentQuery); }, 2000);
+    }
     });
 }
 
