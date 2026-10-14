@@ -1,1 +1,1 @@
-Desactivé el centrado automático (autoCenter: false y noCenter: true) y eliminé los re-centrados (.turn('center')) al pasar páginas y al redimensionar en docs/js/app.js.
+El div izquierdo desaparecía porque calculateZ en turn.js no asignaba zIndex a la página estática visible al tocar la derecha; lo solucioné en docs/js/turn.js asignando j.pageZ[v] a todas las páginas de la vista actual y desactivando autoCenter en docs/js/app.js.
