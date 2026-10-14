@@ -1,0 +1,1 @@
+Desactivé el centrado automático (autoCenter: false y noCenter: true) y eliminé los re-centrados (.turn('center')) al pasar páginas y al redimensionar en docs/js/app.js.

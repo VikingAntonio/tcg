@@ -727,7 +727,7 @@ $(document).ready(async function() {
                     const $container = $album.closest('.public-album-item');
                     if ($container.length) {
                         const { width, height } = getAlbumSize($container);
-                        $album.turn('size', width, height).turn('center');
+                        $album.turn('size', width, height);
                     }
                 }
             });
@@ -3133,7 +3133,8 @@ function renderAlbum(album) {
         $albumDiv.turn({
             width: width,
             height: height,
-            autoCenter: true,
+            autoCenter: false,
+            noCenter: true,
             gradients: true,
             acceleration: true,
             display: 'double',
@@ -3157,12 +3158,12 @@ function renderAlbum(album) {
                 },
                 turned: function() {
                     $(this).removeClass('is-turning');
-                    // Forzamos el re-ajuste y centrado para asegurar que la hoja quede bien anclada
+                    // Forzamos el re-ajuste para asegurar que la hoja quede bien anclada sin desplazamientos
                     const $el = $(this);
                     const $container = $el.closest('.public-album-item');
                     const { width, height } = getAlbumSize($container);
                     setTimeout(() => {
-                        $el.turn('stop').turn('size', width, height).turn('center');
+                        $el.turn('stop').turn('size', width, height);
                     }, 50);
                 }
             }
@@ -4953,7 +4954,8 @@ function renderPublicInvAlbumMode($container) {
         $album.turn({
             width: width,
             height: height,
-            autoCenter: true,
+            autoCenter: false,
+            noCenter: true,
             display: 'double',
             acceleration: true,
             elevation: 50,
