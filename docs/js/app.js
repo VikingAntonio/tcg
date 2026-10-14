@@ -2905,17 +2905,6 @@ function renderBinder(binder) {
             duration: 800,
             cornerSize: isMobile ? 50 : 100,
             when: {
-                start: function(event, pageObject, corner) {
-                    const fData = $(this).data() ? $(this).data().f : null;
-                    if (fData && fData.status === 'hover') {
-                        event.preventDefault();
-                        return;
-                    }
-                    if (!corner && !window.isManualPageTurn) {
-                        event.preventDefault();
-                        return;
-                    }
-                },
                 turning: function(e, page) {
                     $(this).addClass('is-turning');
                     loadPageImages($(this), page);
