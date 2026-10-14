@@ -876,10 +876,17 @@
           g = a.length - 1,
           j = { pageZ: {}, partZ: {}, pageV: {} },
           k = function (a) {
-            a = h.turn("view", a);
-            a[0] && (j.pageV[a[0]] = !0);
-            a[1] && (j.pageV[a[1]] = !0);
+            var v = h.turn("view", a);
+            if (v[0]) {
+              j.pageV[v[0]] = !0;
+              if (j.pageZ[v[0]] === undefined) j.pageZ[v[0]] = f.totalPages - Math.abs(i - v[0]);
+            }
+            if (v[1]) {
+              j.pageV[v[1]] = !0;
+              if (j.pageZ[v[1]] === undefined) j.pageZ[v[1]] = f.totalPages - Math.abs(i - v[1]);
+            }
           };
+        k(i);
         for (b = 0; b <= g; b++)
           (c = a[b]),
             (d = f.pages[c].data().f.opts.next),
