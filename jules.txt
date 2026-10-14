@@ -1,2 +1,0 @@
-Supabase rechazaba el guardado de cartas porque la columna 'cost_price' no existia en la tabla 'binder_card_slots' de la base de datos.
-En public.html (app.js) faltaba resolver el ID de tienda por URL y agrupar la consulta de cartas de todas las hojas del binder.
