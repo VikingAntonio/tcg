@@ -2894,7 +2894,7 @@ function renderBinder(binder) {
         $binderDiv.turn({
             width: width,
             height: height,
-            autoCenter: true,
+            autoCenter: false,
             gradients: true,
             acceleration: true,
             display: 'double',
@@ -2903,6 +2903,11 @@ function renderBinder(binder) {
             cornerSize: isMobile ? 50 : 100,
             when: {
                 start: function(event, pageObject, corner) {
+                    const fData = $(this).data() ? $(this).data().f : null;
+                    if (fData && fData.status === 'hover') {
+                        event.preventDefault();
+                        return;
+                    }
                     if (!corner && !isManualPageTurn) {
                         event.preventDefault();
                         return;
@@ -2921,7 +2926,7 @@ function renderBinder(binder) {
                     const $container = $el.closest('.public-album-item');
                     const { width, height } = getAlbumSize($container);
                     setTimeout(() => {
-                        $el.turn('stop').turn('size', width, height).turn('center');
+                        $el.turn('stop').turn('size', width, height);
                     }, 50);
                 }
             }
