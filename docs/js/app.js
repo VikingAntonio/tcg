@@ -2760,7 +2760,7 @@ function renderBinder(binder) {
     if (!pages) pages = [];
 
     const coverImg = binder.cover_image_url;
-    const coverColor = binder.cover_color || '#1a1a1a';
+    const coverColor = binder.cover_color || 'transparent';
     const coverStyle = 'style-cosmic';
     let pageCount = 1;
 
@@ -2872,7 +2872,7 @@ function renderBinder(binder) {
 
     pageCount++;
     const backImg = binder.back_image_url;
-    const backColor = binder.back_color || '#1a1a1a';
+    const backColor = binder.back_color || 'transparent';
 
     if (backImg) {
         $binderDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);
@@ -3012,7 +3012,7 @@ function renderAlbum(album) {
     if (!pages) pages = [];
 
     const coverImg = album.cover_image_url;
-    const coverColor = album.cover_color || '#1a1a1a';
+    const coverColor = album.cover_color || 'transparent';
     const coverStyle = 'style-cosmic';
     let pageCount = 1;
 
@@ -3107,7 +3107,7 @@ function renderAlbum(album) {
     // Añadir contraportada siempre
     pageCount++;
     const backImg = album.back_image_url;
-    const backColor = album.back_color || '#1a1a1a';
+    const backColor = album.back_color || 'transparent';
 
     if (backImg) {
         $albumDiv.append(`<div class="page album-page cover-page" data-page-num="${pageCount}"><img src="${backImg}"></div>`);

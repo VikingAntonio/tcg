@@ -227,7 +227,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #1a1a1a;
+    background: transparent;
 }
 
 /* ===== Tamaños responsivos del álbum (Configuración del Test) ===== */
@@ -244,7 +244,7 @@ body {
     backface-visibility: hidden;
     transform: translate3d(0,0,0);
     transform-style: preserve-3d;
-    background: #1a1a1a;
+    background: transparent;
 }
 
 
@@ -255,7 +255,7 @@ body {
     box-sizing: border-box !important;
     position: absolute !important;
     z-index: 10;
-    background: #1a1a1a;
+    background: transparent;
 }
 
 .page {
@@ -5598,7 +5598,7 @@ body.focus-mode-active .event-card {
     justify-content: center;
     position: relative;
     overflow: hidden;
-    background-color: #1a1a1a;
+    background-color: transparent;
 }
 
 .textured-cover h2,

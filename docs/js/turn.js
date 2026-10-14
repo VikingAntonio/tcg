@@ -1108,8 +1108,18 @@
         }
         return !a.corner || -1 == f.inArray(a.corner, h) ? !1 : a;
       },
+      _pageOffset: function () {
+        var b = this.data().f,
+          turn = b.opts.turn,
+          turnOffset = turn.offset(),
+          pos = g._pageSize.call(turn, b.opts.page, !0);
+        return {
+          top: turnOffset.top + (pos.top || 0),
+          left: turnOffset.left + (pos.left !== "auto" && pos.left !== undefined ? pos.left : (turn.width() - pos.width))
+        };
+      },
       _isIArea: function (a) {
-        var b = this.data().f.parent.offset(),
+        var b = i._pageOffset.call(this),
           a = t && a.originalEvent ? a.originalEvent.touches[0] : a;
         return i._cornerActivated.call(this, {
           x: a.pageX - b.left,
@@ -1735,7 +1745,7 @@
         var b = this.data().f;
         if (!b.disabled)
           if (((a = t ? a.originalEvent.touches : [a]), b.corner)) {
-            var c = b.parent.offset();
+            var c = i._pageOffset.call(this);
             b.corner.x = a[0].pageX - c.left;
             b.corner.y = a[0].pageY - c.top;
             i._showFoldedPage.call(this, b.corner);
