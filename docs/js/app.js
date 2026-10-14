@@ -1,6 +1,7 @@
 let isDragging = false;
 let isMoving = false;
 let isManualPageTurn = false;
+window.isManualPageTurn = false;
 let startX, startY;
 
 // applyFoilToElement is now globally defined in utils.js
@@ -833,9 +834,10 @@ function filterContent(query) {
 
                     if (!isAlreadyVisible) {
                         isManualPageTurn = true;
+                        window.isManualPageTurn = true;
                         $turnAlbum.turn('page', firstMatchPage);
                         // Aumentamos el tiempo del flag para asegurar que termine la animación
-                        setTimeout(() => { isManualPageTurn = false; }, 1500);
+                        setTimeout(() => { isManualPageTurn = false; window.isManualPageTurn = false; }, 1500);
                     }
                 }
             }
@@ -2895,6 +2897,7 @@ function renderBinder(binder) {
             width: width,
             height: height,
             autoCenter: false,
+            noCenter: true,
             gradients: true,
             acceleration: true,
             display: 'double',
@@ -2908,7 +2911,7 @@ function renderBinder(binder) {
                         event.preventDefault();
                         return;
                     }
-                    if (!corner && !isManualPageTurn) {
+                    if (!corner && !window.isManualPageTurn) {
                         event.preventDefault();
                         return;
                     }
