@@ -256,6 +256,8 @@ body {
     position: absolute !important;
     z-index: 10;
     background: transparent;
+    transform-style: flat !important;
+    -webkit-transform-style: flat !important;
 }
 
 .page {
@@ -272,6 +274,23 @@ body {
     transform: translate3d(0,0,0);
     transform-style: preserve-3d;
     will-change: transform;
+}
+
+/* Ensure 2D flat composition for album pages to prevent child elements shifting in 3D during page flips */
+.album .page,
+.album .grid-container,
+.album .card-slot {
+    transform-style: flat !important;
+    -webkit-transform-style: flat !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+}
+
+/* Disable translateY/scale hover transforms on card slots inside the album so they stay locked in place */
+.album .card-slot:hover {
+    transform: none !important;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
 }
 
 
@@ -2762,9 +2781,11 @@ input:checked + .slider:before {
 .album.is-turning .card-slot,
 .album.is-turning .zoom-btn,
 .album.is-turning .page,
+.album.is-turning .grid-container,
 .album .page-wrapper {
     transition: none !important;
     animation: none !important;
+    pointer-events: none !important;
 }
 
 /* Shading for missing/obtained cards */

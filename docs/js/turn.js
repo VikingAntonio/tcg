@@ -1257,7 +1257,7 @@
               a.wrapper = f("<div/>", l(0, 0, this.css("z-index")))
                 .appendTo(c)
                 .prepend(this);
-              a.fwrapper = f("<div/>", l(c.offset().top, c.offset().left))
+              a.fwrapper = f("<div/>", l(c[0].offsetTop, c[0].offsetLeft))
                 .hide()
                 .appendTo(a.fparent);
               a.fpage = f("<div/>", l(0, 0, 0, "visible"))
