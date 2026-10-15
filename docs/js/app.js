@@ -2914,12 +2914,6 @@ function renderBinder(binder) {
                 },
                 turned: function() {
                     $(this).removeClass('is-turning');
-                    const $el = $(this);
-                    const $container = $el.closest('.public-album-item');
-                    const { width, height } = getAlbumSize($container);
-                    setTimeout(() => {
-                        $el.turn('stop').turn('size', width, height);
-                    }, 50);
                 }
             }
         });
@@ -3158,13 +3152,6 @@ function renderAlbum(album) {
                 },
                 turned: function() {
                     $(this).removeClass('is-turning');
-                    // Forzamos el re-ajuste para asegurar que la hoja quede bien anclada sin desplazamientos
-                    const $el = $(this);
-                    const $container = $el.closest('.public-album-item');
-                    const { width, height } = getAlbumSize($container);
-                    setTimeout(() => {
-                        $el.turn('stop').turn('size', width, height);
-                    }, 50);
                 }
             }
         });
@@ -4957,6 +4944,7 @@ function renderPublicInvAlbumMode($container) {
             autoCenter: false,
             noCenter: true,
             display: 'double',
+            gradients: false,
             acceleration: true,
             elevation: 50,
             duration: 800
