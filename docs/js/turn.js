@@ -1738,10 +1738,16 @@
             b.corner.y = a[0].pageY - c.top;
             i._showFoldedPage.call(this, b.corner);
           } else if (b.hover && !this.data().effect && this.is(":visible")) {
-            if ("hover" == b.status) {
-              b.status = "";
-              i.hideFoldedPage.call(this, !0);
-            }
+            if ((a = i._isIArea.call(this, a[0]))) {
+              if ("hover" == b.status && b.point && b.point.corner == a.corner)
+                return;
+              c = i._c.call(this, a.corner, b.opts.cornerSize / 2);
+              b.status = "hover";
+              a = { corner: a.corner, x: c.x, y: c.y };
+              i._showFoldedPage.call(this, a, !0);
+            } else
+              "hover" == b.status &&
+                ((b.status = ""), i.hideFoldedPage.call(this, !0));
           }
       },
       _eventEnd: function () {
