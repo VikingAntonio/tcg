@@ -545,6 +545,7 @@ function renderAlbumMode($container) {
             height: height,
             autoCenter: true,
             display: 'double',
+            gradients: false,
             acceleration: true,
             elevation: 50,
             duration: 800,
