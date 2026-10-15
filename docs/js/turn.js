@@ -1209,10 +1209,8 @@
               i._backGradient.call(this) &&
                 b.bshadow.css({ width: d, height: e })),
               b.parent.is(":visible") &&
-                ((c = C(b.parent[0])),
-                b.fwrapper.css({ top: c.top, left: c.left }),
-                (c = C(b.opts.turn[0])),
-                b.fparent.css({ top: -c.top, left: -c.left })),
+                (b.fparent.css({ top: 0, left: 0 }),
+                b.fwrapper.css({ top: b.parent[0].offsetTop, left: b.parent[0].offsetLeft })),
               this.flip("z", b.opts["z-index"]);
         }
       },
