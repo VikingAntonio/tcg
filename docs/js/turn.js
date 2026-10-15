@@ -1108,18 +1108,8 @@
         }
         return !a.corner || -1 == f.inArray(a.corner, h) ? !1 : a;
       },
-      _pageOffset: function () {
-        var b = this.data().f,
-          turn = b.opts.turn,
-          turnOffset = turn.offset(),
-          pos = g._pageSize.call(turn, b.opts.page, !0);
-        return {
-          top: turnOffset.top + (pos.top || 0),
-          left: turnOffset.left + (pos.left !== "auto" && pos.left !== undefined ? pos.left : (turn.width() - pos.width))
-        };
-      },
       _isIArea: function (a) {
-        var b = i._pageOffset.call(this),
+        var b = this.data().f.parent.offset(),
           a = t && a.originalEvent ? a.originalEvent.touches[0] : a;
         return i._cornerActivated.call(this, {
           x: a.pageX - b.left,
@@ -1459,13 +1449,14 @@
                 return !0;
               };
             f = function (a, d, f, g) {
-              var m = ((e - Q) * f[0]) / 100,
+              var k = ["0", "auto"],
+                m = ((e - Q) * f[0]) / 100,
                 l = ((h - Q) * f[1]) / 100,
                 d = {
-                  left: 0,
-                  top: 0,
-                  right: "auto",
-                  bottom: "auto",
+                  left: k[d[0]],
+                  top: k[d[1]],
+                  right: k[d[2]],
+                  bottom: k[d[3]],
                 },
                 k = {},
                 n = 90 != g && -90 != g ? (B ? -1 : 1) : 0,
@@ -1488,9 +1479,11 @@
                 E(-a.x + u.x + m, -a.y + u.y + l, N) + F(-g),
                 r
               );
-              if (c.opts.gradients) {
-                f[0] && (z.x = 100 - z.x);
-                f[1] && (z.y = 100 - z.y);
+              c.opts.gradients &&
+                (f[0] && (z.x = 100 - z.x),
+                f[1] && (z.y = 100 - z.y),
+                (k["box-shadow"] = "0 0 20px rgba(0,0,0," + 0.5 * C + ")"),
+                I.css(k),
                 O(
                   b.ashadow,
                   j(B ? 100 : 0, D ? 0 : 100),
@@ -1502,7 +1495,7 @@
                   ],
                   3,
                   0
-                );
+                ),
                 i._backGradient.call(t) &&
                   O(
                     b.bshadow,
@@ -1514,8 +1507,7 @@
                       [1, "rgba(0,0,0,0)"],
                     ],
                     3
-                  );
-              }
+                  ));
             };
             switch (a.corner) {
               case "tl":
@@ -1743,7 +1735,7 @@
         var b = this.data().f;
         if (!b.disabled)
           if (((a = t ? a.originalEvent.touches : [a]), b.corner)) {
-            var c = i._pageOffset.call(this);
+            var c = b.parent.offset();
             b.corner.x = a[0].pageX - c.left;
             b.corner.y = a[0].pageY - c.top;
             i._showFoldedPage.call(this, b.corner);

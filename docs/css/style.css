@@ -6437,17 +6437,9 @@ body.modal-open #decks-view.active {
     }
 
     /* Ensure default PC album dimensions match JS config */
-    .album {
-        width: 540px !important;
-        height: 378px !important;
-    }
     #binders-container .album {
         margin-left: 0 !important;
         margin-right: 0 !important;
-    }
-    .page {
-        width: 270px !important;
-        height: 378px !important;
     }
 }
 
