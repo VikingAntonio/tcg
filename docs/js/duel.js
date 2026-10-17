@@ -549,10 +549,14 @@ function renderAllCards() {
             handActionOverlayHTML = `
                 <div class="hand-card-actions">
                     <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}">Invocar</button>
-                    ${state.layout === 'pokemon' ?
-                        `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
-                         <button class="hand-action-btn btn-pokemon-field" data-instance-id="${card.instanceId}">Field</button>` :
-                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
+                    ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ?
+                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>
+                         <button class="hand-action-btn btn-defense" data-instance-id="${card.instanceId}">DEF</button>` :
+                        (state.layout === 'pokemon' ?
+                            `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
+                             <button class="hand-action-btn btn-pokemon-field" data-instance-id="${card.instanceId}">Field</button>` :
+                            `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
+                        )
                     }
                     <button class="hand-action-btn btn-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="hand-action-btn btn-effect" data-instance-id="${card.instanceId}">Efecto</button>
@@ -574,8 +578,8 @@ function renderAllCards() {
                 <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
                     <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
                     <button class="field-action-btn btn-field-direct" data-instance-id="${card.instanceId}">Atk Directo</button>
-                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Voltear</button>
-                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">Girar</button>
+                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Set</button>
+                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">DEF</button>
                     <button class="field-action-btn btn-field-control" data-instance-id="${card.instanceId}">Control</button>
                     <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
@@ -771,6 +775,8 @@ function bindCardDragEvents() {
             startGraphicalTargeting(cardObj, "summon");
         } else if ($(this).hasClass("btn-set")) {
             startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-defense")) {
+            startGraphicalTargeting(cardObj, "defense");
         } else if ($(this).hasClass("btn-attach")) {
             // Start Attachment Targeting mode
             startAttachmentTargeting(cardObj);
@@ -1957,6 +1963,7 @@ function openExtraDeckModal(playerKey) {
 
             const actionButtonsHTML = isMyExtraDeck ? `
                 <button class="extra-card-action-btn btn-extra-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ? `<button class="extra-card-action-btn btn-extra-defense" data-instance-id="${card.instanceId}">DEF</button>` : ''}
                 <button class="extra-card-action-btn btn-extra-xyz" data-instance-id="${card.instanceId}" style="background: #ffd32d; color: black; box-shadow: 0 4px 10px rgba(255, 211, 45, 0.5);">XYZ</button>
                 <button class="extra-card-action-btn btn-extra-view" data-instance-id="${card.instanceId}" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff;">Ver carta</button>
             ` : (isMasked ? "" : `
@@ -1984,6 +1991,16 @@ function openExtraDeckModal(playerKey) {
         if (cardObj) {
             $("#extra-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "summon");
+        }
+    });
+
+    // Click DEF button to start defense targeting mode on the field
+    $(".btn-extra-defense").off("click").on("click", function() {
+        const instId = $(this).data("instance-id");
+        const cardObj = state.cards.find(c => c.instanceId === instId);
+        if (cardObj) {
+            $("#extra-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "defense");
         }
     });
 
@@ -2764,6 +2781,7 @@ function openSearchModal(playerKey) {
                             <button class="pile-card-action-btn btn-search-hand" data-instance-id="${card.instanceId}">Mano</button>
                             <button class="pile-card-action-btn btn-search-summon" data-instance-id="${card.instanceId}">Invocar</button>
                             <button class="pile-card-action-btn btn-search-set" data-instance-id="${card.instanceId}">Set</button>
+                            ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ? `<button class="pile-card-action-btn btn-search-defense" data-instance-id="${card.instanceId}">DEF</button>` : ''}
                                     <button class="pile-card-action-btn btn-search-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-search-grave" data-instance-id="${card.instanceId}">Grave</button>
                             <button class="pile-card-action-btn btn-search-banish" data-instance-id="${card.instanceId}">Remover</button>
@@ -2820,6 +2838,9 @@ function openSearchModal(playerKey) {
         } else if ($(this).hasClass("btn-search-set")) {
             $("#search-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-search-defense")) {
+            $("#search-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "defense");
         } else if ($(this).hasClass("btn-search-attach")) {
             $("#search-overlay").fadeOut(200);
             startAttachmentTargeting(cardObj);
@@ -2879,6 +2900,7 @@ function openPileModal(playerKey, pileType) {
                         <div class="pile-card-menu">
                             <button class="pile-card-action-btn btn-pile-summon" data-instance-id="${card.instanceId}">Invocar</button>
                             <button class="pile-card-action-btn btn-pile-set" data-instance-id="${card.instanceId}">Set</button>
+                            ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ? `<button class="pile-card-action-btn btn-pile-defense" data-instance-id="${card.instanceId}">DEF</button>` : ''}
                             <button class="pile-card-action-btn btn-pile-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                             <button class="pile-card-action-btn btn-pile-hand" data-instance-id="${card.instanceId}">Mano</button>
                             <button class="pile-card-action-btn btn-pile-deck" data-instance-id="${card.instanceId}">Deck</button>
@@ -2925,6 +2947,9 @@ function openPileModal(playerKey, pileType) {
         } else if ($(this).hasClass("btn-pile-set")) {
             $("#pile-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "set");
+        } else if ($(this).hasClass("btn-pile-defense")) {
+            $("#pile-overlay").fadeOut(200);
+            startGraphicalTargeting(cardObj, "defense");
         } else if ($(this).hasClass("btn-pile-attach")) {
             $("#pile-overlay").fadeOut(200);
             startAttachmentTargeting(cardObj);
