@@ -203,6 +203,22 @@
                 </div>
             </div>
 
+            <!-- Binders Configuration Card -->
+            <div class="binders-config-card" style="width: 100%; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 24px; padding: 24px; backdrop-filter: blur(16px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-book" style="font-size: 1.5rem; color: #38bdf8;"></i>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #f8fafc;">Límite de Binders a Mostrar</h3>
+                        <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">Elige cuántos Binders deseas mostrar en tu sitio web (por ejemplo, si tienes 10 configurados pero solo quieres mostrar 6).</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <input type="number" id="input-widgets-binders-limit" min="1" max="100" value="6" placeholder="Ej: 6" style="width: 120px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px 16px; color: #f8fafc; font-family: 'Montserrat', sans-serif; font-size: 0.9rem; text-align: center; outline: none;">
+                    <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Binders máximo a mostrar en el widget</span>
+                </div>
+            </div>
+
             <div class="widgets-buttons-wrapper">
                 <button class="btn-widget-copy" onclick="copyWidgetSnippet('chatbot')">Chatbot</button>
                 <button class="btn-widget-copy" onclick="copyWidgetSnippet('binders')">Binders</button>
@@ -244,6 +260,14 @@
             $(document).on('click', function(e) {
                 if (!$(e.target).closest('.user-menu-container').length) {
                     $('#user-dropdown').removeClass('active');
+                }
+            });
+
+            // Binders limit change listener
+            $('#input-widgets-binders-limit').on('input change', function() {
+                if (currentUserId) {
+                    const domainVal = $('#input-widgets-domain').val().trim();
+                    buildUserSnippets(currentUserId, domainVal);
                 }
             });
 
@@ -475,8 +499,10 @@
                 domainName = raw.toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].split(':')[0].trim();
             }
 
+            const binderLimit = parseInt($('#input-widgets-binders-limit').val()) || 6;
+
             window.widgetSnippets.chatbot = `<!-- VikingTCG Chatbot Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-chatbot domain="${domainName}"></vikingdev-chatbot>`;
-            window.widgetSnippets.binders = `<!-- VikingTCG Binder Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-binder domain="${domainName}"></vikingdev-binder>`;
+            window.widgetSnippets.binders = `<!-- VikingTCG Binder Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-binders domain="${domainName}" limit="${binderLimit}"></vikingdev-binders>`;
             window.widgetSnippets.subastas = `<!-- VikingTCG Auctions Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-subastas domain="${domainName}"></vikingdev-subastas>`;
             window.widgetSnippets.claims = `<!-- VikingTCG Claims Widget -->\n<script src="https://vikingtcg.xyz/js/viking-widget.js" defer><\/script>\n<vikingdev-claims domain="${domainName}"></vikingdev-claims>`;
         }
