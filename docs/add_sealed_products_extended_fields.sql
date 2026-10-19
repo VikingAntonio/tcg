@@ -5,6 +5,8 @@
 -- nuevos campos solicitados para la gestión de productos sellados.
 
 ALTER TABLE public.sealed_products
+  ADD COLUMN IF NOT EXISTS stock integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS quantity integer DEFAULT 0,
   ADD COLUMN IF NOT EXISTS status text DEFAULT 'Disponible',
   ADD COLUMN IF NOT EXISTS discount text DEFAULT '',
   ADD COLUMN IF NOT EXISTS cost_price text DEFAULT '',

@@ -154,6 +154,12 @@
             border-radius: 4px;
         }
 
+        .sheet-table-container.editing-mode {
+            border: 2px solid #00d2ff !important;
+            box-shadow: 0 0 25px rgba(0, 210, 255, 0.5) !important;
+            transition: all 0.3s ease;
+        }
+
         .sheet-table {
             width: 100%;
             border-collapse: separate;
@@ -892,6 +898,9 @@
                 <div class="header-action-group">
                     <button id="btn-toggle-admin-filters" class="btn-filter-toggle">
                         <i class="fas fa-filter"></i> Filtros
+                    </button>
+                    <button id="btn-toggle-edit-mode" class="btn-filter-toggle" style="background: rgba(0, 210, 255, 0.15); border-color: #00d2ff; color: #00d2ff;">
+                        <i class="fas fa-edit"></i> EDITAR TABLA
                     </button>
                     <button id="btn-open-add-modal" class="btn-add-primary">
                         <i class="fas fa-plus-circle"></i> AÑADIR PRODUCTO
