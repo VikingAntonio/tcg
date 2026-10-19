@@ -2069,6 +2069,10 @@ function loadPublicBinders(userId) {
 
         if (binders) {
             binders = binders.filter(b => b.is_public !== false);
+            const limitParam = parseInt(params.get('limit') || params.get('max'));
+            if (!isNaN(limitParam) && limitParam > 0) {
+                binders = binders.slice(0, limitParam);
+            }
             window.currentBinders = binders;
         }
 

@@ -1055,7 +1055,7 @@
         }
 
         static get observedAttributes() {
-            return ['domain', 'user', 'album-id', 'albumid'];
+            return ['domain', 'user', 'album-id', 'albumid', 'binder-id', 'binderid', 'limit', 'max'];
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
@@ -1072,9 +1072,10 @@
             const attrDomain = this.getAttribute('domain') || window.location.hostname || '';
             const targetDomain = cleanDomain(attrDomain);
             const userAttr = this.getAttribute('user');
-            const albumId = this.getAttribute('album-id') || this.getAttribute('albumid') || '';
+            const albumId = this.getAttribute('album-id') || this.getAttribute('albumid') || this.getAttribute('binder-id') || this.getAttribute('binderid') || '';
+            const limit = this.getAttribute('limit') || this.getAttribute('max') || '';
 
-            console.log('[VikingdevBinder] Inicializando binder custom label para dominio:', targetDomain, '| user:', userAttr, '| album:', albumId);
+            console.log('[VikingdevBinder] Inicializando binder custom label para dominio:', targetDomain, '| user:', userAttr, '| album:', albumId, '| limit:', limit);
 
             if (typeof window.supabase === 'undefined') {
                 await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
@@ -1189,7 +1190,7 @@
                 userIdentifier = 'vikingtcg';
             }
 
-            this.renderBinder(userIdentifier, albumId);
+            this.renderBinder(userIdentifier, albumId, limit);
         }
 
         renderLockedBlock(title, msg) {
@@ -1201,16 +1202,19 @@
             `;
         }
 
-        renderBinder(userIdentifier, albumId) {
+        renderBinder(userIdentifier, albumId, limit) {
             const baseUrl = 'https://vikingtcg.xyz/public.html';
-            let embedUrl = `${baseUrl}?id=${encodeURIComponent(userIdentifier)}&view=albums&embed=true`;
+            let embedUrl = `${baseUrl}?id=${encodeURIComponent(userIdentifier)}&view=binders&embed=true`;
             if (albumId) {
                 embedUrl += `&albumId=${encodeURIComponent(albumId)}`;
+            }
+            if (limit) {
+                embedUrl += `&limit=${encodeURIComponent(limit)}`;
             }
 
             this.innerHTML = `
                 <style>
-                    vikingdev-binder {
+                    vikingdev-binder, vikingdev-binders {
                         display: block !important;
                         width: 100%;
                         max-width: 1100px;
@@ -1257,6 +1261,9 @@
 
     if (!customElements.get('vikingdev-binder')) {
         customElements.define('vikingdev-binder', VikingdevBinderElement);
+    }
+    if (!customElements.get('vikingdev-binders')) {
+        customElements.define('vikingdev-binders', VikingdevBinderElement);
     }
 
     class VikingdevSubastasElement extends HTMLElement {
