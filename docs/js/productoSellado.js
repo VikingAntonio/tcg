@@ -174,7 +174,6 @@ async function loadProducts() {
         if (error) throw error;
 
         allAdminProducts = products || [];
-        updateMetricsSummary(allAdminProducts);
         applyAdminFiltersAndSort();
     } catch (err) {
         console.error("Load products error:", err);
@@ -213,25 +212,15 @@ function calculateEstimatedProfit() {
     }
 }
 
-function updateMetricsSummary(products) {
-    const total = products.length;
-    const publicCount = products.filter(p => p.is_public !== false).length;
-    let totalStock = 0;
-    let totalValue = 0;
-
-    products.forEach(p => {
-        const stockVal = parseInt(p.stock !== undefined ? p.stock : (p.quantity || 1)) || 0;
-        totalStock += stockVal;
-
-        const priceStr = (p.price || "0").toString().replace(/[^0-9.,]/g, '').replace(',', '.');
-        const numPrice = parseFloat(priceStr) || 0;
-        totalValue += (numPrice * (stockVal || 1));
-    });
-
-    $('#stat-total-products').text(total);
-    $('#stat-public-products').text(publicCount);
-    $('#stat-total-stock').text(totalStock);
-    $('#stat-total-value').text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+function getProductStock(product) {
+    if (!product) return 0;
+    if (product.stock !== undefined && product.stock !== null && product.stock !== '') {
+        return parseInt(product.stock) || 0;
+    }
+    if (product.quantity !== undefined && product.quantity !== null && product.quantity !== '') {
+        return parseInt(product.quantity) || 0;
+    }
+    return 0;
 }
 
 function calcProductProfit(priceVal, discountVal, costVal) {
@@ -288,9 +277,9 @@ function applyAdminFiltersAndSort() {
     // Stock Filter
     const stockFilter = $('#admin-filter-stock').val();
     if (stockFilter === 'in_stock') {
-        filtered = filtered.filter(p => (p.stock !== undefined ? parseInt(p.stock) : (parseInt(p.quantity) || 1)) > 0);
+        filtered = filtered.filter(p => getProductStock(p) > 0);
     } else if (stockFilter === 'out_of_stock') {
-        filtered = filtered.filter(p => (p.stock !== undefined ? parseInt(p.stock) : (parseInt(p.quantity) || 1)) <= 0);
+        filtered = filtered.filter(p => getProductStock(p) <= 0);
     }
 
     // Sort
@@ -310,6 +299,7 @@ function applyAdminFiltersAndSort() {
     renderAdminProductTable(filtered);
 }
 
+window.renderAdminProductTable = renderAdminProductTable;
 function renderAdminProductTable(products) {
     const $tbody = $('#product-table-body');
     $tbody.empty();
@@ -328,7 +318,7 @@ function renderAdminProductTable(products) {
 
     products.forEach(product => {
         const isPublic = product.is_public !== false;
-        const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 0);
+        const stockCount = getProductStock(product);
         const costPrice = product.cost_price || product.cost || '';
         const discountVal = product.discount || '';
         const priceVal = product.price || '';
@@ -471,6 +461,12 @@ function renderAdminProductTable(products) {
 
 async function updateInlineProductField(product, updates) {
     try {
+        if (updates.stock !== undefined && updates.quantity === undefined) {
+            updates.quantity = updates.stock;
+        } else if (updates.quantity !== undefined && updates.stock === undefined) {
+            updates.stock = updates.quantity;
+        }
+
         let res = await _supabase.from('sealed_products').update(updates).eq('id', product.id);
         if (res.error) {
             // Fallback try without quantity or extended profit fields if schema errors occur
@@ -498,7 +494,6 @@ async function updateInlineProductField(product, updates) {
 
         Object.assign(product, updates);
         if (updates.stock !== undefined) product.quantity = updates.stock;
-        updateMetricsSummary(allAdminProducts);
 
         Swal.fire({
             title: '¡Guardado!',
@@ -517,7 +512,7 @@ async function updateInlineProductField(product, updates) {
 
 
 async function sellOneUnit(product) {
-    const currentStock = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
+    const currentStock = getProductStock(product);
     if (currentStock <= 0) {
         Swal.fire({
             title: 'Sin Stock',
@@ -556,7 +551,6 @@ async function sellOneUnit(product) {
             showConfirmButton: false
         });
 
-        updateMetricsSummary(allAdminProducts);
         applyAdminFiltersAndSort();
     } catch (e) {
         Swal.fire('Error', 'No se pudo actualizar el stock: ' + e.message, 'error');
@@ -890,7 +884,7 @@ function editProduct(product) {
     $('#product-cost-price').val(product.cost_price || product.cost || '');
     $('#product-status').val(product.status || 'Disponible');
     $('#product-description').val(product.description || '');
-    $('#product-stock').val(product.stock !== undefined && product.stock !== null ? product.stock : (product.quantity !== undefined ? product.quantity : ''));
+    $('#product-stock').val(getProductStock(product));
     $('#product-per-person-limit').val(product.per_person_limit !== undefined && product.per_person_limit !== null ? product.per_person_limit : '');
     $('#product-tcg').val(product.tcg || 'yugioh');
     $('#product-public').prop('checked', product.is_public !== false);
@@ -943,7 +937,6 @@ async function updateVisibility(id, isPublic) {
         // Update local object & metrics
         const prod = allAdminProducts.find(p => p.id == id);
         if (prod) prod.is_public = isPublic;
-        updateMetricsSummary(allAdminProducts);
     } catch (err) {
         Swal.fire('Error', 'No se pudo actualizar la visibilidad', 'error');
     }
