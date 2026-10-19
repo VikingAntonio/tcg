@@ -1,16 +1,7 @@
 let currentUser = null;
 let allAdminProducts = [];
-let currentViewMode = localStorage.getItem('sealed_view_mode') || 'grid';
 
 $(document).ready(async function() {
-    updateViewModeUI();
-
-    $('#btn-toggle-view-mode').click(function() {
-        currentViewMode = currentViewMode === 'grid' ? 'table' : 'grid';
-        localStorage.setItem('sealed_view_mode', currentViewMode);
-        updateViewModeUI();
-        applyAdminFiltersAndSort();
-    });
     console.log("Initializing Sealed Products Module...");
     try {
         await checkSession();
@@ -243,16 +234,6 @@ function updateMetricsSummary(products) {
     $('#stat-total-value').text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 }
 
-function updateViewModeUI() {
-    if (currentViewMode === 'table') {
-        $('#view-mode-label').text('Vista Tarjetas');
-        $('#btn-toggle-view-mode i').attr('class', 'fas fa-th-large');
-    } else {
-        $('#view-mode-label').text('Vista Tabla');
-        $('#btn-toggle-view-mode i').attr('class', 'fas fa-table');
-    }
-}
-
 function calcProductProfit(priceVal, discountVal, costVal) {
     const parseVal = (val) => {
         if (!val) return 0;
@@ -325,15 +306,8 @@ function applyAdminFiltersAndSort() {
         return new Date(b.created_at || 0) - new Date(a.created_at || 0);
     });
 
-    if (currentViewMode === 'table') {
-        $('#product-list').hide();
-        $('#product-table-wrapper').show();
-        renderAdminProductTable(filtered);
-    } else {
-        $('#product-table-wrapper').hide();
-        $('#product-list').show();
-        renderAdminProductGrid(filtered);
-    }
+    $('#product-table-wrapper').show();
+    renderAdminProductTable(filtered);
 }
 
 function renderAdminProductTable(products) {
@@ -541,112 +515,6 @@ async function updateInlineProductField(product, updates) {
     }
 }
 
-function renderAdminProductGrid(products) {
-    const $container = $('#product-list');
-    $container.empty();
-
-    if (!products || products.length === 0) {
-        $container.html(`
-            <div class="empty" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #64748b; background: rgba(15, 23, 36, 0.4); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.08);">
-                <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.4;"></i>
-                <p style="font-size: 1.1rem; font-weight: 700; color: #94a3b8; margin: 0;">No se encontraron productos en el inventario.</p>
-            </div>
-        `);
-        return;
-    }
-
-    products.forEach(product => {
-        const isPublic = product.is_public !== false;
-        const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
-        const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
-        const statusLabel = product.status || (isOutOfStock ? 'Agotado' : 'Disponible');
-
-        let statusBg = 'rgba(0, 255, 136, 0.15)';
-        let statusBorder = 'rgba(0, 255, 136, 0.3)';
-        let statusColor = '#00ff88';
-
-        if (statusLabel === 'Agotado') {
-            statusBg = 'rgba(255, 71, 87, 0.15)';
-            statusBorder = 'rgba(255, 71, 87, 0.3)';
-            statusColor = '#ff4757';
-        } else if (statusLabel === 'Poco Stock') {
-            statusBg = 'rgba(245, 175, 25, 0.15)';
-            statusBorder = 'rgba(245, 175, 25, 0.3)';
-            statusColor = '#f5af19';
-        } else if (statusLabel === 'En Camino') {
-            statusBg = 'rgba(155, 89, 182, 0.15)';
-            statusBorder = 'rgba(155, 89, 182, 0.3)';
-            statusColor = '#9b59b6';
-        }
-
-        const costPrice = product.cost_price || product.cost || '';
-        const discountVal = product.discount || '';
-        const profitVal = product.estimated_profit || product.profit || '';
-
-        const $card = $(`
-            <div class="product-ecom-card">
-                <div class="card-img-box">
-                    <span class="badge-tcg-pill">${(product.tcg || 'Otro').toUpperCase()}</span>
-                    <span class="badge-stock-pill" style="background: ${statusBg}; border-color: ${statusBorder}; color: ${statusColor};">
-                        ${statusLabel} (Stock: ${stockCount})
-                    </span>
-                    <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${product.name}">
-                </div>
-
-                <div class="card-content-body">
-                    <div>
-                        <h3 class="card-title">${product.name}</h3>
-                        ${product.description ? `<p class="card-desc">${product.description}</p>` : ''}
-                    </div>
-
-                    <div class="card-price-row" style="flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            <span style="font-size: 0.72rem; color: #94a3b8; display: block; font-weight: 700;">PRECIO VENTA</span>
-                            <span class="card-price-val">${product.price || 'Consultar'}</span>
-                            ${discountVal ? `<span style="font-size: 0.75rem; color: #f5af19; font-weight: 800; margin-left: 6px;">Desc: ${discountVal}</span>` : ''}
-                        </div>
-                        ${costPrice ? `
-                            <div style="text-align: right;">
-                                <span style="font-size: 0.68rem; color: #64748b; display: block;">COSTO: $${costPrice}</span>
-                                ${profitVal ? `<span style="font-size: 0.75rem; color: #00ff88; font-weight: 800; display: block;">GANANCIA: ${profitVal}</span>` : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                        <button class="btn-sell-one" data-id="${product.id}" style="background: rgba(255, 71, 87, 0.15); border: 1px solid rgba(255, 71, 87, 0.3); color: #ff4757; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
-                            <i class="fas fa-minus-circle"></i> -1 Vender
-                        </button>
-                    </div>
-
-                    <div class="card-actions-bar">
-                        <label class="public-toggle-label">
-                            <label class="switch" style="transform: scale(0.75); margin: 0;">
-                                <input type="checkbox" class="toggle-public" data-id="${product.id}" ${isPublic ? 'checked' : ''}>
-                                <span class="slider"></span>
-                            </label>
-                            <span>${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
-                        </label>
-
-                        <div style="display: flex; gap: 6px;">
-                            <button class="btn-icon-square btn-edit" title="Editar"><i class="fas fa-pen"></i></button>
-                            <button class="btn-icon-square danger btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `);
-
-        $card.find('.btn-edit').click(() => editProduct(product));
-        $card.find('.btn-delete').click(() => deleteProduct(product.id));
-        $card.find('.btn-sell-one').click(() => sellOneUnit(product));
-        $card.find('.toggle-public').change(function() {
-            updateVisibility(product.id, $(this).is(':checked'));
-        });
-
-        $container.append($card);
-    });
-}
 
 async function sellOneUnit(product) {
     const currentStock = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 1);
