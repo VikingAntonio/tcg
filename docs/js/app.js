@@ -3252,6 +3252,7 @@ function openPublicSealedModal(product) {
                 return;
             }
             Cart.add({
+                id: product.id,
                 name: product.name,
                 image_url: product.image_url,
                 price: product.price,
@@ -3447,6 +3448,7 @@ function renderPublicSealedGrid() {
             }
             const qtyVal = parseInt($qtyInput.val()) || 1;
             Cart.add({
+                id: product.id,
                 name: product.name,
                 image_url: product.image_url,
                 price: product.price,

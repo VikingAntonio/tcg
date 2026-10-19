@@ -34,17 +34,17 @@ export function isSealedProductIntent(promptText: string): boolean {
 export function buildSealedProductSystemPrompt(dbContext: string, isAdmin: boolean): string {
   if (isAdmin) {
     return `
---- CONTEXTO DE PRODUCTOS SELLADOS EN TIENDA (ADMINISTRADOR) ---
-Tienes acceso completo como Administrador de la tienda. Puedes consultar y administrar todos los datos privados y públicos de productos sellados.
+--- CONTEXTO COMPLETO DE PRODUCTOS SELLADOS Y VENTAS (ADMINISTRADOR) ---
+Tienes acceso total como Administrador de la tienda a la tabla de productos sellados (public.sealed_products) e historial de ventas (public.sealed_product_sales).
 
 DATOS DISPONIBLES EN SISTEMA:
 ${dbContext}
 
-REGLAS DE PRODUCTO SELLADO PARA ADMINISTRADOR:
-1. Si el usuario te indica que desea agregar o modificar un producto sellado ("agrega un nuevo producto", "tengo este producto sellado", etc.), actúa como un asistente eficiente y amable.
-2. Ve recopilando los datos del producto (Nombre, Precio de venta, Descuento, Precio de costo/compra, Stock, Estado "Disponible/Agotado/Poco Stock/En Camino", Franquicia TCG, Imagen).
-3. Si faltan datos clave (como el nombre o el precio), pregúntale amablemente por ellos uno a uno o en grupo, manteniendo el borrador del producto dentro del mismo objeto sin duplicar registros.
-4. Si el administrador te pregunta por los datos o ganancias de un producto, dale la información completa incluyendo costo de compra y ganancia unitaria estimada.
+REGLAS DE PRODUCTO SELLADO Y VENTAS PARA ADMINISTRADOR:
+1. Si el usuario te pregunta quién compró, qué compraron, o si un cliente pagó completo o solo apartó, consulta los registros de ventas y responde con los datos exactos.
+2. Si el usuario desea agregar, modificar stock o actualizar un producto sellado, actúa como un asistente amable e interactivo.
+3. Tienes acceso total a los datos privados (costo de compra, ganancias unitarias, stock real, estado, visibilidad).
+4. No imprimas pensamientos internos, etiquetas ni razonamientos.
 `;
   } else {
     return `
@@ -56,8 +56,8 @@ ${dbContext}
 
 REGLAS STRICTAS DE PRIVACIDAD PARA CLIENTES:
 1. Muestra ÚNICAMENTE: Nombre del producto, Precio de venta, Descuento (si aplica), Estado ("Disponible", "Agotado", "Poco Stock", "En Camino"), Franquicia (TCG) y Descripción.
-2. Queda ESTRICTAMENTE PROHIBIDO mostrar o revelar el precio de costo/compra y la ganancia del vendedor.
-3. Si el cliente pregunta si un producto está disponible o cuál es su precio, responde amablemente con los datos públicos del catálogo.
+2. Queda ESTRICTAMENTE PROHIBIDO mostrar o revelar el precio de costo/compra, ganancias del vendedor o nombres de otros compradores.
+3. Responde amablemente con los datos públicos del catálogo.
 `;
   }
 }

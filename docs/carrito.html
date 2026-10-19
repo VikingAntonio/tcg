@@ -500,11 +500,12 @@
                 const safeId = storeName.replace(/['"]/g, '');
                 const { data, error } = await _supabase
                     .from('usuarios')
-                    .select('store_name, username, store_logo, is_store, whatsapp_link, messenger_link')
+                    .select('id, store_name, username, store_logo, is_store, whatsapp_link, messenger_link')
                     .or(`store_name.eq."${safeId}",username.eq."${safeId}"`)
                     .maybeSingle();
 
                 if (!error && data) {
+                    storeOwnerLinks.seller_id = data.id;
                     if (data.whatsapp_link) storeOwnerLinks.whatsapp = data.whatsapp_link;
                     if (data.messenger_link) storeOwnerLinks.messenger = data.messenger_link;
 
@@ -519,7 +520,7 @@
             }
         }
 
-        function sendMessage(platform) {
+        async function sendMessage(platform) {
             const items = Cart.getAll();
             if (items.length === 0) return;
 
@@ -530,7 +531,84 @@
             if (firstItem.whatsapp_link) whatsapp = firstItem.whatsapp_link;
             if (firstItem.messenger_link) messenger = firstItem.messenger_link;
 
-            let message = "Hola, estoy interesado en comprar estas cartas de TCG Dual:\n\n";
+            const { value: buyerDetails } = await Swal.fire({
+                title: 'Confirmar Datos para el Vendedor',
+                html: `
+                    <div style="text-align: left; font-family: sans-serif; font-size: 0.9rem;">
+                        <p style="margin-bottom: 12px; color: #cbd5e1;">Ingresa tus datos para notificar al vendedor y coordinar tu entrega:</p>
+                        <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Tu Nombre Completo *</label>
+                        <input id="swal-buyer-name" class="swal2-input" placeholder="Ej. Sutano Pérez" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+
+                        <label style="display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Teléfono / Contacto</label>
+                        <input id="swal-buyer-contact" class="swal2-input" placeholder="Ej. 55-1234-5678" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+
+                        <label style="display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Estado / Opción de Pago *</label>
+                        <select id="swal-payment-status" class="swal2-select" style="width: 100%; margin-top: 0; background: #1e293b; color: #fff; border: 1px solid #334155; padding: 10px; border-radius: 8px;">
+                            <option value="Pagado Completo" selected>Pagado Completo</option>
+                            <option value="Apartado (50%)">Apartado (50%) / Anticipo</option>
+                            <option value="Pago Parcial">Pago Parcial</option>
+                            <option value="Pago al Entregar">Pago al Entregar</option>
+                        </select>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-paper-plane"></i> Registrar y Enviar Mensaje',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#25d366',
+                cancelButtonColor: '#475569',
+                background: '#0f172a',
+                color: '#fff',
+                preConfirm: () => {
+                    const name = document.getElementById('swal-buyer-name').value.trim();
+                    const contact = document.getElementById('swal-buyer-contact').value.trim();
+                    const payment = document.getElementById('swal-payment-status').value;
+                    if (!name) {
+                        Swal.showValidationMessage('Por favor ingresa tu nombre');
+                        return false;
+                    }
+                    return { name, contact, payment };
+                }
+            });
+
+            if (!buyerDetails) return;
+
+            const sellerId = storeOwnerLinks.seller_id || window.currentStoreId;
+            const totalAmount = Cart.getTotal();
+
+            if (sellerId && typeof _supabase !== 'undefined') {
+                try {
+                    await _supabase.from('sealed_product_sales').insert([{
+                        seller_id: sellerId,
+                        buyer_name: buyerDetails.name,
+                        buyer_contact: buyerDetails.contact,
+                        items: items,
+                        total_amount: totalAmount,
+                        payment_status: buyerDetails.payment,
+                        is_read: false
+                    }]);
+
+                    for (const item of items) {
+                        if (item.id) {
+                            const qty = parseInt(item.cart_quantity) || 1;
+                            const { data: prod } = await _supabase.from('sealed_products').select('stock, quantity, status').eq('id', item.id).maybeSingle();
+                            if (prod) {
+                                const currentStock = prod.stock !== undefined ? parseInt(prod.stock) : (parseInt(prod.quantity) || 1);
+                                const newStock = Math.max(0, currentStock - qty);
+                                const newStatus = newStock === 0 ? 'Agotado' : (prod.status || 'Disponible');
+                                await _supabase.from('sealed_products').update({ stock: newStock, quantity: newStock, status: newStatus }).eq('id', item.id);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error logging sale transaction:", e);
+                }
+            }
+
+            let message = `Hola, mi nombre es *${buyerDetails.name}* (${buyerDetails.contact || 'Sin teléfono'}).\n`;
+            message += `Estado de Pago: *${buyerDetails.payment}*\n\n`;
+            message += "Deseo adquirir los siguientes artículos:\n\n";
+
             items.forEach((item, index) => {
                 const qty = parseInt(item.cart_quantity) || 1;
                 const isPreorderDeposit = item.unit_deposit !== undefined && item.unit_deposit !== null;
@@ -549,7 +627,7 @@
                 const tag = detailParts.length > 0 ? ` (${detailParts.join(' - ')})` : '';
                 message += `${index + 1}. ${item.name}${tag} x${qty} - $${subtotal.toFixed(2)}\n`;
             });
-            message += `\nTotal Estimado: $${Cart.getTotal().toFixed(2)}`;
+            message += `\nTotal Estimado: $${totalAmount.toFixed(2)}`;
 
             const encodedMsg = encodeURIComponent(message);
 
