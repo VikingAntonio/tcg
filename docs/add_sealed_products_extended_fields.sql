@@ -8,10 +8,12 @@ ALTER TABLE public.sealed_products
   ADD COLUMN IF NOT EXISTS status text DEFAULT 'Disponible',
   ADD COLUMN IF NOT EXISTS discount text DEFAULT '',
   ADD COLUMN IF NOT EXISTS cost_price text DEFAULT '',
-  ADD COLUMN IF NOT EXISTS estimated_profit text DEFAULT '';
+  ADD COLUMN IF NOT EXISTS estimated_profit text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS per_person_limit integer DEFAULT NULL;
 
 -- Comentario explicativo
 COMMENT ON COLUMN public.sealed_products.status IS 'Estado del producto: Disponible, Agotado, Poco Stock, En Camino';
 COMMENT ON COLUMN public.sealed_products.discount IS 'Descuento aplicado al producto (ej. 10% o $100)';
 COMMENT ON COLUMN public.sealed_products.cost_price IS 'Precio de compra o costo privado del vendedor';
 COMMENT ON COLUMN public.sealed_products.estimated_profit IS 'Ganancia unitaria estimada calculada para el vendedor';
+COMMENT ON COLUMN public.sealed_products.per_person_limit IS 'Límite de compra por persona / restricciones configuradas por la tienda';

@@ -664,6 +664,7 @@ async function saveProduct() {
     const tcg = $('#product-tcg').val();
     const description = $('#product-description').val().trim();
     const stockVal = parseInt($('#product-stock').val()) || 0;
+    const perPersonLimitVal = parseInt($('#product-per-person-limit').val()) || null;
     const isPublic = $('#product-public').is(':checked');
 
     if (!name) {
@@ -686,6 +687,7 @@ async function saveProduct() {
         description,
         stock: stockVal,
         quantity: stockVal,
+        per_person_limit: perPersonLimitVal,
         is_public: isPublic
     };
 
@@ -761,6 +763,7 @@ function editProduct(product) {
     $('#product-status').val(product.status || 'Disponible');
     $('#product-description').val(product.description || '');
     $('#product-stock').val(product.stock !== undefined && product.stock !== null ? product.stock : (product.quantity !== undefined ? product.quantity : ''));
+    $('#product-per-person-limit').val(product.per_person_limit !== undefined && product.per_person_limit !== null ? product.per_person_limit : '');
     $('#product-tcg').val(product.tcg || 'yugioh');
     $('#product-public').prop('checked', product.is_public !== false);
 
@@ -872,6 +875,7 @@ function resetModal() {
     $('#product-estimated-profit').val('');
     $('#product-status').val('Disponible');
     $('#product-stock').val('');
+    $('#product-per-person-limit').val('');
     $('#product-tcg').val('yugioh');
     $('#product-public').prop('checked', true);
 

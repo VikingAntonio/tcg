@@ -244,6 +244,12 @@
                 Total Estimado: <span class="total-amount" id="cart-total-display">$0.00</span>
             </div>
             <div class="checkout-actions">
+                <button class="btn btn-checkout btn-simulated" id="send-simulated" style="background: linear-gradient(135deg, #00d2ff, #00ff88) !important; color: #000 !important; font-weight: 800; border: none; border-radius: 12px; cursor: pointer;">
+                    <i class="fas fa-vial"></i> Simular Compra (Probar Notificación)
+                </button>
+                <button class="btn btn-checkout btn-stripe" id="send-stripe" style="background: linear-gradient(135deg, #635bff, #a259ff) !important; color: #fff !important; font-weight: 800; border: none; border-radius: 12px; cursor: pointer;">
+                    <i class="fab fa-stripe-s"></i> Pagar con Tarjeta (Stripe)
+                </button>
                 <button class="btn btn-checkout btn-whatsapp" id="send-whatsapp">
                     <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
                 </button>
@@ -391,6 +397,14 @@
                 });
             });
 
+            $('#send-simulated').click(function() {
+                simulatePurchase();
+            });
+
+            $('#send-stripe').click(function() {
+                payWithStripe();
+            });
+
             $('#send-whatsapp').click(function() {
                 sendMessage('whatsapp');
             });
@@ -517,6 +531,198 @@
                 }
             } catch (e) {
                 console.error("Error loading store contact:", e);
+            }
+        }
+
+        async function simulatePurchase() {
+            const items = Cart.getAll();
+            if (items.length === 0) {
+                Swal.fire({ icon: 'info', title: 'Carrito Vacío', text: 'Agrega al menos un producto al carrito.' });
+                return;
+            }
+
+            const { value: buyerDetails } = await Swal.fire({
+                title: 'Simular Compra (Prueba de Notificación)',
+                html: `
+                    <div style="text-align: left; font-family: sans-serif; font-size: 0.9rem;">
+                        <p style="margin-bottom: 12px; color: #cbd5e1;">Esta acción simulará la adquisición de los productos e inmediatamente enviará la notificación al vendedor:</p>
+                        <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Nombre del Comprador *</label>
+                        <input id="swal-sim-name" class="swal2-input" value="Sutano Pérez" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+
+                        <label style="display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Teléfono / Contacto</label>
+                        <input id="swal-sim-contact" class="swal2-input" value="55-8888-9999" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+
+                        <label style="display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; color: #00d2ff;">Opción de Pago *</label>
+                        <select id="swal-sim-payment" class="swal2-select" style="width: 100%; margin-top: 0; background: #1e293b; color: #fff; border: 1px solid #334155; padding: 10px; border-radius: 8px;">
+                            <option value="Pagado Completo" selected>Pagado Completo</option>
+                            <option value="Apartado (50%)">Apartado (50%) / Anticipo</option>
+                            <option value="Pago Parcial">Pago Parcial</option>
+                            <option value="Pago al Entregar">Pago al Entregar</option>
+                        </select>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check-circle"></i> Ejecutar Compra Simulada',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#00d2ff',
+                cancelButtonColor: '#475569',
+                background: '#0f172a',
+                color: '#fff',
+                preConfirm: () => {
+                    const name = document.getElementById('swal-sim-name').value.trim();
+                    const contact = document.getElementById('swal-sim-contact').value.trim();
+                    const payment = document.getElementById('swal-sim-payment').value;
+                    if (!name) {
+                        Swal.showValidationMessage('Ingresa un nombre');
+                        return false;
+                    }
+                    return { name, contact, payment };
+                }
+            });
+
+            if (!buyerDetails) return;
+
+            const sellerId = storeOwnerLinks.seller_id || window.currentStoreId;
+            const totalAmount = Cart.getTotal();
+
+            if (sellerId && typeof _supabase !== 'undefined') {
+                try {
+                    await _supabase.from('sealed_product_sales').insert([{
+                        seller_id: sellerId,
+                        buyer_name: buyerDetails.name,
+                        buyer_contact: buyerDetails.contact,
+                        items: items,
+                        total_amount: totalAmount,
+                        payment_status: buyerDetails.payment,
+                        is_read: false
+                    }]);
+
+                    for (const item of items) {
+                        if (item.id) {
+                            const qty = parseInt(item.cart_quantity) || 1;
+                            const { data: prod } = await _supabase.from('sealed_products').select('stock, quantity, status').eq('id', item.id).maybeSingle();
+                            if (prod) {
+                                const currentStock = prod.stock !== undefined ? parseInt(prod.stock) : (parseInt(prod.quantity) || 1);
+                                const newStock = Math.max(0, currentStock - qty);
+                                const newStatus = newStock === 0 ? 'Agotado' : (prod.status || 'Disponible');
+                                await _supabase.from('sealed_products').update({ stock: newStock, quantity: newStock, status: newStatus }).eq('id', item.id);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error inserting simulated sale:", e);
+                }
+            }
+
+            Cart.clear();
+            renderCart();
+
+            Swal.fire({
+                title: '¡Compra Simulada Registrada!',
+                text: `Se ha registrado la compra de ${buyerDetails.name} por $${totalAmount.toFixed(2)} (${buyerDetails.payment}). La notificación fue enviada en tiempo real al vendedor.`,
+                icon: 'success',
+                confirmButtonColor: '#00d2ff',
+                background: '#0f172a',
+                color: '#fff'
+            });
+        }
+
+        async function payWithStripe() {
+            const items = Cart.getAll();
+            if (items.length === 0) return;
+
+            const { value: buyerDetails } = await Swal.fire({
+                title: 'Pago con Tarjeta via Stripe',
+                html: `
+                    <div style="text-align: left; font-family: sans-serif; font-size: 0.9rem;">
+                        <p style="margin-bottom: 12px; color: #cbd5e1;">Ingresa tus datos para procesar el pago seguro con Stripe:</p>
+                        <label style="display: block; margin-bottom: 4px; font-weight: bold; color: #635bff;">Tu Nombre Completo *</label>
+                        <input id="swal-stripe-name" class="swal2-input" placeholder="Ej. Sutano Pérez" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+
+                        <label style="display: block; margin-top: 12px; margin-bottom: 4px; font-weight: bold; color: #635bff;">Correo Electrónico / Teléfono *</label>
+                        <input id="swal-stripe-contact" class="swal2-input" placeholder="ejemplo@correo.com" style="margin-top: 0; width: 100%; box-sizing: border-box; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 8px;">
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fab fa-stripe-s"></i> Proceder al Pago Seguro',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#635bff',
+                cancelButtonColor: '#475569',
+                background: '#0f172a',
+                color: '#fff',
+                preConfirm: () => {
+                    const name = document.getElementById('swal-stripe-name').value.trim();
+                    const contact = document.getElementById('swal-stripe-contact').value.trim();
+                    if (!name || !contact) {
+                        Swal.showValidationMessage('Ingresa tu nombre y correo/teléfono');
+                        return false;
+                    }
+                    return { name, contact };
+                }
+            });
+
+            if (!buyerDetails) return;
+
+            const sellerId = storeOwnerLinks.seller_id || window.currentStoreId;
+            const totalAmount = Cart.getTotal();
+
+            Swal.fire({ title: 'Conectando con Stripe...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                if (sellerId && typeof _supabase !== 'undefined') {
+                    await _supabase.from('sealed_product_sales').insert([{
+                        seller_id: sellerId,
+                        buyer_name: buyerDetails.name,
+                        buyer_contact: buyerDetails.contact,
+                        items: items,
+                        total_amount: totalAmount,
+                        payment_status: 'Pagado con Tarjeta (Stripe)',
+                        is_read: false
+                    }]);
+
+                    for (const item of items) {
+                        if (item.id) {
+                            const qty = parseInt(item.cart_quantity) || 1;
+                            const { data: prod } = await _supabase.from('sealed_products').select('stock, quantity, status').eq('id', item.id).maybeSingle();
+                            if (prod) {
+                                const currentStock = prod.stock !== undefined ? parseInt(prod.stock) : (parseInt(prod.quantity) || 1);
+                                const newStock = Math.max(0, currentStock - qty);
+                                const newStatus = newStock === 0 ? 'Agotado' : (prod.status || 'Disponible');
+                                await _supabase.from('sealed_products').update({ stock: newStock, quantity: newStock, status: newStatus }).eq('id', item.id);
+                            }
+                        }
+                    }
+                }
+
+                let checkoutUrl = null;
+                if (typeof _supabase !== 'undefined') {
+                    try {
+                        const { data } = await _supabase.functions.invoke('create-checkout-session', {
+                            body: { items, buyer_name: buyerDetails.name, buyer_email: buyerDetails.contact, total_amount: totalAmount }
+                        });
+                        if (data && data.url) checkoutUrl = data.url;
+                    } catch(e) {}
+                }
+
+                Cart.clear();
+                renderCart();
+
+                if (checkoutUrl) {
+                    window.location.href = checkoutUrl;
+                } else {
+                    Swal.fire({
+                        title: '¡Pago y Notificación Registrados!',
+                        text: `Se registró la orden de ${buyerDetails.name} por $${totalAmount.toFixed(2)} (Stripe). Notificación enviada al vendedor.`,
+                        icon: 'success',
+                        confirmButtonColor: '#635bff',
+                        background: '#0f172a',
+                        color: '#fff'
+                    });
+                }
+            } catch(e) {
+                Swal.fire('Error', 'No se pudo iniciar el pago: ' + e.message, 'error');
             }
         }
 
