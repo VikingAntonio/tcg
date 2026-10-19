@@ -1945,3 +1945,10 @@ window.checkVikingMaintenance = async function(zoneKey) {
         $('#viking-overlay-close-x').css('display', 'none').hide();
     }
 };
+
+// Dynamically auto-load notifications manager across platform views
+$(document).ready(function() {
+    if ($('script[src*="notifications.js"]').length === 0) {
+        $('<script src="js/notifications.js"></script>').appendTo('head');
+    }
+});

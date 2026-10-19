@@ -1460,13 +1460,14 @@ async function handleSendAIChatMessage() {
         let dbContext = '';
         if (targetStoreId && typeof _supabase !== 'undefined') {
             try {
+                // 1. Fetch preorders
                 const { data: preorders } = await _supabase
                     .from('preorders')
                     .select('*')
                     .eq('user_id', targetStoreId);
 
                 if (preorders && preorders.length > 0) {
-                    dbContext += 'PREVENTAS EN LA TIENDA:\n';
+                    dbContext += '--- PREVENTAS EN LA TIENDA ---\n';
                     preorders.forEach(p => {
                         let clients = p.clients_list;
                         if (typeof clients === 'string') {
@@ -1478,18 +1479,60 @@ async function handleSendAIChatMessage() {
                         let maxStock = parseInt(p.max_stock) || 0;
                         let available = Math.max(0, maxStock - reserved);
 
-                        dbContext += `- ${p.name} | Precio Venta: ${p.price || 'N/A'} | Stock Total: ${maxStock} | Reservados: ${reserved} | Disponibles: ${available} | Límite Pago: ${p.payment_deadline || 'N/A'} | Llegada: ${p.arrival_date || 'N/A'}\n`;
+                        dbContext += `- ${p.name} | Precio Venta: ${p.price || 'N/A'} | Stock Total: ${maxStock} | Reservados: ${reserved} | Disponibles: ${available} | Límite Pago: ${p.payment_deadline || 'N/A'}\n`;
 
                         if (isAdmin && clients.length > 0) {
-                            dbContext += `  [Lista Privada de Clientes para ${p.name}]:\n`;
+                            dbContext += `  [Lista de Clientes Preventa]:\n`;
                             clients.forEach(c => {
-                                dbContext += `   * Cliente: ${c.name} | Cantidad: ${c.qty} | Anticipo: $${parseFloat(c.deposit||0).toFixed(2)} | Estado: ${c.status}\n`;
+                                dbContext += `   * Cliente: ${c.name} | Cantidad: ${c.qty} | Anticipo: $${parseFloat(c.deposit||0).toFixed(2)} | Estado Pago: ${c.status_payment || c.status || 'Pendiente'} | Entrega: ${c.status_delivery || 'Por Entregar'}\n`;
                             });
                         }
                     });
                 }
+
+                // 2. Fetch sealed products
+                const { data: sealedProds } = await _supabase
+                    .from('sealed_products')
+                    .select('*')
+                    .eq('user_id', targetStoreId);
+
+                if (sealedProds && sealedProds.length > 0) {
+                    dbContext += '\n--- CATÁLOGO DE PRODUCTOS SELLADOS ---\n';
+                    sealedProds.forEach(sp => {
+                        const stockVal = sp.stock !== undefined ? sp.stock : (sp.quantity !== undefined ? sp.quantity : 1);
+                        if (isAdmin) {
+                            dbContext += `- [ID: ${sp.id}] "${sp.name}" | TCG: ${sp.tcg || 'Otro'} | Precio Venta: ${sp.price || 'N/A'} | Descuento: ${sp.discount || 'Sin desc.'} | Costo Compra: $${sp.cost_price || sp.cost || 0} | Ganancia Est.: ${sp.estimated_profit || sp.profit || 0} | Stock: ${stockVal} | Estado: ${sp.status || 'Disponible'} | Visibilidad: ${sp.is_public !== false ? 'Público' : 'Privado'}\n`;
+                        } else if (sp.is_public !== false) {
+                            dbContext += `- "${sp.name}" | TCG: ${sp.tcg || 'Otro'} | Precio: ${sp.price || 'N/A'} | Estado: ${sp.status || 'Disponible'} | Stock: ${stockVal}\n`;
+                        }
+                    });
+                }
+
+                // 3. Fetch sales & notifications
+                if (isAdmin) {
+                    const { data: sales } = await _supabase
+                        .from('sealed_product_sales')
+                        .select('*')
+                        .eq('seller_id', targetStoreId)
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+
+                    if (sales && sales.length > 0) {
+                        dbContext += '\n--- HISTORIAL DE VENTAS Y NOTIFICACIONES DE COMPRAS DE CLIENTES ---\n';
+                        sales.forEach(s => {
+                            let itemsStr = '';
+                            if (Array.isArray(s.items)) {
+                                itemsStr = s.items.map(i => `${i.cart_quantity || i.qty || 1}x ${i.name || 'Prod'}`).join(', ');
+                            } else {
+                                itemsStr = s.items || 'Productos';
+                            }
+                            const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
+                            dbContext += `- Cliente: "${s.buyer_name}" (${s.buyer_contact || 'Sin tel.'}) | Artículos: ${itemsStr} | Total: $${parseFloat(s.total_amount || 0).toFixed(2)} | Estado de Pago: ${s.payment_status || 'Pagado Completo'} | Fecha: ${dateStr} | Leído: ${s.is_read ? 'Sí' : 'No'}\n`;
+                        });
+                    }
+                }
             } catch (e) {
-                console.warn("Failed to build preorders context:", e);
+                console.warn("Failed to build store context:", e);
             }
         }
 

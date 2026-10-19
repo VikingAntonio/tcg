@@ -49,29 +49,32 @@ interface RequestBody {
 function buildSealedProductSystemPrompt(dbContext: string, isAdmin: boolean): string {
   if (isAdmin) {
     return `
---- CONTEXTO DE PRODUCTOS Y PREVENTAS DE LA TIENDA (ADMINISTRADOR) ---
-Tienes acceso completo como Administrador de la tienda. Puedes consultar y administrar todos los datos privados y públicos de productos sellados y preventas activas.
+--- CONTEXTO COMPLETO DE PRODUCTOS SELLADOS, VENTAS Y PREVENTAS (ADMINISTRADOR) ---
+Tienes acceso total como Administrador de la tienda a la tabla de productos sellados (public.sealed_products), historial de ventas de clientes (public.sealed_product_sales) y preventas (public.preorders).
 
 DATOS DISPONIBLES EN SISTEMA DE LA TIENDA:
 ${dbContext}
 
 REGLAS PARA ADMINISTRADOR:
-1. Si el usuario pregunta por preventas, reservas, lista de clientes, anticipos dados, saldos pendientes ("¿cuánto dio Fulano?", "¿quién ha pagado?", etc.), consulta los datos de preventas en el sistema y respóndale con la información exacta que pide de forma amigable, natural y formulada por ti mismo (sin respuestas prefabricadas ni estáticas).
-2. Si el usuario indica actualizar el estado de pago o entrega de un cliente (ej: "Sutano ya pagó", "pon a Fulano como Liquidado" o "pon la entrega de Mengano como Entregado"), confirma que has entendido y explica que se actualizó el registro correspondiente del cliente.
-3. Si pregunta por costos de compra, ganancias o estado de cuentas de clientes, dale la información privada completa ya que es el dueño de la tienda.
+1. CONSULTAS DE VENTAS Y PAGOS:
+   - Si el administrador te pregunta quién compró, qué compraron, o el estado de pago de un cliente (ej: "¿Sutano pagó todo o solo apartó?", "¿quién adquirió productos sellados?", "¿cuánto debe Mengano?"), revisa la sección de ventas/notificaciones y responde con datos exactos, amigables y conversacionales.
+2. CONSULTAS DE PRODUCTOS SELLADOS Y STOCK:
+   - Tienes acceso total a los datos privados (costo de compra, ganancias unitarias, stock real, estado, visibilidad). Si pregunta por existencias o métricas, dale la información completa.
+3. GESTIÓN Y OPERACIONES:
+   - Si el usuario solicita agregar, modificar stock o actualizar datos de un producto sellado o venta, confirma de forma directa, entusiasta y amable que has procesado su solicitud.
 `;
   } else {
     return `
 --- CONTEXTO DE PRODUCTOS Y PREVENTAS (CLIENTE PÚBLICO) ---
 Eres un asistente de ventas de la tienda. Muestras ÚNICAMENTE la información pública permitida para clientes.
 
-DATOS PÚBLICOS DISPONIBLES EN SISTEMA:
+DATOS PÚBLICOS DISPONIBLES EN CATÁLOGO:
 ${dbContext}
 
 REGLAS STRICTAS DE PRIVACIDAD PARA CLIENTES:
-1. Muestra ÚNICAMENTE: Nombre del producto o preventa, Precio de venta, Disponibilidad, Fechas límite de pago/llegada y Límite por persona.
-2. Queda ESTRICTAMENTE PROHIBIDO mostrar o revelar nombres de otros clientes, lista de reservas, precios de costo o ganancias del vendedor.
-3. Si el cliente pregunta si una preventa está disponible o cuál es su precio, responde amablemente con los datos públicos.
+1. Muestra ÚNICAMENTE: Nombre del producto, Precio de venta, Descuento, Estado ("Disponible", "Agotado", "Poco Stock", "En Camino"), TCG y Descripción.
+2. Queda ESTRICTAMENTE PROHIBIDO mostrar o revelar precios de costo, ganancias, nombres de otros compradores o ventas privadas.
+3. Responde siempre de forma amable, cercana y servicial para ayudar al cliente a conocer y adquirir sus productos.
 `;
   }
 }
@@ -83,12 +86,13 @@ function sanitizeAIResponse(text: string): string {
 
   // 1. Eliminar bloques de pensamiento o borradores <thought> o <think>
   clean = clean.replace(/<(thought|think)[\s\S]*?<\/\1>/gi, '');
+  clean = clean.replace(/<(thought|think)[\s\S]*/gi, '');
 
   // 2. Eliminar secciones de desglose de preguntas, borradores en inglés o razonamientos internos
   clean = clean.replace(/(question \d+:|knowledge areas:|steps \(|self-correction|drafting:|persona:|constraint:|\"como se hace|\"how to make)[\s\S]*?(?=\n\n[A-Z¡¿"']|Para |El |Hola |¡Hola |$)/gi, '');
 
   // 3. Eliminar prefijos de razonamiento o etiquetas internas
-  clean = clean.replace(/(pensamiento|thought|reasoning|proceso de pensamiento):[\s\S]*?(?=\n\n|\n[A-Z¡¿"']|$)/gi, '');
+  clean = clean.replace(/(pensamiento|thought|reasoning|proceso de pensamiento|pasos|drafting):[\s\S]*?(?=\n\n|\n[A-Z¡¿"']|$)/gi, '');
 
   // 4. Filtrar líneas de metadatos o viñetas internas
   const lines = clean.split('\n');
@@ -314,7 +318,7 @@ REGLAS ABSOLUTAS E IMPERATIVAS:
       const geminiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
 
       const generationConfig: Record<string, any> = {
-        temperature: 0.7,
+        temperature: 0.2,
         maxOutputTokens: 2048
       };
 
