@@ -9,10 +9,18 @@ const Cart = {
         return items ? JSON.parse(items) : [];
     },
 
-    add: function(card) {
+    add: function(card, quantity) {
         const items = this.getAll();
-        const selectedQty = parseInt(card.cart_quantity) || 1;
-        const maxQty = parseInt(card.max_quantity || card.quantity) || 999;
+        const selectedQty = parseInt(quantity !== undefined && quantity !== null ? quantity : card.cart_quantity) || 1;
+
+        let maxQty = 999;
+        if (card.max_quantity !== undefined && card.max_quantity !== null && parseInt(card.max_quantity) > 0) {
+            maxQty = parseInt(card.max_quantity);
+        } else {
+            const stockVal = (card.stock !== undefined && card.stock !== null) ? parseInt(card.stock) : ((card.quantity !== undefined && card.quantity !== null) ? parseInt(card.quantity) : 999);
+            const limitVal = (card.per_person_limit !== undefined && card.per_person_limit !== null && parseInt(card.per_person_limit) > 0) ? parseInt(card.per_person_limit) : 999;
+            maxQty = Math.min(stockVal > 0 ? stockVal : 999, limitVal);
+        }
 
         const existingIdx = items.findIndex(item =>
             item.name === card.name &&

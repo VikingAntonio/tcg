@@ -3256,6 +3256,8 @@ function openPublicSealedModal(product) {
                 name: product.name,
                 image_url: product.image_url,
                 price: product.price,
+                stock: stockValCount,
+                per_person_limit: perPersonLimitVal,
                 tcg: product.tcg,
                 description: product.description,
                 whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
@@ -3358,7 +3360,9 @@ function renderPublicSealedGrid() {
             badgeColor = '#9b59b6';
         }
 
-        const maxStockAvailable = isNaN(parseInt(product.stock)) ? 99 : Math.max(0, parseInt(product.stock));
+        const stockValCount = !isNaN(parseInt(product.stock)) ? parseInt(product.stock) : (!isNaN(parseInt(product.quantity)) ? parseInt(product.quantity) : 99);
+        const perPersonLimitVal = (product.per_person_limit !== undefined && product.per_person_limit !== null && parseInt(product.per_person_limit) > 0) ? parseInt(product.per_person_limit) : 999;
+        const maxStockAvailable = Math.min(Math.max(0, stockValCount), perPersonLimitVal);
 
         let formattedPriceVal = product.price ? product.price.toString().trim() : 'Consultar';
         if (formattedPriceVal !== 'Consultar' && !formattedPriceVal.startsWith('$')) {
@@ -3377,7 +3381,7 @@ function renderPublicSealedGrid() {
                         <button class="btn btn-share-sealed-modern btn-share-sealed-single" title="Compartir" style="position: absolute; top: 10px; right: 10px; z-index: 5; margin: 0; padding: 0;">
                             <i class="fas fa-share-alt"></i>
                         </button>
-                        <span class="sealed-status-badge ${isOutOfStock ? 'status-out' : ''}">${statusLabel.toUpperCase()} (${stockCount})</span>
+                        <span class="sealed-status-badge ${isOutOfStock ? 'status-out' : ''}">${statusLabel.toUpperCase()} (${stockCount}) ${perPersonLimitVal < 999 ? ` - Máx ${perPersonLimitVal}/pers` : ''}</span>
                         <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img">
                     </div>
 
@@ -3418,7 +3422,15 @@ function renderPublicSealedGrid() {
         const handlePlus = (e) => {
             e.preventDefault(); e.stopPropagation();
             let cur = parseInt($qtyInput.val()) || 1;
-            if (cur < maxStockAvailable) $qtyInput.val(cur + 1);
+            if (cur < maxStockAvailable) {
+                $qtyInput.val(cur + 1);
+            } else {
+                if (stockValCount <= perPersonLimitVal) {
+                    Swal.fire({ icon: 'info', title: 'Límite de Stock', text: `Solo hay ${stockValCount} unidad(es) disponibles en stock.`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                } else {
+                    Swal.fire({ icon: 'info', title: 'Límite por Persona', text: `La tienda configuró un límite de ${perPersonLimitVal} unidad(es) por persona.`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                }
+            }
         };
 
         $item.find('.btn-qty-minus').on('click', handleMinus);
