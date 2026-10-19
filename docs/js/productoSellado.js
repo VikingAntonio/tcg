@@ -1,7 +1,16 @@
 let currentUser = null;
 let allAdminProducts = [];
+let currentViewMode = localStorage.getItem('sealed_view_mode') || 'grid';
 
 $(document).ready(async function() {
+    updateViewModeUI();
+
+    $('#btn-toggle-view-mode').click(function() {
+        currentViewMode = currentViewMode === 'grid' ? 'table' : 'grid';
+        localStorage.setItem('sealed_view_mode', currentViewMode);
+        updateViewModeUI();
+        applyAdminFiltersAndSort();
+    });
     console.log("Initializing Sealed Products Module...");
     try {
         await checkSession();
@@ -234,6 +243,44 @@ function updateMetricsSummary(products) {
     $('#stat-total-value').text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 }
 
+function updateViewModeUI() {
+    if (currentViewMode === 'table') {
+        $('#view-mode-label').text('Vista Tarjetas');
+        $('#btn-toggle-view-mode i').attr('class', 'fas fa-th-large');
+    } else {
+        $('#view-mode-label').text('Vista Tabla');
+        $('#btn-toggle-view-mode i').attr('class', 'fas fa-table');
+    }
+}
+
+function calcProductProfit(priceVal, discountVal, costVal) {
+    const parseVal = (val) => {
+        if (!val) return 0;
+        const clean = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+        return parseFloat(clean) || 0;
+    };
+
+    const price = parseVal(priceVal);
+    let discountStr = (discountVal || '').toString().trim();
+    let discountAmount = 0;
+
+    if (discountStr.includes('%')) {
+        discountAmount = (price * parseVal(discountStr)) / 100;
+    } else {
+        discountAmount = parseVal(discountStr);
+    }
+
+    const effectivePrice = Math.max(0, price - discountAmount);
+    const cost = parseVal(costVal);
+
+    if (price > 0 && cost > 0) {
+        return effectivePrice - cost;
+    } else if (price > 0 && cost === 0) {
+        return effectivePrice;
+    }
+    return 0;
+}
+
 function applyAdminFiltersAndSort() {
     let filtered = [...allAdminProducts];
 
@@ -278,7 +325,220 @@ function applyAdminFiltersAndSort() {
         return new Date(b.created_at || 0) - new Date(a.created_at || 0);
     });
 
-    renderAdminProductGrid(filtered);
+    if (currentViewMode === 'table') {
+        $('#product-list').hide();
+        $('#product-table-wrapper').show();
+        renderAdminProductTable(filtered);
+    } else {
+        $('#product-table-wrapper').hide();
+        $('#product-list').show();
+        renderAdminProductGrid(filtered);
+    }
+}
+
+function renderAdminProductTable(products) {
+    const $tbody = $('#product-table-body');
+    $tbody.empty();
+
+    if (!products || products.length === 0) {
+        $tbody.html(`
+            <tr>
+                <td colspan="11" style="text-align: center; padding: 50px; color: #64748b;">
+                    <i class="fas fa-box-open" style="font-size: 2.5rem; margin-bottom: 10px; opacity: 0.4;"></i>
+                    <p style="font-size: 1rem; font-weight: 700; color: #94a3b8; margin: 0;">No se encontraron productos en el inventario.</p>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+
+    products.forEach(product => {
+        const isPublic = product.is_public !== false;
+        const stockCount = product.stock !== undefined ? parseInt(product.stock) : (parseInt(product.quantity) || 0);
+        const costPrice = product.cost_price || product.cost || '';
+        const discountVal = product.discount || '';
+        const priceVal = product.price || '';
+
+        const profitNum = calcProductProfit(priceVal, discountVal, costPrice);
+        const profitFormatted = `$${profitNum.toFixed(2)}`;
+
+        const $tr = $(`
+            <tr class="sheet-tr" data-id="${product.id}">
+                <td class="sheet-td" style="text-align: center;">
+                    <img src="${product.image_url || 'https://via.placeholder.com/100?text=Sin+Imagen'}" class="sheet-img-thumb" alt="${product.name}">
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-name" value="${product.name || ''}" style="width: 100%; min-width: 180px;">
+                </td>
+                <td class="sheet-td">
+                    <select class="sheet-select sheet-select-tcg">
+                        <option value="yugioh" ${(product.tcg || '').toLowerCase() === 'yugioh' ? 'selected' : ''}>Yu-Gi-Oh!</option>
+                        <option value="pokemon" ${(product.tcg || '').toLowerCase() === 'pokemon' ? 'selected' : ''}>Pokémon</option>
+                        <option value="onepiece" ${(product.tcg || '').toLowerCase() === 'onepiece' ? 'selected' : ''}>One Piece</option>
+                        <option value="lorcana" ${(product.tcg || '').toLowerCase() === 'lorcana' ? 'selected' : ''}>Lorcana</option>
+                        <option value="other" ${(product.tcg || '').toLowerCase() === 'other' ? 'selected' : ''}>Otro</option>
+                    </select>
+                </td>
+                <td class="sheet-td" style="text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <button class="sheet-btn-quick sub btn-sub-stock" title="Registrar Venta (-1)">-</button>
+                        <input type="number" class="sheet-input sheet-input-stock" value="${stockCount}" min="0">
+                        <button class="sheet-btn-quick add btn-add-stock" title="Registrar Devolución/Ingreso (+1)">+</button>
+                    </div>
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-price input-price" value="${priceVal}">
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-price input-discount" value="${discountVal}">
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-price input-cost" value="${costPrice}">
+                </td>
+                <td class="sheet-td">
+                    <span class="profit-val" style="font-weight: 800; color: #00ff88; font-size: 0.85rem;">${profitFormatted}</span>
+                </td>
+                <td class="sheet-td">
+                    <select class="sheet-select sheet-select-status">
+                        <option value="Disponible" ${(product.status || 'Disponible') === 'Disponible' ? 'selected' : ''}>Disponible</option>
+                        <option value="Agotado" ${product.status === 'Agotado' ? 'selected' : ''}>Agotado</option>
+                        <option value="Poco Stock" ${product.status === 'Poco Stock' ? 'selected' : ''}>Poco Stock</option>
+                        <option value="En Camino" ${product.status === 'En Camino' ? 'selected' : ''}>En Camino</option>
+                    </select>
+                </td>
+                <td class="sheet-td" style="text-align: center;">
+                    <label class="switch" style="transform: scale(0.7); margin: 0 auto; display: block;">
+                        <input type="checkbox" class="toggle-public-sheet" ${isPublic ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </td>
+                <td class="sheet-td" style="text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button class="btn-icon-square btn-edit-sheet" title="Editar Modal"><i class="fas fa-pen"></i></button>
+                        <button class="btn-icon-square danger btn-delete-sheet" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `);
+
+        // Row events
+        $tr.find('.btn-edit-sheet').click(() => editProduct(product));
+        $tr.find('.btn-delete-sheet').click(() => deleteProduct(product.id));
+
+        $tr.find('.toggle-public-sheet').change(function() {
+            updateVisibility(product.id, $(this).is(':checked'));
+        });
+
+        // Quick Stock -1 (Venta)
+        $tr.find('.btn-sub-stock').click(function() {
+            const current = parseInt($tr.find('.sheet-input-stock').val()) || 0;
+            if (current <= 0) return;
+            const newStock = current - 1;
+            const newStatus = newStock === 0 ? 'Agotado' : (product.status || 'Disponible');
+            $tr.find('.sheet-input-stock').val(newStock);
+            $tr.find('.sheet-select-status').val(newStatus);
+            updateInlineProductField(product, { stock: newStock, status: newStatus });
+        });
+
+        // Quick Stock +1 (Devolución / Ingreso)
+        $tr.find('.btn-add-stock').click(function() {
+            const current = parseInt($tr.find('.sheet-input-stock').val()) || 0;
+            const newStock = current + 1;
+            const newStatus = product.status === 'Agotado' ? 'Disponible' : (product.status || 'Disponible');
+            $tr.find('.sheet-input-stock').val(newStock);
+            $tr.find('.sheet-select-status').val(newStatus);
+            updateInlineProductField(product, { stock: newStock, status: newStatus });
+        });
+
+        // Stock input direct change
+        $tr.find('.sheet-input-stock').on('change', function() {
+            const newStock = parseInt($(this).val()) || 0;
+            const newStatus = newStock === 0 ? 'Agotado' : (product.status || 'Disponible');
+            $tr.find('.sheet-select-status').val(newStatus);
+            updateInlineProductField(product, { stock: newStock, status: newStatus });
+        });
+
+        // Name change
+        $tr.find('.sheet-input-name').on('change', function() {
+            const newName = $(this).val().trim();
+            if (newName) {
+                updateInlineProductField(product, { name: newName });
+            }
+        });
+
+        // TCG change
+        $tr.find('.sheet-select-tcg').on('change', function() {
+            updateInlineProductField(product, { tcg: $(this).val() });
+        });
+
+        // Status change
+        $tr.find('.sheet-select-status').on('change', function() {
+            updateInlineProductField(product, { status: $(this).val() });
+        });
+
+        // Price, Discount, Cost change
+        const recalculateRowProfit = () => {
+            const p = $tr.find('.input-price').val().trim();
+            const d = $tr.find('.input-discount').val().trim();
+            const c = $tr.find('.input-cost').val().trim();
+            const estProfit = `$${calcProductProfit(p, d, c).toFixed(2)}`;
+            $tr.find('.profit-val').text(estProfit);
+            return { price: p, discount: d, cost_price: c, cost: c, estimated_profit: estProfit, profit: estProfit };
+        };
+
+        $tr.find('.input-price, .input-discount, .input-cost').on('change', function() {
+            const updates = recalculateRowProfit();
+            updateInlineProductField(product, updates);
+        });
+
+        $tbody.append($tr);
+    });
+}
+
+async function updateInlineProductField(product, updates) {
+    try {
+        let res = await _supabase.from('sealed_products').update(updates).eq('id', product.id);
+        if (res.error) {
+            // Fallback try without quantity or extended profit fields if schema errors occur
+            const fallback = { ...updates };
+            delete fallback.quantity;
+            delete fallback.cost;
+            delete fallback.profit;
+            res = await _supabase.from('sealed_products').update(fallback).eq('id', product.id);
+        }
+
+        if (res.error) {
+            // Further fallback to core fields
+            const coreFallback = { ...updates };
+            delete coreFallback.quantity;
+            delete coreFallback.cost;
+            delete coreFallback.profit;
+            delete coreFallback.cost_price;
+            delete coreFallback.estimated_profit;
+            delete coreFallback.discount;
+            delete coreFallback.status;
+            res = await _supabase.from('sealed_products').update(coreFallback).eq('id', product.id);
+        }
+
+        if (res.error) throw res.error;
+
+        Object.assign(product, updates);
+        if (updates.stock !== undefined) product.quantity = updates.stock;
+        updateMetricsSummary(allAdminProducts);
+
+        Swal.fire({
+            title: '¡Guardado!',
+            text: 'Cambio guardado en Supabase',
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 1000,
+            showConfirmButton: false
+        });
+    } catch (e) {
+        console.error("Error actualizando campo inline:", e);
+        Swal.fire('Error', 'No se pudo guardar la edición: ' + (e.message || e), 'error');
+    }
 }
 
 function renderAdminProductGrid(products) {
