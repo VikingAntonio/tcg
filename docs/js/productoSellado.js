@@ -1,5 +1,7 @@
 let currentUser = null;
 let allAdminProducts = [];
+let isTableEditMode = false;
+let pendingTableChanges = {};
 
 $(document).ready(async function() {
     console.log("Initializing Sealed Products Module...");
@@ -13,6 +15,10 @@ $(document).ready(async function() {
     $('#btn-toggle-admin-filters').click(function() {
         $(this).toggleClass('active');
         $('#admin-filter-drawer').slideToggle(250).css('display', $('#admin-filter-drawer').is(':visible') ? 'flex' : 'none');
+    });
+
+    $('#btn-toggle-edit-mode').click(function() {
+        toggleTableEditMode();
     });
 
     $('#btn-open-add-modal').click(function() {
@@ -299,6 +305,85 @@ function applyAdminFiltersAndSort() {
     renderAdminProductTable(filtered);
 }
 
+async function toggleTableEditMode() {
+    if (isTableEditMode) {
+        // Save batch changes
+        const modifiedIds = Object.keys(pendingTableChanges);
+        if (modifiedIds.length > 0) {
+            Swal.fire({
+                title: 'Guardando cambios...',
+                text: 'Actualizando catálogo en Supabase...',
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                for (const id of modifiedIds) {
+                    const updates = pendingTableChanges[id];
+                    const prod = allAdminProducts.find(p => p.id == id);
+                    if (!prod) continue;
+
+                    let savePayload = { ...updates };
+                    if (savePayload.stock !== undefined) savePayload.quantity = savePayload.stock;
+
+                    let res = await _supabase.from('sealed_products').update(savePayload).eq('id', id);
+
+                    // Fallbacks for schema errors
+                    if (res.error) {
+                        delete savePayload.quantity;
+                        delete savePayload.cost;
+                        delete savePayload.profit;
+                        res = await _supabase.from('sealed_products').update(savePayload).eq('id', id);
+                    }
+                    if (res.error) {
+                        delete savePayload.stock;
+                        delete savePayload.cost_price;
+                        delete savePayload.estimated_profit;
+                        delete savePayload.discount;
+                        delete savePayload.status;
+                        res = await _supabase.from('sealed_products').update(savePayload).eq('id', id);
+                    }
+
+                    if (!res.error) {
+                        Object.assign(prod, updates);
+                        if (updates.stock !== undefined) prod.quantity = updates.stock;
+                    }
+                }
+
+                pendingTableChanges = {};
+                Swal.fire({
+                    title: '¡Cambios Guardados!',
+                    text: 'Toda la tabla ha sido actualizada correctamente en Supabase.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } catch (err) {
+                console.error("Batch save error:", err);
+                Swal.fire('Error', 'Hubo un problema guardando algunos productos', 'error');
+            }
+        }
+
+        isTableEditMode = false;
+        $('#product-table-wrapper').removeClass('editing-mode');
+        $('#btn-toggle-edit-mode').html('<i class="fas fa-edit"></i> EDITAR TABLA').css({
+            background: 'rgba(0, 210, 255, 0.15)',
+            borderColor: '#00d2ff',
+            color: '#00d2ff'
+        });
+        applyAdminFiltersAndSort();
+    } else {
+        isTableEditMode = true;
+        pendingTableChanges = {};
+        $('#product-table-wrapper').addClass('editing-mode');
+        $('#btn-toggle-edit-mode').html('<i class="fas fa-save"></i> GUARDAR CAMBIOS').css({
+            background: 'linear-gradient(135deg, #00ff88 0%, #00b894 100%)',
+            borderColor: '#00ff88',
+            color: '#fff'
+        });
+        applyAdminFiltersAndSort();
+    }
+}
+
 window.renderAdminProductTable = renderAdminProductTable;
 function renderAdminProductTable(products) {
     const $tbody = $('#product-table-body');
@@ -326,16 +411,19 @@ function renderAdminProductTable(products) {
         const profitNum = calcProductProfit(priceVal, discountVal, costPrice);
         const profitFormatted = `$${profitNum.toFixed(2)}`;
 
+        const disabledAttr = isTableEditMode ? '' : 'disabled';
+        const pointerEvents = isTableEditMode ? 'auto' : 'none';
+
         const $tr = $(`
             <tr class="sheet-tr" data-id="${product.id}">
                 <td class="sheet-td" style="text-align: center;">
                     <img src="${product.image_url || 'https://via.placeholder.com/100?text=Sin+Imagen'}" class="sheet-img-thumb" alt="${product.name}">
                 </td>
                 <td class="sheet-td">
-                    <input type="text" class="sheet-input sheet-input-name" value="${product.name || ''}" style="width: 100%; min-width: 180px;">
+                    <input type="text" class="sheet-input sheet-input-name" value="${product.name || ''}" style="width: 100%; min-width: 180px; pointer-events: ${pointerEvents};" ${disabledAttr}>
                 </td>
                 <td class="sheet-td">
-                    <select class="sheet-select sheet-select-tcg">
+                    <select class="sheet-select sheet-select-tcg" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
                         <option value="yugioh" ${(product.tcg || '').toLowerCase() === 'yugioh' ? 'selected' : ''}>Yu-Gi-Oh!</option>
                         <option value="pokemon" ${(product.tcg || '').toLowerCase() === 'pokemon' ? 'selected' : ''}>Pokémon</option>
                         <option value="onepiece" ${(product.tcg || '').toLowerCase() === 'onepiece' ? 'selected' : ''}>One Piece</option>
@@ -345,25 +433,25 @@ function renderAdminProductTable(products) {
                 </td>
                 <td class="sheet-td" style="text-align: center;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                        <button class="sheet-btn-quick sub btn-sub-stock" title="Registrar Venta (-1)">-</button>
-                        <input type="number" class="sheet-input sheet-input-stock" value="${stockCount}" min="0">
-                        <button class="sheet-btn-quick add btn-add-stock" title="Registrar Devolución/Ingreso (+1)">+</button>
+                        <button class="sheet-btn-quick sub btn-sub-stock" title="Registrar Venta (-1)" style="pointer-events: ${pointerEvents};" ${disabledAttr}>-</button>
+                        <input type="number" class="sheet-input sheet-input-stock" value="${stockCount}" min="0" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                        <button class="sheet-btn-quick add btn-add-stock" title="Registrar Devolución/Ingreso (+1)" style="pointer-events: ${pointerEvents};" ${disabledAttr}>+</button>
                     </div>
                 </td>
                 <td class="sheet-td">
-                    <input type="text" class="sheet-input sheet-input-price input-price" value="${priceVal}">
+                    <input type="text" class="sheet-input sheet-input-price input-price" value="${priceVal}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
                 </td>
                 <td class="sheet-td">
-                    <input type="text" class="sheet-input sheet-input-price input-discount" value="${discountVal}">
+                    <input type="text" class="sheet-input sheet-input-price input-discount" value="${discountVal}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
                 </td>
                 <td class="sheet-td">
-                    <input type="text" class="sheet-input sheet-input-price input-cost" value="${costPrice}">
+                    <input type="text" class="sheet-input sheet-input-price input-cost" value="${costPrice}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
                 </td>
                 <td class="sheet-td">
                     <span class="profit-val" style="font-weight: 800; color: #00ff88; font-size: 0.85rem;">${profitFormatted}</span>
                 </td>
                 <td class="sheet-td">
-                    <select class="sheet-select sheet-select-status">
+                    <select class="sheet-select sheet-select-status" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
                         <option value="Disponible" ${(product.status || 'Disponible') === 'Disponible' ? 'selected' : ''}>Disponible</option>
                         <option value="Agotado" ${product.status === 'Agotado' ? 'selected' : ''}>Agotado</option>
                         <option value="Poco Stock" ${product.status === 'Poco Stock' ? 'selected' : ''}>Poco Stock</option>
@@ -371,26 +459,41 @@ function renderAdminProductTable(products) {
                     </select>
                 </td>
                 <td class="sheet-td" style="text-align: center;">
-                    <label class="switch" style="transform: scale(0.7); margin: 0 auto; display: block;">
-                        <input type="checkbox" class="toggle-public-sheet" ${isPublic ? 'checked' : ''}>
+                    <label class="switch" style="transform: scale(0.7); margin: 0 auto; display: block; pointer-events: ${pointerEvents};">
+                        <input type="checkbox" class="toggle-public-sheet" ${isPublic ? 'checked' : ''} ${disabledAttr}>
                         <span class="slider"></span>
                     </label>
                 </td>
                 <td class="sheet-td" style="text-align: center;">
                     <div style="display: flex; gap: 4px; justify-content: center;">
-                        <button class="btn-icon-square btn-edit-sheet" title="Editar Modal"><i class="fas fa-pen"></i></button>
+                        <button class="btn-icon-square btn-edit-sheet" title="${isTableEditMode ? 'Guardar Cambios' : 'Activar Edición de Tabla'}"><i class="fas ${isTableEditMode ? 'fa-save' : 'fa-pen'}"></i></button>
                         <button class="btn-icon-square danger btn-delete-sheet" title="Eliminar"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
             </tr>
         `);
 
+        // Helper to record changes locally in pendingTableChanges
+        const trackChange = (fieldUpdates) => {
+            if (!pendingTableChanges[product.id]) {
+                pendingTableChanges[product.id] = {};
+            }
+            Object.assign(pendingTableChanges[product.id], fieldUpdates);
+        };
+
         // Row events
-        $tr.find('.btn-edit-sheet').click(() => editProduct(product));
+        $tr.find('.btn-edit-sheet').click(() => {
+            if (!isTableEditMode) {
+                toggleTableEditMode();
+            } else {
+                toggleTableEditMode(); // Save batch
+            }
+        });
         $tr.find('.btn-delete-sheet').click(() => deleteProduct(product.id));
 
         $tr.find('.toggle-public-sheet').change(function() {
-            updateVisibility(product.id, $(this).is(':checked'));
+            const val = $(this).is(':checked');
+            trackChange({ is_public: val });
         });
 
         // Quick Stock -1 (Venta)
@@ -401,7 +504,7 @@ function renderAdminProductTable(products) {
             const newStatus = newStock === 0 ? 'Agotado' : (product.status || 'Disponible');
             $tr.find('.sheet-input-stock').val(newStock);
             $tr.find('.sheet-select-status').val(newStatus);
-            updateInlineProductField(product, { stock: newStock, status: newStatus });
+            trackChange({ stock: newStock, quantity: newStock, status: newStatus });
         });
 
         // Quick Stock +1 (Devolución / Ingreso)
@@ -411,33 +514,33 @@ function renderAdminProductTable(products) {
             const newStatus = product.status === 'Agotado' ? 'Disponible' : (product.status || 'Disponible');
             $tr.find('.sheet-input-stock').val(newStock);
             $tr.find('.sheet-select-status').val(newStatus);
-            updateInlineProductField(product, { stock: newStock, status: newStatus });
+            trackChange({ stock: newStock, quantity: newStock, status: newStatus });
         });
 
         // Stock input direct change
-        $tr.find('.sheet-input-stock').on('change', function() {
+        $tr.find('.sheet-input-stock').on('input change', function() {
             const newStock = parseInt($(this).val()) || 0;
             const newStatus = newStock === 0 ? 'Agotado' : (product.status || 'Disponible');
             $tr.find('.sheet-select-status').val(newStatus);
-            updateInlineProductField(product, { stock: newStock, status: newStatus });
+            trackChange({ stock: newStock, quantity: newStock, status: newStatus });
         });
 
         // Name change
-        $tr.find('.sheet-input-name').on('change', function() {
+        $tr.find('.sheet-input-name').on('input change', function() {
             const newName = $(this).val().trim();
             if (newName) {
-                updateInlineProductField(product, { name: newName });
+                trackChange({ name: newName });
             }
         });
 
         // TCG change
         $tr.find('.sheet-select-tcg').on('change', function() {
-            updateInlineProductField(product, { tcg: $(this).val() });
+            trackChange({ tcg: $(this).val() });
         });
 
         // Status change
         $tr.find('.sheet-select-status').on('change', function() {
-            updateInlineProductField(product, { status: $(this).val() });
+            trackChange({ status: $(this).val() });
         });
 
         // Price, Discount, Cost change
@@ -450,64 +553,13 @@ function renderAdminProductTable(products) {
             return { price: p, discount: d, cost_price: c, cost: c, estimated_profit: estProfit, profit: estProfit };
         };
 
-        $tr.find('.input-price, .input-discount, .input-cost').on('change', function() {
+        $tr.find('.input-price, .input-discount, .input-cost').on('input change', function() {
             const updates = recalculateRowProfit();
-            updateInlineProductField(product, updates);
+            trackChange(updates);
         });
 
         $tbody.append($tr);
     });
-}
-
-async function updateInlineProductField(product, updates) {
-    try {
-        if (updates.stock !== undefined && updates.quantity === undefined) {
-            updates.quantity = updates.stock;
-        } else if (updates.quantity !== undefined && updates.stock === undefined) {
-            updates.stock = updates.quantity;
-        }
-
-        let res = await _supabase.from('sealed_products').update(updates).eq('id', product.id);
-        if (res.error) {
-            // Fallback try without quantity or extended profit fields if schema errors occur
-            const fallback = { ...updates };
-            delete fallback.quantity;
-            delete fallback.cost;
-            delete fallback.profit;
-            res = await _supabase.from('sealed_products').update(fallback).eq('id', product.id);
-        }
-
-        if (res.error) {
-            // Further fallback to core fields
-            const coreFallback = { ...updates };
-            delete coreFallback.quantity;
-            delete coreFallback.cost;
-            delete coreFallback.profit;
-            delete coreFallback.cost_price;
-            delete coreFallback.estimated_profit;
-            delete coreFallback.discount;
-            delete coreFallback.status;
-            res = await _supabase.from('sealed_products').update(coreFallback).eq('id', product.id);
-        }
-
-        if (res.error) throw res.error;
-
-        Object.assign(product, updates);
-        if (updates.stock !== undefined) product.quantity = updates.stock;
-
-        Swal.fire({
-            title: '¡Guardado!',
-            text: 'Cambio guardado en Supabase',
-            icon: 'success',
-            toast: true,
-            position: 'top-end',
-            timer: 1000,
-            showConfirmButton: false
-        });
-    } catch (e) {
-        console.error("Error actualizando campo inline:", e);
-        Swal.fire('Error', 'No se pudo guardar la edición: ' + (e.message || e), 'error');
-    }
 }
 
 
