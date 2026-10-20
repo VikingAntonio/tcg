@@ -376,8 +376,10 @@ function renderAdminPreorderTable(preorders) {
                     </label>
                 </td>
                 <td class="sheet-td" style="text-align: center;">
-                    <div style="display: flex; gap: 4px; justify-content: center;">
-                        <button class="btn-icon-square btn-clients" title="Ver Clientes (${reservedCount})"><i class="fas fa-users"></i></button>
+                    <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                        <button class="btn-clients-badge btn-clients" title="Ver Lista de Clientes (${reservedCount})">
+                            <i class="fas fa-users"></i> Clientes (${reservedCount})
+                        </button>
                         <button class="btn-icon-square btn-edit-sheet" title="${isTableEditMode ? 'Guardar Cambios' : 'Editar'}"><i class="fas ${isTableEditMode ? 'fa-save' : 'fa-pen'}"></i></button>
                         <button class="btn-icon-square danger btn-delete-sheet" title="Eliminar"><i class="fas fa-trash"></i></button>
                     </div>
