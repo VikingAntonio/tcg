@@ -131,78 +131,168 @@
             color: #00d2ff;
         }
 
-        /* Metric Summary Cards */
-        .stats-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        /* Google Sheets / Spreadsheet Style View */
+        .sheet-table-container {
+            width: 100%;
+            overflow-x: auto;
+            background: rgba(15, 23, 36, 0.7);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 210, 255, 0.4) rgba(15, 23, 36, 0.5);
         }
 
-        .stat-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 16px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 0;
+        .sheet-table-container::-webkit-scrollbar {
+            height: 8px;
+            background: rgba(15, 23, 36, 0.5);
         }
 
-        .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: rgba(0, 210, 255, 0.12);
-            color: var(--accent-cyan);
-            display: flex;
+        .sheet-table-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 210, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        .sheet-table-container.editing-mode {
+            border: 2px solid #00d2ff !important;
+            box-shadow: 0 0 25px rgba(0, 210, 255, 0.5) !important;
+            transition: all 0.3s ease;
+        }
+
+        .sheet-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 100%;
+            color: #e2e8f0;
+            font-size: 0.85rem;
+        }
+
+        .sheet-th {
+            background: rgba(0, 0, 0, 0.4);
+            color: #00d2ff;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.5px;
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 2px solid rgba(0, 210, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            white-space: nowrap;
+        }
+
+        .sheet-tr {
+            transition: background 0.2s ease;
+        }
+
+        .sheet-tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .sheet-tr:hover {
+            background: rgba(0, 210, 255, 0.08);
+        }
+
+        .sheet-td {
+            padding: 8px 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .sheet-img-thumb {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: block;
+            margin: 0 auto;
+        }
+
+        .sheet-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: #fff;
+            padding: 5px 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .sheet-input:focus {
+            border-color: #00d2ff;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .sheet-input-stock {
+            width: 48px;
+            text-align: center;
+        }
+
+        .sheet-input-price {
+            width: 72px;
+        }
+
+        .sheet-input-date {
+            width: 105px;
+            color-scheme: dark;
+        }
+
+        .sheet-select {
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: #fff;
+            padding: 5px 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .sheet-btn-quick {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-radius: 6px;
+            width: 22px;
+            height: 22px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
-            flex-shrink: 0;
-        }
-
-        .stat-card:nth-child(2) .stat-icon {
-            background: rgba(0, 255, 136, 0.12);
-            color: var(--accent-green);
-        }
-
-        .stat-card:nth-child(3) .stat-icon {
-            background: rgba(245, 175, 25, 0.12);
-            color: #f5af19;
-        }
-
-        .stat-card:nth-child(4) .stat-icon {
-            background: rgba(155, 89, 182, 0.12);
-            color: #9b59b6;
-        }
-
-        .stat-info {
-            min-width: 0;
-            overflow: hidden;
-        }
-
-        .stat-info .stat-val {
-            font-size: 1.25rem;
-            font-weight: 900;
-            color: #fff;
-            line-height: 1.1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .stat-info .stat-lbl {
+            cursor: pointer;
             font-size: 0.7rem;
-            color: #8a9ba8;
-            text-transform: uppercase;
-            font-weight: 700;
-            margin-top: 2px;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .sheet-btn-quick:hover {
+            background: rgba(0, 210, 255, 0.2);
+            color: #00d2ff;
+            border-color: #00d2ff;
+        }
+
+        .sheet-btn-quick.add:hover {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border-color: #00ff88;
+        }
+
+        .sheet-btn-quick.sub:hover {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+            border-color: #ff4757;
         }
 
         /* Collapsible Filter Toolbar */
@@ -652,41 +742,12 @@
                     <button id="btn-toggle-admin-filters" class="btn-filter-toggle">
                         <i class="fas fa-filter"></i> Filtros
                     </button>
+                    <button id="btn-toggle-edit-mode" class="btn-filter-toggle" style="background: rgba(0, 210, 255, 0.15); border-color: #00d2ff; color: #00d2ff;">
+                        <i class="fas fa-edit"></i> EDITAR TABLA
+                    </button>
                     <button id="btn-open-add-modal" class="btn-add-primary">
                         <i class="fas fa-plus-circle"></i> AÑADIR PREVENTA
                     </button>
-                </div>
-            </div>
-
-            <!-- Stats Metric Cards -->
-            <div class="stats-summary-grid">
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-fire"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-val" id="stat-total-preorders">0</div>
-                        <div class="stat-lbl">Preventas</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-eye"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-val" id="stat-public-preorders">0</div>
-                        <div class="stat-lbl">Públicas</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-val" id="stat-total-reservations">0</div>
-                        <div class="stat-lbl">Reservas</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-boxes"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-val" id="stat-available-stock">0</div>
-                        <div class="stat-lbl">Disponibles</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -695,7 +756,7 @@
         <div id="admin-filter-drawer" class="toolbar-control-panel">
             <div class="search-field-wrapper">
                 <i class="fas fa-search"></i>
-                <input type="text" id="admin-search-input" class="search-field-input">
+                <input type="text" id="admin-search-input" class="search-field-input" placeholder="Buscar por nombre...">
             </div>
 
             <div class="filter-group-wrapper">
@@ -716,11 +777,34 @@
             </div>
         </div>
 
-        <!-- Preorders Grid -->
-        <div id="preorder-list" class="products-ecom-grid">
-            <div class="loading" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #94a3b8; font-size: 1.1rem;">
-                <i class="fas fa-circle-notch fa-spin fa-2x" style="color: #00d2ff;"></i><br><br>Cargando preventas...
-            </div>
+        <!-- Preorders Table Container (Spreadsheet View) -->
+        <div id="preorder-table-wrapper" class="sheet-table-container">
+            <table class="sheet-table">
+                <thead>
+                    <tr>
+                        <th class="sheet-th" style="width: 42px; text-align: center;">Img</th>
+                        <th class="sheet-th">Preventa</th>
+                        <th class="sheet-th" style="width: 95px;">TCG</th>
+                        <th class="sheet-th" style="width: 110px; text-align: center;">Stock Total</th>
+                        <th class="sheet-th" style="width: 90px;">Precio Venta</th>
+                        <th class="sheet-th" style="width: 90px;">Aparta Desde</th>
+                        <th class="sheet-th" style="width: 90px;">Inversión</th>
+                        <th class="sheet-th" style="width: 80px; text-align: center;">Límite x Pers.</th>
+                        <th class="sheet-th" style="width: 110px;">Fecha Inicio</th>
+                        <th class="sheet-th" style="width: 110px;">Fin Pago</th>
+                        <th class="sheet-th" style="width: 110px;">Fecha Llegada</th>
+                        <th class="sheet-th" style="width: 65px; text-align: center;">Público</th>
+                        <th class="sheet-th" style="width: 95px; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="preorder-table-body">
+                    <tr>
+                        <td colspan="13" style="padding: 60px; text-align: center; color: #94a3b8; font-size: 1rem;">
+                            <i class="fas fa-circle-notch fa-spin fa-2x" style="color: #00d2ff; margin-bottom: 12px;"></i><br>Cargando preventas...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 

@@ -2,6 +2,8 @@ let currentUser = null;
 let allPreorders = [];
 let activeClientsPreorder = null;
 let currentClientsList = [];
+let isTableEditMode = false;
+let pendingTableChanges = {};
 
 $(document).ready(async function() {
     console.log("Initializing Preorders Module...");
@@ -12,6 +14,15 @@ $(document).ready(async function() {
     }
 
     // --- Navigation & Filter Drawer ---
+    $('#btn-toggle-admin-filters').click(function() {
+        $(this).toggleClass('active');
+        $('#admin-filter-drawer').slideToggle(200).css('display', $(this).hasClass('active') ? 'flex' : 'none');
+    });
+
+    $('#btn-toggle-edit-mode').click(function() {
+        toggleTableEditMode();
+    });
+
     $('#btn-open-add-modal').click(function() {
         resetModal();
         $('#preorder-modal').addClass('active');
@@ -23,11 +34,6 @@ $(document).ready(async function() {
 
     $('#close-clients-modal').click(function() {
         $('#preorder-clients-modal').removeClass('active');
-    });
-
-    $('#btn-toggle-admin-filters').click(function() {
-        $(this).toggleClass('active');
-        $('#admin-filter-drawer').slideToggle(200).css('display', $(this).hasClass('active') ? 'flex' : 'none');
     });
 
     $('#admin-search-input, #admin-filter-tcg, #admin-filter-visibility').on('input change', function() {
@@ -156,7 +162,13 @@ async function handleLogout() {
 }
 
 async function loadPreorders() {
-    $('#preorder-list').html('<div class="loading" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #94a3b8; font-size: 1.1rem;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color: #00d2ff;"></i><br><br>Cargando preventas...</div>');
+    $('#preorder-table-body').html(`
+        <tr>
+            <td colspan="13" style="padding: 60px; text-align: center; color: #94a3b8; font-size: 1rem;">
+                <i class="fas fa-circle-notch fa-spin fa-2x" style="color: #00d2ff; margin-bottom: 12px;"></i><br>Cargando preventas...
+            </td>
+        </tr>
+    `);
 
     try {
         const { data: preorders, error } = await _supabase
@@ -168,41 +180,17 @@ async function loadPreorders() {
         if (error) throw error;
 
         allPreorders = preorders || [];
-        updateDashboardMetrics();
         filterAndRenderPreorders();
     } catch (err) {
         console.error("Load preorders error:", err);
-        $('#preorder-list').html('<div class="error" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #ff4757;">Error al cargar preventas. Por favor, refresca la página.</div>');
+        $('#preorder-table-body').html(`
+            <tr>
+                <td colspan="13" style="padding: 60px; text-align: center; color: #ff4757; font-size: 1rem;">
+                    Error al cargar preventas. Por favor, refresca la página.
+                </td>
+            </tr>
+        `);
     }
-}
-
-function updateDashboardMetrics() {
-    let totalCount = allPreorders.length;
-    let publicCount = 0;
-    let totalReservations = 0;
-    let totalAvailable = 0;
-
-    allPreorders.forEach(p => {
-        if (p.is_public !== false) publicCount++;
-
-        let clients = p.clients_list;
-        if (typeof clients === 'string') {
-            try { clients = JSON.parse(clients); } catch (e) { clients = []; }
-        }
-        if (!Array.isArray(clients)) clients = [];
-
-        let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
-        let maxStock = parseInt(p.max_stock) || 0;
-        let available = Math.max(0, maxStock - reserved);
-
-        totalReservations += reserved;
-        totalAvailable += available;
-    });
-
-    $('#stat-total-preorders').text(totalCount);
-    $('#stat-public-preorders').text(publicCount);
-    $('#stat-total-reservations').text(totalReservations);
-    $('#stat-available-stock').text(totalAvailable);
 }
 
 function filterAndRenderPreorders() {
@@ -218,95 +206,283 @@ function filterAndRenderPreorders() {
         return true;
     });
 
-    renderPreordersList(filtered);
+    $('#preorder-table-wrapper').show();
+    renderAdminPreorderTable(filtered);
 }
 
-function renderPreordersList(preorders) {
-    const $container = $('#preorder-list');
-    $container.empty();
+async function toggleTableEditMode() {
+    if (isTableEditMode) {
+        // Save batch changes
+        const modifiedIds = Object.keys(pendingTableChanges);
+        if (modifiedIds.length > 0) {
+            Swal.fire({
+                title: 'Guardando cambios...',
+                text: 'Actualizando preventas en Supabase...',
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                for (const id of modifiedIds) {
+                    const updates = pendingTableChanges[id];
+                    const preorder = allPreorders.find(p => p.id == id);
+                    if (!preorder) continue;
+
+                    let savePayload = { ...updates };
+
+                    let res = await _supabase.from('preorders').update(savePayload).eq('id', id);
+
+                    // Fallbacks for schema errors
+                    if (res.error) {
+                        delete savePayload.cost_price;
+                        delete savePayload.reserve_amount;
+                        delete savePayload.start_date;
+                        delete savePayload.arrival_date;
+                        res = await _supabase.from('preorders').update(savePayload).eq('id', id);
+                    }
+                    if (res.error) {
+                        delete savePayload.max_stock;
+                        delete savePayload.per_person_limit;
+                        delete savePayload.payment_deadline;
+                        res = await _supabase.from('preorders').update(savePayload).eq('id', id);
+                    }
+
+                    if (!res.error) {
+                        Object.assign(preorder, updates);
+                    }
+                }
+
+                pendingTableChanges = {};
+                Swal.fire({
+                    title: '¡Cambios Guardados!',
+                    text: 'Toda la tabla ha sido actualizada correctamente en Supabase.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } catch (err) {
+                console.error("Batch save error:", err);
+                Swal.fire('Error', 'Hubo un problema guardando algunas preventas', 'error');
+            }
+        }
+
+        isTableEditMode = false;
+        $('#preorder-table-wrapper').removeClass('editing-mode');
+        $('#btn-toggle-edit-mode').html('<i class="fas fa-edit"></i> EDITAR TABLA').css({
+            background: 'rgba(0, 210, 255, 0.15)',
+            borderColor: '#00d2ff',
+            color: '#00d2ff'
+        });
+        filterAndRenderPreorders();
+    } else {
+        isTableEditMode = true;
+        pendingTableChanges = {};
+        $('#preorder-table-wrapper').addClass('editing-mode');
+        $('#btn-toggle-edit-mode').html('<i class="fas fa-save"></i> GUARDAR CAMBIOS').css({
+            background: 'linear-gradient(135deg, #00ff88 0%, #00b894 100%)',
+            borderColor: '#00ff88',
+            color: '#fff'
+        });
+        filterAndRenderPreorders();
+    }
+}
+
+window.renderAdminPreorderTable = renderAdminPreorderTable;
+function renderAdminPreorderTable(preorders) {
+    const $tbody = $('#preorder-table-body');
+    $tbody.empty();
 
     if (!preorders || preorders.length === 0) {
-        $container.html('<div class="empty" style="grid-column: 1/-1; padding: 80px; text-align: center; color: #64748b; font-size: 1rem;">No hay preventas registradas.</div>');
+        $tbody.html(`
+            <tr>
+                <td colspan="13" style="text-align: center; padding: 50px; color: #64748b;">
+                    <i class="fas fa-box-open" style="font-size: 2.5rem; margin-bottom: 10px; opacity: 0.4;"></i>
+                    <p style="font-size: 1rem; font-weight: 700; color: #94a3b8; margin: 0;">No se encontraron preventas en el registro.</p>
+                </td>
+            </tr>
+        `);
         return;
     }
 
     preorders.forEach(preorder => {
         const isPublic = preorder.is_public !== false;
+        const maxStock = parseInt(preorder.max_stock) || 0;
+        const costPrice = preorder.cost_price || '';
+        const priceVal = preorder.price || '';
+        const reserveVal = preorder.reserve_amount || '';
+        const perPersonLimitVal = preorder.per_person_limit !== null && preorder.per_person_limit !== undefined ? preorder.per_person_limit : '';
+        const startDateVal = preorder.start_date || '';
+        const deadlineVal = preorder.payment_deadline || preorder.deadline || '';
+        const arrivalDateVal = preorder.arrival_date || '';
 
         let clients = preorder.clients_list;
         if (typeof clients === 'string') {
             try { clients = JSON.parse(clients); } catch (e) { clients = []; }
         }
         if (!Array.isArray(clients)) clients = [];
+        const reservedCount = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
 
-        let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
-        let maxStock = parseInt(preorder.max_stock) || 0;
-        let available = Math.max(0, maxStock - reserved);
+        const disabledAttr = isTableEditMode ? '' : 'disabled';
+        const pointerEvents = isTableEditMode ? 'auto' : 'none';
 
-        const $card = $(`
-            <div class="product-ecom-card">
-                <div class="card-img-box">
-                    <img src="${preorder.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${preorder.name}">
-                    <span class="badge-tcg-pill">${preorder.tcg || 'Otro'}</span>
-                    <span class="badge-stock-pill ${available <= 0 ? 'out-of-stock' : ''}">
-                        ${maxStock > 0 ? `${available} Disp.` : 'Consultar'}
-                    </span>
-                </div>
-
-                <div style="padding: 12px 2px 2px 2px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <h3 style="margin: 0 0 6px 0; font-size: 1.05rem; font-weight: 800; color: #fff; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 2.6em;">
-                            ${preorder.name}
-                        </h3>
-
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
-                            <div style="font-size: 1.2rem; font-weight: 900; color: #00d2ff;">
-                                ${preorder.price || 'Consultar'}
-                            </div>
-                            <div style="font-size: 0.72rem; color: #ff4757; font-weight: 800; display: flex; align-items: center; gap: 4px;">
-                                <i class="fas fa-clock"></i> ${preorder.payment_deadline || preorder.deadline || 'Fin N/A'}
-                            </div>
-                        </div>
-
-                        ${preorder.reserve_amount ? `
-                            <div style="font-size: 0.72rem; color: #f5af19; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-                                <i class="fas fa-coins"></i> Aparta desde: ${preorder.reserve_amount.toString().includes('$') ? preorder.reserve_amount : `$${preorder.reserve_amount}`}
-                            </div>
-                        ` : ''}
-
-                        ${preorder.arrival_date ? `
-                            <div style="font-size: 0.72rem; color: #00ff88; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-                                <i class="fas fa-truck"></i> Llegada: ${preorder.arrival_date}
-                            </div>
-                        ` : ''}
+        const $tr = $(`
+            <tr class="sheet-tr" data-id="${preorder.id}">
+                <td class="sheet-td" style="text-align: center;">
+                    <img src="${preorder.image_url || 'https://via.placeholder.com/100?text=Sin+Imagen'}" class="sheet-img-thumb" alt="${preorder.name}">
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-name" value="${preorder.name || ''}" style="width: 100%; min-width: 180px; pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td">
+                    <select class="sheet-select sheet-select-tcg" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                        <option value="yugioh" ${(preorder.tcg || '').toLowerCase() === 'yugioh' ? 'selected' : ''}>Yu-Gi-Oh!</option>
+                        <option value="pokemon" ${(preorder.tcg || '').toLowerCase() === 'pokemon' ? 'selected' : ''}>Pokémon</option>
+                        <option value="onepiece" ${(preorder.tcg || '').toLowerCase() === 'onepiece' ? 'selected' : ''}>One Piece</option>
+                        <option value="lorcana" ${(preorder.tcg || '').toLowerCase() === 'lorcana' ? 'selected' : ''}>Lorcana</option>
+                        <option value="other" ${(preorder.tcg || '').toLowerCase() === 'other' ? 'selected' : ''}>Otro</option>
+                    </select>
+                </td>
+                <td class="sheet-td" style="text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <button class="sheet-btn-quick sub btn-sub-stock" title="Reducir Stock Total (-1)" style="pointer-events: ${pointerEvents};" ${disabledAttr}>-</button>
+                        <input type="number" class="sheet-input sheet-input-stock" value="${maxStock}" min="0" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                        <button class="sheet-btn-quick add btn-add-stock" title="Aumentar Stock Total (+1)" style="pointer-events: ${pointerEvents};" ${disabledAttr}>+</button>
                     </div>
-
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <label class="switch" style="transform: scale(0.75);">
-                                <input type="checkbox" class="toggle-public" data-id="${preorder.id}" ${isPublic ? 'checked' : ''}>
-                                <span class="slider"></span>
-                            </label>
-                            <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 800;">${isPublic ? 'PÚBLICO' : 'PRIVADO'}</span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            <button class="btn-icon-square btn-clients" title="Ver Clientes (${reserved})"><i class="fas fa-users"></i></button>
-                            <button class="btn-icon-square btn-edit" title="Editar"><i class="fas fa-pen"></i></button>
-                            <button class="btn-icon-square danger btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
-                        </div>
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-price input-price" value="${priceVal}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-price input-reserve" value="${reserveVal}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td">
+                    <input type="text" class="sheet-input sheet-input-price input-cost" value="${costPrice}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td" style="text-align: center;">
+                    <input type="number" class="sheet-input sheet-input-stock input-per-person" value="${perPersonLimitVal}" min="1" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td">
+                    <input type="date" class="sheet-input sheet-input-date input-start-date" value="${startDateVal}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td">
+                    <input type="date" class="sheet-input sheet-input-date input-deadline" value="${deadlineVal}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td">
+                    <input type="date" class="sheet-input sheet-input-date input-arrival-date" value="${arrivalDateVal}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
+                </td>
+                <td class="sheet-td" style="text-align: center;">
+                    <label class="switch" style="transform: scale(0.7); margin: 0 auto; display: block; pointer-events: ${pointerEvents};">
+                        <input type="checkbox" class="toggle-public-sheet" ${isPublic ? 'checked' : ''} ${disabledAttr}>
+                        <span class="slider"></span>
+                    </label>
+                </td>
+                <td class="sheet-td" style="text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button class="btn-icon-square btn-clients" title="Ver Clientes (${reservedCount})"><i class="fas fa-users"></i></button>
+                        <button class="btn-icon-square btn-edit-sheet" title="${isTableEditMode ? 'Guardar Cambios' : 'Editar'}"><i class="fas ${isTableEditMode ? 'fa-save' : 'fa-pen'}"></i></button>
+                        <button class="btn-icon-square danger btn-delete-sheet" title="Eliminar"><i class="fas fa-trash"></i></button>
                     </div>
-                </div>
-            </div>
+                </td>
+            </tr>
         `);
 
-        $card.find('.btn-clients').click(() => openClientsModal(preorder));
-        $card.find('.btn-edit').click(() => editPreorder(preorder));
-        $card.find('.btn-delete').click(() => deletePreorder(preorder.id));
-        $card.find('.toggle-public').change(function() {
-            updateVisibility(preorder.id, $(this).is(':checked'));
+        // Helper to record changes locally in pendingTableChanges
+        const trackChange = (fieldUpdates) => {
+            if (!pendingTableChanges[preorder.id]) {
+                pendingTableChanges[preorder.id] = {};
+            }
+            Object.assign(pendingTableChanges[preorder.id], fieldUpdates);
+        };
+
+        // Row events
+        $tr.find('.btn-clients').click(() => openClientsModal(preorder));
+        $tr.find('.btn-edit-sheet').click(() => {
+            if (!isTableEditMode) {
+                editPreorder(preorder);
+            } else {
+                toggleTableEditMode(); // Save batch
+            }
+        });
+        $tr.find('.btn-delete-sheet').click(() => deletePreorder(preorder.id));
+
+        $tr.find('.toggle-public-sheet').change(function() {
+            const val = $(this).is(':checked');
+            trackChange({ is_public: val });
         });
 
-        $container.append($card);
+        // Quick Stock -1
+        $tr.find('.btn-sub-stock').click(function() {
+            const current = parseInt($tr.find('.sheet-input-stock').val()) || 0;
+            if (current <= 0) return;
+            const newStock = current - 1;
+            $tr.find('.sheet-input-stock').val(newStock);
+            trackChange({ max_stock: newStock });
+        });
+
+        // Quick Stock +1
+        $tr.find('.btn-add-stock').click(function() {
+            const current = parseInt($tr.find('.sheet-input-stock').val()) || 0;
+            const newStock = current + 1;
+            $tr.find('.sheet-input-stock').val(newStock);
+            trackChange({ max_stock: newStock });
+        });
+
+        // Stock input direct change
+        $tr.find('.sheet-input-stock').on('input change', function() {
+            const newStock = parseInt($(this).val()) || 0;
+            trackChange({ max_stock: newStock });
+        });
+
+        // Name change
+        $tr.find('.sheet-input-name').on('input change', function() {
+            const newName = $(this).val().trim();
+            if (newName) {
+                trackChange({ name: newName });
+            }
+        });
+
+        // TCG change
+        $tr.find('.sheet-select-tcg').on('change', function() {
+            trackChange({ tcg: $(this).val() });
+        });
+
+        // Price change
+        $tr.find('.input-price').on('input change', function() {
+            trackChange({ price: $(this).val().trim() });
+        });
+
+        // Reserve Amount change
+        $tr.find('.input-reserve').on('input change', function() {
+            trackChange({ reserve_amount: $(this).val().trim() });
+        });
+
+        // Cost Price change
+        $tr.find('.input-cost').on('input change', function() {
+            trackChange({ cost_price: $(this).val().trim() });
+        });
+
+        // Per Person Limit change
+        $tr.find('.input-per-person').on('input change', function() {
+            const val = $(this).val().trim();
+            trackChange({ per_person_limit: val ? (parseInt(val) || null) : null });
+        });
+
+        // Start Date change
+        $tr.find('.input-start-date').on('change', function() {
+            trackChange({ start_date: $(this).val() });
+        });
+
+        // Deadline change
+        $tr.find('.input-deadline').on('change', function() {
+            const val = $(this).val();
+            trackChange({ payment_deadline: val, deadline: val });
+        });
+
+        // Arrival Date change
+        $tr.find('.input-arrival-date').on('change', function() {
+            trackChange({ arrival_date: $(this).val() });
+        });
+
+        $tbody.append($tr);
     });
 }
 
