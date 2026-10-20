@@ -2035,6 +2035,14 @@ input:checked + .slider:before {
     padding: 10px 16px;
     border-radius: 12px;
     border: 1px solid #a7f3d0;
+    flex-wrap: wrap;
+}
+
+.sealed-price-val-original {
+    text-decoration: line-through;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    font-weight: 700;
 }
 
 .sealed-price-val {
@@ -2046,6 +2054,15 @@ input:checked + .slider:before {
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.5px;
     animation: priceShimmerGlow 3s ease-in-out infinite;
+}
+
+.sealed-price-val-promo {
+    font-weight: 900;
+    font-size: 1.6rem;
+    color: #dc2626 !important;
+    background: none !important;
+    -webkit-text-fill-color: #dc2626 !important;
+    letter-spacing: -0.5px;
 }
 
 @keyframes priceShimmerGlow {
@@ -2060,13 +2077,35 @@ input:checked + .slider:before {
 }
 
 .sealed-discount-badge {
-    color: #d97706;
+    color: #b91c1c;
     font-size: 0.75rem;
-    font-weight: 800;
-    background: #fef3c7;
-    padding: 3px 10px;
+    font-weight: 900;
+    background: #fee2e2;
+    padding: 4px 10px;
     border-radius: 10px;
-    border: 1px solid #fde68a;
+    border: 1px solid #fca5a5;
+    text-transform: uppercase;
+}
+
+/* AGOTADO Stamp Overlay covering card image */
+.sealed-soldout-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    border: 4px solid #ef4444;
+    color: #ef4444;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 8px 22px;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-radius: 14px;
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
 }
 
 /* Combined Action Row (NO "CANTIDAD" LABEL, NO EMOJI) */
