@@ -580,27 +580,27 @@ function renderClientsTable() {
 
             const $row = $(`
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;">
-                    <td style="padding: 10px 8px; font-weight: 700; color: #fff;">${client.name}</td>
-                    <td style="padding: 10px 8px; text-align: center; font-weight: 800; color: #00d2ff;">${client.qty}</td>
-                    <td style="padding: 10px 8px;">$${(parseFloat(client.deposit) || 0).toFixed(2)}</td>
-                    <td style="padding: 10px 8px; color: ${remaining > 0 ? '#ff4757' : '#00ff88'}; font-weight: 700;">$${remaining.toFixed(2)}</td>
-                    <td style="padding: 10px 8px;">
-                        <select class="select-client-payment" style="background: rgba(15,23,42,0.8); border: 1px solid ${paymentColor}; color: ${paymentColor}; border-radius: 6px; padding: 4px 6px; font-size: 0.75rem; font-weight: 800; outline: none; cursor: pointer;">
+                    <td style="padding: 12px 14px; font-weight: 700; color: #fff;">${client.name}</td>
+                    <td style="padding: 12px 14px; text-align: center; font-weight: 800; color: #00d2ff;">${client.qty}</td>
+                    <td style="padding: 12px 14px;">$${(parseFloat(client.deposit) || 0).toFixed(2)}</td>
+                    <td style="padding: 12px 14px; color: ${remaining > 0 ? '#ff4757' : '#00ff88'}; font-weight: 700;">$${remaining.toFixed(2)}</td>
+                    <td style="padding: 12px 14px;">
+                        <select class="select-client-payment" style="background: rgba(15,23,42,0.9); border: 1px solid ${paymentColor}; color: ${paymentColor}; border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; font-weight: 800; outline: none; cursor: pointer; width: 100%; min-width: 140px;">
                             <option value="Pendiente" ${paymentStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                             <option value="Pago Parcial" ${paymentStatus === 'Pago Parcial' ? 'selected' : ''}>Pago Parcial</option>
                             <option value="Liquidado" ${paymentStatus === 'Liquidado' ? 'selected' : ''}>Liquidado</option>
                         </select>
                     </td>
-                    <td style="padding: 10px 8px;">
-                        <select class="select-client-delivery" style="background: rgba(15,23,42,0.8); border: 1px solid ${deliveryColor}; color: ${deliveryColor}; border-radius: 6px; padding: 4px 6px; font-size: 0.75rem; font-weight: 800; outline: none; cursor: pointer;">
+                    <td style="padding: 12px 14px;">
+                        <select class="select-client-delivery" style="background: rgba(15,23,42,0.9); border: 1px solid ${deliveryColor}; color: ${deliveryColor}; border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; font-weight: 800; outline: none; cursor: pointer; width: 100%; min-width: 140px;">
                             <option value="Por Entregar" ${deliveryStatus === 'Por Entregar' ? 'selected' : ''}>Por Entregar</option>
                             <option value="En Camino" ${deliveryStatus === 'En Camino' ? 'selected' : ''}>En Camino</option>
                             <option value="Entregado" ${deliveryStatus === 'Entregado' ? 'selected' : ''}>Entregado</option>
                             <option value="Retrasado" ${deliveryStatus === 'Retrasado' ? 'selected' : ''}>Retrasado</option>
                         </select>
                     </td>
-                    <td style="padding: 10px 8px; text-align: center;">
-                        <button type="button" class="btn-del-client" style="background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.3); color: #ff4757; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;"><i class="fas fa-times"></i></button>
+                    <td style="padding: 12px 14px; text-align: center;">
+                        <button type="button" class="btn-del-client" style="background: rgba(255,71,87,0.15); border: 1px solid rgba(255,71,87,0.4); color: #ff4757; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 0.88rem;"><i class="fas fa-times"></i></button>
                     </td>
                 </tr>
             `);
