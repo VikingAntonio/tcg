@@ -537,6 +537,12 @@
             padding-top: 15px;
         }
 
+        .overlay-content.modal-clients-wide,
+        .modal-product-ecom.modal-clients-wide {
+            max-width: 1600px !important;
+            width: 95vw !important;
+        }
+
         .modal-tabs-header {
             display: flex;
             background: rgba(0, 0, 0, 0.4);
@@ -1018,30 +1024,30 @@
                 </div>
 
                 <!-- Client Sub-Form -->
-                <div style="display: grid; grid-template-columns: 2fr 0.8fr 1fr 1.5fr 1.5fr auto; gap: 12px; margin-bottom: 18px; align-items: end; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="display: grid; grid-template-columns: 2.5fr 1fr 1.2fr 1.8fr 1.8fr auto; gap: 14px; margin-bottom: 18px; align-items: end; background: rgba(0,0,0,0.3); padding: 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);">
                     <div>
-                        <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Nombre del Cliente</label>
+                        <label style="font-size: 0.78rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Nombre del Cliente</label>
                         <input type="text" id="client-input-name" placeholder="Ej: Juan Pérez" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 10px 12px; width: 100%; box-sizing: border-box; font-size: 0.88rem;">
                     </div>
                     <div>
-                        <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Cant.</label>
+                        <label style="font-size: 0.78rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Cant.</label>
                         <input type="number" id="client-input-qty" min="1" placeholder="1" value="" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 10px 8px; width: 100%; box-sizing: border-box; font-size: 0.88rem; text-align: center;">
                     </div>
                     <div>
-                        <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Anticipo ($)</label>
+                        <label style="font-size: 0.78rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Anticipo ($)</label>
                         <input type="text" id="client-input-deposit" placeholder="0.00" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 10px 10px; width: 100%; box-sizing: border-box; font-size: 0.88rem;">
                     </div>
                     <div>
-                        <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Estado de Pago</label>
-                        <select id="client-input-status-payment" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 10px 10px; width: 100%; box-sizing: border-box; font-size: 0.85rem; font-weight: 700;">
+                        <label style="font-size: 0.78rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Estado de Pago</label>
+                        <select id="client-input-status-payment" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 10px 12px; width: 100%; min-width: 150px; box-sizing: border-box; font-size: 0.85rem; font-weight: 700;">
                             <option value="Pendiente">Pendiente</option>
                             <option value="Pago Parcial">Pago Parcial</option>
                             <option value="Liquidado">Liquidado</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Estado de Entrega</label>
-                        <select id="client-input-status-delivery" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 10px 10px; width: 100%; box-sizing: border-box; font-size: 0.85rem; font-weight: 700;">
+                        <label style="font-size: 0.78rem; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">Estado de Entrega</label>
+                        <select id="client-input-status-delivery" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 10px 12px; width: 100%; min-width: 150px; box-sizing: border-box; font-size: 0.85rem; font-weight: 700;">
                             <option value="Por Entregar">Por Entregar</option>
                             <option value="En Camino">En Camino</option>
                             <option value="Entregado">Entregado</option>
@@ -1049,24 +1055,24 @@
                         </select>
                     </div>
                     <div>
-                        <button type="button" id="btn-add-client-entry" style="background: #00d2ff; color: #000; border: none; padding: 11px 18px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
+                        <button type="button" id="btn-add-client-entry" style="background: #00d2ff; color: #000; border: none; padding: 11px 22px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 0.88rem; white-space: nowrap;">
                             <i class="fas fa-plus"></i> Agregar
                         </button>
                     </div>
                 </div>
 
                 <!-- Client Table -->
-                <div style="max-height: 380px; overflow-y: auto; scrollbar-width: none; border-radius: 14px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); padding: 4px;">
-                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.88rem; color: #cbd5e1;">
+                <div style="max-height: 420px; overflow-y: auto; scrollbar-width: none; border-radius: 14px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); padding: 4px;">
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; color: #cbd5e1;">
                         <thead>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: #94a3b8; font-size: 0.78rem; text-transform: uppercase;">
-                                <th style="padding: 12px 10px;">Cliente</th>
-                                <th style="padding: 12px 10px; text-align: center;">Cant.</th>
-                                <th style="padding: 12px 10px;">Anticipo</th>
-                                <th style="padding: 12px 10px;">Falta</th>
-                                <th style="padding: 12px 10px; min-width: 130px;">Pago</th>
-                                <th style="padding: 12px 10px; min-width: 130px;">Entrega</th>
-                                <th style="padding: 12px 10px; text-align: center; width: 40px;"></th>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">
+                                <th style="padding: 12px 14px;">Cliente</th>
+                                <th style="padding: 12px 14px; text-align: center; width: 80px;">Cant.</th>
+                                <th style="padding: 12px 14px; width: 120px;">Anticipo</th>
+                                <th style="padding: 12px 14px; width: 120px;">Falta</th>
+                                <th style="padding: 12px 14px; min-width: 160px;">Pago</th>
+                                <th style="padding: 12px 14px; min-width: 160px;">Entrega</th>
+                                <th style="padding: 12px 14px; text-align: center; width: 50px;"></th>
                             </tr>
                         </thead>
                         <tbody id="client-table-body">
