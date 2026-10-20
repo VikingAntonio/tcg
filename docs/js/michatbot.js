@@ -1467,7 +1467,7 @@ async function handleSendAIChatMessage() {
                     .eq('user_id', targetStoreId);
 
                 if (preorders && preorders.length > 0) {
-                    dbContext += '--- PREVENTAS EN LA TIENDA ---\n';
+                    dbContext += '--- TABLA COMPLETA DE PREVENTAS EN LA TIENDA ---\n';
                     preorders.forEach(p => {
                         let clients = p.clients_list;
                         if (typeof clients === 'string') {
@@ -1479,13 +1479,16 @@ async function handleSendAIChatMessage() {
                         let maxStock = parseInt(p.max_stock) || 0;
                         let available = Math.max(0, maxStock - reserved);
 
-                        dbContext += `- ${p.name} | Precio Venta: ${p.price || 'N/A'} | Stock Total: ${maxStock} | Reservados: ${reserved} | Disponibles: ${available} | Límite Pago: ${p.payment_deadline || 'N/A'}\n`;
-
-                        if (isAdmin && clients.length > 0) {
-                            dbContext += `  [Lista de Clientes Preventa]:\n`;
-                            clients.forEach(c => {
-                                dbContext += `   * Cliente: ${c.name} | Cantidad: ${c.qty} | Anticipo: $${parseFloat(c.deposit||0).toFixed(2)} | Estado Pago: ${c.status_payment || c.status || 'Pendiente'} | Entrega: ${c.status_delivery || 'Por Entregar'}\n`;
-                            });
+                        if (isAdmin) {
+                            dbContext += `- [ID: ${p.id}] "${p.name}" | TCG: ${p.tcg || 'Otro'} | Precio Venta: ${p.price || 'N/A'} | Aparta Desde: ${p.reserve_amount || 'N/A'} | Costo Compra/Inversión: $${p.cost_price || 0} | Límite x Pers.: ${p.per_person_limit || 'Sin límite'} | Stock Total: ${maxStock} | Reservados: ${reserved} | Disponibles: ${available} | Fecha Inicio: ${p.start_date || 'N/A'} | Fecha Límite Pago: ${p.payment_deadline || p.deadline || 'N/A'} | Fecha Llegada: ${p.arrival_date || 'N/A'} | Visibilidad: ${p.is_public !== false ? 'Público' : 'Privado'}\n`;
+                            if (clients.length > 0) {
+                                dbContext += `  [Lista de Clientes en Preventa]:\n`;
+                                clients.forEach(c => {
+                                    dbContext += `   * Cliente: "${c.name}" | Cantidad: ${c.qty} | Anticipo/Depósito: $${parseFloat(c.deposit||0).toFixed(2)} | Estado Pago: ${c.status_payment || c.status || 'Pendiente'} | Estado Entrega: ${c.status_delivery || 'Por Entregar'}\n`;
+                                });
+                            }
+                        } else if (p.is_public !== false) {
+                            dbContext += `- "${p.name}" | TCG: ${p.tcg || 'Otro'} | Precio Venta: ${p.price || 'N/A'} | Aparta Desde: ${p.reserve_amount || 'N/A'} | Disponibles: ${available} | Límite Pago: ${p.payment_deadline || p.deadline || 'N/A'} | Llegada Est.: ${p.arrival_date || 'N/A'}\n`;
                         }
                     });
                 }
