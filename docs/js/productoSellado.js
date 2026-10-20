@@ -46,8 +46,25 @@ $(document).ready(async function() {
         handleLogout();
     });
 
-    // --- Profit Calculation ---
+    // --- Profit Calculation & Discount Percent Sync ---
     $('#product-price, #product-discount, #product-cost-price').on('input change', function() {
+        calculateEstimatedProfit();
+    });
+
+    $('#product-discount-percent').on('input change', function() {
+        const parseVal = (val) => {
+            if (!val) return 0;
+            const clean = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+            return parseFloat(clean) || 0;
+        };
+        const price = parseVal($('#product-price').val());
+        const percent = parseVal($(this).val());
+        if (price > 0 && percent > 0) {
+            const promoPrice = Math.max(0, price - (price * percent / 100));
+            $('#product-discount').val(promoPrice.toFixed(0));
+        } else if (percent === 0) {
+            $('#product-discount').val('');
+        }
         calculateEstimatedProfit();
     });
 
@@ -195,26 +212,21 @@ function calculateEstimatedProfit() {
     };
 
     const price = parseVal($('#product-price').val());
-    let discountStr = ($('#product-discount').val() || '').toString().trim();
-    let discountAmount = 0;
-
-    if (discountStr.includes('%')) {
-        const percent = parseVal(discountStr);
-        discountAmount = (price * percent) / 100;
-    } else {
-        discountAmount = parseVal(discountStr);
-    }
-
-    const effectivePrice = Math.max(0, price - discountAmount);
+    const discountVal = ($('#product-discount').val() || '').toString().trim();
     const cost = parseVal($('#product-cost-price').val());
 
-    if (price > 0 && cost > 0) {
-        const profit = effectivePrice - cost;
-        $('#product-estimated-profit').val(`$${profit.toFixed(2)}`);
-    } else if (price > 0 && cost === 0) {
-        $('#product-estimated-profit').val(`$${effectivePrice.toFixed(2)}`);
+    const profit = calcProductProfit(price, discountVal, cost);
+    const $profitInput = $('#product-estimated-profit');
+
+    if (price > 0 || cost > 0) {
+        $profitInput.val(`$${profit.toFixed(2)}`);
+        if (profit >= 0) {
+            $profitInput.css({ 'color': '#00ff88', 'background': 'rgba(0, 255, 136, 0.08)', 'border-color': 'rgba(0, 255, 136, 0.2)' });
+        } else {
+            $profitInput.css({ 'color': '#ff4757', 'background': 'rgba(255, 71, 87, 0.08)', 'border-color': 'rgba(255, 71, 87, 0.2)' });
+        }
     } else {
-        $('#product-estimated-profit').val('$0.00');
+        $profitInput.val('$0.00').css({ 'color': '#00ff88', 'background': 'rgba(0, 255, 136, 0.08)', 'border-color': 'rgba(0, 255, 136, 0.2)' });
     }
 }
 
@@ -237,24 +249,33 @@ function calcProductProfit(priceVal, discountVal, costVal) {
     };
 
     const price = parseVal(priceVal);
-    let discountStr = (discountVal || '').toString().trim();
-    let discountAmount = 0;
-
-    if (discountStr.includes('%')) {
-        discountAmount = (price * parseVal(discountStr)) / 100;
-    } else {
-        discountAmount = parseVal(discountStr);
-    }
-
-    const effectivePrice = Math.max(0, price - discountAmount);
+    const discountStr = (discountVal || '').toString().trim();
     const cost = parseVal(costVal);
 
-    if (price > 0 && cost > 0) {
-        return effectivePrice - cost;
-    } else if (price > 0 && cost === 0) {
-        return effectivePrice;
+    if (price === 0 && cost === 0) return 0;
+
+    let effectivePrice = price;
+    if (discountStr) {
+        if (discountStr.includes('%')) {
+            const pct = parseVal(discountStr);
+            effectivePrice = Math.max(0, price - ((price * pct) / 100));
+        } else {
+            const discNum = parseVal(discountStr);
+            if (discNum > 0) {
+                // If the discount entered is less than the price, it could either be a promotional price (e.g., 1299 for $1500 item) or a discount amount (e.g. $200 off).
+                // If discNum is greater than 0 and less than price, treats discNum as promo price if discNum > price / 2, else amount off.
+                if (discNum < price && discNum > (price * 0.3)) {
+                    effectivePrice = discNum; // User entered promotional sale price directly
+                } else if (discNum < price) {
+                    effectivePrice = price - discNum; // User entered discount amount
+                } else {
+                    effectivePrice = discNum;
+                }
+            }
+        }
     }
-    return 0;
+
+    return effectivePrice - cost;
 }
 
 function applyAdminFiltersAndSort() {
@@ -410,6 +431,7 @@ function renderAdminProductTable(products) {
 
         const profitNum = calcProductProfit(priceVal, discountVal, costPrice);
         const profitFormatted = `$${profitNum.toFixed(2)}`;
+        const profitColor = profitNum >= 0 ? '#00ff88' : '#ff4757';
 
         const disabledAttr = isTableEditMode ? '' : 'disabled';
         const pointerEvents = isTableEditMode ? 'auto' : 'none';
@@ -448,7 +470,7 @@ function renderAdminProductTable(products) {
                     <input type="text" class="sheet-input sheet-input-price input-cost" value="${costPrice}" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
                 </td>
                 <td class="sheet-td">
-                    <span class="profit-val" style="font-weight: 800; color: #00ff88; font-size: 0.85rem;">${profitFormatted}</span>
+                    <span class="profit-val" style="font-weight: 800; color: ${profitColor}; font-size: 0.85rem;">${profitFormatted}</span>
                 </td>
                 <td class="sheet-td">
                     <select class="sheet-select sheet-select-status" style="pointer-events: ${pointerEvents};" ${disabledAttr}>
@@ -548,8 +570,10 @@ function renderAdminProductTable(products) {
             const p = $tr.find('.input-price').val().trim();
             const d = $tr.find('.input-discount').val().trim();
             const c = $tr.find('.input-cost').val().trim();
-            const estProfit = `$${calcProductProfit(p, d, c).toFixed(2)}`;
-            $tr.find('.profit-val').text(estProfit);
+            const profitNum = calcProductProfit(p, d, c);
+            const estProfit = `$${profitNum.toFixed(2)}`;
+            const profitColor = profitNum >= 0 ? '#00ff88' : '#ff4757';
+            $tr.find('.profit-val').text(estProfit).css('color', profitColor);
             return { price: p, discount: d, cost_price: c, cost: c, estimated_profit: estProfit, profit: estProfit };
         };
 

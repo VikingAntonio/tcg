@@ -3220,31 +3220,101 @@ function openPublicSealedModal(product) {
     const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
     const statusLabel = product.status || (isOutOfStock ? 'Agotado' : 'Disponible');
     const tcgLabel = (product.tcg || 'Otro').toUpperCase();
-    const discountVal = product.discount || '';
+    const discountVal = (product.discount || '').toString().trim();
+
+    const stockValCount = !isNaN(parseInt(product.stock)) ? parseInt(product.stock) : (!isNaN(parseInt(product.quantity)) ? parseInt(product.quantity) : 99);
+    const perPersonLimitVal = (product.per_person_limit !== undefined && product.per_person_limit !== null && parseInt(product.per_person_limit) > 0) ? parseInt(product.per_person_limit) : 999;
+
+    const parseNum = (val) => {
+        if (!val) return 0;
+        const clean = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+        return parseFloat(clean) || 0;
+    };
+
+    const origPriceNum = parseNum(product.price);
+    let hasPromo = false;
+    let promoPriceFormatted = '';
+    let origPriceFormatted = product.price ? (product.price.toString().startsWith('$') ? product.price : `$${product.price}`) : 'Consultar';
+
+    if (discountVal && origPriceNum > 0) {
+        hasPromo = true;
+        let effectivePromo = origPriceNum;
+        if (discountVal.includes('%')) {
+            const pct = parseNum(discountVal);
+            effectivePromo = Math.max(0, origPriceNum - ((origPriceNum * pct) / 100));
+        } else {
+            const discNum = parseNum(discountVal);
+            if (discNum < origPriceNum && discNum > (origPriceNum * 0.3)) {
+                effectivePromo = discNum;
+            } else if (discNum < origPriceNum) {
+                effectivePromo = origPriceNum - discNum;
+            } else {
+                effectivePromo = discNum;
+            }
+        }
+        promoPriceFormatted = `$${Math.round(effectivePromo)}`;
+    }
+
+    // Determine current site theme for modal styling
+    const bodyTheme = document.body.className || 'theme-dark';
+    const isLightTheme = bodyTheme.includes('theme-light') || $('body').hasClass('theme-light');
+
+    const modalBg = isLightTheme ? '#ffffff' : 'var(--card-bg, #0f172a)';
+    const textColor = isLightTheme ? '#0f172a' : '#ffffff';
+    const subtextColor = isLightTheme ? '#475569' : '#cbd5e1';
+    const boxBg = isLightTheme ? '#f8fafc' : 'rgba(255,255,255,0.04)';
+    const boxBorder = isLightTheme ? '#e2e8f0' : 'rgba(255,255,255,0.08)';
 
     Swal.fire({
-        title: `<div style="font-size: 1.2rem; font-weight: 800; color: #fff;">${product.name}</div>`,
+        title: `<div style="font-size: 1.3rem; font-weight: 900; color: ${textColor}; text-align: left; padding: 0 5px; line-height: 1.3;">${product.name}</div>`,
         html: `
-            <div style="text-align: center; color: #e2e8f0; font-family: sans-serif;">
-                <div style="margin-bottom: 15px; position: relative; background: rgba(0,0,0,0.3); border-radius: 16px; padding: 15px; border: 1px solid rgba(255,255,255,0.1);">
-                    <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); border-radius: 8px;">
+            <div style="text-align: left; color: ${textColor}; font-family: 'Montserrat', sans-serif; padding: 0 5px;">
+                <!-- Product Image Container -->
+                <div style="position: relative; background: ${boxBg}; border-radius: 18px; padding: 20px; border: 1px solid ${boxBorder}; margin: 12px 0 16px 0; text-align: center;">
+                    ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
+                    <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" style="max-width: 100%; max-height: 300px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); border-radius: 10px;">
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px;">
-                    <span style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; background: rgba(0,210,255,0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(0,210,255,0.3);">${tcgLabel}</span>
-                    <span style="font-size: 0.85rem; font-weight: 800; color: ${isOutOfStock ? '#ff4757' : '#00ff88'};">${statusLabel} (Stock: ${stockCount})</span>
+
+                <!-- Badges Row -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: ${boxBg}; padding: 12px 16px; border-radius: 14px; border: 1px solid ${boxBorder};">
+                    <span style="font-size: 0.8rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 5px 12px; border-radius: 20px; border: 1px solid #bae6fd;">${tcgLabel}</span>
+                    <span style="font-size: 0.82rem; font-weight: 800; color: ${isOutOfStock ? '#dc2626' : '#16a34a'}; background: ${isOutOfStock ? '#fee2e2' : '#dcfce7'}; padding: 5px 12px; border-radius: 20px; border: 1px solid ${isOutOfStock ? '#fecaca' : '#bbf7d0'};">
+                        ${statusLabel.toUpperCase()} (Stock: ${stockCount}) ${perPersonLimitVal < 999 ? ` - Máx ${perPersonLimitVal}/pers` : ''}
+                    </span>
                 </div>
-                <div style="font-size: 1.5rem; font-weight: 900; color: #00d2ff; margin-bottom: 6px; text-align: center;">${product.price || 'Consultar'}</div>
-                ${discountVal ? `<div style="font-size: 0.9rem; color: #f5af19; font-weight: 800; margin-bottom: 12px;">¡Descuento: ${discountVal}!</div>` : ''}
-                ${product.description ? `<p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px; text-align: left; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">${product.description}</p>` : ''}
+
+                <!-- Price Section -->
+                <div style="background: ${isLightTheme ? '#f0fdf4' : 'rgba(0, 255, 136, 0.05)'}; padding: 14px 18px; border-radius: 16px; border: 1px solid ${isLightTheme ? '#a7f3d0' : 'rgba(0, 255, 136, 0.2)'}; margin-bottom: 16px;">
+                    ${hasPromo ? `
+                        <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+                            <span style="text-decoration: line-through; color: #94a3b8; font-size: 1.1rem; font-weight: 700;">${origPriceFormatted}</span>
+                            <span style="font-size: 2.1rem; font-weight: 900; color: #dc2626;">${promoPriceFormatted}</span>
+                            <span class="sealed-discount-badge" style="margin-left: auto;">Precio en Promoción</span>
+                        </div>
+                    ` : `
+                        <div style="font-size: 2.1rem; font-weight: 900; color: #059669;">${origPriceFormatted}</div>
+                    `}
+                </div>
+
+                <!-- Description Field -->
+                ${product.description ? `
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: ${subtextColor}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Descripción del Producto</div>
+                        <p style="font-size: 0.92rem; color: ${textColor}; line-height: 1.55; margin: 0; background: ${boxBg}; padding: 14px 16px; border-radius: 14px; border: 1px solid ${boxBorder};">${product.description}</p>
+                    </div>
+                ` : ''}
             </div>
         `,
         showCancelButton: true,
-        confirmButtonText: '<i class="fas fa-cart-plus"></i> Añadir al Carrito',
+        confirmButtonText: isOutOfStock ? 'AGOTADO' : '<i class="fas fa-cart-plus"></i> Añadir al Carrito',
         cancelButtonText: 'Cerrar',
-        confirmButtonColor: '#00d2ff',
-        cancelButtonColor: '#475569',
-        background: '#0f172a',
-        color: '#fff'
+        confirmButtonColor: isOutOfStock ? '#cbd5e1' : '#2563eb',
+        cancelButtonColor: '#64748b',
+        background: modalBg,
+        color: textColor,
+        customClass: {
+            popup: 'sealed-modal-popup-custom'
+        }
     }).then((result) => {
         if (result.isConfirmed) {
             if (isOutOfStock) {
@@ -3340,33 +3410,40 @@ function renderPublicSealedGrid() {
         const isOutOfStock = stockCount <= 0 || product.status === 'Agotado';
         const statusLabel = product.status || (isOutOfStock ? 'AGOTADO' : 'DISPONIBLE');
         const tcgLabel = (product.tcg || 'Otro').toUpperCase();
-        const discountVal = product.discount || '';
-
-        let badgeBg = 'rgba(0, 255, 136, 0.18)';
-        let badgeBorder = '#00ff88';
-        let badgeColor = '#00ff88';
-
-        if (statusLabel === 'Agotado' || isOutOfStock) {
-            badgeBg = 'rgba(255, 71, 87, 0.25)';
-            badgeBorder = '#ff4757';
-            badgeColor = '#ff4757';
-        } else if (statusLabel === 'Poco Stock') {
-            badgeBg = 'rgba(245, 175, 25, 0.25)';
-            badgeBorder = '#f5af19';
-            badgeColor = '#f5af19';
-        } else if (statusLabel === 'En Camino') {
-            badgeBg = 'rgba(155, 89, 182, 0.25)';
-            badgeBorder = '#9b59b6';
-            badgeColor = '#9b59b6';
-        }
+        const discountVal = (product.discount || '').toString().trim();
 
         const stockValCount = !isNaN(parseInt(product.stock)) ? parseInt(product.stock) : (!isNaN(parseInt(product.quantity)) ? parseInt(product.quantity) : 99);
         const perPersonLimitVal = (product.per_person_limit !== undefined && product.per_person_limit !== null && parseInt(product.per_person_limit) > 0) ? parseInt(product.per_person_limit) : 999;
         const maxStockAvailable = Math.min(Math.max(0, stockValCount), perPersonLimitVal);
 
-        let formattedPriceVal = product.price ? product.price.toString().trim() : 'Consultar';
-        if (formattedPriceVal !== 'Consultar' && !formattedPriceVal.startsWith('$')) {
-            formattedPriceVal = `$${formattedPriceVal}`;
+        const parseNum = (val) => {
+            if (!val) return 0;
+            const clean = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+            return parseFloat(clean) || 0;
+        };
+
+        const origPriceNum = parseNum(product.price);
+        let hasPromo = false;
+        let promoPriceFormatted = '';
+        let origPriceFormatted = product.price ? (product.price.toString().startsWith('$') ? product.price : `$${product.price}`) : 'Consultar';
+
+        if (discountVal && origPriceNum > 0) {
+            hasPromo = true;
+            let effectivePromo = origPriceNum;
+            if (discountVal.includes('%')) {
+                const pct = parseNum(discountVal);
+                effectivePromo = Math.max(0, origPriceNum - ((origPriceNum * pct) / 100));
+            } else {
+                const discNum = parseNum(discountVal);
+                if (discNum < origPriceNum && discNum > (origPriceNum * 0.3)) {
+                    effectivePromo = discNum;
+                } else if (discNum < origPriceNum) {
+                    effectivePromo = origPriceNum - discNum;
+                } else {
+                    effectivePromo = discNum;
+                }
+            }
+            promoPriceFormatted = `$${Math.round(effectivePromo)}`;
         }
 
         const $item = $(`
@@ -3375,13 +3452,14 @@ function renderPublicSealedGrid() {
                     <!-- 1. TITLE TOP -->
                     <h3 class="sealed-card-title">${product.name}</h3>
 
-                    <!-- 2. IMAGE CONTAINER WITH BADGES & SINGLE SHARE BUTTON TOP-RIGHT -->
+                    <!-- 2. IMAGE CONTAINER WITH BADGES, STAMP & SHARE BUTTON -->
                     <div class="product-image-container" style="position: relative;">
                         <span class="sealed-tcg-badge">${tcgLabel}</span>
                         <button class="btn btn-share-sealed-modern btn-share-sealed-single" title="Compartir" style="position: absolute; top: 10px; right: 10px; z-index: 5; margin: 0; padding: 0;">
                             <i class="fas fa-share-alt"></i>
                         </button>
                         <span class="sealed-status-badge ${isOutOfStock ? 'status-out' : ''}">${statusLabel.toUpperCase()} (${stockCount}) ${perPersonLimitVal < 999 ? ` - Máx ${perPersonLimitVal}/pers` : ''}</span>
+                        ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
                         <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img">
                     </div>
 
@@ -3389,10 +3467,17 @@ function renderPublicSealedGrid() {
                 </div>
 
                 <div class="sealed-card-bottom">
-                    <!-- PRICE CONTAINER (PROMINENT & ANIMATED, NO "PRECIO" LABEL) -->
+                    <!-- PRICE CONTAINER (PROMINENT & ANIMATED, WITH STRIKETHROUGH ON PROMO) -->
                     <div class="sealed-price-container">
-                        <span class="sealed-price-val">${formattedPriceVal}</span>
-                        ${discountVal ? `<span class="sealed-discount-badge">Desc: ${discountVal}</span>` : ''}
+                        ${hasPromo ? `
+                            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                <span class="sealed-price-val-original">${origPriceFormatted}</span>
+                                <span class="sealed-price-val-promo">${promoPriceFormatted}</span>
+                            </div>
+                            <span class="sealed-discount-badge">Precio Promoción</span>
+                        ` : `
+                            <span class="sealed-price-val">${origPriceFormatted}</span>
+                        `}
                     </div>
 
                     <!-- COMBINED QUANTITY & CART ACTION ROW (NO "CANTIDAD" LABEL, NO EMOJI) -->
