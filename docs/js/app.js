@@ -3303,7 +3303,7 @@ function openPublicSealedModal(product) {
                 <div class="amazon-modal-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: start;">
                     <!-- LEFT COLUMN: IMAGE PREVIEW -->
                     <div style="background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 16px; padding: 20px; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; min-height: 280px;">
-                        ${isOutOfStock ? '<div class="sealed-soldout-overlay"><div class="soldout-stamp-inner">AGOTADO</div></div>' : ''}
+                        ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
                         <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${product.name}">
                     </div>
 
@@ -3567,7 +3567,7 @@ function renderPublicSealedGrid() {
 
                         <!-- PRODUCT IMAGE FRAME WITH FULL STAMP OVERLAY -->
                         <div class="amazon-image-frame">
-                            ${isOutOfStock ? '<div class="sealed-soldout-overlay"><div class="soldout-stamp-inner">AGOTADO</div></div>' : ''}
+                            ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
                             <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${product.name}" class="amazon-product-img">
                         </div>
 
