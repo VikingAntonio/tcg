@@ -3224,6 +3224,7 @@ function openPublicSealedModal(product) {
 
     const stockValCount = !isNaN(parseInt(product.stock)) ? parseInt(product.stock) : (!isNaN(parseInt(product.quantity)) ? parseInt(product.quantity) : 99);
     const perPersonLimitVal = (product.per_person_limit !== undefined && product.per_person_limit !== null && parseInt(product.per_person_limit) > 0) ? parseInt(product.per_person_limit) : 999;
+    const maxStockAvailable = Math.min(Math.max(0, stockValCount), perPersonLimitVal);
 
     const parseNum = (val) => {
         if (!val) return 0;
@@ -3234,14 +3235,18 @@ function openPublicSealedModal(product) {
     const origPriceNum = parseNum(product.price);
     let hasPromo = false;
     let promoPriceFormatted = '';
-    let origPriceFormatted = product.price ? (product.price.toString().startsWith('$') ? product.price : `$${product.price}`) : 'Consultar';
+    let origPriceFormatted = origPriceNum > 0 ? `$${Math.round(origPriceNum).toLocaleString('es-MX')}` : (product.price ? (product.price.toString().startsWith('$') ? product.price : `$${product.price}`) : 'Consultar');
+    let pctBadgeText = '';
+    let savingsBadgeText = '';
 
     if (discountVal && origPriceNum > 0) {
-        hasPromo = true;
         let effectivePromo = origPriceNum;
         if (discountVal.includes('%')) {
             const pct = parseNum(discountVal);
             effectivePromo = Math.max(0, origPriceNum - ((origPriceNum * pct) / 100));
+            pctBadgeText = `-${Math.round(pct)}%`;
+            const savedAmt = origPriceNum - effectivePromo;
+            savingsBadgeText = `Ahorras $${Math.round(savedAmt).toLocaleString('es-MX')}`;
         } else {
             const discNum = parseNum(discountVal);
             if (discNum < origPriceNum && discNum > (origPriceNum * 0.3)) {
@@ -3251,104 +3256,193 @@ function openPublicSealedModal(product) {
             } else {
                 effectivePromo = discNum;
             }
+            const savedAmt = origPriceNum - effectivePromo;
+            if (savedAmt > 0) {
+                const pct = Math.round((savedAmt / origPriceNum) * 100);
+                pctBadgeText = `-${pct}%`;
+                savingsBadgeText = `Ahorras $${Math.round(savedAmt).toLocaleString('es-MX')}`;
+            }
         }
-        promoPriceFormatted = `$${Math.round(effectivePromo)}`;
+
+        if (effectivePromo < origPriceNum) {
+            hasPromo = true;
+            promoPriceFormatted = `$${Math.round(effectivePromo).toLocaleString('es-MX')}`;
+        }
     }
 
-    // Determine current site theme for modal styling
+    // Determine theme for popup adaptivity
     const bodyTheme = document.body.className || 'theme-dark';
     const isLightTheme = bodyTheme.includes('theme-light') || $('body').hasClass('theme-light');
 
-    const modalBg = isLightTheme ? '#ffffff' : 'var(--card-bg, #0f172a)';
-    const textColor = isLightTheme ? '#0f172a' : '#ffffff';
-    const subtextColor = isLightTheme ? '#475569' : '#cbd5e1';
-    const boxBg = isLightTheme ? '#f8fafc' : 'rgba(255,255,255,0.04)';
-    const boxBorder = isLightTheme ? '#e2e8f0' : 'rgba(255,255,255,0.08)';
+    const modalBg = isLightTheme ? '#ffffff' : '#0f172a';
+    const textColor = isLightTheme ? '#0f172a' : '#f8fafc';
+    const subtextColor = isLightTheme ? '#64748b' : '#94a3b8';
+    const boxBg = isLightTheme ? '#f8fafc' : '#1e293b';
+    const boxBorder = isLightTheme ? '#e2e8f0' : '#334155';
 
     Swal.fire({
-        title: `<div style="font-size: 1.3rem; font-weight: 900; color: ${textColor}; text-align: left; padding: 0 5px; line-height: 1.3;">${product.name}</div>`,
+        title: '',
         html: `
-            <div style="text-align: left; color: ${textColor}; font-family: 'Montserrat', sans-serif; padding: 0 5px;">
-                <!-- Product Image Container -->
-                <div style="position: relative; background: ${boxBg}; border-radius: 18px; padding: 20px; border: 1px solid ${boxBorder}; margin: 12px 0 16px 0; text-align: center;">
-                    ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
-                    <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" style="max-width: 100%; max-height: 300px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); border-radius: 10px;">
-                </div>
-
-                <!-- Badges Row -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: ${boxBg}; padding: 12px 16px; border-radius: 14px; border: 1px solid ${boxBorder};">
-                    <span style="font-size: 0.8rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 5px 12px; border-radius: 20px; border: 1px solid #bae6fd;">${tcgLabel}</span>
-                    <span style="font-size: 0.82rem; font-weight: 800; color: ${isOutOfStock ? '#dc2626' : '#16a34a'}; background: ${isOutOfStock ? '#fee2e2' : '#dcfce7'}; padding: 5px 12px; border-radius: 20px; border: 1px solid ${isOutOfStock ? '#fecaca' : '#bbf7d0'};">
-                        ${statusLabel.toUpperCase()} (Stock: ${stockCount}) ${perPersonLimitVal < 999 ? ` - Máx ${perPersonLimitVal}/pers` : ''}
+            <div class="amazon-modal-container" style="text-align: left; font-family: 'Montserrat', sans-serif; color: ${textColor}; padding: 5px;">
+                <!-- MODAL HEADER BAR -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <span style="font-size: 0.78rem; font-weight: 800; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 12px; border-radius: 20px;">
+                        <i class="fas fa-layer-group"></i> ${tcgLabel}
                     </span>
-                </div>
-
-                <!-- Price Section -->
-                <div style="background: ${isLightTheme ? '#f0fdf4' : 'rgba(0, 255, 136, 0.05)'}; padding: 14px 18px; border-radius: 16px; border: 1px solid ${isLightTheme ? '#a7f3d0' : 'rgba(0, 255, 136, 0.2)'}; margin-bottom: 16px;">
-                    ${hasPromo ? `
-                        <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
-                            <span style="text-decoration: line-through; color: #94a3b8; font-size: 1.1rem; font-weight: 700;">${origPriceFormatted}</span>
-                            <span style="font-size: 2.1rem; font-weight: 900; color: #dc2626;">${promoPriceFormatted}</span>
-                            <span class="sealed-discount-badge" style="margin-left: auto;">Precio en Promoción</span>
-                        </div>
-                    ` : `
-                        <div style="font-size: 2.1rem; font-weight: 900; color: #059669;">${origPriceFormatted}</div>
-                    `}
-                </div>
-
-                <!-- Description Field -->
-                ${product.description ? `
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-size: 0.8rem; font-weight: 800; color: ${subtextColor}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Descripción del Producto</div>
-                        <p style="font-size: 0.92rem; color: ${textColor}; line-height: 1.55; margin: 0; background: ${boxBg}; padding: 14px 16px; border-radius: 14px; border: 1px solid ${boxBorder};">${product.description}</p>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 8px;">
+                            <i class="fas fa-bolt"></i> Envío Rápido
+                        </span>
+                        <button type="button" class="btn-share-modal-sealed" style="background: ${boxBg}; border: 1px solid ${boxBorder}; color: ${subtextColor}; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Compartir">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
                     </div>
-                ` : ''}
+                </div>
+
+                <!-- MAIN SPLIT LAYOUT -->
+                <div class="amazon-modal-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: start;">
+                    <!-- LEFT COLUMN: IMAGE PREVIEW -->
+                    <div style="background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 16px; padding: 20px; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; min-height: 280px;">
+                        ${isOutOfStock ? '<div class="sealed-soldout-overlay"><div class="soldout-stamp-inner">AGOTADO</div></div>' : ''}
+                        <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${product.name}">
+                    </div>
+
+                    <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <h2 style="font-size: 1.35rem; font-weight: 900; color: ${textColor}; margin: 0; line-height: 1.3;">${product.name}</h2>
+
+                        <!-- RATING ROW -->
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
+                            <div style="color: #f59e0b;"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                            <span style="font-weight: 800; color: ${textColor};">4.9</span>
+                            <span style="color: ${subtextColor}; font-size: 0.78rem;">(128 calificaciones)</span>
+                        </div>
+
+                        <hr style="border: none; border-top: 1px solid ${boxBorder}; margin: 2px 0;">
+
+                        <!-- PRICE BOX (AMAZON STYLE HERO) -->
+                        <div style="background: ${isLightTheme ? '#f0fdf4' : 'rgba(16, 185, 129, 0.08)'}; border: 1px solid ${isLightTheme ? '#a7f3d0' : 'rgba(16, 185, 129, 0.25)'}; padding: 14px 18px; border-radius: 14px;">
+                            ${hasPromo ? `
+                                <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px;">
+                                    <span style="font-size: 1.3rem; font-weight: 900; color: #cc0c39;">${pctBadgeText}</span>
+                                    <span style="font-size: 2.2rem; font-weight: 900; color: ${textColor};">${promoPriceFormatted}</span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: ${subtextColor}; margin-bottom: 6px;">
+                                    Precio de lista: <span style="text-decoration: line-through; font-weight: 700;">${origPriceFormatted}</span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.78rem; font-weight: 800; color: #065f46; background: #d1fae5; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 5px;">
+                                        <i class="fas fa-tag"></i> ${savingsBadgeText}
+                                    </span>
+                                </div>
+                            ` : `
+                                <div style="font-size: 2.2rem; font-weight: 900; color: ${textColor};">${origPriceFormatted}</div>
+                            `}
+                        </div>
+
+                        <!-- STOCK STATUS & LIMIT -->
+                        <div style="font-size: 0.88rem; font-weight: 800;">
+                            ${isOutOfStock ? `
+                                <span style="color: #dc2626;"><i class="fas fa-times-circle"></i> No disponible actualmente</span>
+                            ` : `
+                                <span style="color: #16a34a;"><i class="fas fa-check-circle"></i> En Stock (${stockCount} disponibles) ${perPersonLimitVal < 999 ? `<span style="font-size: 0.8rem; color: ${subtextColor}; font-weight: 600;">• Máx. ${perPersonLimitVal}/persona</span>` : ''}</span>
+                            `}
+                        </div>
+
+                        <!-- DESCRIPTION FIELD -->
+                        ${product.description ? `
+                            <div style="background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 12px 14px; border-radius: 12px;">
+                                <div style="font-size: 0.72rem; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">DESCRIPCIÓN DEL PRODUCTO</div>
+                                <div style="font-size: 0.88rem; color: ${subtextColor}; line-height: 1.5; white-space: pre-wrap;">${product.description}</div>
+                            </div>
+                        ` : ''}
+
+                        <!-- BUY BOX ACTION ROW (QUANTITY + AMAZON YELLOW BUY BUTTON) -->
+                        <div style="margin-top: 6px; display: flex; align-items: center; gap: 10px;">
+                            ${!isOutOfStock ? `
+                                <div class="amazon-modal-qty-box" style="display: flex; align-items: center; background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 10px; padding: 3px; gap: 3px;">
+                                    <button type="button" class="btn-qty-minus-modal" style="width: 34px; height: 34px; border-radius: 8px; border: 1px solid ${boxBorder}; background: ${isLightTheme ? '#fff' : '#0f172a'}; color: ${textColor}; font-weight: 800; font-size: 1.1rem; cursor: pointer;">-</button>
+                                    <input type="number" id="modal-sealed-qty-input" value="1" min="1" max="${maxStockAvailable}" readonly style="width: 36px; height: 34px; text-align: center; background: transparent; color: ${textColor}; border: none; font-size: 1rem; font-weight: 800; pointer-events: none;">
+                                    <button type="button" class="btn-qty-plus-modal" style="width: 34px; height: 34px; border-radius: 8px; border: 1px solid ${boxBorder}; background: ${isLightTheme ? '#fff' : '#0f172a'}; color: ${textColor}; font-weight: 800; font-size: 1.1rem; cursor: pointer;">+</button>
+                                </div>
+                            ` : ''}
+                            <button type="button" id="btn-modal-sealed-add-cart" class="${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''} style="flex: 1; height: 46px; border-radius: 10px; font-weight: 800; font-size: 0.95rem; background: ${isOutOfStock ? '#cbd5e1' : '#ffd814'}; color: #0f172a; border: 1px solid ${isOutOfStock ? '#cbd5e1' : '#fcd200'}; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.12);">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>${isOutOfStock ? 'AGOTADO' : 'Agregar al carrito'}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `,
-        showCancelButton: true,
-        confirmButtonText: isOutOfStock ? 'AGOTADO' : '<i class="fas fa-cart-plus"></i> Añadir al Carrito',
-        cancelButtonText: 'Cerrar',
-        confirmButtonColor: isOutOfStock ? '#cbd5e1' : '#2563eb',
-        cancelButtonColor: '#64748b',
+        showConfirmButton: false,
+        showCloseButton: true,
         background: modalBg,
         color: textColor,
+        width: '780px',
         customClass: {
             popup: 'sealed-modal-popup-custom'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            if (isOutOfStock) {
-                Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para este producto.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-                return;
-            }
-            Cart.add({
-                id: product.id,
-                name: product.name,
-                image_url: product.image_url,
-                price: product.price,
-                stock: stockValCount,
-                per_person_limit: perPersonLimitVal,
-                tcg: product.tcg,
-                description: product.description,
-                whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
-                messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
+        },
+        didOpen: (popup) => {
+            const $popup = $(popup);
+            const $qtyInput = $popup.find('#modal-sealed-qty-input');
+
+            $popup.find('.btn-qty-minus-modal').on('click', () => {
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur > 1) $qtyInput.val(cur - 1);
             });
-            const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
-            Swal.fire({
-                title: '¡Añadido al Carrito!',
-                text: `${product.name} se agregó a tu carrito.`,
-                icon: 'success',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
-                cancelButtonText: 'Seguir Comprando',
-                confirmButtonColor: '#00d2ff',
-                cancelButtonColor: '#475569',
-                background: '#0f172a',
-                color: '#fff'
-            }).then((res) => {
-                if (res.isConfirmed) {
-                    window.location.href = cartUrl;
+
+            $popup.find('.btn-qty-plus-modal').on('click', () => {
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur < maxStockAvailable) {
+                    $qtyInput.val(cur + 1);
+                } else {
+                    if (stockValCount <= perPersonLimitVal) {
+                        Swal.fire({ icon: 'info', title: 'Límite de Stock', text: `Solo hay ${stockValCount} unidad(es) disponibles en stock.`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                    } else {
+                        Swal.fire({ icon: 'info', title: 'Límite por Persona', text: `La tienda configuró un límite de ${perPersonLimitVal} unidad(es) por persona.`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                    }
                 }
+            });
+
+            $popup.find('.btn-share-modal-sealed').on('click', () => {
+                openShareModal((product.name || ''), 'sealed', product.id);
+            });
+
+            $popup.find('#btn-modal-sealed-add-cart').on('click', () => {
+                if (isOutOfStock) return;
+                const qtyVal = parseInt($qtyInput.val()) || 1;
+                Cart.add({
+                    id: product.id,
+                    name: product.name,
+                    image_url: product.image_url,
+                    price: product.price,
+                    stock: stockValCount,
+                    per_person_limit: perPersonLimitVal,
+                    tcg: product.tcg,
+                    description: product.description,
+                    whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
+                    messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
+                }, qtyVal);
+
+                Swal.close();
+                const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
+                Swal.fire({
+                    title: '¡Añadido al Carrito!',
+                    text: `Se agregaron ${qtyVal} unidad(es) de "${product.name}" a tu carrito.`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
+                    cancelButtonText: 'Seguir Comprando',
+                    confirmButtonColor: '#00d2ff',
+                    cancelButtonColor: '#475569',
+                    background: '#0f172a',
+                    color: '#fff'
+                }).then((res) => {
+                    if (res.isConfirmed) {
+                        window.location.href = cartUrl;
+                    }
+                });
             });
         }
     });
@@ -3425,14 +3519,18 @@ function renderPublicSealedGrid() {
         const origPriceNum = parseNum(product.price);
         let hasPromo = false;
         let promoPriceFormatted = '';
-        let origPriceFormatted = product.price ? (product.price.toString().startsWith('$') ? product.price : `$${product.price}`) : 'Consultar';
+        let origPriceFormatted = origPriceNum > 0 ? `$${Math.round(origPriceNum).toLocaleString('es-MX')}` : (product.price ? (product.price.toString().startsWith('$') ? product.price : `$${product.price}`) : 'Consultar');
+        let pctBadgeText = '';
+        let savingsBadgeText = '';
 
         if (discountVal && origPriceNum > 0) {
-            hasPromo = true;
             let effectivePromo = origPriceNum;
             if (discountVal.includes('%')) {
                 const pct = parseNum(discountVal);
                 effectivePromo = Math.max(0, origPriceNum - ((origPriceNum * pct) / 100));
+                pctBadgeText = `-${Math.round(pct)}%`;
+                const savedAmt = origPriceNum - effectivePromo;
+                savingsBadgeText = `Ahorras $${Math.round(savedAmt).toLocaleString('es-MX')}`;
             } else {
                 const discNum = parseNum(discountVal);
                 if (discNum < origPriceNum && discNum > (origPriceNum * 0.3)) {
@@ -3442,55 +3540,94 @@ function renderPublicSealedGrid() {
                 } else {
                     effectivePromo = discNum;
                 }
+                const savedAmt = origPriceNum - effectivePromo;
+                if (savedAmt > 0) {
+                    const pct = Math.round((savedAmt / origPriceNum) * 100);
+                    pctBadgeText = `-${pct}%`;
+                    savingsBadgeText = `Ahorras $${Math.round(savedAmt).toLocaleString('es-MX')}`;
+                }
             }
-            promoPriceFormatted = `$${Math.round(effectivePromo)}`;
+
+            if (effectivePromo < origPriceNum) {
+                hasPromo = true;
+                promoPriceFormatted = `$${Math.round(effectivePromo).toLocaleString('es-MX')}`;
+            }
         }
 
         const $item = $(`
-            <div class="deck-public-item sealed-product-item sealed-product-card-modern" id="product-item-${product.id}">
-                <div>
-                    <!-- 1. TITLE TOP -->
-                    <h3 class="sealed-card-title">${product.name}</h3>
-
-                    <!-- 2. IMAGE CONTAINER WITH BADGES, STAMP & SHARE BUTTON -->
-                    <div class="product-image-container" style="position: relative;">
-                        <span class="sealed-tcg-badge">${tcgLabel}</span>
-                        <button class="btn btn-share-sealed-modern btn-share-sealed-single" title="Compartir" style="position: absolute; top: 10px; right: 10px; z-index: 5; margin: 0; padding: 0;">
+                <div class="deck-public-item sealed-product-item amazon-sealed-card" id="product-item-${product.id}">
+                    <div class="amazon-card-top">
+                        <!-- BRAND & SHARE BAR -->
+                        <div class="amazon-brand-bar">
+                            <span class="amazon-tcg-tag"><i class="fas fa-layer-group"></i> ${tcgLabel}</span>
+                            <button type="button" class="btn-share-sealed-single amazon-share-btn" title="Compartir">
                             <i class="fas fa-share-alt"></i>
                         </button>
-                        <span class="sealed-status-badge ${isOutOfStock ? 'status-out' : ''}">${statusLabel.toUpperCase()} (${stockCount}) ${perPersonLimitVal < 999 ? ` - Máx ${perPersonLimitVal}/pers` : ''}</span>
-                        ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
-                        <img src="${product.image_url || 'https://via.placeholder.com/300x150?text=Sin+Imagen'}" alt="${product.name}" class="sealed-product-img">
                     </div>
 
-                    ${product.description ? `<p class="sealed-card-description">${product.description}</p>` : ''}
+                        <!-- PRODUCT IMAGE FRAME WITH FULL STAMP OVERLAY -->
+                        <div class="amazon-image-frame">
+                            ${isOutOfStock ? '<div class="sealed-soldout-overlay"><div class="soldout-stamp-inner">AGOTADO</div></div>' : ''}
+                            <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${product.name}" class="amazon-product-img">
+                        </div>
+
+                        <!-- RATING & SELLER BADGE -->
+                        <div class="amazon-meta-row">
+                            <div class="amazon-rating-stars">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                <span class="amazon-rating-val">4.9</span>
+                            </div>
+                            <span class="amazon-badge-prime"><i class="fas fa-bolt"></i> Envío Rápido</span>
+                        </div>
+
+                        <!-- TITLE & DESCRIPTION -->
+                        <h3 class="amazon-product-title">${product.name}</h3>
+                        ${product.description ? `<p class="amazon-product-desc">${product.description}</p>` : ''}
                 </div>
 
-                <div class="sealed-card-bottom">
-                    <!-- PRICE CONTAINER (PROMINENT & ANIMATED, WITH STRIKETHROUGH ON PROMO) -->
-                    <div class="sealed-price-container">
+                    <div class="amazon-card-bottom">
+                        <!-- PRICE HERO BLOCK (AMAZON / MERCADO LIBRE STYLE) -->
+                        <div class="amazon-price-box">
                         ${hasPromo ? `
-                            <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                                <span class="sealed-price-val-original">${origPriceFormatted}</span>
-                                <span class="sealed-price-val-promo">${promoPriceFormatted}</span>
+                                <div class="amazon-price-promo-row">
+                                    <span class="amazon-pct-badge">${pctBadgeText}</span>
+                                    <span class="amazon-promo-price">${promoPriceFormatted}</span>
                             </div>
-                            <span class="sealed-discount-badge">Precio Promoción</span>
+                                <div class="amazon-orig-price-row">
+                                    <span class="amazon-list-price-lbl">Precio de lista:</span>
+                                    <span class="amazon-orig-strikethrough">${origPriceFormatted}</span>
+                                </div>
+                                <div class="amazon-savings-row">
+                                    <span class="amazon-savings-badge"><i class="fas fa-tag"></i> ${savingsBadgeText}</span>
+                                </div>
                         ` : `
-                            <span class="sealed-price-val">${origPriceFormatted}</span>
+                                <div class="amazon-price-promo-row">
+                                    <span class="amazon-promo-price amazon-regular-price">${origPriceFormatted}</span>
+                                </div>
                         `}
                     </div>
 
-                    <!-- COMBINED QUANTITY & CART ACTION ROW (NO "CANTIDAD" LABEL, NO EMOJI) -->
-                    <div class="sealed-action-row">
+                        <!-- STOCK AVAILABILITY STATUS -->
+                        <div class="amazon-stock-status">
+                            ${isOutOfStock ? `
+                                <span class="amazon-stock-out"><i class="fas fa-times-circle"></i> No disponible actualmente</span>
+                            ` : `
+                                <span class="amazon-stock-in"><i class="fas fa-check-circle"></i> En Stock (${stockCount} disponibles) ${perPersonLimitVal < 999 ? `<span class="amazon-limit-info">• Máx. ${perPersonLimitVal}/persona</span>` : ''}</span>
+                            `}
+                        </div>
+
+                        <!-- ACTION ROW: QTY & AMAZON BUY BUTTON -->
+                        <div class="amazon-action-row">
                         ${!isOutOfStock ? `
-                        <div class="sealed-qty-control">
+                            <div class="amazon-qty-selector">
                             <button type="button" class="btn-qty-minus" aria-label="Restar">-</button>
                             <input type="number" class="sealed-qty-input" value="1" min="1" max="${maxStockAvailable}" readonly>
                             <button type="button" class="btn-qty-plus" aria-label="Sumar">+</button>
                         </div>
                         ` : ''}
-                        <button class="btn btn-add-sealed-modern btn-add-sealed-cart ${isOutOfStock ? 'disabled' : ''}" title="Añadir al Carrito" ${isOutOfStock ? 'disabled' : ''}>
-                            <span>${isOutOfStock ? 'AGOTADO' : 'AÑADIR AL CARRITO'}</span>
+                            <button type="button" class="btn-add-sealed-cart amazon-btn-buy ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''}>
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>${isOutOfStock ? 'AGOTADO' : 'Agregar al carrito'}</span>
                         </button>
                     </div>
                 </div>
