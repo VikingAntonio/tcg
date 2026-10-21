@@ -2238,18 +2238,7 @@ input:checked + .slider:before {
 
 /* Stamp Overlay */
 .soldout-stamp-inner {
-    border: 4px solid #ef4444;
-    color: #ef4444;
-    background: rgba(255, 255, 255, 0.94);
-    padding: 8px 24px;
-    font-size: 1.4rem;
-    font-weight: 900;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    border-radius: 12px;
-    box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
-    transform: rotate(-12deg);
-    white-space: nowrap;
+    display: inline-block;
 }
 
 /* Amazon Style Sealed Product Modal Popup */
@@ -2434,25 +2423,26 @@ input:checked + .slider:before {
     text-transform: uppercase;
 }
 
-/* AGOTADO Stamp Overlay covering card image */
+/* Single Prominent AGOTADO Stamp Overlay covering card image */
 .sealed-soldout-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-12deg);
-    border: 4px solid #ef4444;
-    color: #ef4444;
-    background: rgba(255, 255, 255, 0.92);
-    padding: 8px 22px;
-    font-size: 1.35rem;
+    border: 4px solid #dc2626;
+    color: #dc2626;
+    background: rgba(255, 255, 255, 0.96);
+    padding: 10px 32px;
+    font-size: 1.55rem;
     font-weight: 900;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     text-transform: uppercase;
     border-radius: 14px;
-    box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
     z-index: 10;
     pointer-events: none;
     white-space: nowrap;
+    text-align: center;
 }
 
 /* Combined Action Row (NO "CANTIDAD" LABEL, NO EMOJI) */
