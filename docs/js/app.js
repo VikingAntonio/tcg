@@ -3290,9 +3290,6 @@ function openPublicSealedModal(product) {
                         <i class="fas fa-layer-group"></i> ${tcgLabel}
                     </span>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.75rem; font-weight: 800; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 8px;">
-                            <i class="fas fa-bolt"></i> Envío Rápido
-                        </span>
                         <button type="button" class="btn-share-modal-sealed" style="background: ${boxBg}; border: 1px solid ${boxBorder}; color: ${subtextColor}; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Compartir">
                             <i class="fas fa-share-alt"></i>
                         </button>
@@ -3310,13 +3307,6 @@ function openPublicSealedModal(product) {
                     <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
                     <div style="display: flex; flex-direction: column; gap: 14px;">
                         <h2 style="font-size: 1.35rem; font-weight: 900; color: ${textColor}; margin: 0; line-height: 1.3;">${product.name}</h2>
-
-                        <!-- RATING ROW -->
-                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
-                            <div style="color: #f59e0b;"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                            <span style="font-weight: 800; color: ${textColor};">4.9</span>
-                            <span style="color: ${subtextColor}; font-size: 0.78rem;">(128 calificaciones)</span>
-                        </div>
 
                         <hr style="border: none; border-top: 1px solid ${boxBorder}; margin: 2px 0;">
 
@@ -3571,14 +3561,6 @@ function renderPublicSealedGrid() {
                             <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=Sin+Imagen'}" alt="${product.name}" class="amazon-product-img">
                         </div>
 
-                        <!-- RATING & SELLER BADGE -->
-                        <div class="amazon-meta-row">
-                            <div class="amazon-rating-stars">
-                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                                <span class="amazon-rating-val">4.9</span>
-                            </div>
-                            <span class="amazon-badge-prime"><i class="fas fa-bolt"></i> Envío Rápido</span>
-                        </div>
 
                         <!-- TITLE & DESCRIPTION -->
                         <h3 class="amazon-product-title">${product.name}</h3>

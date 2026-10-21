@@ -2200,30 +2200,31 @@ input:checked + .slider:before {
 
 .amazon-btn-buy {
     flex: 1;
-    height: 42px;
-    border-radius: 10px;
+    height: 44px;
+    border-radius: 12px;
     font-weight: 800;
-    font-size: 0.88rem;
-    background: #ffd814;
+    font-size: 0.9rem;
+    background: linear-gradient(180deg, #fef08a 0%, #fde047 100%);
     color: #0f172a !important;
-    border: 1px solid #fcd200;
+    border: 1px solid #eab308;
     cursor: pointer !important;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 0 2px 5px rgba(213, 217, 217, 0.5);
-    transition: all 0.2s ease;
+    box-shadow: 0 3px 8px rgba(234, 179, 8, 0.25);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .amazon-btn-buy:hover:not(:disabled) {
-    background: #f7ca00;
-    border-color: #f2c200;
-    box-shadow: 0 4px 10px rgba(213, 217, 217, 0.8);
+    background: linear-gradient(180deg, #fde047 0%, #facc15 100%);
+    border-color: #ca8a04;
+    box-shadow: 0 5px 14px rgba(234, 179, 8, 0.4);
+    transform: translateY(-1px);
 }
 
 .amazon-btn-buy:active:not(:disabled) {
-    background: #f0b800;
+    background: #eab308;
     transform: translateY(1px);
 }
 
@@ -2429,16 +2430,16 @@ input:checked + .slider:before {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-12deg);
-    border: 4px solid #dc2626;
+    border: 5px solid #dc2626;
     color: #dc2626;
-    background: rgba(255, 255, 255, 0.96);
-    padding: 10px 32px;
-    font-size: 1.55rem;
+    background: rgba(255, 255, 255, 0.97);
+    padding: 12px 38px;
+    font-size: 1.85rem;
     font-weight: 900;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
     text-transform: uppercase;
-    border-radius: 14px;
-    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(220, 38, 38, 0.45);
     z-index: 10;
     pointer-events: none;
     white-space: nowrap;
