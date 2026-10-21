@@ -2092,13 +2092,21 @@ body.theme-light .amazon-product-desc {
 .amazon-promo-price {
     font-size: 1.7rem;
     font-weight: 900;
-    color: #0f172a !important;
+    color: var(--text-color, #ffffff) !important;
     letter-spacing: -0.5px;
+}
+
+body.theme-light .amazon-promo-price {
+    color: #0f172a !important;
 }
 
 .amazon-regular-price {
     font-size: 1.6rem;
     font-weight: 900;
+    color: var(--text-color, #ffffff) !important;
+}
+
+body.theme-light .amazon-regular-price {
     color: #0f172a !important;
 }
 
@@ -2107,17 +2115,29 @@ body.theme-light .amazon-product-desc {
     align-items: center;
     gap: 6px;
     font-size: 0.78rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+body.theme-light .amazon-orig-price-row {
     color: #565959;
 }
 
 .amazon-list-price-lbl {
+    color: var(--text-muted, #94a3b8);
+}
+
+body.theme-light .amazon-list-price-lbl {
     color: #565959;
 }
 
 .amazon-orig-strikethrough {
     text-decoration: line-through;
-    color: #565959;
+    color: var(--text-muted, #94a3b8);
     font-weight: 600;
+}
+
+body.theme-light .amazon-orig-strikethrough {
+    color: #565959;
 }
 
 .amazon-savings-row {

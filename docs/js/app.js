@@ -3289,8 +3289,8 @@ function openPublicSealedModal(product) {
                     <span style="font-size: 0.78rem; font-weight: 800; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 12px; border-radius: 20px;">
                         <i class="fas fa-layer-group"></i> ${tcgLabel}
                     </span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button type="button" class="btn-share-modal-sealed" style="background: ${boxBg}; border: 1px solid ${boxBorder}; color: ${subtextColor}; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Compartir">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-right: 45px;">
+                        <button type="button" class="btn-share-modal-sealed" style="background: ${boxBg}; border: 1px solid ${boxBorder}; color: ${subtextColor}; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Compartir">
                             <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
