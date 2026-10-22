@@ -50,6 +50,12 @@ $(document).ready(async function() {
         const text = $(this).data('guia');
         copyToClipboard(text);
     });
+
+    window.addEventListener('viking_data_changed', function() {
+        if (currentUser) {
+            loadTracking();
+        }
+    });
 });
 
 function updateFormDirectionLabels(dir) {
