@@ -390,9 +390,9 @@ $(document).ready(async function() {
             title: '<span style="color: #38bdf8; font-weight: 800;">¡Mejora a Plan Premium!</span>',
             html: `
                 <div style="text-align: left; color: #eee; font-size: 0.92rem; line-height: 1.6;">
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <span style="font-size: 2rem; font-weight: 900; color: #00ff88;">$300 MXN</span>
-                        <span style="font-size: 0.85rem; color: #aaa;"> / mes</span>
+                    <div style="text-align: center; margin-bottom: 15px; padding: 12px; background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 16px;">
+                        <span style="font-size: 2.2rem; font-weight: 900; color: #00ff88;">$300 MXN</span>
+                        <span style="font-size: 0.9rem; color: #38bdf8; font-weight: 700;"> / mes</span>
                     </div>
                     <ul style="list-style-type: none; padding-left: 0; margin: 0 0 15px 0;">
                         <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>15 álbumes activos</strong>.</li>
@@ -404,18 +404,17 @@ $(document).ready(async function() {
                         <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Gestión de hasta <strong>100 clientes</strong>.</li>
                         <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Gestión de hasta <strong>100 subastas</strong>.</li>
                         <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Gestión de hasta <strong>50 eventos</strong>.</li>
-                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Acceso a <strong>todos los asistentes IA seleccionados</strong>.</li>
-                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Acceso a los <strong>widgets para tus dominios</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Acceso a todos los <strong>asistentes IA avanzada</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Acceso a <strong>widgets para tu pagina web</strong>.</li>
                         <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> <strong>Soporte prioritario</strong>.</li>
                     </ul>
-                    <p style="text-align: center; font-size: 0.8rem; color: #94a3b8; margin: 0;">Pago en línea seguro y cifrado procesado por Stripe.</p>
                 </div>
             `,
             icon: 'info',
             showCancelButton: true,
-            confirmButtonText: '<i class="fab fa-stripe-s"></i> Pagar $300 MXN con Tarjeta (Stripe)',
+            confirmButtonText: '<i class="fas fa-bolt"></i> Suscríbete Ahora',
             cancelButtonText: 'Tal vez luego',
-            confirmButtonColor: '#635bff',
+            confirmButtonColor: '#00d2ff',
             cancelButtonColor: '#334155',
             background: '#0f172a',
             color: '#fff'
