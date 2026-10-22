@@ -1891,7 +1891,75 @@ input:checked + .slider:before {
     }
 }
 
-/* --- Authentic Amazon / Mercado Libre E-Commerce Sealed Cards --- */
+/* --- Authentic Amazon / Mercado Libre E-Commerce Preorder & Sealed Cards --- */
+.amazon-preorder-deposit-badge {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #0284c7;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+body.theme-dark .amazon-preorder-deposit-badge,
+body.theme-medium .amazon-preorder-deposit-badge,
+body.theme-purple .amazon-preorder-deposit-badge {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.3);
+}
+
+.amazon-preorder-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.amazon-preorder-chip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+}
+
+body.theme-dark .amazon-preorder-chip,
+body.theme-medium .amazon-preorder-chip,
+body.theme-purple .amazon-preorder-chip {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.amazon-preorder-chip .chip-label {
+    color: #64748b;
+    font-weight: 600;
+}
+
+body.theme-dark .amazon-preorder-chip .chip-label,
+body.theme-medium .amazon-preorder-chip .chip-label,
+body.theme-purple .amazon-preorder-chip .chip-label {
+    color: #94a3b8;
+}
+
+.amazon-preorder-chip .chip-val {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+body.theme-dark .amazon-preorder-chip .chip-val,
+body.theme-medium .amazon-preorder-chip .chip-val,
+body.theme-purple .amazon-preorder-chip .chip-val {
+    color: #f8fafc;
+}
+
 .amazon-sealed-card {
     position: relative;
     pointer-events: auto !important;
