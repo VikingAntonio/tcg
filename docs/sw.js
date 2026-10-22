@@ -9,7 +9,7 @@ const URLS_TO_CACHE = [
   './public.html',
   './learn.html',
   './widgets.html',
-  './dominios.html',
+  './packages.html',
   './session-bridge.html',
   './js/viking-widget.js',
   './deseos.html',
