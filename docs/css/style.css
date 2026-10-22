@@ -1891,111 +1891,97 @@ input:checked + .slider:before {
     }
 }
 
-/* --- Eye-Catching Pulsing Promo Stamp Badge for Preorders --- */
-@keyframes preorderPulse {
+/* --- Authentic Jagged Promo Starburst Stamp Badge for Preorders --- */
+@keyframes starburstPulse {
     0% {
-        transform: scale(1);
-        box-shadow: 0 0 8px rgba(255, 71, 87, 0.6), 0 4px 12px rgba(255, 71, 87, 0.4);
+        transform: rotate(-8deg) scale(1);
+        filter: drop-shadow(0 4px 10px rgba(239, 68, 68, 0.5));
     }
     50% {
-        transform: scale(1.05);
-        box-shadow: 0 0 18px rgba(255, 71, 87, 0.9), 0 6px 18px rgba(255, 71, 87, 0.7);
+        transform: rotate(-8deg) scale(1.08);
+        filter: drop-shadow(0 6px 18px rgba(239, 68, 68, 0.85));
     }
     100% {
-        transform: scale(1);
-        box-shadow: 0 0 8px rgba(255, 71, 87, 0.6), 0 4px 12px rgba(255, 71, 87, 0.4);
+        transform: rotate(-8deg) scale(1);
+        filter: drop-shadow(0 4px 10px rgba(239, 68, 68, 0.5));
     }
 }
 
-.preorder-pulsing-badge {
+.preorder-starburst-badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 8;
-    background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #ffffff !important;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 900;
-    padding: 6px 13px;
-    border-radius: 50px;
-    border: 1.5px solid #ffffff;
-    letter-spacing: 0.5px;
+    padding: 12px 14px;
+    clip-path: polygon(
+        50% 0%, 63% 12%, 80% 5%, 85% 22%, 100% 25%, 95% 42%, 100% 60%, 88% 71%, 90% 88%, 73% 86%,
+        65% 100%, 50% 92%, 35% 100%, 27% 86%, 10% 88%, 12% 71%, 0% 60%, 5% 42%, 0% 25%, 15% 22%,
+        20% 5%, 37% 12%
+    );
+    letter-spacing: 0.3px;
     text-transform: uppercase;
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    gap: 5px;
-    animation: preorderPulse 2s infinite ease-in-out;
-    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.5);
+    justify-content: center;
+    text-align: center;
+    line-height: 1.12;
+    animation: starburstPulse 2.2s infinite ease-in-out;
     pointer-events: none;
     white-space: nowrap;
 }
 
-/* --- Authentic High-Conversion Preorder & Sealed Cards --- */
-.amazon-preorder-deposit-badge {
-    font-size: 0.8rem;
+.preorder-starburst-badge .badge-lbl {
+    font-size: 0.6rem;
+    font-weight: 800;
+    opacity: 0.95;
+}
+
+.preorder-starburst-badge .badge-amt {
+    font-size: 0.88rem;
     font-weight: 900;
-    color: #0284c7;
-    background: #e0f2fe;
-    border: 1px solid #bae6fd;
-    padding: 4px 12px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
 }
 
-body.theme-dark .amazon-preorder-deposit-badge,
-body.theme-medium .amazon-preorder-deposit-badge,
-body.theme-purple .amazon-preorder-deposit-badge {
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.15);
-    border-color: rgba(56, 189, 248, 0.3);
-}
-
-.amazon-preorder-chips {
+/* --- Clean Borderless Date Metadata for Preorders --- */
+.preorder-clean-metadata {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     margin-bottom: 10px;
+    padding: 2px 0;
 }
 
-.amazon-preorder-chip {
+.preorder-meta-line {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    padding: 6px 12px;
-    border-radius: 10px;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
 }
 
-body.theme-dark .amazon-preorder-chip,
-body.theme-medium .amazon-preorder-chip,
-body.theme-purple .amazon-preorder-chip {
-    background: #0f172a;
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.amazon-preorder-chip .chip-label {
-    color: #64748b;
+.preorder-meta-line .meta-label {
+    color: var(--text-muted, #64748b);
     font-weight: 600;
 }
 
-body.theme-dark .amazon-preorder-chip .chip-label,
-body.theme-medium .amazon-preorder-chip .chip-label,
-body.theme-purple .amazon-preorder-chip .chip-label {
+body.theme-dark .preorder-meta-line .meta-label,
+body.theme-medium .preorder-meta-line .meta-label,
+body.theme-purple .preorder-meta-line .meta-label {
     color: #94a3b8;
 }
 
-.amazon-preorder-chip .chip-val {
-    color: #0f172a;
+.preorder-meta-line .meta-val {
+    color: var(--text-color, #0f172a);
     font-weight: 700;
 }
 
-body.theme-dark .amazon-preorder-chip .chip-val,
-body.theme-medium .amazon-preorder-chip .chip-val,
-body.theme-purple .amazon-preorder-chip .chip-val {
+body.theme-dark .preorder-meta-line .meta-val,
+body.theme-medium .preorder-meta-line .meta-val,
+body.theme-purple .preorder-meta-line .meta-val {
     color: #f8fafc;
 }
 
