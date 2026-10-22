@@ -1906,8 +1906,13 @@ function openPublicPreorderModal(preorder) {
 
                 <!-- MAIN SPLIT LAYOUT -->
                 <div class="amazon-modal-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: start;">
-                    <!-- LEFT COLUMN: IMAGE PREVIEW -->
-                    <div style="background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 16px; padding: 20px; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; min-height: 280px;">
+                    <!-- LEFT COLUMN: IMAGE PREVIEW WITH PULSING STAMP -->
+                    <div style="background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 16px; padding: 20px; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; min-height: 280px; overflow: hidden;">
+                        ${reserveFormatted ? `
+                            <div class="preorder-pulsing-badge" style="top: 12px; right: 12px;">
+                                <i class="fas fa-fire"></i> Aparta desde ${reserveFormatted}
+                            </div>
+                        ` : ''}
                         ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
                         <img src="${preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${preorder.name}">
                     </div>
@@ -1920,10 +1925,11 @@ function openPublicPreorderModal(preorder) {
 
                         <!-- PRICE HERO BLOCK -->
                         <div style="background: ${isLightTheme ? '#f0fdf4' : 'rgba(16, 185, 129, 0.08)'}; border: 1px solid ${isLightTheme ? '#a7f3d0' : 'rgba(16, 185, 129, 0.25)'}; padding: 14px 18px; border-radius: 14px; display: flex; flex-direction: column; gap: 6px;">
-                            <div style="font-size: 2.2rem; font-weight: 900; color: ${textColor};">${formattedPrice}</div>
+                            <div style="font-size: 0.72rem; font-weight: 900; color: #16a34a; text-transform: uppercase; letter-spacing: 0.5px;">PRECIO PREVENTA</div>
+                            <div style="font-size: 2.4rem; font-weight: 900; color: ${textColor}; line-height: 1.1;">${formattedPrice}</div>
                             ${reserveFormatted ? `
-                                <div>
-                                    <span style="font-size: 0.82rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 4px 12px; border-radius: 8px; border: 1px solid #bae6fd; display: inline-flex; align-items: center; gap: 6px;">
+                                <div style="margin-top: 4px;">
+                                    <span class="amazon-preorder-deposit-badge" style="font-size: 0.88rem; font-weight: 900; padding: 6px 14px;">
                                         <i class="fas fa-coins"></i> Aparta desde ${reserveFormatted}
                                     </span>
                                 </div>
@@ -1962,9 +1968,9 @@ function openPublicPreorderModal(preorder) {
                                     <button type="button" class="btn-qty-plus-modal" style="width: 34px; height: 34px; border-radius: 8px; border: 1px solid ${boxBorder}; background: ${isLightTheme ? '#fff' : '#0f172a'}; color: ${textColor}; font-weight: 800; font-size: 1.1rem; cursor: pointer;">+</button>
                                 </div>
                             ` : ''}
-                            <button type="button" id="btn-modal-preorder-add-cart" class="${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''} style="flex: 1; height: 46px; border-radius: 10px; font-weight: 800; font-size: 0.95rem; background: ${isOutOfStock ? '#cbd5e1' : '#ffd814'}; color: #0f172a; border: 1px solid ${isOutOfStock ? '#cbd5e1' : '#fcd200'}; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.12);">
+                            <button type="button" id="btn-modal-preorder-add-cart" class="${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''} style="flex: 1; height: 48px; border-radius: 10px; font-weight: 900; font-size: 0.95rem; background: ${isOutOfStock ? '#cbd5e1' : 'linear-gradient(180deg, #fef08a 0%, #fde047 100%)'}; color: #0f172a; border: 1px solid ${isOutOfStock ? '#cbd5e1' : '#eab308'}; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.12); letter-spacing: 0.5px;">
                                 <i class="fas fa-shopping-cart"></i>
-                                <span>${isOutOfStock ? 'AGOTADO' : 'Agregar al carrito'}</span>
+                                <span>${isOutOfStock ? 'AGOTADO' : 'APARTAR / AÑADIR AL CARRITO'}</span>
                             </button>
                         </div>
                     </div>
@@ -2086,8 +2092,13 @@ function loadPublicPreorders() {
                             </button>
                         </div>
 
-                        <!-- PRODUCT IMAGE FRAME WITH FULL STAMP OVERLAY -->
+                        <!-- PRODUCT IMAGE FRAME WITH PULSING PROMO BADGE & SOLD OUT OVERLAY -->
                         <div class="amazon-image-frame">
+                            ${reserveFormatted ? `
+                                <div class="preorder-pulsing-badge">
+                                    <i class="fas fa-fire"></i> Aparta desde ${reserveFormatted}
+                                </div>
+                            ` : ''}
                             ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
                             <img src="${preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa'}" alt="${preorder.name}" class="amazon-product-img">
                         </div>
@@ -2100,13 +2111,8 @@ function loadPublicPreorders() {
                         <!-- PRICE HERO BLOCK -->
                         <div class="amazon-price-box">
                             <div class="amazon-price-promo-row">
-                                <span class="amazon-promo-price amazon-regular-price">${formattedPrice}</span>
+                                <span class="amazon-promo-price amazon-regular-price" style="font-size: 1.85rem; font-weight: 900;">${formattedPrice}</span>
                             </div>
-                            ${reserveFormatted ? `
-                                <div class="amazon-savings-row">
-                                    <span class="amazon-preorder-deposit-badge"><i class="fas fa-coins"></i> Aparta desde ${reserveFormatted}</span>
-                                </div>
-                            ` : ''}
                         </div>
 
                         <!-- PREORDER INFO CHIPS -->
@@ -2141,9 +2147,9 @@ function loadPublicPreorders() {
                                     <button type="button" class="btn-qty-plus" aria-label="Sumar">+</button>
                                 </div>
                             ` : ''}
-                            <button type="button" class="btn-add-preorder-cart amazon-btn-buy ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''}>
+                            <button type="button" class="btn-add-preorder-cart amazon-btn-buy ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''} style="font-size: 0.92rem; font-weight: 900; letter-spacing: 0.5px;">
                                 <i class="fas fa-shopping-cart"></i>
-                                <span>${isOutOfStock ? 'AGOTADO' : 'Agregar al carrito'}</span>
+                                <span>${isOutOfStock ? 'AGOTADO' : 'APARTAR / AÑADIR AL CARRITO'}</span>
                             </button>
                         </div>
                     </div>
