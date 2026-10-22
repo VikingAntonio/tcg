@@ -1695,6 +1695,322 @@ async function loadStoreData() {
     }
 }
 
+async function executePreorderAddToCart(preorder, qty, isOutOfStock, maxAllowed) {
+    if (isOutOfStock) {
+        Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para esta preventa.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+        return;
+    }
+
+    const parsePriceVal = (val) => {
+        if (!val) return 0;
+        const str = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+        return parseFloat(str) || 0;
+    };
+
+    const totalUnitPrice = parsePriceVal(preorder.price);
+    const reserveUnitPrice = parsePriceVal(preorder.reserve_amount);
+
+    let chosenTotalPayment = null;
+
+    if (reserveUnitPrice > 0 && reserveUnitPrice < totalUnitPrice) {
+        const minTotal = reserveUnitPrice * qty;
+        const maxTotal = totalUnitPrice * qty;
+
+        const swalRes = await Swal.fire({
+            title: 'Monto a pagar en preventa',
+            html: `
+                <div style="text-align: left; font-size: 0.95rem; color: #cbd5e1; font-family: sans-serif;">
+                    <p style="margin-bottom: 12px;">Estás apartando <strong>${qty}</strong> unidad(es) de <strong>${preorder.name}</strong>.</p>
+                    <div style="background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); padding: 12px; border-radius: 12px; margin-bottom: 15px;">
+                        <div style="margin-bottom: 4px;"><i class="fas fa-coins" style="color: #f5af19;"></i> <strong>Apartado mín. unitario:</strong> $${reserveUnitPrice.toFixed(2)}</div>
+                        <div><i class="fas fa-tag" style="color: #00ffaa;"></i> <strong>Precio total unitario:</strong> $${totalUnitPrice.toFixed(2)}</div>
+                    </div>
+                    <div style="margin-bottom: 15px; background: rgba(15, 23, 42, 0.8); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);">
+                        <label style="display: block; font-weight: 800; color: #00d2ff; margin-bottom: 8px;">
+                            ¿Cuánto deseas pagar/abonar ahora?<br>
+                            <span style="font-size: 0.82rem; color: #f5af19;">Rango permitido (${qty} unidad/es): $${minTotal.toFixed(2)} - $${maxTotal.toFixed(2)}</span>
+                        </label>
+                        <input type="number" id="swal-preorder-amount-input" class="swal2-input" value="${minTotal}" min="${minTotal}" max="${maxTotal}" step="1" style="width: 100%; box-sizing: border-box; font-size: 1.25rem; font-weight: 900; text-align: center; color: #00ffaa; background: #000; border: 1px solid #00d2ff; border-radius: 10px; margin: 0;">
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button type="button" class="btn btn-sm" id="swal-btn-preset-min" style="background: rgba(245, 175, 25, 0.2); color: #f5af19; border: 1px solid #f5af19; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Apartar Mínimo ($${minTotal.toFixed(2)})</button>
+                        <button type="button" class="btn btn-sm" id="swal-btn-preset-max" style="background: rgba(0, 255, 170, 0.2); color: #00ffaa; border: 1px solid #00ffaa; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Pagar Total ($${maxTotal.toFixed(2)})</button>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-shopping-cart"></i> Agregar al Carrito',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#00d2ff',
+            cancelButtonColor: '#475569',
+            background: '#0f172a',
+            color: '#fff',
+            didOpen: () => {
+                const $input = $('#swal-preorder-amount-input');
+                $('#swal-btn-preset-min').on('click', () => $input.val(minTotal));
+                $('#swal-btn-preset-max').on('click', () => $input.val(maxTotal));
+            },
+            preConfirm: () => {
+                const entered = parseFloat($('#swal-preorder-amount-input').val());
+                if (isNaN(entered) || entered < minTotal - 0.01 || entered > maxTotal + 0.01) {
+                    Swal.showValidationMessage(`El monto debe estar entre $${minTotal.toFixed(2)} y $${maxTotal.toFixed(2)}.`);
+                    return false;
+                }
+                return entered;
+            }
+        });
+
+        if (!swalRes.isConfirmed) return;
+        chosenTotalPayment = swalRes.value;
+    }
+
+    const unitDeposit = chosenTotalPayment !== null ? (chosenTotalPayment / qty) : (totalUnitPrice || 0);
+
+    Cart.add({
+        preorder_id: preorder.id,
+        name: preorder.name,
+        image_url: preorder.image_url,
+        price: preorder.price,
+        total_unit_price: totalUnitPrice,
+        reserve_amount: preorder.reserve_amount,
+        unit_deposit: unitDeposit,
+        custom_payment_amount: chosenTotalPayment !== null ? chosenTotalPayment : (totalUnitPrice * qty),
+        is_preorder: true,
+        tcg: preorder.tcg,
+        deadline: preorder.payment_deadline || preorder.deadline,
+        cart_quantity: qty,
+        max_quantity: maxAllowed,
+        whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
+        messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
+    });
+
+    // Auto-register customer reservation entry in Supabase preorders.clients_list
+    (async () => {
+        try {
+            const { data: latestPreorder } = await _supabase
+                .from('preorders')
+                .select('id, clients_list, max_stock')
+                .eq('id', preorder.id)
+                .single();
+
+            if (latestPreorder) {
+                let clients = latestPreorder.clients_list;
+                if (typeof clients === 'string') {
+                    try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+                }
+                if (!Array.isArray(clients)) clients = [];
+
+                let clientName = 'Cliente';
+                if (window.currentUser && (window.currentUser.username || window.currentUser.store_name)) {
+                    clientName = window.currentUser.username || window.currentUser.store_name;
+                } else {
+                    const localUser = localStorage.getItem('tcg_session');
+                    if (localUser) {
+                        try {
+                            const parsed = JSON.parse(localUser);
+                            if (parsed.username) clientName = parsed.username;
+                        } catch (e) {}
+                    }
+                }
+
+                const totalCost = totalUnitPrice * qty;
+                const deposit = chosenTotalPayment !== null ? chosenTotalPayment : totalCost;
+
+                let statusPayment = 'Pendiente';
+                if (deposit >= totalCost && totalCost > 0) statusPayment = 'Liquidado';
+                else if (deposit > 0) statusPayment = 'Pago Parcial';
+
+                clients.push({
+                    id: Date.now(),
+                    name: clientName,
+                    qty: qty,
+                    deposit: deposit,
+                    status_payment: statusPayment,
+                    status_delivery: 'Por Entregar',
+                    created_at: new Date().toISOString()
+                });
+
+                await _supabase
+                    .from('preorders')
+                    .update({ clients_list: clients })
+                    .eq('id', preorder.id);
+            }
+        } catch (err) {
+            console.warn("Auto-fill preorder reservation warning:", err);
+        }
+    })();
+
+    const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
+
+    Swal.fire({
+        title: '¡Añadido al Carrito!',
+        text: `Se agregaron ${qty} unidad(es) de "${preorder.name}" a tu carrito.`,
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
+        cancelButtonText: 'Seguir Comprando',
+        confirmButtonColor: '#00d2ff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = cartUrl;
+        }
+    });
+}
+
+function openPublicPreorderModal(preorder) {
+    let clients = preorder.clients_list;
+    if (typeof clients === 'string') {
+        try { clients = JSON.parse(clients); } catch (e) { clients = []; }
+    }
+    if (!Array.isArray(clients)) clients = [];
+
+    let reserved = clients.reduce((sum, c) => sum + (parseInt(c.qty) || 0), 0);
+    let maxStock = parseInt(preorder.max_stock) || 0;
+    let available = Math.max(0, maxStock - reserved);
+    let isOutOfStock = available <= 0 && maxStock > 0;
+
+    let maxAllowed = preorder.per_person_limit ? Math.min(available, preorder.per_person_limit) : available;
+    if (maxAllowed <= 0 && !isOutOfStock) maxAllowed = 999;
+    if (maxAllowed <= 0) maxAllowed = 1;
+
+    const formattedPrice = preorder.price ? (preorder.price.toString().includes('$') ? preorder.price : `$${preorder.price}`) : 'Consultar';
+    const reserveFormatted = preorder.reserve_amount ? (preorder.reserve_amount.toString().includes('$') ? preorder.reserve_amount : `$${preorder.reserve_amount}`) : null;
+    const deadlineVal = preorder.payment_deadline || preorder.deadline || '-';
+    const tcgLabel = (preorder.tcg || 'Preventa TCG').toUpperCase();
+
+    // Determine theme for popup adaptivity
+    const bodyTheme = document.body.className || 'theme-dark';
+    const isLightTheme = bodyTheme.includes('theme-light') || $('body').hasClass('theme-light');
+
+    const modalBg = isLightTheme ? '#ffffff' : '#0f172a';
+    const textColor = isLightTheme ? '#0f172a' : '#f8fafc';
+    const subtextColor = isLightTheme ? '#64748b' : '#94a3b8';
+    const boxBg = isLightTheme ? '#f8fafc' : '#1e293b';
+    const boxBorder = isLightTheme ? '#e2e8f0' : '#334155';
+
+    Swal.fire({
+        title: '',
+        html: `
+            <div class="amazon-modal-container" style="text-align: left; font-family: 'Montserrat', sans-serif; color: ${textColor}; padding: 5px;">
+                <!-- MODAL HEADER BAR -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <span style="font-size: 0.78rem; font-weight: 800; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 12px; border-radius: 20px;">
+                        <i class="fas fa-layer-group"></i> ${tcgLabel}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-right: 45px;">
+                        <button type="button" class="btn-share-modal-preorder" style="background: ${boxBg}; border: 1px solid ${boxBorder}; color: ${subtextColor}; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Compartir Preventa">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MAIN SPLIT LAYOUT -->
+                <div class="amazon-modal-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: start;">
+                    <!-- LEFT COLUMN: IMAGE PREVIEW -->
+                    <div style="background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 16px; padding: 20px; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; min-height: 280px;">
+                        ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
+                        <img src="${preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa'}" style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); transition: transform 0.3s;" alt="${preorder.name}">
+                    </div>
+
+                    <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <h2 style="font-size: 1.35rem; font-weight: 900; color: ${textColor}; margin: 0; line-height: 1.3;">${preorder.name}</h2>
+
+                        <hr style="border: none; border-top: 1px solid ${boxBorder}; margin: 2px 0;">
+
+                        <!-- PRICE HERO BLOCK -->
+                        <div style="background: ${isLightTheme ? '#f0fdf4' : 'rgba(16, 185, 129, 0.08)'}; border: 1px solid ${isLightTheme ? '#a7f3d0' : 'rgba(16, 185, 129, 0.25)'}; padding: 14px 18px; border-radius: 14px; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="font-size: 2.2rem; font-weight: 900; color: ${textColor};">${formattedPrice}</div>
+                            ${reserveFormatted ? `
+                                <div>
+                                    <span style="font-size: 0.82rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 4px 12px; border-radius: 8px; border: 1px solid #bae6fd; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-coins"></i> Aparta desde ${reserveFormatted}
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- INFO CHIPS -->
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 8px 14px; border-radius: 10px; font-size: 0.85rem;">
+                                <span style="color: ${subtextColor}; font-weight: 600;">Límite de Pago:</span>
+                                <span style="color: ${textColor}; font-weight: 700;">${deadlineVal}</span>
+                            </div>
+                            ${preorder.arrival_date ? `
+                                <div style="display: flex; justify-content: space-between; align-items: center; background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 8px 14px; border-radius: 10px; font-size: 0.85rem;">
+                                    <span style="color: ${subtextColor}; font-weight: 600;">Llegada Estimada:</span>
+                                    <span style="color: ${textColor}; font-weight: 700;">${preorder.arrival_date}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- STOCK STATUS & LIMIT -->
+                        <div style="font-size: 0.88rem; font-weight: 800;">
+                            ${isOutOfStock ? `
+                                <span style="color: #dc2626;"><i class="fas fa-times-circle"></i> No disponible actualmente</span>
+                            ` : `
+                                <span style="color: #16a34a;"><i class="fas fa-check-circle"></i> En Stock (${available} disponibles) ${preorder.per_person_limit ? `<span style="font-size: 0.8rem; color: ${subtextColor}; font-weight: 600;">• Máx. ${preorder.per_person_limit}/persona</span>` : ''}</span>
+                            `}
+                        </div>
+
+                        <!-- BUY BOX ACTION ROW -->
+                        <div style="margin-top: 6px; display: flex; align-items: center; gap: 10px;">
+                            ${!isOutOfStock ? `
+                                <div class="amazon-modal-qty-box" style="display: flex; align-items: center; background: ${boxBg}; border: 1px solid ${boxBorder}; border-radius: 10px; padding: 3px; gap: 3px;">
+                                    <button type="button" class="btn-qty-minus-modal" style="width: 34px; height: 34px; border-radius: 8px; border: 1px solid ${boxBorder}; background: ${isLightTheme ? '#fff' : '#0f172a'}; color: ${textColor}; font-weight: 800; font-size: 1.1rem; cursor: pointer;">-</button>
+                                    <input type="number" id="modal-preorder-qty-input" value="1" min="1" max="${maxAllowed}" readonly style="width: 36px; height: 34px; text-align: center; background: transparent; color: ${textColor}; border: none; font-size: 1rem; font-weight: 800; pointer-events: none;">
+                                    <button type="button" class="btn-qty-plus-modal" style="width: 34px; height: 34px; border-radius: 8px; border: 1px solid ${boxBorder}; background: ${isLightTheme ? '#fff' : '#0f172a'}; color: ${textColor}; font-weight: 800; font-size: 1.1rem; cursor: pointer;">+</button>
+                                </div>
+                            ` : ''}
+                            <button type="button" id="btn-modal-preorder-add-cart" class="${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''} style="flex: 1; height: 46px; border-radius: 10px; font-weight: 800; font-size: 0.95rem; background: ${isOutOfStock ? '#cbd5e1' : '#ffd814'}; color: #0f172a; border: 1px solid ${isOutOfStock ? '#cbd5e1' : '#fcd200'}; cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.12);">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>${isOutOfStock ? 'AGOTADO' : 'Agregar al carrito'}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `,
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: modalBg,
+        color: textColor,
+        width: '780px',
+        customClass: {
+            popup: 'sealed-modal-popup-custom'
+        },
+        didOpen: (popup) => {
+            const $popup = $(popup);
+            const $qtyInput = $popup.find('#modal-preorder-qty-input');
+
+            $popup.find('.btn-qty-minus-modal').on('click', () => {
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur > 1) $qtyInput.val(cur - 1);
+            });
+
+            $popup.find('.btn-qty-plus-modal').on('click', () => {
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur < maxAllowed) {
+                    $qtyInput.val(cur + 1);
+                } else {
+                    Swal.fire({ icon: 'info', title: 'Límite Alcanzado', text: `Cantidad máxima permitida: ${maxAllowed}`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                }
+            });
+
+            $popup.find('.btn-share-modal-preorder').on('click', () => {
+                openShareModal((preorder.name || ''), 'preorders', preorder.id);
+            });
+
+            $popup.find('#btn-modal-preorder-add-cart').on('click', () => {
+                if (isOutOfStock) return;
+                const qtyVal = parseInt($qtyInput.val()) || 1;
+                Swal.close();
+                executePreorderAddToCart(preorder, qtyVal, isOutOfStock, maxAllowed);
+            });
+        }
+    });
+}
+
 function loadPublicPreorders() {
     return new Promise(async (resolve) => {
     let userId = window.currentStoreId;
@@ -1755,258 +2071,128 @@ function loadPublicPreorders() {
             if (maxAllowed <= 0) maxAllowed = 1;
 
             const formattedPrice = preorder.price ? (preorder.price.toString().includes('$') ? preorder.price : `$${preorder.price}`) : 'Consultar';
-
             const reserveFormatted = preorder.reserve_amount ? (preorder.reserve_amount.toString().includes('$') ? preorder.reserve_amount : `$${preorder.reserve_amount}`) : null;
             const deadlineVal = preorder.payment_deadline || preorder.deadline || '-';
+            const tcgLabel = (preorder.tcg || 'Preventa TCG').toUpperCase();
 
             const $item = $(`
-                <article class="deck-public-item preorder-card-modern ${isOutOfStock ? 'is-out-of-stock' : ''}" id="preorder-item-${preorder.id}">
-                    <div class="preorder-card-top-bar">
-                        <span class="preorder-brand-tag">${preorder.tcg ? preorder.tcg.toUpperCase() : 'PREVENTA TCG'}</span>
-                        <button type="button" class="btn-share-item btn-share-floating" onclick="openShareModal('${preorder.name.replace(/'/g, "\\'")}', 'preorders', '${preorder.id}')" title="Compartir Preventa">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                    </div>
-
-                    <div class="preorder-media-frame">
-                        <img src="${preorder.image_url || 'https://via.placeholder.com/400x300?text=Preventa'}" alt="${preorder.name}" class="preorder-hero-img">
-                        ${isOutOfStock ? '<div class="preorder-soldout-overlay">AGOTADO</div>' : ''}
-                    </div>
-
-                    <div class="preorder-content-body">
-                        <h3 class="preorder-title">${preorder.name}</h3>
-
-                        <div class="preorder-price-hero">
-                            <span class="preorder-price-val">${formattedPrice}</span>
-                            ${reserveFormatted ? `<span class="preorder-deposit-badge">Aparta desde ${reserveFormatted}</span>` : ''}
+                <div class="deck-public-item sealed-product-item amazon-sealed-card" id="preorder-item-${preorder.id}">
+                    <div class="amazon-card-top">
+                        <!-- BRAND & SHARE BAR -->
+                        <div class="amazon-brand-bar">
+                            <span class="amazon-tcg-tag"><i class="fas fa-layer-group"></i> ${tcgLabel}</span>
+                            <button type="button" class="btn-share-preorder-single amazon-share-btn" title="Compartir Preventa">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
                         </div>
 
-                        <div class="preorder-info-rows">
-                            <div class="preorder-info-chip">
+                        <!-- PRODUCT IMAGE FRAME WITH FULL STAMP OVERLAY -->
+                        <div class="amazon-image-frame">
+                            ${isOutOfStock ? '<div class="sealed-soldout-overlay">AGOTADO</div>' : ''}
+                            <img src="${preorder.image_url || 'https://via.placeholder.com/300x200?text=Preventa'}" alt="${preorder.name}" class="amazon-product-img">
+                        </div>
+
+                        <!-- TITLE -->
+                        <h3 class="amazon-product-title">${preorder.name}</h3>
+                    </div>
+
+                    <div class="amazon-card-bottom">
+                        <!-- PRICE HERO BLOCK -->
+                        <div class="amazon-price-box">
+                            <div class="amazon-price-promo-row">
+                                <span class="amazon-promo-price amazon-regular-price">${formattedPrice}</span>
+                            </div>
+                            ${reserveFormatted ? `
+                                <div class="amazon-savings-row">
+                                    <span class="amazon-preorder-deposit-badge"><i class="fas fa-coins"></i> Aparta desde ${reserveFormatted}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- PREORDER INFO CHIPS -->
+                        <div class="amazon-preorder-chips">
+                            <div class="amazon-preorder-chip">
                                 <span class="chip-label">Límite de Pago:</span>
                                 <span class="chip-val">${deadlineVal}</span>
                             </div>
                             ${preorder.arrival_date ? `
-                            <div class="preorder-info-chip">
-                                <span class="chip-label">Llegada Estimada:</span>
-                                <span class="chip-val">${preorder.arrival_date}</span>
-                            </div>` : ''}
-                            ${maxStock > 0 ? `
-                            <div class="preorder-info-chip">
-                                <span class="chip-label">Disponibles:</span>
-                                <span class="chip-val">${available} de ${maxStock} ${preorder.per_person_limit ? `(Máx. ${preorder.per_person_limit}/pers.)` : ''}</span>
-                            </div>` : ''}
+                                <div class="amazon-preorder-chip">
+                                    <span class="chip-label">Llegada Estimada:</span>
+                                    <span class="chip-val">${preorder.arrival_date}</span>
+                                </div>
+                            ` : ''}
                         </div>
-                    </div>
 
-                    <div class="preorder-action-row">
-                        ${!isOutOfStock ? `
-                        <div class="preorder-qty-control">
-                            <button type="button" class="preorder-qty-btn preorder-qty-minus" aria-label="Restar">-</button>
-                            <input type="number" class="preorder-qty-input" value="1" min="1" max="${maxAllowed}" readonly>
-                            <button type="button" class="preorder-qty-btn preorder-qty-plus" aria-label="Sumar">+</button>
+                        <!-- STOCK AVAILABILITY STATUS -->
+                        <div class="amazon-stock-status">
+                            ${isOutOfStock ? `
+                                <span class="amazon-stock-out"><i class="fas fa-times-circle"></i> No disponible actualmente</span>
+                            ` : `
+                                <span class="amazon-stock-in"><i class="fas fa-check-circle"></i> En Stock (${available} dispon.) ${preorder.per_person_limit ? `<span class="amazon-limit-info">• Máx. ${preorder.per_person_limit}/pers.</span>` : ''}</span>
+                            `}
                         </div>
-                        ` : ''}
-                        <button type="button" class="btn-add-preorder-cart ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''}>
-                            ${isOutOfStock ? 'AGOTADO' : 'Añadir al Carrito'}
-                        </button>
+
+                        <!-- ACTION ROW: QTY & AMAZON BUY BUTTON -->
+                        <div class="amazon-action-row">
+                            ${!isOutOfStock ? `
+                                <div class="amazon-qty-selector">
+                                    <button type="button" class="btn-qty-minus" aria-label="Restar">-</button>
+                                    <input type="number" class="preorder-qty-input sealed-qty-input" value="1" min="1" max="${maxAllowed}" readonly>
+                                    <button type="button" class="btn-qty-plus" aria-label="Sumar">+</button>
+                                </div>
+                            ` : ''}
+                            <button type="button" class="btn-add-preorder-cart amazon-btn-buy ${isOutOfStock ? 'disabled' : ''}" ${isOutOfStock ? 'disabled' : ''}>
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>${isOutOfStock ? 'AGOTADO' : 'Agregar al carrito'}</span>
+                            </button>
+                        </div>
                     </div>
-                </article>
+                </div>
             `);
 
-            // Quantity button controls with explicit click/touch handling
-            const handleMinus = function(e) {
-                if (e) { e.preventDefault(); e.stopPropagation(); }
-                const $input = $item.find('.preorder-qty-input');
-                let currVal = parseInt($input.val()) || 1;
-                if (currVal > 1) $input.val(currVal - 1);
+            // Handle quantity buttons
+            const $qtyInput = $item.find('.preorder-qty-input');
+            const handleMinus = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur > 1) $qtyInput.val(cur - 1);
+            };
+            const handlePlus = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                let cur = parseInt($qtyInput.val()) || 1;
+                if (cur < maxAllowed) {
+                    $qtyInput.val(cur + 1);
+                } else {
+                    Swal.fire({ icon: 'info', title: 'Límite Alcanzado', text: `Cantidad máxima permitida: ${maxAllowed}`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                }
             };
 
-            const handlePlus = function(e) {
-                if (e) { e.preventDefault(); e.stopPropagation(); }
-                const $input = $item.find('.preorder-qty-input');
-                let currVal = parseInt($input.val()) || 1;
-                if (currVal < maxAllowed) $input.val(currVal + 1);
-            };
+            $item.find('.btn-qty-minus').on('click', handleMinus);
+            $item.find('.btn-qty-plus').on('click', handlePlus);
 
-            $item.find('.preorder-qty-minus').on('click touchstart', handleMinus);
-            $item.find('.preorder-qty-plus').on('click touchstart', handlePlus);
-
-            $item.find('.preorder-qty-input').on('click touchstart change keyup', function(e) {
-                e.stopPropagation();
-                let val = parseInt($(this).val()) || 1;
-                if (val < 1) $(this).val(1);
-                if (val > maxAllowed) $(this).val(maxAllowed);
+            // Clicking image or card area opens detail modal
+            $item.on('click', function(e) {
+                if ($(e.target).closest('button, input, .btn-add-preorder-cart, .btn-share-preorder-single, .btn-qty-minus, .btn-qty-plus').length) return;
+                openPublicPreorderModal(preorder);
             });
 
-            // Add to Cart click handler
-            const handleAddToCart = async function(e) {
-                if (e) { e.preventDefault(); e.stopPropagation(); }
+            // Share button click
+            const handleShare = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openShareModal((preorder.name || ''), 'preorders', preorder.id);
+            };
+            $item.find('.btn-share-preorder-single').on('click', handleShare);
 
-                if (isOutOfStock) {
-                    Swal.fire({ icon: 'warning', title: 'Producto Agotado', text: 'No hay stock disponible para esta preventa.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-                    return;
-                }
-
-                const qty = parseInt($item.find('.preorder-qty-input').val()) || 1;
-
-                const parsePriceVal = (val) => {
-                    if (!val) return 0;
-                    const str = val.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
-                    return parseFloat(str) || 0;
-                };
-
-                const totalUnitPrice = parsePriceVal(preorder.price);
-                const reserveUnitPrice = parsePriceVal(preorder.reserve_amount);
-
-                let chosenTotalPayment = null;
-
-                if (reserveUnitPrice > 0 && reserveUnitPrice < totalUnitPrice) {
-                    const minTotal = reserveUnitPrice * qty;
-                    const maxTotal = totalUnitPrice * qty;
-
-                    const swalRes = await Swal.fire({
-                        title: 'Monto a pagar en preventa',
-                        html: `
-                            <div style="text-align: left; font-size: 0.95rem; color: #cbd5e1; font-family: sans-serif;">
-                                <p style="margin-bottom: 12px;">Estás apartado <strong>${qty}</strong> unidad(es) de <strong>${preorder.name}</strong>.</p>
-                                <div style="background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); padding: 12px; border-radius: 12px; margin-bottom: 15px;">
-                                    <div style="margin-bottom: 4px;"><i class="fas fa-coins" style="color: #f5af19;"></i> <strong>Apartado mín. unitario:</strong> $${reserveUnitPrice.toFixed(2)}</div>
-                                    <div><i class="fas fa-tag" style="color: #00ffaa;"></i> <strong>Precio total unitario:</strong> $${totalUnitPrice.toFixed(2)}</div>
-                                </div>
-                                <div style="margin-bottom: 15px; background: rgba(15, 23, 42, 0.8); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);">
-                                    <label style="display: block; font-weight: 800; color: #00d2ff; margin-bottom: 8px;">
-                                        ¿Cuánto deseas pagar/abonar ahora?<br>
-                                        <span style="font-size: 0.82rem; color: #f5af19;">Rango permitido (${qty} unidad/es): $${minTotal.toFixed(2)} - $${maxTotal.toFixed(2)}</span>
-                                    </label>
-                                    <input type="number" id="swal-preorder-amount-input" class="swal2-input" value="${minTotal}" min="${minTotal}" max="${maxTotal}" step="1" style="width: 100%; box-sizing: border-box; font-size: 1.25rem; font-weight: 900; text-align: center; color: #00ffaa; background: #000; border: 1px solid #00d2ff; border-radius: 10px; margin: 0;">
-                                </div>
-                                <div style="display: flex; gap: 8px; justify-content: center;">
-                                    <button type="button" class="btn btn-sm" id="swal-btn-preset-min" style="background: rgba(245, 175, 25, 0.2); color: #f5af19; border: 1px solid #f5af19; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Apartar Mínimo ($${minTotal.toFixed(2)})</button>
-                                    <button type="button" class="btn btn-sm" id="swal-btn-preset-max" style="background: rgba(0, 255, 170, 0.2); color: #00ffaa; border: 1px solid #00ffaa; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Pagar Total ($${maxTotal.toFixed(2)})</button>
-                                </div>
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        confirmButtonText: '<i class="fas fa-shopping-cart"></i> Agregar al Carrito',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#00d2ff',
-                        cancelButtonColor: '#475569',
-                        background: '#0f172a',
-                        color: '#fff',
-                        didOpen: () => {
-                            const $input = $('#swal-preorder-amount-input');
-                            $('#swal-btn-preset-min').on('click', () => $input.val(minTotal));
-                            $('#swal-btn-preset-max').on('click', () => $input.val(maxTotal));
-                        },
-                        preConfirm: () => {
-                            const entered = parseFloat($('#swal-preorder-amount-input').val());
-                            if (isNaN(entered) || entered < minTotal - 0.01 || entered > maxTotal + 0.01) {
-                                Swal.showValidationMessage(`El monto debe estar entre $${minTotal.toFixed(2)} y $${maxTotal.toFixed(2)}.`);
-                                return false;
-                            }
-                            return entered;
-                        }
-                    });
-
-                    if (!swalRes.isConfirmed) return;
-                    chosenTotalPayment = swalRes.value;
-                }
-
-                const unitDeposit = chosenTotalPayment !== null ? (chosenTotalPayment / qty) : (totalUnitPrice || 0);
-
-                Cart.add({
-                    preorder_id: preorder.id,
-                    name: preorder.name,
-                    image_url: preorder.image_url,
-                    price: preorder.price,
-                    total_unit_price: totalUnitPrice,
-                    reserve_amount: preorder.reserve_amount,
-                    unit_deposit: unitDeposit,
-                    custom_payment_amount: chosenTotalPayment !== null ? chosenTotalPayment : (totalUnitPrice * qty),
-                    is_preorder: true,
-                    tcg: preorder.tcg,
-                    deadline: preorder.payment_deadline || preorder.deadline,
-                    cart_quantity: qty,
-                    max_quantity: maxAllowed,
-                    whatsapp_link: window.currentStoreContact ? window.currentStoreContact.whatsapp : null,
-                    messenger_link: window.currentStoreContact ? window.currentStoreContact.messenger : null
-                });
-
-                // Auto-register customer reservation entry in Supabase preorders.clients_list
-                (async () => {
-                    try {
-                        const { data: latestPreorder } = await _supabase
-                            .from('preorders')
-                            .select('id, clients_list, max_stock')
-                            .eq('id', preorder.id)
-                            .single();
-
-                        if (latestPreorder) {
-                            let clients = latestPreorder.clients_list;
-                            if (typeof clients === 'string') {
-                                try { clients = JSON.parse(clients); } catch (e) { clients = []; }
-                            }
-                            if (!Array.isArray(clients)) clients = [];
-
-                            let clientName = 'Cliente';
-                            if (window.currentUser && (window.currentUser.username || window.currentUser.store_name)) {
-                                clientName = window.currentUser.username || window.currentUser.store_name;
-                            } else {
-                                const localUser = localStorage.getItem('tcg_session');
-                                if (localUser) {
-                                    try {
-                                        const parsed = JSON.parse(localUser);
-                                        if (parsed.username) clientName = parsed.username;
-                                    } catch (e) {}
-                                }
-                            }
-
-                            const totalCost = totalUnitPrice * qty;
-                            const deposit = chosenTotalPayment !== null ? chosenTotalPayment : totalCost;
-
-                            let statusPayment = 'Pendiente';
-                            if (deposit >= totalCost && totalCost > 0) statusPayment = 'Liquidado';
-                            else if (deposit > 0) statusPayment = 'Pago Parcial';
-
-                            clients.push({
-                                id: Date.now(),
-                                name: clientName,
-                                qty: qty,
-                                deposit: deposit,
-                                status_payment: statusPayment,
-                                status_delivery: 'Por Entregar',
-                                created_at: new Date().toISOString()
-                            });
-
-                            await _supabase
-                                .from('preorders')
-                                .update({ clients_list: clients })
-                                .eq('id', preorder.id);
-                        }
-                    } catch (err) {
-                        console.warn("Auto-fill preorder reservation warning:", err);
-                    }
-                })();
-
-                const cartUrl = `carrito.html?${window.currentStoreIdentifier ? 'store=' + encodeURIComponent(window.currentStoreIdentifier) : ''}`;
-
-                Swal.fire({
-                    title: '¡Añadido al Carrito!',
-                    text: `Se agregaron ${qty} unidad(es) de "${preorder.name}" a tu carrito.`,
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="fas fa-shopping-cart"></i> Ver Carrito',
-                    cancelButtonText: 'Seguir Comprando',
-                    confirmButtonColor: '#00d2ff'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = cartUrl;
-                    }
-                });
+            // Add to cart button click
+            const handleAddToCart = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const qtyVal = parseInt($qtyInput.val()) || 1;
+                executePreorderAddToCart(preorder, qtyVal, isOutOfStock, maxAllowed);
             };
 
-            $item.find('.btn-add-preorder-cart').on('click touchstart', handleAddToCart);
+            $item.find('.btn-add-preorder-cart').on('click', handleAddToCart);
 
             $('#preorders-container').append($item);
         });
