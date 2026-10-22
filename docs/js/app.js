@@ -2325,6 +2325,14 @@ function loadPublicAlbums(userId) {
             // Filtrar en JS para tratar null como público (true)
             // Solo ocultamos si is_public es explícitamente false
             albums = albums.filter(a => a.is_public !== false);
+
+            // Respetar el límite de álbumes asignado al usuario en tiempo real
+            const { data: userConfig } = await _supabase.from('usuarios').select('max_albums').eq('id', userId).maybeSingle();
+            const maxAllowed = userConfig && userConfig.max_albums ? userConfig.max_albums : 5;
+            if (albums.length > maxAllowed) {
+                albums = albums.slice(0, maxAllowed);
+            }
+
             window.currentAlbums = albums;
         }
 

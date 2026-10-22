@@ -387,37 +387,60 @@ $(document).ready(async function() {
     $(document).on('click', '#btn-upgrade-plan', function(e) {
         e.preventDefault();
         Swal.fire({
-            title: '<span style="color: #00d2ff;">¡Sube a Premium!</span>',
+            title: '<span style="color: #38bdf8; font-weight: 800;">¡Mejora a Plan Premium!</span>',
             html: `
-                <div style="text-align: left; color: #eee; font-size: 0.95rem; line-height: 1.6;">
-                    <p>¿Te gustaría aumentar el potencial de tu tienda? Estos son los beneficios del plan <strong>Premium</strong>:</p>
-                    <ul style="list-style-type: none; padding-left: 0; margin-top: 15px;">
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 álbumes</strong> activos.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>10 páginas</strong> por álbum.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 decks</strong> personalizados.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>50 cartas</strong> en Wishlist.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>20 productos</strong> sellados.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Hasta <strong>5 preventas</strong> activas.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>10 clientes</strong>.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>15 subastas</strong>.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Gestión de hasta <strong>5 eventos</strong>.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Acceso a <strong>todos los compañeros</strong>.</li>
-                        <li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: #00d2ff; margin-right: 10px;"></i> Soporte prioritario.</li>
+                <div style="text-align: left; color: #eee; font-size: 0.92rem; line-height: 1.6;">
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <span style="font-size: 2rem; font-weight: 900; color: #00ff88;">$300 MXN</span>
+                        <span style="font-size: 0.85rem; color: #aaa;"> / mes</span>
+                    </div>
+                    <ul style="list-style-type: none; padding-left: 0; margin: 0 0 15px 0;">
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>15 álbumes activos</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>10 páginas</strong> por álbum.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>30 decks personalizados</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>50 cartas</strong> en Wishlist por lista.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>60 productos sellados</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>30 preventas activas</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Gestión de hasta <strong>100 clientes</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Gestión de hasta <strong>100 subastas</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Gestión de hasta <strong>50 eventos</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Acceso a <strong>todos los asistentes IA seleccionados</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Acceso a los <strong>widgets para tus dominios</strong>.</li>
+                        <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> <strong>Soporte prioritario</strong>.</li>
                     </ul>
-                    <p style="margin-top: 20px; text-align: center; font-weight: bold;">Haz clic abajo para contactarnos y solicitar tu upgrade:</p>
+                    <p style="text-align: center; font-size: 0.8rem; color: #94a3b8; margin: 0;">Pago en línea seguro y cifrado procesado por Stripe.</p>
                 </div>
             `,
             icon: 'info',
             showCancelButton: true,
-            confirmButtonText: '<i class="fab fa-facebook-messenger"></i> Contactar por Messenger',
+            confirmButtonText: '<i class="fab fa-stripe-s"></i> Pagar $300 MXN con Tarjeta (Stripe)',
             cancelButtonText: 'Tal vez luego',
-            confirmButtonColor: '#0084ff',
-            cancelButtonColor: '#333',
-            background: '#1a1a1a',
+            confirmButtonColor: '#635bff',
+            cancelButtonColor: '#334155',
+            background: '#0f172a',
             color: '#fff'
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                window.open('https://m.me/vikingdevtj', '_blank');
+                if (typeof _supabase === 'undefined') return;
+                Swal.fire({
+                    title: 'Conectando con Stripe Checkout...',
+                    text: 'Por favor espera un momento.',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                try {
+                    const { data, error } = await _supabase.functions.invoke('create-checkout-session', {
+                        body: { return_url: window.location.origin + window.location.pathname }
+                    });
+                    if (error) throw error;
+                    if (data && data.url) {
+                        window.location.href = data.url;
+                    } else {
+                        throw new Error(data?.error || 'No se pudo generar la sesión de pago.');
+                    }
+                } catch (err) {
+                    Swal.fire('Error de Pago', err.message || 'Error al conectar con Stripe Checkout.', 'error');
+                }
             }
         });
     });
