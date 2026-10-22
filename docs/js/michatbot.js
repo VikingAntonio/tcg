@@ -1534,6 +1534,30 @@ async function handleSendAIChatMessage() {
                         });
                     }
                 }
+
+                // 4. Fetch tracking records
+                const { data: trackings } = await _supabase
+                    .from('tracking')
+                    .select('*')
+                    .eq('user_id', targetStoreId)
+                    .order('created_at', { ascending: false });
+
+                if (trackings && trackings.length > 0) {
+                    dbContext += '\n--- REGISTROS DE TRACKING Y GUÍAS DE ENVÍO DE LA TIENDA ---\n';
+                    trackings.forEach(t => {
+                        const guia = t.guia || t.tracking_number || 'Sin guía';
+                        const paq = t.paqueteria || t.carrier || 'No especificada';
+                        const cliente = t.nombre_cliente || t.seller_name || 'Sin contacto';
+                        const dir = t.direction === 'received' ? 'Recibir (Compra/Proveedor)' : 'Enviar (Venta/Cliente)';
+                        const status = t.status || 'pending';
+                        const fechaE = t.fecha_envio || 'N/A';
+                        const fechaL = t.fecha_llegada || 'N/A';
+                        const url = t.tracking_url || '';
+                        const detalles = t.detalles_pedido || '';
+
+                        dbContext += `- [ID: ${t.id}] Guía: "${guia}" | Tipo: ${dir} | Paquetería: ${paq} | Contacto: "${cliente}" (${t.telefono || 'Sin tel.'}) | Ubicación: "${t.ubicacion || 'N/A'}" | Estado: ${status} | Envío: ${fechaE} | Llegada: ${fechaL} | Detalles: "${detalles}" | URL: ${url}\n`;
+                    });
+                }
             } catch (e) {
                 console.warn("Failed to build store context:", e);
             }
@@ -1590,6 +1614,7 @@ async function handleSendAIChatMessage() {
                 if (typeof loadLearnItems === 'function') loadLearnItems();
                 if (typeof loadSealedProducts === 'function') loadSealedProducts();
                 if (typeof loadEvents === 'function') loadEvents();
+                if (typeof loadTracking === 'function') loadTracking();
 
                 // Dispatch global real-time event for UI sync
                 window.dispatchEvent(new CustomEvent('viking_data_changed', {

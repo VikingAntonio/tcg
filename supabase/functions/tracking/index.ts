@@ -329,14 +329,18 @@ async function tryExtractAndAddTracking(supabase: any, promptText: string, user_
   else if (lower.includes('dhl')) carrier = 'DHL';
   else if (lower.includes('correos') || lower.includes('sepomex') || lower.includes('mexpost')) carrier = 'Correos de México';
 
+  const isSent = lower.includes('enviar') || lower.includes('cliente') || lower.includes('venta');
+  const direction = isSent ? 'sent' : 'received';
+
   const insertData: Record<string, any> = {
     guia: guia,
     tracking_number: guia,
     paqueteria: carrier,
     carrier: carrier,
-    nombre_cliente: 'Cliente',
+    nombre_cliente: isSent ? 'Cliente' : 'Vendedor',
+    seller_name: isSent ? null : 'Vendedor',
     status: 'pending',
-    direction: 'received'
+    direction: direction
   };
 
   if (user_id) {
@@ -355,6 +359,62 @@ async function tryExtractAndAddTracking(supabase: any, promptText: string, user_
   }
 
   return guia;
+}
+
+// Intentar modificar o eliminar una guía si la intención del usuario es modificar/borrar
+async function tryExtractAndModifyTracking(supabase: any, promptText: string, user_id?: string): Promise<string | null> {
+  const lower = promptText.toLowerCase();
+  const isDeleteIntent = lower.includes('elimina') || lower.includes('eliminar') || lower.includes('borra') || lower.includes('borrar') || lower.includes('quita') || lower.includes('quitar');
+  const isUpdateIntent = lower.includes('cambia') || lower.includes('cambiar') || lower.includes('actualiza') || lower.includes('actualizar') || lower.includes('marca') || lower.includes('marcar') || lower.includes('modifica') || lower.includes('modificar');
+
+  if (!isDeleteIntent && !isUpdateIntent) return null;
+
+  const guiaMatch = promptText.match(/\b([A-Za-z0-9]{6,25})\b/);
+  if (!guiaMatch) return null;
+
+  const guia = guiaMatch[1];
+
+  if (isDeleteIntent) {
+    let deleteQuery = supabase.from('tracking').delete();
+    if (user_id) deleteQuery = deleteQuery.eq('user_id', user_id);
+    deleteQuery = deleteQuery.or(`guia.eq.${guia},tracking_number.eq.${guia}`);
+    const { error } = await deleteQuery;
+    if (error) {
+      console.warn("Error eliminando tracking en BD:", error.message);
+      return null;
+    }
+    return `[SISTEMA]: Se eliminó la guía "${guia}" correctamente de la base de datos.`;
+  }
+
+  if (isUpdateIntent) {
+    const updateData: Record<string, any> = {};
+    if (lower.includes('entregad') || lower.includes('completad')) {
+      updateData.status = 'completed';
+      updateData.completed_at = new Date().toISOString();
+    } else if (lower.includes('listo para recoger') || lower.includes('ventanilla') || lower.includes('sucursal')) {
+      updateData.status = 'ready_for_pickup';
+    } else if (lower.includes('tránsito') || lower.includes('transito') || lower.includes('camino')) {
+      updateData.status = 'in_transit';
+    } else if (lower.includes('devuelt') || lower.includes('retornad')) {
+      updateData.status = 'returned';
+    } else if (lower.includes('pendient')) {
+      updateData.status = 'pending';
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      let updateQuery = supabase.from('tracking').update(updateData);
+      if (user_id) updateQuery = updateQuery.eq('user_id', user_id);
+      updateQuery = updateQuery.or(`guia.eq.${guia},tracking_number.eq.${guia}`);
+      const { error } = await updateQuery;
+      if (error) {
+        console.warn("Error actualizando tracking en BD:", error.message);
+        return null;
+      }
+      return `[SISTEMA]: Se actualizó el estado de la guía "${guia}" a "${updateData.status}" en la base de datos.`;
+    }
+  }
+
+  return null;
 }
 
 serve(async (req: Request) => {
@@ -383,8 +443,9 @@ serve(async (req: Request) => {
     // CASO A: CONSULTA / PETICIÓN IA INTERACTIVA (Prompt o mensaje proporcionado)
     // =========================================================================
     if (userPrompt) {
-      // 1. Verificar si el usuario pide agregar un nuevo tracking
+      // 1. Verificar si el usuario pide agregar un nuevo tracking o modificar/eliminar
       const newlyAddedGuia = await tryExtractAndAddTracking(supabase, userPrompt, user_id);
+      const modificationResult = await tryExtractAndModifyTracking(supabase, userPrompt, user_id);
 
       // 2. Verificar si pide actualizar / consultar estado
       const lowerPrompt = userPrompt.toLowerCase();
@@ -428,6 +489,10 @@ serve(async (req: Request) => {
 
       if (newlyAddedGuia) {
         dbContext += `\n[SISTEMA]: Se acaba de agregar la guía "${newlyAddedGuia}" exitosamente a la base de datos y se realizó su primera verificación.\n`;
+      }
+
+      if (modificationResult) {
+        dbContext += `\n${modificationResult}\n`;
       }
 
       // 5. Preparar llamada a Gemini AI
