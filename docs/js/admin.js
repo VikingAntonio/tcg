@@ -387,12 +387,12 @@ $(document).ready(async function() {
     $(document).on('click', '#btn-upgrade-plan', function(e) {
         e.preventDefault();
         Swal.fire({
-            title: '<span style="color: #38bdf8; font-weight: 800;">¡Mejora a Plan Premium!</span>',
+            title: '<span style="color: #a855f7; font-weight: 800;">Mejora a Plan Premium</span>',
             html: `
                 <div style="text-align: left; color: #eee; font-size: 0.92rem; line-height: 1.6;">
-                    <div style="text-align: center; margin-bottom: 15px; padding: 12px; background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 16px;">
+                    <div style="text-align: center; margin-bottom: 15px; padding: 12px; background: rgba(99, 91, 255, 0.12); border: 1px solid rgba(99, 91, 255, 0.35); border-radius: 16px;">
                         <span style="font-size: 2.2rem; font-weight: 900; color: #00ff88;">$300 MXN</span>
-                        <span style="font-size: 0.9rem; color: #38bdf8; font-weight: 700;"> / mes</span>
+                        <span style="font-size: 0.9rem; color: #c084fc; font-weight: 700;"> / mes</span>
                     </div>
                     <ul style="list-style-type: none; padding-left: 0; margin: 0 0 15px 0;">
                         <li style="margin-bottom: 6px;"><i class="fas fa-check-circle" style="color: #00ff88; margin-right: 8px;"></i> Hasta <strong>15 álbumes activos</strong>.</li>
@@ -412,9 +412,9 @@ $(document).ready(async function() {
             `,
             icon: 'info',
             showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-bolt"></i> Suscríbete Ahora',
+            confirmButtonText: 'Desbloquear Plan Premium',
             cancelButtonText: 'Tal vez luego',
-            confirmButtonColor: '#00d2ff',
+            confirmButtonColor: '#635bff',
             cancelButtonColor: '#334155',
             background: '#0f172a',
             color: '#fff'
