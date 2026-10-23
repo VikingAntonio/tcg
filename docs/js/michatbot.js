@@ -1460,6 +1460,40 @@ async function handleSendAIChatMessage() {
         let dbContext = '';
         if (targetStoreId && typeof _supabase !== 'undefined') {
             try {
+                // 0. Fetch user profile data (perfil.html) including additional info blocks
+                const { data: userProfile } = await _supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('id', targetStoreId)
+                    .maybeSingle();
+
+                if (userProfile) {
+                    dbContext += '--- INFORMACIÓN DEL PERFIL DE LA TIENDA / USUARIO (PERFIL.HTML) ---\n';
+                    dbContext += `- ID Usuario: ${userProfile.id}\n`;
+                    if (userProfile.username) dbContext += `- Nombre de Usuario: ${userProfile.username}\n`;
+                    if (userProfile.store_name) dbContext += `- Nombre de la Tienda: ${userProfile.store_name}\n`;
+                    if (userProfile.horario) dbContext += `- Horario de Atención: ${userProfile.horario}\n`;
+                    if (userProfile.ubicacion) dbContext += `- Ubicación / Dirección: ${userProfile.ubicacion}\n`;
+                    if (userProfile.whatsapp_link) dbContext += `- WhatsApp: ${userProfile.whatsapp_link}\n`;
+                    if (userProfile.messenger_link) dbContext += `- Messenger: ${userProfile.messenger_link}\n`;
+                    if (userProfile.custom_domain) dbContext += `- Dominio Web: ${userProfile.custom_domain}\n`;
+                    if (userProfile.email && isAdmin) dbContext += `- Correo Electrónico: ${userProfile.email}\n`;
+
+                    let addInfo = userProfile.additional_info;
+                    if (typeof addInfo === 'string') {
+                        try { addInfo = JSON.parse(addInfo); } catch (e) { addInfo = []; }
+                    }
+                    if (Array.isArray(addInfo) && addInfo.length > 0) {
+                        dbContext += '  [Información Adicional del Negocio / Asistente]:\n';
+                        addInfo.forEach((item, idx) => {
+                            if (item.title || item.description) {
+                                dbContext += `   * Bloque ${idx + 1}: "${item.title || 'Información'}" -> ${item.description || ''}\n`;
+                            }
+                        });
+                    }
+                    dbContext += '\n';
+                }
+
                 // 1. Fetch preorders
                 const { data: preorders } = await _supabase
                     .from('preorders')
