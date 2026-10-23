@@ -100,26 +100,40 @@
                         <label><i class="fas fa-globe"></i> Dominio Web (Autorizado)</label>
                         <input type="text" id="profile-domain" placeholder="ej: misitio.com">
                     </div>
-                    <div class="form-group store-only-field" style="display: none;">
-                        <label><i class="fas fa-clock"></i> Horario de Atención</label>
-                        <input type="text" id="profile-horario" placeholder="Lun-Vie 9:00 - 18:00">
+                    <div class="form-group store-only-field full-width-field" style="display: none; grid-column: 1 / -1;">
+                        <label>Horario de Atención</label>
+                        <input type="text" id="profile-horario" placeholder="Lun-Vie 9:00 AM - 6:00 PM" style="width: 100%; margin-bottom: 12px;">
 
-                        <!-- Schedule Helper -->
-                        <div class="schedule-helper">
-                            <div class="schedule-helper-title">Configurador Rápido</div>
-                            <div class="schedule-days-grid">
-                                <button type="button" class="day-btn" data-day="Lun-Vie">Lun-Vie</button>
-                                <button type="button" class="day-btn" data-day="Lun-Sab">Lun-Sab</button>
-                                <button type="button" class="day-btn" data-day="Toda la semana">Toda la semana</button>
-                                <button type="button" class="day-btn" data-day="Sáb">Sáb</button>
-                                <button type="button" class="day-btn" data-day="Dom">Dom</button>
+                        <!-- Schedule Helper Panel -->
+                        <div class="schedule-helper-card">
+                            <div class="sched-subtitle">CONFIGURACIÓN RÁPIDA DE DÍAS</div>
+                            <div class="schedule-quick-presets">
+                                <button type="button" class="preset-btn" data-preset="Lun - Vie">Lun - Vie</button>
+                                <button type="button" class="preset-btn" data-preset="Sáb - Dom">Sáb - Dom</button>
+                                <button type="button" class="preset-btn" data-preset="Toda la semana">Toda la semana</button>
                             </div>
+                            <div class="schedule-days-row">
+                                <button type="button" class="day-pill" data-day="Lun">Lun</button>
+                                <button type="button" class="day-pill" data-day="Mar">Mar</button>
+                                <button type="button" class="day-pill" data-day="Mié">Mié</button>
+                                <button type="button" class="day-pill" data-day="Jue">Jue</button>
+                                <button type="button" class="day-pill" data-day="Vie">Vie</button>
+                                <button type="button" class="day-pill" data-day="Sáb">Sáb</button>
+                                <button type="button" class="day-pill" data-day="Dom">Dom</button>
+                            </div>
+                            <div class="sched-subtitle" style="margin-top: 14px;">HORARIO (APERTURA Y CIERRE)</div>
                             <div class="schedule-time-row">
-                                <input type="time" id="sched-start" value="09:00">
-                                <span>a</span>
-                                <input type="time" id="sched-end" value="18:00">
-                                <button type="button" id="btn-apply-sched" class="btn btn-sm btn-primary btn-apply-schedule">
-                                    <i class="fas fa-plus"></i> Aplicar
+                                <div class="time-input-wrap">
+                                    <i class="far fa-clock"></i>
+                                    <input type="time" id="sched-start" value="09:00">
+                                </div>
+                                <span class="time-to-separator">a</span>
+                                <div class="time-input-wrap">
+                                    <i class="far fa-clock"></i>
+                                    <input type="time" id="sched-end" value="18:00">
+                                </div>
+                                <button type="button" id="btn-apply-sched" class="btn btn-sm btn-primary">
+                                    Aplicar
                                 </button>
                             </div>
                         </div>
@@ -131,19 +145,14 @@
                     <input type="text" id="profile-ubicacion" placeholder="Ciudad, País o Dirección completa">
                 </div>
 
-                <!-- Additional Information for Assistant Section -->
-                <div style="margin-top: 35px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary-color, #38bdf8); font-weight: 600;">
-                            <i class="fas fa-brain"></i> Información Adicional para tu Asistente
-                        </h3>
+                <!-- Additional Information Section -->
+                <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <label style="font-size: 1rem; font-weight: 600; color: #ffffff; margin: 0;">Información Adicional</label>
                         <button type="button" id="btn-add-info-block" class="btn btn-sm btn-secondary" style="font-size: 0.8rem;">
-                            <i class="fas fa-plus"></i> Agregar Bloque
+                            + Agregar Bloque
                         </button>
                     </div>
-                    <p style="font-size: 0.83rem; color: #a1a1aa; margin-bottom: 18px; line-height: 1.4;">
-                        Agrega bloques de información personalizada (título y descripción) para que tu asistente conozca a la perfección los detalles de tu negocio, productos, servicios, políticas de venta o cualquier dato clave para responder las dudas de tus clientes.
-                    </p>
 
                     <div id="additional-info-container" style="display: flex; flex-direction: column; gap: 16px;">
                         <!-- Dynamic Info Blocks Render Here -->
