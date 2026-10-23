@@ -98,17 +98,17 @@ $(document).ready(async function() {
     function addInfoBlockUI(title = '', description = '') {
         const $container = $('#additional-info-container');
         const blockHtml = `
-            <div class="info-block-card" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 16px; position: relative;">
-                <button type="button" class="btn-remove-info-block" style="position: absolute; top: 12px; right: 12px; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="Eliminar bloque">
+            <div class="info-block-card" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; position: relative;">
+                <button type="button" class="btn-remove-info-block" style="position: absolute; top: 12px; right: 12px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="Eliminar bloque">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="form-group" style="margin-bottom: 12px; padding-right: 35px;">
-                    <label style="font-size: 0.82rem; color: #cbd5e1; font-weight: 500;">Título del Bloque / Tema</label>
-                    <input type="text" class="info-block-title" placeholder="Ej: Políticas de Envío, Garantía, Promociones de Mayo" value="${title.replace(/"/g, '&quot;')}" style="width: 100%; font-size: 0.88rem;">
+                    <label style="font-size: 0.85rem; color: #cbd5e1; font-weight: 500;">Título</label>
+                    <input type="text" class="info-block-title" value="${title.replace(/"/g, '&quot;')}" style="width: 100%; font-size: 0.9rem;">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label style="font-size: 0.82rem; color: #cbd5e1; font-weight: 500;">Descripción / Detalles para tu Asistente</label>
-                    <textarea class="info-block-desc" rows="3" placeholder="Ej: Hacemos envíos por Estafeta en $150 MXN a todo México. Entregas personales los sábados en Plaza Central de 12 a 3 PM." style="width: 100%; font-size: 0.88rem; background: rgba(0,0,0,0.3); color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; resize: vertical;">${description}</textarea>
+                    <label style="font-size: 0.85rem; color: #cbd5e1; font-weight: 500;">Descripción</label>
+                    <textarea class="info-block-desc" rows="3" placeholder="Agrega información adicional para que tu asistente conozca más de tu negocio" style="width: 100%; font-size: 0.88rem; background: rgba(0,0,0,0.3); color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; resize: vertical;">${description}</textarea>
                 </div>
             </div>
         `;
@@ -325,23 +325,79 @@ $(document).ready(async function() {
 
 
     // --- Schedule Helper Logic ---
-    let selectedScheduleDay = null;
+    let activeScheduleDays = [];
 
-    $('.day-btn').click(function() {
-        $('.day-btn').removeClass('active');
+    $('.preset-btn').click(function() {
+        const preset = $(this).data('preset');
+        $('.preset-btn').removeClass('active');
         $(this).addClass('active');
-        selectedScheduleDay = $(this).data('day');
+        $('.day-pill').removeClass('active');
+        activeScheduleDays = [];
+
+        if (preset === 'Lun - Vie') {
+            ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].forEach(d => {
+                $(`.day-pill[data-day="${d}"]`).addClass('active');
+                activeScheduleDays.push(d);
+            });
+        } else if (preset === 'Sáb - Dom') {
+            ['Sáb', 'Dom'].forEach(d => {
+                $(`.day-pill[data-day="${d}"]`).addClass('active');
+                activeScheduleDays.push(d);
+            });
+        } else if (preset === 'Toda la semana') {
+            $('.day-pill').each(function() {
+                $(this).addClass('active');
+                activeScheduleDays.push($(this).data('day'));
+            });
+        }
     });
 
+    $(document).on('click', '.day-pill', function() {
+        $('.preset-btn').removeClass('active');
+        const day = $(this).data('day');
+        $(this).toggleClass('active');
+
+        if ($(this).hasClass('active')) {
+            if (!activeScheduleDays.includes(day)) activeScheduleDays.push(day);
+        } else {
+            activeScheduleDays = activeScheduleDays.filter(d => d !== day);
+        }
+    });
+
+    function format12Hour(time24) {
+        if (!time24) return '';
+        const parts = time24.split(':');
+        let hours = parseInt(parts[0], 10);
+        const minutes = parts[1];
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // hour 0 is 12
+        return `${hours}:${minutes} ${ampm}`;
+    }
+
     $('#btn-apply-sched').click(function() {
-        if (!selectedScheduleDay) {
-            Swal.fire('Atención', 'Por favor, selecciona un rango de días primero.', 'info');
+        if (activeScheduleDays.length === 0) {
+            Swal.fire('Atención', 'Por favor, selecciona al menos un día.', 'info');
             return;
         }
 
-        const start = $('#sched-start').val();
-        const end = $('#sched-end').val();
-        const newSchedulePart = `${selectedScheduleDay} ${start} - ${end}`;
+        const startRaw = $('#sched-start').val();
+        const endRaw = $('#sched-end').val();
+        const start12 = format12Hour(startRaw);
+        const end12 = format12Hour(endRaw);
+
+        let daysLabel = '';
+        if (activeScheduleDays.length === 5 && ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].every(d => activeScheduleDays.includes(d))) {
+            daysLabel = 'Lun - Vie';
+        } else if (activeScheduleDays.length === 2 && activeScheduleDays.includes('Sáb') && activeScheduleDays.includes('Dom')) {
+            daysLabel = 'Sáb - Dom';
+        } else if (activeScheduleDays.length === 7) {
+            daysLabel = 'Toda la semana';
+        } else {
+            daysLabel = activeScheduleDays.join(', ');
+        }
+
+        const newSchedulePart = `${daysLabel} ${start12} - ${end12}`;
 
         let currentVal = $('#profile-horario').val().trim();
         if (currentVal) {
@@ -352,7 +408,7 @@ $(document).ready(async function() {
 
         Swal.fire({
             title: '¡Aplicado!',
-            text: 'Se ha añadido al horario.',
+            text: 'Se ha añadido al horario de atención.',
             icon: 'success',
             timer: 1500,
             showConfirmButton: false,

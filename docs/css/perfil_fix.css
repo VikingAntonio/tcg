@@ -12,3 +12,127 @@
     background: rgba(255,255,255,0.05) !important;
     cursor: not-allowed;
 }
+
+/* Schedule Helper Panel Styles */
+.schedule-helper-card {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 8px;
+}
+
+.sched-subtitle {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--primary-color, #ff6b00);
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.schedule-quick-presets {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.preset-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.preset-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+}
+
+.preset-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.schedule-days-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.day-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    padding: 10px 4px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.day-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.day-pill.active {
+    background: var(--primary-color, #ff6b00) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-color, #ff6b00) !important;
+    box-shadow: 0 0 10px rgba(255, 107, 0, 0.4);
+}
+
+.schedule-time-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.time-input-wrap {
+    flex: 1;
+    min-width: 140px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.time-input-wrap i {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.time-input-wrap input[type="time"] {
+    width: 100%;
+    padding-left: 34px !important;
+    font-size: 0.9rem;
+    background: rgba(0, 0, 0, 0.3) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px;
+}
+
+.time-to-separator {
+    color: #94a3b8;
+    font-weight: 500;
+    font-size: 0.88rem;
+}
+
+@media (max-width: 500px) {
+    .schedule-days-row {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
