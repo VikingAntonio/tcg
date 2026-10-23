@@ -68,7 +68,60 @@ $(document).ready(async function() {
         } else {
             $('.store-only-field').hide();
         }
+
+        loadAdditionalInfoBlocks();
     }
+
+    function loadAdditionalInfoBlocks() {
+        const $container = $('#additional-info-container');
+        $container.empty();
+
+        let blocks = [];
+        if (currentUser.additional_info) {
+            if (typeof currentUser.additional_info === 'string') {
+                try { blocks = JSON.parse(currentUser.additional_info); } catch (e) { blocks = []; }
+            } else if (Array.isArray(currentUser.additional_info)) {
+                blocks = currentUser.additional_info;
+            }
+        }
+
+        if (blocks.length === 0) {
+            // Render default empty block placeholder if none exist
+            addInfoBlockUI('', '');
+        } else {
+            blocks.forEach(block => {
+                addInfoBlockUI(block.title || '', block.description || '');
+            });
+        }
+    }
+
+    function addInfoBlockUI(title = '', description = '') {
+        const $container = $('#additional-info-container');
+        const blockHtml = `
+            <div class="info-block-card" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 16px; position: relative;">
+                <button type="button" class="btn-remove-info-block" style="position: absolute; top: 12px; right: 12px; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="Eliminar bloque">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="form-group" style="margin-bottom: 12px; padding-right: 35px;">
+                    <label style="font-size: 0.82rem; color: #cbd5e1; font-weight: 500;">Título del Bloque / Tema</label>
+                    <input type="text" class="info-block-title" placeholder="Ej: Políticas de Envío, Garantía, Promociones de Mayo" value="${title.replace(/"/g, '&quot;')}" style="width: 100%; font-size: 0.88rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.82rem; color: #cbd5e1; font-weight: 500;">Descripción / Detalles para tu Asistente</label>
+                    <textarea class="info-block-desc" rows="3" placeholder="Ej: Hacemos envíos por Estafeta en $150 MXN a todo México. Entregas personales los sábados en Plaza Central de 12 a 3 PM." style="width: 100%; font-size: 0.88rem; background: rgba(0,0,0,0.3); color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; resize: vertical;">${description}</textarea>
+                </div>
+            </div>
+        `;
+        $container.append(blockHtml);
+    }
+
+    $('#btn-add-info-block').click(function() {
+        addInfoBlockUI('', '');
+    });
+
+    $(document).on('click', '.btn-remove-info-block', function() {
+        $(this).closest('.info-block-card').remove();
+    });
 
     function updateHeader() {
         if (currentUser.is_store) {
@@ -171,12 +224,26 @@ $(document).ready(async function() {
             const domainVal = $('#profile-domain').val().trim();
             const cleanDomainStr = domainVal ? domainVal.toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].split(':')[0].trim() : null;
 
+            // Gather Additional Info Blocks
+            const additionalInfoBlocks = [];
+            $('.info-block-card').each(function() {
+                const bTitle = $(this).find('.info-block-title').val().trim();
+                const bDesc = $(this).find('.info-block-desc').val().trim();
+                if (bTitle || bDesc) {
+                    additionalInfoBlocks.push({
+                        title: bTitle,
+                        description: bDesc
+                    });
+                }
+            });
+
             // 2. Update DB
             // Start with fields common to all users
             const updateData = {
                 whatsapp_link: whatsapp || null,
                 messenger_link: messenger || null,
-                custom_domain: cleanDomainStr
+                custom_domain: cleanDomainStr,
+                additional_info: additionalInfoBlocks
             };
 
             if (cleanDomainStr) {
