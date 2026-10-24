@@ -55,7 +55,7 @@
         </div>
     </div>
 
-    <div class="admin-container" style="max-width: 800px; margin: 80px auto; padding: 20px; display: none;">
+    <div class="admin-container" style="max-width: 1200px; width: 95%; margin: 40px auto; padding: 20px; display: none;">
         <div class="admin-header">
             <a href="admin.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
             <h1>Mi Perfil</h1>
@@ -102,7 +102,12 @@
                     </div>
                     <div class="form-group store-only-field full-width-field" style="display: none; grid-column: 1 / -1;">
                         <label>Horario de Atención</label>
-                        <input type="text" id="profile-horario" placeholder="Lun-Vie 9:00 AM - 6:00 PM" style="width: 100%; margin-bottom: 12px;">
+                        <!-- Schedule Slots Display Container -->
+                        <div id="schedule-slots-container" class="schedule-slots-list">
+                            <!-- Dynamic schedule slot badges/cards will render here -->
+                        </div>
+                        <!-- Hidden input to store consolidated text for database & Gemini AI assistant context -->
+                        <input type="hidden" id="profile-horario">
 
                         <!-- Schedule Helper Panel -->
                         <div class="schedule-helper-card">
@@ -125,15 +130,19 @@
                             <div class="schedule-time-row">
                                 <div class="time-input-wrap">
                                     <i class="far fa-clock"></i>
-                                    <input type="time" id="sched-start" value="09:00">
+                                    <input type="text" id="sched-start" value="09:00 AM" readonly class="time-picker-simple">
                                 </div>
                                 <span class="time-to-separator">a</span>
                                 <div class="time-input-wrap">
                                     <i class="far fa-clock"></i>
-                                    <input type="time" id="sched-end" value="18:00">
+                                    <input type="text" id="sched-end" value="06:00 PM" readonly class="time-picker-simple">
                                 </div>
+                                <label class="sched-closed-check">
+                                    <input type="checkbox" id="sched-is-closed">
+                                    Cerrado
+                                </label>
                                 <button type="button" id="btn-apply-sched" class="btn btn-sm btn-primary">
-                                    Aplicar
+                                    + Agregar Horario
                                 </button>
                             </div>
                         </div>

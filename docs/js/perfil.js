@@ -324,8 +324,211 @@ $(document).ready(async function() {
     });
 
 
-    // --- Schedule Helper Logic ---
+    // --- Schedule Helper & Slot Management Logic ---
+    let scheduleSlots = [];
     let activeScheduleDays = [];
+
+    // Custom Interactive Time Picker Modal Implementation
+    if (typeof window.openCustomTimePickerModal !== 'function') {
+        window.openCustomTimePickerModal = function(inputElement) {
+            const $input = $(inputElement);
+            let currentVal = $input.val().trim();
+
+            let selectedHour = "09";
+            let selectedMin = "00";
+            let selectedMeridiem = "AM";
+
+            if ($input.attr('id') === 'sched-end') {
+                selectedHour = "06";
+                selectedMin = "00";
+                selectedMeridiem = "PM";
+            }
+
+            if (currentVal) {
+                const match = currentVal.match(/^(\d{1,2}):(\d{2})\s*(AM|PM|A|P)?/i);
+                if (match) {
+                    let h = parseInt(match[1], 10);
+                    if (h >= 1 && h <= 12) selectedHour = String(h).padStart(2, '0');
+                    selectedMin = match[2];
+                    if (match[3]) {
+                        selectedMeridiem = match[3].toUpperCase().startsWith('P') ? 'PM' : 'AM';
+                    }
+                }
+            }
+
+            const hours = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+            const mins = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+
+            function buildPills(items, selectedVal, type) {
+                return items.map(item => {
+                    const activeClass = (item === selectedVal) ? 'active' : '';
+                    return `<button type="button" class="swal-time-pill ${type}-pill ${activeClass}" data-val="${item}">${item}</button>`;
+                }).join('');
+            }
+
+            const html = `
+                <div class="swal-time-picker-container">
+                    <div id="swal-time-preview" style="font-size: 2.2rem; font-weight: 900; color: var(--primary-color, #00f0ff); margin-bottom: 20px; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.1); text-align: center;">
+                        <span id="swal-preview-hour">${selectedHour}</span>:<span id="swal-preview-min">${selectedMin}</span> <span id="swal-preview-meridiem">${selectedMeridiem}</span>
+                    </div>
+
+                    <div style="margin-bottom: 15px; text-align: left;">
+                        <label style="font-size: 0.75rem; font-weight: 800; color: #888; text-transform: uppercase; display: block; margin-bottom: 8px;">HORA</label>
+                        <div class="swal-time-grid" id="swal-hour-grid">
+                            ${buildPills(hours, selectedHour, 'hour')}
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; text-align: left;">
+                        <label style="font-size: 0.75rem; font-weight: 800; color: #888; text-transform: uppercase; display: block; margin-bottom: 8px;">MINUTOS</label>
+                        <div class="swal-time-grid" id="swal-min-grid">
+                            ${buildPills(mins, selectedMin, 'min')}
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 10px; text-align: left;">
+                        <label style="font-size: 0.75rem; font-weight: 800; color: #888; text-transform: uppercase; display: block; margin-bottom: 8px;">PERIODO</label>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="swal-time-pill meridiem-pill ${selectedMeridiem === 'AM' ? 'active' : ''}" data-val="AM" style="flex: 1; padding: 12px; font-size: 1.1rem;">AM</button>
+                            <button type="button" class="swal-time-pill meridiem-pill ${selectedMeridiem === 'PM' ? 'active' : ''}" data-val="PM" style="flex: 1; padding: 12px; font-size: 1.1rem;">PM</button>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    .swal-time-grid {
+                        display: grid;
+                        grid-template-columns: repeat(6, 1fr);
+                        gap: 8px;
+                    }
+                    @media (max-width: 480px) {
+                        .swal-time-grid {
+                            grid-template-columns: repeat(4, 1fr);
+                        }
+                    }
+                    .swal-time-pill {
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        color: #ffffff;
+                        border-radius: 12px;
+                        padding: 10px 4px;
+                        font-size: 0.95rem;
+                        font-weight: 800;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+                    .swal-time-pill:hover {
+                        background: rgba(255, 255, 255, 0.15);
+                    }
+                    .swal-time-pill.active {
+                        background: var(--primary-color, #00f0ff) !important;
+                        border-color: var(--primary-color, #00f0ff) !important;
+                        color: #000000 !important;
+                        box-shadow: 0 4px 10px rgba(0, 240, 255, 0.3);
+                    }
+                </style>
+            `;
+
+            Swal.fire({
+                title: 'AJUSTAR HORA',
+                html: html,
+                showCancelButton: true,
+                confirmButtonText: 'ACEPTAR',
+                cancelButtonText: 'CANCELAR',
+                confirmButtonColor: 'var(--primary-color, #00f0ff)',
+                cancelButtonColor: '#adb5bd',
+                didOpen: (el) => {
+                    const $popup = $(el);
+
+                    $popup.on('click', '.hour-pill', function() {
+                        $popup.find('.hour-pill').removeClass('active');
+                        $(this).addClass('active');
+                        selectedHour = $(this).data('val');
+                        $popup.find('#swal-preview-hour').text(selectedHour);
+                    });
+
+                    $popup.on('click', '.min-pill', function() {
+                        $popup.find('.min-pill').removeClass('active');
+                        $(this).addClass('active');
+                        selectedMin = $(this).data('val');
+                        $popup.find('#swal-preview-min').text(selectedMin);
+                    });
+
+                    $popup.on('click', '.meridiem-pill', function() {
+                        $popup.find('.meridiem-pill').removeClass('active');
+                        $(this).addClass('active');
+                        selectedMeridiem = $(this).data('val');
+                        $popup.find('#swal-preview-meridiem').text(selectedMeridiem);
+                    });
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const finalVal = `${selectedHour}:${selectedMin} ${selectedMeridiem}`;
+                    $input.val(finalVal).trigger('change');
+                }
+            });
+        };
+    }
+
+    $(document).on('click', '.time-picker-simple', function(e) {
+        e.preventDefault();
+        window.openCustomTimePickerModal(this);
+    });
+
+    $('#sched-is-closed').change(function() {
+        if ($(this).is(':checked')) {
+            $('#sched-start, #sched-end').prop('disabled', true).css('opacity', '0.4');
+        } else {
+            $('#sched-start, #sched-end').prop('disabled', false).css('opacity', '1');
+        }
+    });
+
+    function parseHorarioToSlots(horarioStr) {
+        if (!horarioStr || !horarioStr.trim()) return [];
+        const rawSlots = horarioStr.split(',').map(s => s.trim()).filter(Boolean);
+        return rawSlots;
+    }
+
+    function renderScheduleSlots() {
+        const $container = $('#schedule-slots-container');
+        $container.empty();
+
+        if (scheduleSlots.length === 0) {
+            $container.html('<div style="font-size:0.85rem; color:#888; font-style:italic;">No hay horarios configurados. Agrega uno usando el panel de abajo.</div>');
+            $('#profile-horario').val('');
+            return;
+        }
+
+        scheduleSlots.forEach((slotText, idx) => {
+            $container.append(`
+                <div class="sched-slot-badge" data-index="${idx}">
+                    <span>${slotText}</span>
+                    <i class="fas fa-times btn-remove-slot" title="Eliminar este horario"></i>
+                </div>
+            `);
+        });
+
+        $('#profile-horario').val(scheduleSlots.join(', '));
+    }
+
+    // Initialize slots from user profile load
+    function initScheduleSlots() {
+        const horarioVal = currentUser.horario || '';
+        scheduleSlots = parseHorarioToSlots(horarioVal);
+        renderScheduleSlots();
+    }
+
+    // Hook initScheduleSlots into loadProfileData
+    const origLoadProfileData = loadProfileData;
+    loadProfileData = function() {
+        origLoadProfileData();
+        initScheduleSlots();
+    };
+
+    $(document).on('click', '.btn-remove-slot', function() {
+        const idx = $(this).closest('.sched-slot-badge').data('index');
+        scheduleSlots.splice(idx, 1);
+        renderScheduleSlots();
+    });
 
     $('.preset-btn').click(function() {
         const preset = $(this).data('preset');
@@ -364,51 +567,44 @@ $(document).ready(async function() {
         }
     });
 
-    function format12Hour(time24) {
-        if (!time24) return '';
-        const parts = time24.split(':');
-        let hours = parseInt(parts[0], 10);
-        const minutes = parts[1];
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; // hour 0 is 12
-        return `${hours}:${minutes} ${ampm}`;
-    }
-
     $('#btn-apply-sched').click(function() {
         if (activeScheduleDays.length === 0) {
             Swal.fire('Atención', 'Por favor, selecciona al menos un día.', 'info');
             return;
         }
 
-        const startRaw = $('#sched-start').val();
-        const endRaw = $('#sched-end').val();
-        const start12 = format12Hour(startRaw);
-        const end12 = format12Hour(endRaw);
+        const isClosed = $('#sched-is-closed').is(':checked');
+        let timeStr = '';
+
+        if (isClosed) {
+            timeStr = 'Cerrado';
+        } else {
+            const startVal = $('#sched-start').val().trim();
+            const endVal = $('#sched-end').val().trim();
+            timeStr = `${startVal} - ${endVal}`;
+        }
 
         let daysLabel = '';
-        if (activeScheduleDays.length === 5 && ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].every(d => activeScheduleDays.includes(d))) {
+        const dayOrder = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        const sortedDays = activeScheduleDays.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+
+        if (sortedDays.length === 5 && ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].every(d => sortedDays.includes(d))) {
             daysLabel = 'Lun - Vie';
-        } else if (activeScheduleDays.length === 2 && activeScheduleDays.includes('Sáb') && activeScheduleDays.includes('Dom')) {
+        } else if (sortedDays.length === 2 && sortedDays.includes('Sáb') && sortedDays.includes('Dom')) {
             daysLabel = 'Sáb - Dom';
-        } else if (activeScheduleDays.length === 7) {
+        } else if (sortedDays.length === 7) {
             daysLabel = 'Toda la semana';
         } else {
-            daysLabel = activeScheduleDays.join(', ');
+            daysLabel = sortedDays.join(', ');
         }
 
-        const newSchedulePart = `${daysLabel} ${start12} - ${end12}`;
-
-        let currentVal = $('#profile-horario').val().trim();
-        if (currentVal) {
-            $('#profile-horario').val(currentVal + ', ' + newSchedulePart);
-        } else {
-            $('#profile-horario').val(newSchedulePart);
-        }
+        const slotText = `${daysLabel} ${timeStr}`;
+        scheduleSlots.push(slotText);
+        renderScheduleSlots();
 
         Swal.fire({
-            title: '¡Aplicado!',
-            text: 'Se ha añadido al horario de atención.',
+            title: '¡Horario Añadido!',
+            text: slotText,
             icon: 'success',
             timer: 1500,
             showConfirmButton: false,
