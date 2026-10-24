@@ -42,6 +42,12 @@ INSERT INTO public.package_configs (
     15, 10, 30, 90, 50,
     60, 30, 100, 100, 100, 50,
     'all', true, true
+),
+(
+    'tienda', 'Tienda', 500, 'Paquete para tiendas.',
+    999, 999, 999, 999, 999,
+    999, 999, 999, 999, 999, 999,
+    'all', true, true
 )
 ON CONFLICT (id) DO NOTHING;
 

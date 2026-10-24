@@ -3,335 +3,484 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Paquetes & Dominios (Admin) - Viking TCG</title>
+    <title>Paquetes y Dominios - Viking TCG</title>
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="js/utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/cloudinary-upload.js"></script>
     <style>
         * { box-sizing: border-box; }
-        html, body {
-            margin: 0; padding: 0; width: 100%; min-height: 100vh;
-            background-color: #0b0f19; color: #f8fafc; font-family: 'Montserrat', sans-serif;
-            overflow-x: hidden;
+        body {
+            background: radial-gradient(circle at 50% 20%, #1c2d3d 0%, #0a0d14 100%) !important;
+            min-height: 100vh;
+            color: #fff;
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: none !important;
         }
-        .packages-page-wrapper {
-            display: flex; flex-direction: column; min-height: 100vh; width: 100%;
-        }
-        header.integrated-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 24px; background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            position: sticky; top: 0; z-index: 100;
-        }
-        .logo-integrated { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
-        .logo-integrated img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8; }
-        .logo-integrated h1 {
-            font-size: 1.15rem; font-weight: 800; margin: 0; letter-spacing: 0.5px;
-            background: linear-gradient(135deg, #38bdf8, #818cf8);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .header-actions { display: flex; align-items: center; gap: 10px; }
-        .btn-header-nav {
-            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #f8fafc; padding: 8px 16px; border-radius: 20px; font-weight: 600;
-            font-size: 0.82rem; text-decoration: none; display: inline-flex; align-items: center;
-            gap: 8px; transition: all 0.2s ease; cursor: pointer;
-        }
-        .btn-header-nav:hover { background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; }
+        body::-webkit-scrollbar { display: none !important; }
 
-        .main-content-layout {
-            max-width: 1400px; width: 100%; margin: 0 auto; padding: 24px 20px;
-            display: flex; flex-direction: column; gap: 30px; flex: 1;
+        .packages-page-container {
+            max-width: 1400px;
+            width: 95%;
+            margin: 0 auto;
+            padding: 90px 15px 120px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 35px;
         }
 
-        .section-header {
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px;
-        }
-        .section-header h2 {
-            margin: 0; font-size: 1.3rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 10px;
-        }
-
-        .pkg-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;
-        }
-        .pkg-card {
-            background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 24px; padding: 24px; backdrop-filter: blur(16px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 18px;
-            position: relative; overflow: hidden;
-        }
-        .pkg-card.highlight {
-            border-color: #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
-        }
-        .pkg-badge {
-            position: absolute; top: 16px; right: 16px; background: rgba(56, 189, 248, 0.2);
-            color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 12px;
-            padding: 4px 12px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+        .section-box {
+            background: rgba(15, 23, 36, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
         }
 
-        .form-grid-2 {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-        }
-        .input-group { display: flex; flex-direction: column; gap: 6px; }
-        .input-group label { font-size: 0.8rem; font-weight: 700; color: #cbd5e1; display: flex; align-items: center; gap: 6px; }
-        .custom-input, .custom-select, .custom-textarea {
-            width: 100%; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px; padding: 10px 14px; color: #f8fafc; font-family: 'Montserrat', sans-serif;
-            font-size: 0.88rem; outline: none; transition: border-color 0.2s ease;
-        }
-        .custom-input:focus, .custom-select:focus, .custom-textarea:focus {
-            border-color: #38bdf8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        .section-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #00d2ff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .spirits-picker-container {
-            background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px; padding: 12px; max-height: 180px; overflow-y: auto;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;
-        }
-        .spirit-check-item {
-            display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #e2e8f0;
-            cursor: pointer; background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; border: none;
-            border-radius: 14px; padding: 12px 20px; font-family: 'Montserrat', sans-serif;
-            font-size: 0.9rem; font-weight: 800; cursor: pointer; text-transform: uppercase;
-            letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); transition: all 0.2s ease;
-            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(56, 189, 248, 0.5); }
-
-        /* Broadcast Announcement Card */
-        .broadcast-card {
-            background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 24px; padding: 24px; backdrop-filter: blur(16px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 16px;
-        }
-        .dynamic-list { display: flex; flex-direction: column; gap: 10px; }
-        .dynamic-item-row { display: flex; gap: 10px; align-items: center; }
-        .btn-danger-icon {
-            background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #f87171; border-radius: 10px; width: 38px; height: 38px; display: flex;
-            align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
-        }
-        .btn-danger-icon:hover { background: rgba(239, 68, 68, 0.4); color: #fff; }
-        .btn-add-mini {
-            background: rgba(56, 189, 248, 0.15); border: 1px dashed #38bdf8; color: #38bdf8;
-            border-radius: 10px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;
-            cursor: pointer; display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+        /* Google Sheets Table Styling */
+        .sheet-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.4);
         }
 
-        /* Dominios Table Section */
-        .dominios-container {
-            display: grid; grid-template-columns: 400px 1fr; gap: 24px;
+        .sheet-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+            font-size: 0.85rem;
         }
-        @media (max-width: 900px) {
-            .dominios-container { grid-template-columns: 1fr; }
+
+        .sheet-table th, .sheet-table td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 12px;
+            vertical-align: middle;
         }
-        .domain-item {
-            background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px; padding: 14px 18px; display: flex; align-items: center;
-            justify-content: space-between; gap: 12px; transition: all 0.2s ease;
+
+        .sheet-table th {
+            background: rgba(0, 210, 255, 0.12);
+            color: #00d2ff;
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            text-align: center;
         }
-        .domain-status {
-            font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;
+
+        .sheet-table td.col-service {
+            background: rgba(255, 255, 255, 0.03);
+            font-weight: 700;
+            color: #f1f5f9;
+            width: 240px;
         }
-        .status-active { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
-        .status-inactive { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+        .sheet-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .sheet-input:focus {
+            border-color: #00d2ff;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .spirits-select-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 140px;
+            overflow-y: auto;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .spirit-item-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+
+        .btn-action-primary {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-action-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.4);
+        }
+
+        /* Pure Text Clean Forms */
+        .clean-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .clean-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .clean-field label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #cbd5e1;
+            text-transform: uppercase;
+        }
+
+        .clean-input, .clean-select, .clean-textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        .clean-input:focus, .clean-select:focus, .clean-textarea:focus {
+            border-color: #00d2ff;
+        }
+
+        .file-drop-area {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .file-drop-area:hover, .file-drop-area.dragover {
+            border-color: #00d2ff;
+            background: rgba(0, 210, 255, 0.08);
+        }
+
+        .domains-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 850px) {
+            .clean-form-grid, .domains-grid { grid-template-columns: 1fr; }
+        }
+
+        .domain-row-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .btn-icon-del {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div class="packages-page-wrapper">
-        <header class="integrated-header">
-            <a href="admin.html" class="logo-integrated">
-                <img id="user-store-logo" src="https://vikingtcg.xyz/favi.png" alt="Logo">
-                <h1 id="user-store-name">Viking TCG Admin</h1>
+
+    <!-- Floating User Panel -->
+    <div class="top-left-panel" id="top-panel" style="display: none;">
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <div class="btn-nav-auctions-pill" id="nav-btn-auctions-won" style="display: none; cursor: pointer;">
+                <i class="fas fa-gavel" style="color: var(--primary-color);"></i>
+                <span id="nav-auction-badge" class="nav-badge" style="display: none;">0</span>
+            </div>
+
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count">0</span>
             </a>
-            <div class="header-actions">
-                <a href="admin.html" class="btn-header-nav"><i class="fas fa-arrow-left"></i> Panel Admin</a>
-                <a href="widgets.html" class="btn-header-nav"><i class="fas fa-code"></i> Custom Labels</a>
-            </div>
-        </header>
 
-        <div class="main-content-layout">
-
-            <!-- SECTION 1: PACKAGES MANAGEMENT -->
-            <div>
-                <div class="section-header">
-                    <h2><i class="fas fa-box-open"></i> Configuración de Paquetes en Tiempo Real</h2>
-                    <span style="font-size: 0.85rem; color: #94a3b8;">Los cambios se aplican inmediatamente a todos los usuarios de cada plan.</span>
-                </div>
-                <div class="pkg-grid" id="packages-grid">
-                    <div style="text-align: center; color: #94a3b8; padding: 40px; grid-column: 1/-1;">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Cargando planes...
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION 2: BROADCAST MESSAGING FOR USERS -->
-            <div class="broadcast-card">
-                <div class="section-header" style="margin-bottom: 0; border: none; padding: 0;">
-                    <h2><i class="fas fa-bullhorn"></i> Enviar Mensaje Informativo o Novedad a Usuarios</h2>
-                </div>
-                <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">
-                    Envía notificaciones a los usuarios activos. Puedes seleccionar a qué paquetes llegará el aviso, incluir múltiples fragmentos de texto y añadir varias imágenes.
-                </p>
-
-                <div class="form-grid-2">
-                    <div class="input-group">
-                        <label><i class="fas fa-heading"></i> Título del Mensaje *</label>
-                        <input type="text" id="msg-title" class="custom-input" placeholder="Ej: ¡Nuevo compañero disponible y más capacidad!">
-                    </div>
-                    <div class="input-group">
-                        <label><i class="fas fa-users"></i> Plan Destinatario *</label>
-                        <select id="msg-target-role" class="custom-select">
-                            <option value="all">Todos los usuarios (Cualquier paquete)</option>
-                            <option value="starter">Solo usuarios Starter</option>
-                            <option value="premium">Solo usuarios Premium</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Text Paragraphs Container -->
-                <div class="input-group">
-                    <label><i class="fas fa-paragraph"></i> Mensajes / Párrafos</label>
-                    <div class="dynamic-list" id="msg-texts-container">
-                        <div class="dynamic-item-row">
-                            <input type="text" class="custom-input msg-text-input" placeholder="Escribe el texto del mensaje...">
-                        </div>
-                    </div>
-                    <button type="button" class="btn-add-mini" id="btn-add-text-field">
-                        <i class="fas fa-plus"></i> Añadir otro texto
-                    </button>
-                </div>
-
-                <!-- Images URLs Container -->
-                <div class="input-group">
-                    <label><i class="fas fa-image"></i> Imágenes Ilustrativas (URLs o Subir)</label>
-                    <div class="dynamic-list" id="msg-images-container">
-                        <div class="dynamic-item-row">
-                            <input type="text" class="custom-input msg-image-input" placeholder="https://ejemplo.com/imagen.png">
-                            <input type="file" class="msg-file-input" style="display:none;" accept="image/*">
-                            <button type="button" class="btn-add-mini btn-upload-msg-img" style="align-self:center;"><i class="fas fa-upload"></i> Subir</button>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-add-mini" id="btn-add-image-field">
-                        <i class="fas fa-plus"></i> Añadir otra imagen
-                    </button>
-                </div>
-
-                <button type="button" class="btn-primary" id="btn-send-broadcast">
-                    <i class="fas fa-paper-plane"></i> Enviar Mensaje a Usuarios
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
                 </button>
-            </div>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Admin</div>
+                    </div>
+                    <a href="#" class="menu-item" id="menu-btn-home"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="binders.html" class="menu-item" id="menu-btn-albums"><i class="fas fa-book"></i> Mis Álbumes</a>
+                    <a href="decks.html" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
+                    <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
+                    <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
+                    <a href="learn.html" class="menu-item" id="menu-btn-learn"><i class="fas fa-brain"></i> Base de Conocimiento</a>
+                    <a href="widgets.html" class="menu-item" id="menu-btn-widgets"><i class="fas fa-code"></i> Custom Labels</a>
+                    <a href="packages.html" class="menu-item" id="menu-btn-dominios"><i class="fas fa-box-open"></i> Planes y Dominios</a>
+                    <a href="#" class="menu-item" id="menu-btn-wishlist"><i class="fas fa-heart"></i> Wishlist</a>
+                    <a href="eventos.html" class="menu-item" id="menu-btn-eventos"><i class="fas fa-calendar-alt"></i> Eventos</a>
+                    <a href="inversiones.html" class="menu-item" id="menu-btn-investments"><i class="fas fa-chart-line"></i> Mis Inversiones</a>
 
-            <!-- SECTION 3: DOMAINS MANAGEMENT (PRESERVED) -->
-            <div>
-                <div class="section-header">
-                    <h2><i class="fas fa-globe"></i> Gestión de Dominios Autorizados</h2>
-                    <span style="font-size: 0.85rem; color: #94a3b8;">Habilita dominios para la integración de widgets externas.</span>
-                </div>
-                <div class="dominios-container">
-                    <div class="pkg-card">
-                        <h3 style="margin: 0; font-size: 1.1rem; color: #38bdf8;"><i class="fas fa-user-shield"></i> Habilitar Dominio (Admin)</h3>
-                        <div class="input-group">
-                            <label><i class="fas fa-user"></i> Seleccionar Usuario *</label>
-                            <select id="user-select" class="custom-select">
-                                <option value="">Cargando usuarios...</option>
-                            </select>
+                    <!-- Mobile Theme Switcher -->
+                    <div class="theme-menu-container-mobile" style="display: none;">
+                        <div class="menu-item"><i class="fas fa-palette"></i> Temas</div>
+                        <div class="theme-switcher-inline" style="padding: 0 20px 10px;">
+                            <button class="theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                            <button class="theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                            <button class="theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
                         </div>
-                        <div class="input-group">
-                            <label><i class="fas fa-globe"></i> Dominio Autorizado *</label>
-                            <input type="text" id="domain-input" class="custom-input" placeholder="Ej: misitio.com">
-                        </div>
-                        <button type="button" class="btn-primary" id="btn-register-domain">
-                            <i class="fas fa-plus-circle"></i> Registrar Dominio
-                        </button>
                     </div>
 
-                    <div class="pkg-card">
-                        <h3 style="margin: 0; font-size: 1.1rem; color: #38bdf8;"><i class="fas fa-list-check"></i> Dominios Registrados</h3>
-                        <div class="domains-list" id="domains-list">
-                            <div style="text-align: center; color: #94a3b8; padding: 20px;">
-                                <i class="fas fa-spinner fa-spin"></i> Cargando dominios...
-                            </div>
-                        </div>
-                    </div>
+                    <a href="#" class="menu-item logout" id="menu-btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <script src="js/supabase-config.js"></script>
-    <script src="js/utils.js"></script>
+    <!-- Main Content Layout -->
+    <div class="packages-page-container" id="authenticated-content" style="display: none;">
+
+        <!-- SECTION 1: PACKAGES SPREADSHEET TABLE -->
+        <div class="section-box">
+            <h2 class="section-title">Paquetes</h2>
+
+            <div class="sheet-table-wrapper">
+                <table class="sheet-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; width: 250px;">Servicios / Límites</th>
+                            <th style="width: 200px;">Starter</th>
+                            <th style="width: 200px;">Premium</th>
+                            <th style="width: 200px;">Tienda</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packages-table-body">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                Cargando tabla de paquetes...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="button" class="btn-action-primary" id="btn-save-table-configs">
+                    GUARDAR CAMBIOS
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 2: BROADCAST NOTIFICATIONS (CLEAN, NO EMOJIS, NO PLACEHOLDERS, NO EXPLANATIONS) -->
+        <div class="section-box">
+            <h2 class="section-title">Notificaciones</h2>
+
+            <div class="clean-form-grid">
+                <div class="clean-field">
+                    <label>Título</label>
+                    <input type="text" id="msg-title" class="clean-input">
+                </div>
+
+                <div class="clean-field">
+                    <label>Destinatario</label>
+                    <select id="msg-target-role" class="clean-select">
+                        <option value="all">Todos los usuarios</option>
+                        <option value="starter">Starter</option>
+                        <option value="premium">Premium</option>
+                        <option value="tienda">Tienda</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="clean-field">
+                <label>Mensaje</label>
+                <textarea id="msg-body" class="clean-textarea" rows="3"></textarea>
+            </div>
+
+            <div class="clean-field">
+                <label>Imagen</label>
+                <label class="file-drop-area" id="drop-zone-notification">
+                    <div style="font-weight: 700; color: #fff; font-size: 0.85rem;" id="notification-file-label">Arrastra una imagen aquí o haz clic para seleccionar</div>
+                    <input type="file" id="input-notification-file" accept="image/*" style="display: none;">
+                </label>
+                <input type="hidden" id="msg-image-url">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="button" class="btn-action-primary" id="btn-send-notification">
+                    Enviar Mensaje
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 3: DOMINIOS AUTORIZADOS (CLEAN, OMITTING ADMIN STRINGS) -->
+        <div class="section-box">
+            <h2 class="section-title">Dominios Autorizados</h2>
+
+            <div class="domains-grid">
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <div class="clean-field">
+                        <label>Usuario</label>
+                        <select id="user-select" class="clean-select">
+                            <option value="">Cargando usuarios...</option>
+                        </select>
+                    </div>
+
+                    <div class="clean-field">
+                        <label>Dominio</label>
+                        <input type="text" id="domain-input" class="clean-input">
+                    </div>
+
+                    <button type="button" class="btn-action-primary" id="btn-register-domain">
+                        Registrar Dominio
+                    </button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="font-size: 0.8rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase;">Dominios Registrados</label>
+                    <div id="domains-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+                        <div style="color: #94a3b8; text-align: center; padding: 20px;">Cargando dominios...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item" id="btn-nav-home" title="Ir al Home">
+            <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-item" id="btn-nav-return" title="Volver">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+    </div>
+
+    <!-- 3D Companion Chatbot Integration -->
+    <script src="js/michatbot.js"></script>
+
     <script>
         let currentUserId = null;
         let allAvailableSpirits = [];
+        let packagesData = {};
 
         $(document).ready(async function() {
             await initPackagesPage();
 
-            // Dynamic fields for Broadcast
-            $('#btn-add-text-field').click(function() {
-                $('#msg-texts-container').append(`
-                    <div class="dynamic-item-row">
-                        <input type="text" class="custom-input msg-text-input" placeholder="Escribe el texto del mensaje...">
-                        <button type="button" class="btn-danger-icon btn-remove-row"><i class="fas fa-trash"></i></button>
-                    </div>
-                `);
+            // Drag & drop for Notification image
+            const $dropZone = $('#drop-zone-notification');
+            const $fileInput = $('#input-notification-file');
+
+            $dropZone.on('click', function() { $fileInput.click(); });
+
+            $dropZone.on('dragover dragenter', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).addClass('dragover');
             });
 
-            $('#btn-add-image-field').click(function() {
-                $('#msg-images-container').append(`
-                    <div class="dynamic-item-row">
-                        <input type="text" class="custom-input msg-image-input" placeholder="https://ejemplo.com/imagen.png">
-                        <input type="file" class="msg-file-input" style="display:none;" accept="image/*">
-                        <button type="button" class="btn-add-mini btn-upload-msg-img" style="align-self:center;"><i class="fas fa-upload"></i> Subir</button>
-                        <button type="button" class="btn-danger-icon btn-remove-row"><i class="fas fa-trash"></i></button>
-                    </div>
-                `);
+            $dropZone.on('dragleave drop', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                $(this).removeClass('dragover');
             });
 
-            $(document).on('click', '.btn-remove-row', function() {
-                $(this).closest('.dynamic-item-row').remove();
-            });
-
-            // Handle Cloudinary image upload inside broadcast form
-            $(document).on('click', '.btn-upload-msg-img', function() {
-                $(this).siblings('.msg-file-input').click();
-            });
-
-            $(document).on('change', '.msg-file-input', async function() {
-                const file = this.files[0];
-                if (!file) return;
-                const $input = $(this).siblings('.msg-image-input');
-                const $btn = $(this).siblings('.btn-upload-msg-img');
-
-                $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
-                try {
-                    const url = await CloudinaryUpload.uploadImage(file);
-                    $input.val(url);
-                    Swal.fire({ icon: 'success', title: 'Imagen subida', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
-                } catch (e) {
-                    Swal.fire('Error', 'No se pudo subir la imagen: ' + e.message, 'error');
-                } finally {
-                    $btn.html('<i class="fas fa-upload"></i> Subir').prop('disabled', false);
+            $dropZone.on('drop', async function(e) {
+                const files = e.originalEvent.dataTransfer.files;
+                if (files && files.length > 0) {
+                    await handleNotificationImageUpload(files[0]);
                 }
             });
 
-            $('#btn-send-broadcast').click(async function() {
-                await sendBroadcastNotification();
+            $fileInput.on('change', async function() {
+                if (this.files && this.files.length > 0) {
+                    await handleNotificationImageUpload(this.files[0]);
+                }
+            });
+
+            $('#btn-save-table-configs').click(async function() {
+                await saveAllSpreadsheetConfigs();
+            });
+
+            $('#btn-send-notification').click(async function() {
+                await sendNotificationBroadcast();
             });
 
             $('#btn-register-domain').click(async function() {
-                await handleAdminRegisterDomain();
+                await handleRegisterDomain();
             });
         });
 
@@ -363,11 +512,10 @@
                 return;
             }
 
-            if (profile.store_name) $('#user-store-name').text(profile.store_name);
-            if (profile.store_logo) $('#user-store-logo').attr('src', profile.store_logo);
+            $('#authenticated-content').show();
 
             await loadSpiritsList();
-            await loadPackages();
+            await loadPackagesTable();
             await loadUsersDropdown();
             await loadRegisteredDomains();
         }
@@ -377,243 +525,168 @@
             allAvailableSpirits = data || [];
         }
 
-        async function loadPackages() {
-            const { data: pkgs, error } = await _supabase.from('package_configs').select('*').order('price_mxn', { ascending: true });
+        async function loadPackagesTable() {
+            const { data: pkgs, error } = await _supabase.from('package_configs').select('*');
 
-            const $grid = $('#packages-grid');
-            $grid.empty();
+            const defaultPkgs = {
+                starter: { id: 'starter', name: 'Starter', price_mxn: 0, max_albums: 5, max_pages: 9, max_decks: 10, max_cards_per_deck: 90, max_wishlist: 8, max_sealed: 20, max_preorders: 5, max_clients_count: 10, max_auctions_count: 10, max_claims_count: 10, max_events: 5, allowed_spirit_ids: '' },
+                premium: { id: 'premium', name: 'Premium', price_mxn: 300, max_albums: 15, max_pages: 10, max_decks: 30, max_cards_per_deck: 90, max_wishlist: 50, max_sealed: 60, max_preorders: 30, max_clients_count: 100, max_auctions_count: 100, max_claims_count: 100, max_events: 50, allowed_spirit_ids: 'all' },
+                tienda: { id: 'tienda', name: 'Tienda', price_mxn: 500, max_albums: 999, max_pages: 999, max_decks: 999, max_cards_per_deck: 999, max_wishlist: 999, max_sealed: 999, max_preorders: 999, max_clients_count: 999, max_auctions_count: 999, max_claims_count: 999, max_events: 999, allowed_spirit_ids: 'all' }
+            };
 
-            if (error || !pkgs || pkgs.length === 0) {
-                $grid.html('<div style="color: #ef4444; padding: 20px;">Error al cargar configuración de paquetes. Por favor ejecuta el SQL add_packages_table.sql.</div>');
-                return;
+            packagesData = defaultPkgs;
+
+            if (pkgs && pkgs.length > 0) {
+                pkgs.forEach(p => {
+                    packagesData[p.id] = { ...defaultPkgs[p.id], ...p };
+                });
             }
 
-            pkgs.forEach(pkg => {
-                const isPremium = pkg.id === 'premium';
-                const allowedArray = pkg.allowed_spirit_ids ? pkg.allowed_spirit_ids.split(',').map(s => s.trim()) : [];
-                const isAllSpirits = pkg.allowed_spirit_ids === 'all';
+            renderSpreadsheetTable();
+        }
 
-                let spiritsHtml = '';
+        function renderSpreadsheetTable() {
+            const roles = ['starter', 'premium', 'tienda'];
+
+            const fields = [
+                { key: 'price_mxn', label: 'Precio ($ MXN / mes)' },
+                { key: 'max_albums', label: 'Álbumes Activos' },
+                { key: 'max_pages', label: 'Páginas por Álbum' },
+                { key: 'max_decks', label: 'Decks Personalizados' },
+                { key: 'max_cards_per_deck', label: 'Cartas por Deck' },
+                { key: 'max_wishlist', label: 'Wishlist Slots' },
+                { key: 'max_sealed', label: 'Productos Sellados' },
+                { key: 'max_preorders', label: 'Preventas Activas' },
+                { key: 'max_clients_count', label: 'Gestión Clientes' },
+                { key: 'max_auctions_count', label: 'Gestión Subastas' },
+                { key: 'max_claims_count', label: 'Gestión Claims' },
+                { key: 'max_events', label: 'Gestión Eventos' }
+            ];
+
+            const $tbody = $('#packages-table-body');
+            $tbody.empty();
+
+            fields.forEach(f => {
+                let rowHtml = `<tr><td class="col-service">${f.label}</td>`;
+                roles.forEach(role => {
+                    const val = packagesData[role] ? (packagesData[role][f.key] ?? 0) : 0;
+                    rowHtml += `
+                        <td style="text-align: center;">
+                            <input type="number" class="sheet-input pkg-field" data-pkg="${role}" data-field="${f.key}" value="${val}">
+                        </td>
+                    `;
+                });
+                rowHtml += `</tr>`;
+                $tbody.append(rowHtml);
+            });
+
+            // Row for Spirits / Companions selection
+            let spiritsRow = `<tr><td class="col-service">Compañeros Habilitados</td>`;
+            roles.forEach(role => {
+                const pkg = packagesData[role] || {};
+                const allowedStr = pkg.allowed_spirit_ids || '';
+                const isAll = allowedStr === 'all';
+                const allowedArray = allowedStr.split(',').map(s => s.trim());
+
+                let spiritChecksHtml = `
+                    <div style="margin-bottom: 6px; text-align: left;">
+                        <label class="spirit-item-check" style="font-weight: 800; color: #00d2ff;">
+                            <input type="checkbox" class="pkg-all-spirits-toggle" data-pkg="${role}" ${isAll ? 'checked' : ''}> Todos los compañeros
+                        </label>
+                    </div>
+                    <div class="spirits-select-container" id="spirits-container-${role}">
+                `;
+
                 allAvailableSpirits.forEach(s => {
-                    const checked = isAllSpirits || allowedArray.includes(s.id.toString()) ? 'checked' : '';
-                    spiritsHtml += `
-                        <label class="spirit-check-item">
-                            <input type="checkbox" class="pkg-spirit-cb" data-pkg="${pkg.id}" value="${s.id}" ${checked}>
+                    const checked = isAll || allowedArray.includes(s.id.toString()) ? 'checked' : '';
+                    spiritChecksHtml += `
+                        <label class="spirit-item-check">
+                            <input type="checkbox" class="pkg-spirit-cb" data-pkg="${role}" value="${s.id}" ${checked}>
                             <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(s.name)}</span>
                         </label>
                     `;
                 });
 
-                const $card = $(`
-                    <div class="pkg-card ${isPremium ? 'highlight' : ''}" id="pkg-card-${pkg.id}">
-                        <div class="pkg-badge">${pkg.id}</div>
-                        <h3 style="margin: 0; font-size: 1.2rem; color: #fff;">${escapeHtml(pkg.name)}</h3>
-
-                        <div class="input-group">
-                            <label>Descripción</label>
-                            <input type="text" class="custom-input pkg-desc" value="${escapeHtml(pkg.description || '')}">
-                        </div>
-
-                        <div class="form-grid-2">
-                            <div class="input-group">
-                                <label>Precio MXN / mes</label>
-                                <input type="number" class="custom-input pkg-price" value="${pkg.price_mxn || 0}">
-                            </div>
-                            <div class="input-group">
-                                <label>Álbumes Activos</label>
-                                <input type="number" class="custom-input pkg-albums" value="${pkg.max_albums || 5}">
-                            </div>
-                            <div class="input-group">
-                                <label>Páginas / Álbum</label>
-                                <input type="number" class="custom-input pkg-pages" value="${pkg.max_pages || 9}">
-                            </div>
-                            <div class="input-group">
-                                <label>Decks Personalizados</label>
-                                <input type="number" class="custom-input pkg-decks" value="${pkg.max_decks || 10}">
-                            </div>
-                            <div class="input-group">
-                                <label>Cartas / Deck</label>
-                                <input type="number" class="custom-input pkg-cards-deck" value="${pkg.max_cards_per_deck || 90}">
-                            </div>
-                            <div class="input-group">
-                                <label>Wishlist Slots</label>
-                                <input type="number" class="custom-input pkg-wishlist" value="${pkg.max_wishlist || 8}">
-                            </div>
-                            <div class="input-group">
-                                <label>Productos Sellados</label>
-                                <input type="number" class="custom-input pkg-sealed" value="${pkg.max_sealed || 20}">
-                            </div>
-                            <div class="input-group">
-                                <label>Preventas Activas</label>
-                                <input type="number" class="custom-input pkg-preorders" value="${pkg.max_preorders || 5}">
-                            </div>
-                            <div class="input-group">
-                                <label>Gestión Clientes</label>
-                                <input type="number" class="custom-input pkg-clients" value="${pkg.max_clients_count || 10}">
-                            </div>
-                            <div class="input-group">
-                                <label>Gestión Subastas</label>
-                                <input type="number" class="custom-input pkg-auctions" value="${pkg.max_auctions_count || 10}">
-                            </div>
-                            <div class="input-group">
-                                <label>Gestión Claims</label>
-                                <input type="number" class="custom-input pkg-claims" value="${pkg.max_claims_count || 10}">
-                            </div>
-                            <div class="input-group">
-                                <label>Gestión Eventos</label>
-                                <input type="number" class="custom-input pkg-events" value="${pkg.max_events || 5}">
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <label style="margin:0;">Compañeros Habilitados</label>
-                                <label style="font-size: 0.72rem; color: #38bdf8; cursor: pointer;">
-                                    <input type="checkbox" class="pkg-all-spirits-toggle" data-pkg="${pkg.id}" ${isAllSpirits ? 'checked' : ''}> Todos
-                                </label>
-                            </div>
-                            <div class="spirits-picker-container" id="spirits-picker-${pkg.id}">
-                                ${spiritsHtml}
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn-primary btn-save-package" data-pkg="${pkg.id}">
-                            <i class="fas fa-save"></i> Guardar Cambios Plan ${pkg.name}
-                        </button>
-                    </div>
-                `);
-
-                $grid.append($card);
+                spiritChecksHtml += `</div>`;
+                spiritsRow += `<td>${spiritChecksHtml}</td>`;
             });
+            spiritsRow += `</tr>`;
 
-            // Handlers for Save and All Spirits Toggle
+            $tbody.append(spiritsRow);
+
             $('.pkg-all-spirits-toggle').change(function() {
                 const pkgId = $(this).data('pkg');
-                const isChecked = $(this).is(':checked');
-                $(`#spirits-picker-${pkgId} .pkg-spirit-cb`).prop('checked', isChecked);
-            });
-
-            $('.btn-save-package').click(async function() {
-                const pkgId = $(this).data('pkg');
-                await savePackageConfig(pkgId);
+                const checked = $(this).is(':checked');
+                $(`#spirits-container-${pkgId} .pkg-spirit-cb`).prop('checked', checked);
             });
         }
 
-        async function savePackageConfig(pkgId) {
-            const $card = $(`#pkg-card-${pkgId}`);
+        async function saveAllSpreadsheetConfigs() {
+            const roles = ['starter', 'premium', 'tienda'];
 
-            const selectedSpirits = [];
-            $card.find('.pkg-spirit-cb:checked').each(function() {
-                selectedSpirits.push($(this).val());
-            });
-
-            let allowedSpirits = selectedSpirits.join(',');
-            if ($card.find('.pkg-all-spirits-toggle').is(':checked') || (selectedSpirits.length === allAvailableSpirits.length && allAvailableSpirits.length > 0)) {
-                allowedSpirits = 'all';
-            }
-
-            const updateData = {
-                description: $card.find('.pkg-desc').val().trim(),
-                price_mxn: parseFloat($card.find('.pkg-price').val()) || 0,
-                max_albums: parseInt($card.find('.pkg-albums').val()) || 5,
-                max_pages: parseInt($card.find('.pkg-pages').val()) || 9,
-                max_decks: parseInt($card.find('.pkg-decks').val()) || 10,
-                max_cards_per_deck: parseInt($card.find('.pkg-cards-deck').val()) || 90,
-                max_wishlist: parseInt($card.find('.pkg-wishlist').val()) || 8,
-                max_sealed: parseInt($card.find('.pkg-sealed').val()) || 20,
-                max_preorders: parseInt($card.find('.pkg-preorders').val()) || 5,
-                max_clients_count: parseInt($card.find('.pkg-clients').val()) || 10,
-                max_auctions_count: parseInt($card.find('.pkg-auctions').val()) || 10,
-                max_claims_count: parseInt($card.find('.pkg-claims').val()) || 10,
-                max_events: parseInt($card.find('.pkg-events').val()) || 5,
-                allowed_spirit_ids: allowedSpirits,
-                updated_at: new Date().toISOString()
-            };
-
-            Swal.fire({ title: 'Actualizando paquete y sincronizando usuarios...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'Guardando configuración de paquetes...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
-                // 1. Update package config table
-                const { error: pkgErr } = await _supabase
-                    .from('package_configs')
-                    .update(updateData)
-                    .eq('id', pkgId);
+                for (const role of roles) {
+                    const pkgData = {
+                        id: role,
+                        name: role.charAt(0).toUpperCase() + role.slice(1),
+                        updated_at: new Date().toISOString()
+                    };
 
-                if (pkgErr) throw pkgErr;
+                    $(`.pkg-field[data-pkg="${role}"]`).each(function() {
+                        const field = $(this).data('field');
+                        const val = parseFloat($(this).val()) || 0;
+                        pkgData[field] = val;
+                    });
 
-                // 2. Sync active users belonging to this role
-                const userUpdate = {
-                    max_albums: updateData.max_albums,
-                    max_pages: updateData.max_pages,
-                    max_decks: updateData.max_decks,
-                    max_cards_per_deck: updateData.max_cards_per_deck,
-                    max_wishlist: updateData.max_wishlist,
-                    max_sealed: updateData.max_sealed,
-                    max_preorders: updateData.max_preorders,
-                    max_clients_count: updateData.max_clients_count,
-                    max_auctions_count: updateData.max_auctions_count,
-                    max_events: updateData.max_events,
-                    allowed_spirit_ids: updateData.allowed_spirit_ids
-                };
+                    // Handle Spirits selection
+                    const isAll = $(`.pkg-all-spirits-toggle[data-pkg="${role}"]`).is(':checked');
+                    if (isAll) {
+                        pkgData.allowed_spirit_ids = 'all';
+                    } else {
+                        const selected = [];
+                        $(`#spirits-container-${role} .pkg-spirit-cb:checked`).each(function() {
+                            selected.push($(this).val());
+                        });
+                        pkgData.allowed_spirit_ids = selected.join(',');
+                    }
 
-                const targetRole = pkgId === 'starter' ? 'starter' : (pkgId === 'premium' ? 'premium' : pkgId);
-                const { error: userErr } = await _supabase
-                    .from('usuarios')
-                    .update(userUpdate)
-                    .eq('role', targetRole);
+                    // Upsert package_configs
+                    const { error: pkgErr } = await _supabase
+                        .from('package_configs')
+                        .upsert([pkgData], { onConflict: 'id' });
 
-                if (userErr) console.warn("Error updating user roles:", userErr);
+                    if (pkgErr) throw pkgErr;
 
-                // 2b. Reallocate active spirit if user's current selected_spirit_id is no longer allowed
-                if (updateData.allowed_spirit_ids !== 'all') {
-                    const allowedIdsArr = updateData.allowed_spirit_ids ? updateData.allowed_spirit_ids.split(',').map(s => s.trim()).filter(Boolean) : [];
-                    const defaultSpiritId = allowedIdsArr.length > 0 ? parseInt(allowedIdsArr[0]) : null;
+                    // Sync active users matching role
+                    const userUpdate = {
+                        max_albums: pkgData.max_albums,
+                        max_pages: pkgData.max_pages,
+                        max_decks: pkgData.max_decks,
+                        max_cards_per_deck: pkgData.max_cards_per_deck,
+                        max_wishlist: pkgData.max_wishlist,
+                        max_sealed: pkgData.max_sealed,
+                        max_preorders: pkgData.max_preorders,
+                        max_clients_count: pkgData.max_clients_count,
+                        max_auctions_count: pkgData.max_auctions_count,
+                        max_events: pkgData.max_events,
+                        allowed_spirit_ids: pkgData.allowed_spirit_ids
+                    };
 
-                    const { data: roleUsers } = await _supabase
+                    await _supabase
                         .from('usuarios')
-                        .select('id, selected_spirit_id')
-                        .eq('role', targetRole);
-
-                    if (roleUsers) {
-                        for (const u of roleUsers) {
-                            if (u.selected_spirit_id) {
-                                const isStillAllowed = allowedIdsArr.includes(u.selected_spirit_id.toString());
-                                if (!isStillAllowed) {
-                                    await _supabase
-                                        .from('usuarios')
-                                        .update({ selected_spirit_id: defaultSpiritId })
-                                        .eq('id', u.id);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 3. Auto-enforce public link limits: unpublish excess albums if max_albums decreased
-                const { data: usersRole } = await _supabase.from('usuarios').select('id').eq('role', targetRole);
-                if (usersRole && usersRole.length > 0) {
-                    for (const u of usersRole) {
-                        const { data: userAlbums } = await _supabase
-                            .from('albums')
-                            .select('id, is_public')
-                            .eq('user_id', u.id)
-                            .order('created_at', { ascending: true });
-
-                        if (userAlbums && userAlbums.length > updateData.max_albums) {
-                            const excessIds = userAlbums.slice(updateData.max_albums).map(a => a.id);
-                            await _supabase.from('albums').update({ is_public: false }).in('id', excessIds);
-                        }
-                    }
+                        .update(userUpdate)
+                        .eq('role', role);
                 }
 
                 Swal.fire({
                     icon: 'success',
-                    title: `¡Plan ${pkgId.toUpperCase()} Guardado!`,
-                    text: 'Se han sincronizado los límites en tiempo real para todos los usuarios de este paquete.',
+                    title: '¡Cambios Guardados!',
                     toast: true,
                     position: 'top-end',
                     showConfirmButton: false,
-                    timer: 2500
+                    timer: 2000
                 });
 
             } catch (err) {
@@ -622,41 +695,46 @@
             }
         }
 
-        async function sendBroadcastNotification() {
+        async function handleNotificationImageUpload(file) {
+            if (!file) return;
+            $('#notification-file-label').html('<i class="fas fa-spinner fa-spin"></i> Subiendo imagen...');
+
+            try {
+                const url = await CloudinaryUpload.uploadImage(file);
+                $('#msg-image-url').val(url);
+                $('#notification-file-label').text('Imagen subida: ' + file.name);
+                Swal.fire({ icon: 'success', title: 'Imagen lista', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+            } catch (e) {
+                $('#notification-file-label').text('Arrastra una imagen aquí o haz clic para seleccionar');
+                Swal.fire('Error', 'No se pudo subir la imagen: ' + e.message, 'error');
+            }
+        }
+
+        async function sendNotificationBroadcast() {
             const title = $('#msg-title').val().trim();
             const targetRole = $('#msg-target-role').val();
+            const bodyText = $('#msg-body').val().trim();
+            const imageUrl = $('#msg-image-url').val().trim();
 
             if (!title) {
                 Swal.fire('Atención', 'Ingresa un título para la notificación.', 'warning');
                 return;
             }
 
-            const messages = [];
-            $('.msg-text-input').each(function() {
-                const txt = $(this).val().trim();
-                if (txt) messages.push(txt);
-            });
-
-            const images = [];
-            $('.msg-image-input').each(function() {
-                const img = $(this).val().trim();
-                if (img) images.push(img);
-            });
-
-            if (messages.length === 0 && images.length === 0) {
-                Swal.fire('Atención', 'Agrega al menos un texto o una imagen al mensaje.', 'warning');
+            if (!bodyText && !imageUrl) {
+                Swal.fire('Atención', 'Ingresa un mensaje o sube una imagen.', 'warning');
                 return;
             }
 
-            Swal.fire({ title: 'Enviando mensaje...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'Enviando notificación...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
                 const payload = {
                     sender_id: currentUserId,
                     target_role: targetRole,
                     title: title,
-                    messages: messages,
-                    images: images
+                    messages: bodyText ? [bodyText] : [],
+                    images: imageUrl ? [imageUrl] : []
                 };
 
                 const { error } = await _supabase.from('app_notifications').insert([payload]);
@@ -665,25 +743,18 @@
 
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Mensaje Enviado!',
-                    text: 'La notificación ha sido distribuida a los usuarios destinatarios.',
-                    confirmButtonColor: '#38bdf8'
+                    title: 'Enviado',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
                 });
 
                 // Reset fields
                 $('#msg-title').val('');
-                $('#msg-texts-container').html(`
-                    <div class="dynamic-item-row">
-                        <input type="text" class="custom-input msg-text-input" placeholder="Escribe el texto del mensaje...">
-                    </div>
-                `);
-                $('#msg-images-container').html(`
-                    <div class="dynamic-item-row">
-                        <input type="text" class="custom-input msg-image-input" placeholder="https://ejemplo.com/imagen.png">
-                        <input type="file" class="msg-file-input" style="display:none;" accept="image/*">
-                        <button type="button" class="btn-add-mini btn-upload-msg-img" style="align-self:center;"><i class="fas fa-upload"></i> Subir</button>
-                    </div>
-                `);
+                $('#msg-body').val('');
+                $('#msg-image-url').val('');
+                $('#notification-file-label').text('Arrastra una imagen aquí o haz clic para seleccionar');
 
             } catch (err) {
                 console.error(err);
@@ -691,11 +762,11 @@
             }
         }
 
-        // Domain functions
+        // Domain management
         async function loadUsersDropdown() {
             const { data: users } = await _supabase.from('usuarios').select('id, username, store_name').order('username', { ascending: true });
             const $select = $('#user-select');
-            $select.empty().append('<option value="">-- Selecciona un usuario --</option>');
+            $select.empty().append('<option value="">Selecciona un usuario</option>');
             if (users) {
                 users.forEach(u => {
                     const name = u.store_name ? `${u.store_name} (${u.username})` : u.username;
@@ -715,36 +786,26 @@
             $list.empty();
 
             if (error || !data || data.length === 0) {
-                $list.html('<div style="color: #94a3b8; text-align: center; padding: 20px;">No hay dominios registrados.</div>');
+                $list.html('<div style="color: #94a3b8; text-align: center; padding: 15px;">Sin dominios registrados</div>');
                 return;
             }
 
             data.forEach(item => {
                 const ownerName = item.usuarios?.store_name || item.usuarios?.username || 'Usuario';
-                const statusBadge = item.is_active
-                    ? '<span class="domain-status status-active"><i class="fas fa-check-circle"></i> Activo</span>'
-                    : '<span class="domain-status status-inactive"><i class="fas fa-times-circle"></i> Apagado</span>';
-
-                const toggleBtn = `<button class="btn-danger-icon" style="width:34px; height:34px; border-radius:8px;" onclick="toggleDomainActive('${item.id}', ${!item.is_active})" title="Cambiar Estado"><i class="fas fa-power-off"></i></button>`;
-
                 const $item = $(`
-                    <div class="domain-item">
+                    <div class="domain-row-item">
                         <div>
-                            <div style="font-weight: 700; color: #f8fafc;"><i class="fas fa-globe text-sky"></i> ${escapeHtml(item.domain)}</div>
-                            <div style="font-size: 0.75rem; color: #94a3b8;"><i class="fas fa-user"></i> ${escapeHtml(ownerName)}</div>
+                            <div style="font-weight: 800; color: #fff;">${escapeHtml(item.domain)}</div>
+                            <div style="font-size: 0.75rem; color: #94a3b8;">${escapeHtml(ownerName)}</div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            ${statusBadge}
-                            ${toggleBtn}
-                            <button class="btn-danger-icon" style="width:34px; height:34px; border-radius:8px;" onclick="deleteDomain('${item.id}')"><i class="fas fa-trash-alt"></i></button>
-                        </div>
+                        <button class="btn-icon-del" onclick="deleteDomain('${item.id}')"><i class="fas fa-trash"></i></button>
                     </div>
                 `);
                 $list.append($item);
             });
         }
 
-        async function handleAdminRegisterDomain() {
+        async function handleRegisterDomain() {
             const targetUserId = $('#user-select').val();
             const rawDomain = $('#domain-input').val().trim();
             const domain = cleanDomain(rawDomain);
@@ -766,11 +827,6 @@
                 await loadRegisteredDomains();
             }
         }
-
-        window.toggleDomainActive = async function(id, newStatus) {
-            await _supabase.from('widget_domains').update({ is_active: newStatus }).eq('id', id);
-            await loadRegisteredDomains();
-        };
 
         window.deleteDomain = async function(id) {
             const { isConfirmed } = await Swal.fire({ title: '¿Eliminar dominio?', icon: 'warning', showCancelButton: true });
