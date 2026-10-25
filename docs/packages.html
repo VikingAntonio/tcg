@@ -119,25 +119,83 @@
             background: rgba(0, 0, 0, 0.7);
         }
 
-        .spirits-select-container {
+        /* Assistants Section Styling */
+        .assistant-tabs-container {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-height: 140px;
-            overflow-y: auto;
-            text-align: left;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+            flex-wrap: wrap;
         }
 
-        .spirit-item-check {
+        .assistant-tab-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.25s ease;
+        }
+
+        .assistant-tab-btn:hover {
+            background: rgba(0, 210, 255, 0.15);
+            color: #00d2ff;
+            border-color: rgba(0, 210, 255, 0.3);
+        }
+
+        .assistant-tab-btn.active {
+            background: #00d2ff;
+            color: #000;
+            border-color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+        }
+
+        .assistant-controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .assistants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+
+        .assistant-card-check {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.75rem;
-            color: #cbd5e1;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .assistant-card-check:hover {
+            border-color: rgba(0, 210, 255, 0.5);
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        .assistant-card-check input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #00d2ff;
             cursor: pointer;
         }
 
@@ -287,7 +345,7 @@
                     <a href="binders.html" class="menu-item" id="menu-btn-albums"><i class="fas fa-book"></i> Mis Álbumes</a>
                     <a href="decks.html" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
                     <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
-                    <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
+                    <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Asistentes</a>
                     <a href="learn.html" class="menu-item" id="menu-btn-learn"><i class="fas fa-brain"></i> Base de Conocimiento</a>
                     <a href="widgets.html" class="menu-item" id="menu-btn-widgets"><i class="fas fa-code"></i> Custom Labels</a>
                     <a href="packages.html" class="menu-item" id="menu-btn-dominios"><i class="fas fa-box-open"></i> Planes y Dominios</a>
@@ -345,7 +403,40 @@
             </div>
         </div>
 
-        <!-- SECTION 2: BROADCAST NOTIFICATIONS (CLEAN, NO EMOJIS, NO PLACEHOLDERS, NO EXPLANATIONS) -->
+        <!-- SECTION 2: ASSISTANTS MANAGEMENT (SPACIOUS, NO INTERNAL SCROLLBARS) -->
+        <div class="section-box">
+            <h2 class="section-title">Asistentes Habilitados por Paquete</h2>
+
+            <div class="assistant-tabs-container">
+                <button type="button" class="assistant-tab-btn active" data-pkg="starter">Starter</button>
+                <button type="button" class="assistant-tab-btn" data-pkg="premium">Premium</button>
+                <button type="button" class="assistant-tab-btn" data-pkg="tienda">Tienda</button>
+            </div>
+
+            <div class="assistant-controls-bar">
+                <label style="font-weight: 800; color: #00d2ff; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="pkg-all-assistants-checkbox" style="width: 18px; height: 18px; accent-color: #00d2ff;"> Habilitar Todos los Asistentes
+                </label>
+
+                <div style="max-width: 300px; width: 100%;">
+                    <input type="text" id="assistant-search-input" class="clean-input" placeholder="Buscar asistente..." style="padding: 6px 12px; font-size: 0.8rem;">
+                </div>
+            </div>
+
+            <div class="assistants-grid" id="assistants-grid-container">
+                <div style="text-align: center; padding: 20px; color: #94a3b8; grid-column: 1 / -1;">
+                    Cargando asistentes...
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="button" class="btn-action-primary" id="btn-save-assistants">
+                    GUARDAR ASISTENTES
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 3: BROADCAST NOTIFICATIONS -->
         <div class="section-box">
             <h2 class="section-title">Notificaciones</h2>
 
@@ -387,7 +478,7 @@
             </div>
         </div>
 
-        <!-- SECTION 3: DOMINIOS AUTORIZADOS (CLEAN, OMITTING ADMIN STRINGS) -->
+        <!-- SECTION 4: DOMINIOS AUTORIZADOS -->
         <div class="section-box">
             <h2 class="section-title">Dominios Autorizados</h2>
 
@@ -438,9 +529,59 @@
         let currentUserId = null;
         let allAvailableSpirits = [];
         let packagesData = {};
+        let activeAssistantPkg = 'starter';
+        let packageAssistantsState = {
+            starter: [],
+            premium: [],
+            tienda: []
+        };
+        let packageAllAssistantsState = {
+            starter: false,
+            premium: true,
+            tienda: true
+        };
 
         $(document).ready(async function() {
             await initPackagesPage();
+
+            // Assistant Tab Switching
+            $('.assistant-tab-btn').click(function() {
+                $('.assistant-tab-btn').removeClass('active');
+                $(this).addClass('active');
+                activeAssistantPkg = $(this).data('pkg');
+                renderAssistantsGrid();
+            });
+
+            // Assistant Search Filter
+            $('#assistant-search-input').on('input', function() {
+                const term = $(this).val().toLowerCase();
+                $('.assistant-card-check').each(function() {
+                    const name = $(this).data('name').toLowerCase();
+                    if (name.includes(term)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+
+            // All Assistants Checkbox
+            $('#pkg-all-assistants-checkbox').change(function() {
+                const checked = $(this).is(':checked');
+                packageAllAssistantsState[activeAssistantPkg] = checked;
+                $(`.assistant-cb-item`).prop('checked', checked);
+                saveCurrentAssistantsGridToState();
+            });
+
+            // Save buttons
+            $('#btn-save-table-configs').click(async function() {
+                await saveAllSpreadsheetConfigs();
+            });
+
+            $('#btn-save-assistants').click(async function() {
+                saveCurrentAssistantsGridToState();
+                await saveAllSpreadsheetConfigs();
+            });
 
             // Drag & drop for Notification image
             const $dropZone = $('#drop-zone-notification');
@@ -469,10 +610,6 @@
                 if (this.files && this.files.length > 0) {
                     await handleNotificationImageUpload(this.files[0]);
                 }
-            });
-
-            $('#btn-save-table-configs').click(async function() {
-                await saveAllSpreadsheetConfigs();
             });
 
             $('#btn-send-notification').click(async function() {
@@ -542,7 +679,20 @@
                 });
             }
 
+            // Extract spirits states into state object
+            ['starter', 'premium', 'tienda'].forEach(role => {
+                const allowed = packagesData[role]?.allowed_spirit_ids || '';
+                if (allowed === 'all') {
+                    packageAllAssistantsState[role] = true;
+                    packageAssistantsState[role] = allAvailableSpirits.map(s => s.id.toString());
+                } else {
+                    packageAllAssistantsState[role] = false;
+                    packageAssistantsState[role] = allowed.split(',').map(s => s.trim()).filter(Boolean);
+                }
+            });
+
             renderSpreadsheetTable();
+            renderAssistantsGrid();
         }
 
         function renderSpreadsheetTable() {
@@ -579,49 +729,62 @@
                 rowHtml += `</tr>`;
                 $tbody.append(rowHtml);
             });
+        }
 
-            // Row for Spirits / Companions selection
-            let spiritsRow = `<tr><td class="col-service">Compañeros Habilitados</td>`;
-            roles.forEach(role => {
-                const pkg = packagesData[role] || {};
-                const allowedStr = pkg.allowed_spirit_ids || '';
-                const isAll = allowedStr === 'all';
-                const allowedArray = allowedStr.split(',').map(s => s.trim());
+        function renderAssistantsGrid() {
+            const $container = $('#assistants-grid-container');
+            $container.empty();
 
-                let spiritChecksHtml = `
-                    <div style="margin-bottom: 6px; text-align: left;">
-                        <label class="spirit-item-check" style="font-weight: 800; color: #00d2ff;">
-                            <input type="checkbox" class="pkg-all-spirits-toggle" data-pkg="${role}" ${isAll ? 'checked' : ''}> Todos los compañeros
-                        </label>
-                    </div>
-                    <div class="spirits-select-container" id="spirits-container-${role}">
-                `;
+            const isAll = packageAllAssistantsState[activeAssistantPkg];
+            const currentSelected = packageAssistantsState[activeAssistantPkg] || [];
 
-                allAvailableSpirits.forEach(s => {
-                    const checked = isAll || allowedArray.includes(s.id.toString()) ? 'checked' : '';
-                    spiritChecksHtml += `
-                        <label class="spirit-item-check">
-                            <input type="checkbox" class="pkg-spirit-cb" data-pkg="${role}" value="${s.id}" ${checked}>
-                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(s.name)}</span>
-                        </label>
-                    `;
+            $('#pkg-all-assistants-checkbox').prop('checked', isAll);
+
+            if (!allAvailableSpirits || allAvailableSpirits.length === 0) {
+                $container.html('<div style="text-align: center; color: #94a3b8; grid-column: 1/-1; padding: 20px;">No hay asistentes registrados en el sistema.</div>');
+                return;
+            }
+
+            allAvailableSpirits.forEach(s => {
+                const isChecked = isAll || currentSelected.includes(s.id.toString());
+                const $card = $(`
+                    <label class="assistant-card-check" data-name="${escapeHtml(s.name)}">
+                        <input type="checkbox" class="assistant-cb-item" value="${s.id}" ${isChecked ? 'checked' : ''}>
+                        <span style="font-weight: 700; font-size: 0.85rem; color: #f1f5f9;">${escapeHtml(s.name)}</span>
+                    </label>
+                `);
+
+                $card.find('input').change(function() {
+                    saveCurrentAssistantsGridToState();
                 });
 
-                spiritChecksHtml += `</div>`;
-                spiritsRow += `<td>${spiritChecksHtml}</td>`;
+                $container.append($card);
             });
-            spiritsRow += `</tr>`;
 
-            $tbody.append(spiritsRow);
+            // Re-apply search filter if typed
+            const searchTerm = $('#assistant-search-input').val().toLowerCase();
+            if (searchTerm) {
+                $('#assistant-search-input').trigger('input');
+            }
+        }
 
-            $('.pkg-all-spirits-toggle').change(function() {
-                const pkgId = $(this).data('pkg');
-                const checked = $(this).is(':checked');
-                $(`#spirits-container-${pkgId} .pkg-spirit-cb`).prop('checked', checked);
-            });
+        function saveCurrentAssistantsGridToState() {
+            const isAll = $('#pkg-all-assistants-checkbox').is(':checked');
+            packageAllAssistantsState[activeAssistantPkg] = isAll;
+
+            if (isAll) {
+                packageAssistantsState[activeAssistantPkg] = allAvailableSpirits.map(s => s.id.toString());
+            } else {
+                const selected = [];
+                $('.assistant-cb-item:checked').each(function() {
+                    selected.push($(this).val().toString());
+                });
+                packageAssistantsState[activeAssistantPkg] = selected;
+            }
         }
 
         async function saveAllSpreadsheetConfigs() {
+            saveCurrentAssistantsGridToState();
             const roles = ['starter', 'premium', 'tienda'];
 
             Swal.fire({ title: 'Guardando configuración de paquetes...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -640,15 +803,12 @@
                         pkgData[field] = val;
                     });
 
-                    // Handle Spirits selection
-                    const isAll = $(`.pkg-all-spirits-toggle[data-pkg="${role}"]`).is(':checked');
+                    // Handle Assistants selection
+                    const isAll = packageAllAssistantsState[role];
                     if (isAll) {
                         pkgData.allowed_spirit_ids = 'all';
                     } else {
-                        const selected = [];
-                        $(`#spirits-container-${role} .pkg-spirit-cb:checked`).each(function() {
-                            selected.push($(this).val());
-                        });
+                        const selected = packageAssistantsState[role] || [];
                         pkgData.allowed_spirit_ids = selected.join(',');
                     }
 
