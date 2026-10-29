@@ -45,24 +45,97 @@ window.getCardZoomImage = function(card) {
     }
 };
 
-window.showCustomCardZoom = function(imageUrl) {
+window.showCustomCardZoom = function(imageUrl, cardObj) {
     if (!imageUrl || imageUrl.includes("placeholder") || imageUrl.includes("via.placeholder.com")) {
         return;
     }
     // Collapse any mobile accessories sidebar first
     $(".duel-sidebar").removeClass("mobile-sidebar-active");
 
+    $("#zoom-desc-overlay").hide();
     $("#custom-card-zoom-img").attr("src", imageUrl);
+
+    let cardName = "";
+    let cardDesc = "";
+
+    if (cardObj && typeof cardObj === "object") {
+        const isExtraFaceUp = (cardObj.zone && cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster") && cardObj.faceDown === false);
+        const isPile = cardObj.zone && (cardObj.zone.startsWith("deck_") || (cardObj.zone.startsWith("extra_") && !cardObj.zone.startsWith("extra_monster")) || cardObj.zone.startsWith("prize_")) && !isExtraFaceUp;
+        let isFaceDown = cardObj.faceDown && cardObj.zone && !cardObj.zone.startsWith("hand_");
+
+        let showAsBack = false;
+        if (state.mode !== 'practice') {
+            const viewerRole = window.currentRole || "player1";
+            const isMyCard = (cardObj.owner === viewerRole);
+            if (!isMyCard) {
+                showAsBack = isPile || isFaceDown;
+            }
+        }
+
+        if (showAsBack) {
+            cardName = "Carta Boca Abajo";
+            cardDesc = "Detalles ocultos para evitar trampas.";
+        } else {
+            cardName = cardObj.name || $("#detail-card-name").text() || "Detalles de Carta";
+            cardDesc = cardObj.desc || cardObj.description || cardObj.effect || cardObj.text || "";
+        }
+    } else {
+        cardName = $("#detail-card-name").text() || "Detalles de Carta";
+        cardDesc = $("#detail-card-desc").text() || "Sin efecto/descripción.";
+    }
+
+    if (cardDesc === "Efecto no disponible." || cardDesc === "Sin efecto/descripción." || cardDesc === "Cargando efecto...") {
+        cardDesc = "";
+    }
+
+    $("#zoom-overlay-card-name").text(cardName);
+    if (!cardDesc && cardName && cardName !== "Carta Boca Abajo" && cardName !== "Detalles de Carta") {
+        $("#zoom-overlay-card-desc").text("Cargando efecto...");
+        fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(cardName)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && data.data && data.data.length > 0) {
+                    const matched = data.data.find(c => c.name.toLowerCase() === cardName.toLowerCase()) || data.data[0];
+                    if (matched && matched.desc) {
+                        if (cardObj && typeof cardObj === "object") cardObj.desc = matched.desc;
+                        $("#zoom-overlay-card-desc").text(matched.desc);
+                    } else {
+                        $("#zoom-overlay-card-desc").text("Efecto no disponible.");
+                    }
+                } else {
+                    $("#zoom-overlay-card-desc").text("Efecto no disponible.");
+                }
+            })
+            .catch(() => {
+                $("#zoom-overlay-card-desc").text("Efecto no disponible.");
+            });
+    } else {
+        $("#zoom-overlay-card-desc").text(cardDesc || "Sin efecto/descripción.");
+    }
+
     $("#custom-card-zoom-overlay").fadeIn(150).css("display", "flex");
 };
 
 // Bind custom card zoom overlay click handlers
 $(document).ready(function() {
     $("#custom-card-zoom-overlay, #custom-card-zoom-close").click(function(e) {
-        if (e.target.id === "custom-card-zoom-img") {
+        if (e.target.id === "custom-card-zoom-img" || $(e.target).closest("#btn-toggle-zoom-desc-overlay, #zoom-desc-overlay").length) {
             return;
         }
+        $("#zoom-desc-overlay").hide();
         $("#custom-card-zoom-overlay").fadeOut(150);
+    });
+
+    $("#btn-toggle-zoom-desc-overlay").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $("#zoom-desc-overlay").fadeToggle(150);
+    });
+
+    $("#zoom-desc-overlay").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).fadeOut(150);
     });
 });
 
@@ -1494,10 +1567,10 @@ function checkHandTrayHover(e, traySelector) {
 // Helper to render card image and description in preview
 function renderCardEffectInPreview(card) {
     $("#detail-card-img").attr("src", card.imageUrl);
-    $("#detail-card-name, #preview-overlay-card-name").text(card.name);
+    $("#detail-card-name").text(card.name);
     let descText = card.desc || card.description || card.effect || card.text || "";
     if (!descText && card.name) {
-        $("#detail-card-desc, #preview-overlay-card-desc").text("Cargando efecto...");
+        $("#detail-card-desc").text("Cargando efecto...");
         fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
@@ -1506,20 +1579,20 @@ function renderCardEffectInPreview(card) {
                     if (matched && matched.desc) {
                         card.desc = matched.desc;
                         if ($("#detail-card-name").text() === card.name) {
-                            $("#detail-card-desc, #preview-overlay-card-desc").text(matched.desc);
+                            $("#detail-card-desc").text(matched.desc);
                         }
                     } else {
-                        $("#detail-card-desc, #preview-overlay-card-desc").text("Efecto no disponible.");
+                        $("#detail-card-desc").text("Efecto no disponible.");
                     }
                 } else {
-                    $("#detail-card-desc, #preview-overlay-card-desc").text("Efecto no disponible.");
+                    $("#detail-card-desc").text("Efecto no disponible.");
                 }
             })
             .catch(() => {
-                $("#detail-card-desc, #preview-overlay-card-desc").text("Efecto no disponible.");
+                $("#detail-card-desc").text("Efecto no disponible.");
             });
     } else {
-        $("#detail-card-desc, #preview-overlay-card-desc").text(descText || "Sin efecto/descripción.");
+        $("#detail-card-desc").text(descText || "Sin efecto/descripción.");
     }
 }
 
@@ -1530,8 +1603,8 @@ function updatePreview(card) {
         const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
-        $("#detail-card-name, #preview-overlay-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc, #preview-overlay-card-desc").text("Detalles ocultos para evitar trampas.");
+        $("#detail-card-name").text("Carta Boca Abajo");
+        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
         return;
     }
 
@@ -1549,8 +1622,8 @@ function updatePreview(card) {
         const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
-        $("#detail-card-name, #preview-overlay-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc, #preview-overlay-card-desc").text("Detalles ocultos para evitar trampas.");
+        $("#detail-card-name").text("Carta Boca Abajo");
+        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
     } else {
         renderCardEffectInPreview(card);
     }
@@ -1817,7 +1890,7 @@ function openExtraDeckModal(playerKey) {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (cardObj) {
             const zoomUrl = window.getCardZoomImage(cardObj);
-            window.showCustomCardZoom(zoomUrl);
+            window.showCustomCardZoom(zoomUrl, cardObj);
         }
     });
 
@@ -2165,7 +2238,7 @@ function openAttachedCardsModal(parentId) {
 
         if ($(this).hasClass("btn-attached-zoom")) {
             const zoomUrl = window.getCardZoomImage(cardObj);
-            window.showCustomCardZoom(zoomUrl);
+            window.showCustomCardZoom(zoomUrl, cardObj);
             return;
         }
 
@@ -2585,7 +2658,7 @@ function openSearchModal(playerKey) {
 
         if ($(this).hasClass("btn-search-zoom")) {
             const zoomUrl = window.getCardZoomImage(cardObj);
-            window.showCustomCardZoom(zoomUrl);
+            window.showCustomCardZoom(zoomUrl, cardObj);
             return;
         }
 
@@ -2747,7 +2820,7 @@ function openPileModal(playerKey, pileType) {
 
         if ($(this).hasClass("btn-pile-zoom")) {
             const zoomUrl = window.getCardZoomImage(cardObj);
-            window.showCustomCardZoom(zoomUrl);
+            window.showCustomCardZoom(zoomUrl, cardObj);
             return;
         }
 
@@ -2876,18 +2949,6 @@ function setupEventListeners() {
         window.showCustomCardZoom(src);
     });
 
-    // Toggle description dark overlay on card preview image
-    $("#btn-toggle-desc-overlay").click(function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $("#preview-desc-overlay").fadeToggle(150);
-    });
-
-    $("#preview-desc-overlay").click(function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $(this).fadeOut(150);
-    });
 
     // Menu layout toggle
     $("#select-board-layout").change(async function() {
@@ -3112,7 +3173,7 @@ function setupEventListeners() {
         if (!activeMenuCard) return;
         $("#card-menu").removeClass("active");
         const zoomUrl = window.getCardZoomImage(activeMenuCard);
-        window.showCustomCardZoom(zoomUrl);
+        window.showCustomCardZoom(zoomUrl, activeMenuCard);
     });
 
     $(document).on("click", "#menu-summon", function() {
