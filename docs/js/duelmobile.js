@@ -72,6 +72,61 @@ function isYGOLayout(layout) {
     return l === "yugioh" || l === "yugioh_advanced" || l === "speed_rush";
 }
 
+function ensureMonsterAtkDefWidget(card) {
+    if (!isYGOLayout(state.layout)) return;
+    if (!card || card.faceDown) return;
+    const isField = card.zone &&
+                    !card.zone.startsWith("hand_") &&
+                    !card.zone.startsWith("deck_") &&
+                    !(card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) &&
+                    !card.zone.startsWith("grave_") &&
+                    !card.zone.startsWith("banished_") &&
+                    !card.zone.startsWith("prize_");
+    if (!isField) return;
+    if (card.customAtkDef || card.isNotMonster || card.isFetchingAtkDef) return;
+
+    card.isFetchingAtkDef = true;
+
+    let cardId = null;
+    if (card.imageUrl) {
+        const idMatch = card.imageUrl.match(/\/cards\/(\d+)\./);
+        if (idMatch) cardId = idMatch[1];
+    }
+
+    const apiUrl = cardId ?
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${cardId}` :
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`;
+
+    fetch(apiUrl)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            card.isFetchingAtkDef = false;
+            if (data && data.data && data.data.length > 0) {
+                const matched = (cardId ? data.data[0] : (data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0]));
+                if (matched) {
+                    const cardType = matched.type || "";
+                    if (cardType.includes("Spell") || cardType.includes("Trap")) {
+                        card.isNotMonster = true;
+                    } else {
+                        const atkVal = (matched.atk !== undefined && matched.atk !== null) ? String(matched.atk) : "?";
+                        const defVal = (matched.def !== undefined && matched.def !== null) ? String(matched.def) : "?";
+                        card.customAtkDef = { atk: atkVal, def: defVal };
+                        if (typeof window.renderAllCards === "function") {
+                            window.renderAllCards();
+                        }
+                    }
+                } else {
+                    card.isNotMonster = true;
+                }
+            } else {
+                card.isNotMonster = true;
+            }
+        })
+        .catch(() => {
+            card.isFetchingAtkDef = false;
+        });
+}
+
 // JSON Playmat layouts for Yu-Gi-Oh and Pokémon TCG
 // Scaled layout for a 1120x600 playmat board.
 // Card Width: 80px, Height: 116px.
@@ -680,6 +735,8 @@ function renderAllCards() {
     }
     // ENFORCE SANITIZATION RULES SECURELY
     state.cards.forEach(card => {
+        ensureMonsterAtkDefWidget(card);
+
         // Clear counters and custom ATK/DEF if card is not on field
         const isFieldCard = card.zone === "field_free" ||
                             card.zone.startsWith("monster_") ||
@@ -1437,10 +1494,10 @@ function checkHandTrayHover(e, traySelector) {
 // Helper to render card image and description in preview
 function renderCardEffectInPreview(card) {
     $("#detail-card-img").attr("src", card.imageUrl);
-    $("#detail-card-name").text(card.name);
+    $("#detail-card-name, #preview-overlay-card-name").text(card.name);
     let descText = card.desc || card.description || card.effect || card.text || "";
     if (!descText && card.name) {
-        $("#detail-card-desc").text("Cargando efecto...");
+        $("#detail-card-desc, #preview-overlay-card-desc").text("Cargando efecto...");
         fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
@@ -1449,20 +1506,20 @@ function renderCardEffectInPreview(card) {
                     if (matched && matched.desc) {
                         card.desc = matched.desc;
                         if ($("#detail-card-name").text() === card.name) {
-                            $("#detail-card-desc").text(matched.desc);
+                            $("#detail-card-desc, #preview-overlay-card-desc").text(matched.desc);
                         }
                     } else {
-                        $("#detail-card-desc").text("Efecto no disponible.");
+                        $("#detail-card-desc, #preview-overlay-card-desc").text("Efecto no disponible.");
                     }
                 } else {
-                    $("#detail-card-desc").text("Efecto no disponible.");
+                    $("#detail-card-desc, #preview-overlay-card-desc").text("Efecto no disponible.");
                 }
             })
             .catch(() => {
-                $("#detail-card-desc").text("Efecto no disponible.");
+                $("#detail-card-desc, #preview-overlay-card-desc").text("Efecto no disponible.");
             });
     } else {
-        $("#detail-card-desc").text(descText || "Sin efecto/descripción.");
+        $("#detail-card-desc, #preview-overlay-card-desc").text(descText || "Sin efecto/descripción.");
     }
 }
 
@@ -1473,8 +1530,8 @@ function updatePreview(card) {
         const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
-        $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
+        $("#detail-card-name, #preview-overlay-card-name").text("Carta Boca Abajo");
+        $("#detail-card-desc, #preview-overlay-card-desc").text("Detalles ocultos para evitar trampas.");
         return;
     }
 
@@ -1492,8 +1549,8 @@ function updatePreview(card) {
         const defaultBack = (state.layout === "pokemon") ? "img/pokeBocaAbajo.jpg" : "img/bocabajo.jpg";
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
-        $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
+        $("#detail-card-name, #preview-overlay-card-name").text("Carta Boca Abajo");
+        $("#detail-card-desc, #preview-overlay-card-desc").text("Detalles ocultos para evitar trampas.");
     } else {
         renderCardEffectInPreview(card);
     }
@@ -2817,6 +2874,19 @@ function setupEventListeners() {
             return;
         }
         window.showCustomCardZoom(src);
+    });
+
+    // Toggle description dark overlay on card preview image
+    $("#btn-toggle-desc-overlay").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $("#preview-desc-overlay").fadeToggle(150);
+    });
+
+    $("#preview-desc-overlay").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).fadeOut(150);
     });
 
     // Menu layout toggle
