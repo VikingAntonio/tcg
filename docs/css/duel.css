@@ -820,6 +820,87 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* Custom LP Calculator Swal Modal styling */
+.calc-swal-popup {
+    border: 1.5px solid var(--primary-color, #00d2ff) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3), 0 0 20px rgba(0, 0, 0, 0.9) !important;
+    padding: 14px !important;
+    max-width: 320px !important;
+    width: 90vw !important;
+    font-family: 'Montserrat', 'Poppins', sans-serif !important;
+    background: #12181e !important;
+    color: #fff !important;
+}
+
+.calc-swal-popup .swal2-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #ffd32d !important;
+    margin-bottom: 6px !important;
+    padding: 0 !important;
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+.calc-swal-popup .btn-calc {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    font-size: 1.1rem !important;
+    padding: 10px 0 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+.calc-swal-popup .btn-calc:active,
+.calc-swal-popup .btn-calc:hover {
+    background: var(--primary-color, #00d2ff) !important;
+    color: #000000 !important;
+    border-color: #00d2ff !important;
+}
+
+.calc-swal-popup .btn-calc-op.btn-danger {
+    background: #ff4757 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    font-size: 1.2rem !important;
+    padding: 10px 0 !important;
+}
+
+.calc-swal-popup .btn-calc-op.btn-success {
+    background: #2ed573 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    font-size: 1.2rem !important;
+    padding: 10px 0 !important;
+}
+
+.calc-swal-popup .btn-calc-op.btn-warning {
+    background: #ff9f43 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    font-size: 1rem !important;
+    padding: 10px 0 !important;
+}
+
+.calc-swal-popup .btn-calc-clear {
+    background: #4b6584 !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    font-size: 1.1rem !important;
+    padding: 10px 0 !important;
+}
+
 /* Card Select Pointer Visual style - bouncing yellow/gold finger pointing down at the card */
 .card-select-pointer {
     position: absolute;
