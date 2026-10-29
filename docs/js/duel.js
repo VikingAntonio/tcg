@@ -607,12 +607,12 @@ function renderAllCards() {
                 <div class="hand-card-actions">
                     <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}">Invocar</button>
                     ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ?
-                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set?Flip</button>
+                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set/Flip</button>
                          <button class="hand-action-btn btn-defense" data-instance-id="${card.instanceId}">ATK/DEF</button>` :
                         (state.layout === 'pokemon' ?
                             `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
                              <button class="hand-action-btn btn-pokemon-field" data-instance-id="${card.instanceId}">Field</button>` :
-                            `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set?Flip</button>`
+                            `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set/Flip</button>`
                         )
                     }
                     <button class="hand-action-btn btn-attach" data-instance-id="${card.instanceId}">Acoplar</button>
@@ -635,7 +635,7 @@ function renderAllCards() {
                 <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
                     <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
                     <button class="field-action-btn btn-field-direct" data-instance-id="${card.instanceId}">Atk Directo</button>
-                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Set?Flip</button>
+                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Set/Flip</button>
                     <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">ATK/DEF</button>
                     <button class="field-action-btn btn-field-control" data-instance-id="${card.instanceId}">Control</button>
                     <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
@@ -974,7 +974,17 @@ function bindCardDragEvents() {
             cardObj.faceDown = !cardObj.faceDown;
             renderAllCards();
         } else if ($(this).hasClass("btn-field-tap")) {
-            cardObj.tapped = !cardObj.tapped;
+            if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+                if (cardObj.tapped) {
+                    cardObj.tapped = false;
+                    cardObj.faceDown = false;
+                } else {
+                    cardObj.tapped = true;
+                    cardObj.faceDown = false;
+                }
+            } else {
+                cardObj.tapped = !cardObj.tapped;
+            }
             renderAllCards();
         } else if ($(this).hasClass("btn-field-control")) {
             // Swap controller ONLY, leave owner intact!
@@ -3387,7 +3397,17 @@ function openCardContextMenu(cardObj, clientX, clientY) {
 
     $("#menu-tap").click(function() {
         if (!activeMenuCard) return;
-        activeMenuCard.tapped = !activeMenuCard.tapped;
+        if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
+            if (activeMenuCard.tapped) {
+                activeMenuCard.tapped = false;
+                activeMenuCard.faceDown = false;
+            } else {
+                activeMenuCard.tapped = true;
+                activeMenuCard.faceDown = false;
+            }
+        } else {
+            activeMenuCard.tapped = !activeMenuCard.tapped;
+        }
         renderAllCards();
     });
 

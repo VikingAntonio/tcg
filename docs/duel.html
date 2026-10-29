@@ -392,8 +392,14 @@
             flex-direction: column;
             gap: 8px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
-            z-index: 102;
+            z-index: 10005;
             pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .lp-counter-container * {
+            cursor: pointer !important;
+            pointer-events: auto !important;
         }
 
         .p1-lp-container, .p2-lp-container {
@@ -1389,7 +1395,7 @@
         <div class="menu-item" id="menu-attack"><i class="fas fa-bolt"></i> Atacar</div>
         <div class="menu-item" id="menu-direct-attack"><i class="fas fa-crosshairs"></i> Atk Directo</div>
         <hr>
-        <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Set?Flip</div>
+        <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Set/Flip</div>
         <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> ATK/DEF</div>
         <div class="menu-item pokemon-only-item" id="menu-swap-active-bench" style="display: none;"><i class="fas fa-exchange-alt"></i> Activo / Banca</div>
         <hr>
@@ -3570,10 +3576,10 @@
             }
 
             // Open LP Calculator Modal on LP container click
-            $("#lp-counter-p1").click(function() {
+            $(document).on("click", "#lp-counter-p1, .p1-lp-container", function(e) {
                 openLPCalculator('p1');
             });
-            $("#lp-counter-p2").click(function() {
+            $(document).on("click", "#lp-counter-p2, .p2-lp-container", function(e) {
                 openLPCalculator('p2');
             });
 
@@ -3583,52 +3589,99 @@
                 const playerLabel = player === "p1" ? "P1" : "P2";
 
                 Swal.fire({
-                    title: `Modificar LP (${playerLabel})`,
+                    title: `Calculadora LP - ${playerLabel}`,
+                    customClass: {
+                        popup: 'calc-swal-popup'
+                    },
                     html: `
-                        <div style="font-family: 'Orbitron', sans-serif; font-size: 2.2rem; color: ${player === 'p1' ? 'var(--primary-color)' : 'var(--secondary-color)'}; font-weight: 900; margin-bottom: 12px; text-shadow: 0 0 10px rgba(255,255,255,0.2);">
+                        <div style="font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 900; color: ${player === 'p1' ? 'var(--primary-color, #00d2ff)' : 'var(--secondary-color, #ff007f)'}; margin-bottom: 10px; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px; text-shadow: 0 0 10px rgba(255,255,255,0.2);" id="calc-current-display">
                             ${currentLP} LP
                         </div>
-                        <input type="number" id="swal-lp-val" class="swal2-input" placeholder="Ingresa valor..." autofocus style="width: 80%; text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.3rem; margin: 10px auto 15px auto; background: rgba(0,0,0,0.6); color: #fff; border: 1.5px solid var(--glass-border); border-radius: 8px;">
-                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-                            <button type="button" id="btn-lp-op-add" class="swal2-confirm swal2-styled" style="background-color: #2ed573; color: #000; font-weight: 900; font-size: 1.3rem; padding: 10px 22px; border-radius: 8px; cursor: pointer;">+</button>
-                            <button type="button" id="btn-lp-op-sub" class="swal2-confirm swal2-styled" style="background-color: #ff4757; color: #fff; font-weight: 900; font-size: 1.3rem; padding: 10px 22px; border-radius: 8px; cursor: pointer;">-</button>
-                            <button type="button" id="btn-lp-op-div" class="swal2-confirm swal2-styled" style="background-color: #ffa502; color: #000; font-weight: 900; font-size: 1.1rem; padding: 10px 20px; border-radius: 8px; cursor: pointer;">/ 2</button>
+                        <input type="text" id="calc-input-value" class="swal2-input" placeholder="0" autofocus style="text-align: center; font-size: 1.5rem; font-family: 'Orbitron', sans-serif; margin: 10px auto; width: 85%; background: #1e2530; color: #fff; border: 1.5px solid var(--primary-color, #00d2ff); border-radius: 8px;">
+
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px auto; max-width: 260px;">
+                            <button class="btn btn-calc" data-val="7">7</button>
+                            <button class="btn btn-calc" data-val="8">8</button>
+                            <button class="btn btn-calc" data-val="9">9</button>
+                            <button class="btn btn-calc" data-val="4">4</button>
+                            <button class="btn btn-calc" data-val="5">5</button>
+                            <button class="btn btn-calc" data-val="6">6</button>
+                            <button class="btn btn-calc" data-val="1">1</button>
+                            <button class="btn btn-calc" data-val="2">2</button>
+                            <button class="btn btn-calc" data-val="3">3</button>
+                            <button class="btn btn-calc" data-val="0">0</button>
+                            <button class="btn btn-calc" data-val="00">00</button>
+                            <button class="btn btn-calc" data-val="000">000</button>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px auto; max-width: 260px;">
+                            <button class="btn btn-calc-op btn-danger" data-op="sub">-</button>
+                            <button class="btn btn-calc-op btn-success" data-op="add">+</button>
+                            <button class="btn btn-calc-op btn-warning" data-op="half">/2</button>
+                            <button class="btn btn-calc-clear btn-secondary">C</button>
                         </div>
                     `,
-                    showConfirmButton: false,
-                    showCancelButton: true,
-                    cancelButtonText: 'Cancelar',
                     background: '#12181e',
                     color: '#fff',
+                    showConfirmButton: false,
+                    showCloseButton: true,
                     didOpen: () => {
-                        const $input = $("#swal-lp-val");
+                        const $input = $("#calc-input-value");
                         setTimeout(() => $input.focus(), 100);
 
-                        const applyOp = (op) => {
-                            const val = parseInt($input.val()) || 0;
-                            applyLPOperation(player, op, val);
+                        $(".btn-calc").click(function() {
+                            const val = $(this).data("val");
+                            let curr = $input.val();
+                            if (curr === "0") curr = "";
+                            $input.val(curr + val);
+                            $input.focus();
+                        });
+
+                        $(".btn-calc-clear").click(function() {
+                            $input.val("");
+                            $input.focus();
+                        });
+
+                        $(".btn-calc-op").click(function() {
+                            const op = $(this).data("op");
+                            const entered = parseInt($input.val()) || 0;
+                            if (op === "add") {
+                                applyLPOperation(player, '+', entered);
+                            } else if (op === "sub") {
+                                applyLPOperation(player, '-', entered);
+                            } else if (op === "half") {
+                                applyLPOperation(player, '/', 0);
+                            }
                             Swal.close();
-                        };
+                        });
 
-                        $("#btn-lp-op-add").click(() => applyOp('+'));
-                        $("#btn-lp-op-sub").click(() => applyOp('-'));
-                        $("#btn-lp-op-div").click(() => applyOp('/'));
-
-                        $input.on('keydown', (e) => {
-                            if (e.key === '+' || e.key === 'Add') {
-                                e.preventDefault();
-                                applyOp('+');
-                            } else if (e.key === '-' || e.key === 'Subtract') {
-                                e.preventDefault();
-                                applyOp('-');
-                            } else if (e.key === '/' || e.key === 'Divide') {
-                                e.preventDefault();
-                                applyOp('/');
-                            } else if (e.key === 'Enter') {
-                                e.preventDefault();
-                                applyOp('-');
+                        $(document).off("keydown.calc").on("keydown.calc", function(ke) {
+                            if (ke.key === '+' || ke.key === 'Add') {
+                                ke.preventDefault();
+                                const entered = parseInt($input.val()) || 0;
+                                applyLPOperation(player, '+', entered);
+                                Swal.close();
+                            } else if (ke.key === '-' || ke.key === 'Subtract') {
+                                ke.preventDefault();
+                                const entered = parseInt($input.val()) || 0;
+                                applyLPOperation(player, '-', entered);
+                                Swal.close();
+                            } else if (ke.key === '/' || ke.key === 'Divide') {
+                                ke.preventDefault();
+                                applyLPOperation(player, '/', 0);
+                                Swal.close();
+                            } else if (ke.key === 'Enter') {
+                                ke.preventDefault();
+                                const entered = parseInt($input.val()) || 0;
+                                applyLPOperation(player, '-', entered);
+                                Swal.close();
+                            } else if ((ke.key === 'c' || ke.key === 'C') && document.activeElement !== $input[0]) {
+                                $input.val("");
                             }
                         });
+                    },
+                    willClose: () => {
+                        $(document).off("keydown.calc");
                     }
                 });
             };
