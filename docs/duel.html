@@ -1190,14 +1190,20 @@
                         <div class="accessories-section" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
                             <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #ff1b6b;">ATK/DEF Custom</h3>
                             <div class="atk-def-custom-inputs" style="display: flex; gap: 6px; margin-bottom: 8px; justify-content: center;">
-                                <input type="number" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="" />
-                                <input type="number" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="" />
+                                <input type="text" class="custom-atk-input" placeholder="ATK" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="" />
+                                <input type="text" class="custom-def-input" placeholder="DEF" style="width: 55px; background: #2a3540; color: #fff; border: 1px solid #4f5f73; border-radius: 4px; padding: 4px; text-align: center; font-size: 0.8rem;" value="" />
                             </div>
                             <div style="text-align: center;">
                                 <div class="custom-atk-def-source" draggable="true" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1b2838, #2a475e); border: 2px dashed #00d2ff; border-radius: 6px; color: #fff; cursor: grab; font-weight: bold; text-align: center; font-size: 0.75rem; box-shadow: 0 0 5px rgba(0, 210, 255, 0.3);">
                                     <i class="fas fa-arrows-alt"></i> Arrastrar ATK/DEF
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Card Description Section -->
+                        <div class="accessories-section" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+                            <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #00d2ff;"><i class="fas fa-file-text"></i> Descripción de Carta</h3>
+                            <p id="accessories-card-desc" style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.8rem; line-height: 1.4; color: #eee; margin-top: 4px; text-align: left; border: 1px solid rgba(255,255,255,0.08); font-family: sans-serif; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow-y: auto; margin-bottom: 0;"></p>
                         </div>
                     </div>
                 </div>
@@ -1383,8 +1389,8 @@
         <div class="menu-item" id="menu-attack"><i class="fas fa-bolt"></i> Atacar</div>
         <div class="menu-item" id="menu-direct-attack"><i class="fas fa-crosshairs"></i> Atk Directo</div>
         <hr>
-        <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Set Boca Abajo/Arriba</div>
-        <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> DEF</div>
+        <div class="menu-item" id="menu-flip"><i class="fas fa-eye-slash"></i> Set?Flip</div>
+        <div class="menu-item" id="menu-tap"><i class="fas fa-sync"></i> ATK/DEF</div>
         <div class="menu-item pokemon-only-item" id="menu-swap-active-bench" style="display: none;"><i class="fas fa-exchange-alt"></i> Activo / Banca</div>
         <hr>
         <div class="menu-item" id="menu-add-counter"><i class="fas fa-plus-circle"></i> Agregar Contador (+1)</div>
@@ -3027,8 +3033,10 @@
             $(document).on("dragstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
                 if ($(this).hasClass("custom-atk-def-source")) {
                     const $parent = $(this).closest(".accessories-section");
-                    const atk = parseInt($parent.find(".custom-atk-input").val()) || 0;
-                    const def = parseInt($parent.find(".custom-def-input").val()) || 0;
+                    const valAtk = $parent.find(".custom-atk-input").val().trim();
+                    const valDef = $parent.find(".custom-def-input").val().trim();
+                    const atk = valAtk !== "" ? valAtk : "0";
+                    const def = valDef !== "" ? valDef : "0";
                     activeCounterDragVal = { type: "CUSTOM_ATK_DEF", atk: atk, def: def };
                     if (e.originalEvent.dataTransfer) {
                         e.originalEvent.dataTransfer.setData("text/plain", "custom_atk_def");
@@ -3137,8 +3145,10 @@
                 activeTouchDragSource = $(this);
                 if (activeTouchDragSource.hasClass("custom-atk-def-source")) {
                     const $parent = activeTouchDragSource.closest(".accessories-section");
-                    const atk = parseInt($parent.find(".custom-atk-input").val()) || 0;
-                    const def = parseInt($parent.find(".custom-def-input").val()) || 0;
+                    const valAtk = $parent.find(".custom-atk-input").val().trim();
+                    const valDef = $parent.find(".custom-def-input").val().trim();
+                    const atk = valAtk !== "" ? valAtk : "0";
+                    const def = valDef !== "" ? valDef : "0";
                     activeCounterDragVal = { type: "CUSTOM_ATK_DEF", atk: atk, def: def };
                 } else if (activeTouchDragSource.hasClass("custom-atk-def-badge")) {
                     const instId = activeTouchDragSource.data("instance-id");
@@ -3355,7 +3365,7 @@
 
                     // Render Custom ATK/DEF Badge if set
                     $card.find(".custom-atk-def-badge").remove();
-                    if (card.customAtkDef) {
+                    if (card.customAtkDef && !card.faceDown) {
                         $card.append(`
                             <div class="custom-atk-def-badge" draggable="true" data-instance-id="${card.instanceId}">
                                 <span>ATK: <span class="atk-val">${card.customAtkDef.atk}</span></span>
@@ -3381,11 +3391,11 @@
                         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
                             <div>
                                 <label style="display: block; font-weight: bold; color: #ff4a4a; margin-bottom: 5px; font-size: 0.9rem;">ATK:</label>
-                                <input type="number" id="edit-atk-input" class="swal2-input" value="${cardObj.customAtkDef.atk}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
+                                <input type="text" id="edit-atk-input" class="swal2-input" value="${cardObj.customAtkDef.atk}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
                             </div>
                             <div>
                                 <label style="display: block; font-weight: bold; color: #00d2ff; margin-bottom: 5px; font-size: 0.9rem;">DEF:</label>
-                                <input type="number" id="edit-def-input" class="swal2-input" value="${cardObj.customAtkDef.def}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
+                                <input type="text" id="edit-def-input" class="swal2-input" value="${cardObj.customAtkDef.def}" style="width: 100px; margin: 0; text-align: center; background: #2a3540; color: #fff; border: 1px solid #4f5f73;">
                             </div>
                         </div>
                     `,

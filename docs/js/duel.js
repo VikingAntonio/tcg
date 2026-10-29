@@ -433,6 +433,61 @@ function instantiateDeck(playerKey) {
     renderAllCards();
 }
 
+function ensureMonsterAtkDefWidget(card) {
+    if (state.layout !== 'yugioh' && state.layout !== 'yugioh_advanced') return;
+    if (!card || card.faceDown) return;
+    const isField = card.zone &&
+                    !card.zone.startsWith("hand_") &&
+                    !card.zone.startsWith("deck_") &&
+                    !(card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) &&
+                    !card.zone.startsWith("grave_") &&
+                    !card.zone.startsWith("banished_") &&
+                    !card.zone.startsWith("prize_");
+    if (!isField) return;
+    if (card.customAtkDef || card.isNotMonster || card.isFetchingAtkDef) return;
+
+    card.isFetchingAtkDef = true;
+
+    let cardId = null;
+    if (card.imageUrl) {
+        const idMatch = card.imageUrl.match(/\/cards\/(\d+)\./);
+        if (idMatch) cardId = idMatch[1];
+    }
+
+    const apiUrl = cardId ?
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${cardId}` :
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`;
+
+    fetch(apiUrl)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            card.isFetchingAtkDef = false;
+            if (data && data.data && data.data.length > 0) {
+                const matched = (cardId ? data.data[0] : (data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0]));
+                if (matched) {
+                    const cardType = matched.type || "";
+                    if (cardType.includes("Spell") || cardType.includes("Trap")) {
+                        card.isNotMonster = true;
+                    } else {
+                        const atkVal = (matched.atk !== undefined && matched.atk !== null) ? String(matched.atk) : "?";
+                        const defVal = (matched.def !== undefined && matched.def !== null) ? String(matched.def) : "?";
+                        card.customAtkDef = { atk: atkVal, def: defVal };
+                        if (typeof window.renderAllCards === "function") {
+                            window.renderAllCards();
+                        }
+                    }
+                } else {
+                    card.isNotMonster = true;
+                }
+            } else {
+                card.isNotMonster = true;
+            }
+        })
+        .catch(() => {
+            card.isFetchingAtkDef = false;
+        });
+}
+
 // Multi-deck setup / Rendering
 let insideRenderAllCards = false;
 function renderAllCards() {
@@ -446,6 +501,8 @@ function renderAllCards() {
     }
     // ENFORCE SANITIZATION RULES SECURELY
     state.cards.forEach(card => {
+        ensureMonsterAtkDefWidget(card);
+
         // If attached, inherit zone of the parent card to stay logically in play
         if (card.attachedTo) {
             const parent = state.cards.find(c => c.instanceId === card.attachedTo);
@@ -550,12 +607,12 @@ function renderAllCards() {
                 <div class="hand-card-actions">
                     <button class="hand-action-btn btn-summon" data-instance-id="${card.instanceId}">Invocar</button>
                     ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ?
-                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>
-                         <button class="hand-action-btn btn-defense" data-instance-id="${card.instanceId}">DEF</button>` :
+                        `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set?Flip</button>
+                         <button class="hand-action-btn btn-defense" data-instance-id="${card.instanceId}">ATK/DEF</button>` :
                         (state.layout === 'pokemon' ?
                             `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
                              <button class="hand-action-btn btn-pokemon-field" data-instance-id="${card.instanceId}">Field</button>` :
-                            `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set</button>`
+                            `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set?Flip</button>`
                         )
                     }
                     <button class="hand-action-btn btn-attach" data-instance-id="${card.instanceId}">Acoplar</button>
@@ -578,8 +635,8 @@ function renderAllCards() {
                 <div class="field-card-actions ${p2Class} ${fieldZoneClass}">
                     <button class="field-action-btn btn-field-attack" data-instance-id="${card.instanceId}">Atacar</button>
                     <button class="field-action-btn btn-field-direct" data-instance-id="${card.instanceId}">Atk Directo</button>
-                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Set</button>
-                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">DEF</button>
+                    <button class="field-action-btn btn-field-flip" data-instance-id="${card.instanceId}">Set?Flip</button>
+                    <button class="field-action-btn btn-field-tap" data-instance-id="${card.instanceId}">ATK/DEF</button>
                     <button class="field-action-btn btn-field-control" data-instance-id="${card.instanceId}">Control</button>
                     <button class="field-action-btn btn-field-attach" data-instance-id="${card.instanceId}">Acoplar</button>
                     <button class="field-action-btn btn-field-flash" data-instance-id="${card.instanceId}">Efecto</button>
@@ -1576,7 +1633,7 @@ function renderCardEffectInPreview(card) {
     $("#detail-card-name").text(card.name);
     let descText = card.desc || card.description || card.effect || card.text || "";
     if (!descText && card.name) {
-        $("#detail-card-desc").text("Cargando efecto...");
+        $("#detail-card-desc, #accessories-card-desc").text("Cargando efecto...");
         fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
@@ -1585,20 +1642,20 @@ function renderCardEffectInPreview(card) {
                     if (matched && matched.desc) {
                         card.desc = matched.desc;
                         if ($("#detail-card-name").text() === card.name) {
-                            $("#detail-card-desc").text(matched.desc);
+                            $("#detail-card-desc, #accessories-card-desc").text(matched.desc);
                         }
                     } else {
-                        $("#detail-card-desc").text("Efecto no disponible.");
+                        $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
                     }
                 } else {
-                    $("#detail-card-desc").text("Efecto no disponible.");
+                    $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
                 }
             })
             .catch(() => {
-                $("#detail-card-desc").text("Efecto no disponible.");
+                $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
             });
     } else {
-        $("#detail-card-desc").text(descText || "Sin efecto/descripción.");
+        $("#detail-card-desc, #accessories-card-desc").text(descText || "Sin efecto/descripción.");
     }
 }
 
@@ -1610,7 +1667,7 @@ function updatePreview(card) {
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
+        $("#detail-card-desc, #accessories-card-desc").text("Detalles ocultos para evitar trampas.");
         return;
     }
 
@@ -1623,7 +1680,7 @@ function updatePreview(card) {
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
+        $("#detail-card-desc, #accessories-card-desc").text("Detalles ocultos para evitar trampas.");
         return;
     }
 
@@ -1657,24 +1714,22 @@ function updatePreview(card) {
         const backImg = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
         $("#detail-card-img").attr("src", backImg);
         $("#detail-card-name").text("Carta Boca Abajo");
-        $("#detail-card-desc").text("Detalles ocultos para evitar trampas.");
+        $("#detail-card-desc, #accessories-card-desc").text("Detalles ocultos para evitar trampas.");
     } else {
         renderCardEffectInPreview(card);
     }
 }
 
-// Reusable card zoom viewer popup that respects anti-cheat masking rules and displays effect description
+// Reusable card zoom viewer popup that respects anti-cheat masking rules
 function viewCardZoom(card) {
     if (!card) return;
 
     let imgToZoom = card.imageUrl;
-    let descText = "";
     let isMasked = false;
 
     if (card.zone && card.zone.startsWith("prize_") && card.faceDown) {
         const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
         imgToZoom = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
-        descText = "Detalles ocultos para evitar trampas.";
         isMasked = true;
     } else if (state.mode !== "practice") {
         const currentRole = window.currentRole || "player1";
@@ -1694,31 +1749,20 @@ function viewCardZoom(card) {
         if (!canSee) {
             const defaultBack = (state.layout === "yugioh" || state.layout === "yugioh_advanced") ? "img/bocabajo.jpg" : "img/pokeBocaAbajo.jpg";
             imgToZoom = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
-            descText = "Detalles ocultos para evitar trampas.";
             isMasked = true;
         }
     }
 
     if (!imgToZoom) return;
 
-    if (!isMasked) {
-        descText = card.desc || card.description || card.effect || card.text || "";
-    }
-
     if (document.activeElement && typeof document.activeElement.blur === "function") {
         document.activeElement.blur();
     }
 
-    const needsFetch = !isMasked && !descText && card.name;
-    const initialDescHTML = needsFetch ? "Cargando efecto..." : (descText || "Sin efecto/descripción.");
-
     Swal.fire({
         html: `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 420px; margin: 0 auto; padding: 5px;">
-                <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-                    <img src="${imgToZoom}" style="max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
-                </div>
-                <div id="zoom-card-desc" style="background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; color: #eee; margin-top: 12px; text-align: left; border: 1px solid rgba(255,255,255,0.12); font-family: sans-serif; white-space: pre-wrap; word-break: break-word; max-height: 25vh; overflow-y: auto; width: 100%; box-sizing: border-box;">${initialDescHTML}</div>
+            <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
+                <img src="${imgToZoom}" style="max-height: 82vh; max-width: 88vw; object-fit: contain; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
             </div>
         `,
         showCloseButton: true,
@@ -1728,28 +1772,6 @@ function viewCardZoom(card) {
         color: "#fff",
         backdrop: "rgba(0, 0, 0, 0.85)",
         width: "auto",
-        didOpen: () => {
-            if (needsFetch) {
-                fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
-                    .then(r => r.ok ? r.json() : null)
-                    .then(data => {
-                        if (data && data.data && data.data.length > 0) {
-                            const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
-                            if (matched && matched.desc) {
-                                card.desc = matched.desc;
-                                $("#zoom-card-desc").text(matched.desc);
-                            } else {
-                                $("#zoom-card-desc").text("Efecto no disponible.");
-                            }
-                        } else {
-                            $("#zoom-card-desc").text("Efecto no disponible.");
-                        }
-                    })
-                    .catch(() => {
-                        $("#zoom-card-desc").text("Efecto no disponible.");
-                    });
-            }
-        },
         willClose: () => {
             if (document.activeElement && typeof document.activeElement.blur === "function") {
                 document.activeElement.blur();
@@ -3085,14 +3107,10 @@ function setupEventListeners() {
         if (!src || src.includes("placeholder") || src.includes("via.placeholder.com")) {
             return;
         }
-        const descText = $("#detail-card-desc").text() || "";
         Swal.fire({
             html: `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 420px; margin: 0 auto; padding: 5px;">
-                    <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-                        <img src="${src}" style="max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
-                    </div>
-                    ${descText ? `<div style="background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; color: #eee; margin-top: 12px; text-align: left; border: 1px solid rgba(255,255,255,0.12); font-family: sans-serif; white-space: pre-wrap; word-break: break-word; max-height: 25vh; overflow-y: auto; width: 100%; box-sizing: border-box;">${descText}</div>` : ''}
+                <div style="display: flex; justify-content: center; align-items: center; padding: 5px;">
+                    <img src="${src}" style="max-height: 82vh; max-width: 88vw; object-fit: contain; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);" alt="Card Zoom">
                 </div>
             `,
             showCloseButton: true,
