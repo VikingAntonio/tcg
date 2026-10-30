@@ -899,9 +899,12 @@ window.set3DTarget = function(rx, ry) {
 };
 
 async function openCardModal($slot) {
-    let imgSrc = $slot.data("full-img") || $slot.find("img").attr("src");
+    let imgSrc = $slot.data("full-img") || $slot.find("img").attr("data-src") || $slot.find("img").attr("src");
+    if (imgSrc && imgSrc.startsWith('data:image/gif') && $slot.find("img").attr("data-src")) {
+        imgSrc = $slot.find("img").attr("data-src");
+    }
 
-    if (!imgSrc || imgSrc.includes('placeholder')) return;
+    if (!imgSrc || imgSrc.includes('placeholder') || imgSrc.startsWith('data:image/gif')) return;
 
     // Optimize image for modal view
     if (window.optimizeCloudinaryUrl) {
@@ -1151,7 +1154,7 @@ async function openCardModal($slot) {
         if (extraImages && extraImages.length > 0) {
             const allThumbs = [imgSrc, ...extraImages];
             allThumbs.forEach((thumbUrl, idx) => {
-                const $thumb = $(`<img src="${thumbUrl}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1.5px solid ${idx === 0 ? '#00d2ff' : 'rgba(255,255,255,0.2)'}; transition: all 0.2s;">`);
+                const $thumb = $(`<img src="${thumbUrl}" style="width: 55px; height: 75px; object-fit: cover; border-radius: 8px; cursor: pointer; flex-shrink: 0; border: 2px solid ${idx === 0 ? '#00d2ff' : 'rgba(255,255,255,0.2)'}; transition: all 0.2s;">`);
                 $thumb.on('click', function() {
                     $('#expanded-image').attr('src', thumbUrl);
                     $gallery.find('img').css('border-color', 'rgba(255,255,255,0.2)');
@@ -1159,7 +1162,15 @@ async function openCardModal($slot) {
                 });
                 $gallery.append($thumb);
             });
-            $gallery.css('display', 'grid');
+            $gallery.css({
+                'display': 'flex',
+                'flex-wrap': 'nowrap',
+                'gap': '10px',
+                'overflow-x': 'auto',
+                'padding-bottom': '8px',
+                'width': '100%',
+                'box-sizing': 'border-box'
+            });
         } else {
             $gallery.hide();
         }
@@ -3034,7 +3045,7 @@ function renderBinder(binder) {
                     $slot.append(`<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${slotData.image_url}" class="tcg-card" alt="${cardAlt}" decoding="async">`);
 
                     if (slotData.price) {
-                        $slot.append(`<div style="position: absolute; bottom: 3px; right: 3px; background: rgba(0, 255, 136, 0.9); color: #000; font-weight: 900; font-size: 10px; padding: 2px 5px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5;">$${slotData.price}</div>`);
+                        $slot.append(`<div style="position: absolute; top: 3px; right: 3px; background: rgba(0, 255, 136, 0.9); color: #000; font-weight: 900; font-size: 10px; padding: 2px 5px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5;">$${slotData.price}</div>`);
                     }
 
                     const $zoomBtn = $('<div class="zoom-btn"><i class="fas fa-search-plus"></i></div>');
@@ -3053,8 +3064,7 @@ function renderBinder(binder) {
         }
 
         const $pageHeader = $(`
-            <div class="binder-page-header-info" style="position: absolute; top: 4px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 800; color: #888; z-index: 10; pointer-events: none;">
-                <span>Hoja ${page.page_index + 1} de ${pages.length}</span>
+            <div class="binder-page-header-info" style="position: absolute; top: 4px; left: 8px; right: 8px; display: flex; justify-content: flex-end; align-items: center; font-size: 10px; font-weight: 800; color: #888; z-index: 10; pointer-events: none;">
                 <span style="background: rgba(0,0,0,0.6); color: #00ff88; padding: 1px 6px; border-radius: 10px; border: 1px solid rgba(0,255,136,0.3);">Hoja: $${pageTotal.toFixed(2)}</span>
             </div>
         `);
@@ -3245,6 +3255,8 @@ function renderAlbum(album) {
                 // El nombre de la carta se almacena como atributo data-name para búsquedas (invisible en UI)
                 // data-page almacena el número de página para navegación directa
                 $slot.attr({
+                    'data-id': slotData.id || '',
+                    'data-full-img': slotData.image_url || '',
                     'data-name': slotData.name || '',
                     'data-page': pageCount,
                     'data-rarity': slotData.rarity || '',
