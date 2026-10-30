@@ -457,17 +457,12 @@
 
         .picker-tags-pills {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
-            overflow-x: auto;
             padding-bottom: 5px;
             align-items: center;
             position: relative;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-
-        .picker-tags-pills::-webkit-scrollbar {
-            display: none;
+            overflow: visible;
         }
 
         .picker-tag-pill {
@@ -481,12 +476,53 @@
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .picker-tag-pill:hover, .picker-tag-pill.active {
             background: var(--primary-color);
             color: #000;
             border-color: var(--primary-color);
+        }
+
+        .picker-more-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .picker-more-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: rgba(18, 24, 30, 0.95);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 6px;
+            z-index: 1050;
+            min-width: 130px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .picker-more-dropdown-item {
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #aaa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .picker-more-dropdown-item:hover, .picker-more-dropdown-item.active {
+            background: var(--primary-color);
+            color: #000;
         }
 
         .picker-deck-list {
@@ -849,6 +885,16 @@
     <script src="js/supabase-config.js"></script>
     <script src="js/utils.js"></script>
     <script>
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         $(document).ready(async function() {
             // Maintenance & Beta/Test Mode Check
             if (typeof window.checkVikingMaintenance === 'function') {
