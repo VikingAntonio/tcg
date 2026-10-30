@@ -1677,6 +1677,119 @@ function shuffleDeck(playerKey) {
     });
 }
 
+// Shuffle hand cards for specified player (player1 or player2)
+function shuffleHand(playerKey) {
+    const handZone = playerKey === "player1" ? "hand_1" : "hand_2";
+    const handCards = state.cards.filter(c => c.zone === handZone);
+
+    if (handCards.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Mano Vacía',
+            text: 'No tienes cartas en la mano para barajar.',
+            toast: true,
+            position: 'top-end',
+            timer: 1800,
+            showConfirmButton: false
+        });
+        return;
+    }
+
+    // Fisher-Yates shuffle cards array and re-assign sequential z indices
+    for (let i = handCards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = handCards[i];
+        handCards[i] = handCards[j];
+        handCards[j] = temp;
+    }
+
+    const baseZ = state.cards.length + 10;
+    handCards.forEach((card, index) => {
+        card.z = baseZ + index;
+    });
+
+    renderAllCards();
+
+    const pLabel = playerKey === "player1" ? "Jugador 1" : "Jugador 2";
+    if (typeof sendGameAction === "function") {
+        sendGameAction(`Barajó las cartas de su mano`);
+    }
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Mano Barajada',
+        text: `Las cartas de la mano de ${pLabel} han cambiado de posición.`,
+        toast: true,
+        position: 'top-end',
+        timer: 1800,
+        showConfirmButton: false
+    });
+}
+
+// Mulligan action: return all hand cards to deck, shuffle deck, and log
+function mulliganHand(playerKey) {
+    const handZone = playerKey === "player1" ? "hand_1" : "hand_2";
+    const playerSuffix = playerKey === "player1" ? 1 : 2;
+    const targetDeckZone = `deck_${playerSuffix}`;
+    const handCards = state.cards.filter(c => c.zone === handZone);
+
+    if (handCards.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Mano Vacía',
+            text: 'No hay cartas en la mano para hacer Mulligan.',
+            toast: true,
+            position: 'top-end',
+            timer: 1800,
+            showConfirmButton: false
+        });
+        return;
+    }
+
+    const pLabel = playerKey === "player1" ? "Jugador 1" : "Jugador 2";
+
+    Swal.fire({
+        title: `¿Mulligan (${pLabel})?`,
+        text: `¿Deseas devolver las ${handCards.length} cartas de tu mano al Deck y barajarlo?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, Mulligan',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#00d2ff',
+        cancelButtonColor: '#6c757d',
+        background: '#12181e',
+        color: '#fff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const count = handCards.length;
+            handCards.forEach(cardObj => {
+                cardObj.zone = targetDeckZone;
+                delete cardObj.movedToPileAt;
+                cardObj.faceDown = true;
+                cardObj.tapped = false;
+                cardObj.attachedTo = null;
+            });
+
+            shuffleDeckSilent(playerKey);
+            renderAllCards();
+
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Realizó Mulligan: devolvió ${count} carta(s) de su mano al Deck y lo barajó`);
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Mulligan Completado',
+                text: `Se devolvieron ${count} cartas al Deck y se ha barajado.`,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    });
+}
+
 // Set up 6 face-down Prize Cards for Pokemon
 let insideSetupPokemonPrizes = false;
 function setupPokemonPrizes(playerKey) {
@@ -4644,10 +4757,14 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 $(".phase-btn").removeClass("active");
                 $(`.phase-btn[data-phase="${state.activePhase}"]`).addClass("active");
 
-                // Animated LP transition (Anime-style ticker)
-                function animateLPCounter(elementId, startValue, endValue, duration = 800) {
+                // Animated LP transition (Anime-style ticker with gain/loss class)
+                function animateLPCounter(elementId, startValue, endValue, animClass = '', duration = 800) {
                     const $el = $(elementId);
                     const startTime = performance.now();
+
+                    if (animClass) {
+                        $el.removeClass('lp-adding lp-subtracting').addClass(animClass);
+                    }
 
                     function update(currentTime) {
                         const elapsed = currentTime - startTime;
@@ -4661,10 +4778,17 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                             requestAnimationFrame(update);
                         } else {
                             $el.text(endValue);
+                            if (animClass) {
+                                setTimeout(() => {
+                                    $el.removeClass(animClass);
+                                }, 1200);
+                            }
                         }
                     }
                     requestAnimationFrame(update);
                 }
+
+                window.animateLPCounter = animateLPCounter;
 
                 // Update LP Displays with anime-style counting animations
                 const currentP1Disp = parseInt($("#lp-display-p1").text()) || 0;
@@ -4908,6 +5032,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             $(document).on("dragstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
                 $(".duel-sidebar").removeClass("mobile-sidebar-active");
+                $("#accessories-collapsible-panel").fadeOut(150);
                 if ($(this).hasClass("custom-atk-def-source")) {
                     const $parent = $(this).closest(".accessories-section");
                     const atk = parseInt($parent.find(".custom-atk-input").val()) || 0;
@@ -5031,6 +5156,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
 
             $(document).on("touchstart", ".counter-source, .custom-atk-def-source, .custom-atk-def-badge", function(e) {
                 $(".duel-sidebar").removeClass("mobile-sidebar-active");
+                $("#accessories-collapsible-panel").fadeOut(150);
                 activeTouchDragSource = $(this);
                 if (activeTouchDragSource.hasClass("custom-atk-def-source")) {
                     const $parent = activeTouchDragSource.closest(".accessories-section");
@@ -5528,47 +5654,50 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 sendTurnStateUpdate();
             });
 
-            // Mobile Click LP counter to show SweetAlert2 calculator
-            $(".lp-counter-container").click(function(e) {
-                // If clicking an input/button of desktop layout, ignore
-                if ($(e.target).closest(".lp-calc-input, .lp-btn").length) {
-                    return;
-                }
-                const player = $(this).attr("id") === "lp-counter-p1" ? "p1" : "p2";
-                const key = player === "p1" ? "player1" : "player2";
-                const currentLP = state.lp[key];
+            // Open LP Calculator Modal on LP container click
+            $(document).on("click", "#lp-counter-p1, .p1-lp-container", function(e) {
+                openLPCalculator('p1');
+            });
+            $(document).on("click", "#lp-counter-p2, .p2-lp-container", function(e) {
+                openLPCalculator('p2');
+            });
+
+            window.openLPCalculator = function(player) {
+                const pKey = player === "p1" ? "player1" : "player2";
+                const currentLP = state.lp[pKey];
+                const playerLabel = player === "p1" ? "P1" : "P2";
 
                 Swal.fire({
-                    title: `Calculadora LP - ${player.toUpperCase()}`,
+                    title: `Calculadora LP - ${playerLabel}`,
                     customClass: {
                         popup: 'calc-swal-popup'
                     },
                     html: `
-                        <div style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;" id="calc-current-display">
-                            ${currentLP}
+                        <div style="font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 900; color: ${player === 'p1' ? 'var(--primary-color, #00d2ff)' : 'var(--secondary-color, #ff007f)'}; margin-bottom: 10px; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px; text-shadow: 0 0 10px rgba(255,255,255,0.2);" id="calc-current-display">
+                            ${currentLP} LP
                         </div>
-                        <input type="text" id="calc-input-value" class="swal2-input" placeholder="0" readonly style="text-align: center; font-size: 1.5rem; font-family: 'Orbitron', sans-serif; margin: 10px auto; width: 80%; background: #1e2530; color: #fff; border: 1.5px solid var(--primary-color);">
+                        <input type="text" id="calc-input-value" class="swal2-input" placeholder="0" autofocus style="text-align: center; font-size: 1.5rem; font-family: 'Orbitron', sans-serif; margin: 10px auto; width: 85%; background: #1e2530; color: #fff; border: 1.5px solid var(--primary-color, #00d2ff); border-radius: 8px;">
 
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px auto; max-width: 240px;">
-                            <button class="btn btn-calc" data-val="7" style="padding: 10px 0; font-size: 1.1rem;">7</button>
-                            <button class="btn btn-calc" data-val="8" style="padding: 10px 0; font-size: 1.1rem;">8</button>
-                            <button class="btn btn-calc" data-val="9" style="padding: 10px 0; font-size: 1.1rem;">9</button>
-                            <button class="btn btn-calc" data-val="4" style="padding: 10px 0; font-size: 1.1rem;">4</button>
-                            <button class="btn btn-calc" data-val="5" style="padding: 10px 0; font-size: 1.1rem;">5</button>
-                            <button class="btn btn-calc" data-val="6" style="padding: 10px 0; font-size: 1.1rem;">6</button>
-                            <button class="btn btn-calc" data-val="1" style="padding: 10px 0; font-size: 1.1rem;">1</button>
-                            <button class="btn btn-calc" data-val="2" style="padding: 10px 0; font-size: 1.1rem;">2</button>
-                            <button class="btn btn-calc" data-val="3" style="padding: 10px 0; font-size: 1.1rem;">3</button>
-                            <button class="btn btn-calc" data-val="0" style="padding: 10px 0; font-size: 1.1rem;">0</button>
-                            <button class="btn btn-calc" data-val="00" style="padding: 10px 0; font-size: 1.1rem;">00</button>
-                            <button class="btn btn-calc" data-val="000" style="padding: 10px 0; font-size: 1.1rem;">000</button>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px auto; max-width: 260px;">
+                            <button class="btn btn-calc" data-val="7">7</button>
+                            <button class="btn btn-calc" data-val="8">8</button>
+                            <button class="btn btn-calc" data-val="9">9</button>
+                            <button class="btn btn-calc" data-val="4">4</button>
+                            <button class="btn btn-calc" data-val="5">5</button>
+                            <button class="btn btn-calc" data-val="6">6</button>
+                            <button class="btn btn-calc" data-val="1">1</button>
+                            <button class="btn btn-calc" data-val="2">2</button>
+                            <button class="btn btn-calc" data-val="3">3</button>
+                            <button class="btn btn-calc" data-val="0">0</button>
+                            <button class="btn btn-calc" data-val="00">00</button>
+                            <button class="btn btn-calc" data-val="000">000</button>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px auto; max-width: 240px;">
-                            <button class="btn btn-calc-op btn-danger" data-op="sub" style="padding: 12px 0; font-weight: bold; font-size: 1.1rem;">-</button>
-                            <button class="btn btn-calc-op btn-success" data-op="add" style="padding: 12px 0; font-weight: bold; font-size: 1.1rem;">+</button>
-                            <button class="btn btn-calc-op btn-warning" data-op="half" style="padding: 12px 0; font-weight: bold; font-size: 0.9rem; background: #ff9f43; border: none; color: #fff;">/2</button>
-                            <button class="btn btn-calc-clear btn-secondary" style="padding: 12px 0; font-weight: bold; font-size: 1.1rem; background: #4b6584; border: none; color: #fff;">C</button>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px auto; max-width: 260px;">
+                            <button class="btn btn-calc-op btn-danger" data-op="sub">-</button>
+                            <button class="btn btn-calc-op btn-success" data-op="add">+</button>
+                            <button class="btn btn-calc-op btn-warning" data-op="half">/2</button>
+                            <button class="btn btn-calc-clear btn-secondary">C</button>
                         </div>
                     `,
                     background: '#12181e',
@@ -5576,88 +5705,57 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     showConfirmButton: false,
                     showCloseButton: true,
                     didOpen: () => {
-                        const inputVal = $("#calc-input-value");
+                        const $input = $("#calc-input-value");
+                        setTimeout(() => $input.focus(), 100);
 
-                        // Handle numbers click
                         $(".btn-calc").click(function() {
                             const val = $(this).data("val");
-                            let curr = inputVal.val();
+                            let curr = $input.val();
                             if (curr === "0") curr = "";
-                            inputVal.val(curr + val);
+                            $input.val(curr + val);
+                            $input.focus();
                         });
 
-                        // Handle clear click
                         $(".btn-calc-clear").click(function() {
-                            inputVal.val("");
+                            $input.val("");
+                            $input.focus();
                         });
 
-                        // Handle operators click
                         $(".btn-calc-op").click(function() {
                             const op = $(this).data("op");
-                            const entered = parseInt(inputVal.val()) || 0;
-
+                            const entered = parseInt($input.val()) || 0;
                             if (op === "add") {
-                                if (entered > 0) {
-                                    state.lp[key] += entered;
-                                    appendGameLog('SYS', `Sumó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
-                                }
+                                applyLPOperation(player, '+', entered);
                             } else if (op === "sub") {
-                                if (entered > 0) {
-                                    state.lp[key] = Math.max(0, state.lp[key] - entered);
-                                    appendGameLog('SYS', `Restó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
-                                }
+                                applyLPOperation(player, '-', entered);
                             } else if (op === "half") {
-                                const originalLP = state.lp[key];
-                                state.lp[key] = Math.ceil(state.lp[key] / 2);
-                                appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${originalLP} a ${state.lp[key]}`);
+                                applyLPOperation(player, '/', 0);
                             }
-
-                            updateTurnUI();
-                            sendTurnStateUpdate();
                             Swal.close();
                         });
 
-                        // Support physical keyboard entries
                         $(document).off("keydown.calc").on("keydown.calc", function(ke) {
-                            if (ke.key >= '0' && ke.key <= '9') {
-                                let curr = inputVal.val();
-                                if (curr === "0") curr = "";
-                                inputVal.val(curr + ke.key);
-                            } else if (ke.key === 'Backspace' || ke.key === 'Delete') {
-                                let curr = inputVal.val();
-                                if (curr.length > 0) {
-                                    inputVal.val(curr.slice(0, -1));
-                                }
-                            } else if (ke.key === '+' || ke.key === 'Enter') {
+                            if (ke.key === '+' || ke.key === 'Add') {
                                 ke.preventDefault();
-                                const entered = parseInt(inputVal.val()) || 0;
-                                if (entered > 0) {
-                                    state.lp[key] += entered;
-                                    appendGameLog('SYS', `Sumó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
-                                    updateTurnUI();
-                                    sendTurnStateUpdate();
-                                }
+                                const entered = parseInt($input.val()) || 0;
+                                applyLPOperation(player, '+', entered);
                                 Swal.close();
-                            } else if (ke.key === '-') {
+                            } else if (ke.key === '-' || ke.key === 'Subtract') {
                                 ke.preventDefault();
-                                const entered = parseInt(inputVal.val()) || 0;
-                                if (entered > 0) {
-                                    state.lp[key] = Math.max(0, state.lp[key] - entered);
-                                    appendGameLog('SYS', `Restó ${entered} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${state.lp[key]})`);
-                                    updateTurnUI();
-                                    sendTurnStateUpdate();
-                                }
+                                const entered = parseInt($input.val()) || 0;
+                                applyLPOperation(player, '-', entered);
                                 Swal.close();
-                            } else if (ke.key === '/') {
+                            } else if (ke.key === '/' || ke.key === 'Divide') {
                                 ke.preventDefault();
-                                const originalLP = state.lp[key];
-                                state.lp[key] = Math.ceil(state.lp[key] / 2);
-                                appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${originalLP} a ${state.lp[key]}`);
-                                updateTurnUI();
-                                sendTurnStateUpdate();
+                                applyLPOperation(player, '/', 0);
                                 Swal.close();
-                            } else if (ke.key === 'c' || ke.key === 'C') {
-                                inputVal.val("");
+                            } else if (ke.key === 'Enter') {
+                                ke.preventDefault();
+                                const entered = parseInt($input.val()) || 0;
+                                applyLPOperation(player, '-', entered);
+                                Swal.close();
+                            } else if ((ke.key === 'c' || ke.key === 'C') && document.activeElement !== $input[0]) {
+                                $input.val("");
                             }
                         });
                     },
@@ -5665,7 +5763,43 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         $(document).off("keydown.calc");
                     }
                 });
-            });
+            };
+
+            window.applyLPOperation = function(player, op, val) {
+                const key = player === "p1" ? "player1" : "player2";
+                const startValue = state.lp[key];
+                let endValue = startValue;
+                let diff = 0;
+                let opType = 'none';
+
+                if (op === '+') {
+                    endValue = startValue + val;
+                    diff = val;
+                    opType = 'heal';
+                    appendGameLog('SYS', `Sumó ${val} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${endValue})`);
+                } else if (op === '-') {
+                    endValue = Math.max(0, startValue - val);
+                    diff = startValue - endValue;
+                    opType = 'damage';
+                    appendGameLog('SYS', `Restó ${val} LP a ${player === "p1" ? "P1" : "P2"} (Total: ${endValue})`);
+                } else if (op === '/') {
+                    endValue = Math.ceil(startValue / 2);
+                    diff = startValue - endValue;
+                    opType = 'damage';
+                    appendGameLog('SYS', `Dividió a la mitad los LP de ${player === "p1" ? "P1" : "P2"} de ${startValue} a ${endValue}`);
+                }
+
+                state.lp[key] = endValue;
+
+                // Trigger LP Animation with colors
+                const displayElId = player === "p1" ? "#lp-display-p1" : "#lp-display-p2";
+                if (typeof window.animateLPCounter === "function") {
+                    window.animateLPCounter(displayElId, startValue, endValue, opType === 'heal' ? 'lp-adding' : 'lp-subtracting');
+                }
+
+                updateTurnUI();
+                sendTurnStateUpdate();
+            };
 
             // 8. Decorate global helper functions in duelmobile.js
             let isDrawingAction = false;
@@ -6251,43 +6385,29 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     updatePreview(cardObj);
 
                     dragCard = $(this);
-                    dragCard.addClass("dragging").removeClass("snapping");
-
-                    const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                    cardObj.z = maxZ + 1;
-                    dragCard.css("z-index", cardObj.z);
-
                     const pos = getEventCoords(e);
-                    const matOffset = $("#playmat").offset();
-                    const rect = $("#playmat")[0].getBoundingClientRect();
-                    const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+                    dragStartCoords = { x: pos.x, y: pos.y };
+                    dragStartTime = Date.now();
+                    window.wasDragging = false;
 
                     if (cardObj.zone.startsWith("hand_")) {
-                        // Move element to playmat container to escape flex relative layout
-                        $("#field-cards-container").append(dragCard);
-                        const initialX = (pos.x - matOffset.left) / scale - 40;
-                        const initialY = (pos.y - matOffset.top) / scale - 58;
-                        dragCard.css({
-                            position: "absolute",
-                            width: "80px",
-                            height: "116px",
-                            left: `${initialX}px`,
-                            top: `${initialY}px`,
-                            margin: "0"
-                        });
-                        cardObj.x = initialX;
-                        cardObj.y = initialY;
-                        dragOffset.x = 40;
-                        dragOffset.y = 58;
+                        // Keep card locked in hand container until user actually drags > 10px
+                        cardObj.isHandCardPendingDrag = true;
                     } else {
+                        cardObj.isHandCardPendingDrag = false;
+                        dragCard.addClass("dragging").removeClass("snapping");
+                        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                        cardObj.z = maxZ + 1;
+                        dragCard.css("z-index", cardObj.z);
+
+                        const matOffset = $("#playmat").offset();
+                        const rect = $("#playmat")[0].getBoundingClientRect();
+                        const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
                         const elemLeft = parseFloat($(this).css("left")) || 0;
                         const elemTop = parseFloat($(this).css("top")) || 0;
                         dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
                         dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
                     }
-                    dragStartCoords = { x: pos.x, y: pos.y };
-                    dragStartTime = Date.now();
-                    window.wasDragging = false;
                 });
 
                 // Re-bind attached cards cascade click/contextmenu for fast taps
@@ -6305,13 +6425,51 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             // Re-bind window mousemove/touchmove with flawless scale handling using namespaced events
             $(window).on('mousemove.mobileDrag touchmove.mobileDrag', function(e) {
                 if (!dragCard) return;
-                e.preventDefault();
 
                 const instId = dragCard.data("instance-id");
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
 
                 const pos = getEventCoords(e);
+                const dx = pos.x - dragStartCoords.x;
+                const dy = pos.y - dragStartCoords.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (cardObj.isHandCardPendingDrag) {
+                    if (dist < 10) {
+                        return; // Stay locked in hand tray until moved beyond threshold
+                    }
+                    cardObj.isHandCardPendingDrag = false;
+                    window.wasDragging = true;
+
+                    $("#field-cards-container").append(dragCard);
+                    dragCard.addClass("dragging").removeClass("snapping");
+                    const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                    cardObj.z = maxZ + 1;
+                    dragCard.css("z-index", cardObj.z);
+
+                    const matOffset = $("#playmat").offset();
+                    const rect = $("#playmat")[0].getBoundingClientRect();
+                    const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+
+                    const initialX = (pos.x - matOffset.left) / scale - 40;
+                    const initialY = (pos.y - matOffset.top) / scale - 58;
+                    dragCard.css({
+                        position: "absolute",
+                        width: "80px",
+                        height: "116px",
+                        left: `${initialX}px`,
+                        top: `${initialY}px`,
+                        margin: "0"
+                    });
+                    cardObj.x = initialX;
+                    cardObj.y = initialY;
+                    dragOffset.x = 40;
+                    dragOffset.y = 58;
+                }
+
+                e.preventDefault();
+
                 const matOffset = $("#playmat").offset();
                 const rect = $("#playmat")[0].getBoundingClientRect();
                 const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
@@ -6341,10 +6499,7 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     $(`#zone-${overlappingZone.id}`).addClass("highlighted");
                 }
 
-                // Toggle wasDragging to true if moved beyond 10px threshold
-                const dx = pos.x - dragStartCoords.x;
-                const dy = pos.y - dragStartCoords.y;
-                if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                if (dist > 10) {
                     window.wasDragging = true;
                 }
             });
@@ -6698,7 +6853,18 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             }
         };
 
-        $(window).on("resize orientationchange", window.adjustPlaymatScale);
+        let resizeAnimationFrameId = null;
+        const debouncedAdjustPlaymatScale = function() {
+            if (resizeAnimationFrameId) {
+                cancelAnimationFrame(resizeAnimationFrameId);
+            }
+            resizeAnimationFrameId = requestAnimationFrame(() => {
+                window.adjustPlaymatScale();
+                resizeAnimationFrameId = null;
+            });
+        };
+
+        $(window).on("resize orientationchange", debouncedAdjustPlaymatScale);
         $(document).ready(function() {
             setTimeout(window.adjustPlaymatScale, 100);
         });
@@ -6903,6 +7069,27 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             if (state.mode === 'practice') {
                 $("#btn-rotate-board").show().css("display", "flex");
             }
+
+            // Close accessories panel when clicking counter source directly
+            $(document).on("click", ".counter-source, .ygo-counter-source, .poke-counter-source, .custom-atk-def-source", function(e) {
+                $("#accessories-collapsible-panel").fadeOut(150);
+                $(".duel-sidebar").removeClass("mobile-sidebar-active");
+            });
+
+            // Event bindings for Hand Shuffle and Mulligan buttons
+            $(document).on("click", ".btn-hand-shuffle", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const playerKey = $(this).data("player") || "player1";
+                shuffleHand(playerKey);
+            });
+
+            $(document).on("click", ".btn-hand-mulligan", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const playerKey = $(this).data("player") || "player1";
+                mulliganHand(playerKey);
+            });
 
             // Click listener for rotation button
             $("#btn-rotate-board").off("click").on("click", function(e) {

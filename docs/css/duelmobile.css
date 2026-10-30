@@ -276,6 +276,9 @@ body.duel-body {
     transform-origin: center center;
     margin-top: -84px;
     margin-bottom: -84px;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform;
 }
 
 .playmat-board.pokemon-active {
@@ -493,6 +496,9 @@ body.duel-body {
     z-index: 10;
     border: 1px solid rgba(255, 255, 255, 0.12);
     transform: rotate(var(--tilt, 0deg));
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform, left, top;
 }
 
 /* Transition is enabled when not actively dragged */
@@ -529,6 +535,8 @@ body.duel-body {
     object-fit: cover;
     display: block;
     pointer-events: none;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
 }
 
 /* Card states */
@@ -1632,7 +1640,6 @@ body:not(.layout-pokemon) .pokemon-only-item {
 .duel-communication-sidebar,
 .lp-counter-container,
 .central-turn-bar,
-.hand-controls,
 .tcg-accessories-panel,
 .accessories-tab,
 #btn-reset-game,
@@ -1646,6 +1653,54 @@ body:not(.layout-pokemon) .pokemon-only-item {
 #pending-response-box,
 .quick-responses-bar {
     display: none !important;
+}
+
+.hand-controls {
+    display: flex !important;
+}
+
+/* Hand Shuffle and Mulligan button styles */
+.btn-hand-shuffle,
+.btn-hand-mulligan {
+    background: rgba(18, 24, 30, 0.9) !important;
+    border: 1px solid var(--primary-color, #00d2ff) !important;
+    color: var(--primary-color, #00d2ff) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6) !important;
+    transition: all 0.15s ease !important;
+    white-space: nowrap !important;
+}
+
+.player-2 .btn-hand-shuffle,
+.player-2 .btn-hand-mulligan {
+    border-color: var(--secondary-color, #ff1b6b) !important;
+    color: var(--secondary-color, #ff1b6b) !important;
+}
+
+.btn-hand-shuffle:hover,
+.btn-hand-mulligan:hover,
+.btn-hand-shuffle:active,
+.btn-hand-mulligan:active {
+    background: var(--primary-color, #00d2ff) !important;
+    color: #000 !important;
+    transform: scale(1.05) !important;
+}
+
+.player-2 .btn-hand-shuffle:hover,
+.player-2 .btn-hand-mulligan:hover,
+.player-2 .btn-hand-shuffle:active,
+.player-2 .btn-hand-mulligan:active {
+    background: var(--secondary-color, #ff1b6b) !important;
+    color: #fff !important;
 }
 
 /* Landscape/horizontal mobile layout adjustments */
