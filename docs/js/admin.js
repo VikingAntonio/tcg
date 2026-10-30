@@ -2370,30 +2370,191 @@ function setDeckFormatTag(tag) {
     updateDeckEditorTagSelects(val);
 }
 
-$(document).on('click', '#btn-create-tag-inline, #btn-create-tag-inline-mobile', function(e) {
-    e.preventDefault();
-    const newTag = prompt("Nombre del Tag:");
-    if (newTag && newTag.trim()) {
-        const trimmed = newTag.trim();
-        if (!window.availableCustomTags) window.availableCustomTags = [];
-        if (!window.availableCustomTags.includes(trimmed)) {
-            window.availableCustomTags.push(trimmed);
+function openTagManagementModal() {
+    function getAllTags() {
+        const decks = window.userDecksCache || [];
+        const customTags = new Set();
+        decks.forEach(d => {
+            if (d.format_tag && d.format_tag.trim()) {
+                customTags.add(d.format_tag.trim());
+            }
+        });
+        if (window.availableCustomTags && Array.isArray(window.availableCustomTags)) {
+            window.availableCustomTags.forEach(t => {
+                if (t && t.trim()) customTags.add(t.trim());
+            });
         }
-        populateDeckFilterOptions(window.userDecksCache || []);
-        setDeckFormatTag(trimmed);
+        return Array.from(customTags);
     }
-});
 
-$(document).on('click', '#btn-delete-tag-inline, #btn-delete-tag-inline-mobile', function(e) {
-    e.preventDefault();
-    const activeTag = $('#nexus-input-deck-format').val() || $('#input-deck-format').val() || '';
-    if (activeTag) {
-        if (window.availableCustomTags) {
-            window.availableCustomTags = window.availableCustomTags.filter(t => t.toLowerCase().trim() !== activeTag.toLowerCase().trim());
+    function renderModalTableHtml() {
+        const tags = getAllTags();
+        const decks = window.userDecksCache || [];
+
+        let rowsHtml = '';
+        if (tags.length === 0) {
+            rowsHtml = `<tr><td colspan="3" style="text-align: center; color: #888; padding: 15px;">No hay tags creados aún.</td></tr>`;
+        } else {
+            tags.forEach(tag => {
+                const count = decks.filter(d => (d.format_tag || '').trim().toLowerCase() === tag.toLowerCase()).length;
+                rowsHtml += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                        <td style="padding: 10px 12px; text-align: left; font-weight: 700;">
+                            <span class="badge-format-tag" style="background: rgba(0,210,255,0.15); color: #00d2ff; border: 1px solid rgba(0,210,255,0.3); padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; display: inline-block;">
+                                <i class="fas fa-tag"></i> ${escapeHtml(tag)}
+                            </span>
+                        </td>
+                        <td style="padding: 10px 12px; text-align: center; font-size: 0.8rem; color: #aaa;">
+                            ${count} ${count === 1 ? 'deck' : 'decks'}
+                        </td>
+                        <td style="padding: 10px 12px; text-align: right; white-space: nowrap;">
+                            <button type="button" class="btn-action-edit-tag" data-tag="${escapeHtml(tag)}" style="background: rgba(255,193,7,0.2); border: 1px solid #ffc107; color: #ffc107; padding: 5px 10px; border-radius: 6px; cursor: pointer; margin-right: 6px; font-size: 0.75rem;" title="Editar / Renombrar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn-action-delete-tag" data-tag="${escapeHtml(tag)}" style="background: rgba(255,71,87,0.2); border: 1px solid #ff4757; color: #ff4757; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
         }
-        setDeckFormatTag('');
-        populateDeckFilterOptions(window.userDecksCache || []);
+
+        return `
+            <div style="font-family: inherit; text-align: left;">
+                <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                    <input type="text" id="modal-input-new-tag" placeholder="Nombre del nuevo tag..." style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,210,255,0.4); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; outline: none;">
+                    <button type="button" id="modal-btn-add-tag" style="background: #00d2ff; color: #000; border: none; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-plus"></i> Crear Tag
+                    </button>
+                </div>
+                <div style="max-height: 280px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.2);">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); text-transform: uppercase; font-size: 0.75rem; color: #aaa;">
+                                <th style="padding: 10px 12px; text-align: left;">Tag</th>
+                                <th style="padding: 10px 12px; text-align: center;">Uso</th>
+                                <th style="padding: 10px 12px; text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-tag-table-body">
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
     }
+
+    Swal.fire({
+        title: '<i class="fas fa-tags" style="color: #00d2ff;"></i> Configuración de Tags',
+        html: renderModalTableHtml(),
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: '#0f172a',
+        color: '#ffffff',
+        width: '520px',
+        didOpen: (modalEl) => {
+            const $modal = $(modalEl);
+
+            function refreshTable() {
+                $modal.find('#modal-tag-table-body').html($(renderModalTableHtml()).find('#modal-tag-table-body').html());
+            }
+
+            $modal.on('click', '#modal-btn-add-tag', function() {
+                const newTag = $modal.find('#modal-input-new-tag').val().trim();
+                if (!newTag) return;
+
+                if (!window.availableCustomTags) window.availableCustomTags = [];
+                if (!window.availableCustomTags.some(t => t.toLowerCase() === newTag.toLowerCase())) {
+                    window.availableCustomTags.push(newTag);
+                }
+                populateDeckFilterOptions(window.userDecksCache || []);
+                setDeckFormatTag(newTag);
+                $modal.find('#modal-input-new-tag').val('');
+                refreshTable();
+            });
+
+            $modal.on('keypress', '#modal-input-new-tag', function(e) {
+                if (e.which === 13) {
+                    $modal.find('#modal-btn-add-tag').click();
+                }
+            });
+
+            $modal.on('click', '.btn-action-edit-tag', async function() {
+                const oldTag = $(this).data('tag');
+                const { value: newTagName } = await Swal.fire({
+                    title: 'Editar Tag',
+                    input: 'text',
+                    inputValue: oldTag,
+                    inputLabel: 'Nuevo nombre para el tag',
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar',
+                    cancelButtonText: 'Cancelar',
+                    background: '#0f172a',
+                    color: '#fff'
+                });
+
+                if (newTagName && newTagName.trim() && newTagName.trim() !== oldTag) {
+                    const trimmedNew = newTagName.trim();
+                    if (window.availableCustomTags) {
+                        window.availableCustomTags = window.availableCustomTags.map(t => t.toLowerCase() === oldTag.toLowerCase() ? trimmedNew : t);
+                    }
+                    if (window.userDecksCache) {
+                        window.userDecksCache.forEach(d => {
+                            if ((d.format_tag || '').trim().toLowerCase() === oldTag.toLowerCase()) {
+                                d.format_tag = trimmedNew;
+                            }
+                        });
+                    }
+                    const activeSelectVal = $('#nexus-input-deck-format').val() || $('#input-deck-format').val() || '';
+                    if (activeSelectVal.toLowerCase() === oldTag.toLowerCase()) {
+                        setDeckFormatTag(trimmedNew);
+                    }
+                    populateDeckFilterOptions(window.userDecksCache || []);
+                    openTagManagementModal();
+                }
+            });
+
+            $modal.on('click', '.btn-action-delete-tag', async function() {
+                const tagToDelete = $(this).data('tag');
+                const result = await Swal.fire({
+                    title: '¿Eliminar Tag?',
+                    text: `Se eliminará "${tagToDelete}".`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    background: '#0f172a',
+                    color: '#fff'
+                });
+
+                if (result.isConfirmed) {
+                    if (window.availableCustomTags) {
+                        window.availableCustomTags = window.availableCustomTags.filter(t => t.toLowerCase() !== tagToDelete.toLowerCase());
+                    }
+                    if (window.userDecksCache) {
+                        window.userDecksCache.forEach(d => {
+                            if ((d.format_tag || '').trim().toLowerCase() === tagToDelete.toLowerCase()) {
+                                d.format_tag = '';
+                            }
+                        });
+                    }
+                    const activeSelectVal = $('#nexus-input-deck-format').val() || $('#input-deck-format').val() || '';
+                    if (activeSelectVal.toLowerCase() === tagToDelete.toLowerCase()) {
+                        setDeckFormatTag('');
+                    }
+                    populateDeckFilterOptions(window.userDecksCache || []);
+                    openTagManagementModal();
+                }
+            });
+        }
+    });
+}
+
+$(document).on('click', '.btn-manage-tags-modal, #btn-manage-tags-nexus, #btn-manage-tags-mobile', function(e) {
+    e.preventDefault();
+    openTagManagementModal();
 });
 
 function renderFilteredDecks(scrollPos) {

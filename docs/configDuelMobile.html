@@ -458,9 +458,16 @@
         .picker-tags-pills {
             display: flex;
             gap: 8px;
-            overflow-x: auto;
+            overflow: visible;
             padding-bottom: 5px;
-            scrollbar-width: thin;
+            align-items: center;
+            position: relative;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .picker-tags-pills::-webkit-scrollbar {
+            display: none;
         }
 
         .picker-tag-pill {
@@ -1019,28 +1026,97 @@
             let currentPickerTarget = null;
             let currentPickerTag = '';
 
-            function openDeckPicker(targetSelectId, titleText) {
-                currentPickerTarget = targetSelectId;
-                $('#deck-picker-title').text(titleText || 'Selecciona un Deck');
-                $('#picker-search-input').val('');
-                currentPickerTag = '';
-
-                // Build unique tags pills
+            function buildPickerTagPills() {
                 const customTags = new Set();
                 userDecks.concat(publicAccountDecks || []).forEach(d => {
                     if (d.format_tag && d.format_tag.trim()) {
                         customTags.add(d.format_tag.trim());
                     }
                 });
+                const allTags = Array.from(customTags);
+                const $container = $('#picker-tags-container');
+                $container.empty();
 
-                let pillsHtml = '<button class="picker-tag-pill active" data-tag="">Todos</button>';
-                customTags.forEach(tag => {
-                    pillsHtml += `<button class="picker-tag-pill" data-tag="${tag}">${tag}</button>`;
+                const containerWidth = $container.width() || ($container.parent().width() - 30) || 340;
+
+                const canvas = buildPickerTagPills.canvas || (buildPickerTagPills.canvas = document.createElement("canvas"));
+                const context = canvas.getContext("2d");
+                context.font = "700 12px sans-serif";
+                function measureTagWidth(text) {
+                    return context.measureText(text).width + 30;
+                }
+
+                const todosWidth = measureTagWidth("Todos");
+                const moreBtnWidth = 85;
+                const gap = 8;
+
+                let currentWidth = todosWidth;
+                const visibleTags = [];
+                const hiddenTags = [];
+
+                for (let i = 0; i < allTags.length; i++) {
+                    const tag = allTags[i];
+                    const tagWidth = measureTagWidth(tag) + gap;
+
+                    const isLast = (i === allTags.length - 1);
+                    const neededWidth = currentWidth + tagWidth + (isLast ? 0 : (moreBtnWidth + gap));
+
+                    if (neededWidth <= containerWidth) {
+                        visibleTags.push(tag);
+                        currentWidth += tagWidth;
+                    } else {
+                        for (let j = i; j < allTags.length; j++) {
+                            hiddenTags.push(allTags[j]);
+                        }
+                        break;
+                    }
+                }
+
+                let pillsHtml = `<button class="picker-tag-pill ${!currentPickerTag ? 'active' : ''}" data-tag="">Todos</button>`;
+
+                visibleTags.forEach(tag => {
+                    const isActive = currentPickerTag && currentPickerTag.toLowerCase() === tag.toLowerCase();
+                    pillsHtml += `<button class="picker-tag-pill ${isActive ? 'active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
                 });
-                $('#picker-tags-container').html(pillsHtml);
 
-                renderPickerDeckList();
+                if (hiddenTags.length > 0) {
+                    const isHiddenActive = currentPickerTag && hiddenTags.some(t => t.toLowerCase() === currentPickerTag.toLowerCase());
+                    const activeHiddenTag = isHiddenActive ? hiddenTags.find(t => t.toLowerCase() === currentPickerTag.toLowerCase()) : null;
+                    const labelText = activeHiddenTag ? `Más: ${activeHiddenTag}` : '+ Más';
+
+                    let dropdownItemsHtml = '';
+                    hiddenTags.forEach(ht => {
+                        const isItActive = currentPickerTag && currentPickerTag.toLowerCase() === ht.toLowerCase();
+                        dropdownItemsHtml += `<div class="picker-more-dropdown-item ${isItActive ? 'active' : ''}" data-tag="${escapeHtml(ht)}">${escapeHtml(ht)}</div>`;
+                    });
+
+                    pillsHtml += `
+                        <div class="picker-more-wrapper">
+                            <button class="picker-tag-pill picker-tag-more-btn ${isHiddenActive ? 'active' : ''}" id="btn-picker-more-tags">
+                                <span>${escapeHtml(labelText)}</span> <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                            </button>
+                            <div class="picker-more-dropdown" id="picker-more-dropdown">
+                                ${dropdownItemsHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                $container.html(pillsHtml);
+            }
+
+            function openDeckPicker(targetSelectId, titleText) {
+                currentPickerTarget = targetSelectId;
+                $('#deck-picker-title').text(titleText || 'Selecciona un Deck');
+                $('#picker-search-input').val('');
+                currentPickerTag = '';
+
                 $('#deck-picker-modal').css('display', 'flex');
+
+                setTimeout(() => {
+                    buildPickerTagPills();
+                    renderPickerDeckList();
+                }, 30);
             }
 
             function renderPickerDeckList() {
@@ -1128,11 +1204,50 @@
                 }
             });
 
-            $(document).on('click', '.picker-tag-pill', function() {
+            $(document).on('click', '.picker-tag-pill:not(#btn-picker-more-tags)', function(e) {
+                e.stopPropagation();
                 $('.picker-tag-pill').removeClass('active');
                 $(this).addClass('active');
-                currentPickerTag = $(this).data('tag');
+                currentPickerTag = $(this).data('tag') || '';
+
+                $('#btn-picker-more-tags span').text('+ Más');
+                $('#picker-more-dropdown').hide();
+                $('.picker-more-dropdown-item').removeClass('active');
+
                 renderPickerDeckList();
+            });
+
+            $(document).on('click', '#btn-picker-more-tags', function(e) {
+                e.stopPropagation();
+                $('#picker-more-dropdown').toggle();
+            });
+
+            $(document).on('click', '.picker-more-dropdown-item', function(e) {
+                e.stopPropagation();
+                const selectedTag = $(this).data('tag');
+                currentPickerTag = selectedTag;
+
+                $('.picker-tag-pill').removeClass('active');
+                $('#btn-picker-more-tags').addClass('active');
+                $('#btn-picker-more-tags span').text(`Más: ${selectedTag}`);
+
+                $('.picker-more-dropdown-item').removeClass('active');
+                $(this).addClass('active');
+
+                $('#picker-more-dropdown').hide();
+                renderPickerDeckList();
+            });
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.picker-more-wrapper').length) {
+                    $('#picker-more-dropdown').hide();
+                }
+            });
+
+            $(window).on('resize', function() {
+                if ($('#deck-picker-modal').is(':visible')) {
+                    buildPickerTagPills();
+                }
             });
 
             $('#picker-search-input').on('input', function() {
