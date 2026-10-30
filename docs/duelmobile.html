@@ -425,31 +425,15 @@
         <main class="duel-arena-wrapper">
 
             <!-- LP Counter for Player 2 (Moved to top right) -->
-            <div class="lp-counter-container p2-lp-container" id="lp-counter-p2">
+            <div class="lp-counter-container p2-lp-container" id="lp-counter-p2" title="Clic para modificar Puntos de Vida">
                 <div class="lp-header">P2 LP</div>
                 <div class="lp-number" id="lp-display-p2">8000</div>
-                <div class="lp-calc-row">
-                    <input type="number" class="lp-calc-input" id="lp-calc-p2" placeholder="0" min="0">
-                </div>
-                <div class="lp-controls-row">
-                    <button class="lp-btn lp-btn-add" data-player="p2" title="Sumar">+</button>
-                    <button class="lp-btn lp-btn-sub" data-player="p2" title="Restar">-</button>
-                    <button class="lp-btn lp-btn-half" data-player="p2" title="Dividir a la mitad">/</button>
-                </div>
             </div>
 
             <!-- LP Counter for Player 1 (Moved to top left) -->
-            <div class="lp-counter-container p1-lp-container" id="lp-counter-p1">
+            <div class="lp-counter-container p1-lp-container" id="lp-counter-p1" title="Clic para modificar Puntos de Vida">
                 <div class="lp-header">P1 LP</div>
                 <div class="lp-number" id="lp-display-p1">8000</div>
-                <div class="lp-calc-row">
-                    <input type="number" class="lp-calc-input" id="lp-calc-p1" placeholder="0" min="0">
-                </div>
-                <div class="lp-controls-row">
-                    <button class="lp-btn lp-btn-add" data-player="p1" title="Sumar">+</button>
-                    <button class="lp-btn lp-btn-sub" data-player="p1" title="Restar">-</button>
-                    <button class="lp-btn lp-btn-half" data-player="p1" title="Dividir a la mitad">/</button>
-                </div>
             </div>
 
             <!-- Central Turn and Phase Selector Bar -->
@@ -471,11 +455,13 @@
                 <div class="hand-tray-drag-handle" data-tray="hand-tray-p2" title="Mover bloque de mano"><i class="fas fa-arrows-alt"></i></div>
                 <div class="hand-tray-resize-handle" data-tray="hand-tray-p2" title="Ajustar tamaño de mano"><i class="fas fa-expand-alt"></i></div>
 
-                <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
+                <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 5px; pointer-events: auto;">
                     <label class="theme-switch p2-theme-switch" title="Selección Múltiple">
                         <input type="checkbox" class="hand-multi-select-toggle" data-player="player2">
                         <span class="theme-slider"></span>
                     </label>
+                    <button class="btn-hand-shuffle" data-player="player2" title="Barajar Mano"><i class="fas fa-random"></i> Barajar Mano</button>
+                    <button class="btn-hand-mulligan" data-player="player2" title="Mulligan"><i class="fas fa-undo-alt"></i> Mulligan</button>
                     <div class="hand-batch-actions" id="hand-batch-p2" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
                         <button class="batch-action-btn btn-batch-grave" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
@@ -514,11 +500,13 @@
                 <div class="hand-tray-drag-handle" data-tray="hand-tray-p1" title="Mover bloque de mano"><i class="fas fa-arrows-alt"></i></div>
                 <div class="hand-tray-resize-handle" data-tray="hand-tray-p1" title="Ajustar tamaño de mano"><i class="fas fa-expand-alt"></i></div>
 
-                <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
+                <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 5px; pointer-events: auto;">
                     <label class="theme-switch p1-theme-switch" title="Selección Múltiple">
                         <input type="checkbox" class="hand-multi-select-toggle" data-player="player1">
                         <span class="theme-slider"></span>
                     </label>
+                    <button class="btn-hand-shuffle" data-player="player1" title="Barajar Mano"><i class="fas fa-random"></i> Barajar Mano</button>
+                    <button class="btn-hand-mulligan" data-player="player1" title="Mulligan"><i class="fas fa-undo-alt"></i> Mulligan</button>
                     <div class="hand-batch-actions" id="hand-batch-p1" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
                         <button class="batch-action-btn btn-batch-grave" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
@@ -857,8 +845,19 @@
                 };
 
                 // Re-bind window resize/orientation events so the custom wrapper is invoked
+                let customResizeFrameId = null;
+                const debouncedCustomAdjustPlaymatScale = function() {
+                    if (customResizeFrameId) {
+                        cancelAnimationFrame(customResizeFrameId);
+                    }
+                    customResizeFrameId = requestAnimationFrame(() => {
+                        window.adjustPlaymatScale();
+                        customResizeFrameId = null;
+                    });
+                };
+
                 $(window).off("resize orientationchange", originalAdjustPlaymatScale);
-                $(window).on("resize orientationchange", window.adjustPlaymatScale);
+                $(window).on("resize orientationchange", debouncedCustomAdjustPlaymatScale);
             }
 
             // Global storage for hand tray custom transforms (offsets and scale)
@@ -1027,40 +1026,24 @@
                         updatePreview(cardObj);
 
                         dragCard = $(this);
-                        dragCard.addClass("dragging").removeClass("snapping");
-
-                        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
-                        cardObj.z = maxZ + 1;
-                        dragCard.css("z-index", cardObj.z);
-
                         const pos = getEventCoords(e);
-                        const matOffset = $("#playmat").offset();
-                        const rect = $("#playmat")[0].getBoundingClientRect();
-                        const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+                        dragStartCoords = { x: pos.x, y: pos.y };
+                        dragStartTime = Date.now();
+                        window.wasDragging = false;
 
                         if (cardObj.zone.startsWith("hand_")) {
-                            $("#field-cards-container").append(dragCard);
-                            let initialX, initialY;
-                            if (window.isBoardRotated) {
-                                initialX = (matOffset.left + rect.width - pos.x) / scale - 40;
-                                initialY = (matOffset.top + rect.height - pos.y) / scale - 58;
-                            } else {
-                                initialX = (pos.x - matOffset.left) / scale - 40;
-                                initialY = (pos.y - matOffset.top) / scale - 58;
-                            }
-                            dragCard.css({
-                                position: "absolute",
-                                width: "80px",
-                                height: "116px",
-                                left: `${initialX}px`,
-                                top: `${initialY}px`,
-                                margin: "0"
-                            });
-                            cardObj.x = initialX;
-                            cardObj.y = initialY;
-                            dragOffset.x = 40;
-                            dragOffset.y = 58;
+                            // Keep card locked in hand container until user actually drags > 10px
+                            cardObj.isHandCardPendingDrag = true;
                         } else {
+                            cardObj.isHandCardPendingDrag = false;
+                            dragCard.addClass("dragging").removeClass("snapping");
+                            const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                            cardObj.z = maxZ + 1;
+                            dragCard.css("z-index", cardObj.z);
+
+                            const matOffset = $("#playmat").offset();
+                            const rect = $("#playmat")[0].getBoundingClientRect();
+                            const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
                             const elemLeft = parseFloat($(this).css("left")) || 0;
                             const elemTop = parseFloat($(this).css("top")) || 0;
                             if (window.isBoardRotated) {
@@ -1071,9 +1054,6 @@
                                 dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
                             }
                         }
-                        dragStartCoords = { x: pos.x, y: pos.y };
-                        dragStartTime = Date.now();
-                        window.wasDragging = false;
                     });
                 };
             }
@@ -1082,13 +1062,57 @@
             $(window).off('mousemove.mobileDrag touchmove.mobileDrag');
             $(window).on('mousemove.mobileDrag touchmove.mobileDrag', function(e) {
                 if (!dragCard) return;
-                e.preventDefault();
 
                 const instId = dragCard.data("instance-id");
                 const cardObj = state.cards.find(c => c.instanceId === instId);
                 if (!cardObj) return;
 
                 const pos = getEventCoords(e);
+                const dx = pos.x - dragStartCoords.x;
+                const dy = pos.y - dragStartCoords.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (cardObj.isHandCardPendingDrag) {
+                    if (dist < 10) {
+                        return; // Stay locked in hand tray until moved beyond threshold
+                    }
+                    cardObj.isHandCardPendingDrag = false;
+                    window.wasDragging = true;
+
+                    $("#field-cards-container").append(dragCard);
+                    dragCard.addClass("dragging").removeClass("snapping");
+                    const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z)) : 10;
+                    cardObj.z = maxZ + 1;
+                    dragCard.css("z-index", cardObj.z);
+
+                    const matOffset = $("#playmat").offset();
+                    const rect = $("#playmat")[0].getBoundingClientRect();
+                    const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
+
+                    let initialX, initialY;
+                    if (window.isBoardRotated) {
+                        initialX = (matOffset.left + rect.width - pos.x) / scale - 40;
+                        initialY = (matOffset.top + rect.height - pos.y) / scale - 58;
+                    } else {
+                        initialX = (pos.x - matOffset.left) / scale - 40;
+                        initialY = (pos.y - matOffset.top) / scale - 58;
+                    }
+                    dragCard.css({
+                        position: "absolute",
+                        width: "80px",
+                        height: "116px",
+                        left: `${initialX}px`,
+                        top: `${initialY}px`,
+                        margin: "0"
+                    });
+                    cardObj.x = initialX;
+                    cardObj.y = initialY;
+                    dragOffset.x = 40;
+                    dragOffset.y = 58;
+                }
+
+                e.preventDefault();
+
                 const matOffset = $("#playmat").offset();
                 const rect = $("#playmat")[0].getBoundingClientRect();
                 const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
@@ -1124,9 +1148,7 @@
                     $(`#zone-${overlappingZone.id}`).addClass("highlighted");
                 }
 
-                const dx = pos.x - dragStartCoords.x;
-                const dy = pos.y - dragStartCoords.y;
-                if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                if (dist > 10) {
                     window.wasDragging = true;
                 }
             });
