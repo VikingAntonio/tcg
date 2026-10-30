@@ -1150,9 +1150,8 @@
                 $('#more-tag-text').text('Más');
                 $('#picker-more-dropdown').hide();
 
-                // Populate 'Más' dropdown with default and user-created extra tags
-                const defaultExtraTags = ['GOAT', 'TENGU', 'REDU', 'POKEMON'];
-                const allTagsSet = new Set(defaultExtraTags);
+                // Populate 'Más' dropdown strictly with tags created on user's decks
+                const allTagsSet = new Set();
 
                 userDecks.concat(publicAccountDecks || []).forEach(d => {
                     if (d.format_tag && d.format_tag.trim()) {
