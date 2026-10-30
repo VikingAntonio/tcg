@@ -6866,6 +6866,58 @@ body.modal-open #decks-view.active {
     mask-composite: intersect !important;
 }
 
+/* Theme Adaptive Tag Select Dropdown */
+.tag-select-adaptive {
+    background: #0f172a !important;
+    color: #00d2ff !important;
+    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+.tag-select-adaptive option {
+    background: #0f172a !important;
+    color: #ffffff !important;
+}
+
+body.theme-light .tag-select-adaptive {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+}
+body.theme-light .tag-select-adaptive option {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+body.theme-dark .tag-select-adaptive {
+    background: #0f172a !important;
+    color: #00d2ff !important;
+    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+}
+body.theme-dark .tag-select-adaptive option {
+    background: #0f172a !important;
+    color: #ffffff !important;
+}
+
+body.theme-medium .tag-select-adaptive {
+    background: #2d3436 !important;
+    color: #38bdf8 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+body.theme-medium .tag-select-adaptive option {
+    background: #2d3436 !important;
+    color: #ffffff !important;
+}
+
+body.theme-purple .tag-select-adaptive {
+    background: #2a0845 !important;
+    color: #e8d5ff !important;
+    border: 1px solid #a855f7 !important;
+}
+body.theme-purple .tag-select-adaptive option {
+    background: #2a0845 !important;
+    color: #ffffff !important;
+}
+
 .foil-effect-container {
     position: absolute;
     top: 0;

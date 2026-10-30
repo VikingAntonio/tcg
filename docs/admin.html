@@ -976,14 +976,11 @@
                         <div class="form-group" style="margin-top: 10px;">
                             <label>Tags</label>
                             <div style="display: flex; gap: 6px; align-items: center;">
-                                <select id="nexus-input-deck-format" class="nexus-input-sync" data-target="#input-deck-format" style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #00d2ff; font-weight: 600; padding: 8px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; outline: none;">
+                                <select id="nexus-input-deck-format" class="nexus-input-sync tag-select-adaptive" data-target="#input-deck-format" style="width: 100%; font-weight: 600; padding: 8px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; outline: none;">
                                     <option value=""></option>
                                 </select>
-                                <button type="button" id="btn-create-tag-inline" class="btn btn-secondary" style="padding: 8px 12px; white-space: nowrap; font-size: 12px;" title="Crear Tag">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                                <button type="button" id="btn-delete-tag-inline" class="btn btn-danger" style="padding: 8px 12px; white-space: nowrap; font-size: 12px;" title="Eliminar Tag">
-                                    <i class="fas fa-trash"></i>
+                                <button type="button" id="btn-manage-tags-nexus" class="btn btn-secondary btn-manage-tags-modal" style="padding: 8px 12px; white-space: nowrap; font-size: 13px;" title="Gestionar Tags">
+                                    <i class="fas fa-cog"></i>
                                 </button>
                             </div>
                         </div>
@@ -1128,14 +1125,11 @@
                     <div class="form-group">
                         <label>Tags</label>
                         <div style="display: flex; gap: 6px; align-items: center;">
-                            <select id="input-deck-format" style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #00d2ff; font-weight: 600; padding: 10px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; outline: none;">
+                            <select id="input-deck-format" class="tag-select-adaptive" style="width: 100%; font-weight: 600; padding: 10px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; outline: none;">
                                 <option value=""></option>
                             </select>
-                            <button type="button" id="btn-create-tag-inline-mobile" class="btn btn-secondary" style="padding: 10px 14px; white-space: nowrap; font-size: 12px;" title="Crear Tag">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <button type="button" id="btn-delete-tag-inline-mobile" class="btn btn-danger" style="padding: 10px 14px; white-space: nowrap; font-size: 12px;" title="Eliminar Tag">
-                                <i class="fas fa-trash"></i>
+                            <button type="button" id="btn-manage-tags-mobile" class="btn btn-secondary btn-manage-tags-modal" style="padding: 10px 14px; white-space: nowrap; font-size: 13px;" title="Gestionar Tags">
+                                <i class="fas fa-cog"></i>
                             </button>
                         </div>
                     </div>
