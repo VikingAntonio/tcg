@@ -541,7 +541,7 @@ function renderAlbumPagesLocal(pages) {
             const $slot = $(`<div class="card-slot" data-index="${i}"></div>`);
             if (slot && slot.image_url) {
                 let slotHtml = `<img src="${slot.image_url}" class="tcg-card">`;
-                if (slot.price) slotHtml += `<div style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,255,136,0.9); color: #000; font-weight: 900; font-size: 10px; padding: 1px 4px; border-radius: 4px;">$${slot.price}</div>`;
+                if (slot.price) slotHtml += `<div style="position: absolute; top: 2px; right: 2px; background: rgba(0,255,136,0.9); color: #000; font-weight: 900; font-size: 10px; padding: 1px 4px; border-radius: 4px;">$${slot.price}</div>`;
                 $slot.html(slotHtml);
             } else {
                 $slot.html('<div style="color:#444; font-size:10px; text-align:center; padding-top:10px;">Vacío</div>');

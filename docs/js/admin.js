@@ -135,10 +135,46 @@ $(document).ready(async function() {
     });
 
     // --- Navigation (Dashboard Tiles) ---
-    $(document).on('click', '#btn-show-albums', function(e) {
+    $(document).on('click', '#btn-show-albums, #menu-btn-albums', function(e) {
         e.preventDefault();
-        showView('dashboard');
-        loadAlbums();
+        window.location.href = 'binders.html';
+    });
+
+    $(document).on('click', '#btn-widgets, #menu-btn-widgets', function(e) {
+        e.preventDefault();
+        const role = currentUser ? (currentUser.role || '') : '';
+        const subStatus = currentUser ? (currentUser.subscription_status || 'inactive') : 'inactive';
+        const hasActiveAccess = role === 'admin' || role === 'premium' || subStatus === 'active' || subStatus === 'trialing';
+
+        if (!hasActiveAccess) {
+            Swal.fire({
+                title: '<span style="color: #38bdf8; font-weight: 800;">Suscripción Requerida</span>',
+                html: `
+                    <div style="text-align: left; color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; font-family: sans-serif;">
+                        <p style="margin-bottom: 12px;">Para activar e integrar los <strong>Widgets / Custom Labels</strong> en tu sitio web personalizado, necesitas contar con una suscripción activa al <strong>Paquete Premium</strong>.</p>
+                        <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center;">
+                            <span style="font-size: 1.5rem; font-weight: 900; color: #38bdf8;">$300 MXN</span>
+                            <span style="font-size: 0.85rem; color: #94a3b8;"> / mes</span>
+                        </div>
+                        <p style="font-size: 0.82rem; color: #94a3b8;">Puedes revisar tus códigos e instrucciones en la sección de Widgets, pero su funcionamiento en dominios externos requiere tu suscripción activa.</p>
+                    </div>
+                `,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Ir a Widgets',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#38bdf8',
+                cancelButtonColor: '#334155',
+                background: '#0f172a',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'widgets.html';
+                }
+            });
+        } else {
+            window.location.href = 'widgets.html';
+        }
     });
 
     async function redistributeLocalSlots(newLayout) {
@@ -346,7 +382,7 @@ $(document).ready(async function() {
 
 
     $('#menu-btn-home').click(function(e) { e.preventDefault(); showView('main-dashboard'); $('#user-dropdown').removeClass('active'); });
-    $('#menu-btn-albums').click(function(e) { e.preventDefault(); showView('dashboard'); loadAlbums(); $('#user-dropdown').removeClass('active'); });
+    $('#menu-btn-albums').click(function(e) { e.preventDefault(); window.location.href = 'binders.html'; });
     $('#menu-btn-decks').click(function(e) { e.preventDefault(); showView('decks'); loadDecks(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-spirits').click(function(e) { e.preventDefault(); showView('spirits'); loadSpirits(); $('#user-dropdown').removeClass('active'); });
     $('#menu-btn-logout').click(function(e) { e.preventDefault(); handleLogout(); });
