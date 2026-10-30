@@ -894,6 +894,7 @@
             let sessionUser = null;
             let userDecks = [];
             let preselectedDeck = null;
+            let publicAccountDecks = [];
 
             // Check if there is a preselected deck via query string
             const urlParams = new URLSearchParams(window.location.search);
@@ -903,11 +904,20 @@
                 try {
                     const { data, error } = await _supabase
                         .from('decks')
-                        .select('id, name, format_tag')
+                        .select('id, name, format_tag, user_id')
                         .eq('id', preselectedDeckId)
                         .maybeSingle();
                     if (!error && data) {
                         preselectedDeck = data;
+
+                        // Fetch all decks belonging to the owner of this public deck
+                        const { data: oDecks, error: oError } = await _supabase
+                            .from('decks')
+                            .select('id, name, format_tag')
+                            .eq('user_id', preselectedDeck.user_id);
+                        if (!oError && oDecks) {
+                            publicAccountDecks = oDecks;
+                        }
                     }
                 } catch(e) {
                     console.error("Error fetching preselected deck:", e);
@@ -1139,7 +1149,7 @@
                 const $list = $('#picker-deck-list');
                 $list.empty();
 
-                let availableDecks = [...userDecks];
+                let availableDecks = currentPickerTarget === '#practice-deck2' && publicAccountDecks.length > 0 ? [...publicAccountDecks] : [...userDecks];
 
                 // If practice P2 or mock option is supported for target
                 const isPractice = currentPickerTarget === '#practice-deck1' || currentPickerTarget === '#practice-deck2';
