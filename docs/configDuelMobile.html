@@ -1020,8 +1020,21 @@
             async function checkSession() {
                 try {
                     const { data: { session } } = await _supabase.auth.getSession();
-                    if (session && session.user) {
-                        sessionUser = session.user;
+                    let effectiveUser = session ? session.user : null;
+
+                    if (!effectiveUser) {
+                        const storedStr = localStorage.getItem('tcg_session');
+                        if (storedStr) {
+                            try {
+                                effectiveUser = JSON.parse(storedStr);
+                            } catch (err) {
+                                console.error("Error parsing stored tcg_session:", err);
+                            }
+                        }
+                    }
+
+                    if (effectiveUser && effectiveUser.id) {
+                        sessionUser = effectiveUser;
 
                         const { data: userData, error: userError } = await _supabase
                             .from('usuarios')
@@ -1029,7 +1042,7 @@
                             .eq('id', sessionUser.id)
                             .maybeSingle();
 
-                        const username = (userData && userData.username) ? userData.username : sessionUser.email.split('@')[0];
+                        const username = (userData && userData.username) ? userData.username : (sessionUser.username || (sessionUser.email ? sessionUser.email.split('@')[0] : 'Usuario'));
 
                         $("#username-display").text(username);
                         $("#logged-user-badge").show();
