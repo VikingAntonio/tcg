@@ -458,7 +458,7 @@
         .picker-tags-pills {
             display: flex;
             gap: 8px;
-            overflow: visible;
+            overflow-x: auto;
             padding-bottom: 5px;
             align-items: center;
             position: relative;
@@ -1026,51 +1026,23 @@
             let currentPickerTarget = null;
             let currentPickerTag = '';
 
-            function buildPickerTagPills() {
+            function renderPickerTagPills() {
                 const customTags = new Set();
                 userDecks.concat(publicAccountDecks || []).forEach(d => {
                     if (d.format_tag && d.format_tag.trim()) {
                         customTags.add(d.format_tag.trim());
                     }
                 });
+                if (window.availableCustomTags && Array.isArray(window.availableCustomTags)) {
+                    window.availableCustomTags.forEach(t => {
+                        if (t && t.trim()) customTags.add(t.trim());
+                    });
+                }
+
                 const allTags = Array.from(customTags);
-                const $container = $('#picker-tags-container');
-                $container.empty();
-
-                const containerWidth = $container.width() || ($container.parent().width() - 30) || 340;
-
-                const canvas = buildPickerTagPills.canvas || (buildPickerTagPills.canvas = document.createElement("canvas"));
-                const context = canvas.getContext("2d");
-                context.font = "700 12px sans-serif";
-                function measureTagWidth(text) {
-                    return context.measureText(text).width + 30;
-                }
-
-                const todosWidth = measureTagWidth("Todos");
-                const moreBtnWidth = 85;
-                const gap = 8;
-
-                let currentWidth = todosWidth;
-                const visibleTags = [];
-                const hiddenTags = [];
-
-                for (let i = 0; i < allTags.length; i++) {
-                    const tag = allTags[i];
-                    const tagWidth = measureTagWidth(tag) + gap;
-
-                    const isLast = (i === allTags.length - 1);
-                    const neededWidth = currentWidth + tagWidth + (isLast ? 0 : (moreBtnWidth + gap));
-
-                    if (neededWidth <= containerWidth) {
-                        visibleTags.push(tag);
-                        currentWidth += tagWidth;
-                    } else {
-                        for (let j = i; j < allTags.length; j++) {
-                            hiddenTags.push(allTags[j]);
-                        }
-                        break;
-                    }
-                }
+                const maxVisible = 3;
+                const visibleTags = allTags.length <= 4 ? allTags : allTags.slice(0, maxVisible);
+                const hiddenTags = allTags.length <= 4 ? [] : allTags.slice(maxVisible);
 
                 let pillsHtml = `<button class="picker-tag-pill ${!currentPickerTag ? 'active' : ''}" data-tag="">Todos</button>`;
 
@@ -1102,7 +1074,7 @@
                     `;
                 }
 
-                $container.html(pillsHtml);
+                $('#picker-tags-container').html(pillsHtml);
             }
 
             function openDeckPicker(targetSelectId, titleText) {
@@ -1111,12 +1083,9 @@
                 $('#picker-search-input').val('');
                 currentPickerTag = '';
 
+                renderPickerTagPills();
+                renderPickerDeckList();
                 $('#deck-picker-modal').css('display', 'flex');
-
-                setTimeout(() => {
-                    buildPickerTagPills();
-                    renderPickerDeckList();
-                }, 30);
             }
 
             function renderPickerDeckList() {
@@ -1246,7 +1215,7 @@
 
             $(window).on('resize', function() {
                 if ($('#deck-picker-modal').is(':visible')) {
-                    buildPickerTagPills();
+                    renderPickerTagPills();
                 }
             });
 
