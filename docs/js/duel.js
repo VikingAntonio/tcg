@@ -433,8 +433,75 @@ function instantiateDeck(playerKey) {
     renderAllCards();
 }
 
+function isYGOLayout(layout) {
+    const l = layout || (typeof state !== 'undefined' ? state.layout : '');
+    return l === "yugioh" || l === "yugioh_advanced" || l === "speed_rush";
+}
+
+function isYGOMonsterCard(card) {
+    if (!isYGOLayout(state.layout)) return false;
+    if (!card) return false;
+    if (card.customAtkDef) return true;
+    if (card.isNotMonster) return false;
+    // Check if placed in monster zones
+    if (card.zone && (card.zone.startsWith("monster_") || card.zone.startsWith("extra_monster_"))) {
+        return true;
+    }
+    // Check if placed in spell/trap zones
+    if (card.zone && card.zone.startsWith("spell_")) {
+        return false;
+    }
+    return !card.isNotMonster;
+}
+
+function handleYGOPositionFlip(cardObj) {
+    if (isYGOLayout(state.layout)) {
+        if (isYGOMonsterCard(cardObj)) {
+            if (!cardObj.faceDown) {
+                // Boca arriba (ataque o defensa) -> pasa a defensa boca abajo
+                cardObj.faceDown = true;
+                cardObj.tapped = true;
+            } else {
+                // Defensa boca abajo -> pasa a defensa boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = true;
+            }
+        } else {
+            // Cartas mágicas, trampas, campo: dos estados (boca arriba / boca abajo)
+            cardObj.faceDown = !cardObj.faceDown;
+        }
+    } else {
+        cardObj.faceDown = !cardObj.faceDown;
+    }
+}
+
+function handleYGOPositionTap(cardObj) {
+    if (isYGOLayout(state.layout)) {
+        if (isYGOMonsterCard(cardObj)) {
+            if (cardObj.faceDown) {
+                // En defensa boca abajo -> pasa a ataque boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = false;
+            } else if (!cardObj.tapped) {
+                // En ataque boca arriba -> pasa a defensa boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = true;
+            } else {
+                // En defensa boca arriba -> pasa a ataque boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = false;
+            }
+        } else {
+            // Cartas que no son monstruo (magias/trampas)
+            cardObj.tapped = !cardObj.tapped;
+        }
+    } else {
+        cardObj.tapped = !cardObj.tapped;
+    }
+}
+
 function ensureMonsterAtkDefWidget(card) {
-    if (state.layout !== 'yugioh' && state.layout !== 'yugioh_advanced') return;
+    if (!isYGOLayout(state.layout)) return;
     if (!card || card.faceDown) return;
     const isField = card.zone &&
                     !card.zone.startsWith("hand_") &&
@@ -971,20 +1038,10 @@ function bindCardDragEvents() {
         const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
 
         if ($(this).hasClass("btn-field-flip")) {
-            cardObj.faceDown = !cardObj.faceDown;
+            handleYGOPositionFlip(cardObj);
             renderAllCards();
         } else if ($(this).hasClass("btn-field-tap")) {
-            if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
-                if (cardObj.tapped) {
-                    cardObj.tapped = false;
-                    cardObj.faceDown = false;
-                } else {
-                    cardObj.tapped = true;
-                    cardObj.faceDown = false;
-                }
-            } else {
-                cardObj.tapped = !cardObj.tapped;
-            }
+            handleYGOPositionTap(cardObj);
             renderAllCards();
         } else if ($(this).hasClass("btn-field-control")) {
             // Swap controller ONLY, leave owner intact!
@@ -1217,23 +1274,20 @@ $(window).on('mousemove touchmove', function(e) {
     const x = (pos.x - matOffset.left) / scale - dragOffset.x;
     const y = (pos.y - matOffset.top) / scale - dragOffset.y;
 
-    // Constrain inside mat viewport boundaries + offset spacing (scaled to 1120x600 playmat, card is 80x116)
-    const boundedX = Math.max(-10, Math.min(1120 - 70, x));
-    const boundedY = Math.max(-10, Math.min(600 - 100, y));
-
-    cardObj.x = boundedX;
-    cardObj.y = boundedY;
+    // Free movement across entire window/playmat container without artificial clamping
+    cardObj.x = x;
+    cardObj.y = y;
 
     // Apply immediate position overrides (bypassing smooth snaps during live movement)
     dragCard.css({
-        left: `${boundedX}px`,
-        top: `${boundedY}px`
+        left: `${x}px`,
+        top: `${y}px`
     });
 
     // Check collision highlights against zones underneath the dragged card (center of 80x116 is +40, +58)
     const centerCoords = {
-        x: boundedX + 40,
-        y: boundedY + 58
+        x: x + 40,
+        y: y + 58
     };
 
     $(".board-zone").removeClass("highlighted");
@@ -1451,8 +1505,22 @@ $(window).on('mouseup touchend', function(e) {
 
         // Determine target dropping destination (Zone, Hand tray, or Free Board float)
         const hoverZone = findOverlappingZone(centerCoords);
-        const isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
-        const isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+        let isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
+        let isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+
+        // Check if dragged outside the board towards hand zones
+        const playmatEl = $("#playmat")[0];
+        if (playmatEl) {
+            const pRect = playmatEl.getBoundingClientRect();
+            // Dragged below playmat bottom -> P1 hand area
+            if (endPos.y > pRect.bottom - 10) {
+                isOverP1Hand = true;
+            }
+            // Dragged above playmat top -> P2 hand area
+            if (endPos.y < pRect.top + 10) {
+                isOverP2Hand = true;
+            }
+        }
 
         // Token specific check: delete if dragged out of active field
         if (cardObj.isToken) {
@@ -1470,10 +1538,17 @@ $(window).on('mouseup touchend', function(e) {
         const oldZone = cardObj.zone;
 
         if (isOverP1Hand || isOverP2Hand) {
-            // Return/move to original owner's hand automatically
-            const originalSuffix = cardObj.owner === "player1" ? 1 : 2;
-            cardObj.zone = `hand_${originalSuffix}`;
-            cardObj.controller = cardObj.owner; // Reset controller
+            // Determine target hand (if specifically dropped towards P1 or P2)
+            let targetHandSuffix;
+            if (isOverP1Hand && !isOverP2Hand) {
+                targetHandSuffix = 1;
+            } else if (isOverP2Hand && !isOverP1Hand) {
+                targetHandSuffix = 2;
+            } else {
+                targetHandSuffix = cardObj.owner === "player1" ? 1 : 2;
+            }
+            cardObj.zone = `hand_${targetHandSuffix}`;
+            cardObj.controller = targetHandSuffix === 1 ? "player1" : "player2";
             cardObj.faceDown = false;
             cardObj.tapped = false;
             cardObj.tiltAngle = 0;
@@ -1629,12 +1704,35 @@ function checkHandTrayHover(e, traySelector) {
     if (!tray.length) return false;
 
     const coords = getEventCoords(e);
-    const offset = tray.offset();
-    const w = tray.width();
-    const h = tray.height();
+    const bufferY = 30;
+    const bufferX = 30;
 
-    return (coords.x >= offset.left && coords.x <= offset.left + w &&
-            coords.y >= offset.top && coords.y <= offset.top + h);
+    const trayEl = tray[0];
+    const rect = trayEl.getBoundingClientRect();
+    if (coords.x >= rect.left - bufferX && coords.x <= rect.right + bufferX &&
+        coords.y >= rect.top - bufferY && coords.y <= rect.bottom + bufferY) {
+        return true;
+    }
+
+    const container = tray.find(".hand-cards-container");
+    if (container.length) {
+        const cRect = container[0].getBoundingClientRect();
+        if (coords.x >= cRect.left - bufferX && coords.x <= cRect.right + bufferX &&
+            coords.y >= cRect.top - bufferY && coords.y <= cRect.bottom + bufferY) {
+            return true;
+        }
+    }
+
+    const wrapper = tray.find(".hand-cards-wrapper");
+    if (wrapper.length) {
+        const wRect = wrapper[0].getBoundingClientRect();
+        if (coords.x >= wRect.left - bufferX && coords.x <= wRect.right + bufferX &&
+            coords.y >= wRect.top - bufferY && coords.y <= wRect.bottom + bufferY) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Helper to render card image and description in preview
@@ -3487,23 +3585,13 @@ function openCardContextMenu(cardObj, clientX, clientY) {
     // Card Menu Action handlers
     $("#menu-flip").click(function() {
         if (!activeMenuCard) return;
-        activeMenuCard.faceDown = !activeMenuCard.faceDown;
+        handleYGOPositionFlip(activeMenuCard);
         renderAllCards();
     });
 
     $("#menu-tap").click(function() {
         if (!activeMenuCard) return;
-        if (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') {
-            if (activeMenuCard.tapped) {
-                activeMenuCard.tapped = false;
-                activeMenuCard.faceDown = false;
-            } else {
-                activeMenuCard.tapped = true;
-                activeMenuCard.faceDown = false;
-            }
-        } else {
-            activeMenuCard.tapped = !activeMenuCard.tapped;
-        }
+        handleYGOPositionTap(activeMenuCard);
         renderAllCards();
     });
 
