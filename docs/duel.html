@@ -1208,7 +1208,6 @@
 
                         <!-- Card Description Section -->
                         <div class="accessories-section" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
-                            <h3 style="font-size: 0.9rem; margin-bottom: 4px; color: #00d2ff;"><i class="fas fa-file-text"></i> Descripción de Carta</h3>
                             <p id="accessories-card-desc" style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.8rem; line-height: 1.4; color: #eee; margin-top: 4px; text-align: left; border: 1px solid rgba(255,255,255,0.08); font-family: sans-serif; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow-y: auto; margin-bottom: 0;"></p>
                         </div>
                     </div>
@@ -1255,11 +1254,9 @@
             <!-- Player 2 Hand Tray (Invisible transparent workspace area at the top) -->
             <div class="hand-tray player-2" id="hand-tray-p2">
 
-                <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
-                    <label class="theme-switch p2-theme-switch" title="Selección Múltiple">
-                        <input type="checkbox" class="hand-multi-select-toggle" data-player="player2">
-                        <span class="theme-slider"></span>
-                    </label>
+                <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 5px; pointer-events: auto;">
+                    <button class="btn-hand-shuffle" data-player="player2" title="Shuffle">Shuffle</button>
+                    <button class="btn-hand-mulligan" data-player="player2" title="Mulligan">Mulligan</button>
                     <div class="hand-batch-actions" id="hand-batch-p2" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
                         <button class="batch-action-btn btn-batch-grave" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
@@ -1304,11 +1301,9 @@
             <!-- Player 1 Hand Tray (Invisible transparent workspace area at the bottom) -->
             <div class="hand-tray player-1" id="hand-tray-p1">
 
-                <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 5px;">
-                    <label class="theme-switch p1-theme-switch" title="Selección Múltiple">
-                        <input type="checkbox" class="hand-multi-select-toggle" data-player="player1">
-                        <span class="theme-slider"></span>
-                    </label>
+                <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 5px; pointer-events: auto;">
+                    <button class="btn-hand-shuffle" data-player="player1" title="Shuffle">Shuffle</button>
+                    <button class="btn-hand-mulligan" data-player="player1" title="Mulligan">Mulligan</button>
                     <div class="hand-batch-actions" id="hand-batch-p1" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
                         <button class="batch-action-btn btn-batch-grave" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>

@@ -1708,6 +1708,18 @@ function shuffleHand(playerKey) {
         card.z = baseZ + index;
     });
 
+    // Reorder DOM elements inside the hand container to match the shuffled order
+    const handContainerSelector = playerKey === "player1" ? "#hand-p1" : "#hand-p2";
+    const $container = $(handContainerSelector);
+    if ($container.length) {
+        handCards.forEach(card => {
+            const el = document.getElementById(card.instanceId);
+            if (el && el.parentNode === $container[0]) {
+                $container[0].appendChild(el);
+            }
+        });
+    }
+
     renderAllCards();
 
     const pLabel = playerKey === "player1" ? "Jugador 1" : "Jugador 2";
@@ -1726,7 +1738,7 @@ function shuffleHand(playerKey) {
     });
 }
 
-// Mulligan action: return all hand cards to deck, shuffle deck, and log
+// Mulligan action: return all hand cards to deck, shuffle deck, and log directly without confirmation prompt
 function mulliganHand(playerKey) {
     const handZone = playerKey === "player1" ? "hand_1" : "hand_2";
     const playerSuffix = playerKey === "player1" ? 1 : 2;
@@ -1746,47 +1758,30 @@ function mulliganHand(playerKey) {
         return;
     }
 
-    const pLabel = playerKey === "player1" ? "Jugador 1" : "Jugador 2";
+    const count = handCards.length;
+    handCards.forEach(cardObj => {
+        cardObj.zone = targetDeckZone;
+        delete cardObj.movedToPileAt;
+        cardObj.faceDown = true;
+        cardObj.tapped = false;
+        cardObj.attachedTo = null;
+    });
+
+    shuffleDeckSilent(playerKey);
+    renderAllCards();
+
+    if (typeof sendGameAction === "function") {
+        sendGameAction(`Realizó Mulligan: devolvió ${count} carta(s) de su mano al Deck y lo barajó`);
+    }
 
     Swal.fire({
-        title: `¿Mulligan (${pLabel})?`,
-        text: `¿Deseas devolver las ${handCards.length} cartas de tu mano al Deck y barajarlo?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, Mulligan',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#00d2ff',
-        cancelButtonColor: '#6c757d',
-        background: '#12181e',
-        color: '#fff'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const count = handCards.length;
-            handCards.forEach(cardObj => {
-                cardObj.zone = targetDeckZone;
-                delete cardObj.movedToPileAt;
-                cardObj.faceDown = true;
-                cardObj.tapped = false;
-                cardObj.attachedTo = null;
-            });
-
-            shuffleDeckSilent(playerKey);
-            renderAllCards();
-
-            if (typeof sendGameAction === "function") {
-                sendGameAction(`Realizó Mulligan: devolvió ${count} carta(s) de su mano al Deck y lo barajó`);
-            }
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Mulligan Completado',
-                text: `Se devolvieron ${count} cartas al Deck y se ha barajado.`,
-                toast: true,
-                position: 'top-end',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }
+        icon: 'success',
+        title: 'Mulligan Completado',
+        text: `Se devolvieron ${count} cartas al Deck y se ha barajado.`,
+        toast: true,
+        position: 'top-end',
+        timer: 1800,
+        showConfirmButton: false
     });
 }
 
