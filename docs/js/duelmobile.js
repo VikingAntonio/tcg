@@ -145,6 +145,68 @@ function isYGOLayout(layout) {
     return l === "yugioh" || l === "yugioh_advanced" || l === "speed_rush";
 }
 
+function isYGOMonsterCard(card) {
+    if (!isYGOLayout(state.layout)) return false;
+    if (!card) return false;
+    if (card.customAtkDef) return true;
+    if (card.isNotMonster) return false;
+    // Check if placed in monster zones
+    if (card.zone && (card.zone.startsWith("monster_") || card.zone.startsWith("extra_monster_"))) {
+        return true;
+    }
+    // Check if placed in spell/trap zones
+    if (card.zone && card.zone.startsWith("spell_")) {
+        return false;
+    }
+    return !card.isNotMonster;
+}
+
+function handleYGOPositionFlip(cardObj) {
+    if (isYGOLayout(state.layout)) {
+        if (isYGOMonsterCard(cardObj)) {
+            if (!cardObj.faceDown) {
+                // Boca arriba (ataque o defensa) -> pasa a defensa boca abajo
+                cardObj.faceDown = true;
+                cardObj.tapped = true;
+            } else {
+                // Defensa boca abajo -> pasa a defensa boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = true;
+            }
+        } else {
+            // Cartas mágicas, trampas, campo: dos estados (boca arriba / boca abajo)
+            cardObj.faceDown = !cardObj.faceDown;
+        }
+    } else {
+        cardObj.faceDown = !cardObj.faceDown;
+    }
+}
+
+function handleYGOPositionTap(cardObj) {
+    if (isYGOLayout(state.layout)) {
+        if (isYGOMonsterCard(cardObj)) {
+            if (cardObj.faceDown) {
+                // En defensa boca abajo -> pasa a ataque boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = false;
+            } else if (!cardObj.tapped) {
+                // En ataque boca arriba -> pasa a defensa boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = true;
+            } else {
+                // En defensa boca arriba -> pasa a ataque boca arriba
+                cardObj.faceDown = false;
+                cardObj.tapped = false;
+            }
+        } else {
+            // Cartas que no son monstruo (magias/trampas)
+            cardObj.tapped = !cardObj.tapped;
+        }
+    } else {
+        cardObj.tapped = !cardObj.tapped;
+    }
+}
+
 function ensureMonsterAtkDefWidget(card) {
     if (!isYGOLayout(state.layout)) return;
     if (!card || card.faceDown) return;
@@ -1325,10 +1387,10 @@ function bindCardDragEvents() {
         const playerSuffix = cardObj.owner === "player1" ? 1 : 2;
 
         if ($(this).hasClass("btn-field-flip")) {
-            cardObj.faceDown = !cardObj.faceDown;
+            handleYGOPositionFlip(cardObj);
             renderAllCards();
         } else if ($(this).hasClass("btn-field-tap")) {
-            cardObj.tapped = !cardObj.tapped;
+            handleYGOPositionTap(cardObj);
             renderAllCards();
         } else if ($(this).hasClass("btn-field-control")) {
             // Swap controller ONLY, leave owner intact!
@@ -1530,8 +1592,8 @@ function checkHandTrayHover(e, traySelector) {
     if (!tray.length) return false;
 
     const coords = getEventCoords(e);
-    const bufferY = 20;
-    const bufferX = 20;
+    const bufferY = 30;
+    const bufferX = 30;
 
     // Check main tray rect
     const trayEl = tray[0];
@@ -3391,13 +3453,13 @@ function setupEventListeners() {
 
     $("#menu-flip").click(function() {
         if (!activeMenuCard) return;
-        activeMenuCard.faceDown = !activeMenuCard.faceDown;
+        handleYGOPositionFlip(activeMenuCard);
         renderAllCards();
     });
 
     $("#menu-tap").click(function() {
         if (!activeMenuCard) return;
-        activeMenuCard.tapped = !activeMenuCard.tapped;
+        handleYGOPositionTap(activeMenuCard);
         renderAllCards();
     });
 
@@ -6472,20 +6534,18 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 const x = (pos.x - matOffset.left) / scale - dragOffset.x;
                 const y = (pos.y - matOffset.top) / scale - dragOffset.y;
 
-                const boundedX = Math.max(-10, Math.min(1120 - 70, x));
-                const boundedY = Math.max(-10, Math.min(600 - 100, y));
-
-                cardObj.x = boundedX;
-                cardObj.y = boundedY;
+                // Free movement across entire window/playmat container without artificial clamping
+                cardObj.x = x;
+                cardObj.y = y;
 
                 dragCard.css({
-                    left: `${boundedX}px`,
-                    top: `${boundedY}px`
+                    left: `${x}px`,
+                    top: `${y}px`
                 });
 
                 const centerCoords = {
-                    x: boundedX + 40,
-                    y: boundedY + 58
+                    x: x + 40,
+                    y: y + 58
                 };
 
                 $(".board-zone").removeClass("highlighted");
@@ -6588,6 +6648,18 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     const hoverZone = findOverlappingZone(centerCoords);
                     let isOverP1Hand = checkHandTrayHover(e, "#hand-tray-p1");
                     let isOverP2Hand = checkHandTrayHover(e, "#hand-tray-p2");
+
+                    // Check if dragged outside the board towards hand zones
+                    const playmatEl = $("#playmat")[0];
+                    if (playmatEl) {
+                        const pRect = playmatEl.getBoundingClientRect();
+                        if (endPos.y > pRect.bottom - 10) {
+                            isOverP1Hand = true;
+                        }
+                        if (endPos.y < pRect.top + 10) {
+                            isOverP2Hand = true;
+                        }
+                    }
 
                     if (cardObj.isToken) {
                         if (isOverP1Hand || isOverP2Hand || (hoverZone && (hoverZone.id.startsWith("deck_") || (hoverZone.id.startsWith("extra_") && !hoverZone.id.startsWith("extra_monster")) || hoverZone.id.startsWith("grave_") || hoverZone.id.startsWith("banished_")))) {
