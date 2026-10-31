@@ -1842,6 +1842,102 @@ function shuffleDeck(playerKey) {
     });
 }
 
+// Shuffle hand cards for specified player (player1 or player2)
+function shuffleHand(playerKey) {
+    const handZone = playerKey === "player1" ? "hand_1" : "hand_2";
+    const handCards = state.cards.filter(c => c.zone === handZone);
+
+    if (handCards.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Mano Vacía',
+            text: 'No tienes cartas en la mano para barajar.',
+            toast: true,
+            position: 'top-end',
+            timer: 1800,
+            showConfirmButton: false
+        });
+        return;
+    }
+
+    // Fisher-Yates shuffle cards array and re-assign sequential z indices
+    for (let i = handCards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = handCards[i];
+        handCards[i] = handCards[j];
+        handCards[j] = temp;
+    }
+
+    const baseZ = state.cards.length + 10;
+    handCards.forEach((card, index) => {
+        card.z = baseZ + index;
+    });
+
+    renderAllCards();
+
+    const pLabel = playerKey === "player1" ? "Jugador 1" : "Jugador 2";
+    if (typeof sendGameAction === "function") {
+        sendGameAction(`Barajó las cartas de su mano`);
+    }
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Mano Barajada',
+        text: `Las cartas de la mano de ${pLabel} han cambiado de posición.`,
+        toast: true,
+        position: 'top-end',
+        timer: 1800,
+        showConfirmButton: false
+    });
+}
+
+// Mulligan action: return all hand cards to deck, shuffle deck, and log without confirmation prompt
+function mulliganHand(playerKey) {
+    const handZone = playerKey === "player1" ? "hand_1" : "hand_2";
+    const playerSuffix = playerKey === "player1" ? 1 : 2;
+    const targetDeckZone = `deck_${playerSuffix}`;
+    const handCards = state.cards.filter(c => c.zone === handZone);
+
+    if (handCards.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Mano Vacía',
+            text: 'No hay cartas en la mano para hacer Mulligan.',
+            toast: true,
+            position: 'top-end',
+            timer: 1800,
+            showConfirmButton: false
+        });
+        return;
+    }
+
+    const count = handCards.length;
+    handCards.forEach(cardObj => {
+        cardObj.zone = targetDeckZone;
+        delete cardObj.movedToPileAt;
+        cardObj.faceDown = true;
+        cardObj.tapped = false;
+        cardObj.attachedTo = null;
+    });
+
+    shuffleDeckSilent(playerKey);
+    renderAllCards();
+
+    if (typeof sendGameAction === "function") {
+        sendGameAction(`Realizó Mulligan: devolvió ${count} carta(s) de su mano al Deck y lo barajó`);
+    }
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Mulligan Completado',
+        text: `Se devolvieron ${count} cartas al Deck y se ha barajado.`,
+        toast: true,
+        position: 'top-end',
+        timer: 1800,
+        showConfirmButton: false
+    });
+}
+
 // Set up 6 face-down Prize Cards for Pokemon
 let insideSetupPokemonPrizes = false;
 function setupPokemonPrizes(playerKey) {
@@ -4037,6 +4133,21 @@ function openCardContextMenu(cardObj, clientX, clientY) {
     $("#bulk-to-deck").click(function() {
         const parentId = $(this).data("parent-id");
         moveAllAttachedTo(parentId, "deck");
+    });
+
+    // Event bindings for Hand Shuffle and Mulligan buttons
+    $(document).on("click", ".btn-hand-shuffle", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const playerKey = $(this).data("player") || "player1";
+        shuffleHand(playerKey);
+    });
+
+    $(document).on("click", ".btn-hand-mulligan", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const playerKey = $(this).data("player") || "player1";
+        mulliganHand(playerKey);
     });
 
     // Hand Multi-Select Toggle Handlers

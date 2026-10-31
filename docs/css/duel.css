@@ -1394,6 +1394,51 @@ body.layout-pokemon #floating-count-banished_2 {
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
 }
 
+/* Hand Shuffle and Mulligan button styles */
+.btn-hand-shuffle,
+.btn-hand-mulligan {
+    background: rgba(18, 24, 30, 0.9) !important;
+    border: 1px solid var(--primary-color, #00d2ff) !important;
+    color: var(--primary-color, #00d2ff) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    padding: 3px 10px !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6) !important;
+    transition: all 0.15s ease !important;
+    white-space: nowrap !important;
+}
+
+.player-2 .btn-hand-shuffle,
+.player-2 .btn-hand-mulligan {
+    border-color: var(--secondary-color, #ff1b6b) !important;
+    color: var(--secondary-color, #ff1b6b) !important;
+}
+
+.btn-hand-shuffle:hover,
+.btn-hand-mulligan:hover,
+.btn-hand-shuffle:active,
+.btn-hand-mulligan:active {
+    background: var(--primary-color, #00d2ff) !important;
+    color: #000 !important;
+    transform: scale(1.05) !important;
+}
+
+.player-2 .btn-hand-shuffle:hover,
+.player-2 .btn-hand-mulligan:hover,
+.player-2 .btn-hand-shuffle:active,
+.player-2 .btn-hand-mulligan:active {
+    background: var(--secondary-color, #ff1b6b) !important;
+    color: #000 !important;
+    transform: scale(1.05) !important;
+}
+
 /* Multi-select active state highlights */
 .duel-card.selected-for-batch {
     outline: 3px solid #00d2ff !important;
