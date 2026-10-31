@@ -1084,6 +1084,84 @@
             opacity: 1;
         }
 
+        /* Hand Tray Card Slider & Navigation Controls */
+        .hand-cards-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 1120px;
+            pointer-events: auto !important;
+            margin: 0 auto;
+        }
+
+        .hand-nav-arrow {
+            flex-shrink: 0;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(10, 15, 22, 0.9);
+            border: 1.5px solid #00d2ff;
+            color: #00d2ff;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 2500;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.5);
+            transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            pointer-events: auto !important;
+        }
+
+        .hand-tray.player-2 .hand-nav-arrow {
+            border-color: #ff1b6b;
+            color: #ff1b6b;
+            box-shadow: 0 0 12px rgba(255, 27, 107, 0.5);
+        }
+
+        .hand-nav-arrow:hover {
+            transform: scale(1.1);
+            background: rgba(0, 210, 255, 0.2);
+            box-shadow: 0 0 16px rgba(0, 210, 255, 0.8);
+        }
+
+        .hand-tray.player-2 .hand-nav-arrow:hover {
+            background: rgba(255, 27, 107, 0.2);
+            box-shadow: 0 0 16px rgba(255, 27, 107, 0.8);
+        }
+
+        .hand-nav-arrow:active {
+            transform: scale(0.95);
+        }
+
+        .hand-cards-container.has-scroll {
+            justify-content: flex-start !important;
+            max-width: 960px !important;
+            width: 960px !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            scroll-behavior: smooth !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+            padding: 8px 10px 10px 10px !important;
+        }
+
+        .hand-cards-container.has-scroll::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        .hand-cards-container.has-scroll .duel-card:last-child {
+            margin-right: 25px !important;
+        }
+
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1262,8 +1340,12 @@
                         <button class="batch-action-btn btn-batch-grave" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
                     </div>
                 </div>
-                <div class="hand-cards-container" id="hand-p2">
-                    <!-- Cards inside P2 hand will be appended here -->
+                <div class="hand-cards-wrapper">
+                    <button class="hand-nav-arrow nav-left" data-target="hand-p2" title="Anterior carta"><i class="fas fa-chevron-left"></i></button>
+                    <div class="hand-cards-container" id="hand-p2">
+                        <!-- Cards inside P2 hand will be appended here -->
+                    </div>
+                    <button class="hand-nav-arrow nav-right" data-target="hand-p2" title="Siguiente carta"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
 
@@ -1309,8 +1391,12 @@
                         <button class="batch-action-btn btn-batch-grave" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
                     </div>
                 </div>
-                <div class="hand-cards-container" id="hand-p1">
-                    <!-- Cards inside P1 hand will be appended here -->
+                <div class="hand-cards-wrapper">
+                    <button class="hand-nav-arrow nav-left" data-target="hand-p1" title="Anterior carta"><i class="fas fa-chevron-left"></i></button>
+                    <div class="hand-cards-container" id="hand-p1">
+                        <!-- Cards inside P1 hand will be appended here -->
+                    </div>
+                    <button class="hand-nav-arrow nav-right" data-target="hand-p1" title="Siguiente carta"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
 
@@ -4291,6 +4377,65 @@
             initSpirits();
             setupCompanionControls(1);
             setupCompanionControls(2);
+
+            // ==========================================
+            // 11. HAND TRAY CARDS SLIDER & ARROWS
+            // ==========================================
+            window.updateHandTrayArrows = function() {
+                ["#hand-p1", "#hand-p2"].forEach(selector => {
+                    const elem = $(selector)[0];
+                    if (!elem) return;
+                    const $wrapper = $(elem).closest(".hand-cards-wrapper");
+                    const cardCount = $(elem).children(".duel-card").length;
+
+                    // If more than 10 cards in hand, enable slide mode and display navigation arrows
+                    if (cardCount > 10) {
+                        $(elem).addClass("has-scroll");
+                        if ($wrapper.length) {
+                            $wrapper.find(".hand-nav-arrow").css("display", "flex");
+                        }
+                    } else {
+                        $(elem).removeClass("has-scroll");
+                        elem.scrollLeft = 0;
+                        if ($wrapper.length) {
+                            $wrapper.find(".hand-nav-arrow").css("display", "none");
+                        }
+                    }
+                });
+            };
+
+            // Wrap window.renderAllCards to automatically refresh arrows and slide status
+            const prevRenderAllCards = window.renderAllCards;
+            window.renderAllCards = function() {
+                prevRenderAllCards.apply(this, arguments);
+                if (typeof window.updateHandTrayArrows === "function") {
+                    window.updateHandTrayArrows();
+                }
+            };
+
+            // Hand Navigation Arrows click scroll handler
+            $(document).on("click", ".hand-nav-arrow", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const targetId = $(this).data("target");
+                const container = document.getElementById(targetId);
+                if (!container) return;
+
+                const isLeft = $(this).hasClass("nav-left");
+                // Each click scrolls exactly 1 card (card width 80px + gap 16px = 96px)
+                const firstCard = container.querySelector(".duel-card");
+                let step = 96;
+                if (firstCard) {
+                    const cardRect = firstCard.getBoundingClientRect();
+                    const computedGap = parseFloat(window.getComputedStyle(container).gap) || 16;
+                    step = Math.round(cardRect.width + computedGap);
+                }
+                const scrollAmount = isLeft ? -step : step;
+                container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+            });
+
+            // Initial call to set arrow state
+            window.updateHandTrayArrows();
         });
     </script>
 </body>
