@@ -1799,21 +1799,21 @@ function updatePreview(card) {
 
     // Otherwise, multiplayer mode
     const currentRole = window.currentRole || "player1";
-    const isMyCard = (card.owner === currentRole);
+    const cardOwner = card.owner || (card.zone && card.zone.endsWith('_1') ? 'player1' : 'player2');
+    const isMyCard = (cardOwner === currentRole);
 
     const isPile = card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_");
-    let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+    let isFaceDown = card.faceDown;
+    const isHand = card.zone && card.zone.startsWith("hand_");
 
-    // Seteadas o piles de mi oponente no se pueden ver, EXCEPTO si es una carta en el Extra Deck que esté boca arriba (Péndulo)
     let canSee = false;
-    if (!isPile && !isFaceDown) {
-        // Face-up field/hand cards are public
+    if (isMyCard) {
         canSee = true;
-    } else if (isMyCard) {
-        // I can see all my own cards (face-down field cards, my deck, my extra deck)
+    } else if (isHand) {
+        canSee = Boolean(state.handRevealed && state.handRevealed[cardOwner]);
+    } else if (!isPile && !isFaceDown) {
         canSee = true;
     } else if (card.zone.startsWith("extra_") && !card.faceDown) {
-        // Face-up cards in the opponent's Extra Deck (Pendulums) are visible to both players
         canSee = true;
     }
 
@@ -1841,14 +1841,18 @@ function viewCardZoom(card) {
         isMasked = true;
     } else if (state.mode !== "practice") {
         const currentRole = window.currentRole || "player1";
-        const isMyCard = (card.owner === currentRole);
+        const cardOwner = card.owner || (card.zone && card.zone.endsWith('_1') ? 'player1' : 'player2');
+        const isMyCard = (cardOwner === currentRole);
         const isPile = card.zone.startsWith("deck_") || (card.zone.startsWith("extra_") && !card.zone.startsWith("extra_monster")) || card.zone.startsWith("prize_");
-        let isFaceDown = card.faceDown && !card.zone.startsWith("hand_");
+        let isFaceDown = card.faceDown;
+        const isHand = card.zone && card.zone.startsWith("hand_");
 
         let canSee = false;
-        if (!isPile && !isFaceDown) {
+        if (isMyCard) {
             canSee = true;
-        } else if (isMyCard) {
+        } else if (isHand) {
+            canSee = Boolean(state.handRevealed && state.handRevealed[cardOwner]);
+        } else if (!isPile && !isFaceDown) {
             canSee = true;
         } else if (card.zone.startsWith("extra_") && !card.faceDown) {
             canSee = true;
