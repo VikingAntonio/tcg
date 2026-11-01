@@ -1203,6 +1203,20 @@
             margin-right: 25px !important;
         }
 
+
+        /* In multiplayer and board rotation, ensure Player 2 (or any hand tray positioned at bottom or rotated) displays hand-card-actions upwards within view */
+        .hand-tray.player-2 .hand-card-actions,
+        body.rotated-board .hand-tray.player-2 .hand-card-actions {
+            bottom: 120px !important;
+            top: auto !important;
+        }
+        .hand-tray.player-2 .hand-card-actions::after,
+        body.rotated-board .hand-tray.player-2 .hand-card-actions::after {
+            bottom: -15px !important;
+            top: auto !important;
+            height: 18px !important;
+        }
+
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2387,7 +2401,7 @@
             }
 
             // 2. Setup Supabase Realtime Channel
-            const commChannel = _supabase.channel(`room:${roomId}`);
+            const commChannel = _supabase.channel(`room:${roomId}`); window.commChannel = commChannel;
 
             // 3. Role Picker Logic (only active in practice mode)
             $(".role-btn").click(function() {
@@ -2868,6 +2882,233 @@
                     if (status === 'SUBSCRIBED') {
                         await fetchMyUsername();
                         appendSystemMsg(`Conectado a la sala: ${roomId}`);
+
+            // --- Helper: Determine if card belongs to rival and is not controlled by current player ---
+            function isOpponentUncontrolledCard(card) {
+                if (state.mode !== 'multiplayer') return false;
+                var myRole = currentRole || 'player1';
+                var effectiveController = card.controller || card.owner || (card.zone && card.zone.endsWith('_1') ? 'player1' : (card.zone && card.zone.endsWith('_2') ? 'player2' : null));
+                return !!(effectiveController && effectiveController !== myRole);
+            }
+
+            // In multiplayer mode, restrict dragging opponent uncontrolled cards (field, hand, piles)
+            var origBindCardDragEvents = window.bindCardDragEvents;
+            if (typeof origBindCardDragEvents === 'function') {
+                window.bindCardDragEvents = function() {
+                    origBindCardDragEvents.apply(this, arguments);
+                    $('.duel-card').off('mousedown.rivalCheck touchstart.rivalCheck').on('mousedown.rivalCheck touchstart.rivalCheck', function(e) {
+                        if (state.mode !== 'multiplayer') return;
+                        var instId = $(this).data('instance-id') || $(this).attr('id');
+                        var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
+                        if (cardObj && isOpponentUncontrolledCard(cardObj)) {
+                            var isHandOrDeck = cardObj.zone && (cardObj.zone.startsWith('hand_') || cardObj.zone.startsWith('deck_'));
+                            if (isHandOrDeck) {
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                                return false;
+                            }
+                            // On field: allow selection / attack targeting, but prevent dragging displacement
+                            e.preventDefault();
+                        }
+                    });
+                };
+            }
+
+            // Restrict Context Menu options on opponent uncontrolled cards: only 'Seleccionar' and 'Tomar Control'
+            var origUpdateCardMenuOptions = window.updateCardMenuOptions;
+            if (typeof origUpdateCardMenuOptions === 'function') {
+                window.updateCardMenuOptions = function(cardObj) {
+                    origUpdateCardMenuOptions.apply(this, arguments);
+                    if (state.mode === 'multiplayer' && isOpponentUncontrolledCard(cardObj)) {
+                        if (cardObj.zone && (cardObj.zone.startsWith('hand_') || cardObj.zone.startsWith('deck_'))) {
+                            $('#card-menu').removeClass('active');
+                            return;
+                        }
+                        $('#card-menu .menu-item').hide();
+                        $('#menu-select-card').show();
+                        $('#menu-control').show();
+                        $('#menu-view-zoom').show();
+                    }
+                };
+            }
+
+            // Clamp card-menu coordinates so it never overflows off-screen
+            var origClampMenuCoords = window.clampMenuCoords;
+            window.clampMenuCoords = function(x, y, menuWidth, menuHeight) {
+                var pos = origClampMenuCoords ? origClampMenuCoords(x, y, menuWidth, menuHeight) : { x: x, y: y };
+                var winHeight = window.innerHeight;
+                if (pos.y + (menuHeight || 200) > winHeight - 15) {
+                    pos.y = Math.max(15, pos.y - (menuHeight || 200));
+                }
+                return pos;
+            };
+
+            // Intercept pile action button clicks (Mano, Deck, Extra Deck)
+            $(document).on('click', '#pile-overlay .btn-pile-hand, #pile-overlay .btn-pile-deck, #pile-overlay .btn-pile-to-extra', function(e) {
+                if (state.mode !== 'multiplayer') return;
+                var $cardElem = $(this).closest('.pile-card-wrapper');
+                var instId = $cardElem.data('instance-id');
+                var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
+                if (!cardObj) return;
+
+                // Stop native handler in js/duel.js
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                var targetZone, actionType, actionDesc;
+                if ($(this).hasClass('btn-pile-hand')) {
+                    actionType = 'hand';
+                    targetZone = cardObj.owner === 'player1' ? 'hand_1' : 'hand_2';
+                    actionDesc = 'Devolvió una carta a la Mano';
+                } else if ($(this).hasClass('btn-pile-deck')) {
+                    actionType = 'deck';
+                    var pSuffix = cardObj.owner === 'player1' ? '1' : '2';
+                    targetZone = 'deck_' + pSuffix;
+                    actionDesc = 'Devolvió una carta al Deck';
+                } else if ($(this).hasClass('btn-pile-to-extra')) {
+                    actionType = 'extra';
+                    var pSuffix = cardObj.owner === 'player1' ? '1' : '2';
+                    targetZone = 'extra_' + pSuffix;
+                    actionDesc = 'Devolvió una carta al Extra Deck';
+                }
+
+                if (typeof window.requestOpponentCardAction === 'function') {
+                    window.requestOpponentCardAction(cardObj, actionType, targetZone, actionDesc);
+                }
+            });
+
+            // Handle card action confirmation requests (Return to Hand, Deck, Extra Deck from Grave / Banished)
+            commChannel.on('broadcast', { event: 'card_action_request' }, async function(ref) {
+                var payload = ref.payload;
+                if (payload.targetPlayer !== currentRole) return;
+                var rivalName = payload.requesterName || 'El adversario';
+                var actionLabel = payload.actionType === 'hand' ? 'devolver una carta a tu Mano' :
+                                  payload.actionType === 'deck' ? 'devolver una carta a tu Deck' :
+                                  payload.actionType === 'extra' ? 'devolver una carta a tu Extra Deck' : 'mover una carta';
+
+                var result = await Swal.fire({
+                    title: 'Solicitud del Adversario',
+                    text: rivalName + ' solicita ' + actionLabel + ' (' + (payload.cardName || 'Carta') + '). ¿Aceptas la acción?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Aceptar',
+                    cancelButtonText: 'Rechazar',
+                    confirmButtonColor: '#00d2ff',
+                    cancelButtonColor: '#ff0055',
+                    customClass: { popup: 'cyber-swal' }
+                });
+
+                var accepted = result.isConfirmed;
+                if (typeof commChannel !== 'undefined' && commChannel && typeof commChannel.send === 'function') {
+                    commChannel.send({
+                        type: 'broadcast',
+                        event: 'card_action_response',
+                        payload: {
+                            requestId: payload.requestId,
+                            accepted: accepted,
+                            cardInstanceId: payload.cardInstanceId,
+                            actionType: payload.actionType,
+                            cardName: payload.cardName,
+                            targetZone: payload.targetZone,
+                            responder: currentRole
+                        }
+                    });
+                }
+            });
+
+            commChannel.on('broadcast', { event: 'card_action_response' }, function(ref) {
+                var payload = ref.payload;
+                if (window.pendingCardActionRequest && window.pendingCardActionRequest.id === payload.requestId) {
+                    var req = window.pendingCardActionRequest;
+                    window.pendingCardActionRequest = null;
+                    Swal.close();
+                    if (payload.accepted) {
+                        Swal.fire({
+                            title: 'Acción Aceptada',
+                            text: 'El adversario aceptó la acción.',
+                            icon: 'success',
+                            timer: 1800,
+                            showConfirmButton: false,
+                            customClass: { popup: 'cyber-swal' }
+                        });
+                        var card = state.cards.find(function(c) { return c.instanceId === req.cardInstanceId; });
+                        if (card) {
+                            card.zone = req.targetZone;
+                            card.x = 0;
+                            card.y = 0;
+                            card.faceDown = false;
+                            card.tapped = false;
+                            window.renderAllCards();
+                            if (typeof window.syncCardsImmediately === 'function') {
+                                window.syncCardsImmediately();
+                            }
+                            sendGameAction(req.actionDesc, card.name);
+                        }
+                    } else {
+                        Swal.fire({
+                            title: 'Acción Rechazada',
+                            text: 'El adversario rechazó la acción.',
+                            icon: 'error',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            customClass: { popup: 'cyber-swal' }
+                        });
+                    }
+                }
+            });
+
+            // Intercept modal pile return actions when targeting opponent cards in multiplayer
+            window.requestOpponentCardAction = function(cardObj, actionType, targetZone, actionDesc) {
+                if (state.mode !== 'multiplayer') {
+                    cardObj.zone = targetZone;
+                    cardObj.x = 0;
+                    cardObj.y = 0;
+                    cardObj.faceDown = false;
+                    cardObj.tapped = false;
+                    window.renderAllCards();
+                    if (typeof window.syncCardsImmediately === 'function') {
+                        window.syncCardsImmediately();
+                    }
+                    sendGameAction(actionDesc, cardObj.name);
+                    return;
+                }
+
+                var requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                var opponentRole = currentRole === 'player1' ? 'player2' : 'player1';
+                window.pendingCardActionRequest = {
+                    id: requestId,
+                    cardInstanceId: cardObj.instanceId,
+                    actionType: actionType,
+                    targetZone: targetZone,
+                    actionDesc: actionDesc
+                };
+
+                Swal.fire({
+                    title: 'Esperando confirmación',
+                    text: 'Esperando respuesta del adversario...',
+                    allowOutsideClick: false,
+                    didOpen: function() { Swal.showLoading(); },
+                    customClass: { popup: 'cyber-swal' }
+                });
+
+                if (typeof commChannel !== 'undefined' && commChannel && typeof commChannel.send === 'function') {
+                    commChannel.send({
+                        type: 'broadcast',
+                        event: 'card_action_request',
+                        payload: {
+                            requestId: requestId,
+                            targetPlayer: opponentRole,
+                            requesterName: myUsername,
+                            actionType: actionType,
+                            cardInstanceId: cardObj.instanceId,
+                            cardName: cardObj.name,
+                            targetZone: targetZone
+                        }
+                    });
+                }
+            };
+
 
                         // Send player_joined event to let the other player know
                         try {
