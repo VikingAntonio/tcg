@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="https://vikingtcg.xyz/favi.png">
     <title>Configurador de Duelos Móvil - Vikingdev TCG</title>
+    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
@@ -752,29 +753,55 @@
         <div class="blob blob-2"></div>
     </div>
 
-    <header class="config-header">
-        <a href="index.html" class="logo">Vikingdev <span>TCG</span></a>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <div id="logged-user-badge" class="user-badge" style="display: none;">
-                <i class="fas fa-circle-user"></i> <span id="username-display">Invitado</span>
+    <!-- Floating User Panel (Píldora) -->
+    <div class="top-left-panel" id="top-panel">
+        <div class="pill-panel">
+            <div class="pill-group" id="header-theme-group">
+                <button class="pill-icon theme-btn-small" data-theme="theme-light" title="Modo Claro"><i class="fas fa-sun"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-purple" title="Modo Morado"><i class="fas fa-magic"></i></button>
+                <button class="pill-icon theme-btn-small" data-theme="theme-dark" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
             </div>
-            <a href="index.html" class="nav-btn"><i class="fas fa-home"></i> Inicio</a>
-        </div>
-    </header>
 
-    <main class="config-container">
-        <section class="title-section">
-            <h1>CONFIGURACIÓN DE DUELO MÓVIL</h1>
-            <p>Elige tu modo de juego, selecciona tus mazos preferidos y prepárate para la batalla en nuestro simulador móvil rule-free.</p>
-        </section>
+            <a href="carrito.html" id="cart-btn" class="pill-icon" title="Carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count">0</span>
+            </a>
+
+            <div class="user-menu-container">
+                <button class="pill-icon" id="avatar-btn" title="Usuario">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="user-dropdown-menu" id="user-dropdown">
+                    <div class="user-dropdown-info">
+                        <img id="dropdown-user-logo" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: none;">
+                        <div class="user-dropdown-name" id="dropdown-user-name">Usuario</div>
+                        <div class="user-dropdown-role" id="dropdown-user-role" style="display: none;">Usuario</div>
+                    </div>
+                    <a href="admin.html" class="menu-item"><i class="fas fa-home"></i> Mi Panel</a>
+                    <a href="play.html" class="menu-item"><i class="fas fa-gamepad"></i> Play!</a>
+                    <a href="binders.html" class="menu-item"><i class="fas fa-book"></i> Mis Álbumes</a>
+                    <a href="decks.html" class="menu-item"><i class="fas fa-layer-group"></i> Mis Decks</a>
+                    <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
+                    <a href="learn.html" class="menu-item"><i class="fas fa-brain"></i> Base de Conocimiento</a>
+                    <a href="widgets.html" class="menu-item"><i class="fas fa-code"></i> Custom Labels</a>
+                    <a href="packages.html" class="menu-item"><i class="fas fa-box-open"></i> Planes y Dominios</a>
+                    <a href="deseos.html" class="menu-item"><i class="fas fa-heart"></i> Wishlist</a>
+                    <a href="eventos.html" class="menu-item"><i class="fas fa-calendar-alt"></i> Eventos</a>
+                    <a href="inversiones.html" class="menu-item"><i class="fas fa-chart-line"></i> Mis Inversiones</a>
+
+                    <a href="#" class="menu-item logout" id="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="config-container" style="padding-top: 80px;">
 
         <section class="mode-grid">
             <!-- Practice Mode Column -->
             <div class="mode-card practice">
                 <div style="text-align: center;">
-                    <div class="card-header-icon"><i class="fas fa-graduation-cap"></i></div>
-                    <h2>MODO PRÁCTICA</h2>
-                    <p class="card-desc">Practica de forma local. Tú controlas ambos lados del tablero para probar tus estrategias, combos y mazos de forma rápida.</p>
+                    <h2>1 Jugador</h2>
                 </div>
 
                 <div class="form-group">
@@ -821,8 +848,7 @@
             <!-- Two Players Mode Column -->
             <div class="mode-card multiplayer">
                 <div style="text-align: center;">
-                    <div class="card-header-icon"><i class="fas fa-gamepad"></i></div>
-                    <h2>MODO DOS JUGADORES</h2>
+                    <h2>2 Jugadores</h2>
                 </div>
 
                 <!-- Unauthenticated view -->
@@ -869,7 +895,7 @@
                         </div>
 
                         <button id="btn-create-room" class="btn-play btn-play-multiplayer">
-                            <i class="fas fa-plus-circle"></i> CREAR SALA E INICIAR
+                            <i class="fas fa-plus-circle"></i> Crear Sala
                         </button>
                     </div>
 
@@ -892,7 +918,7 @@
                         </div>
 
                         <button id="btn-join-room" class="btn-play btn-play-multiplayer">
-                            <i class="fas fa-sign-in-alt"></i> CONECTARSE A SALA
+                            <i class="fas fa-sign-in-alt"></i> Unirse a sala
                         </button>
                     </div>
                 </div>
@@ -1098,6 +1124,13 @@
                         const username = (userData && userData.username) ? userData.username : sessionUser.email.split('@')[0];
 
                         $("#username-display").text(username);
+                        $("#dropdown-user-name").text(username);
+                        if (userData && userData.store_logo) {
+                            $("#dropdown-user-logo").attr("src", userData.store_logo).show();
+                        }
+                        if (userData && userData.role) {
+                            $("#dropdown-user-role").text(userData.role).show();
+                        }
                         $("#logged-user-badge").show();
 
                         $("#auth-locked-view").hide();
@@ -1319,17 +1352,24 @@
                 $deck1.empty();
                 $deck2.empty();
 
-                if (preselectedDeck) {
-                    $deck1.append(`<option value="${preselectedDeck.id}" selected>${preselectedDeck.name}</option>`);
-                    $('#label-practice-deck1').text(preselectedDeck.name);
-                } else if (decks.length > 0) {
-                    $deck1.append(`<option value="${decks[0].id}" selected>${decks[0].name}</option>`);
-                    $('#label-practice-deck1').text(decks[0].name);
-                }
-                $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+                $deck1.append('<option value="" selected>Selecciona un deck...</option>');
+                $deck2.append('<option value="" selected>Selecciona un deck...</option>');
 
-                $deck2.append('<option value="mock" selected>Preestablecido (Mock Deck)</option>');
-                $('#label-practice-deck2').text('Preestablecido (Mock Deck)');
+                if (preselectedDeck) {
+                    $deck1.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                    $deck2.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                }
+                decks.forEach(d => {
+                    if (!preselectedDeck || d.id != preselectedDeck.id) {
+                        $deck1.append(`<option value="${d.id}">${d.name}</option>`);
+                        $deck2.append(`<option value="${d.id}">${d.name}</option>`);
+                    }
+                });
+                $deck1.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+                $deck2.append('<option value="mock">Preestablecido (Mock Deck)</option>');
+
+                $('#label-practice-deck1').text('Selecciona un deck...');
+                $('#label-practice-deck2').text('Selecciona un deck...');
             }
 
             function populateMultiplayerDecks(decks) {
@@ -1346,11 +1386,23 @@
                     return;
                 }
 
-                const firstDeck = preselectedDeck || decks[0];
-                $hostDeck.append(`<option value="${firstDeck.id}" selected>${firstDeck.name}</option>`);
-                $guestDeck.append(`<option value="${firstDeck.id}" selected>${firstDeck.name}</option>`);
-                $('#label-host-deck').text(firstDeck.name);
-                $('#label-guest-deck').text(firstDeck.name);
+                $hostDeck.append('<option value="" selected>Selecciona un deck...</option>');
+                $guestDeck.append('<option value="" selected>Selecciona un deck...</option>');
+
+                if (preselectedDeck) {
+                    $hostDeck.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                    $guestDeck.append(`<option value="${preselectedDeck.id}">${preselectedDeck.name}</option>`);
+                }
+
+                decks.forEach(d => {
+                    if (!preselectedDeck || d.id != preselectedDeck.id) {
+                        $hostDeck.append(`<option value="${d.id}">${d.name}</option>`);
+                        $guestDeck.append(`<option value="${d.id}">${d.name}</option>`);
+                    }
+                });
+
+                $('#label-host-deck').text('Selecciona un deck...');
+                $('#label-guest-deck').text('Selecciona un deck...');
             }
 
             // 4. Action Handlers for redirection
@@ -1359,6 +1411,15 @@
                 const layout = $("#practice-layout").val();
                 const deck1 = $("#practice-deck1").val();
                 const deck2 = $("#practice-deck2").val();
+
+                if (!deck1) {
+                    Swal.fire('Atención', 'Debes seleccionar Tu Deck (P1) para iniciar la práctica.', 'warning');
+                    return;
+                }
+                if (!deck2) {
+                    Swal.fire('Atención', 'Debes seleccionar el Deck Contrincante (P2) para iniciar la práctica.', 'warning');
+                    return;
+                }
 
                 window.location.href = `duelmobile.html?mode=practice&layout=${layout}&deck1=${deck1}&deck2=${deck2}`;
             });
@@ -1394,7 +1455,45 @@
 
                 window.location.href = `duelmobile.html?mode=multiplayer&role=player2&deck2=${deck2}&room=${roomId}`;
             });
+
+            // Theme and Top-Panel User Dropdown Listeners
+            initTheme();
+
+            $(document).on('click', '.theme-btn-small', function() {
+                applyTheme($(this).data('theme'));
+            });
+
+            $(document).on('click', '#avatar-btn', function(e) {
+                e.stopPropagation();
+                $('#user-dropdown').toggleClass('active');
+            });
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.user-menu-container').length) {
+                    $('#user-dropdown').removeClass('active');
+                }
+            });
+
+            $('#btn-logout').click(async function(e) {
+                e.preventDefault();
+                await _supabase.auth.signOut();
+                localStorage.removeItem('tcg_session');
+                window.location.reload();
+            });
+
+            function initTheme() {
+                const savedTheme = localStorage.getItem('tcg_theme') || 'theme-dark';
+                applyTheme(savedTheme);
+            }
+
+            function applyTheme(theme) {
+                $('body').removeClass('theme-light theme-medium theme-dark theme-purple').addClass(theme);
+                localStorage.setItem('tcg_theme', theme);
+                $('.theme-btn-small').removeClass('active');
+                $(`.theme-btn-small[data-theme="${theme}"]`).addClass('active');
+            }
         });
     </script>
+    <script src="js/michatbot.js"></script>
 </body>
 </html>

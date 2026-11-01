@@ -1140,6 +1140,47 @@
             transform: scale(0.95);
         }
 
+        .hand-nav-arrow[disabled], .hand-nav-arrow.arrow-empty {
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+            pointer-events: none;
+        }
+
+        .hand-nav-badge {
+            position: absolute;
+            top: -7px;
+            background: #00d2ff;
+            color: #06090e;
+            font-size: 11px;
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+            border: 1.5px solid #06090e;
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        .hand-nav-arrow.nav-left .hand-nav-badge {
+            left: -5px;
+        }
+
+        .hand-nav-arrow.nav-right .hand-nav-badge {
+            right: -5px;
+        }
+
+        .hand-tray.player-2 .hand-nav-badge {
+            background: #ff1b6b;
+            color: #ffffff;
+        }
+
         .hand-cards-container.has-scroll {
             justify-content: flex-start !important;
             max-width: 960px !important;
@@ -1341,11 +1382,17 @@
                     </div>
                 </div>
                 <div class="hand-cards-wrapper">
-                    <button class="hand-nav-arrow nav-left" data-target="hand-p2" title="Anterior carta"><i class="fas fa-chevron-left"></i></button>
+                    <button class="hand-nav-arrow nav-left" data-target="hand-p2" title="Anterior carta">
+                        <i class="fas fa-chevron-left"></i>
+                        <span class="hand-nav-badge badge-left" id="badge-left-hand-p2">0</span>
+                    </button>
                     <div class="hand-cards-container" id="hand-p2">
                         <!-- Cards inside P2 hand will be appended here -->
                     </div>
-                    <button class="hand-nav-arrow nav-right" data-target="hand-p2" title="Siguiente carta"><i class="fas fa-chevron-right"></i></button>
+                    <button class="hand-nav-arrow nav-right" data-target="hand-p2" title="Siguiente carta">
+                        <i class="fas fa-chevron-right"></i>
+                        <span class="hand-nav-badge badge-right" id="badge-right-hand-p2">0</span>
+                    </button>
                 </div>
             </div>
 
@@ -1392,11 +1439,17 @@
                     </div>
                 </div>
                 <div class="hand-cards-wrapper">
-                    <button class="hand-nav-arrow nav-left" data-target="hand-p1" title="Anterior carta"><i class="fas fa-chevron-left"></i></button>
+                    <button class="hand-nav-arrow nav-left" data-target="hand-p1" title="Anterior carta">
+                        <i class="fas fa-chevron-left"></i>
+                        <span class="hand-nav-badge badge-left" id="badge-left-hand-p1">0</span>
+                    </button>
                     <div class="hand-cards-container" id="hand-p1">
                         <!-- Cards inside P1 hand will be appended here -->
                     </div>
-                    <button class="hand-nav-arrow nav-right" data-target="hand-p1" title="Siguiente carta"><i class="fas fa-chevron-right"></i></button>
+                    <button class="hand-nav-arrow nav-right" data-target="hand-p1" title="Siguiente carta">
+                        <i class="fas fa-chevron-right"></i>
+                        <span class="hand-nav-badge badge-right" id="badge-right-hand-p1">0</span>
+                    </button>
                 </div>
             </div>
 
@@ -4381,6 +4434,58 @@
             // ==========================================
             // 11. HAND TRAY CARDS SLIDER & ARROWS
             // ==========================================
+            window.updateHandTrayCounts = function(containerElem) {
+                if (!containerElem) return;
+                const $wrapper = $(containerElem).closest(".hand-cards-wrapper");
+                if (!$wrapper.length) return;
+
+                const cards = Array.from(containerElem.querySelectorAll(".duel-card"));
+                const totalCards = cards.length;
+                if (totalCards <= 10) {
+                    $wrapper.find(".hand-nav-arrow").css("display", "none");
+                    return;
+                }
+
+                $wrapper.find(".hand-nav-arrow").css("display", "flex");
+
+                const containerRect = containerElem.getBoundingClientRect();
+                let leftCount = 0;
+                let rightCount = 0;
+
+                cards.forEach(card => {
+                    const cardRect = card.getBoundingClientRect();
+                    if (cardRect.right <= containerRect.left + 15) {
+                        leftCount++;
+                    } else if (cardRect.left >= containerRect.right - 15) {
+                        rightCount++;
+                    }
+                });
+
+                const $leftArrow = $wrapper.find(".hand-nav-arrow.nav-left");
+                const $rightArrow = $wrapper.find(".hand-nav-arrow.nav-right");
+                const $badgeLeft = $wrapper.find(".hand-nav-badge.badge-left");
+                const $badgeRight = $wrapper.find(".hand-nav-badge.badge-right");
+
+                $badgeLeft.text(leftCount);
+                $badgeRight.text(rightCount);
+
+                if (leftCount > 0) {
+                    $leftArrow.removeClass("arrow-empty").removeAttr("disabled");
+                    $badgeLeft.show();
+                } else {
+                    $leftArrow.addClass("arrow-empty").attr("disabled", "disabled");
+                    $badgeLeft.text("0");
+                }
+
+                if (rightCount > 0) {
+                    $rightArrow.removeClass("arrow-empty").removeAttr("disabled");
+                    $badgeRight.show();
+                } else {
+                    $rightArrow.addClass("arrow-empty").attr("disabled", "disabled");
+                    $badgeRight.text("0");
+                }
+            };
+
             window.updateHandTrayArrows = function() {
                 ["#hand-p1", "#hand-p2"].forEach(selector => {
                     const elem = $(selector)[0];
@@ -4391,9 +4496,7 @@
                     // If more than 10 cards in hand, enable slide mode and display navigation arrows
                     if (cardCount > 10) {
                         $(elem).addClass("has-scroll");
-                        if ($wrapper.length) {
-                            $wrapper.find(".hand-nav-arrow").css("display", "flex");
-                        }
+                        window.updateHandTrayCounts(elem);
                     } else {
                         $(elem).removeClass("has-scroll");
                         elem.scrollLeft = 0;
@@ -4404,6 +4507,16 @@
                 });
             };
 
+            // Listen to scroll events on hand containers to continuously update arrow count badges
+            ["hand-p1", "hand-p2"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener("scroll", function() {
+                        window.updateHandTrayCounts(el);
+                    }, { passive: true });
+                }
+            });
+
             // Wrap window.renderAllCards to automatically refresh arrows and slide status
             const prevRenderAllCards = window.renderAllCards;
             window.renderAllCards = function() {
@@ -4413,7 +4526,7 @@
                 }
             };
 
-            // Hand Navigation Arrows click scroll handler
+            // Hand Navigation Arrows click scroll handler (Exact card-by-card displacement)
             $(document).on("click", ".hand-nav-arrow", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -4422,16 +4535,41 @@
                 if (!container) return;
 
                 const isLeft = $(this).hasClass("nav-left");
-                // Each click scrolls exactly 1 card (card width 80px + gap 16px = 96px)
-                const firstCard = container.querySelector(".duel-card");
-                let step = 96;
-                if (firstCard) {
-                    const cardRect = firstCard.getBoundingClientRect();
-                    const computedGap = parseFloat(window.getComputedStyle(container).gap) || 16;
-                    step = Math.round(cardRect.width + computedGap);
+                const cards = Array.from(container.querySelectorAll(".duel-card"));
+                if (!cards.length) return;
+
+                const currentScroll = container.scrollLeft;
+                const containerPaddingLeft = parseFloat(window.getComputedStyle(container).paddingLeft) || 10;
+
+                // Find card positions relative to container content
+                const cardOffsets = cards.map(c => Math.max(0, c.offsetLeft - containerPaddingLeft));
+
+                let targetScroll = currentScroll;
+                const tolerance = 4;
+
+                if (isLeft) {
+                    for (let i = cardOffsets.length - 1; i >= 0; i--) {
+                        if (cardOffsets[i] < currentScroll - tolerance) {
+                            targetScroll = cardOffsets[i];
+                            break;
+                        }
+                    }
+                    if (targetScroll === currentScroll) {
+                        targetScroll = 0;
+                    }
+                } else {
+                    for (let i = 0; i < cardOffsets.length; i++) {
+                        if (cardOffsets[i] > currentScroll + tolerance) {
+                            targetScroll = cardOffsets[i];
+                            break;
+                        }
+                    }
                 }
-                const scrollAmount = isLeft ? -step : step;
-                container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+
+                container.scrollTo({ left: targetScroll, behavior: "smooth" });
+
+                setTimeout(() => window.updateHandTrayCounts(container), 150);
+                setTimeout(() => window.updateHandTrayCounts(container), 350);
             });
 
             // Initial call to set arrow state
