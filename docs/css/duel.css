@@ -820,6 +820,87 @@ body.layout-pokemon .duel-card.face-down .card-img-wrapper {
     border-color: #ffffff;
 }
 
+/* =========================================================================
+   Rotated board visual overrides for Player 2 perspective in online matches
+   ========================================================================= */
+body.rotated-board .playmat-board {
+    transform: scale(0.85) rotate(180deg) !important;
+}
+
+body.rotated-board #playmat .duel-card {
+    transform: rotate(calc(var(--tilt, 0deg) + 180deg)) !important;
+}
+
+body.rotated-board #playmat .duel-card:hover {
+    transform: scale(1.08) rotate(calc(var(--tilt, 0deg) + 180deg)) !important;
+}
+
+body.rotated-board #playmat .duel-card.dragging {
+    transform: scale(1.12) rotate(calc(var(--tilt, 0deg) + 182deg)) !important;
+}
+
+/* Hand trays visual order swap in desktop flex arena */
+body.rotated-board .duel-arena-wrapper {
+    flex-direction: column-reverse !important;
+}
+
+/* Invert hand cards interactions so hover stays natural */
+body.rotated-board .hand-tray.player-1 .hand-cards-container .duel-card:hover {
+    transform: translateY(15px) scale(1.15) !important;
+}
+
+body.rotated-board .hand-tray.player-2 .hand-cards-container .duel-card:hover {
+    transform: translateY(-15px) scale(1.15) !important;
+}
+
+/* Rotate badge/text indicators on playmat so they stay upright and easily readable */
+body.rotated-board .zone-label,
+body.rotated-board .zone-card-count,
+body.rotated-board .floating-zone-count,
+body.rotated-board .card-counter,
+body.rotated-board .card-attached-badge,
+body.rotated-board .pokemon-damage-badge,
+body.rotated-board .attack-direct-badge,
+body.rotated-board .central-turn-bar {
+    transform: rotate(180deg) !important;
+}
+
+/* Board divider texts flip */
+body.rotated-board .playmat-board::before {
+    top: auto !important;
+    bottom: 12px !important;
+    transform: translateX(-50%) rotate(180deg) !important;
+}
+
+body.rotated-board .playmat-board::after {
+    bottom: auto !important;
+    top: 12px !important;
+    transform: translateX(-50%) rotate(180deg) !important;
+}
+
+/* Precise alignment/rotations for custom ATK/DEF draggable badges */
+body.rotated-board .custom-atk-def-badge {
+    transform: translateX(-50%) rotate(180deg) !important;
+    transform-origin: center center !important;
+}
+
+body.rotated-board .custom-atk-def-badge:hover {
+    transform: translateX(-50%) scale(1.2) rotate(180deg) !important;
+}
+
+/* Swap LP counter positions for Player 2 perspective */
+body.rotated-board.layout-yugioh .lp-counter-container.p1-lp-container,
+body.rotated-board.layout-yugioh_advanced .lp-counter-container.p1-lp-container {
+    left: auto !important;
+    right: 20px !important;
+}
+
+body.rotated-board.layout-yugioh .lp-counter-container.p2-lp-container,
+body.rotated-board.layout-yugioh_advanced .lp-counter-container.p2-lp-container {
+    right: auto !important;
+    left: 20px !important;
+}
+
 /* Custom LP Calculator Swal Modal styling */
 .calc-swal-popup {
     border: 1.5px solid var(--primary-color, #00d2ff) !important;
@@ -1394,9 +1475,10 @@ body.layout-pokemon #floating-count-banished_2 {
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
 }
 
-/* Hand Shuffle and Mulligan button styles */
+/* Hand Shuffle, Mulligan, and Reveal button styles */
 .btn-hand-shuffle,
-.btn-hand-mulligan {
+.btn-hand-mulligan,
+.btn-hand-reveal {
     background: rgba(18, 24, 30, 0.9) !important;
     border: 1px solid var(--primary-color, #00d2ff) !important;
     color: var(--primary-color, #00d2ff) !important;
@@ -1416,15 +1498,18 @@ body.layout-pokemon #floating-count-banished_2 {
 }
 
 .player-2 .btn-hand-shuffle,
-.player-2 .btn-hand-mulligan {
+.player-2 .btn-hand-mulligan,
+.player-2 .btn-hand-reveal {
     border-color: var(--secondary-color, #ff1b6b) !important;
     color: var(--secondary-color, #ff1b6b) !important;
 }
 
 .btn-hand-shuffle:hover,
 .btn-hand-mulligan:hover,
+.btn-hand-reveal:hover,
 .btn-hand-shuffle:active,
-.btn-hand-mulligan:active {
+.btn-hand-mulligan:active,
+.btn-hand-reveal:active {
     background: var(--primary-color, #00d2ff) !important;
     color: #000 !important;
     transform: scale(1.05) !important;
@@ -1432,8 +1517,10 @@ body.layout-pokemon #floating-count-banished_2 {
 
 .player-2 .btn-hand-shuffle:hover,
 .player-2 .btn-hand-mulligan:hover,
+.player-2 .btn-hand-reveal:hover,
 .player-2 .btn-hand-shuffle:active,
-.player-2 .btn-hand-mulligan:active {
+.player-2 .btn-hand-mulligan:active,
+.player-2 .btn-hand-reveal:active {
     background: var(--secondary-color, #ff1b6b) !important;
     color: #000 !important;
     transform: scale(1.05) !important;
