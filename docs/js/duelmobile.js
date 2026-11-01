@@ -1519,12 +1519,17 @@ function bindCardDragEvents() {
         const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
         // Physical position of the card inside the playmat coordinates (unscaled)
-        const elemLeft = (cardOffset.left - matOffset.left) / scale;
-        const elemTop = (cardOffset.top - matOffset.top) / scale;
+        const elemLeft = parseFloat($(this).css("left")) || ((cardOffset.left - matOffset.left) / scale);
+        const elemTop = parseFloat($(this).css("top")) || ((cardOffset.top - matOffset.top) / scale);
 
         // Calculate offset in internal coordinates relative to mouse/touch position
-        dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
-        dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+        if (window.isBoardRotated) {
+            dragOffset.x = (matOffset.left + rect.width - pos.x) / scale - elemLeft;
+            dragOffset.y = (matOffset.top + rect.height - pos.y) / scale - elemTop;
+        } else {
+            dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
+            dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+        }
         dragStartCoords = { x: pos.x, y: pos.y };
         dragStartTime = Date.now();
     });
@@ -4460,19 +4465,53 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 window.renderAllCards();
             });
 
-            // Copy room link
+            // Copy room id
             $("#btn-copy-room").click(function() {
-                navigator.clipboard.writeText(window.location.href);
+                const idToCopy = state.roomId || roomId;
+                navigator.clipboard.writeText(idToCopy);
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Enlace Copiado!',
-                    text: 'Compártelo con tu rival para jugar en la misma sala.',
+                    title: '¡ID de Sala Copiado!',
+                    text: idToCopy,
                     toast: true,
                     position: 'top-end',
                     timer: 2000,
                     showConfirmButton: false
                 });
             });
+
+            // If creating multiplayer room as player1 (host), show room ID popup
+            if (state.mode === "multiplayer" && currentRole === "player1") {
+                Swal.fire({
+                    title: 'Comparte el ID de sala',
+                    text: 'para que otro jugador pueda entrar',
+                    html: `
+                        <p style="margin-bottom: 12px; color: #aaa;">para que otro jugador pueda entrar</p>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(0, 210, 255, 0.1); border: 1.5px solid var(--primary-color, #00d2ff); border-radius: 8px; padding: 12px 18px;">
+                            <span style="font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900; color: #00d2ff; letter-spacing: 2px;">${roomId}</span>
+                            <button type="button" id="btn-swal-copy-id" style="background: var(--primary-color, #00d2ff); border: none; color: #000; font-weight: bold; border-radius: 6px; padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-copy"></i> Copiar
+                            </button>
+                        </div>
+                    `,
+                    background: '#12181e',
+                    color: '#fff',
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    didOpen: () => {
+                        const copyBtn = document.getElementById('btn-swal-copy-id');
+                        if (copyBtn) {
+                            copyBtn.addEventListener('click', () => {
+                                navigator.clipboard.writeText(roomId);
+                                copyBtn.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+                                setTimeout(() => {
+                                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copiar';
+                                }, 2000);
+                            });
+                        }
+                    }
+                });
+            }
 
             // 2. Setup Supabase Realtime Channel
             const commChannel = _supabase.channel(`room:${roomId}`);
@@ -6679,8 +6718,14 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                     const rect = $("#playmat")[0].getBoundingClientRect();
                     const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
-                    const initialX = (pos.x - matOffset.left) / scale - 40;
-                    const initialY = (pos.y - matOffset.top) / scale - 58;
+                    let initialX, initialY;
+                    if (window.isBoardRotated) {
+                        initialX = (matOffset.left + rect.width - pos.x) / scale - 40;
+                        initialY = (matOffset.top + rect.height - pos.y) / scale - 58;
+                    } else {
+                        initialX = (pos.x - matOffset.left) / scale - 40;
+                        initialY = (pos.y - matOffset.top) / scale - 58;
+                    }
                     dragCard.css({
                         position: "absolute",
                         width: "80px",
@@ -6701,8 +6746,14 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                 const rect = $("#playmat")[0].getBoundingClientRect();
                 const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
-                const x = (pos.x - matOffset.left) / scale - dragOffset.x;
-                const y = (pos.y - matOffset.top) / scale - dragOffset.y;
+                let x, y;
+                if (window.isBoardRotated) {
+                    x = (matOffset.left + rect.width - pos.x) / scale - dragOffset.x;
+                    y = (matOffset.top + rect.height - pos.y) / scale - dragOffset.y;
+                } else {
+                    x = (pos.x - matOffset.left) / scale - dragOffset.x;
+                    y = (pos.y - matOffset.top) / scale - dragOffset.y;
+                }
 
                 // Free movement across entire window/playmat container without artificial clamping
                 cardObj.x = x;
@@ -7300,7 +7351,15 @@ window.setupPokemonPrizes = setupPokemonPrizes;
             });
 
             // Initialize board rotated state
-            window.isBoardRotated = false;
+            if (state.mode === 'multiplayer' && currentRole === 'player2') {
+                window.isBoardRotated = true;
+                $("body").addClass("rotated-board");
+                if (typeof window.adjustPlaymatScale === "function") {
+                    window.adjustPlaymatScale();
+                }
+            } else {
+                window.isBoardRotated = false;
+            }
 
             // Show rotation button only in Practice Mode
             if (state.mode === 'practice') {

@@ -1659,9 +1659,10 @@ body:not(.layout-pokemon) .pokemon-only-item {
     display: flex !important;
 }
 
-/* Hand Shuffle and Mulligan button styles */
+/* Hand Shuffle, Mulligan, and Reveal button styles */
 .btn-hand-shuffle,
-.btn-hand-mulligan {
+.btn-hand-mulligan,
+.btn-hand-reveal {
     background: rgba(18, 24, 30, 0.9) !important;
     border: 1px solid var(--primary-color, #00d2ff) !important;
     color: var(--primary-color, #00d2ff) !important;
@@ -1681,15 +1682,18 @@ body:not(.layout-pokemon) .pokemon-only-item {
 }
 
 .player-2 .btn-hand-shuffle,
-.player-2 .btn-hand-mulligan {
+.player-2 .btn-hand-mulligan,
+.player-2 .btn-hand-reveal {
     border-color: var(--secondary-color, #ff1b6b) !important;
     color: var(--secondary-color, #ff1b6b) !important;
 }
 
 .btn-hand-shuffle:hover,
 .btn-hand-mulligan:hover,
+.btn-hand-reveal:hover,
 .btn-hand-shuffle:active,
-.btn-hand-mulligan:active {
+.btn-hand-mulligan:active,
+.btn-hand-reveal:active {
     background: var(--primary-color, #00d2ff) !important;
     color: #000 !important;
     transform: scale(1.05) !important;
@@ -1697,8 +1701,10 @@ body:not(.layout-pokemon) .pokemon-only-item {
 
 .player-2 .btn-hand-shuffle:hover,
 .player-2 .btn-hand-mulligan:hover,
+.player-2 .btn-hand-reveal:hover,
 .player-2 .btn-hand-shuffle:active,
-.player-2 .btn-hand-mulligan:active {
+.player-2 .btn-hand-mulligan:active,
+.player-2 .btn-hand-reveal:active {
     background: var(--secondary-color, #ff1b6b) !important;
     color: #fff !important;
 }

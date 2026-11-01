@@ -1230,8 +1230,14 @@ $(window).on('mousemove touchmove', function(e) {
                 if (cardObj.zone.startsWith("hand_")) {
                     // Move element to playmat container to escape flex relative layout
                     $("#field-cards-container").append(dragCard);
-                    const initialX = (pos.x - matOffset.left) / scale - 40;
-                    const initialY = (pos.y - matOffset.top) / scale - 58;
+                    let initialX, initialY;
+                    if (window.isBoardRotated) {
+                        initialX = (matOffset.left + rect.width - pos.x) / scale - 40;
+                        initialY = (matOffset.top + rect.height - pos.y) / scale - 58;
+                    } else {
+                        initialX = (pos.x - matOffset.left) / scale - 40;
+                        initialY = (pos.y - matOffset.top) / scale - 58;
+                    }
                     dragCard.css({
                         position: "absolute",
                         width: "80px",
@@ -1245,11 +1251,15 @@ $(window).on('mousemove touchmove', function(e) {
                     dragOffset.x = 40;
                     dragOffset.y = 58;
                 } else {
-                    const cardOffset = dragCard.offset();
-                    const elemLeft = (cardOffset.left - matOffset.left) / scale;
-                    const elemTop = (cardOffset.top - matOffset.top) / scale;
-                    dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
-                    dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+                    const elemLeft = parseFloat(dragCard.css("left")) || 0;
+                    const elemTop = parseFloat(dragCard.css("top")) || 0;
+                    if (window.isBoardRotated) {
+                        dragOffset.x = (matOffset.left + rect.width - pos.x) / scale - elemLeft;
+                        dragOffset.y = (matOffset.top + rect.height - pos.y) / scale - elemTop;
+                    } else {
+                        dragOffset.x = (pos.x - matOffset.left) / scale - elemLeft;
+                        dragOffset.y = (pos.y - matOffset.top) / scale - elemTop;
+                    }
                 }
             } else {
                 return;
@@ -1271,8 +1281,14 @@ $(window).on('mousemove touchmove', function(e) {
     const scale = rect.width / $("#playmat")[0].offsetWidth || 1;
 
     // Free movement boundaries relative to playmat container
-    const x = (pos.x - matOffset.left) / scale - dragOffset.x;
-    const y = (pos.y - matOffset.top) / scale - dragOffset.y;
+    let x, y;
+    if (window.isBoardRotated) {
+        x = (matOffset.left + rect.width - pos.x) / scale - dragOffset.x;
+        y = (matOffset.top + rect.height - pos.y) / scale - dragOffset.y;
+    } else {
+        x = (pos.x - matOffset.left) / scale - dragOffset.x;
+        y = (pos.y - matOffset.top) / scale - dragOffset.y;
+    }
 
     // Free movement across entire window/playmat container without artificial clamping
     cardObj.x = x;
