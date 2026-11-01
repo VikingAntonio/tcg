@@ -1376,6 +1376,7 @@
                 <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 5px; pointer-events: auto;">
                     <button class="btn-hand-shuffle" data-player="player2" title="Shuffle">Shuffle</button>
                     <button class="btn-hand-mulligan" data-player="player2" title="Mulligan">Mulligan</button>
+                    <button class="btn-hand-reveal" id="btn-reveal-hand-p2" data-player="player2" style="display: none;" title="Mostrar mano al rival">Mostrar mano</button>
                     <div class="hand-batch-actions" id="hand-batch-p2" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
                         <button class="batch-action-btn btn-batch-grave" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
@@ -1433,6 +1434,7 @@
                 <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 5px; pointer-events: auto;">
                     <button class="btn-hand-shuffle" data-player="player1" title="Shuffle">Shuffle</button>
                     <button class="btn-hand-mulligan" data-player="player1" title="Mulligan">Mulligan</button>
+                    <button class="btn-hand-reveal" id="btn-reveal-hand-p1" data-player="player1" style="display: none;" title="Mostrar mano al rival">Mostrar mano</button>
                     <div class="hand-batch-actions" id="hand-batch-p1" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
                         <button class="batch-action-btn btn-batch-grave" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Descarte</button>
@@ -2137,11 +2139,65 @@
                 }
             }
 
-            // Custom Game State Variables for turn, phase and life points
+            // Custom Game State Variables for turn, phase, life points and privacy
             state.activeTurn = 'player1'; // 'player1' or 'player2'
             state.activePhase = 'DP'; // 'DP', 'SP', 'M1', 'BP', 'M2', 'EP'
             state.lp = { player1: 8000, player2: 8000 };
             state.turnActionTaken = false; // Disable flashing of End Turn button once gameplay action is done
+            state.handRevealed = { player1: false, player2: false };
+
+            // Helper to get default card back based on layout
+            function getDefaultCardBack() {
+                return (state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ? 'img/bocabajo.jpg' : 'img/pokeBocaAbajo.jpg';
+            }
+
+            // Universal Card Privacy check for multiplayer mode
+            function isCardPrivateForOpponent(card, viewerRole) {
+                if (state.mode !== 'multiplayer') return false;
+                const cardOwner = card.owner || (card.zone && card.zone.endsWith('_1') ? 'player1' : 'player2');
+                if (cardOwner === viewerRole) return false;
+
+                const zone = card.zone || '';
+                if (zone.startsWith('deck_')) return true;
+                if (zone.startsWith('extra_') && !zone.startsWith('extra_monster')) {
+                    if (card.faceDown !== false) return true;
+                }
+                if (zone.startsWith('hand_')) {
+                    if (state.handRevealed && state.handRevealed[cardOwner]) {
+                        return false;
+                    }
+                    return true;
+                }
+                if (zone.startsWith('prize_')) return true;
+                if (card.faceDown) return true;
+                return false;
+            }
+
+            // Sanitizer: prepares state.cards payload for broadcast so opponent never gets private details
+            function prepareSanitizedCardsForBroadcast(cardsList) {
+                if (state.mode !== 'multiplayer') return cardsList;
+                const myRole = currentRole || 'player1';
+                const opponentRole = myRole === 'player1' ? 'player2' : 'player1';
+
+                return cardsList.map(card => {
+                    if (isCardPrivateForOpponent(card, opponentRole)) {
+                        const defaultBack = getDefaultCardBack();
+                        const sleeve = (card.owner && state.deckSleeves && state.deckSleeves[card.owner]) ? state.deckSleeves[card.owner] : defaultBack;
+                        return {
+                            ...card,
+                            name: "Carta Oculta",
+                            imageUrl: sleeve,
+                            desc: "",
+                            description: "",
+                            effect: "",
+                            text: "",
+                            customAtkDef: null,
+                            isPrivateMasked: true
+                        };
+                    }
+                    return card;
+                });
+            }
 
             // Helper to hide/show features depending on selected layout
             function updateLayoutFeatureVisibility() {
@@ -2202,11 +2258,76 @@
                     e.preventDefault();
                     e.stopPropagation();
                 });
+
+                // Display the "Mostrar mano" button ONLY for the current player's hand tray
+                const myHandBtn = currentRole === "player1" ? "#btn-reveal-hand-p1" : "#btn-reveal-hand-p2";
+                $(myHandBtn).show();
             } else {
                 // Apply initial active role in practice mode
                 $(".role-btn").removeClass("active");
                 $(`#btn-role-${currentRole}`).addClass("active");
             }
+
+            // Sync helper to broadcast sanitized card state immediately
+            window.syncCardsImmediately = function() {
+                if (state.mode === "multiplayer" && typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                    try {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'card_sync',
+                            payload: { cards: prepareSanitizedCardsForBroadcast(state.cards) }
+                        });
+                    } catch (e) {
+                        console.warn("Could not sync cards immediately:", e);
+                    }
+                }
+            };
+
+            // Toggle "Mostrar mano" / "Ocultar mano"
+            $(".btn-hand-reveal").click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const player = $(this).data("player");
+                if (state.mode !== "multiplayer" || player !== currentRole) return;
+
+                if (!state.handRevealed) state.handRevealed = { player1: false, player2: false };
+                const isNowRevealed = !state.handRevealed[player];
+                state.handRevealed[player] = isNowRevealed;
+
+                const $btn = $(this);
+                if (isNowRevealed) {
+                    $btn.text("Ocultar mano").css({
+                        "background": "rgba(0, 255, 136, 0.25)",
+                        "border": "1px solid #00ff88",
+                        "color": "#00ff88",
+                        "font-weight": "bold"
+                    });
+                    sendGameAction("Mostró su mano al oponente");
+                } else {
+                    $btn.text("Mostrar mano").css({
+                        "background": "",
+                        "border": "",
+                        "color": "",
+                        "font-weight": ""
+                    });
+                    sendGameAction("Ocultó su mano");
+                }
+
+                try {
+                    if (typeof commChannel !== "undefined" && commChannel && typeof commChannel.send === "function") {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'hand_reveal_sync',
+                            payload: { player: currentRole, revealed: isNowRevealed }
+                        });
+                    }
+                } catch (err) {
+                    console.warn("Could not broadcast hand reveal:", err);
+                }
+
+                window.syncCardsImmediately();
+                window.renderAllCards();
+            });
 
             // Copy room link
             $("#btn-copy-room").click(function() {
@@ -2302,12 +2423,34 @@
                     .replace(/'/g, "&#039;");
             }
 
+            // Helper to sanitize action and cardName for chat & game log so private cards are never leaked
+            function sanitizeLogAction(action, cardName) {
+                if (state.mode !== 'multiplayer') return { action, cardName };
+
+                let cleanAction = action;
+                let cleanCardName = cardName;
+
+                const isPrivateAction = /boca abajo|set|robó|mano desde|añadió .* mano|reinsertó .* deck/i.test(action);
+                if (isPrivateAction) {
+                    cleanCardName = null;
+                }
+
+                cleanAction = cleanAction.replace(/Añadió .+ a la Mano desde el tope del Deck/i, "Añadió una carta a la Mano desde el tope del Deck");
+                cleanAction = cleanAction.replace(/Reinsertó .+ al Deck/i, "Reinsertó una carta al Deck");
+                cleanAction = cleanAction.replace(/Buscó y envió al Extra Deck: 📁 .+/i, "Buscó y envió una carta al Extra Deck");
+                cleanAction = cleanAction.replace(/Desacopló y envió al Extra Deck: 📁 .+/i, "Desacopló y envió una carta al Extra Deck");
+                cleanAction = cleanAction.replace(/Envió al Extra Deck: 📁 .+/i, "Envió una carta al Extra Deck");
+
+                return { action: cleanAction, cardName: cleanCardName };
+            }
+
             // 5. Broadcast helper functions with crash safety guards for practice mode
             function sendGameAction(action, cardName, isImportant = false) {
-                const actionData = { player: currentRole, action, cardName, isImportant, username: myUsername };
+                const sanitized = sanitizeLogAction(action, cardName);
+                const actionData = { player: currentRole, action: sanitized.action, cardName: sanitized.cardName, isImportant, username: myUsername };
 
                 // Append locally
-                appendGameLog(currentRole, action, cardName, myUsername);
+                appendGameLog(currentRole, sanitized.action, sanitized.cardName, myUsername);
 
                 // Send via realtime safely
                 try {
@@ -2600,7 +2743,7 @@
                                 commChannel.send({
                                     type: 'broadcast',
                                     event: 'card_sync',
-                                    payload: { cards: state.cards }
+                                    payload: { cards: prepareSanitizedCardsForBroadcast(state.cards) }
                                 });
                                 // Send active turn state
                                 commChannel.send({
@@ -2621,6 +2764,7 @@
                 .on('broadcast', { event: 'card_sync' }, ({ payload }) => {
                     window.isIncomingSync = true;
                     try {
+                        const myRole = currentRole || 'player1';
                         payload.cards.forEach(remoteCard => {
                             const localCard = state.cards.find(c => c.instanceId === remoteCard.instanceId);
                             if (localCard) {
@@ -2639,6 +2783,17 @@
                                 localCard.isExtra = remoteCard.isExtra;
                                 localCard.tiltAngle = remoteCard.tiltAngle;
                                 localCard.attachedAt = remoteCard.attachedAt;
+
+                                const cardOwner = localCard.owner || (localCard.zone && localCard.zone.endsWith('_1') ? 'player1' : 'player2');
+                                if (cardOwner !== myRole) {
+                                    if (!remoteCard.isPrivateMasked) {
+                                        localCard.name = remoteCard.name;
+                                        localCard.imageUrl = remoteCard.imageUrl;
+                                        if (remoteCard.desc !== undefined) localCard.desc = remoteCard.desc;
+                                        if (remoteCard.description !== undefined) localCard.description = remoteCard.description;
+                                        if (remoteCard.customAtkDef !== undefined) localCard.customAtkDef = remoteCard.customAtkDef;
+                                    }
+                                }
                             } else {
                                 state.cards.push(remoteCard);
                             }
@@ -2654,6 +2809,17 @@
                     state.lp = payload.lp;
                     state.turnActionTaken = payload.turnActionTaken || false;
                     updateTurnUI();
+                })
+                .on('broadcast', { event: 'hand_reveal_sync' }, ({ payload }) => {
+                    if (!payload || !payload.player) return;
+                    if (!state.handRevealed) state.handRevealed = { player1: false, player2: false };
+                    state.handRevealed[payload.player] = !!payload.revealed;
+
+                    window.renderAllCards();
+
+                    if (payload.player === currentRole && typeof window.syncCardsImmediately === "function") {
+                        window.syncCardsImmediately();
+                    }
                 })
                 .subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
@@ -4102,7 +4268,7 @@
                             commChannel.send({
                                 type: 'broadcast',
                                 event: 'card_sync',
-                                payload: { cards: state.cards }
+                                payload: { cards: prepareSanitizedCardsForBroadcast(state.cards) }
                             });
                         }
                     } catch (e) {
