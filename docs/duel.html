@@ -1217,6 +1217,18 @@
             height: 18px !important;
         }
 
+        /* En modo 2 jugadores: sobre cartas del rival en el campo, ocultar todos los botones rápidos excepto Controlar y Seleccionar */
+        body.multiplayer-mode .duel-card.opponent-uncontrolled .field-card-actions button:not(.btn-field-control):not(.btn-field-select) {
+            display: none !important;
+        }
+        body.multiplayer-mode .duel-card.opponent-uncontrolled .field-card-actions {
+            gap: 6px !important;
+        }
+        /* Ocultar barra de acciones en manos y decks del oponente */
+        body.multiplayer-mode .hand-tray .duel-card.opponent-uncontrolled .hand-card-actions {
+            display: none !important;
+        }
+
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1506,14 +1518,7 @@
                     <!-- Messages populated here -->
                 </div>
 
-                <!-- Opponent Response Prompt (Flashing when opponent performs important action) -->
-                <div id="pending-response-box" style="display: none; background: rgba(255,211,45,0.15); border: 1px dashed #ffd32d; border-radius: 8px; padding: 8px; margin-bottom: 8px; text-align: center; animation: promptPulse 1.5s infinite alternate;">
-                    <div style="font-size: 0.75rem; color: #ffd32d; font-weight: bold; margin-bottom: 6px;">¿Respondes a la acción?</div>
-                    <div style="display: flex; gap: 6px; justify-content: center;">
-                        <button class="response-prompt-btn" data-response="OK" style="background: #2ec4b6; border: none; color: black; font-weight: bold; border-radius: 4px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer;">✅ OK</button>
-                        <button class="response-prompt-btn" data-response="No" style="background: #ff1b6b; border: none; color: white; font-weight: bold; border-radius: 4px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer;">❌ No</button>
-                    </div>
-                </div>
+
 
                 <!-- Quick Responses Toolbar -->
                 <div class="quick-responses-bar" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 6px;">
@@ -2584,12 +2589,6 @@
                 sendChatMessage(msg);
             });
 
-            // Interactive response prompt button click handlers
-            $(".response-prompt-btn").click(function() {
-                const resp = $(this).data("response");
-                sendOpponentResponse(resp);
-                $("#pending-response-box").slideUp(150);
-            });
 
             // Attack tracking state
             state.attacks = []; // { attackerId, targetId, isDirect }
@@ -2748,45 +2747,21 @@
                 .on('broadcast', { event: 'game_action' }, ({ payload }) => {
                     appendGameLog(payload.player, payload.action, payload.cardName, payload.username);
 
-                    // Show real-time attack alert warning to opponent
-                    if (payload.action.startsWith("Declaró ataque") || payload.action.startsWith("Declaró Ataque Directo")) {
-                        if (payload.player !== currentRole) {
-                            Swal.fire({
-                                icon: 'warning',
-                                title: '¡BAJO ATAQUE!',
-                                html: `<div style="font-family: 'Montserrat', sans-serif;"><span style="color: #ff1b6b; font-weight: 800;">${payload.username}</span> está declarando un ataque:<br><br><b style="font-size: 1.05rem; color: #ff8c00;">${payload.action}</b></div>`,
-                                background: '#0a0508',
-                                color: '#fff',
-                                confirmButtonText: '⚡ Responder / Cadena',
-                                cancelButtonText: 'OK',
-                                showCancelButton: true,
-                                confirmButtonColor: '#ff1b6b',
-                                cancelButtonColor: '#222',
-                                customClass: {
-                                    popup: 'cyber-swal'
-                                }
-                            }).then((res) => {
-                                if (res.isConfirmed) {
-                                    // Slide down the response options bar instantly
-                                    $("#pending-response-box").slideDown(150);
-                                }
-                            });
-                        }
-                    }
 
-                    // Show response options to rival if action is marked important and sent by the other player
-                    if (payload.isImportant && payload.player !== currentRole) {
-                        $("#pending-response-box").slideDown(150);
-                    }
                 })
                 .on('broadcast', { event: 'chat_msg' }, ({ payload }) => {
                     appendChatMessage(payload.player, payload.message, payload.username);
                 })
                 .on('broadcast', { event: 'opponent_response' }, ({ payload }) => {
                     appendGameLog(payload.player, `Responde a la acción anterior: <b>${escapeHtml(payload.response)}</b>`, null, payload.username);
-                    // Clear flashing prompt if it was resolved
-                    if (payload.player !== currentRole) {
-                        $("#pending-response-box").slideUp(150);
+
+                })
+                .on('broadcast', { event: 'spirit_sync' }, ({ payload }) => {
+                    if (payload && payload.playerIdx && payload.spirit) {
+                        const targetViewer = $(`#viewer-p${payload.playerIdx}`);
+                        if (targetViewer.length && payload.spirit.gltf_url) {
+                            targetViewer.attr('src', payload.spirit.gltf_url);
+                        }
                     }
                 })
                 .on('broadcast', { event: 'player_joined' }, ({ payload }) => {
@@ -2812,6 +2787,15 @@
                                         lp: state.lp
                                     }
                                 });
+                                // Send spirit companion sync to newcomer
+                                const myIdx = currentRole === 'player1' ? 1 : 2;
+                                if (playerSpirits && playerSpirits[myIdx - 1]) {
+                                    commChannel.send({
+                                        type: 'broadcast',
+                                        event: 'spirit_sync',
+                                        payload: { playerIdx: myIdx, spirit: playerSpirits[myIdx - 1] }
+                                    });
+                                }
                             }
                         } catch (e) {
                             console.warn("Could not sync with newcomer:", e);
@@ -2896,41 +2880,118 @@
             if (typeof origBindCardDragEvents === 'function') {
                 window.bindCardDragEvents = function() {
                     origBindCardDragEvents.apply(this, arguments);
+
+                    // Ensure classes and buttons on opponent cards in multiplayer mode
+                    if (state.mode === 'multiplayer') {
+                        $('body').addClass('multiplayer-mode');
+                        state.cards.forEach(function(card) {
+                            var $elem = $('#' + card.instanceId);
+                            if ($elem.length && isOpponentUncontrolledCard(card)) {
+                                $elem.addClass('opponent-uncontrolled');
+                                var $actions = $elem.find('.field-card-actions');
+                                if ($actions.length) {
+                                    $actions.find('button').not('.btn-field-control').hide();
+                                    if (!$actions.find('.btn-field-select').length) {
+                                        $actions.prepend('<button class="field-action-btn btn-field-select" data-instance-id="' + card.instanceId + '">Seleccionar</button>');
+                                    }
+                                }
+                            }
+                        });
+                    }
+
                     $('.duel-card').off('mousedown.rivalCheck touchstart.rivalCheck').on('mousedown.rivalCheck touchstart.rivalCheck', function(e) {
                         if (state.mode !== 'multiplayer') return;
                         var instId = $(this).data('instance-id') || $(this).attr('id');
                         var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
                         if (cardObj && isOpponentUncontrolledCard(cardObj)) {
+                            // If attack targeting is active and clicking on rival monster, let attack handler capture it
+                            if (typeof window.activeAttackSourceCard !== 'undefined' && window.activeAttackSourceCard) {
+                                return;
+                            }
                             var isHandOrDeck = cardObj.zone && (cardObj.zone.startsWith('hand_') || cardObj.zone.startsWith('deck_'));
                             if (isHandOrDeck) {
                                 e.preventDefault();
                                 e.stopImmediatePropagation();
                                 return false;
                             }
-                            // On field: allow selection / attack targeting, but prevent dragging displacement
+                            // On field: totally prevent dragging movement
                             e.preventDefault();
+                            e.stopPropagation();
+                            dragCard = null;
                         }
                     });
                 };
             }
 
-            // Restrict Context Menu options on opponent uncontrolled cards: only 'Seleccionar' and 'Tomar Control'
+            // Click handler for field quick-action "Seleccionar" button on rival card
+            $(document).off('click.rivalSelect', '.btn-field-select').on('click.rivalSelect', '.btn-field-select', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var instId = $(this).data('instance-id');
+                var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
+                if (!cardObj) return;
+
+                var $cardElem = $('#' + cardObj.instanceId);
+                if ($cardElem.length) {
+                    $cardElem.addClass("activating-flash");
+                    setTimeout(function() {
+                        $cardElem.removeClass("activating-flash");
+                    }, 800);
+
+                    $(".card-select-pointer").remove();
+                    var $pointer = $('<div class="card-select-pointer"><i class="fas fa-hand-point-down"></i></div>');
+                    $cardElem.append($pointer);
+
+                    setTimeout(function() {
+                        $pointer.css('opacity', '0');
+                        setTimeout(function() {
+                            $pointer.remove();
+                        }, 300);
+                    }, 4000);
+                }
+
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Seleccionó la carta`, cardObj.name);
+                }
+            });
+
+            // Restrict Context Menu options on opponent uncontrolled cards: strictly only 'Seleccionar' and 'Tomar Control'
             var origUpdateCardMenuOptions = window.updateCardMenuOptions;
-            if (typeof origUpdateCardMenuOptions === 'function') {
-                window.updateCardMenuOptions = function(cardObj) {
+            window.updateCardMenuOptions = function(cardObj) {
+                if (typeof origUpdateCardMenuOptions === 'function') {
                     origUpdateCardMenuOptions.apply(this, arguments);
-                    if (state.mode === 'multiplayer' && isOpponentUncontrolledCard(cardObj)) {
-                        if (cardObj.zone && (cardObj.zone.startsWith('hand_') || cardObj.zone.startsWith('deck_'))) {
-                            $('#card-menu').removeClass('active');
-                            return;
-                        }
-                        $('#card-menu .menu-item').hide();
-                        $('#menu-select-card').show();
-                        $('#menu-control').show();
-                        $('#menu-view-zoom').show();
+                }
+                if (state.mode === 'multiplayer' && isOpponentUncontrolledCard(cardObj)) {
+                    if (cardObj.zone && (cardObj.zone.startsWith('hand_') || cardObj.zone.startsWith('deck_'))) {
+                        $('#card-menu').removeClass('active');
+                        return;
                     }
-                };
-            }
+                    $('#card-menu .menu-item, #card-menu hr').hide();
+                    $('#menu-select-card').show();
+                    $('#menu-control').show();
+                }
+            };
+
+            // Intercept right-click and custom context menu opening on opponent cards
+            $(document).on('contextmenu', '.duel-card', function(e) {
+                if (state.mode !== 'multiplayer') return;
+                var instId = $(this).data('instance-id') || $(this).attr('id');
+                var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
+                if (cardObj && isOpponentUncontrolledCard(cardObj)) {
+                    if (cardObj.zone && (cardObj.zone.startsWith('hand_') || cardObj.zone.startsWith('deck_'))) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        $('#card-menu').removeClass('active');
+                        return false;
+                    }
+                    // Let context menu open, but strictly restrict options
+                    setTimeout(function() {
+                        if (typeof window.updateCardMenuOptions === 'function') {
+                            window.updateCardMenuOptions(cardObj);
+                        }
+                    }, 10);
+                }
+            });
 
             // Clamp card-menu coordinates so it never overflows off-screen
             var origClampMenuCoords = window.clampMenuCoords;
@@ -4640,11 +4701,28 @@
             // ==========================================
             // 10. GLTF SPIRIT COMPANIONS LOGIC
             // ==========================================
+            let allDatabaseSpirits = [];
             let availableSpirits = [];
             let playerSpirits = [null, null];
             let activeBubbleTimers = [null, null];
+            let currentUserProfile = null;
 
             async function initSpirits() {
+                try {
+                    // 1. Fetch user profile from Supabase to check role, allowed_spirit_ids, selected_spirit_id
+                    const { data: { session } } = await _supabase.auth.getSession();
+                    if (session && session.user) {
+                        const { data: userData } = await _supabase
+                            .from('usuarios')
+                            .select('id, role, allowed_spirit_ids, selected_spirit_id')
+                            .eq('id', session.user.id)
+                            .maybeSingle();
+                        currentUserProfile = userData;
+                    }
+                } catch (e) {
+                    console.warn("Could not load user profile for spirits:", e);
+                }
+
                 try {
                     const { data: spirits, error } = await _supabase
                         .from('spirits')
@@ -4652,7 +4730,7 @@
                         .order('name', { ascending: true });
 
                     if (!error && spirits && spirits.length > 0) {
-                        availableSpirits = spirits;
+                        allDatabaseSpirits = spirits;
                     }
                 } catch (e) {
                     console.error("Error fetching spirits:", e);
@@ -4665,34 +4743,107 @@
                     gltf_url: 'https://vikingantonio.github.io/vikingdev3D/assets/winged_kuriboh.gltf'
                 };
 
+                if (allDatabaseSpirits.length === 0) {
+                    allDatabaseSpirits = [fallbackSpirit];
+                }
+
+                // Filter available spirits for the logged-in user matching admin.js logic
+                const userRole = currentUserProfile ? currentUserProfile.role : 'starter';
+                const userAllowed = currentUserProfile ? currentUserProfile.allowed_spirit_ids : '';
+
+                availableSpirits = allDatabaseSpirits.filter(spirit => {
+                    // Full access roles
+                    if (userRole === 'premium' || userRole === 'admin' || userRole === 'admin_store') {
+                        return true;
+                    }
+                    // Starter defaults: Winged Kuriboh
+                    if (spirit.name && spirit.name.toLowerCase().includes('winged kuriboh')) {
+                        return true;
+                    }
+                    // Overrides
+                    if (userAllowed === 'all') {
+                        return true;
+                    }
+                    if (userAllowed && userAllowed !== '1' && userAllowed !== '') {
+                        const allowedIds = userAllowed.split(',').map(s => s.trim());
+                        if (allowedIds.includes(String(spirit.id))) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+
                 if (availableSpirits.length === 0) {
-                    availableSpirits = [fallbackSpirit];
+                    availableSpirits = [allDatabaseSpirits[0] || fallbackSpirit];
                 }
 
-                // Saved selections from localStorage or default
-                const savedP1 = localStorage.getItem('viking_duel_spirit_1');
-                const savedP2 = localStorage.getItem('viking_duel_spirit_2');
-
-                if (savedP1) {
-                    try { setPlayerSpirit(1, JSON.parse(savedP1)); } catch (e) { setPlayerSpirit(1, availableSpirits[0]); }
-                } else {
-                    setPlayerSpirit(1, availableSpirits[0]);
+                // Determine default spirit for current user: profile selected_spirit_id, or first available
+                let myDefaultSpirit = availableSpirits[0];
+                if (currentUserProfile && currentUserProfile.selected_spirit_id) {
+                    const matched = availableSpirits.find(s => String(s.id) === String(currentUserProfile.selected_spirit_id));
+                    if (matched) myDefaultSpirit = matched;
                 }
 
-                if (savedP2) {
-                    try { setPlayerSpirit(2, JSON.parse(savedP2)); } catch (e) { setPlayerSpirit(2, availableSpirits[availableSpirits.length > 1 ? 1 : 0]); }
+                const myPlayerIdx = currentRole === 'player1' ? 1 : 2;
+                const rivalPlayerIdx = myPlayerIdx === 1 ? 2 : 1;
+
+                // Load saved spirit or default for my player
+                const savedMySpirit = localStorage.getItem(`viking_duel_spirit_${myPlayerIdx}`);
+                if (savedMySpirit) {
+                    try {
+                        const parsed = JSON.parse(savedMySpirit);
+                        const isStillAllowed = availableSpirits.find(s => String(s.id) === String(parsed.id));
+                        setPlayerSpirit(myPlayerIdx, isStillAllowed || myDefaultSpirit, false);
+                    } catch (e) {
+                        setPlayerSpirit(myPlayerIdx, myDefaultSpirit, false);
+                    }
                 } else {
-                    setPlayerSpirit(2, availableSpirits[availableSpirits.length > 1 ? 1 : 0]);
+                    setPlayerSpirit(myPlayerIdx, myDefaultSpirit, false);
+                }
+
+                // Set initial placeholder for rival (will be synced over network in multiplayer)
+                if (state.mode !== 'multiplayer') {
+                    const savedRivalSpirit = localStorage.getItem(`viking_duel_spirit_${rivalPlayerIdx}`);
+                    if (savedRivalSpirit) {
+                        try { setPlayerSpirit(rivalPlayerIdx, JSON.parse(savedRivalSpirit), false); }
+                        catch(e) { setPlayerSpirit(rivalPlayerIdx, availableSpirits[availableSpirits.length > 1 ? 1 : 0], false); }
+                    } else {
+                        setPlayerSpirit(rivalPlayerIdx, availableSpirits[availableSpirits.length > 1 ? 1 : 0], false);
+                    }
+                } else {
+                    // In multiplayer, broadcast our spirit so rival sees it
+                    broadcastMySpirit(myPlayerIdx);
                 }
             }
 
-            function setPlayerSpirit(playerIdx, spirit) {
+            function broadcastMySpirit(playerIdx) {
+                if (state.mode === 'multiplayer' && typeof commChannel !== 'undefined' && commChannel && typeof commChannel.send === 'function') {
+                    try {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'spirit_sync',
+                            payload: {
+                                playerIdx: playerIdx,
+                                spirit: playerSpirits[playerIdx - 1]
+                            }
+                        });
+                    } catch (e) {
+                        console.warn("Could not broadcast spirit:", e);
+                    }
+                }
+            }
+
+            function setPlayerSpirit(playerIdx, spirit, shouldBroadcast = true) {
                 playerSpirits[playerIdx - 1] = spirit;
                 localStorage.setItem(`viking_duel_spirit_${playerIdx}`, JSON.stringify(spirit));
 
                 const $viewer = $(`#viewer-p${playerIdx}`);
                 if ($viewer.length && spirit && spirit.gltf_url) {
                     $viewer.attr('src', spirit.gltf_url);
+                }
+
+                if (shouldBroadcast) {
+                    broadcastMySpirit(playerIdx);
                 }
             }
 
@@ -4836,6 +4987,19 @@
             }
 
             function showCompanionMenu(playerIdx) {
+                const myIdx = currentRole === 'player1' ? 1 : 2;
+                if (state.mode === 'multiplayer' && playerIdx !== myIdx) {
+                    Swal.fire({
+                        title: 'Compañero del Rival',
+                        text: 'Este es el compañero de tu contrincante en la partida.',
+                        icon: 'info',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    return;
+                }
                 const $wrapper = $(`#gltf-companion-p${playerIdx}`);
                 const currentWidth = parseInt($wrapper.css("width")) || 140;
 
