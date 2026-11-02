@@ -314,6 +314,18 @@
             height: 18px !important;
         }
 
+        /* En modo 2 jugadores: sobre cartas del rival en el campo, ocultar todos los botones rápidos excepto Controlar y Seleccionar */
+        body.multiplayer-mode .duel-card.opponent-uncontrolled .field-card-actions button:not(.btn-field-control):not(.btn-field-select) {
+            display: none !important;
+        }
+        body.multiplayer-mode .duel-card.opponent-uncontrolled .field-card-actions {
+            gap: 6px !important;
+        }
+        /* Ocultar barra de acciones en manos y decks del oponente */
+        body.multiplayer-mode .hand-tray .duel-card.opponent-uncontrolled .hand-card-actions {
+            display: none !important;
+        }
+
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -566,14 +578,7 @@
                     <!-- Messages populated here -->
                 </div>
 
-                <!-- Opponent Response Prompt (Flashing when opponent performs important action) -->
-                <div id="pending-response-box" style="display: none; background: rgba(255,211,45,0.15); border: 1px dashed #ffd32d; border-radius: 8px; padding: 8px; margin-bottom: 8px; text-align: center; animation: promptPulse 1.5s infinite alternate;">
-                    <div style="font-size: 0.75rem; color: #ffd32d; font-weight: bold; margin-bottom: 6px;">¿Respondes a la acción?</div>
-                    <div style="display: flex; gap: 6px; justify-content: center;">
-                        <button class="response-prompt-btn" data-response="OK" style="background: #2ec4b6; border: none; color: black; font-weight: bold; border-radius: 4px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer;">✅ OK</button>
-                        <button class="response-prompt-btn" data-response="No" style="background: #ff1b6b; border: none; color: white; font-weight: bold; border-radius: 4px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer;">❌ No</button>
-                    </div>
-                </div>
+
 
                 <!-- Quick Responses Toolbar -->
                 <div class="quick-responses-bar" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 6px;">
@@ -1172,34 +1177,41 @@
                 }
             });
 
-            // 1. Card Context Menu "Select" option handling
-            if (window.updateCardMenuOptions) {
-                const originalUpdateCardMenuOptions = window.updateCardMenuOptions;
-                window.updateCardMenuOptions = function(cardObj) {
-                    originalUpdateCardMenuOptions(cardObj);
-
-                    const isHandCard = cardObj.zone && cardObj.zone.startsWith("hand_");
-                    if (isHandCard) {
-                        $("#menu-select-card").hide();
-                    } else {
-                        $("#menu-select-card").show();
-                    }
-
-                    if (typeof state !== 'undefined' && state.mode === 'multiplayer' && isOpponentUncontrolledCard(cardObj)) {
-                        if (isHandCard || (cardObj.zone && cardObj.zone.startsWith('deck_'))) {
-                            $('#card-menu').removeClass('active');
-                            return;
-                        }
-                        $('#card-menu .menu-item').hide();
-                        $('#menu-select-card').show();
-                        $('#menu-control').show();
-                        $('#menu-view-zoom').show();
-                    }
-                };
+            // --- Helper: Determine if card belongs to rival and is not controlled by current player ---
+            function isOpponentUncontrolledCard(card) {
+                if (typeof state === 'undefined' || state.mode !== 'multiplayer') return false;
+                var myRole = window.currentRole || (typeof currentRole !== 'undefined' ? currentRole : 'player1');
+                var effectiveController = card.controller || card.owner || (card.zone && card.zone.endsWith('_1') ? 'player1' : (card.zone && card.zone.endsWith('_2') ? 'player2' : null));
+                return !!(effectiveController && effectiveController !== myRole);
             }
 
+            // 1. Card Context Menu "Select" option handling
+            var origUpdateCardMenuOptions = window.updateCardMenuOptions;
+            window.updateCardMenuOptions = function(cardObj) {
+                if (typeof origUpdateCardMenuOptions === 'function') {
+                    origUpdateCardMenuOptions(cardObj);
+                }
+
+                const isHandCard = cardObj.zone && cardObj.zone.startsWith("hand_");
+                if (isHandCard) {
+                    $("#menu-select-card").hide();
+                } else {
+                    $("#menu-select-card").show();
+                }
+
+                if (typeof state !== 'undefined' && state.mode === 'multiplayer' && isOpponentUncontrolledCard(cardObj)) {
+                    if (isHandCard || (cardObj.zone && cardObj.zone.startsWith('deck_'))) {
+                        $('#card-menu').removeClass('active');
+                        return;
+                    }
+                    $('#card-menu .menu-item, #card-menu hr').hide();
+                    $('#menu-select-card').show();
+                    $('#menu-control').show();
+                }
+            };
+
             // 2. Register Seleccionar Option Click Event
-            $("#menu-select-card").click(function() {
+            $("#menu-select-card").off('click.selectCard').on('click.selectCard', function() {
                 if (typeof activeMenuCard === "undefined" || !activeMenuCard) return;
                 const cardObj = activeMenuCard;
 
@@ -1237,25 +1249,38 @@
                 }
             });
 
-
-            // --- Helper: Determine if card belongs to rival and is not controlled by current player ---
-            function isOpponentUncontrolledCard(card) {
-                if (typeof state === 'undefined' || state.mode !== 'multiplayer') return false;
-                var myRole = window.currentRole || (typeof currentRole !== 'undefined' ? currentRole : 'player1');
-                var effectiveController = card.controller || card.owner || (card.zone && card.zone.endsWith('_1') ? 'player1' : (card.zone && card.zone.endsWith('_2') ? 'player2' : null));
-                return !!(effectiveController && effectiveController !== myRole);
-            }
-
             // In multiplayer mode, restrict dragging opponent uncontrolled cards (field, hand, piles)
             var origBindCardDragEvents = window.bindCardDragEvents;
             if (typeof origBindCardDragEvents === 'function') {
                 window.bindCardDragEvents = function() {
                     origBindCardDragEvents.apply(this, arguments);
+
+                    // Ensure classes and buttons on opponent cards in multiplayer mode
+                    if (typeof state !== 'undefined' && state.mode === 'multiplayer') {
+                        $('body').addClass('multiplayer-mode');
+                        state.cards.forEach(function(card) {
+                            var $elem = $('#' + card.instanceId);
+                            if ($elem.length && isOpponentUncontrolledCard(card)) {
+                                $elem.addClass('opponent-uncontrolled');
+                                var $actions = $elem.find('.field-card-actions');
+                                if ($actions.length) {
+                                    $actions.find('button').not('.btn-field-control').hide();
+                                    if (!$actions.find('.btn-field-select').length) {
+                                        $actions.prepend('<button class="field-action-btn btn-field-select" data-instance-id="' + card.instanceId + '">Seleccionar</button>');
+                                    }
+                                }
+                            }
+                        });
+                    }
+
                     $('.duel-card').off('mousedown.rivalCheck touchstart.rivalCheck').on('mousedown.rivalCheck touchstart.rivalCheck', function(e) {
                         if (typeof state === 'undefined' || state.mode !== 'multiplayer') return;
                         var instId = $(this).data('instance-id') || $(this).attr('id');
                         var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
                         if (cardObj && isOpponentUncontrolledCard(cardObj)) {
+                            if (typeof window.activeAttackSourceCard !== 'undefined' && window.activeAttackSourceCard) {
+                                return;
+                            }
                             var isHandOrDeck = cardObj.zone && (cardObj.zone.startsWith('hand_') || cardObj.zone.startsWith('deck_'));
                             if (isHandOrDeck) {
                                 e.preventDefault();
@@ -1264,10 +1289,44 @@
                             }
                             // On field: prevent movement
                             e.preventDefault();
+                            e.stopPropagation();
+                            dragCard = null;
                         }
                     });
                 };
             }
+
+            // Click handler for field quick-action "Seleccionar" button on rival card (mobile)
+            $(document).off('click.rivalSelectMobile', '.btn-field-select').on('click.rivalSelectMobile', '.btn-field-select', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var instId = $(this).data('instance-id');
+                var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
+                if (!cardObj) return;
+
+                var $cardElem = $('#' + cardObj.instanceId);
+                if ($cardElem.length) {
+                    $cardElem.addClass("activating-flash");
+                    setTimeout(function() {
+                        $cardElem.removeClass("activating-flash");
+                    }, 800);
+
+                    $(".card-select-pointer").remove();
+                    var $pointer = $('<div class="card-select-pointer"><i class="fas fa-hand-point-down"></i></div>');
+                    $cardElem.append($pointer);
+
+                    setTimeout(function() {
+                        $pointer.css('opacity', '0');
+                        setTimeout(function() {
+                            $pointer.remove();
+                        }, 300);
+                    }, 4000);
+                }
+
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`Seleccionó la carta`, cardObj.name);
+                }
+            });
 
             // Clamp card-menu coordinates so it never overflows off-screen
             var origClampMenuCoords = window.clampMenuCoords;
