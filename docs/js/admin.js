@@ -285,10 +285,8 @@ $(document).ready(async function() {
     });
 
     $(document).on('click', '#btn-wishlist, #menu-btn-wishlist', function(e) {
-        e.preventDefault();
-        showView('wishlist');
-        if (typeof loadWishlistAdmin === 'function') loadWishlistAdmin();
-        if (window.botInstance) window.botInstance.setContext('wishlist');
+        // Redirigir a Wantlist Pro
+        window.location.href = 'wantlist.html';
     });
 
     $(document).on('click', '#btn-show-expansiones', function(e) {

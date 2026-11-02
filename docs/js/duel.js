@@ -627,9 +627,9 @@ function renderAllCards() {
             card.tiltAngle = 0;
         }
 
-        // Rule 5: In Pokémon, field cards are always face-up (except deck and prizes)
+        // Rule 5: In Pokémon, cards in grave or banished are face-up; field cards preserve their faceDown state (e.g. Invocar Set)
         if (state.layout === "pokemon") {
-            if (!card.zone.startsWith("deck_") && !card.zone.startsWith("prize_") && !card.zone.startsWith("hand_")) {
+            if (card.zone.startsWith("grave_") || card.zone.startsWith("banished_")) {
                 card.faceDown = false;
             }
         }
@@ -677,7 +677,8 @@ function renderAllCards() {
                         `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set/Flip</button>
                          <button class="hand-action-btn btn-defense" data-instance-id="${card.instanceId}">ATK/DEF</button>` :
                         (state.layout === 'pokemon' ?
-                            `<button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
+                            `<button class="hand-action-btn btn-pokemon-set" data-instance-id="${card.instanceId}">Invocar Set</button>
+                             <button class="hand-action-btn btn-activate" data-instance-id="${card.instanceId}">Activar</button>
                              <button class="hand-action-btn btn-pokemon-field" data-instance-id="${card.instanceId}">Field</button>` :
                             `<button class="hand-action-btn btn-set" data-instance-id="${card.instanceId}">Set/Flip</button>`
                         )
@@ -868,6 +869,9 @@ function renderAllCards() {
         }
     });
 
+    // Check Pokemon Prize victory condition (from 6 prizes down to 0)
+    checkPokemonPrizeVictory();
+
     bindCardDragEvents();
 }
 
@@ -897,6 +901,8 @@ function bindCardDragEvents() {
 
         if ($(this).hasClass("btn-summon")) {
             startGraphicalTargeting(cardObj, "summon");
+        } else if ($(this).hasClass("btn-pokemon-set")) {
+            startGraphicalTargeting(cardObj, "pokemon_set");
         } else if ($(this).hasClass("btn-set")) {
             startGraphicalTargeting(cardObj, "set");
         } else if ($(this).hasClass("btn-defense")) {
@@ -1758,26 +1764,118 @@ function renderCardEffectInPreview(card) {
     let descText = card.desc || card.description || card.effect || card.text || "";
     if (!descText && card.name) {
         $("#detail-card-desc, #accessories-card-desc").text("Cargando efecto...");
-        fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                if (data && data.data && data.data.length > 0) {
-                    const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
-                    if (matched && matched.desc) {
-                        card.desc = matched.desc;
-                        if ($("#detail-card-name").text() === card.name) {
-                            $("#detail-card-desc, #accessories-card-desc").text(matched.desc);
+
+        if (state.layout === "pokemon") {
+            // Pokémon card effect search using TCGdex (Spanish/English) & Pokemon TCG API
+            const fetchPokemonDesc = async () => {
+                try {
+                    // Try TCGdex Spanish first
+                    let r = await fetch(`https://api.tcgdex.net/v2/es/cards?name=${encodeURIComponent(card.name)}`);
+                    let list = r.ok ? await r.json() : null;
+                    if (!list || !list.length) {
+                        r = await fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(card.name)}`);
+                        list = r.ok ? await r.json() : null;
+                    }
+                    if (list && list.length > 0) {
+                        const matchedSummary = list.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || list[0];
+                        if (matchedSummary && matchedSummary.id) {
+                            const detailResp = await fetch(`https://api.tcgdex.net/v2/${r.url.includes('/es/') ? 'es' : 'en'}/cards/${matchedSummary.id}`);
+                            if (detailResp.ok) {
+                                const details = await detailResp.json();
+                                let parts = [];
+                                if (details.category) parts.push(`[${details.category}${details.stage ? ' - ' + details.stage : ''}${details.hp ? ' | HP ' + details.hp : ''}]`);
+                                if (details.abilities && details.abilities.length) {
+                                    details.abilities.forEach(ab => {
+                                        parts.push(`【Habilidad: ${ab.name}】\n${ab.effect || ''}`);
+                                    });
+                                }
+                                if (details.attacks && details.attacks.length) {
+                                    details.attacks.forEach(atk => {
+                                        const cost = atk.cost && atk.cost.length ? `[${atk.cost.join(', ')}] ` : '';
+                                        const dmg = atk.damage ? ` (${atk.damage})` : '';
+                                        parts.push(`【${cost}${atk.name}${dmg}】\n${atk.effect || ''}`.trim());
+                                    });
+                                }
+                                if (details.description) {
+                                    parts.push(details.description);
+                                }
+                                if (parts.length > 0) {
+                                    const fullDesc = parts.join('\n\n');
+                                    card.desc = fullDesc;
+                                    if ($("#detail-card-name").text() === card.name) {
+                                        $("#detail-card-desc, #accessories-card-desc").text(fullDesc);
+                                    }
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
+                    // Fallback to official Pokemon TCG API
+                    const pkResp = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(card.name)}"&pageSize=1`, {
+                        headers: { "User-Agent": "Mozilla/5.0" }
+                    });
+                    if (pkResp.ok) {
+                        const pkData = await pkResp.json();
+                        if (pkData && pkData.data && pkData.data.length > 0) {
+                            const c = pkData.data[0];
+                            let parts = [];
+                            if (c.supertype) parts.push(`[${c.supertype}${c.subtypes ? ' - ' + c.subtypes.join(', ') : ''}${c.hp ? ' | HP ' + c.hp : ''}]`);
+                            if (c.abilities && c.abilities.length) {
+                                c.abilities.forEach(ab => {
+                                    parts.push(`【Ability: ${ab.name}】\n${ab.text || ''}`);
+                                });
+                            }
+                            if (c.attacks && c.attacks.length) {
+                                c.attacks.forEach(atk => {
+                                    const cost = atk.cost && atk.cost.length ? `[${atk.cost.join(', ')}] ` : '';
+                                    const dmg = atk.damage ? ` (${atk.damage})` : '';
+                                    parts.push(`【${cost}${atk.name}${dmg}】\n${atk.text || ''}`.trim());
+                                });
+                            }
+                            if (c.rules && c.rules.length) {
+                                parts.push(`【Rules】\n${c.rules.join('\n')}`);
+                            }
+                            if (parts.length > 0) {
+                                const fullDesc = parts.join('\n\n');
+                                card.desc = fullDesc;
+                                if ($("#detail-card-name").text() === card.name) {
+                                    $("#detail-card-desc, #accessories-card-desc").text(fullDesc);
+                                }
+                                return;
+                            }
+                        }
+                    }
+
+                    $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
+                } catch(e) {
+                    $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
+                }
+            };
+            fetchPokemonDesc();
+        } else {
+            // Yu-Gi-Oh! card effect search via YGOPRODeck API
+            fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(card.name)}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data && data.data && data.data.length > 0) {
+                        const matched = data.data.find(c => c.name.toLowerCase() === card.name.toLowerCase()) || data.data[0];
+                        if (matched && matched.desc) {
+                            card.desc = matched.desc;
+                            if ($("#detail-card-name").text() === card.name) {
+                                $("#detail-card-desc, #accessories-card-desc").text(matched.desc);
+                            }
+                        } else {
+                            $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
                         }
                     } else {
                         $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
                     }
-                } else {
+                })
+                .catch(() => {
                     $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
-                }
-            })
-            .catch(() => {
-                $("#detail-card-desc, #accessories-card-desc").text("Efecto no disponible.");
-            });
+                });
+        }
     } else {
         $("#detail-card-desc, #accessories-card-desc").text(descText || "Sin efecto/descripción.");
     }
@@ -2009,11 +2107,10 @@ function shuffleHand(playerKey) {
     });
 }
 
-// Mulligan action: return all hand cards to deck, shuffle deck, and log without confirmation prompt
-function mulliganHand(playerKey) {
+// Mulligan action: dispatch all hand cards to chosen destination (deck, grave, banish)
+function mulliganHand(playerKey, destination = "deck") {
     const handZone = playerKey === "player1" ? "hand_1" : "hand_2";
     const playerSuffix = playerKey === "player1" ? 1 : 2;
-    const targetDeckZone = `deck_${playerSuffix}`;
     const handCards = state.cards.filter(c => c.zone === handZone);
 
     if (handCards.length === 0) {
@@ -2029,31 +2126,92 @@ function mulliganHand(playerKey) {
         return;
     }
 
-    const count = handCards.length;
-    handCards.forEach(cardObj => {
-        cardObj.zone = targetDeckZone;
-        delete cardObj.movedToPileAt;
-        cardObj.faceDown = true;
-        cardObj.tapped = false;
-        cardObj.attachedTo = null;
-    });
-
-    shuffleDeckSilent(playerKey);
-    renderAllCards();
-
-    if (typeof sendGameAction === "function") {
-        sendGameAction(`Realizó Mulligan: devolvió ${count} carta(s) de su mano al Deck y lo barajó`);
+    // Special Pokémon 2-player multiplayer check for sending hand to Deck
+    if (destination === "deck" && state.layout === "pokemon" && state.mode === "multiplayer") {
+        if (typeof requestPokemonMulliganConfirmation === "function") {
+            requestPokemonMulliganConfirmation(playerKey, handCards);
+            return;
+        }
     }
 
-    Swal.fire({
-        icon: 'success',
-        title: 'Mulligan Completado',
-        text: `Se devolvieron ${count} cartas al Deck y se ha barajado.`,
-        toast: true,
-        position: 'top-end',
-        timer: 1800,
-        showConfirmButton: false
-    });
+    executeMulliganDispatch(playerKey, destination, handCards);
+}
+
+function executeMulliganDispatch(playerKey, destination, handCards) {
+    const playerSuffix = playerKey === "player1" ? 1 : 2;
+    const count = handCards.length;
+
+    if (destination === "grave") {
+        const targetGraveZone = `grave_${playerSuffix}`;
+        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z || 0)) : 10;
+        handCards.forEach((cardObj, idx) => {
+            cardObj.zone = targetGraveZone;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            cardObj.attachedTo = null;
+            cardObj.z = maxZ + idx + 1;
+        });
+        renderAllCards();
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Envió su mano (${count} cartas) al Cementerio/Descarte`);
+        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Mano al Cementerio',
+            text: `Se enviaron ${count} cartas al Cementerio/Descarte.`,
+            toast: true,
+            position: 'top-end',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    } else if (destination === "banish") {
+        const targetBanishZone = `banished_${playerSuffix}`;
+        const maxZ = state.cards.length > 0 ? Math.max(...state.cards.map(c => c.z || 0)) : 10;
+        handCards.forEach((cardObj, idx) => {
+            cardObj.zone = targetBanishZone;
+            cardObj.faceDown = false;
+            cardObj.tapped = false;
+            cardObj.attachedTo = null;
+            cardObj.z = maxZ + idx + 1;
+        });
+        renderAllCards();
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Desterró su mano (${count} cartas) a la zona Banish`);
+        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Mano a Banish',
+            text: `Se desterraron ${count} cartas de la mano.`,
+            toast: true,
+            position: 'top-end',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    } else {
+        // Default destination: deck
+        const targetDeckZone = `deck_${playerSuffix}`;
+        handCards.forEach(cardObj => {
+            cardObj.zone = targetDeckZone;
+            delete cardObj.movedToPileAt;
+            cardObj.faceDown = true;
+            cardObj.tapped = false;
+            cardObj.attachedTo = null;
+        });
+        shuffleDeckSilent(playerKey);
+        renderAllCards();
+        if (typeof sendGameAction === "function") {
+            sendGameAction(`Realizó Mulligan: devolvió ${count} carta(s) de su mano al Deck y lo barajó`);
+        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Mulligan Completado',
+            text: `Se devolvieron ${count} cartas al Deck y se ha barajado.`,
+            toast: true,
+            position: 'top-end',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    }
 }
 
 // Set up 6 face-down Prize Cards for Pokemon
@@ -2070,6 +2228,22 @@ function setupPokemonPrizes(playerKey) {
     const playerSuffix = playerKey === "player1" ? 1 : 2;
     const deckZone = `deck_${playerSuffix}`;
     const prizePrefix = `prize_${playerSuffix}_`;
+
+    // Validar si ya se colocaron los premios previamente en la partida
+    if (!state.prizesAlreadyPlaced) state.prizesAlreadyPlaced = {};
+    const existingPrizes = state.cards.filter(c => c.zone && c.zone.startsWith(prizePrefix));
+    if (state.prizesAlreadyPlaced[playerKey] || existingPrizes.length > 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Premios Ya Colocados',
+            text: 'Solo se pueden colocar los 6 premios una sola vez al inicio de la partida.',
+            toast: true,
+            position: 'top-end',
+            timer: 2500,
+            showConfirmButton: false
+        });
+        return;
+    }
 
     // Filter and sort deck cards descending by z-index (top cards first)
     const deckCards = state.cards
@@ -2092,6 +2266,10 @@ function setupPokemonPrizes(playerKey) {
         card.faceDown = true; // Prize cards are always face-down
         card.tapped = false;
     }
+
+    state.prizesAlreadyPlaced[playerKey] = true;
+    state.hasHadPrizes = state.hasHadPrizes || {};
+    state.hasHadPrizes[playerKey] = true;
 
     renderAllCards();
 
@@ -2326,12 +2504,17 @@ function startGraphicalTargeting(cardObj, actionType) {
                     }
                 }
             } else {
-                // Pokémon placement rules (everything on the playmat is face-up except deck and prizes)
-                targetingCard.faceDown = false;
-                if (targetActionType === "defense") {
-                    targetingCard.tapped = true;
-                } else {
+                // Pokémon placement rules (everything on the playmat is face-up except deck, prizes and pokemon_set)
+                if (targetActionType === "pokemon_set") {
+                    targetingCard.faceDown = true;
                     targetingCard.tapped = false;
+                } else {
+                    targetingCard.faceDown = false;
+                    if (targetActionType === "defense") {
+                        targetingCard.tapped = true;
+                    } else {
+                        targetingCard.tapped = false;
+                    }
                 }
             }
 
@@ -4254,8 +4437,24 @@ function openCardContextMenu(cardObj, clientX, clientY) {
     $(document).on("click", ".btn-hand-mulligan", function(e) {
         e.preventDefault();
         e.stopPropagation();
+        const $wrapper = $(this).closest(".mulligan-dropdown-wrapper");
+        $(".mulligan-dropdown-wrapper").not($wrapper).removeClass("open");
+        $wrapper.toggleClass("open");
+    });
+
+    $(document).on("click", ".mulligan-opt-btn", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         const playerKey = $(this).data("player") || "player1";
-        mulliganHand(playerKey);
+        const dest = $(this).data("dest") || "deck";
+        $(this).closest(".mulligan-dropdown-wrapper").removeClass("open");
+        mulliganHand(playerKey, dest);
+    });
+
+    $(document).on("click", function(e) {
+        if (!$(e.target).closest(".mulligan-dropdown-wrapper").length) {
+            $(".mulligan-dropdown-wrapper").removeClass("open");
+        }
     });
 
     // Hand Multi-Select Toggle Handlers
@@ -4542,6 +4741,42 @@ function openCardContextMenu(cardObj, clientX, clientY) {
             confirmButtonText: 'Entendido',
             confirmButtonColor: '#00d2ff'
         });
+    });
+}
+
+// Helper to evaluate Pokemon prize victory condition
+function checkPokemonPrizeVictory() {
+    if (state.layout !== "pokemon" || !state.hasHadPrizes) return;
+    if (state.prizeVictoryAnnounced) return;
+
+    ["player1", "player2"].forEach(playerKey => {
+        if (state.hasHadPrizes[playerKey]) {
+            const playerSuffix = playerKey === "player1" ? 1 : 2;
+            const remainingPrizes = state.cards.filter(c => c.zone && c.zone.startsWith(`prize_${playerSuffix}_`)).length;
+            if (remainingPrizes === 0) {
+                state.prizeVictoryAnnounced = true;
+                const winnerName = (typeof playerCustomNames !== "undefined" && playerCustomNames[playerKey]) ? playerCustomNames[playerKey] : (playerKey === "player1" ? "Jugador 1" : "Jugador 2");
+                const victoryText = `¡${winnerName} ha tomado todos sus premios y GANA la partida!`;
+
+                if (typeof appendGameLog === "function") {
+                    appendGameLog('SYS', `<b>VICTORIA:</b> ${victoryText}`);
+                }
+                if (typeof sendGameAction === "function") {
+                    sendGameAction(`¡Tomó todos sus premios y gana la partida!`, null, true);
+                }
+                if (typeof window.showSpiritThought === "function") {
+                    window.showSpiritThought(playerSuffix, `¡Gané la partida! Tomé todos los premios`);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡VICTORIA EN PÓKEMON!',
+                    html: `<b>${winnerName}</b> ha tomado sus 6 cartas de Premio y es el ganador del juego.`,
+                    confirmButtonColor: '#ffcb05',
+                    confirmButtonText: '¡Excelente!'
+                });
+            }
+        }
     });
 }
 

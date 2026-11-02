@@ -326,6 +326,80 @@
             display: none !important;
         }
 
+        /* Dropdown Mulligan Menu */
+        .mulligan-dropdown-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .mulligan-dropdown-menu {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 6px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            border-radius: 8px;
+            padding: 4px;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10050;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+            min-width: 95px;
+        }
+        .hand-tray.player-2 .mulligan-dropdown-menu {
+            bottom: auto;
+            top: 100%;
+            margin-top: 6px;
+            margin-bottom: 0;
+        }
+        body.rotated-board .hand-tray.player-2 .mulligan-dropdown-menu {
+            top: auto;
+            bottom: 100%;
+            margin-bottom: 6px;
+            margin-top: 0;
+        }
+        body.rotated-board .hand-tray.player-1 .mulligan-dropdown-menu {
+            bottom: auto;
+            top: 100%;
+            margin-top: 6px;
+            margin-bottom: 0;
+        }
+        .mulligan-dropdown-wrapper:hover .mulligan-dropdown-menu,
+        .mulligan-dropdown-wrapper.open .mulligan-dropdown-menu {
+            display: flex;
+        }
+        .mulligan-opt-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #eee;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            text-align: center;
+        }
+        .mulligan-opt-btn:hover {
+            background: rgba(0, 210, 255, 0.25);
+            border-color: #00d2ff;
+            color: #00d2ff;
+        }
+        .mulligan-opt-btn.opt-grave:hover {
+            background: rgba(255, 71, 87, 0.25);
+            border-color: #ff4757;
+            color: #ff4757;
+        }
+        .mulligan-opt-btn.opt-banish:hover {
+            background: rgba(168, 85, 247, 0.25);
+            border-color: #a855f7;
+            color: #a855f7;
+        }
+
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -483,7 +557,14 @@
 
                 <div class="hand-controls" id="hand-controls-p2" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 2px; pointer-events: auto;">
                     <button class="btn-hand-shuffle" data-player="player2" title="Shuffle">Shuffle</button>
-                    <button class="btn-hand-mulligan" data-player="player2" title="Mulligan">Mulligan</button>
+                    <div class="mulligan-dropdown-wrapper">
+                        <button class="btn-hand-mulligan" data-player="player2" title="Mulligan">Mulligan</button>
+                        <div class="mulligan-dropdown-menu">
+                            <button class="mulligan-opt-btn opt-deck" data-player="player2" data-dest="deck">Deck</button>
+                            <button class="mulligan-opt-btn opt-grave" data-player="player2" data-dest="grave">Cementerio</button>
+                            <button class="mulligan-opt-btn opt-banish" data-player="player2" data-dest="banish">Banish</button>
+                        </div>
+                    </div>
                     <button class="btn-hand-reveal" id="btn-reveal-hand-p2" data-player="player2" style="display: none;" title="Mostrar mano al rival">Mostrar mano</button>
                     <div class="hand-batch-actions" id="hand-batch-p2" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player2" style="background: rgba(255,27,107,0.2); border: 1px solid #ff1b6b; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
@@ -525,7 +606,14 @@
 
                 <div class="hand-controls" id="hand-controls-p1" style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 2px; pointer-events: auto;">
                     <button class="btn-hand-shuffle" data-player="player1" title="Shuffle">Shuffle</button>
-                    <button class="btn-hand-mulligan" data-player="player1" title="Mulligan">Mulligan</button>
+                    <div class="mulligan-dropdown-wrapper">
+                        <button class="btn-hand-mulligan" data-player="player1" title="Mulligan">Mulligan</button>
+                        <div class="mulligan-dropdown-menu">
+                            <button class="mulligan-opt-btn opt-deck" data-player="player1" data-dest="deck">Deck</button>
+                            <button class="mulligan-opt-btn opt-grave" data-player="player1" data-dest="grave">Cementerio</button>
+                            <button class="mulligan-opt-btn opt-banish" data-player="player1" data-dest="banish">Banish</button>
+                        </div>
+                    </div>
                     <button class="btn-hand-reveal" id="btn-reveal-hand-p1" data-player="player1" style="display: none;" title="Mostrar mano al rival">Mostrar mano</button>
                     <div class="hand-batch-actions" id="hand-batch-p1" style="display: none; gap: 5px;">
                         <button class="batch-action-btn btn-batch-deck" data-player="player1" style="background: rgba(0,210,255,0.2); border: 1px solid #00d2ff; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer;">A Deck</button>
@@ -1462,8 +1550,121 @@
                         }
                     }
                 });
+
+                // Mobile Pokemon Mulligan Broadcast Listeners
+                ch.on('broadcast', { event: 'pokemon_mulligan_request' }, async function(ref) {
+                    var payload = ref.payload;
+                    var myRole = window.currentRole || 'player1';
+                    if (payload.targetPlayer !== myRole) return;
+                    var rivalName = payload.requesterName || 'El rival';
+                    var cardsList = payload.handCards || [];
+
+                    let cardsHtml = `<div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; max-height: 220px; overflow-y: auto; padding: 10px; margin: 15px 0; background: rgba(0,0,0,0.3); border-radius: 8px;">`;
+                    cardsList.forEach(c => {
+                        cardsHtml += `
+                            <div style="display: flex; flex-direction: column; align-items: center; width: 70px;">
+                                <img src="${c.imageUrl}" alt="${c.name}" style="width: 60px; height: 84px; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.5);">
+                                <span style="font-size: 0.65rem; color: #eee; margin-top: 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;">${c.name}</span>
+                            </div>
+                        `;
+                    });
+                    cardsHtml += `</div>`;
+
+                    var result = await Swal.fire({
+                        title: 'Solicitud de Mulligan Pokémon',
+                        html: `<b>${rivalName}</b> desea realizar Mulligan y devolver su mano al Deck. Te muestra sus cartas:<br>${cardsHtml}¿Confirmas el Mulligan?`,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Confirmar Mulligan',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#00d2ff',
+                        cancelButtonColor: '#ff0055',
+                        customClass: { popup: 'cyber-swal' }
+                    });
+
+                    var accepted = result.isConfirmed;
+                    if (ch && typeof ch.send === 'function') {
+                        ch.send({
+                            type: 'broadcast',
+                            event: 'pokemon_mulligan_response',
+                            payload: {
+                                requestId: payload.requestId,
+                                accepted: accepted,
+                                playerKey: payload.playerKey
+                            }
+                        });
+                    }
+                });
+
+                ch.on('broadcast', { event: 'pokemon_mulligan_response' }, function(ref) {
+                    var payload = ref.payload;
+                    if (window.pendingPokemonMulliganRequest && window.pendingPokemonMulliganRequest.id === payload.requestId) {
+                        var req = window.pendingPokemonMulliganRequest;
+                        window.pendingPokemonMulliganRequest = null;
+                        Swal.close();
+                        if (payload.accepted) {
+                            if (typeof executeMulliganDispatch === 'function') {
+                                executeMulliganDispatch(req.playerKey, 'deck', req.handCards);
+                            }
+                            if (typeof window.syncCardsImmediately === 'function') {
+                                window.syncCardsImmediately();
+                            }
+                        } else {
+                            Swal.fire({
+                                title: 'Mulligan Cancelado',
+                                text: 'El rival no confirmó el Mulligan.',
+                                icon: 'warning',
+                                timer: 2000,
+                                showConfirmButton: false,
+                                customClass: { popup: 'cyber-swal' }
+                            });
+                        }
+                    }
+                });
             }
             initMobileRealtimeConfirmation();
+
+            // Send Pokemon Mulligan request to opponent in Mobile
+            window.requestPokemonMulliganConfirmation = function(playerKey, handCards) {
+                var myRole = window.currentRole || 'player1';
+                var opponentRole = myRole === 'player1' ? 'player2' : 'player1';
+                var requestId = 'mulligan_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+                window.pendingPokemonMulliganRequest = {
+                    id: requestId,
+                    playerKey: playerKey,
+                    handCards: handCards
+                };
+
+                Swal.fire({
+                    title: 'Esperando al Rival',
+                    text: 'Mostrando cartas al rival y esperando su confirmación para el Mulligan...',
+                    allowOutsideClick: false,
+                    didOpen: function() { Swal.showLoading(); },
+                    customClass: { popup: 'cyber-swal' }
+                });
+
+                var ch = window.commChannel || (typeof commChannel !== 'undefined' ? commChannel : null);
+                if (ch && typeof ch.send === 'function') {
+                    ch.send({
+                        type: 'broadcast',
+                        event: 'pokemon_mulligan_request',
+                        payload: {
+                            requestId: requestId,
+                            targetPlayer: opponentRole,
+                            requesterName: typeof myUsername !== 'undefined' ? myUsername : 'Adversario',
+                            playerKey: playerKey,
+                            handCards: handCards.map(function(c) {
+                                return {
+                                    instanceId: c.instanceId,
+                                    name: c.name,
+                                    imageUrl: c.imageUrl
+                                };
+                            })
+                        }
+                    });
+                }
+            };
 
             window.requestOpponentCardAction = function(cardObj, actionType, targetZone, actionDesc) {
                 if (typeof state === 'undefined' || state.mode !== 'multiplayer') {
