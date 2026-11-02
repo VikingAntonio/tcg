@@ -428,6 +428,30 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 27, 107, 0.05);
         }
 
+        /* Inverted LP positions when board is rotated for Player 2 perspective so player's LP is always on left */
+        body.rotated-board .lp-counter-container.p1-lp-container {
+            left: auto !important;
+            right: 15px !important;
+        }
+        body.rotated-board .lp-counter-container.p2-lp-container {
+            right: auto !important;
+            left: 15px !important;
+        }
+
+        /* Inverted GLTF companion positions when board is rotated for Player 2 perspective */
+        body.rotated-board #gltf-companion-p1 {
+            bottom: auto !important;
+            top: 80px !important;
+            left: auto !important;
+            right: 180px !important;
+        }
+        body.rotated-board #gltf-companion-p2 {
+            top: auto !important;
+            bottom: 80px !important;
+            right: auto !important;
+            left: 30px !important;
+        }
+
         /* Equipped Cards Indicator style - centered small icon with 70% opacity and blinking animation */
         .equip-indicator-icon {
             position: absolute;
@@ -1204,16 +1228,25 @@
         }
 
 
-        /* In multiplayer and board rotation, ensure Player 2 (or any hand tray positioned at bottom or rotated) displays hand-card-actions upwards within view */
-        .hand-tray.player-2 .hand-card-actions,
+        /* In 1-player practice mode, player 2 hand options drop DOWNWARDS so they do not go off-screen.
+           In rotated board (when Player 2 is at bottom in 2-player mode), display hand-card-actions UPWARDS within view. */
         body.rotated-board .hand-tray.player-2 .hand-card-actions {
             bottom: 120px !important;
             top: auto !important;
         }
-        .hand-tray.player-2 .hand-card-actions::after,
         body.rotated-board .hand-tray.player-2 .hand-card-actions::after {
             bottom: -15px !important;
             top: auto !important;
+            height: 18px !important;
+        }
+
+        body:not(.rotated-board) .hand-tray.player-2 .hand-card-actions {
+            top: 120px !important;
+            bottom: auto !important;
+        }
+        body:not(.rotated-board) .hand-tray.player-2 .hand-card-actions::after {
+            top: -15px !important;
+            bottom: auto !important;
             height: 18px !important;
         }
 
@@ -1365,20 +1398,20 @@
 
             <!-- LP Counter for Player 2 (Moved to top right) -->
             <div class="lp-counter-container p2-lp-container" id="lp-counter-p2" title="Clic para modificar Puntos de Vida">
-                <div class="lp-header">P2 LP</div>
+                <div class="lp-header" id="lp-header-p2">P2 LP</div>
                 <div class="lp-number" id="lp-display-p2">8000</div>
             </div>
 
             <!-- LP Counter for Player 1 (Moved to top left) -->
             <div class="lp-counter-container p1-lp-container" id="lp-counter-p1" title="Clic para modificar Puntos de Vida">
-                <div class="lp-header">P1 LP</div>
+                <div class="lp-header" id="lp-header-p1">P1 LP</div>
                 <div class="lp-number" id="lp-display-p1">8000</div>
             </div>
 
             <!-- Floating GLTF Character Companions -->
             <!-- Player 1 Companion -->
             <div class="gltf-companion-wrapper" id="gltf-companion-p1" style="position: absolute; bottom: 80px; left: 30px; z-index: 1000; width: 140px; height: 140px; touch-action: none; pointer-events: auto;">
-                <div class="spirit-speech-bubble" id="bubble-p1" style="display: none;">¡Listo para el duelo!</div>
+                <div class="spirit-speech-bubble" id="bubble-p1" style="display: none;">Listo para el duelo</div>
                 <model-viewer id="viewer-p1" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="0" exposure="1" camera-controls disable-zoom disable-pan style="width: 100%; height: 100%; cursor: grab; outline: none;"></model-viewer>
                 <!-- Context Menu trigger button or drag indicator -->
                 <div class="gltf-drag-handle" title="Arrastra para mover personaje" style="position: absolute; top: -5px; right: -5px; width: 26px; height: 26px; background: rgba(0, 210, 255, 0.8); border: 1.5px solid #fff; border-radius: 50%; color: #000; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: move; box-shadow: 0 0 8px rgba(0,210,255,0.6); z-index: 10002;">
@@ -1388,7 +1421,7 @@
 
             <!-- Player 2 Companion -->
             <div class="gltf-companion-wrapper" id="gltf-companion-p2" style="position: absolute; top: 80px; right: 180px; z-index: 1000; width: 140px; height: 140px; touch-action: none; pointer-events: auto;">
-                <div class="spirit-speech-bubble" id="bubble-p2" style="display: none;">¡Que gane el mejor!</div>
+                <div class="spirit-speech-bubble" id="bubble-p2" style="display: none;">Que gane el mejor</div>
                 <model-viewer id="viewer-p2" loading="eager" auto-rotate rotation="0deg 0deg 0deg" interaction-prompt="none" shadow-intensity="0" exposure="1" camera-controls disable-zoom disable-pan style="width: 100%; height: 100%; cursor: grab; outline: none;"></model-viewer>
                 <!-- Context Menu trigger button or drag indicator -->
                 <div class="gltf-drag-handle" title="Arrastra para mover personaje" style="position: absolute; top: -5px; right: -5px; width: 26px; height: 26px; background: rgba(255, 27, 107, 0.8); border: 1.5px solid #fff; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: move; box-shadow: 0 0 8px rgba(255,27,107,0.6); z-index: 10002;">
@@ -1505,7 +1538,12 @@
 
             <!-- Game Log Panel (Auto Logs Actions) -->
             <div class="sidebar-section comm-panel" style="height: 250px; max-height: 250px; display: flex; flex-direction: column; overflow: hidden;">
-                <h3><i class="fas fa-history"></i> Game Log</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <h3 style="margin: 0;"><i class="fas fa-history"></i> Game Log</h3>
+                    <button class="btn-micro" id="btn-change-username" title="Cambiar tu nombre en la partida" style="background: rgba(0,210,255,0.15); border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">
+                        <i class="fas fa-user-edit"></i> Mi Nombre
+                    </button>
+                </div>
                 <div id="game-log-box" style="flex: 1; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 8px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px;">
                     <!-- Logs populated here -->
                 </div>
@@ -1661,6 +1699,12 @@
                             sendGameAction(`Declaró ataque con ${window.activeAttackSourceCard.name} hacia ${targetCard.name}`);
                         }
 
+                        // Spirit thought in first person
+                        if (typeof window.showSpiritThought === "function") {
+                            const pIdx = currentRole === 'player1' ? 1 : 2;
+                            window.showSpiritThought(pIdx, `Ataco a ${targetCard.name}`);
+                        }
+
                         if (typeof window.drawAttackArrows === "function") {
                             window.drawAttackArrows();
                         }
@@ -1692,6 +1736,12 @@
                 // Log action
                 if (typeof sendGameAction === "function") {
                     sendGameAction(`Declaró Ataque Directo con ${attackerCard.name}`);
+                }
+
+                // Spirit thought in first person
+                if (typeof window.showSpiritThought === "function") {
+                    const pIdx = currentRole === 'player1' ? 1 : 2;
+                    window.showSpiritThought(pIdx, `Ataco directamente`);
                 }
 
                 if (typeof window.drawAttackArrows === "function") {
@@ -1923,6 +1973,13 @@
                                 $pointer.remove();
                             }, 300);
                         }, 4000);
+                    }
+
+                    if (typeof window.showSpiritThought === "function" && isFieldZone(cardObj.zone)) {
+                        const pIdx = currentRole === 'player1' ? 1 : 2;
+                        if (!cardObj.faceDown) {
+                            window.showSpiritThought(pIdx, `Activo el efecto de ${cardObj.name}`);
+                        }
                     }
                 }, 100);
 
@@ -2247,6 +2304,37 @@
 
             // Fetch username for chat and logs
             let myUsername = "Jugador";
+            let playerCustomNames = {
+                player1: "P1",
+                player2: "P2"
+            };
+
+            function updatePlayerHeaderNames() {
+                const p1Name = playerCustomNames.player1 || "P1";
+                const p2Name = playerCustomNames.player2 || "P2";
+                $("#lp-header-p1").text(`${p1Name} LP`);
+                $("#lp-header-p2").text(`${p2Name} LP`);
+                $("#btn-role-p1").text(`${p1Name} (Cyan)`);
+                $("#btn-role-p2").text(`${p2Name} (Pink)`);
+            }
+
+            function broadcastMyPlayerName(newName) {
+                if (state.mode === 'multiplayer' && typeof commChannel !== 'undefined' && commChannel && typeof commChannel.send === 'function') {
+                    try {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'player_name_sync',
+                            payload: {
+                                role: currentRole,
+                                name: newName
+                            }
+                        });
+                    } catch (e) {
+                        console.warn("Could not broadcast name:", e);
+                    }
+                }
+            }
+
             async function fetchMyUsername() {
                 try {
                     const { data: { session } } = await _supabase.auth.getSession();
@@ -2267,6 +2355,9 @@
                 } catch (e) {
                     console.error("Error fetching username:", e);
                 }
+                playerCustomNames[currentRole] = myUsername;
+                updatePlayerHeaderNames();
+                broadcastMyPlayerName(myUsername);
             }
 
             // Lock role and config UI in multiplayer mode
@@ -2420,13 +2511,60 @@
                 appendSystemMsg(`Te has conectado como ${currentRole === 'player1' ? 'Jugador 1' : 'Jugador 2'}`);
             });
 
+            // Change username action in duel
+            function promptChangeUsername() {
+                Swal.fire({
+                    title: 'Cambiar Nombre',
+                    input: 'text',
+                    inputValue: myUsername || '',
+                    inputLabel: 'Ingresa tu nombre para la partida',
+                    inputPlaceholder: 'Tu nombre o apodo...',
+                    background: '#12181e',
+                    color: '#fff',
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        popup: 'calc-swal-popup'
+                    },
+                    inputValidator: (value) => {
+                        if (!value || !value.trim()) {
+                            return 'Debes ingresar un nombre válido';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        const trimmed = result.value.trim();
+                        myUsername = trimmed;
+                        playerCustomNames[currentRole] = trimmed;
+                        updatePlayerHeaderNames();
+                        broadcastMyPlayerName(trimmed);
+                        appendSystemMsg(`Has cambiado tu nombre a ${trimmed}`);
+                    }
+                });
+            }
+
+            $("#btn-change-username").click(function(e) {
+                e.preventDefault();
+                promptChangeUsername();
+            });
+
             // 4. Game Log & Chat append utilities
             function appendGameLog(player, action, cardName, username) {
                 const now = new Date();
                 const timeStr = now.toTimeString().split(' ')[0];
                 const playerClass = player === "player1" ? "p1-log" : (player === "player2" ? "p2-log" : "sys-log");
 
-                const displayPrefix = username || (player === "player1" ? "P1" : (player === "player2" ? "P2" : "SYS"));
+                let displayPrefix = username;
+                if (!displayPrefix) {
+                    if (player === "player1") {
+                        displayPrefix = playerCustomNames.player1 || "P1";
+                    } else if (player === "player2") {
+                        displayPrefix = playerCustomNames.player2 || "P2";
+                    } else {
+                        displayPrefix = "SYS";
+                    }
+                }
 
                 // Escaping variables strictly for perfect XSS safety
                 const escapedAction = action; // Actions are hardcoded strings, completely safe
@@ -2513,6 +2651,18 @@
 
                 // Append locally
                 appendGameLog(currentRole, sanitized.action, sanitized.cardName, myUsername);
+
+                // If this is an effect activation on the field, show spirit thought
+                if (typeof window.showSpiritThought === "function" && action && action.indexOf("Activó el efecto de ") !== -1) {
+                    if (action.indexOf("desde la Mano") === -1 && action.indexOf("desde el Cementerio") === -1 && action.indexOf("desde el Desterrado") === -1 && action.indexOf("desde el Extra Deck") === -1) {
+                        const m = action.match(/Activó el efecto de ([^<]+)/);
+                        const cName = m ? m[1].trim() : cardName;
+                        if (cName) {
+                            const pIdx = currentRole === 'player1' ? 1 : 2;
+                            window.showSpiritThought(pIdx, `Activo el efecto de ${cName}`);
+                        }
+                    }
+                }
 
                 // Send via realtime safely
                 try {
@@ -2756,11 +2906,31 @@
                     appendGameLog(payload.player, `Responde a la acción anterior: <b>${escapeHtml(payload.response)}</b>`, null, payload.username);
 
                 })
+                .on('broadcast', { event: 'player_name_sync' }, ({ payload }) => {
+                    if (payload && payload.role && payload.name) {
+                        playerCustomNames[payload.role] = payload.name;
+                        updatePlayerHeaderNames();
+                    }
+                })
                 .on('broadcast', { event: 'spirit_sync' }, ({ payload }) => {
                     if (payload && payload.playerIdx && payload.spirit) {
                         const targetViewer = $(`#viewer-p${payload.playerIdx}`);
                         if (targetViewer.length && payload.spirit.gltf_url) {
                             targetViewer.attr('src', payload.spirit.gltf_url);
+                        }
+                    }
+                })
+                .on('broadcast', { event: 'spirit_thought_sync' }, ({ payload }) => {
+                    if (payload && payload.playerIdx && payload.thought) {
+                        if (typeof window.showSpiritThought === 'function') {
+                            window.showSpiritThought(payload.playerIdx, payload.thought, false);
+                        }
+                    }
+                })
+                .on('broadcast', { event: 'spirit_reaction_sync' }, ({ payload }) => {
+                    if (payload && payload.playerIdx) {
+                        if (typeof window.triggerSpiritReaction === 'function') {
+                            window.triggerSpiritReaction(payload.playerIdx, payload.type, payload.diffVal, payload.currentLP, false);
                         }
                     }
                 })
@@ -2794,6 +2964,14 @@
                                         type: 'broadcast',
                                         event: 'spirit_sync',
                                         payload: { playerIdx: myIdx, spirit: playerSpirits[myIdx - 1] }
+                                    });
+                                }
+                                // Send player name sync to newcomer
+                                if (myUsername) {
+                                    commChannel.send({
+                                        type: 'broadcast',
+                                        event: 'player_name_sync',
+                                        payload: { role: currentRole, name: myUsername }
                                     });
                                 }
                             }
@@ -4231,7 +4409,7 @@
             window.openLPCalculator = function(player) {
                 const pKey = player === "p1" ? "player1" : "player2";
                 const currentLP = state.lp[pKey];
-                const playerLabel = player === "p1" ? "P1" : "P2";
+                const playerLabel = (playerCustomNames && playerCustomNames[pKey]) ? playerCustomNames[pKey] : (player === "p1" ? "P1" : "P2");
 
                 Swal.fire({
                     title: `Calculadora LP - ${playerLabel}`,
@@ -4544,10 +4722,23 @@
                         } else {
                             // Moved to field slots
                             const isSet = newC.faceDown;
+                            const isMonster = (typeof isYGOMonsterCard === "function") ? isYGOMonsterCard(cardObj) : (newC.zone && (newC.zone.startsWith("monster_") || newC.zone.startsWith("extra_monster_")));
+                            const spiritPIdx = currentRole === 'player1' ? 1 : 2;
+
                             if (isSet) {
                                 sendGameAction(`Colocó una carta boca abajo (Set) en ${newZoneName}`);
+                                if (typeof window.showSpiritThought === "function") {
+                                    if (isMonster) {
+                                        window.showSpiritThought(spiritPIdx, "Pongo un monstruo boca abajo");
+                                    } else {
+                                        window.showSpiritThought(spiritPIdx, "Coloco una carta boca abajo");
+                                    }
+                                }
                             } else {
                                 sendGameAction(`Invocó / Colocó a ${publicName} en ${newZoneName}`, null, true);
+                                if (typeof window.showSpiritThought === "function") {
+                                    window.showSpiritThought(spiritPIdx, `Invoco a ${cardObj.name}`);
+                                }
                             }
                         }
                     }
@@ -4559,10 +4750,27 @@
                         }
 
                         if (oldC.faceDown !== newC.faceDown) {
+                            const spiritPIdx = currentRole === 'player1' ? 1 : 2;
+                            const isMonster = (typeof isYGOMonsterCard === "function") ? isYGOMonsterCard(cardObj) : (newC.zone && (newC.zone.startsWith("monster_") || newC.zone.startsWith("extra_monster_")));
+
                             if (newC.faceDown) {
                                 sendGameAction(`volteó una carta boca abajo`);
+                                if (typeof window.showSpiritThought === "function") {
+                                    if (isMonster) {
+                                        window.showSpiritThought(spiritPIdx, "Pongo un monstruo boca abajo");
+                                    } else {
+                                        window.showSpiritThought(spiritPIdx, "Coloco una carta boca abajo");
+                                    }
+                                }
                             } else {
                                 sendGameAction(`volteó boca arriba a ${publicName}`, null, true);
+                                if (typeof window.showSpiritThought === "function") {
+                                    if (isMonster) {
+                                        window.showSpiritThought(spiritPIdx, `${cardObj.name}`);
+                                    } else {
+                                        window.showSpiritThought(spiritPIdx, `Activo mi carta ${cardObj.name}`);
+                                    }
+                                }
                             }
                         }
                         // C. Tapped (Defense position) switches
@@ -4847,8 +5055,40 @@
                 }
             }
 
-            // Trigger reactions (glow tint + speech bubble)
-            window.triggerSpiritReaction = function(playerIdx, type, diffVal, currentLP) {
+            // Show spirit companion thought in first-person plain text (no emojis, no icons)
+            window.showSpiritThought = function(playerIdx, thoughtText, shouldBroadcast = true) {
+                if (!thoughtText) return;
+                const $bubble = $(`#bubble-p${playerIdx}`);
+                if (!$bubble.length) return;
+
+                $bubble.text(thoughtText).stop(true, true).fadeIn(200);
+
+                if (activeBubbleTimers[playerIdx - 1]) {
+                    clearTimeout(activeBubbleTimers[playerIdx - 1]);
+                }
+
+                activeBubbleTimers[playerIdx - 1] = setTimeout(() => {
+                    $bubble.fadeOut(300);
+                }, 3000);
+
+                if (shouldBroadcast && state.mode === 'multiplayer' && typeof commChannel !== 'undefined' && commChannel && typeof commChannel.send === 'function') {
+                    try {
+                        commChannel.send({
+                            type: 'broadcast',
+                            event: 'spirit_thought_sync',
+                            payload: {
+                                playerIdx: playerIdx,
+                                thought: thoughtText
+                            }
+                        });
+                    } catch (e) {
+                        console.warn("Could not broadcast spirit thought:", e);
+                    }
+                }
+            };
+
+            // Trigger reactions (glow tint + speech bubble in plain text)
+            window.triggerSpiritReaction = function(playerIdx, type, diffVal, currentLP, shouldBroadcast = true) {
                 const $bubble = $(`#bubble-p${playerIdx}`);
                 const $viewer = $(`#viewer-p${playerIdx}`);
                 if (!$bubble.length || !$viewer.length) return;
@@ -4857,13 +5097,13 @@
                 let animClass = "";
 
                 if (currentLP <= 0) {
-                    message = "¡Oh no! Perdimos... 😵";
+                    message = "Perdí!";
                     animClass = 'spirit-viewer-damage';
                 } else if (type === 'heal') {
-                    message = `¡Genial! +${diffVal} LP 💚`;
+                    message = `+${diffVal} LP!`;
                     animClass = 'spirit-viewer-heal';
                 } else if (type === 'damage') {
-                    message = `¡Auch! -${diffVal} LP ❤️`;
+                    message = `-${diffVal} LP!`;
                     animClass = 'spirit-viewer-damage';
                 }
 
@@ -4883,6 +5123,23 @@
                             $viewer.removeClass(animClass);
                         }
                     }, 2500);
+
+                    if (shouldBroadcast && state.mode === 'multiplayer' && typeof commChannel !== 'undefined' && commChannel && typeof commChannel.send === 'function') {
+                        try {
+                            commChannel.send({
+                                type: 'broadcast',
+                                event: 'spirit_reaction_sync',
+                                payload: {
+                                    playerIdx: playerIdx,
+                                    type: type,
+                                    diffVal: diffVal,
+                                    currentLP: currentLP
+                                }
+                            });
+                        } catch (e) {
+                            console.warn("Could not broadcast spirit reaction:", e);
+                        }
+                    }
                 }
             };
 
