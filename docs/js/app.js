@@ -1154,20 +1154,21 @@ async function openCardModal($slot) {
         if (extraImages && extraImages.length > 0) {
             const allThumbs = [imgSrc, ...extraImages];
             allThumbs.forEach((thumbUrl, idx) => {
-                const $thumb = $(`<img src="${thumbUrl}" style="width: 55px; height: 75px; object-fit: cover; border-radius: 8px; cursor: pointer; flex-shrink: 0; border: 2px solid ${idx === 0 ? '#00d2ff' : 'rgba(255,255,255,0.2)'}; transition: all 0.2s;">`);
+                const $thumb = $(`<img src="${thumbUrl}" class="card-extra-thumb ${idx === 0 ? 'active' : ''}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; cursor: pointer; flex-shrink: 0; border: 2px solid ${idx === 0 ? '#ffcc00' : 'rgba(255,255,255,0.2)'}; transition: all 0.2s; box-shadow: ${idx === 0 ? '0 0 8px rgba(255,204,0,0.6)' : 'none'};">`);
                 $thumb.on('click', function() {
                     $('#expanded-image').attr('src', thumbUrl);
-                    $gallery.find('img').css('border-color', 'rgba(255,255,255,0.2)');
-                    $(this).css('border-color', '#00d2ff');
+                    $gallery.find('img').css({ 'border-color': 'rgba(255,255,255,0.2)', 'box-shadow': 'none' });
+                    $(this).css({ 'border-color': '#ffcc00', 'box-shadow': '0 0 8px rgba(255,204,0,0.6)' });
                 });
                 $gallery.append($thumb);
             });
             $gallery.css({
                 'display': 'flex',
                 'flex-wrap': 'nowrap',
-                'gap': '10px',
+                'justify-content': 'center',
+                'gap': '8px',
                 'overflow-x': 'auto',
-                'padding-bottom': '8px',
+                'padding': '6px 0',
                 'width': '100%',
                 'box-sizing': 'border-box'
             });
@@ -3037,6 +3038,7 @@ function renderBinder(binder) {
                     'data-condition': slotData.condition || '',
                     'data-quantity': '1',
                     'data-price': slotData.price || '',
+                    'data-description': slotData.description || '',
                     'data-extra-images': JSON.stringify(slotData.extra_images || [])
                 });
 

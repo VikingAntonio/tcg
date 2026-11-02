@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.binder_card_slots (
     condition TEXT DEFAULT 'M',
     price TEXT DEFAULT '',
     cost_price TEXT DEFAULT '',
+    description TEXT DEFAULT '',
     extra_images TEXT[],
     obtained BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),

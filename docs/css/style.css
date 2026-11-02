@@ -3292,10 +3292,15 @@ body.theme-light .amazon-orig-strikethrough {
 .album.is-turning .zoom-btn,
 .album.is-turning .page,
 .album.is-turning .grid-container,
-.album .page-wrapper {
+.album.is-turning .page-wrapper {
     transition: none !important;
     animation: none !important;
     pointer-events: none !important;
+}
+
+.album .card-slot,
+.album .zoom-btn {
+    pointer-events: auto !important;
 }
 
 /* Shading for missing/obtained cards */

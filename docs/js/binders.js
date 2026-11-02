@@ -228,6 +228,7 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             price: $('#slot-price').val() || '',
             cost_price: $('#slot-cost-price').val() || '',
+            description: $('#slot-description').val() || '',
             extra_images: currentSlotExtraImages || [],
             obtained: true
         };
@@ -238,9 +239,10 @@ $(document).ready(async function() {
                 .upsert([cardData], { onConflict: 'page_id,slot_index' })
                 .select();
 
-            if (error && error.message && (error.message.includes('cost_price') || error.message.includes('column'))) {
+            if (error && error.message && (error.message.includes('cost_price') || error.message.includes('description') || error.message.includes('column'))) {
                 const fallbackData = { ...cardData };
-                delete fallbackData.cost_price;
+                if (error.message.includes('cost_price')) delete fallbackData.cost_price;
+                if (error.message.includes('description')) delete fallbackData.description;
                 const retry = await _supabase
                     .from('binder_card_slots')
                     .upsert([fallbackData], { onConflict: 'page_id,slot_index' })
@@ -570,7 +572,7 @@ async function deletePage(id) {
 
 async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
-    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price').val('');
+    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price, #slot-description').val('');
     currentSlotExtraImages = [];
 
     if (data && data.image_url) {
@@ -581,6 +583,7 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-condition').val(data.condition || '');
         $('#slot-price').val(data.price || '');
         $('#slot-cost-price').val(data.cost_price || '');
+        $('#slot-description').val(data.description || '');
         if (data.extra_images && Array.isArray(data.extra_images)) {
             currentSlotExtraImages = [...data.extra_images];
         }
