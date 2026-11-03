@@ -101,9 +101,68 @@ let droppedExtraFiles = [];
 $(document).ready(async function() {
     await checkSession();
     initTheme();
+    checkPostPaymentRedirect();
 
     if (typeof window.setupMultiMaskField === 'function') {
         window.setupMultiMaskField('#slot-custom-mask', '#slot-multi-mask-rows-container', '#btn-slot-add-mask-row');
+    }
+
+    // Check if user just returned from a Stripe payment
+    function checkPostPaymentRedirect() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentStatus = urlParams.get('payment');
+        const paymentType = urlParams.get('type');
+        const spiritId = urlParams.get('spirit_id');
+
+        if (paymentStatus === 'success') {
+            if (paymentType === 'spirit' && spiritId) {
+                // Instantly update user in DB to unlock and select purchased spirit
+                _supabase.from('usuarios').select('purchased_spirit_ids, allowed_spirit_ids').eq('id', currentUser.id).single()
+                    .then(({ data: user }) => {
+                        if (user) {
+                            const purchased = (user.purchased_spirit_ids || '').split(',').map(s => s.trim()).filter(Boolean);
+                            if (!purchased.includes(spiritId.toString())) {
+                                purchased.push(spiritId.toString());
+                            }
+                            const allowed = (user.allowed_spirit_ids || '').split(',').map(s => s.trim()).filter(Boolean);
+                            if (!allowed.includes(spiritId.toString()) && user.allowed_spirit_ids !== 'all') {
+                                allowed.push(spiritId.toString());
+                            }
+                            const updates = {
+                                purchased_spirit_ids: purchased.join(','),
+                                selected_spirit_id: spiritId
+                            };
+                            if (user.allowed_spirit_ids !== 'all') updates.allowed_spirit_ids = allowed.join(',');
+
+                            return _supabase.from('usuarios').update(updates).eq('id', currentUser.id);
+                        }
+                    })
+                    .then(() => {
+                        Swal.fire({
+                            title: '¡Pago Exitoso!',
+                            text: '¡Tu nuevo Asistente 3D ha sido desbloqueado permanentemente y seleccionado!',
+                            icon: 'success'
+                        });
+                        // Clean up URL parameters
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        loadSpirits();
+                    });
+            } else {
+                Swal.fire({
+                    title: '¡Suscripción Activada!',
+                    text: 'Tu plan se ha actualizado con éxito. ¡Disfruta de todos los beneficios Premium!',
+                    icon: 'success'
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        } else if (paymentStatus === 'canceled') {
+            Swal.fire({
+                title: 'Pago Cancelado',
+                text: 'La transacción no se completó. Puedes intentarlo nuevamente cuando desees.',
+                icon: 'info'
+            });
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
 
     // Bindings for Second Holo Effect in Card Slot Modal
@@ -1698,7 +1757,7 @@ $(document).ready(async function() {
         }
 
         if (!editId && !gltfFile) {
-            Swal.fire('Atención', 'El archivo GLTF es obligatorio para nuevos compañeros', 'warning');
+            Swal.fire('Atención', 'El archivo GLTF es obligatorio para nuevos asistentes', 'warning');
             return;
         }
 
@@ -1779,7 +1838,7 @@ $(document).ready(async function() {
             loadSpirits();
         } catch (err) {
             console.error(err);
-            Swal.fire('Error', 'No se pudo guardar el compañero: ' + (err.message || ''), 'error');
+            Swal.fire('Error', 'No se pudo guardar el asistente: ' + (err.message || ''), 'error');
         }
     });
 
@@ -3609,24 +3668,25 @@ async function deletePage(id) {
 }
 
 async function loadSpirits() {
-    $('#spirits-grid').html('<div class="loading">Cargando compañeros...</div>');
+    $('#spirits-grid').html('<div class="loading">Cargando asistentes...</div>');
 
-    // Fetch spirits and user's selection
+    // Fetch spirits and user's selection & purchased spirits
     const [spiritsRes, userRes] = await Promise.all([
         _supabase.from('spirits').select('*').order('name', { ascending: true }),
-        _supabase.from('usuarios').select('selected_spirit_id').eq('id', currentUser.id).single()
+        _supabase.from('usuarios').select('selected_spirit_id, purchased_spirit_ids, allowed_spirit_ids, role').eq('id', currentUser.id).single()
     ]);
 
     if (spiritsRes.error || !spiritsRes.data) {
-        $('#spirits-grid').html('<div class="error">Error al cargar compañeros.</div>');
+        $('#spirits-grid').html('<div class="error">Error al cargar asistentes.</div>');
         return;
     }
 
     const spirits = spiritsRes.data;
     const selectedId = userRes.data ? userRes.data.selected_spirit_id : null;
+    const purchasedIds = (userRes.data?.purchased_spirit_ids || '').split(',').map(s => s.trim()).filter(Boolean);
 
     if (spirits.length === 0) {
-        $('#spirits-grid').html('<div class="empty">No hay compañeros disponibles.</div>');
+        $('#spirits-grid').html('<div class="empty">No hay asistentes disponibles.</div>');
         return;
     }
 
@@ -3635,39 +3695,48 @@ async function loadSpirits() {
 
     spirits.forEach(spirit => {
         const isSelected = spirit.id == selectedId;
-        const isAsh = spirit.gltf_url && spirit.gltf_url.toLowerCase().includes('ash.gltf');
         const isPublic = spirit.is_public !== false;
+        const saleStatus = spirit.sale_status || 'disponible';
+        const priceMxn = Number(spirit.price_mxn) || 50;
 
-        // Filtrado por plan/permisos
+        // Check if user already purchased this assistant
+        const isPurchased = purchasedIds.includes(spirit.id.toString());
+
+        // Check plan/permission access
         let isAllowed = false;
-
-        // 1. Roles con acceso total por defecto
-        if (currentUser.role === 'premium' || currentUser.role === 'admin' || currentUser.role === 'admin_store') {
+        if (currentUser.role === 'admin' || currentUser.role === 'admin_store' || isPurchased) {
             isAllowed = true;
-        } else if (spirit.name.toLowerCase().includes('winged kuriboh')) {
-            // Starter con acceso a Winged Kuriboh por defecto
+        } else if (currentUser.allowed_spirit_ids === 'all') {
             isAllowed = true;
-        }
-
-        // 2. Overrides del admin (Prevalece sobre los roles si está configurado específicamente)
-        // Tratamos '1' como el default para starter, pero si es 'all' o una lista específica (no '1'), aplicamos lógica de override.
-        if (currentUser.allowed_spirit_ids === 'all') {
-            isAllowed = true;
-        } else if (currentUser.allowed_spirit_ids && currentUser.allowed_spirit_ids !== '1' && currentUser.allowed_spirit_ids !== '') {
+        } else if (currentUser.allowed_spirit_ids && currentUser.allowed_spirit_ids !== '') {
             const allowedIds = currentUser.allowed_spirit_ids.split(',').map(s => s.trim());
-            // Para starters, esto EXPANDE su acceso.
-            // Para premium/admin, si el admin puso una lista específica, esto podría RESTRINGIR si así lo desea el sistema,
-            // pero para esta implementación lo usaremos principalmente para EXPANDIR a los starter.
             if (allowedIds.includes(spirit.id.toString())) {
                 isAllowed = true;
             }
+        } else if (currentUser.role === 'premium') {
+            isAllowed = true;
+        } else if (spirit.name.toLowerCase().includes('winged kuriboh')) {
+            isAllowed = true;
         }
 
-        if (!isAllowed) return;
+        // 3 States determination:
+        // 1. Available/Unlocked (isAllowed = true)
+        // 2. For Sale (saleStatus === 'de_paga' and not yet purchased/allowed)
+        // 3. Hidden/Locked (not allowed and not for sale)
+        const isForSale = (saleStatus === 'de_paga' && !isAllowed);
+
+        // If it's hidden and not for sale, and user is not admin, don't show
+        if (!isAllowed && !isForSale && currentUser.role !== 'admin') {
+            return;
+        }
+
+        const priceDisplay = `$${priceMxn} MXN`;
 
         const $card = $(`
-            <div class="spirit-card ${isSelected ? 'selected' : ''}">
-                <div class="badge-selected">Seleccionado</div>
+            <div class="spirit-card ${isSelected ? 'selected' : ''} ${isForSale ? 'spirit-card-for-sale' : ''}">
+                ${isSelected ? '<div class="badge-selected">Seleccionado</div>' : ''}
+                ${isForSale ? `<div class="badge-price-tag" style="position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #ffd700, #ff9f43); color: #000; font-weight: 900; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10;">${priceDisplay}</div>` : ''}
+
                 <model-viewer
                     src="${spirit.gltf_url}"
                     poster="${spirit.poster_url || ''}"
@@ -3678,7 +3747,8 @@ async function loadSpirits() {
                     exposure="1.2">
                 </model-viewer>
                 <h3>${spirit.name}</h3>
-                <div style="margin-bottom: 15px; width: 100%;">
+
+                <div style="margin-bottom: 12px; width: 100%;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <label class="switch">
                             <input type="checkbox" class="toggle-public" data-id="${spirit.id}" data-type="spirits" ${isPublic ? 'checked' : ''}>
@@ -3687,10 +3757,18 @@ async function loadSpirits() {
                         <span style="font-size: 10px; color: #aaa;">${isPublic ? 'Público' : 'Privado'}</span>
                     </div>
                 </div>
+
                 <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-                    <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
-                        ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}
-                    </button>
+                    ${isForSale ? `
+                        <button class="btn btn-buy-spirit" style="background: linear-gradient(135deg, #ffd700 0%, #ff9f43 100%); color: #000; font-weight: 900; font-size: 0.88rem; border: none; border-radius: 10px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); text-transform: uppercase;">
+                            <i class="fas fa-shopping-cart"></i> Desbloquear ${priceDisplay}
+                        </button>
+                    ` : `
+                        <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
+                            ${isSelected ? '<i class="fas fa-check-circle"></i> Seleccionado' : 'Seleccionar'}
+                        </button>
+                    `}
+
                     ${currentUser.role === 'admin' ? `
                         <div style="display: flex; gap: 10px;">
                             <button class="btn btn-secondary btn-edit-spirit" style="flex: 1;"><i class="fas fa-edit"></i> Editar</button>
@@ -3710,6 +3788,27 @@ async function loadSpirits() {
             window.editSpirit(spirit);
         });
 
+        // Assistant purchase handler (Clash Royale / game store style)
+        $card.find('.btn-buy-spirit').click(async function() {
+            Swal.fire({
+                title: `¿Desbloquear a ${spirit.name}?`,
+                html: `
+                    <p style="color: #cbd5e1; font-size: 0.9rem;">Obtén a <b>${escapeHtml(spirit.name)}</b> de forma permanente para tus pantallas de carga y asistente 3D interactivo.</p>
+                    <div style="font-size: 1.6rem; font-weight: 900; color: #ffd700; margin: 15px 0;">${priceDisplay} <span style="font-size: 0.8rem; color: #aaa;">(Pago único)</span></div>
+                    <p style="font-size: 0.78rem; color: #94a3b8;">Procesamiento seguro a través de Stripe.</p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: `<span style="color: #000; font-weight: 900;"><i class="fas fa-credit-card"></i> Pagar con Stripe</span>`,
+                cancelButtonText: 'Cancelar'
+            }).then(async (res) => {
+                if (res.isConfirmed) {
+                    await purchaseSpiritViaStripe(spirit);
+                }
+            });
+        });
+
         $card.find('.btn-select').click(async function() {
             const { error } = await _supabase
                 .from('usuarios')
@@ -3717,12 +3816,12 @@ async function loadSpirits() {
                 .eq('id', currentUser.id);
 
             if (error) {
-                Swal.fire('Error', 'No se pudo seleccionar el compañero', 'error');
+                Swal.fire('Error', 'No se pudo seleccionar el asistente', 'error');
             } else {
                 window.currentSpirit = spirit;
                 initMichatbot(true);
                 Swal.fire({
-                    title: '¡Compañero Seleccionado!',
+                    title: '¡Asistente Seleccionado!',
                     text: `${spirit.name} aparecerá en tus pantallas de carga.`,
                     icon: 'success',
                     timer: 2000,
@@ -3734,6 +3833,49 @@ async function loadSpirits() {
 
         $grid.append($card);
     });
+}
+
+async function purchaseSpiritViaStripe(spirit) {
+    Swal.fire({
+        title: 'Preparando pago seguro...',
+        text: 'Conectando con la pasarela de Stripe.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        const token = session?.access_token || '';
+
+        const returnUrl = window.location.origin + window.location.pathname;
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                user_id: currentUser.id,
+                purchase_type: 'spirit',
+                spirit_id: spirit.id,
+                return_url: returnUrl
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.url) {
+            throw new Error(data.error || 'Error al iniciar la sesión de Stripe.');
+        }
+
+        // Redirect user to Stripe Checkout page
+        window.location.href = data.url;
+
+    } catch (err) {
+        console.error('Error initiating assistant checkout:', err);
+        Swal.fire('Error de Pago', err.message || 'No se pudo procesar el pago.', 'error');
+    }
 }
 
 
@@ -3787,11 +3929,11 @@ async function deleteSpirit(id, gltfUrl) {
 
             if (dbErr) throw dbErr;
 
-            Swal.fire('¡Eliminado!', 'El compañero ha sido borrado correctamente.', 'success');
+            Swal.fire('¡Eliminado!', 'El asistente ha sido borrado correctamente.', 'success');
             loadSpirits();
         } catch (err) {
             console.error(err);
-            Swal.fire('Error', 'No se pudo eliminar el compañero: ' + (err.message || ''), 'error');
+            Swal.fire('Error', 'No se pudo eliminar el asistente: ' + (err.message || ''), 'error');
         }
     }
 }

@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Fallback hardcoded Price ID for monthly 300 MXN subscription if not set in environment
+const DEFAULT_PREMIUM_PRICE_ID = "price_1UXZhRC6W4MA8NCfJ2n0G9CJ";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -13,17 +16,8 @@ serve(async (req) => {
 
   try {
     const stripeSecretKey = (Deno.env.get("STRIPE_SECRET_KEY") || "").trim();
-    const stripePriceId = (Deno.env.get("STRIPE_PRICE_ID") || "").trim();
-
     if (!stripeSecretKey) {
       return new Response(JSON.stringify({ error: "Falta configurar STRIPE_SECRET_KEY en las variables de entorno de Supabase." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    if (!stripePriceId) {
-      return new Response(JSON.stringify({ error: "Falta configurar STRIPE_PRICE_ID en las variables de entorno de Supabase." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -40,11 +34,13 @@ serve(async (req) => {
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       if (token && token !== supabaseKey) {
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) {
-          authUserId = user.id;
-          authUserEmail = user.email || null;
-        }
+        try {
+          const { data: { user } } = await supabase.auth.getUser(token);
+          if (user) {
+            authUserId = user.id;
+            authUserEmail = user.email || null;
+          }
+        } catch (_) {}
       }
     }
 
@@ -52,25 +48,29 @@ serve(async (req) => {
     const userId = authUserId || reqBody.user_id;
 
     if (!userId) {
-      return new Response(JSON.stringify({ error: "Usuario no autenticado." }), {
+      return new Response(JSON.stringify({ error: "Usuario no autenticado o ID de usuario no proporcionado." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // Get user details from database
+    // Determine purchase type: 'subscription' (default) or 'spirit' (one-time micro-payment for 3D assistant)
+    const purchaseType = reqBody.purchase_type || "subscription";
+
+    // Fetch user from DB
     const { data: userProfile } = await supabase
       .from("usuarios")
-      .select("id, username, store_name, stripe_customer_id")
+      .select("id, username, store_name, stripe_customer_id, email")
       .eq("id", userId)
       .maybeSingle();
 
     let customerId = userProfile?.stripe_customer_id;
+    const userEmail = authUserEmail || userProfile?.email;
 
-    // If customer doesn't exist on Stripe yet, create one using Stripe API via fetch
+    // Create Stripe Customer if not existing
     if (!customerId) {
       const customerParams = new URLSearchParams();
-      if (authUserEmail) customerParams.append("email", authUserEmail);
+      if (userEmail) customerParams.append("email", userEmail);
       customerParams.append("metadata[user_id]", userId);
       customerParams.append("name", userProfile?.store_name || userProfile?.username || "Usuario VikingTCG");
 
@@ -90,7 +90,6 @@ serve(async (req) => {
 
       customerId = custData.id;
 
-      // Save customerId in database
       await supabase
         .from("usuarios")
         .update({ stripe_customer_id: customerId })
@@ -98,18 +97,70 @@ serve(async (req) => {
     }
 
     const redirectOrigin = reqBody.return_url || "https://vikingtcg.xyz/widgets.html";
-
-    // Build Stripe Checkout Session request parameters
     const params = new URLSearchParams();
     params.append("customer", customerId);
-    params.append("mode", "subscription");
-    params.append("payment_method_types[0]", "card");
-    params.append("line_items[0][price]", stripePriceId);
-    params.append("line_items[0][quantity]", "1");
     params.append("client_reference_id", userId);
     params.append("metadata[user_id]", userId);
-    params.append("success_url", `${redirectOrigin}?payment=success&session_id={CHECKOUT_SESSION_ID}`);
-    params.append("cancel_url", `${redirectOrigin}?payment=canceled`);
+    params.append("payment_method_types[0]", "card");
+
+    if (purchaseType === "spirit") {
+      // ONE-TIME MICRO-PAYMENT FOR ASSISTANT / SPIRIT
+      const spiritId = reqBody.spirit_id;
+      if (!spiritId) {
+        return new Response(JSON.stringify({ error: "Falta proporcionar el ID del asistente (spirit_id)." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Security: Query spirits table directly via service role to get verified server-side price
+      const { data: spirit, error: spiritErr } = await supabase
+        .from("spirits")
+        .select("id, name, price_mxn, stripe_price_id, sale_status")
+        .eq("id", spiritId)
+        .maybeSingle();
+
+      if (spiritErr || !spirit) {
+        return new Response(JSON.stringify({ error: "El asistente seleccionado no fue encontrado." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      params.append("mode", "payment");
+      params.append("metadata[purchase_type]", "spirit");
+      params.append("metadata[spirit_id]", spirit.id.toString());
+      params.append("metadata[spirit_name]", spirit.name || "Asistente 3D");
+
+      // If a Stripe Price ID is explicitly configured for this assistant, use it directly
+      if (spirit.stripe_price_id && spirit.stripe_price_id.trim().startsWith("price_")) {
+        params.append("line_items[0][price]", spirit.stripe_price_id.trim());
+        params.append("line_items[0][quantity]", "1");
+      } else {
+        // Otherwise, create dynamic line_item using server-side validated price_mxn (defaults to 50 MXN if missing/zero)
+        const priceAmount = Math.max(10, Math.round((Number(spirit.price_mxn) || 50) * 100)); // in cents
+        params.append("line_items[0][price_data][currency]", "mxn");
+        params.append("line_items[0][price_data][unit_amount]", priceAmount.toString());
+        params.append("line_items[0][price_data][product_data][name]", `Asistente 3D: ${spirit.name}`);
+        params.append("line_items[0][price_data][product_data][description]", "Desbloqueo permanente de Asistente 3D en Viking TCG.");
+        params.append("line_items[0][quantity]", "1");
+      }
+
+      params.append("success_url", `${redirectOrigin}?payment=success&type=spirit&spirit_id=${spirit.id}&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=spirit`);
+
+    } else {
+      // SUBSCRIPTION PURCHASE (300 MXN MONTHLY)
+      const envPriceId = (Deno.env.get("STRIPE_PRICE_ID") || "").trim();
+      const finalPriceId = envPriceId || DEFAULT_PREMIUM_PRICE_ID;
+
+      params.append("mode", "subscription");
+      params.append("metadata[purchase_type]", "subscription");
+      params.append("line_items[0][price]", finalPriceId);
+      params.append("line_items[0][quantity]", "1");
+      params.append("success_url", `${redirectOrigin}?payment=success&type=subscription&session_id={CHECKOUT_SESSION_ID}`);
+      params.append("cancel_url", `${redirectOrigin}?payment=canceled&type=subscription`);
+    }
 
     const sessionRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
@@ -131,7 +182,7 @@ serve(async (req) => {
     });
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || "Error procesando el pago." }), {
+    return new Response(JSON.stringify({ error: err.message || "Error procesando el pago en Stripe." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

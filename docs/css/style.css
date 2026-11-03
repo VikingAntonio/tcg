@@ -3604,6 +3604,17 @@ body.theme-light .amazon-orig-strikethrough {
     background: rgba(0, 210, 255, 0.05);
 }
 
+.spirit-card.spirit-card-for-sale {
+    border: 2px solid rgba(255, 215, 0, 0.35);
+    background: rgba(255, 215, 0, 0.03);
+}
+
+.spirit-card.spirit-card-for-sale:hover {
+    border-color: #ffd700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
+    transform: translateY(-4px);
+}
+
 .spirit-card .badge-selected {
     position: absolute;
     top: 10px;
