@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") || "";
-const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
+const STRIPE_SECRET_KEY = (Deno.env.get("STRIPE_SECRET_KEY") || "").trim();
+const STRIPE_WEBHOOK_SECRET = (Deno.env.get("STRIPE_WEBHOOK_SECRET") || "").trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
@@ -77,24 +77,65 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
-        const userId = session.client_reference_id;
+        const userId = session.client_reference_id || session.metadata?.user_id;
         const customerId = session.customer;
-        const subscriptionId = session.subscription;
+        const purchaseType = session.metadata?.purchase_type || (session.mode === "payment" ? "spirit" : "subscription");
 
-        if (userId) {
-          await supabase
-            .from("usuarios")
-            .update({
-              subscription_status: "active",
-              stripe_customer_id: customerId,
-              stripe_subscription_id: subscriptionId,
-            })
-            .eq("id", userId);
+        if (purchaseType === "spirit") {
+          // Assistant unlock
+          const spiritId = session.metadata?.spirit_id;
+          if (userId && spiritId) {
+            const { data: user } = await supabase
+              .from("usuarios")
+              .select("id, purchased_spirit_ids, allowed_spirit_ids")
+              .eq("id", userId)
+              .maybeSingle();
 
-          await supabase
-            .from("widget_domains")
-            .update({ is_active: true })
-            .eq("user_id", userId);
+            if (user) {
+              const currentPurchased = (user.purchased_spirit_ids || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+              if (!currentPurchased.includes(spiritId.toString())) {
+                currentPurchased.push(spiritId.toString());
+              }
+
+              const currentAllowed = (user.allowed_spirit_ids || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+              if (!currentAllowed.includes(spiritId.toString()) && user.allowed_spirit_ids !== "all") {
+                currentAllowed.push(spiritId.toString());
+              }
+
+              const updates: any = {
+                purchased_spirit_ids: currentPurchased.join(","),
+                selected_spirit_id: spiritId
+              };
+
+              if (user.allowed_spirit_ids !== "all") {
+                updates.allowed_spirit_ids = currentAllowed.join(",");
+              }
+
+              await supabase
+                .from("usuarios")
+                .update(updates)
+                .eq("id", userId);
+            }
+          }
+        } else {
+          // Subscription activation
+          const subscriptionId = session.subscription;
+          if (userId) {
+            await supabase
+              .from("usuarios")
+              .update({
+                subscription_status: "active",
+                role: "premium",
+                stripe_customer_id: customerId,
+                stripe_subscription_id: subscriptionId,
+              })
+              .eq("id", userId);
+
+            await supabase
+              .from("widget_domains")
+              .update({ is_active: true })
+              .eq("user_id", userId);
+          }
         }
         break;
       }
@@ -108,12 +149,16 @@ serve(async (req) => {
           .from("usuarios")
           .select("id")
           .eq("stripe_customer_id", customerId)
-          .single();
+          .maybeSingle();
 
         if (user) {
+          const updateData: any = { subscription_status: status };
+          if (status === "active" || status === "trialing") {
+            updateData.role = "premium";
+          }
           await supabase
             .from("usuarios")
-            .update({ subscription_status: status })
+            .update(updateData)
             .eq("id", user.id);
 
           const isActive = status === "active" || status === "trialing";
@@ -133,12 +178,12 @@ serve(async (req) => {
           .from("usuarios")
           .select("id")
           .eq("stripe_customer_id", customerId)
-          .single();
+          .maybeSingle();
 
         if (user) {
           await supabase
             .from("usuarios")
-            .update({ subscription_status: "canceled" })
+            .update({ subscription_status: "canceled", role: "starter" })
             .eq("id", user.id);
 
           await supabase
@@ -157,12 +202,12 @@ serve(async (req) => {
           .from("usuarios")
           .select("id")
           .eq("stripe_customer_id", customerId)
-          .single();
+          .maybeSingle();
 
         if (user) {
           await supabase
             .from("usuarios")
-            .update({ subscription_status: "active" })
+            .update({ subscription_status: "active", role: "premium" })
             .eq("id", user.id);
 
           await supabase
@@ -181,7 +226,7 @@ serve(async (req) => {
           .from("usuarios")
           .select("id")
           .eq("stripe_customer_id", customerId)
-          .single();
+          .maybeSingle();
 
         if (user) {
           await supabase
@@ -204,7 +249,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ received: true }), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Webhook processing error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
