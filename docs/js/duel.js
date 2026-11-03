@@ -502,7 +502,7 @@ function handleYGOPositionTap(cardObj) {
 
 function ensureMonsterAtkDefWidget(card) {
     if (!isYGOLayout(state.layout)) return;
-    if (!card || card.faceDown) return;
+    if (!card || card.faceDown || card.attachedTo) return;
     const isField = card.zone &&
                     !card.zone.startsWith("hand_") &&
                     !card.zone.startsWith("deck_") &&
@@ -813,12 +813,18 @@ function renderAllCards() {
                 return bTime - aTime;
             });
 
-            let cumulativeOffset = 0;
-            attachedCards.forEach((childCard, idx) => {
-                if (idx < 2) {
-                    cumulativeOffset += 14; // cascade offset only for first two cards
-                }
-                const childZ = card.z - 14 * (idx + 1); // Maintain correct stacking order below the parent and each other
+            // SÓLO MOSTRAR HASTA LA TERCERA CARTA EN LA PILA (1 carta principal + máximo 2 acopladas visibles)
+            // Las demás quedan ocultas en el tablero y accesibles al dar click a la carta / modal de acopladas
+            const visibleAttachedCards = attachedCards.slice(0, 2);
+
+            // Ajuste de perspectiva: en tablero rotado (perspectiva de Jugador 2), las cartas acopladas
+            // deben orientarse hacia abajo (hacia el jugador 2) y no invertirse hacia arriba tipo espejo.
+            const isRotated = !!window.isBoardRotated || $("body").hasClass("rotated-board");
+            const cascadeDirection = isRotated ? -1 : 1;
+
+            visibleAttachedCards.forEach((childCard, idx) => {
+                const stepOffset = 14 * (idx + 1) * cascadeDirection;
+                const childZ = card.z - 14 * (idx + 1); // Mantener orden bajo la principal
 
                 const childSleeveUrl = (childCard.owner && state.deckSleeves && state.deckSleeves[childCard.owner]) ? state.deckSleeves[childCard.owner] : "";
                 const childSleeveStyle = childSleeveUrl ? `--custom-sleeve: url('${childSleeveUrl}');` : "";
@@ -841,7 +847,7 @@ function renderAllCards() {
                          id="${childCard.instanceId}"
                          data-instance-id="${childCard.instanceId}"
                          data-parent-id="${card.instanceId}"
-                         style="left: ${finalX + cumulativeOffset}px; top: ${finalY + cumulativeOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg; ${childSleeveStyle}">
+                         style="left: ${finalX + stepOffset}px; top: ${finalY + stepOffset}px; z-index: ${childZ}; --tilt: ${childCard.tiltAngle || 0}deg; ${childSleeveStyle}">
                         <div class="card-img-wrapper">
                             <img src="${childCard.imageUrl}" alt="${childCard.name}">
                         </div>

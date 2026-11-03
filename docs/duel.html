@@ -438,14 +438,14 @@
             left: 15px !important;
         }
 
-        /* Inverted GLTF companion positions when board is rotated for Player 2 perspective */
-        body.rotated-board #gltf-companion-p1 {
+        /* Inverted GLTF companion initial positions when board is rotated for Player 2 perspective */
+        body.rotated-board #gltf-companion-p1:not(.user-dragged) {
             bottom: auto !important;
             top: 80px !important;
             left: auto !important;
             right: 180px !important;
         }
-        body.rotated-board #gltf-companion-p2 {
+        body.rotated-board #gltf-companion-p2:not(.user-dragged) {
             top: auto !important;
             bottom: 80px !important;
             right: auto !important;
@@ -4390,9 +4390,9 @@
                         }
                     }
 
-                    // Render Custom ATK/DEF Badge if set
+                    // Render Custom ATK/DEF Badge if set (only for main cards, not attached cards)
                     $card.find(".custom-atk-def-badge").remove();
-                    if (card.customAtkDef && !card.faceDown) {
+                    if (card.customAtkDef && !card.faceDown && !card.attachedTo && !$card.hasClass("attached-card-cascade")) {
                         $card.append(`
                             <div class="custom-atk-def-badge" draggable="true" data-instance-id="${card.instanceId}">
                                 <span>ATK: <span class="atk-val">${card.customAtkDef.atk}</span></span>
@@ -5388,6 +5388,12 @@
                 let hasMoved = false;
 
                 const onPointerDown = function(e) {
+                    // In multiplayer mode, only permit dragging your own companion
+                    const myIdx = currentRole === 'player1' ? 1 : 2;
+                    if (state.mode === 'multiplayer' && playerIdx !== myIdx) {
+                        return;
+                    }
+
                     const oe = e.originalEvent || e;
                     const clientX = oe.touches ? oe.touches[0].clientX : e.clientX;
                     const clientY = oe.touches ? oe.touches[0].clientY : e.clientY;
@@ -5420,7 +5426,7 @@
 
                     if (hasMoved) {
                         e.preventDefault();
-                        $wrapper.css({
+                        $wrapper.addClass("user-dragged").css({
                             left: `${initialLeft + dx}px`,
                             top: `${initialTop + dy}px`,
                             bottom: 'auto',
