@@ -706,7 +706,7 @@
                     <a href="binders.html" class="menu-item" id="menu-btn-albums"><i class="fas fa-book"></i> Mis Álbumes</a>
                     <a href="decks.html" class="menu-item" id="menu-btn-decks"><i class="fas fa-layer-group"></i> Mis Decks</a>
                     <a href="scanner.html" class="menu-item"><i class="fas fa-barcode"></i> Scanner de Cartas</a>
-                    <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Compañeros</a>
+                    <a href="#" class="menu-item" id="menu-btn-spirits"><i class="fas fa-ghost"></i> Asistentes</a>
                     <a href="learn.html" class="menu-item" id="menu-btn-learn"><i class="fas fa-brain"></i> Base de Conocimiento</a>
                     <a href="widgets.html" class="menu-item" id="menu-btn-widgets"><i class="fas fa-code"></i> Custom Labels</a>
                     <a href="packages.html" class="menu-item" id="menu-btn-dominios"><i class="fas fa-box-open"></i> Planes y Dominios</a>
@@ -777,7 +777,7 @@
                 </a>
                 <a href="#" class="tile tile-yellow tile-tall" id="btn-show-spirits">
                     <i class="fas fa-ghost"></i>
-                    <span>Compañero</span>
+                    <span>Asistente</span>
                 </a>
                 <a href="scanner.html" class="tile tile-orange" id="btn-scanner">
                     <i class="fas fa-barcode"></i>
@@ -1199,19 +1199,19 @@
             </div>
         </div>
 
-        <!-- Compañeros View -->
+        <!-- Asistentes View -->
         <div id="view-spirits" class="admin-section" style="display:none;">
             <div class="admin-header">
                 <button class="btn btn-secondary btn-back-main" style="margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> Volver al Panel</button>
-                <h1>Mis Compañeros</h1>
-                <p>Elige un compañero que te acompañará mientras navegas por la web.</p>
+                <h1>Mis Asistentes</h1>
+                <p>Elige un asistente que te acompañará mientras navegas por la web.</p>
                 <div id="admin-upload-container" style="display:none; margin-top: 20px;">
-                    <button id="btn-open-upload-spirit" class="btn"><i class="fas fa-upload"></i> Subir Nuevo Compañero</button>
+                    <button id="btn-open-upload-spirit" class="btn"><i class="fas fa-upload"></i> Subir Nuevo Asistente</button>
                 </div>
             </div>
 
             <div id="spirits-grid" class="spirits-grid">
-                <!-- Compañeros will be loaded here -->
+                <!-- Asistentes will be loaded here -->
             </div>
         </div>
 
@@ -2027,7 +2027,7 @@
                 oncontextmenu="return false;">
             </model-viewer>
             <div class="card-info">
-                <div id="expanded-gltf-name" class="card-name">Nombre del Compañero</div>
+                <div id="expanded-gltf-name" class="card-name">Nombre del Asistente</div>
             </div>
         </div>
     </div>
@@ -2522,7 +2522,7 @@
     <div id="spirit-upload-modal" class="overlay">
         <div class="overlay-content">
             <span id="close-spirit-upload-modal" class="close-btn">&times;</span>
-            <h2 id="spirit-modal-title">Subir Nuevo Compañero</h2>
+            <h2 id="spirit-modal-title">Subir Nuevo Asistente</h2>
             <input type="hidden" id="edit-spirit-id">
 
             <!-- Tabs Header -->
@@ -2534,7 +2534,7 @@
             <!-- Tab 1: Modelo -->
             <div id="spirit-tab-modelo" class="slot-tab-content active">
                 <div class="form-group">
-                    <label>Nombre del Compañero</label>
+                    <label>Nombre del Asistente</label>
                     <input type="text" id="input-spirit-name" placeholder="Ej: Pikachu">
                 </div>
                 <div class="form-group">
@@ -2547,7 +2547,7 @@
                     </label>
                 </div>
                 <div class="form-group">
-                    <label>Poster del Compañero (Imagen que sale mientras carga)</label>
+                    <label>Poster del Asistente (Imagen que sale mientras carga)</label>
                     <label class="drop-zone file-drop-zone" id="drop-zone-spirit-poster" for="input-spirit-poster" style="display: block;">
                         <i class="fas fa-image"></i>
                         <p>Arrastra un poster aquí o haz clic para subir</p>
@@ -2613,7 +2613,7 @@
                         <input type="checkbox" id="input-spirit-public" checked>
                         <span class="slider"></span>
                     </label>
-                    <label style="margin-bottom: 0; cursor: pointer;" for="input-spirit-public">Compañero Público (Visible en el link)</label>
+                    <label style="margin-bottom: 0; cursor: pointer;" for="input-spirit-public">Asistente Público (Visible en el link)</label>
                 </div>
             </div>
 
