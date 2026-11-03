@@ -1545,7 +1545,49 @@ async function handleSendAIChatMessage() {
                     });
                 }
 
-                // 3. Fetch sales & notifications
+                // 3. Fetch Binders & Cards Inventory
+                const { data: userBinders } = await _supabase
+                    .from('binders')
+                    .select('id, title, is_public')
+                    .eq('user_id', targetStoreId);
+
+                if (userBinders && userBinders.length > 0) {
+                    const binderIds = userBinders.map(b => b.id);
+                    const { data: userPages } = await _supabase
+                        .from('binder_pages')
+                        .select('id, binder_id')
+                        .in('binder_id', binderIds);
+
+                    if (userPages && userPages.length > 0) {
+                        const pageMap = {};
+                        userPages.forEach(p => {
+                            const foundB = userBinders.find(b => b.id === p.binder_id);
+                            pageMap[p.id] = foundB ? foundB.title : 'Binder';
+                        });
+
+                        const { data: userSlots } = await _supabase
+                            .from('binder_card_slots')
+                            .select('*')
+                            .in('page_id', userPages.map(p => p.id))
+                            .not('image_url', 'is', null);
+
+                        if (userSlots && userSlots.length > 0) {
+                            dbContext += '\n--- INVENTARIO Y STOCK DE CARTAS EN BINDERS ---\n';
+                            userSlots.forEach(slot => {
+                                const bTitle = pageMap[slot.page_id] || 'Binder';
+                                const qty = slot.quantity !== undefined && slot.quantity !== null && slot.quantity !== '' ? parseInt(slot.quantity) : 1;
+                                const statusStr = qty <= 0 ? 'AGOTADO' : `Disponible (${qty} copias)`;
+                                if (isAdmin) {
+                                    dbContext += `- [ID: ${slot.id}] "${slot.name || 'Carta'}" | Álbum/Binder: "${bTitle}" | Rareza: ${slot.rarity || '-'} | Expansión: ${slot.expansion || '-'} | Condición: ${slot.condition || 'M'} | Costo Inversión: $${slot.cost_price || 0} | Precio Venta: $${slot.price || 0} | Stock: ${qty} | Estado: ${statusStr}\n`;
+                                } else if (qty > 0) {
+                                    dbContext += `- "${slot.name || 'Carta'}" | Binder: "${bTitle}" | Rareza: ${slot.rarity || '-'} | Precio: $${slot.price || 0} | Stock: ${qty}\n`;
+                                }
+                            });
+                        }
+                    }
+                }
+
+                // 4. Fetch sales & notifications (Sealed & Binders)
                 if (isAdmin) {
                     const { data: sales } = await _supabase
                         .from('sealed_product_sales')
@@ -1554,18 +1596,39 @@ async function handleSendAIChatMessage() {
                         .order('created_at', { ascending: false })
                         .limit(20);
 
-                    if (sales && sales.length > 0) {
-                        dbContext += '\n--- HISTORIAL DE VENTAS Y NOTIFICACIONES DE COMPRAS DE CLIENTES ---\n';
-                        sales.forEach(s => {
-                            let itemsStr = '';
-                            if (Array.isArray(s.items)) {
-                                itemsStr = s.items.map(i => `${i.cart_quantity || i.qty || 1}x ${i.name || 'Prod'}`).join(', ');
-                            } else {
-                                itemsStr = s.items || 'Productos';
-                            }
-                            const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
-                            dbContext += `- Cliente: "${s.buyer_name}" (${s.buyer_contact || 'Sin tel.'}) | Artículos: ${itemsStr} | Total: $${parseFloat(s.total_amount || 0).toFixed(2)} | Estado de Pago: ${s.payment_status || 'Pagado Completo'} | Fecha: ${dateStr} | Leído: ${s.is_read ? 'Sí' : 'No'}\n`;
-                        });
+                    const { data: binderSalesData } = await _supabase
+                        .from('binder_sales')
+                        .select('*')
+                        .eq('seller_id', targetStoreId)
+                        .order('created_at', { ascending: false })
+                        .limit(25);
+
+                    if ((sales && sales.length > 0) || (binderSalesData && binderSalesData.length > 0)) {
+                        dbContext += '\n--- HISTORIAL DE VENTAS Y REPORTES DE CLIENTES (PRODUCTOS Y BINDERS) ---\n';
+                        if (binderSalesData) {
+                            binderSalesData.forEach(bs => {
+                                let itemsStr = '';
+                                if (Array.isArray(bs.items)) {
+                                    itemsStr = bs.items.map(i => `${i.cart_quantity || 1}x ${i.name || 'Carta'}`).join(', ');
+                                } else {
+                                    itemsStr = 'Cartas de Binder';
+                                }
+                                const dateStr = bs.created_at ? new Date(bs.created_at).toLocaleDateString() : '';
+                                dbContext += `- [VENTA BINDER] Comprador: @${bs.buyer_username || 'usuario'} (${bs.buyer_name || 'Cliente'}) | Contacto: ${bs.buyer_contact || 'N/A'} | Artículos: ${itemsStr} | Total: $${parseFloat(bs.total_amount || 0).toFixed(2)} | Estado Venta: ${bs.status || 'pendiente'} | Plataforma: ${bs.platform || 'whatsapp'} | Fecha: ${dateStr}\n`;
+                            });
+                        }
+                        if (sales) {
+                            sales.forEach(s => {
+                                let itemsStr = '';
+                                if (Array.isArray(s.items)) {
+                                    itemsStr = s.items.map(i => `${i.cart_quantity || i.qty || 1}x ${i.name || 'Prod'}`).join(', ');
+                                } else {
+                                    itemsStr = s.items || 'Productos';
+                                }
+                                const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
+                                dbContext += `- [VENTA PRODUCTO] Cliente: "${s.buyer_name}" (${s.buyer_contact || 'Sin tel.'}) | Artículos: ${itemsStr} | Total: $${parseFloat(s.total_amount || 0).toFixed(2)} | Estado de Pago: ${s.payment_status || 'Pagado Completo'} | Fecha: ${dateStr}\n`;
+                            });
+                        }
                     }
                 }
 

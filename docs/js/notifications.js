@@ -258,9 +258,16 @@
         if (!user || typeof _supabase === 'undefined') return;
 
         try {
-            // 1. Fetch Store Sales Notifications
+            // 1. Fetch Store Sales & Binder Sales Notifications
             const salesPromise = _supabase
                 .from('sealed_product_sales')
+                .select('*')
+                .eq('seller_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(15);
+
+            const binderSalesPromise = _supabase
+                .from('binder_sales')
                 .select('*')
                 .eq('seller_id', user.id)
                 .order('created_at', { ascending: false })
@@ -281,9 +288,10 @@
                 .select('*')
                 .eq('user_id', user.id);
 
-            const [salesRes, broadcastRes, statesRes] = await Promise.all([salesPromise, broadcastPromise, statesPromise]);
+            const [salesRes, binderSalesRes, broadcastRes, statesRes] = await Promise.all([salesPromise, binderSalesPromise, broadcastPromise, statesPromise]);
 
             const sales = salesRes.data || [];
+            const binderSales = binderSalesRes.data || [];
             const broadcasts = broadcastRes.data || [];
             const statesMap = {};
 
@@ -294,6 +302,31 @@
             }
 
             const combined = [];
+
+            // Add binder sales items
+            binderSales.forEach(bsale => {
+                let itemsText = '';
+                if (Array.isArray(bsale.items) && bsale.items.length > 0) {
+                    itemsText = bsale.items.map(i => `${i.cart_quantity || 1}x ${i.name || 'Carta'}`).join(', ');
+                } else {
+                    itemsText = 'Cartas de Binder';
+                }
+
+                const localState = statesMap[bsale.id];
+                if (localState && localState.is_deleted) return;
+
+                const statusLabel = bsale.status === 'confirmada' ? 'Venta Confirmada' : (bsale.status === 'cancelada' ? 'Cancelada' : 'Pendiente de Confirmar');
+
+                combined.push({
+                    id: bsale.id,
+                    type: 'sale',
+                    title: `¡Pedido de Binder! @${bsale.buyer_username || 'Cliente'}`,
+                    body: `${itemsText} - $${parseFloat(bsale.total_amount || 0).toFixed(2)} (${statusLabel})`,
+                    images: [],
+                    is_read: localState ? localState.is_read : !!bsale.is_read,
+                    created_at: bsale.created_at
+                });
+            });
 
             // Add sales items
             sales.forEach(sale => {

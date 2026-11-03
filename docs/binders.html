@@ -196,20 +196,92 @@
         </div>
     </div>
 
-    <div id="authenticated-content" style="display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding-top: 100px;">
+    <div id="authenticated-content" style="display: none; width: 100%; max-width: 98vw; margin: 0 auto; padding-top: 90px; padding-left: 20px; padding-right: 20px; box-sizing: border-box;">
         <div id="view-dashboard" class="admin-section">
-            <div class="admin-header">
+            <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
                 <button id="btn-back-to-web" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Web</button>
-                <h1>Mis Álbumes</h1>
+                <h1 style="margin: 0; font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #00d2ff, #a259ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Mis Binders</h1>
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button id="btn-create-album" class="btn"><i class="fas fa-plus"></i> Crear Nuevo Álbum</button>
-                    <button id="btn-organize-albums" class="btn btn-secondary"><i class="fas fa-sort"></i> Organizar</button>
+                    <button id="btn-create-album" class="btn" style="background: linear-gradient(135deg, #8b5cf6, #d946ef); border: none; font-weight: 800; border-radius: 50px; padding: 10px 20px;"><i class="fas fa-plus"></i> Crear Nuevo Binder</button>
+                    <button id="btn-organize-albums" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px;"><i class="fas fa-sort"></i> Organizar</button>
+                    <button id="btn-nav-inversiones" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px; border-color: #f59e0b; color: #f59e0b;"><i class="fas fa-chart-line"></i> Inversiones</button>
+                    <button id="btn-nav-reportes" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 10px 20px; border-color: #00d2ff; color: #00d2ff;"><i class="fas fa-receipt"></i> Reportes</button>
                 </div>
             </div>
-            <div id="album-list" class="album-list"></div>
+            <div id="album-list" class="album-list" style="max-width: 1400px; margin: 0 auto;"></div>
         </div>
 
-        <div id="view-editor" class="admin-section" style="display:none;">
+        <!-- VISTA INVERSIONES (STOCK DE TODAS LAS CARTAS DE BINDERS) -->
+        <div id="view-inversiones" class="admin-section" style="display: none; width: 100%;">
+            <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-secondary btn-back-to-binders-view" style="border-radius: 50px; font-weight: 800;"><i class="fas fa-arrow-left"></i> Volver a Binders</button>
+                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #f59e0b;"><i class="fas fa-chart-line"></i> Inversiones & Stock de Binders</h1>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="inv-table-search" placeholder="Buscar por carta o binder..." style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 8px 16px; color: #fff; font-size: 0.88rem; outline: none;">
+                    <button id="btn-save-inv-table" class="btn" style="background: #00ff88; color: #000; font-weight: 900; border-radius: 50px; padding: 8px 20px; border: none;"><i class="fas fa-save"></i> Guardar Cambios</button>
+                </div>
+            </div>
+
+            <!-- Contenedor Hoja de Cálculo Pantalla Completa sin scroll forzado -->
+            <div class="sheet-table-container" style="background: rgba(15, 23, 42, 0.85); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box; overflow-x: auto;">
+                <table class="sheet-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                    <thead>
+                        <tr style="background: rgba(0,0,0,0.6); color: #f59e0b; border-bottom: 2px solid rgba(245, 158, 11, 0.3);">
+                            <th style="padding: 14px 10px; text-align: center; width: 60px;">Foto</th>
+                            <th style="padding: 14px 12px;">Binder / Álbum</th>
+                            <th style="padding: 14px 12px;">Nombre de Carta</th>
+                            <th style="padding: 14px 10px;">Rareza</th>
+                            <th style="padding: 14px 10px;">Expansión</th>
+                            <th style="padding: 14px 10px; text-align: right;">Costo Inversión ($)</th>
+                            <th style="padding: 14px 10px; text-align: right;">Precio Venta ($)</th>
+                            <th style="padding: 14px 10px; text-align: center; width: 120px;">Stock (Existencia)</th>
+                            <th style="padding: 14px 10px; text-align: center; width: 110px;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inversiones-table-body">
+                        <tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Cargando inventario de binders...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VISTA REPORTES (HISTORIAL Y CONFIRMACIÓN DE VENTAS DE BINDERS) -->
+        <div id="view-reportes" class="admin-section" style="display: none; width: 100%;">
+            <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-secondary btn-back-to-binders-view" style="border-radius: 50px; font-weight: 800;"><i class="fas fa-arrow-left"></i> Volver a Binders</button>
+                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #00d2ff;"><i class="fas fa-receipt"></i> Reportes de Ventas</h1>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="btn-refresh-reportes" class="btn btn-secondary" style="border-radius: 50px; font-weight: 800; padding: 8px 18px;"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                </div>
+            </div>
+
+            <!-- Tabla de Reportes de Ventas Pantalla Completa -->
+            <div class="sheet-table-container" style="background: rgba(15, 23, 42, 0.85); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box; overflow-x: auto;">
+                <table class="sheet-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                    <thead>
+                        <tr style="background: rgba(0,0,0,0.6); color: #00d2ff; border-bottom: 2px solid rgba(0, 210, 255, 0.3);">
+                            <th style="padding: 14px 12px; width: 150px;">Fecha</th>
+                            <th style="padding: 14px 12px;">Comprador (Usuario)</th>
+                            <th style="padding: 14px 12px;">Cartas / Álbum</th>
+                            <th style="padding: 14px 10px; text-align: center; width: 90px;">Cantidad</th>
+                            <th style="padding: 14px 12px; text-align: right; width: 130px;">Total Venta ($)</th>
+                            <th style="padding: 14px 10px; text-align: center; width: 130px;">Medio</th>
+                            <th style="padding: 14px 10px; text-align: center; width: 140px;">Estado</th>
+                            <th style="padding: 14px 12px; text-align: center; width: 220px;">¿Se efectuó la venta?</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportes-table-body">
+                        <tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Cargando reporte de ventas...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-editor" class="admin-section" style="display:none; max-width: 1200px; margin: 0 auto;">
             <div class="admin-header">
                 <button id="btn-back-to-albums" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</button>
                 <h1 id="editor-title">Editar Álbum</h1>
@@ -291,10 +363,14 @@
                         <input type="text" id="slot-expansion">
                     </div>
 
-                    <!-- Condition -->
-                    <div class="form-group full-width">
+                    <!-- Condition & Stock -->
+                    <div class="form-group">
                         <label><i class="fas fa-shield-alt"></i> Estado de Conservación</label>
                         <input type="text" id="slot-condition">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-layer-group" style="color: #00d2ff;"></i> Stock / Existencia</label>
+                        <input type="number" id="slot-quantity" min="0" value="1" style="border-color: rgba(0, 210, 255, 0.4) !important; color: #00d2ff !important; font-weight: 800 !important;">
                     </div>
                 </div>
             </div>

@@ -50,7 +50,8 @@ function buildSealedProductSystemPrompt(dbContext: string, isAdmin: boolean): st
   if (isAdmin) {
     return `
 --- CONTEXTO COMPLETO DE TIENDA: PERFIL, PRODUCTOS SELLADOS, VENTAS, PREVENTAS Y RASTREO/TRACKING (ADMINISTRADOR) ---
-Tienes acceso total como asistente del administrador de la tienda a la información del perfil de la tienda (public.usuarios / perfil.html con bloques de información adicional), productos sellados (public.sealed_products), historial de ventas de clientes (public.sealed_product_sales), preventas (public.preorders) y guías de rastreo de envíos (public.tracking).
+--- CONTEXTO COMPLETO DE TIENDA: PERFIL, BINDERS, CARTAS, PRODUCTOS SELLADOS, VENTAS, PREVENTAS Y RASTREO/TRACKING (ADMINISTRADOR) ---
+Tienes acceso total como asistente del administrador de la tienda a la información del perfil de la tienda (public.usuarios / perfil.html), inventario y stock de cartas en binders (public.binders y public.binder_card_slots), reportes de ventas de binders (public.binder_sales), productos sellados (public.sealed_products), historial de ventas de clientes (public.sealed_product_sales), preventas (public.preorders) y guías de rastreo de envíos (public.tracking).
 
 DATOS DISPONIBLES EN SISTEMA DE LA TIENDA Y PERFIL:
 ${dbContext}
@@ -61,10 +62,10 @@ REGLAS PARA ADMINISTRADOR:
 2. CONSULTAS Y GESTIÓN DE RASTREO / TRACKING DE PAQUETES:
    - Tienes acceso directo a todos los registros de rastreo en public.tracking (guías, paqueterías como Correos de México, Estafeta, FedEx, DHL, estado de envío, fechas y detalles).
    - Si el usuario te hace preguntas sobre guías, estados de envío, paquetes por recibir o enviar, o solicita agregar, actualizar estado/detalles o eliminar registros de rastreo, responde siempre con datos exactos, amigables, claros y conversacionales sin caer en bucles ni explicaciones repetitivas.
-3. CONSULTAS DE VENTAS, PAGOS Y PREVENTAS:
-   - Si el administrador te pregunta quién compró, qué compraron, las reservas de clientes en preventas, o el estado de pago/entrega de un cliente (ej: "¿Sutano pagó todo o solo apartó?", "¿quién reservó preventas?", "¿cuánto debe Mengano?"), revisa la sección de ventas, notificaciones y lista de clientes de preventas, y responde con datos exactos, amigables y conversacionales.
-4. CONSULTAS DE PRODUCTOS SELLADOS, PREVENTAS Y STOCK:
-   - Tienes acceso total a los datos privados de preventas y productos sellados (costo de compra/inversión, monto de apartado, límite por persona, stock total, cantidad reservada, disponible, fecha de inicio, fecha límite de pago, fecha de llegada, visibilidad). Si pregunta por existencias o métricas, dale la información completa.
+3. CONSULTAS DE VENTAS, REPORTES Y COMPRAS DE CLIENTES:
+   - Si el administrador te pregunta quién compró cartas de los binders o productos, qué cartas compraron, en qué binder estaban, quién fue el comprador (usuario de Viking TCG), el monto total, el medio de contacto o el estado de confirmación de la venta, revisa la sección de reportes de ventas de binders (binder_sales) y productos sellados, y responde con datos exactos, claros y conversacionales.
+4. CONSULTAS DE INVENTARIO DE BINDERS, STOCK Y GANANCIAS:
+   - Tienes acceso total a las cartas en cada binder del usuario, conociendo el costo de inversión, precio de venta al público, cantidad de copias (stock), rareza, expansión y si la carta está disponible o AGOTADA (stock 0). Si te preguntan sobre existencias o métricas de cartas, da la información detallada al instante.
 5. GESTIÓN Y OPERACIONES DE LA TIENDA:
    - Si el usuario solicita agregar, modificar stock, actualizar guías o datos de un producto sellado, preventa, lista de clientes o tracking, confirma de forma directa, entusiasta y amable que los datos han sido procesados y actualizados en la base de datos.
 `;
