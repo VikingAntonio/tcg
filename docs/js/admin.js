@@ -521,16 +521,57 @@ $(document).ready(async function() {
                     didOpen: () => Swal.showLoading()
                 });
                 try {
-                    const { data, error } = await _supabase.functions.invoke('create-checkout-session', {
-                        body: { return_url: window.location.origin + window.location.pathname }
-                    });
-                    if (error) throw error;
-                    if (data && data.url) {
-                        window.location.href = data.url;
+                    const { data: { session } } = await _supabase.auth.getSession();
+                    const token = session?.access_token || '';
+                    const returnUrl = window.location.origin + window.location.pathname;
+                    const userId = currentUser?.id || session?.user?.id;
+
+                    const reqPayload = {
+                        user_id: userId,
+                        purchase_type: 'subscription',
+                        return_url: returnUrl
+                    };
+
+                    let checkoutUrl = null;
+
+                    // Try direct fetch first with explicit auth headers and error body extraction
+                    try {
+                        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${token || SUPABASE_KEY}`
+                            },
+                            body: JSON.stringify(reqPayload)
+                        });
+
+                        const resData = await response.json();
+                        if (response.ok && resData && resData.url) {
+                            checkoutUrl = resData.url;
+                        } else {
+                            throw new Error(resData?.error || 'Error al conectar con Stripe.');
+                        }
+                    } catch (fetchErr) {
+                        // Fallback to Supabase functions invoke
+                        const { data, error } = await _supabase.functions.invoke('create-checkout-session', {
+                            body: reqPayload
+                        });
+                        if (error) throw error;
+                        if (data && data.url) {
+                            checkoutUrl = data.url;
+                        } else {
+                            throw new Error(data?.error || fetchErr.message || 'No se pudo generar la sesión de pago.');
+                        }
+                    }
+
+                    if (checkoutUrl) {
+                        window.location.href = checkoutUrl;
                     } else {
-                        throw new Error(data?.error || 'No se pudo generar la sesión de pago.');
+                        throw new Error('No se recibió la URL de pago de Stripe.');
                     }
                 } catch (err) {
+                    console.error('Error initiating premium checkout:', err);
                     Swal.fire('Error de Pago', err.message || 'Error al conectar con Stripe Checkout.', 'error');
                 }
             }
@@ -3732,21 +3773,29 @@ async function loadSpirits() {
 
         const priceDisplay = `$${priceMxn} MXN`;
 
+        const modelViewerHTML = `
+            <model-viewer
+                src="${spirit.gltf_url}"
+                poster="${spirit.poster_url || ''}"
+                loading="lazy"
+                camera-controls
+                shadow-intensity="1"
+                environment-image="neutral"
+                exposure="1.2">
+            </model-viewer>
+        `;
+
+        const wrappedModelViewer = isForSale
+            ? `<div class="model-viewer-paid-wrapper">${modelViewerHTML}</div>`
+            : modelViewerHTML;
+
         const $card = $(`
             <div class="spirit-card ${isSelected ? 'selected' : ''} ${isForSale ? 'spirit-card-for-sale' : ''}">
                 ${isSelected ? '<div class="badge-selected">Seleccionado</div>' : ''}
                 ${isForSale ? `<div class="badge-price-tag" style="position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #ffd700, #ff9f43); color: #000; font-weight: 900; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10;">${priceDisplay}</div>` : ''}
 
-                <model-viewer
-                    src="${spirit.gltf_url}"
-                    poster="${spirit.poster_url || ''}"
-                    loading="lazy"
-                    camera-controls
-                    shadow-intensity="1"
-                    environment-image="neutral"
-                    exposure="1.2">
-                </model-viewer>
-                <h3>${spirit.name}</h3>
+                ${wrappedModelViewer}
+                <h3 style="${isForSale ? 'color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);' : ''}">${spirit.name}</h3>
 
                 <div style="margin-bottom: 12px; width: 100%;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -3760,8 +3809,8 @@ async function loadSpirits() {
 
                 <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                     ${isForSale ? `
-                        <button class="btn btn-buy-spirit" style="background: linear-gradient(135deg, #ffd700 0%, #ff9f43 100%); color: #000; font-weight: 900; font-size: 0.88rem; border: none; border-radius: 10px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); text-transform: uppercase;">
-                            <i class="fas fa-shopping-cart"></i> Desbloquear ${priceDisplay}
+                        <button class="btn btn-buy-spirit" style="background: linear-gradient(135deg, #ffd700 0%, #ff9f43 100%); color: #000; font-weight: 900; font-size: 0.95rem; border: none; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(255, 215, 0, 0.5); text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.25s ease;">
+                            <i class="fas fa-unlock-alt"></i> Desbloquear ${priceDisplay}
                         </button>
                     ` : `
                         <button class="btn btn-select ${isSelected ? 'btn-success' : ''}" ${isSelected ? 'disabled' : ''}>
@@ -3853,7 +3902,8 @@ async function purchaseSpiritViaStripe(spirit) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${token || SUPABASE_KEY}`
             },
             body: JSON.stringify({
                 user_id: currentUser.id,
