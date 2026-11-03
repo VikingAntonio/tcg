@@ -924,7 +924,42 @@
             Swal.fire({ title: 'Guardando configuración...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
-                // 1. Save packages configuration table
+                // 1. Save individual assistant sales states, pricing, and Stripe Price IDs to spirits table
+                const spiritUpdates = [];
+                $('.assistant-config-card').each(function() {
+                    const id = $(this).data('id');
+                    const status = $(this).find('.assistant-status-select').val();
+                    const price = parseFloat($(this).find('.assistant-price-input').val()) || 50;
+                    const stripePriceId = $(this).find('.assistant-stripe-input').val().trim() || null;
+
+                    spiritUpdates.push({
+                        id: id,
+                        sale_status: status,
+                        price_mxn: price,
+                        stripe_price_id: stripePriceId
+                    });
+                });
+
+                for (const sup of spiritUpdates) {
+                    await _supabase
+                        .from('spirits')
+                        .update({
+                            sale_status: sup.sale_status,
+                            price_mxn: sup.price_mxn,
+                            stripe_price_id: sup.stripe_price_id
+                        })
+                        .eq('id', sup.id);
+
+                    // Also update in local memory
+                    const match = allAvailableSpirits.find(s => String(s.id) === String(sup.id));
+                    if (match) {
+                        match.sale_status = sup.sale_status;
+                        match.price_mxn = sup.price_mxn;
+                        match.stripe_price_id = sup.stripe_price_id;
+                    }
+                }
+
+                // 2. Save packages configuration table
                 for (const role of roles) {
                     const pkgData = {
                         id: role,
@@ -978,6 +1013,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: '¡Cambios Guardados!',
+                    text: 'Se han guardado los límites y el estado de asistentes en tiempo real.',
                     toast: true,
                     position: 'top-end',
                     showConfirmButton: false,

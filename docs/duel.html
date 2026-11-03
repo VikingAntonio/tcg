@@ -1274,17 +1274,17 @@
             left: 50%;
             transform: translateX(-50%);
             margin-bottom: 6px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(0, 210, 255, 0.4);
-            border-radius: 8px;
-            padding: 4px;
+            background: rgba(10, 16, 30, 0.98);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(0, 210, 255, 0.6);
+            border-radius: 10px;
+            padding: 6px;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             z-index: 10050;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-            min-width: 95px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.85), 0 0 15px rgba(0, 210, 255, 0.3);
+            min-width: 105px;
         }
         .hand-tray.player-2 .mulligan-dropdown-menu {
             bottom: auto;
@@ -1309,31 +1309,44 @@
             display: flex;
         }
         .mulligan-opt-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #eee;
-            padding: 4px 8px;
-            font-size: 0.75rem;
-            border-radius: 4px;
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            color: #e2e8f0;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s ease;
             white-space: nowrap;
             text-align: center;
         }
         .mulligan-opt-btn:hover {
-            background: rgba(0, 210, 255, 0.25);
+            background: rgba(0, 210, 255, 0.3);
             border-color: #00d2ff;
             color: #00d2ff;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+            transform: scale(1.03);
+        }
+        .mulligan-opt-btn.opt-grave {
+            background: rgba(255, 71, 87, 0.1);
+            border-color: rgba(255, 71, 87, 0.3);
         }
         .mulligan-opt-btn.opt-grave:hover {
-            background: rgba(255, 71, 87, 0.25);
+            background: rgba(255, 71, 87, 0.3);
             border-color: #ff4757;
             color: #ff4757;
+            box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+        }
+        .mulligan-opt-btn.opt-banish {
+            background: rgba(168, 85, 247, 0.1);
+            border-color: rgba(168, 85, 247, 0.3);
         }
         .mulligan-opt-btn.opt-banish:hover {
-            background: rgba(168, 85, 247, 0.25);
+            background: rgba(168, 85, 247, 0.3);
             border-color: #a855f7;
             color: #a855f7;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
         }
 
     </style>
@@ -3169,6 +3182,13 @@
                                         if (remoteCard.desc !== undefined) localCard.desc = remoteCard.desc;
                                         if (remoteCard.description !== undefined) localCard.description = remoteCard.description;
                                         if (remoteCard.customAtkDef !== undefined) localCard.customAtkDef = remoteCard.customAtkDef;
+                                    } else {
+                                        // Masked back to private
+                                        localCard.name = remoteCard.name;
+                                        localCard.imageUrl = remoteCard.imageUrl;
+                                        localCard.desc = "";
+                                        localCard.description = "";
+                                        delete localCard.customAtkDef;
                                     }
                                 }
                             } else {
@@ -3191,6 +3211,22 @@
                     if (!payload || !payload.player) return;
                     if (!state.handRevealed) state.handRevealed = { player1: false, player2: false };
                     state.handRevealed[payload.player] = !!payload.revealed;
+
+                    if (!payload.revealed) {
+                        const targetPlayer = payload.player;
+                        const defaultBack = getDefaultCardBack();
+                        const sleeve = (state.deckSleeves && state.deckSleeves[targetPlayer]) ? state.deckSleeves[targetPlayer] : defaultBack;
+                        state.cards.forEach(card => {
+                            const cardOwner = card.owner || (card.zone && card.zone.endsWith('_1') ? 'player1' : 'player2');
+                            if (cardOwner === targetPlayer && card.zone && card.zone.startsWith('hand_')) {
+                                card.imageUrl = sleeve;
+                                card.name = "Carta Oculta";
+                                card.desc = "";
+                                card.description = "";
+                                delete card.customAtkDef;
+                            }
+                        });
+                    }
 
                     window.renderAllCards();
 
@@ -3343,35 +3379,39 @@
             // Intercept pile action button clicks (Mano, Deck, Extra Deck)
             $(document).on('click', '#pile-overlay .btn-pile-hand, #pile-overlay .btn-pile-deck, #pile-overlay .btn-pile-to-extra', function(e) {
                 if (state.mode !== 'multiplayer') return;
-                var $cardElem = $(this).closest('.pile-card-wrapper');
+                var $cardElem = $(this).closest('.pile-card-container, .pile-card-wrapper');
                 var instId = $cardElem.data('instance-id');
                 var cardObj = state.cards.find(function(c) { return String(c.instanceId) === String(instId); });
                 if (!cardObj) return;
 
-                // Stop native handler in js/duel.js
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
+                var myRole = currentRole || 'player1';
+                var isMyCard = (cardObj.owner === myRole);
+                if (!isMyCard) {
+                    // Stop native handler in js/duel.js
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
 
-                var targetZone, actionType, actionDesc;
-                if ($(this).hasClass('btn-pile-hand')) {
-                    actionType = 'hand';
-                    targetZone = cardObj.owner === 'player1' ? 'hand_1' : 'hand_2';
-                    actionDesc = 'Devolvió una carta a la Mano';
-                } else if ($(this).hasClass('btn-pile-deck')) {
-                    actionType = 'deck';
-                    var pSuffix = cardObj.owner === 'player1' ? '1' : '2';
-                    targetZone = 'deck_' + pSuffix;
-                    actionDesc = 'Devolvió una carta al Deck';
-                } else if ($(this).hasClass('btn-pile-to-extra')) {
-                    actionType = 'extra';
-                    var pSuffix = cardObj.owner === 'player1' ? '1' : '2';
-                    targetZone = 'extra_' + pSuffix;
-                    actionDesc = 'Devolvió una carta al Extra Deck';
-                }
+                    var targetZone, actionType, actionDesc;
+                    if ($(this).hasClass('btn-pile-hand')) {
+                        actionType = 'hand';
+                        targetZone = cardObj.owner === 'player1' ? 'hand_1' : 'hand_2';
+                        actionDesc = 'Devolvió una carta a la Mano';
+                    } else if ($(this).hasClass('btn-pile-deck')) {
+                        actionType = 'deck';
+                        var pSuffix = cardObj.owner === 'player1' ? '1' : '2';
+                        targetZone = 'deck_' + pSuffix;
+                        actionDesc = 'Devolvió una carta al Deck';
+                    } else if ($(this).hasClass('btn-pile-to-extra')) {
+                        actionType = 'extra';
+                        var pSuffix = cardObj.owner === 'player1' ? '1' : '2';
+                        targetZone = 'extra_' + pSuffix;
+                        actionDesc = 'Devolvió una carta al Extra Deck';
+                    }
 
-                if (typeof window.requestOpponentCardAction === 'function') {
-                    window.requestOpponentCardAction(cardObj, actionType, targetZone, actionDesc);
+                    if (typeof window.requestOpponentCardAction === 'function') {
+                        window.requestOpponentCardAction(cardObj, actionType, targetZone, actionDesc);
+                    }
                 }
             });
 

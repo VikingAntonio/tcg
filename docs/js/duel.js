@@ -1148,6 +1148,25 @@ function bindCardDragEvents() {
         const cardObj = state.cards.find(c => c.instanceId === instId);
         if (!cardObj) return;
 
+        // In multiplayer mode, block dragging and unauthorized interaction on opponent cards
+        if (state.mode === "multiplayer") {
+            const myRole = window.currentRole || "player1";
+            const effectiveController = cardObj.controller || cardObj.owner || (cardObj.zone && cardObj.zone.endsWith('_1') ? 'player1' : (cardObj.zone && cardObj.zone.endsWith('_2') ? 'player2' : null));
+            const isRivalCard = effectiveController && effectiveController !== myRole;
+
+            if (isRivalCard) {
+                // If attack targeting is active and clicking on rival card, let attack handler capture it
+                if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
+                    return;
+                }
+                // Disallow dragging any rival card (hand, deck, field, extra)
+                e.preventDefault();
+                e.stopPropagation();
+                updatePreview(cardObj);
+                return;
+            }
+        }
+
         // If we are in attack targeting mode, bypass dragging and click handling in mousedown
         if (typeof window.activeAttackSourceCard !== "undefined" && window.activeAttackSourceCard) {
             return;
@@ -2369,6 +2388,21 @@ function drawCards(playerKey, count = 1) {
 
 // Interactive Extra Deck viewer overlay and Summoning system
 function openExtraDeckModal(playerKey) {
+    const currentRole = window.currentRole || "player1";
+    // In multiplayer 2-player mode, players CANNOT open or inspect rival Extra Deck
+    if (state.mode === "multiplayer" && playerKey !== currentRole) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Acceso Restringido',
+            text: 'No puedes acceder ni interactuar con el Extra Deck del oponente.',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        return;
+    }
+
     const extraZone = playerKey === "player1" ? "extra_1" : "extra_2";
     const extraCards = state.cards.filter(c => c.zone === extraZone);
 
@@ -2378,7 +2412,6 @@ function openExtraDeckModal(playerKey) {
     if (extraCards.length === 0) {
         $("#extra-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas en el Extra Deck.</p>');
     } else {
-        const currentRole = window.currentRole || "player1";
         const isMyExtraDeck = (playerKey === currentRole || state.mode === "practice");
 
         extraCards.forEach(card => {
@@ -3324,29 +3357,51 @@ function openPileModal(playerKey, pileType) {
     $("#pile-modal-title").text(`${title} (${playerKey === "player1" ? "P1" : "P2"})`);
     $("#pile-cards-grid").empty();
 
+    const currentRole = window.currentRole || "player1";
+    const isRivalPile = (state.mode === "multiplayer" && playerKey !== currentRole);
+
+    if (isRivalPile) {
+        $("#pile-multi-select-toggle").closest(".pile-multi-select-wrapper").hide();
+    } else {
+        $("#pile-multi-select-toggle").closest(".pile-multi-select-wrapper").show();
+    }
+
     if (pileCards.length === 0) {
         $("#pile-cards-grid").append('<p style="color: #999; grid-column: 1/-1; text-align: center;">No hay cartas aquí.</p>');
     } else {
         pileCards.forEach(card => {
+            let menuButtonsHTML = "";
+            if (isRivalPile) {
+                // Rival pile in multiplayer: ONLY view and select
+                menuButtonsHTML = `
+                    <button class="pile-card-action-btn btn-pile-select" data-instance-id="${card.instanceId}">Seleccionar</button>
+                    <button class="pile-card-action-btn btn-pile-view" data-instance-id="${card.instanceId}">Ver carta</button>
+                `;
+            } else {
+                menuButtonsHTML = `
+                    <button class="pile-card-action-btn btn-pile-summon" data-instance-id="${card.instanceId}">Invocar</button>
+                    <button class="pile-card-action-btn btn-pile-set" data-instance-id="${card.instanceId}">Set</button>
+                    ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ? `<button class="pile-card-action-btn btn-pile-defense" data-instance-id="${card.instanceId}">DEF</button>` : ''}
+                    <button class="pile-card-action-btn btn-pile-attach" data-instance-id="${card.instanceId}">Acoplar</button>
+                    <button class="pile-card-action-btn btn-pile-hand" data-instance-id="${card.instanceId}">Mano</button>
+                    <button class="pile-card-action-btn btn-pile-deck" data-instance-id="${card.instanceId}">Deck</button>
+                    ${pileType === 'grave' ?
+                        `<button class="pile-card-action-btn btn-pile-banish" data-instance-id="${card.instanceId}">Remover</button>` :
+                        `<button class="pile-card-action-btn btn-pile-grave" data-instance-id="${card.instanceId}">Cementerio</button>`
+                    }
+                    <button class="pile-card-action-btn btn-pile-effect" data-instance-id="${card.instanceId}">Efecto</button>
+                    <button class="pile-card-action-btn btn-pile-to-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
+                    <button class="pile-card-action-btn btn-pile-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
+                    <button class="pile-card-action-btn btn-pile-view" data-instance-id="${card.instanceId}">Ver carta</button>
+                `;
+            }
+
             const cardHTML = `
                 <div class="pile-card-container" data-instance-id="${card.instanceId}">
                     <img src="${card.imageUrl}" alt="${card.name}">
                     <div class="pile-card-hover-overlay">
                         <div class="pile-card-menu">
-                            <button class="pile-card-action-btn btn-pile-summon" data-instance-id="${card.instanceId}">Invocar</button>
-                            <button class="pile-card-action-btn btn-pile-set" data-instance-id="${card.instanceId}">Set</button>
-                            ${(state.layout === 'yugioh' || state.layout === 'yugioh_advanced') ? `<button class="pile-card-action-btn btn-pile-defense" data-instance-id="${card.instanceId}">DEF</button>` : ''}
-                            <button class="pile-card-action-btn btn-pile-attach" data-instance-id="${card.instanceId}">Acoplar</button>
-                            <button class="pile-card-action-btn btn-pile-hand" data-instance-id="${card.instanceId}">Mano</button>
-                            <button class="pile-card-action-btn btn-pile-deck" data-instance-id="${card.instanceId}">Deck</button>
-                            ${pileType === 'grave' ?
-                                `<button class="pile-card-action-btn btn-pile-banish" data-instance-id="${card.instanceId}">Remover</button>` :
-                                `<button class="pile-card-action-btn btn-pile-grave" data-instance-id="${card.instanceId}">Cementerio</button>`
-                            }
-                            <button class="pile-card-action-btn btn-pile-effect" data-instance-id="${card.instanceId}">Efecto</button>
-                            <button class="pile-card-action-btn btn-pile-to-extra" data-instance-id="${card.instanceId}">Extra Deck</button>
-                            <button class="pile-card-action-btn btn-pile-pendulum" data-instance-id="${card.instanceId}">Péndulo</button>
-                            <button class="pile-card-action-btn btn-pile-view" data-instance-id="${card.instanceId}">Ver carta</button>
+                            ${menuButtonsHTML}
                         </div>
                     </div>
                 </div>
@@ -3376,7 +3431,27 @@ function openPileModal(playerKey, pileType) {
 
         const pSuffix = cardObj.owner === "player1" ? 1 : 2;
 
-        if ($(this).hasClass("btn-pile-summon")) {
+        if ($(this).hasClass("btn-pile-select")) {
+            // "Seleccionar" on pile card
+            const $cardElem = $(`#${cardObj.instanceId}`);
+            if ($cardElem.length) {
+                $cardElem.addClass("activating-flash");
+                setTimeout(() => $cardElem.removeClass("activating-flash"), 800);
+            }
+            if (typeof sendGameAction === "function") {
+                sendGameAction(`Seleccionó la carta en ${pileType === 'grave' ? 'el Cementerio' : 'el Banish'}`, cardObj.name);
+            }
+            Swal.fire({
+                icon: 'info',
+                title: 'Carta Seleccionada',
+                text: `Has seleccionado: ${cardObj.name}`,
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        } else if ($(this).hasClass("btn-pile-summon")) {
             $("#pile-overlay").fadeOut(200);
             startGraphicalTargeting(cardObj, "summon");
         } else if ($(this).hasClass("btn-pile-set")) {
@@ -3564,7 +3639,21 @@ function openCardContextMenu(cardObj, clientX, clientY) {
 
     // If card is inside a deck zone, open the deck menu instead of card menu
     if (cardObj.zone.startsWith("deck_")) {
-        activeMenuDeckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+        const deckPlayer = cardObj.zone === "deck_1" ? "player1" : "player2";
+        const currentRole = window.currentRole || "player1";
+        if (state.mode === "multiplayer" && deckPlayer !== currentRole) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Acceso Restringido',
+                text: 'No puedes interactuar con el Deck del oponente.',
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+        activeMenuDeckPlayer = deckPlayer;
         $("#card-menu").removeClass("active");
         $("#deck-menu").css({
             left: `${clientX}px`,
@@ -3714,7 +3803,24 @@ function openCardContextMenu(cardObj, clientX, clientY) {
         e.stopPropagation();
 
         const zoneId = $(this).data("id");
-        activeMenuDeckPlayer = zoneId === "zone-deck_1" || zoneId === "deck_1" ? "player1" : "player2";
+        const deckPlayer = (zoneId === "zone-deck_1" || zoneId === "deck_1") ? "player1" : "player2";
+        const currentRole = window.currentRole || "player1";
+
+        // In multiplayer 2-player mode, do not open deck menu for rival's deck
+        if (state.mode === "multiplayer" && deckPlayer !== currentRole) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Acceso Restringido',
+                text: 'No puedes interactuar con el Deck del oponente.',
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+
+        activeMenuDeckPlayer = deckPlayer;
 
         $("#card-menu").removeClass("active");
         $("#deck-menu").css({
@@ -4440,17 +4546,42 @@ function openCardContextMenu(cardObj, clientX, clientY) {
         shuffleHand(playerKey);
     });
 
+    let mulliganCloseTimer = null;
     $(document).on("click", ".btn-hand-mulligan", function(e) {
         e.preventDefault();
         e.stopPropagation();
+        if (mulliganCloseTimer) {
+            clearTimeout(mulliganCloseTimer);
+            mulliganCloseTimer = null;
+        }
         const $wrapper = $(this).closest(".mulligan-dropdown-wrapper");
         $(".mulligan-dropdown-wrapper").not($wrapper).removeClass("open");
         $wrapper.toggleClass("open");
     });
 
+    $(document).on("mouseenter", ".mulligan-dropdown-wrapper", function() {
+        if (mulliganCloseTimer) {
+            clearTimeout(mulliganCloseTimer);
+            mulliganCloseTimer = null;
+        }
+    });
+
+    $(document).on("mouseleave", ".mulligan-dropdown-wrapper", function() {
+        const $wrapper = $(this);
+        if ($wrapper.hasClass("open")) {
+            mulliganCloseTimer = setTimeout(function() {
+                $wrapper.removeClass("open");
+            }, 1800); // Gives ample time to reach options
+        }
+    });
+
     $(document).on("click", ".mulligan-opt-btn", function(e) {
         e.preventDefault();
         e.stopPropagation();
+        if (mulliganCloseTimer) {
+            clearTimeout(mulliganCloseTimer);
+            mulliganCloseTimer = null;
+        }
         const playerKey = $(this).data("player") || "player1";
         const dest = $(this).data("dest") || "deck";
         $(this).closest(".mulligan-dropdown-wrapper").removeClass("open");
@@ -4459,6 +4590,10 @@ function openCardContextMenu(cardObj, clientX, clientY) {
 
     $(document).on("click", function(e) {
         if (!$(e.target).closest(".mulligan-dropdown-wrapper").length) {
+            if (mulliganCloseTimer) {
+                clearTimeout(mulliganCloseTimer);
+                mulliganCloseTimer = null;
+            }
             $(".mulligan-dropdown-wrapper").removeClass("open");
         }
     });

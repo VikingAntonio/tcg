@@ -3605,14 +3605,38 @@ body.theme-light .amazon-orig-strikethrough {
 }
 
 .spirit-card.spirit-card-for-sale {
-    border: 2px solid rgba(255, 215, 0, 0.35);
-    background: rgba(255, 215, 0, 0.03);
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    background: radial-gradient(circle at top center, rgba(255, 215, 0, 0.08), rgba(15, 23, 42, 0.85));
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.spirit-card.spirit-card-for-sale .model-viewer-paid-wrapper {
+    width: 100%;
+    border-radius: 16px;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+    position: relative;
+    margin-bottom: 8px;
+    animation: goldGlowPulse 2.5s infinite alternate;
+}
+
+@keyframes goldGlowPulse {
+    0% {
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3), inset 0 0 10px rgba(255, 215, 0, 0.1);
+        border-color: rgba(255, 215, 0, 0.6);
+    }
+    100% {
+        box-shadow: 0 0 24px rgba(255, 215, 0, 0.65), inset 0 0 15px rgba(255, 215, 0, 0.25);
+        border-color: #ffd700;
+    }
 }
 
 .spirit-card.spirit-card-for-sale:hover {
     border-color: #ffd700;
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
-    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4);
+    transform: translateY(-6px);
 }
 
 .spirit-card .badge-selected {
