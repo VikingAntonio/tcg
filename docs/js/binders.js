@@ -228,6 +228,7 @@ $(document).ready(async function() {
             condition: $('#slot-condition').val() || 'M',
             price: $('#slot-price').val() || '',
             cost_price: $('#slot-cost-price').val() || '',
+            quantity: parseInt($('#slot-quantity').val(), 10) >= 0 ? parseInt($('#slot-quantity').val(), 10) : 1,
             description: $('#slot-description').val() || '',
             extra_images: currentSlotExtraImages || [],
             obtained: true
@@ -572,7 +573,8 @@ async function deletePage(id) {
 
 async function loadSlotData(pageId, slotIndex) {
     const data = localAlbumSlots.find(s => s.page_id === pageId && s.slot_index === slotIndex);
-    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price, #slot-description').val('');
+    $('#slot-image-url, #slot-name, #slot-rarity, #slot-expansion, #slot-condition, #slot-price, #slot-cost-price, #slot-quantity, #slot-description').val('');
+    $('#slot-quantity').val(1);
     currentSlotExtraImages = [];
 
     if (data && data.image_url) {
@@ -583,6 +585,7 @@ async function loadSlotData(pageId, slotIndex) {
         $('#slot-condition').val(data.condition || '');
         $('#slot-price').val(data.price || '');
         $('#slot-cost-price').val(data.cost_price || '');
+        $('#slot-quantity').val(data.quantity !== undefined && data.quantity !== null ? data.quantity : 1);
         $('#slot-description').val(data.description || '');
         if (data.extra_images && Array.isArray(data.extra_images)) {
             currentSlotExtraImages = [...data.extra_images];
@@ -614,3 +617,416 @@ async function openOrganizeModal(type) {
         }});
     }
 }
+
+// ====================================================================
+// VISTAS: INVERSIONES (STOCK DE BINDERS) Y REPORTES DE VENTAS
+// ====================================================================
+
+let allUserBinderSlots = [];
+let pendingInvChanges = {};
+
+$(document).on('click', '#btn-nav-inversiones', function(e) {
+    e.preventDefault();
+    showView('inversiones');
+    loadInversionesStockTable();
+});
+
+$(document).on('click', '#btn-nav-reportes', function(e) {
+    e.preventDefault();
+    showView('reportes');
+    loadReportesVentasTable();
+});
+
+$(document).on('click', '.btn-back-to-binders-view', function(e) {
+    e.preventDefault();
+    showView('dashboard');
+    loadAlbums();
+});
+
+$(document).on('click', '#btn-refresh-reportes', function(e) {
+    e.preventDefault();
+    loadReportesVentasTable();
+});
+
+// Cargar tabla completa de Inversiones / Stock de todas las cartas de binders
+async function loadInversionesStockTable() {
+    const $tbody = $('#inversiones-table-body');
+    $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Cargando inventario de cartas...</td></tr>');
+    pendingInvChanges = {};
+
+    try {
+        if (!currentUser || !currentUser.id) return;
+
+        // 1. Obtener todos los binders del usuario
+        const { data: binders } = await _supabase
+            .from('binders')
+            .select('id, title')
+            .eq('user_id', currentUser.id);
+
+        if (!binders || binders.length === 0) {
+            $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No tienes binders creados todavía.</td></tr>');
+            return;
+        }
+
+        const binderMap = {};
+        binders.forEach(b => { binderMap[b.id] = b.title; });
+
+        // 2. Obtener páginas de esos binders
+        const { data: pages } = await _supabase
+            .from('binder_pages')
+            .select('id, binder_id')
+            .in('binder_id', binders.map(b => b.id));
+
+        if (!pages || pages.length === 0) {
+            $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No hay páginas ni cartas registradas en tus binders.</td></tr>');
+            return;
+        }
+
+        const pageToBinder = {};
+        pages.forEach(p => { pageToBinder[p.id] = binderMap[p.binder_id] || 'Binder'; });
+
+        // 3. Obtener slots con cartas
+        const { data: slots, error } = await _supabase
+            .from('binder_card_slots')
+            .select('*')
+            .in('page_id', pages.map(p => p.id))
+            .not('image_url', 'is', null);
+
+        if (error) throw error;
+
+        allUserBinderSlots = (slots || []).map(s => ({
+            ...s,
+            binder_title: pageToBinder[s.page_id] || 'Binder'
+        }));
+
+        renderInversionesTable(allUserBinderSlots);
+
+    } catch (err) {
+        console.error("Error al cargar inversiones:", err);
+        $tbody.html(`<tr><td colspan="9" style="text-align: center; padding: 30px; color: #ff4757;">Error al cargar inventario: ${err.message || ''}</td></tr>`);
+    }
+}
+
+function renderInversionesTable(slots) {
+    const $tbody = $('#inversiones-table-body').empty();
+
+    if (!slots || slots.length === 0) {
+        $tbody.html('<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No se encontraron cartas en tus binders.</td></tr>');
+        return;
+    }
+
+    slots.forEach(slot => {
+        const qty = slot.quantity !== undefined && slot.quantity !== null && slot.quantity !== '' ? parseInt(slot.quantity) : 1;
+        const isSoldOut = qty <= 0;
+        const costPrice = parseFloat(slot.cost_price || 0) || 0;
+        const salePrice = parseFloat(slot.price || 0) || 0;
+
+        const $row = $(`
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;" data-slot-id="${slot.id}">
+                <td style="padding: 10px; text-align: center;">
+                    <img src="${slot.image_url}" style="width: 36px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); display: inline-block;">
+                </td>
+                <td style="padding: 10px 12px; font-weight: 700; color: #cbd5e1;">${slot.binder_title}</td>
+                <td style="padding: 10px 12px; font-weight: 800; color: #fff;">${slot.name || 'Sin nombre'}</td>
+                <td style="padding: 10px; color: #94a3b8;">${slot.rarity || '-'}</td>
+                <td style="padding: 10px; color: #94a3b8;">${slot.expansion || '-'}</td>
+                <td style="padding: 10px; text-align: right;">
+                    <input type="number" step="0.01" class="inv-input-cost" data-id="${slot.id}" value="${costPrice > 0 ? costPrice.toFixed(2) : ''}" placeholder="0.00" style="width: 90px; text-align: right; background: rgba(0,0,0,0.4); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; font-weight: 700; border-radius: 6px; padding: 4px 6px;">
+                </td>
+                <td style="padding: 10px; text-align: right;">
+                    <input type="number" step="0.01" class="inv-input-price" data-id="${slot.id}" value="${salePrice > 0 ? salePrice.toFixed(2) : ''}" placeholder="0.00" style="width: 90px; text-align: right; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; font-weight: 700; border-radius: 6px; padding: 4px 6px;">
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    <input type="number" min="0" class="inv-input-qty" data-id="${slot.id}" value="${qty}" style="width: 70px; text-align: center; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,210,255,0.3); color: #00d2ff; font-weight: 800; border-radius: 6px; padding: 4px 6px;">
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    <span class="status-badge-${slot.id}" style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 0.75rem; ${isSoldOut ? 'background: rgba(239,68,68,0.2); color: #ff4757; border: 1px solid #ff4757;' : 'background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88;'}">
+                        ${isSoldOut ? 'AGOTADO' : 'DISPONIBLE'}
+                    </span>
+                </td>
+            </tr>
+        `);
+        $tbody.append($row);
+    });
+}
+
+// Búsqueda en vivo en la tabla de inversiones
+$(document).on('input', '#inv-table-search', function() {
+    const term = $(this).val().toLowerCase().trim();
+    if (!term) {
+        renderInversionesTable(allUserBinderSlots);
+        return;
+    }
+    const filtered = allUserBinderSlots.filter(s =>
+        (s.name && s.name.toLowerCase().includes(term)) ||
+        (s.binder_title && s.binder_title.toLowerCase().includes(term)) ||
+        (s.expansion && s.expansion.toLowerCase().includes(term)) ||
+        (s.rarity && s.rarity.toLowerCase().includes(term))
+    );
+    renderInversionesTable(filtered);
+});
+
+// Guardar cambios en lote de la tabla de Inversiones / Stock
+$(document).on('change', '.inv-input-qty, .inv-input-cost, .inv-input-price', function() {
+    const slotId = $(this).data('id');
+    if (!pendingInvChanges[slotId]) pendingInvChanges[slotId] = {};
+
+    if ($(this).hasClass('inv-input-qty')) {
+        const val = parseInt($(this).val());
+        const finalVal = isNaN(val) ? 0 : Math.max(0, val);
+        pendingInvChanges[slotId].quantity = finalVal;
+
+        // Actualizar etiqueta visual de inmediato
+        const $badge = $(`.status-badge-${slotId}`);
+        if (finalVal <= 0) {
+            $badge.text('AGOTADO').css({ background: 'rgba(239,68,68,0.2)', color: '#ff4757', border: '1px solid #ff4757' });
+        } else {
+            $badge.text('DISPONIBLE').css({ background: 'rgba(0,255,136,0.2)', color: '#00ff88', border: '1px solid #00ff88' });
+        }
+    } else if ($(this).hasClass('inv-input-cost')) {
+        pendingInvChanges[slotId].cost_price = $(this).val();
+    } else if ($(this).hasClass('inv-input-price')) {
+        pendingInvChanges[slotId].price = $(this).val();
+    }
+});
+
+$(document).on('click', '#btn-save-inv-table', async function(e) {
+    e.preventDefault();
+    const ids = Object.keys(pendingInvChanges);
+    if (ids.length === 0) {
+        Swal.fire({ icon: 'info', title: 'Sin Cambios', text: 'No has modificado ningún valor aún.', timer: 1500, showConfirmButton: false });
+        return;
+    }
+
+    Swal.fire({ title: 'Guardando cambios de inventario...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const updates = ids.map(id => {
+            const patch = pendingInvChanges[id];
+            return _supabase.from('binder_card_slots').update(patch).eq('id', id);
+        });
+
+        await Promise.all(updates);
+
+        // Actualizar datos locales
+        ids.forEach(id => {
+            const slot = allUserBinderSlots.find(s => s.id === id);
+            if (slot) Object.assign(slot, pendingInvChanges[id]);
+            const localSlot = localAlbumSlots.find(s => s.id === id);
+            if (localSlot) Object.assign(localSlot, pendingInvChanges[id]);
+        });
+
+        pendingInvChanges = {};
+        Swal.fire({ icon: 'success', title: '¡Inventario Actualizado!', text: 'Los cambios de stock y precios se han guardado con éxito.', timer: 1500, showConfirmButton: false });
+    } catch (err) {
+        Swal.fire('Error', 'No se pudieron guardar los cambios: ' + err.message, 'error');
+    }
+});
+
+
+// Cargar tabla de Reportes de Ventas
+async function loadReportesVentasTable() {
+    const $tbody = $('#reportes-table-body');
+    $tbody.html('<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Cargando reporte de ventas...</td></tr>');
+
+    try {
+        if (!currentUser || !currentUser.id) return;
+
+        const { data: sales, error } = await _supabase
+            .from('binder_sales')
+            .select('*')
+            .eq('seller_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        renderReportesTable(sales || []);
+
+    } catch (err) {
+        console.error("Error al cargar reportes:", err);
+        $tbody.html(`<tr><td colspan="8" style="text-align: center; padding: 30px; color: #ff4757;">Error al cargar ventas: ${err.message || ''}</td></tr>`);
+    }
+}
+
+function renderReportesTable(sales) {
+    const $tbody = $('#reportes-table-body').empty();
+
+    if (!sales || sales.length === 0) {
+        $tbody.html('<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">Aún no tienes ventas registradas desde tus binders.</td></tr>');
+        return;
+    }
+
+    sales.forEach(sale => {
+        const items = Array.isArray(sale.items) ? sale.items : [];
+        let totalItemsCount = 0;
+        const itemsListHtml = items.map(it => {
+            const q = parseInt(it.cart_quantity) || 1;
+            totalItemsCount += q;
+            const bTitle = it.binder_title || it.album_title || 'Binder';
+            return `<div style="font-size: 0.82rem; margin-bottom: 2px;">• <strong>${it.name || 'Carta'}</strong> x${q} <span style="color: #94a3b8;">(${bTitle})</span></div>`;
+        }).join('') || '<span style="color: #64748b;">Sin desglose</span>';
+
+        const dateStr = sale.created_at ? new Date(sale.created_at).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : 'Reciente';
+
+        let statusBadge = '';
+        if (sale.status === 'confirmada') {
+            statusBadge = '<span style="background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88; padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 0.75rem;">CONFIRMADA</span>';
+        } else if (sale.status === 'cancelada') {
+            statusBadge = '<span style="background: rgba(239,68,68,0.2); color: #ff4757; border: 1px solid #ff4757; padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 0.75rem;">CANCELADA</span>';
+        } else {
+            statusBadge = '<span style="background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid #f59e0b; padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 0.75rem;">PENDIENTE</span>';
+        }
+
+        let actionButtons = '';
+        if (sale.status === 'pendiente') {
+            actionButtons = `
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn btn-confirm-sale" data-id="${sale.id}" style="background: #00ff88; color: #000; font-weight: 900; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;" title="Confirmar venta y descontar existencias">
+                        <i class="fas fa-check"></i> Sí (Efectuada)
+                    </button>
+                    <button class="btn btn-reject-sale" data-id="${sale.id}" style="background: #ff4757; color: #fff; font-weight: 800; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;" title="Rechazar o cancelar pedido">
+                        <i class="fas fa-times"></i> No
+                    </button>
+                </div>
+            `;
+        } else {
+            actionButtons = `<span style="color: #64748b; font-size: 0.8rem;">Procesada</span>`;
+        }
+
+        const platformIcon = sale.platform === 'messenger'
+            ? '<i class="fab fa-facebook-messenger" style="color: #0084ff; font-size: 1.1rem;" title="Messenger"></i>'
+            : '<i class="fab fa-whatsapp" style="color: #25d366; font-size: 1.1rem;" title="WhatsApp"></i>';
+
+        const $row = $(`
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);" id="sale-row-${sale.id}">
+                <td style="padding: 12px; color: #94a3b8; font-size: 0.8rem;">${dateStr}</td>
+                <td style="padding: 12px;">
+                    <strong style="color: #00d2ff;">@${sale.buyer_username || 'usuario'}</strong>
+                    <div style="font-size: 0.78rem; color: #cbd5e1;">${sale.buyer_name || ''}</div>
+                    ${sale.buyer_contact ? `<div style="font-size: 0.75rem; color: #64748b;">${sale.buyer_contact}</div>` : ''}
+                </td>
+                <td style="padding: 12px;">${itemsListHtml}</td>
+                <td style="padding: 12px; text-align: center; font-weight: 800; color: #fff;">${totalItemsCount}</td>
+                <td style="padding: 12px; text-align: right; font-weight: 900; color: #00ff88; font-size: 0.95rem;">$${parseFloat(sale.total_amount || 0).toFixed(2)}</td>
+                <td style="padding: 12px; text-align: center;">${platformIcon}</td>
+                <td style="padding: 12px; text-align: center;">${statusBadge}</td>
+                <td style="padding: 12px; text-align: center;">${actionButtons}</td>
+            </tr>
+        `);
+        $tbody.append($row);
+    });
+}
+
+// Confirmar venta: descontar stock de las cartas del binder
+$(document).on('click', '.btn-confirm-sale', async function(e) {
+    e.preventDefault();
+    const saleId = $(this).data('id');
+
+    const result = await Swal.fire({
+        title: '¿Confirmar venta realizada?',
+        text: 'Al confirmar que la venta se efectuó, se restarán automáticamente las cartas del inventario. Si alguna carta llega a 0 existencias, quedará marcada como AGOTADA.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, efectuar venta',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#00ff88',
+        cancelButtonColor: '#475569'
+    });
+
+    if (!result.isConfirmed) return;
+
+    Swal.fire({ title: 'Actualizando stock y ventas...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const { data: sale, error } = await _supabase
+            .from('binder_sales')
+            .select('*')
+            .eq('id', saleId)
+            .single();
+
+        if (error) throw error;
+
+        // Descontar existencias de cada carta vendida
+        const items = Array.isArray(sale.items) ? sale.items : [];
+        for (const item of items) {
+            if (item.id) {
+                const qtySold = parseInt(item.cart_quantity) || 1;
+                // Buscar slot en Supabase
+                const { data: slot } = await _supabase
+                    .from('binder_card_slots')
+                    .select('id, quantity')
+                    .eq('id', item.id)
+                    .maybeSingle();
+
+                if (slot) {
+                    const currentQty = slot.quantity !== undefined && slot.quantity !== null ? parseInt(slot.quantity) : 1;
+                    const newQty = Math.max(0, currentQty - qtySold);
+                    await _supabase
+                        .from('binder_card_slots')
+                        .update({ quantity: newQty })
+                        .eq('id', item.id);
+                }
+            }
+        }
+
+        // Actualizar estado de la venta a confirmada
+        await _supabase
+            .from('binder_sales')
+            .update({ status: 'confirmada', is_read: true })
+            .eq('id', saleId);
+
+        Swal.fire({
+            icon: 'success',
+            title: '¡Venta Confirmada!',
+            text: 'Se efectuó la venta y se descontaron las copias vendidas del stock del binder.',
+            confirmButtonColor: '#00d2ff'
+        });
+
+        loadReportesVentasTable();
+
+    } catch (err) {
+        console.error("Error al confirmar venta:", err);
+        Swal.fire('Error', 'No se pudo procesar la confirmación: ' + (err.message || ''), 'error');
+    }
+});
+
+// Rechazar o marcar venta como no efectuada
+$(document).on('click', '.btn-reject-sale', async function(e) {
+    e.preventDefault();
+    const saleId = $(this).data('id');
+
+    const result = await Swal.fire({
+        title: '¿Venta no efectuada?',
+        text: 'La venta se marcará como cancelada. No se modificará el stock de tus cartas.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Marcar no efectuada',
+        cancelButtonText: 'Regresar',
+        confirmButtonColor: '#ff4757',
+        cancelButtonColor: '#475569'
+    });
+
+    if (!result.isConfirmed) return;
+
+    Swal.fire({ title: 'Actualizando registro...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        await _supabase
+            .from('binder_sales')
+            .update({ status: 'cancelada', is_read: true })
+            .eq('id', saleId);
+
+        Swal.fire({
+            icon: 'info',
+            title: 'Venta Cancelada',
+            text: 'El reporte se actualizó sin alterar el inventario de cartas.',
+            confirmButtonColor: '#00d2ff'
+        });
+
+        loadReportesVentasTable();
+
+    } catch (err) {
+        console.error("Error al cancelar venta:", err);
+        Swal.fire('Error', 'No se pudo actualizar el registro: ' + (err.message || ''), 'error');
+    }
+});
