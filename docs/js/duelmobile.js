@@ -215,7 +215,7 @@ function handleYGOPositionTap(cardObj) {
 
 function ensureMonsterAtkDefWidget(card) {
     if (!isYGOLayout(state.layout)) return;
-    if (!card || card.faceDown) return;
+    if (!card || card.faceDown || card.attachedTo) return;
     const isField = card.zone &&
                     !card.zone.startsWith("hand_") &&
                     !card.zone.startsWith("deck_") &&
@@ -1152,11 +1152,17 @@ function renderAllCards() {
                 return bTime - aTime;
             });
 
-            let cumulativeOffset = 0;
-            attachedCards.forEach((childCard, idx) => {
-                if (idx < 2) {
-                    cumulativeOffset += 14;
-                }
+            // SÓLO MOSTRAR HASTA LA TERCERA CARTA EN LA PILA (1 carta principal + máximo 2 acopladas visibles)
+            // Las demás quedan ocultas en el tablero y accesibles al dar click a la carta / modal de acopladas
+            const visibleAttachedCards = attachedCards.slice(0, 2);
+
+            // Ajuste de perspectiva: en tablero rotado (perspectiva de Jugador 2), las cartas acopladas
+            // deben orientarse hacia abajo (hacia el jugador 2) y no invertirse hacia arriba tipo espejo.
+            const isRotated = !!window.isBoardRotated || $("body").hasClass("rotated-board");
+            const cascadeDirection = isRotated ? -1 : 1;
+
+            visibleAttachedCards.forEach((childCard, idx) => {
+                const stepOffset = 14 * (idx + 1) * cascadeDirection;
                 const childZ = card.z - 14 * (idx + 1);
 
                 activeRenderedIds.add(childCard.instanceId);
@@ -1174,8 +1180,8 @@ function renderAllCards() {
                     }
                 }
 
-                const childX = posX + cumulativeOffset;
-                const childY = posY + cumulativeOffset;
+                const childX = posX + stepOffset;
+                const childY = posY + stepOffset;
 
                 const $childElem = $(document.getElementById(childCard.instanceId));
                 if ($childElem.length > 0 && $childElem.hasClass("attached-card-cascade")) {
@@ -5809,9 +5815,9 @@ window.setupPokemonPrizes = setupPokemonPrizes;
                         }
                     }
 
-                    // Render Custom ATK/DEF Badge if set
+                    // Render Custom ATK/DEF Badge if set (only for main cards, not attached cards)
                     $card.find(".custom-atk-def-badge").remove();
-                    if (card.customAtkDef) {
+                    if (card.customAtkDef && !card.faceDown && !card.attachedTo && !$card.hasClass("attached-card-cascade")) {
                         $card.append(`
                             <div class="custom-atk-def-badge" draggable="true" data-instance-id="${card.instanceId}">
                                 <span>ATK: <span class="atk-val">${card.customAtkDef.atk}</span></span>
