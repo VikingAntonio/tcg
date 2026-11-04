@@ -116,7 +116,7 @@ $(document).ready(async function() {
     initTheme();
 
     $("#btn-login").click(function(e) { e.preventDefault(); handleLogin(); });
-    $(document).on("click", "#btn-back-to-web", function(e) { e.preventDefault(); window.location.href = "index.html"; });
+    $(document).on("click", "#btn-back-to-web", function(e) { e.preventDefault(); window.location.href = "admin.html"; });
 
     // Drag and Drop & File Upload handlers for Extra Images
     $(document).on('click', '#slot-dropzone', function() { $('#slot-file-input').click(); });

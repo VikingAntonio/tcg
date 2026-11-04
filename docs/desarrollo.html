@@ -665,7 +665,7 @@
             <i class="fas fa-lock"></i>
             <h2>Acceso Restringido</h2>
             <p>Este apartado está reservado exclusivamente para la administración principal de la plataforma VikingTCG.</p>
-            <a href="index.html" class="btn-main-save" style="display: inline-flex; justify-content: center; text-decoration: none;"><i class="fas fa-home"></i> Ir a la Página Principal</a>
+            <a href="admin.html" class="btn-main-save" style="display: inline-flex; justify-content: center; text-decoration: none;"><i class="fas fa-home"></i> Volver a Mi Panel</a>
         </div>
 
         <!-- Authorized Admin Panel -->
@@ -1518,7 +1518,7 @@
             $('#btn-dev-logout').click(async function() {
                 await _supabase.auth.signOut();
                 localStorage.removeItem('tcg_session');
-                window.location.href = 'index.html';
+                window.location.href = 'admin.html';
             });
         }
     </script>
