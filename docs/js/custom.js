@@ -30,6 +30,7 @@ const ADMIN_SLOTS = [
     { id: 'btn-eventos', title: 'Eventos', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-chatbot-config', title: 'Chatbot', defaultClass: 'tile-purple tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 2, row: 1 } },
     { id: 'btn-show-investments', title: 'Inversiones', defaultClass: 'tile-green', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'btn-custom-tile', title: 'Personalizar', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-widgets', title: 'Widgets', defaultClass: 'tile-blue', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'btn-logout-tile', title: 'Salir', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
 ];
@@ -43,7 +44,8 @@ const PUBLIC_SLOTS = [
     { id: 'public-wishlist', title: 'Buscamos', defaultClass: 'tile-pink', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'public-investments', title: 'Inversiones', defaultClass: 'tile-orange', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
     { id: 'public-claims', title: 'Claims', defaultClass: 'tile-cyan', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
-    { id: 'public-events', title: 'Eventos y Noticias', defaultClass: 'tile-cyan tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
+    { id: 'public-events', title: 'Eventos y Noticias', defaultClass: 'tile-cyan tile-wide', defaultPcSpan: { col: 2, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } },
+    { id: 'public-learn', title: 'Aprender', defaultClass: 'tile-green', defaultPcSpan: { col: 1, row: 1 }, defaultMobileSpan: { col: 1, row: 1 } }
 ];
 
 // Test Stickers Library (transparent PNGs)
@@ -329,17 +331,21 @@ function renderGrid() {
     bindSlotInteractions();
 }
 
-// 5. Render Stickers in Slot with In-Slot Handles
+// 5. Render Stickers in Slot with In-Slot Handles & Responsive Scaling
 function renderSlotStickers($container, stickers, slotId) {
     $container.empty();
     if (!stickers || stickers.length === 0) return;
 
     const isSlotSelected = window.CustomStoreState.selectedSlotId === slotId;
+    const isMobile = window.CustomStoreState.currentDevice === 'mobile';
+    // In mobile preview, scale sticker dimensions by factor of 0.75 for proportionate harmony
+    const scaleFactor = isMobile ? 0.75 : 1.0;
 
     stickers.forEach((stk, idx) => {
         const x = stk.x || 50;
         const y = stk.y || 50;
-        const size = stk.size || 40;
+        const baseSize = stk.size || 40;
+        const renderedSize = Math.round(baseSize * scaleFactor);
         const rot = stk.rotation || 0;
         const isActiveStk = isSlotSelected && window.CustomStoreState.activeStickerIdx === idx;
 
@@ -347,8 +353,8 @@ function renderSlotStickers($container, stickers, slotId) {
             <div class="sticker-item ${isActiveStk ? 'active-sticker' : ''}" data-index="${idx}" style="
                 left: ${x}%;
                 top: ${y}%;
-                width: ${size}px;
-                height: ${size}px;
+                width: ${renderedSize}px;
+                height: ${renderedSize}px;
                 transform: translate(-50%, -50%) rotate(${rot}deg);
             ">
                 <img src="${stk.url}" alt="${stk.name || 'Sticker'}">
@@ -358,7 +364,7 @@ function renderSlotStickers($container, stickers, slotId) {
             </div>
         `);
 
-        bindDirectStickerControls($stkItem, $container.closest('.tile'), slotId, idx);
+        bindDirectStickerControls($stkItem, $container.closest('.tile'), slotId, idx, scaleFactor);
         $container.append($stkItem);
     });
 }
@@ -537,7 +543,7 @@ function bind8ResizeDots() {
 }
 
 // 8. Direct In-Slot Sticker Controls (Drag, Scale handle, Rotate handle, Delete)
-function bindDirectStickerControls($stkItem, $slotEl, slotId, stickerIdx) {
+function bindDirectStickerControls($stkItem, $slotEl, slotId, stickerIdx, scaleFactor = 1.0) {
     // Select active sticker on click
     $stkItem.on('click', function(e) {
         e.stopPropagation();
@@ -561,26 +567,34 @@ function bindDirectStickerControls($stkItem, $slotEl, slotId, stickerIdx) {
         }
     });
 
-    // Scale Handle
+    // Fluid Scale Handle (Distance-from-Center math: perfectly smooth regardless of rotation angle)
     $stkItem.find('.stk-scale-handle').on('mousedown touchstart', function(e) {
         e.stopPropagation();
         e.preventDefault();
 
-        const startX = e.pageX || (e.originalEvent.touches ? e.originalEvent.touches[0].pageX : 0);
-        const startY = e.pageY || (e.originalEvent.touches ? e.originalEvent.touches[0].pageY : 0);
-        const initialSize = parseFloat($stkItem.css('width')) || 40;
+        const stkRect = $stkItem[0].getBoundingClientRect();
+        const centerX = stkRect.left + stkRect.width / 2;
+        const centerY = stkRect.top + stkRect.height / 2;
+
+        const startX = e.pageX || (e.originalEvent.touches ? e.originalEvent.touches[0].pageX : centerX);
+        const startY = e.pageY || (e.originalEvent.touches ? e.originalEvent.touches[0].pageY : centerY);
+        const initialDist = Math.hypot(startX - centerX, startY - centerY) || 1;
+        const currentRenderedSize = parseFloat($stkItem.css('width')) || 40;
 
         function onScaleMove(ev) {
-            const curX = ev.pageX || (ev.originalEvent.touches ? ev.originalEvent.touches[0].pageX : startX);
-            const curY = ev.pageY || (ev.originalEvent.touches ? ev.originalEvent.touches[0].pageY : startY);
-            const delta = Math.max(curX - startX, curY - startY);
-            const newSize = Math.max(20, Math.min(130, Math.round(initialSize + delta)));
+            const curX = ev.pageX || (ev.originalEvent.touches ? ev.originalEvent.touches[0].pageX : centerX);
+            const curY = ev.pageY || (ev.originalEvent.touches ? ev.originalEvent.touches[0].pageY : centerY);
 
-            $stkItem.css({ width: `${newSize}px`, height: `${newSize}px` });
+            const curDist = Math.hypot(curX - centerX, curY - centerY);
+            const distRatio = curDist / initialDist;
+            const newRenderedSize = Math.max(16, Math.min(150, Math.round(currentRenderedSize * distRatio)));
+            const normalizedBaseSize = Math.max(16, Math.min(150, Math.round(newRenderedSize / scaleFactor)));
+
+            $stkItem.css({ width: `${newRenderedSize}px`, height: `${newRenderedSize}px` });
 
             const sc = window.CustomStoreState.slotsConfig[slotId];
             if (sc && sc.stickers && sc.stickers[stickerIdx]) {
-                sc.stickers[stickerIdx].size = newSize;
+                sc.stickers[stickerIdx].size = normalizedBaseSize;
             }
         }
 
@@ -700,17 +714,23 @@ function updateGlobalStylesFromInputs() {
     renderGrid();
 }
 
-// 10. Single-Row Unit Customization Bar
+// 10. Centered Unit Customization Modal
 function toggleUnitCustomBar(slotId) {
     const state = window.CustomStoreState;
-    const $bar = $('#unit-custom-bar');
+    const $backdrop = $('#unit-custom-modal-backdrop');
 
-    if ($bar.hasClass('active') && state.selectedSlotId === slotId) {
-        $bar.removeClass('active');
+    if ($backdrop.hasClass('active') && state.selectedSlotId === slotId) {
+        $backdrop.removeClass('active');
         return;
     }
 
     state.selectedSlotId = slotId;
+
+    // Find slot title
+    const currentSlots = state.currentTargetView === 'admin' ? ADMIN_SLOTS : PUBLIC_SLOTS;
+    const slotMeta = currentSlots.find(s => s.id === slotId);
+    $('#unit-modal-slot-title').text(slotMeta ? `Personalizar: ${slotMeta.title}` : 'Personalizar Slot');
+
     const slotConfig = state.slotsConfig[slotId] || {};
 
     const bg = slotConfig.bg_color || state.globalStyles.bg_color || '#1e272e';
@@ -729,7 +749,7 @@ function toggleUnitCustomBar(slotId) {
 
     $('#unit-font-family').val(font);
 
-    $bar.addClass('active');
+    $backdrop.addClass('active');
 }
 
 function updateActiveSlotStyles() {
@@ -922,8 +942,8 @@ function resetAllCustomizations() {
             state.selectedSlotId = null;
             state.activeStickerIdx = null;
 
-            // Hide unit bar
-            $('#unit-custom-bar').removeClass('active');
+            // Hide unit modal
+            $('#unit-custom-modal-backdrop').removeClass('active');
 
             populateDefaultGridStructure();
             applyGlobalStylesToInputs();
@@ -959,7 +979,7 @@ function bindEvents() {
         $(this).addClass('active');
         window.CustomStoreState.currentTargetView = 'admin';
         window.CustomStoreState.selectedSlotId = null;
-        $('#unit-custom-bar').removeClass('active');
+        $('#unit-custom-modal-backdrop').removeClass('active');
         renderGrid();
     });
 
@@ -968,7 +988,7 @@ function bindEvents() {
         $(this).addClass('active');
         window.CustomStoreState.currentTargetView = 'public';
         window.CustomStoreState.selectedSlotId = null;
-        $('#unit-custom-bar').removeClass('active');
+        $('#unit-custom-modal-backdrop').removeClass('active');
         renderGrid();
     });
 
@@ -985,8 +1005,15 @@ function bindEvents() {
     $('#unit-font-family').on('change', updateActiveSlotStyles);
 
     $('#btn-unit-reset').on('click', resetActiveSlotToGlobal);
-    $('#btn-close-unit-bar').on('click', function() {
-        $('#unit-custom-bar').removeClass('active');
+    $('#btn-close-unit-modal').on('click', function() {
+        $('#unit-custom-modal-backdrop').removeClass('active');
+    });
+
+    // Close when clicking outside card
+    $('#unit-custom-modal-backdrop').on('click', function(e) {
+        if ($(e.target).is('#unit-custom-modal-backdrop')) {
+            $(this).removeClass('active');
+        }
     });
 
     // Save & Reset Buttons

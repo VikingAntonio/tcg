@@ -6905,6 +6905,33 @@ body.modal-open #decks-view.active {
     mask-composite: intersect !important;
 }
 
+/* Store Customization Light Theme High Contrast Overrides */
+body.theme-light .custom-editor-panel select,
+body.theme-light .unit-custom-modal select,
+body.theme-light .unit-bar-select,
+body.theme-light .compact-select-input {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.theme-light .slot-custom-item,
+body.theme-light .tile-customized {
+    color: #1e293b;
+}
+
+body.theme-light .protected-text-zone,
+body.theme-light .slot-protected-zone {
+    border-color: #d97706 !important;
+    background-color: rgba(217, 119, 6, 0.12) !important;
+}
+
+body.theme-light .protected-tag,
+body.theme-light .slot-protected-zone-tag {
+    color: #ffffff !important;
+    background-color: #b45309 !important;
+}
+
 /* Theme Adaptive Tag Select Dropdown */
 .tag-select-adaptive {
     background: #0f172a !important;
