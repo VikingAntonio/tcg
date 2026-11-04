@@ -791,27 +791,15 @@ function initStickersPicker() {
 
     TEST_STICKERS.forEach(stk => {
         const $item = $(`
-            <div class="picker-sticker-item" title="${stk.name}">
+            <div class="picker-sticker-item" title="Agregar ${stk.name}">
                 <img src="${stk.url}" alt="${stk.name}">
             </div>
         `);
         $item.on('click', function(e) {
             e.stopPropagation();
             addStickerToCurrentSlot(stk);
-            $picker.removeClass('active');
         });
         $picker.append($item);
-    });
-
-    $('#btn-toggle-stickers-popup').on('click', function(e) {
-        e.stopPropagation();
-        $picker.toggleClass('active');
-    });
-
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('#stickers-picker-popup, #btn-toggle-stickers-popup').length) {
-            $picker.removeClass('active');
-        }
     });
 }
 

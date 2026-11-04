@@ -5845,8 +5845,7 @@ body.focus-mode-active .event-card {
 }
 
 .home-menu-item i {
-    font-size: 2.5rem;
-    color: var(--primary-color);
+    display: none !important;
 }
 
 .home-menu-item span {
