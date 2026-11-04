@@ -93,6 +93,63 @@
             color: #1e1e2f;
         }
 
+        /* High Contrast Support for Theme-Light across Customization Panels */
+        body.theme-light .custom-global-sidebar,
+        body.theme-light .unit-custom-modal-card {
+            background: #ffffff !important;
+            border-color: #d1d8e0 !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        body.theme-light .unit-modal-controls-row {
+            background: #f8fafc !important;
+            border-bottom-color: #e2e8f0 !important;
+        }
+
+        body.theme-light .unit-modal-header {
+            background: #f1f5f9 !important;
+            border-bottom-color: #e2e8f0 !important;
+        }
+
+        body.theme-light .compact-select-input,
+        body.theme-light .unit-bar-select {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+
+        body.theme-light .compact-select-input option,
+        body.theme-light .unit-bar-select option {
+            background: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        body.theme-light .unit-bar-label,
+        body.theme-light .compact-field-group label {
+            color: #475569 !important;
+        }
+
+        body.theme-light .picker-sticker-item {
+            background: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        body.theme-light .picker-sticker-item:hover {
+            border-color: #0084ff !important;
+            background: #f0f9ff !important;
+        }
+
+        body.theme-light .slot-protected-zone {
+            border-color: #f59e0b !important;
+            background: rgba(245, 158, 11, 0.12) !important;
+        }
+
+        body.theme-light .slot-protected-zone-tag {
+            color: #ffffff !important;
+            background: #d97706 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+        }
+
         .btn-action-save-text {
             background: #a29bfe; /* Flat pastel purple */
             color: #1e1e2f;
@@ -540,71 +597,78 @@
             display: flex;
         }
 
-        /* Clean Single-Row Unit Customization Bar + Stickers Panel Immediately Below */
-        .unit-custom-bar-overlay {
+        /* Centered Unit Customization Modal & Backdrop */
+        .custom-modal-backdrop {
             position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20000;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(8px);
+            z-index: 25000;
             display: none;
-            flex-direction: column;
-            background: rgba(18, 24, 38, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            padding: 12px 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 210, 255, 0.2);
-            backdrop-filter: blur(20px);
             align-items: center;
-            gap: 12px;
-            max-width: 95vw;
+            justify-content: center;
+            padding: 20px;
             box-sizing: border-box;
         }
 
-        .unit-custom-bar-overlay.active {
+        .custom-modal-backdrop.active {
             display: flex;
         }
 
-        .unit-bar-main-row {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
-            justify-content: center;
+        .unit-custom-modal-card {
+            background: var(--card-bg, #121826);
+            border: 1px solid var(--card-border, rgba(255, 255, 255, 0.18));
+            border-radius: 20px;
             width: 100%;
+            max-width: 580px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 210, 255, 0.25);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-out;
+            box-sizing: border-box;
         }
 
-        .unit-bar-group {
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Top Row Controls */
+        .unit-modal-header {
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
         }
 
-        .unit-bar-label {
-            font-size: 0.72rem;
+        .unit-modal-title {
+            font-size: 0.88rem;
             font-weight: 700;
-            color: var(--text-muted);
+            color: var(--primary-color, #00d2ff);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .unit-bar-select {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid var(--card-border);
-            color: var(--text-color);
-            padding: 5px 8px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-family: inherit;
-            outline: none;
-            cursor: pointer;
+        .unit-modal-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .unit-bar-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid var(--card-border);
-            color: var(--text-color);
-            padding: 6px 12px;
+        .unit-modal-btn-reset {
+            background: rgba(255, 71, 87, 0.12);
+            border: 1px solid rgba(255, 71, 87, 0.4);
+            color: #ff4757;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 700;
@@ -613,75 +677,121 @@
             font-family: inherit;
         }
 
-        .unit-bar-btn:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
+        .unit-modal-btn-reset:hover {
+            background: #ff4757;
+            color: #ffffff;
         }
 
-        .unit-bar-btn-close {
+        .unit-modal-btn-close {
             background: none;
             border: none;
-            color: var(--text-muted);
-            font-size: 1.1rem;
+            color: var(--text-muted, #a4b0be);
+            font-size: 1.4rem;
             cursor: pointer;
+            line-height: 1;
             padding: 0 4px;
+            transition: color 0.2s;
         }
 
-        .unit-bar-btn-close:hover {
+        .unit-modal-btn-close:hover {
             color: #ff4757;
         }
 
-        /* Stickers Mini Tray / Embedded Row */
-        .unit-stickers-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-            padding-top: 4px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            overflow-x: auto;
-            scrollbar-width: thin;
+        /* Exact 4 Primary Controls Row */
+        .unit-modal-controls-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.1);
         }
 
-        .unit-stickers-label {
+        .unit-bar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .unit-bar-label {
             font-size: 0.72rem;
             font-weight: 700;
-            color: var(--primary-color);
+            color: var(--text-muted, #a4b0be);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            white-space: nowrap;
+        }
+
+        .unit-bar-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border, rgba(255, 255, 255, 0.15));
+            color: var(--text-color, #ffffff);
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Stickers Section in Modal */
+        .unit-modal-stickers-section {
+            padding: 16px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stickers-section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stickers-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary-color, #00d2ff);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .stickers-section-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted, #a4b0be);
         }
 
         .stickers-picker-popup {
-            display: flex !important;
-            align-items: center;
-            gap: 8px;
-            background: transparent;
-            border: none;
-            padding: 2px 0;
-            box-shadow: none;
-            position: static;
-            z-index: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+            gap: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 6px 2px;
+            box-sizing: border-box;
+            scrollbar-width: thin;
         }
 
         .picker-sticker-item {
-            width: 42px;
-            height: 42px;
+            aspect-ratio: 1;
             background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 4px;
+            border: 1px solid var(--card-border, rgba(255, 255, 255, 0.15));
+            border-radius: 12px;
+            padding: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             box-sizing: border-box;
-            transition: transform 0.15s;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .picker-sticker-item:hover {
-            transform: scale(1.15);
-            border-color: var(--primary-color);
+            transform: scale(1.12);
+            border-color: var(--primary-color, #00d2ff);
+            background: rgba(0, 210, 255, 0.08);
+            box-shadow: 0 4px 14px rgba(0, 210, 255, 0.3);
         }
 
         .picker-sticker-item img {
@@ -818,60 +928,70 @@
         </div>
     </div>
 
-    <!-- Unit Customization Bar with Controls on Top Row and Stickers Library Immediately Below -->
-    <div class="unit-custom-bar-overlay" id="unit-custom-bar">
-        <!-- Top Row: Colors, Typography & Actions -->
-        <div class="unit-bar-main-row">
-            <!-- Fondo Swatch -->
-            <div class="unit-bar-group">
-                <span class="unit-bar-label">Fondo</span>
-                <div class="swatch-btn swatch-fill" id="swatch-unit-bg">
-                    <input type="color" id="unit-bg-color" value="#1e272e">
+    <!-- Centered Unit Customization Modal & Backdrop -->
+    <div class="custom-modal-backdrop" id="unit-custom-modal-backdrop">
+        <div class="unit-custom-modal-card" id="unit-custom-modal-card">
+            <!-- Modal Header with Title, Restablecer and Close Button -->
+            <div class="unit-modal-header">
+                <div class="unit-modal-title">
+                    <span id="unit-modal-slot-title">Personalizar Slot</span>
+                </div>
+                <div class="unit-modal-actions">
+                    <button class="unit-modal-btn-reset" id="btn-unit-reset" title="Restablecer este slot a los valores globales">Restablecer a Global</button>
+                    <button class="unit-modal-btn-close" id="btn-close-unit-modal" aria-label="Cerrar">&times;</button>
                 </div>
             </div>
 
-            <!-- Borde Swatch (Outline only) -->
-            <div class="unit-bar-group">
-                <span class="unit-bar-label">Borde</span>
-                <div class="swatch-btn swatch-outline" id="swatch-unit-border">
-                    <input type="color" id="unit-border-color" value="#00d2ff">
+            <!-- Top Row: Exactly the 4 Primary Controls (Fondo, Borde, Letra, Tipografía) -->
+            <div class="unit-modal-controls-row">
+                <!-- Fondo Swatch -->
+                <div class="unit-bar-group">
+                    <span class="unit-bar-label">Fondo</span>
+                    <div class="swatch-btn swatch-fill" id="swatch-unit-bg">
+                        <input type="color" id="unit-bg-color" value="#1e272e">
+                    </div>
+                </div>
+
+                <!-- Borde Swatch -->
+                <div class="unit-bar-group">
+                    <span class="unit-bar-label">Borde</span>
+                    <div class="swatch-btn swatch-outline" id="swatch-unit-border">
+                        <input type="color" id="unit-border-color" value="#00d2ff">
+                    </div>
+                </div>
+
+                <!-- Letra Swatch -->
+                <div class="unit-bar-group">
+                    <span class="unit-bar-label">Letra</span>
+                    <div class="swatch-btn swatch-fill" id="swatch-unit-text" style="background-color: #f5f6fa;">
+                        <input type="color" id="unit-text-color" value="#f5f6fa">
+                    </div>
+                </div>
+
+                <!-- Tipografía Dropdown -->
+                <div class="unit-bar-group">
+                    <span class="unit-bar-label">Tipografía</span>
+                    <select id="unit-font-family" class="unit-bar-select">
+                        <option value="inherit">Heredar</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Inter', sans-serif">Inter</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Orbitron', sans-serif">Orbitron</option>
+                        <option value="'Cinzel', serif">Cinzel</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Letra Swatch -->
-            <div class="unit-bar-group">
-                <span class="unit-bar-label">Letra</span>
-                <div class="swatch-btn swatch-fill" id="swatch-unit-text" style="background-color: #f5f6fa;">
-                    <input type="color" id="unit-text-color" value="#f5f6fa">
+            <!-- Bottom Section: Stickers Library prepared for many stickers -->
+            <div class="unit-modal-stickers-section">
+                <div class="stickers-section-head">
+                    <span class="stickers-section-title">Biblioteca de Stickers</span>
+                    <span class="stickers-section-hint">Haz clic en un sticker para agregarlo (máx. 10)</span>
                 </div>
-            </div>
-
-            <!-- Tipografía Dropdown -->
-            <div class="unit-bar-group">
-                <span class="unit-bar-label">Tipografía</span>
-                <select id="unit-font-family" class="unit-bar-select">
-                    <option value="inherit">Heredar</option>
-                    <option value="'Montserrat', sans-serif">Montserrat</option>
-                    <option value="'Inter', sans-serif">Inter</option>
-                    <option value="'Roboto', sans-serif">Roboto</option>
-                    <option value="'Poppins', sans-serif">Poppins</option>
-                    <option value="'Orbitron', sans-serif">Orbitron</option>
-                    <option value="'Cinzel', serif">Cinzel</option>
-                </select>
-            </div>
-
-            <!-- Unit Reset to Global -->
-            <button class="unit-bar-btn" id="btn-unit-reset" style="color: #ff4757; border-color: rgba(255,71,87,0.3);">Restablecer</button>
-
-            <!-- Close Bar -->
-            <button class="unit-bar-btn-close" id="btn-close-unit-bar">&times;</button>
-        </div>
-
-        <!-- Bottom Row: Stickers Library Immediately Below -->
-        <div class="unit-stickers-row">
-            <span class="unit-stickers-label">Stickers</span>
-            <div class="stickers-picker-popup" id="stickers-picker-popup">
-                <!-- Temporary Test Stickers Library -->
+                <div class="stickers-picker-popup" id="stickers-picker-popup">
+                    <!-- Dynamic test sticker catalog rendered here -->
+                </div>
             </div>
         </div>
     </div>
